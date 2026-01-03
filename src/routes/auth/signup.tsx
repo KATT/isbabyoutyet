@@ -33,11 +33,18 @@ function SignupPage() {
 
   const form = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema as any),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-    },
+    defaultValues:
+      process.env.NODE_ENV === "development"
+        ? {
+            name: "Test User",
+            email: "test@example.com",
+            password: "password",
+          }
+        : {
+            name: "",
+            email: "",
+            password: "",
+          },
   });
 
   const onSubmit = async (values: SignupFormValues) => {
