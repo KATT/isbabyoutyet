@@ -119,7 +119,7 @@ type DueDateEditorProps = {
 };
 
 function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEditorProps) {
-  const updateDueDate = useMutation(api.babies.updateDueDate);
+  const updateBaby = useMutation(api.babies.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newDate, setNewDate] = useState(() => {
     const date = parseDate(currentDueDate);
@@ -291,7 +291,7 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
                 try {
                   const dateObj = parseISO(newDate);
                   const dateString = dateObj.toISOString();
-                  await updateDueDate({
+                  await updateBaby({
                     babyId: babyId as any,
                     dueDate: dateString,
                   });
@@ -322,6 +322,11 @@ type StatusDateEditorProps = {
   currentDate: string;
   label: string;
   compact?: boolean;
+  baby: {
+    laborStarted: string | null;
+    wentToHospital: string | null;
+    babyBorn: string | null;
+  };
 };
 
 function StatusDateEditor({
@@ -330,8 +335,9 @@ function StatusDateEditor({
   currentDate,
   label,
   compact = false,
+  baby,
 }: StatusDateEditorProps) {
-  const updateStatus = useMutation(api.babies.updateStatus);
+  const updateBaby = useMutation(api.babies.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newDateTime, setNewDateTime] = useState(() => {
     const date = parseDate(currentDate);
@@ -510,10 +516,26 @@ function StatusDateEditor({
                 try {
                   const dateObj = parseISO(newDateTime);
                   const dateString = dateObj.toISOString();
-                  await updateStatus({
+                  const updateFields: {
+                    laborStarted?: string | null;
+                    wentToHospital?: string | null;
+                    babyBorn?: string | null;
+                  } = {};
+
+                  if (status === "labor_started") {
+                    updateFields.laborStarted = dateString;
+                  } else if (status === "gone_to_hospital") {
+                    updateFields.wentToHospital = dateString;
+                  } else if (status === "born") {
+                    updateFields.babyBorn = dateString;
+                    if (!baby.wentToHospital) {
+                      updateFields.wentToHospital = dateString;
+                    }
+                  }
+
+                  await updateBaby({
                     babyId: babyId as any,
-                    status,
-                    date: dateString,
+                    ...updateFields,
                   });
                   setShowConfirm(false);
                   setIsEditing(false);
@@ -538,7 +560,7 @@ function StatusDateEditor({
 
 type CustomMessageEditorProps = {
   babyId: string;
-  currentMessage: string | undefined;
+  currentMessage: string | null | undefined;
   compact?: boolean;
 };
 
@@ -547,7 +569,7 @@ function CustomMessageEditor({
   currentMessage,
   compact = false,
 }: CustomMessageEditorProps) {
-  const updateCustomMessage = useMutation(api.babies.updateCustomMessage);
+  const updateBaby = useMutation(api.babies.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(currentMessage || "");
   const [showConfirm, setShowConfirm] = useState(false);
@@ -680,7 +702,7 @@ function CustomMessageEditor({
               onClick={async () => {
                 setIsLoading(true);
                 try {
-                  await updateCustomMessage({
+                  await updateBaby({
                     babyId: babyId as any,
                     customMessage: newMessage.trim() || null,
                   });
@@ -715,6 +737,11 @@ type StatusUpdateButtonProps = {
   compact?: boolean;
   previousStatuses?: Array<{ label: string; isSet: boolean }>;
   subsequentStatuses?: Array<{ label: string }>;
+  baby: {
+    laborStarted: string | null;
+    wentToHospital: string | null;
+    babyBorn: string | null;
+  };
 };
 
 function StatusUpdateButton({
@@ -727,8 +754,9 @@ function StatusUpdateButton({
   compact = false,
   previousStatuses = [],
   subsequentStatuses = [],
+  baby,
 }: StatusUpdateButtonProps) {
-  const updateStatus = useMutation(api.babies.updateStatus);
+  const updateBaby = useMutation(api.babies.update);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -792,21 +820,43 @@ function StatusUpdateButton({
               onClick={async () => {
                 setIsLoading(true);
                 try {
+                  const updateFields: {
+                    laborStarted?: string | null;
+                    wentToHospital?: string | null;
+                    babyBorn?: string | null;
+                  } = {};
+
                   if (isCompleted) {
-                    await updateStatus({
-                      babyId: babyId as any,
-                      status,
-                      date: null,
-                    });
+                    if (status === "labor_started") {
+                      updateFields.laborStarted = null;
+                      updateFields.wentToHospital = null;
+                      updateFields.babyBorn = null;
+                    } else if (status === "gone_to_hospital") {
+                      updateFields.wentToHospital = null;
+                      updateFields.babyBorn = null;
+                    } else {
+                      updateFields.babyBorn = null;
+                    }
                   } else {
                     const now = new Date();
                     const dateString = now.toISOString();
-                    await updateStatus({
-                      babyId: babyId as any,
-                      status,
-                      date: dateString,
-                    });
+
+                    if (status === "labor_started") {
+                      updateFields.laborStarted = dateString;
+                    } else if (status === "gone_to_hospital") {
+                      updateFields.wentToHospital = dateString;
+                    } else if (status === "born") {
+                      updateFields.babyBorn = dateString;
+                      if (!baby.wentToHospital) {
+                        updateFields.wentToHospital = dateString;
+                      }
+                    }
                   }
+
+                  await updateBaby({
+                    babyId: babyId as any,
+                    ...updateFields,
+                  });
                   setShowConfirm(false);
                 } catch (err) {
                   if (err instanceof Error) {
@@ -899,10 +949,27 @@ function BabyPage() {
     }
   }
 
+  // For progress bar: if a later status is set, show previous statuses as completed
+  // Status updates remain independent, but progress bar assumes logical progression
+  const isStateCompletedForProgress = (state: (typeof states)[number]): boolean => {
+    if (state.type === "labor_started") {
+      // Labor is completed if it has a date OR if gone_to_hospital or born is set
+      return !!state.date || !!baby.wentToHospital || !!baby.babyBorn;
+    }
+    if (state.type === "gone_to_hospital") {
+      // Gone to hospital is completed if it has a date OR if born is set
+      return !!state.date || !!baby.babyBorn;
+    }
+    // Born is only completed if it has a date
+    return !!state.date;
+  };
+
   // Progress is based on how many fields are set (not order)
-  const completedCount = states.filter((s) => s.date).length;
+  // For progress bar, count states as completed if they have dates OR if later statuses are set
+  const completedCount = states.filter((s) => isStateCompletedForProgress(s)).length;
 
   // Determine the next state (first uncompleted state)
+  // For UI logic, only consider explicitly set statuses
   const nextStateIndex = states.findIndex((s) => !s.date);
   const isNextState = (index: number) => index === nextStateIndex;
 
@@ -1008,6 +1075,11 @@ function BabyPage() {
                                       currentDate={state.date}
                                       label={stateLabels[state.type]}
                                       compact
+                                      baby={{
+                                        laborStarted: baby.laborStarted,
+                                        wentToHospital: baby.wentToHospital,
+                                        babyBorn: baby.babyBorn,
+                                      }}
                                     />
                                   )}
                                   <StatusUpdateButton
@@ -1020,6 +1092,11 @@ function BabyPage() {
                                     compact
                                     previousStatuses={previousStatuses}
                                     subsequentStatuses={subsequentStatuses}
+                                    baby={{
+                                      laborStarted: baby.laborStarted,
+                                      wentToHospital: baby.wentToHospital,
+                                      babyBorn: baby.babyBorn,
+                                    }}
                                   />
                                 </div>
                               </div>
@@ -1153,7 +1230,8 @@ function BabyPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 {states.map((state) => {
-                  const isCompleted = !!state.date;
+                  // For progress bar, show previous statuses as completed if later ones are set
+                  const isCompleted = isStateCompletedForProgress(state);
                   const isCurrent = currentStatus?.type === state.type;
                   const Icon = stateIcons[state.type];
                   const classes = getStateClasses(state.type, isCompleted, isCurrent);

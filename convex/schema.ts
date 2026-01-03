@@ -7,10 +7,10 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    customMessage: v.optional(v.string()), // Custom message shown when gone to hospital
-    laborStarted: v.optional(v.string()), // ISO date string, nullable
-    wentToHospital: v.optional(v.string()), // ISO date string, nullable
-    babyBorn: v.optional(v.string()), // ISO date string, nullable
+    customMessage: v.union(v.string(), v.null()), // Custom message shown when gone to hospital
+    laborStarted: v.union(v.string(), v.null()), // ISO date string, nullable
+    wentToHospital: v.union(v.string(), v.null()), // ISO date string, nullable
+    babyBorn: v.union(v.string(), v.null()), // ISO date string, nullable
     createdAt: v.number(),
   })
     .index("by_user", ["userId"])

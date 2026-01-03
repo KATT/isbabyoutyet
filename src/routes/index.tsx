@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby, Heart, Users, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -19,6 +20,8 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  const sessionData = useSession();
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-6 py-16">
@@ -33,16 +36,26 @@ function HomePage() {
             Track the progress of labor and birth. Share real-time updates with family and friends.
           </p>
           <div className="flex gap-4 justify-center">
-            <Link to="/auth/signup">
-              <Button size="lg" className="text-lg px-8 py-6">
-                Get Started
-              </Button>
-            </Link>
-            <Link to="/auth/login">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
-                Sign In
-              </Button>
-            </Link>
+            {sessionData.data ? (
+              <Link to="/dashboard">
+                <Button size="lg" className="text-lg px-8 py-6">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/auth/signup">
+                  <Button size="lg" className="text-lg px-8 py-6">
+                    Get Started
+                  </Button>
+                </Link>
+                <Link to="/auth/login">
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                    Sign In
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
@@ -137,13 +150,23 @@ function HomePage() {
           <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
           <p className="text-muted-foreground mb-8">
-            Join families tracking their baby's journey today.
+            {sessionData.data
+              ? "Continue tracking your baby's journey."
+              : "Join families tracking their baby's journey today."}
           </p>
-          <Link to="/auth/signup">
-            <Button size="lg" className="text-lg px-8 py-6">
-              Create Your Account
-            </Button>
-          </Link>
+          {sessionData.data ? (
+            <Link to="/dashboard">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Go to Dashboard
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/auth/signup">
+              <Button size="lg" className="text-lg px-8 py-6">
+                Create Your Account
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </div>
