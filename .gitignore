@@ -12,3 +12,4 @@ count.txt
 .vinxi
 todos.json
 convex/_generated
+/src/routeTree.gen.ts
