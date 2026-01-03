@@ -14,11 +14,11 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import appCss from "../styles.css?url";
 import { authClient } from "@/lib/auth-client";
-import { getToken } from "@/lib/auth-server";
+import { authServer } from "@/lib/auth-server";
 
 // Get auth information for SSR using available cookies
 const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await getToken();
+  return await authServer.getToken();
 });
 
 export const Route = createRootRouteWithContext<{
