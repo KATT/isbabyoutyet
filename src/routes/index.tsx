@@ -240,15 +240,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900">
-      <section className="relative py-20 px-6 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-r from-orange-600/5 via-orange-500/5 to-amber-600/5"></div>
+      <h1 className="sticky top-0 z-10 text-3xl md:text-6xl font-black text-white tracking-[-0.08em] whitespace-nowrap py-4 md:py-8 px-6 text-center">
+        <span className="bg-linear-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">
+          Is Baby Darvill out yet?
+        </span>
+      </h1>
+      <section className="relative px-6 text-center overflow-hidden">
         <div className="relative max-w-4xl mx-auto">
-          <h1 className="text-3xl md:text-6xl font-black text-white mb-8 tracking-[-0.08em] whitespace-nowrap">
-            <span className="bg-linear-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">
-              Is Baby Darvill out yet?
-            </span>
-          </h1>
-
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl">
             {/* Current status display */}
             {!currentStatus && (
