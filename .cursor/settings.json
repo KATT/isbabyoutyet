@@ -1,0 +1,4 @@
+{
+  "extensions.unwantedRecommendations": ["biomejs.biome", "dbaeumer.vscode-eslint"]
+}
+
