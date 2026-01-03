@@ -1,7 +1,82 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Baby, Hospital, CheckCircle, Activity } from "lucide-react";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({
+  component: App,
+  head: () => {
+    // Calculate current status for dynamic title
+    let currentIndex = -1;
+    for (let i = states.length - 1; i >= 0; i--) {
+      if (states[i].date !== null) {
+        currentIndex = i;
+        break;
+      }
+    }
+    const currentStatus = currentIndex >= 0 ? states[currentIndex] : null;
+
+    let title = "Is Baby Darvill out yet?";
+    let description = "Track the progress of labour and birth - know when baby arrives!";
+
+    if (currentStatus) {
+      switch (currentStatus.type) {
+        case "labor_started":
+          title = "Labour started - Is Baby Darvill out yet?";
+          description = "Labour has started! Track the progress.";
+          break;
+        case "gone_to_hospital":
+          title = "Gone to hospital - Is Baby Darvill out yet?";
+          description = "At the hospital! Baby is on the way.";
+          break;
+        case "born":
+          title = "Yes! Baby Darvill is out! 🎉";
+          description = "Baby Darvill has arrived!";
+          break;
+      }
+    } else {
+      const overdueDays = getOverdueDays();
+      if (overdueDays > 0) {
+        title = `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue - Is Baby Darvill out yet?`;
+        description = `Baby is ${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue. Still waiting!`;
+      }
+    }
+
+    return {
+      meta: [
+        {
+          title,
+        },
+        {
+          name: "description",
+          content: description,
+        },
+        {
+          property: "og:title",
+          content: title,
+        },
+        {
+          property: "og:description",
+          content: description,
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary",
+        },
+        {
+          name: "twitter:title",
+          content: title,
+        },
+        {
+          name: "twitter:description",
+          content: description,
+        },
+      ],
+    };
+  },
+});
 
 // Timezone for all states (Malmö, Sweden)
 const TIMEZONE = "Europe/Stockholm";
@@ -35,6 +110,38 @@ const states: [
     // date: "2026-01-03 11:00",
   },
 ];
+
+// Helper function to calculate overdue days from due date (31st December 2025)
+function getOverdueDays(): number {
+  const now = new Date();
+
+  // Get current date in Stockholm timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const nowParts = formatter.formatToParts(now);
+  const currentYear = parseInt(nowParts.find((p) => p.type === "year")!.value);
+  const currentMonth = parseInt(nowParts.find((p) => p.type === "month")!.value);
+  const currentDay = parseInt(nowParts.find((p) => p.type === "day")!.value);
+
+  // Due date is 31st December 2025
+  const dueYear = 2025;
+  const dueMonth = 12;
+  const dueDay = 31;
+
+  // Calculate difference in calendar days
+  const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
+  const dueDate = new Date(dueYear, dueMonth - 1, dueDay);
+
+  const diffInMs = currentDate.getTime() - dueDate.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffInDays);
+}
 
 // Helper function to parse date string "YYYY-MM-DD HH:mm" in the specified timezone
 // The date string represents a time in Stockholm timezone
@@ -131,38 +238,6 @@ function getRelativeTime(dateString: string): string {
   }
 
   return rtf.format(0, "second");
-}
-
-// Helper function to calculate overdue days from due date (31st December 2025)
-function getOverdueDays(): number {
-  const now = new Date();
-
-  // Get current date in Stockholm timezone
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: TIMEZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const nowParts = formatter.formatToParts(now);
-  const currentYear = parseInt(nowParts.find((p) => p.type === "year")!.value);
-  const currentMonth = parseInt(nowParts.find((p) => p.type === "month")!.value);
-  const currentDay = parseInt(nowParts.find((p) => p.type === "day")!.value);
-
-  // Due date is 31st December 2025
-  const dueYear = 2025;
-  const dueMonth = 12;
-  const dueDay = 31;
-
-  // Calculate difference in calendar days
-  const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
-  const dueDate = new Date(dueYear, dueMonth - 1, dueDay);
-
-  const diffInMs = currentDate.getTime() - dueDate.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  return Math.max(0, diffInDays);
 }
 
 function App() {
