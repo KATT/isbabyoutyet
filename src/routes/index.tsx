@@ -243,7 +243,7 @@ function App() {
       <section className="relative py-20 px-6 text-center overflow-hidden">
         <div className="absolute inset-0 bg-linear-to-r from-orange-600/5 via-orange-500/5 to-amber-600/5"></div>
         <div className="relative max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-8 tracking-[-0.08em]">
+          <h1 className="text-3xl md:text-6xl font-black text-white mb-8 tracking-[-0.08em] whitespace-nowrap">
             <span className="bg-linear-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">
               Is Baby Darvill out yet?
             </span>
@@ -254,7 +254,9 @@ function App() {
             {!currentStatus && (
               <div className="flex flex-col items-center">
                 <Baby className="w-24 h-24 md:w-32 md:h-32 text-orange-300 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Not yet</h2>
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-4 whitespace-nowrap">
+                  Not yet
+                </h2>
                 <p className="text-xl text-gray-300 mb-4">Baby is still on the way</p>
                 {(() => {
                   const overdueDays = getOverdueDays();
@@ -276,7 +278,9 @@ function App() {
             {currentStatus?.type === "labor_started" && (
               <div className="flex flex-col items-center">
                 <Activity className="w-24 h-24 md:w-32 md:h-32 text-orange-300 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Labour Started</h2>
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-4 whitespace-nowrap">
+                  Labour started
+                </h2>
                 <p className="text-xl text-gray-300 mb-2">Not gone to hospital yet</p>
                 {currentStatus.date && (
                   <p className="text-lg text-gray-400 mt-2">
@@ -290,7 +294,9 @@ function App() {
             {currentStatus?.type === "gone_to_hospital" && (
               <div className="flex flex-col items-center">
                 <Hospital className="w-24 h-24 md:w-32 md:h-32 text-orange-400 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Gone to Hospital</h2>
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-4 whitespace-nowrap">
+                  Gone to hospital
+                </h2>
                 {currentStatus.date && (
                   <p className="text-xl text-gray-300 mb-2">
                     {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
@@ -307,7 +313,9 @@ function App() {
             {currentStatus?.type === "born" && (
               <div className="flex flex-col items-center">
                 <CheckCircle className="w-24 h-24 md:w-32 md:h-32 text-orange-500 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Yes! Baby is Out</h2>
+                <h2 className="text-2xl md:text-5xl font-bold text-white mb-4 whitespace-nowrap">
+                  Yes! Baby is out
+                </h2>
                 {currentStatus.date && (
                   <p className="text-xl text-gray-300">
                     Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
