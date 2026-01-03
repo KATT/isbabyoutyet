@@ -2,10 +2,10 @@
 alwaysApply: true
 ---
 
+# General Guidelines
+
 - Assume the app is running in dev mode at http://localhost:3000
 - Always run `pnpm checks` before consider yourself done with a task
-
-
 
 ## TypeScript & Code Style
 
@@ -196,6 +196,32 @@ const method = options!.method;
 
 - Use JSX runtime (no need to import React for JSX)
 - Prefer function components
+- **NEVER** create a separate component file if the component is only used once
+- Inline components directly in the file where they're used if they have a single usage
+- Only extract components to separate files when they are reused in multiple places
+
+```typescript
+// ✅ CORRECT - Component used once, inline it
+export const Route = createFileRoute("/dashboard/add")({
+  component: AddBabyPage,
+});
+
+function AddBabyPage() {
+  // Form logic directly in the page component
+  const form = useForm<AddBabyFormValues>({...});
+  return <form>...</form>;
+}
+
+// ❌ INCORRECT - Creating a component file for single-use component
+// src/components/baby/AddBabyForm.tsx
+export function AddBabyForm() { ... }
+
+// src/routes/dashboard/add.tsx
+import { AddBabyForm } from "@/components/baby/AddBabyForm";
+function AddBabyPage() {
+  return <AddBabyForm />; // Only used once!
+}
+```
 
 ### Switch Statements
 
