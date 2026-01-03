@@ -4,7 +4,7 @@ import { Baby, Hospital, CheckCircle, Activity } from "lucide-react";
 // Type definitions
 type StatusState = {
   type: "labor_started" | "gone_to_hospital" | "born";
-  date: string | null; // date string in "YYYY-MM-DD HH:mm" format
+  date?: string; // date string in "YYYY-MM-DD HH:mm" format
 };
 
 // Status data - tuple of states in order
@@ -16,17 +16,14 @@ const states: [
 ] = [
   {
     type: "labor_started",
-    date: null, //
     // date: "2026-01-03 12:00",
   },
   {
     type: "gone_to_hospital",
-    date: null,
     // date: "2026-01-03 12:00",
   },
   {
     type: "born",
-    date: null,
     // date: "2026-01-03 11:00",
   },
 ];
@@ -37,7 +34,7 @@ export const Route = createFileRoute("/")({
     // Calculate current status for dynamic title
     let currentIndex = -1;
     for (let i = states.length - 1; i >= 0; i--) {
-      if (states[i].date !== null) {
+      if (states[i].date) {
         currentIndex = i;
         break;
       }
@@ -244,13 +241,13 @@ function App() {
   // Find the latest completed status (last state with a date, or null if none)
   let currentIndex = -1;
   for (let i = states.length - 1; i >= 0; i--) {
-    if (states[i].date !== null) {
+    if (states[i].date) {
       currentIndex = i;
       break;
     }
   }
   const currentStatus = currentIndex >= 0 ? states[currentIndex] : null;
-  const completedCount = states.filter((s) => s.date !== null).length;
+  const completedCount = states.filter((s) => s.date).length;
 
   const stateLabels = {
     labor_started: "Labour started",
@@ -404,7 +401,7 @@ function App() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 {states.map((state, index) => {
-                  const isCompleted = state.date !== null;
+                  const isCompleted = !!state.date;
                   const isCurrent = index === currentIndex;
                   const Icon = stateIcons[state.type];
                   const classes = getStateClasses(state.type, isCompleted, isCurrent);
