@@ -1,6 +1,6 @@
 {
-  "short_name": "Is Baby Out Yet?",
-  "name": "Is Baby Out Yet?",
+  "short_name": "Is Baby Darvill out yet?",
+  "name": "Is Baby Darvill out yet?",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#0f172a",
+  "theme_color": "#ea580c",
   "background_color": "#0f172a"
 }

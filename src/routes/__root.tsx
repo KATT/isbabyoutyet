@@ -6,7 +6,7 @@ import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
   head: () => ({
-    title: "Is Baby Out Yet?",
+    title: "Is Baby Darvill out yet?",
     meta: [
       {
         charSet: "utf-8",
@@ -21,7 +21,7 @@ export const Route = createRootRoute({
       },
       {
         name: "theme-color",
-        content: "#0f172a",
+        content: "#ea580c",
       },
     ],
     links: [

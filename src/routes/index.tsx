@@ -133,6 +133,38 @@ function getRelativeTime(dateString: string): string {
   return rtf.format(0, "second");
 }
 
+// Helper function to calculate overdue days from due date (31st December 2025)
+function getOverdueDays(): number {
+  const now = new Date();
+
+  // Get current date in Stockholm timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+
+  const nowParts = formatter.formatToParts(now);
+  const currentYear = parseInt(nowParts.find((p) => p.type === "year")!.value);
+  const currentMonth = parseInt(nowParts.find((p) => p.type === "month")!.value);
+  const currentDay = parseInt(nowParts.find((p) => p.type === "day")!.value);
+
+  // Due date is 31st December 2025
+  const dueYear = 2025;
+  const dueMonth = 12;
+  const dueDay = 31;
+
+  // Calculate difference in calendar days
+  const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
+  const dueDate = new Date(dueYear, dueMonth - 1, dueDay);
+
+  const diffInMs = currentDate.getTime() - dueDate.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+
+  return Math.max(0, diffInDays);
+}
+
 function App() {
   // Find the latest completed status (last state with a date, or null if none)
   let currentIndex = -1;
@@ -146,9 +178,9 @@ function App() {
   const completedCount = states.filter((s) => s.date !== null).length;
 
   const stateLabels = {
-    labor_started: "Labor Started",
-    gone_to_hospital: "Gone to Hospital",
-    born: "Baby Born",
+    labor_started: "Labour started",
+    gone_to_hospital: "Gone to hospital",
+    born: "Baby born",
   };
 
   const stateIcons = {
@@ -171,12 +203,12 @@ function App() {
           };
         case "gone_to_hospital":
           return {
-            circle: "bg-yellow-500 text-white",
+            circle: "bg-orange-600 text-white",
             text: "text-white",
           };
         case "born":
           return {
-            circle: "bg-green-500 text-white",
+            circle: "bg-orange-700 text-white",
             text: "text-white",
           };
       }
@@ -190,13 +222,13 @@ function App() {
           };
         case "gone_to_hospital":
           return {
-            circle: "bg-yellow-500/50 border-2 border-yellow-400 text-yellow-300",
-            text: "text-yellow-300",
+            circle: "bg-orange-600/50 border-2 border-orange-500 text-orange-200",
+            text: "text-orange-200",
           };
         case "born":
           return {
-            circle: "bg-green-500/50 border-2 border-green-400 text-green-300",
-            text: "text-green-300",
+            circle: "bg-orange-700/50 border-2 border-orange-600 text-orange-200",
+            text: "text-orange-200",
           };
       }
     }
@@ -209,17 +241,86 @@ function App() {
   return (
     <div className="min-h-screen bg-linear-to-b from-slate-900 via-slate-800 to-slate-900">
       <section className="relative py-20 px-6 text-center overflow-hidden">
-        <div className="absolute inset-0 bg-linear-to-r from-cyan-500/10 via-blue-500/10 to-purple-500/10"></div>
+        <div className="absolute inset-0 bg-linear-to-r from-orange-600/5 via-orange-500/5 to-amber-600/5"></div>
         <div className="relative max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-6xl font-black text-white mb-8 tracking-[-0.08em]">
-            <span className="bg-linear-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-              Is Baby Out Yet?
+            <span className="bg-linear-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">
+              Is Baby Darvill out yet?
             </span>
           </h1>
 
           <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-8 md:p-12 shadow-2xl">
+            {/* Current status display */}
+            {!currentStatus && (
+              <div className="flex flex-col items-center">
+                <Baby className="w-24 h-24 md:w-32 md:h-32 text-orange-300 mb-6" />
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Not yet</h2>
+                <p className="text-xl text-gray-300 mb-4">Baby is still on the way</p>
+                {(() => {
+                  const overdueDays = getOverdueDays();
+                  if (overdueDays > 0) {
+                    return (
+                      <div className="mt-4 p-4 bg-orange-600/20 border border-orange-500/50 rounded-lg">
+                        <p className="text-lg font-semibold text-orange-200">
+                          {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+                        </p>
+                        <p className="text-sm text-orange-300/80 mt-1">Due date: 31st December</p>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
+
+            {currentStatus?.type === "labor_started" && (
+              <div className="flex flex-col items-center">
+                <Activity className="w-24 h-24 md:w-32 md:h-32 text-orange-300 mb-6" />
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Labour Started</h2>
+                <p className="text-xl text-gray-300 mb-2">Not gone to hospital yet</p>
+                {currentStatus.date && (
+                  <p className="text-lg text-gray-400 mt-2">
+                    Started at {formatDate(currentStatus.date)} (
+                    {getRelativeTime(currentStatus.date)})
+                  </p>
+                )}
+              </div>
+            )}
+
+            {currentStatus?.type === "gone_to_hospital" && (
+              <div className="flex flex-col items-center">
+                <Hospital className="w-24 h-24 md:w-32 md:h-32 text-orange-400 mb-6" />
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Gone to Hospital</h2>
+                {currentStatus.date && (
+                  <p className="text-xl text-gray-300 mb-2">
+                    {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+                  </p>
+                )}
+                <div className="mt-6 p-4 bg-orange-600/20 border border-orange-500/50 rounded-lg">
+                  <p className="text-lg font-semibold text-orange-200">
+                    Do not disturb, only send messages to Alex
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {currentStatus?.type === "born" && (
+              <div className="flex flex-col items-center">
+                <CheckCircle className="w-24 h-24 md:w-32 md:h-32 text-orange-500 mb-6" />
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Yes! Baby is Out</h2>
+                {currentStatus.date && (
+                  <p className="text-xl text-gray-300">
+                    Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Horizontal divider */}
+            <div className="my-8 border-t border-slate-700"></div>
+
             {/* Progress indicator */}
-            <div className="mb-8">
+            <div>
               <div className="flex items-center justify-between mb-4">
                 {states.map((state, index) => {
                   const isCompleted = state.date !== null;
@@ -247,63 +348,11 @@ function App() {
               {/* Progress bar */}
               <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-orange-500 via-yellow-500 to-green-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-orange-700 transition-all duration-500"
                   style={{ width: `${(completedCount / states.length) * 100}%` }}
                 />
               </div>
             </div>
-
-            {/* Current status display */}
-            {!currentStatus && (
-              <div className="flex flex-col items-center">
-                <Baby className="w-24 h-24 md:w-32 md:h-32 text-cyan-400 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Not Yet</h2>
-                <p className="text-xl text-gray-300">Baby is still on the way</p>
-              </div>
-            )}
-
-            {currentStatus?.type === "labor_started" && (
-              <div className="flex flex-col items-center">
-                <Activity className="w-24 h-24 md:w-32 md:h-32 text-orange-400 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Labor Started</h2>
-                <p className="text-xl text-gray-300 mb-2">Not gone to hospital yet</p>
-                {currentStatus.date && (
-                  <p className="text-lg text-gray-400 mt-2">
-                    Started at {formatDate(currentStatus.date)} (
-                    {getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
-              </div>
-            )}
-
-            {currentStatus?.type === "gone_to_hospital" && (
-              <div className="flex flex-col items-center">
-                <Hospital className="w-24 h-24 md:w-32 md:h-32 text-yellow-400 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Gone to Hospital</h2>
-                {currentStatus.date && (
-                  <p className="text-xl text-gray-300 mb-2">
-                    {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
-                <div className="mt-6 p-4 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
-                  <p className="text-lg font-semibold text-yellow-300">
-                    Do not disturb, only send messages to Alex
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {currentStatus?.type === "born" && (
-              <div className="flex flex-col items-center">
-                <CheckCircle className="w-24 h-24 md:w-32 md:h-32 text-green-400 mb-6" />
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">Yes! Baby is Out</h2>
-                {currentStatus.date && (
-                  <p className="text-xl text-gray-300">
-                    Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </section>
