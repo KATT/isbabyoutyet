@@ -11,6 +11,5 @@ count.txt
 .output
 .vinxi
 todos.json
-convex/_generated
 /src/routeTree.gen.ts
 .vercel
