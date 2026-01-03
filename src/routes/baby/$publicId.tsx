@@ -142,15 +142,12 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
         <PopoverContent
           align="end"
           className="w-80"
-          onEscapeKeyDown={(e) => {
-            // Allow escape to close
-          }}
           onInteractOutside={(e) => {
             // Prevent closing when the date input is focused (native picker might be open)
             const activeElement = document.activeElement;
             if (
-              activeElement?.tagName === 'INPUT' &&
-              (activeElement as HTMLInputElement).type === 'date'
+              activeElement?.tagName === "INPUT" &&
+              (activeElement as HTMLInputElement).type === "date"
             ) {
               e.preventDefault();
             }
@@ -172,7 +169,8 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
           />
           <div className="flex gap-2 justify-end">
             <Button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 const date = parseDate(currentDueDate);
                 setNewDate(format(date, "yyyy-MM-dd"));
                 setIsEditing(false);
@@ -361,15 +359,12 @@ function StatusDateEditor({
         <PopoverContent
           align="end"
           className="w-80"
-          onEscapeKeyDown={(e) => {
-            // Allow escape to close
-          }}
           onInteractOutside={(e) => {
             // Prevent closing when the date input is focused (native picker might be open)
             const activeElement = document.activeElement;
             if (
-              activeElement?.tagName === 'INPUT' &&
-              (activeElement as HTMLInputElement).type === 'datetime-local'
+              activeElement?.tagName === "INPUT" &&
+              (activeElement as HTMLInputElement).type === "datetime-local"
             ) {
               e.preventDefault();
             }
@@ -391,7 +386,8 @@ function StatusDateEditor({
           />
           <div className="flex gap-2 justify-end">
             <Button
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 const date = parseDate(currentDate);
                 const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                 setNewDateTime(localDate.toISOString().slice(0, 16));
