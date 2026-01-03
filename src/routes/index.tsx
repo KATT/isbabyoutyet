@@ -1,6 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Baby, Hospital, CheckCircle, Activity } from "lucide-react";
 
+// Type definitions
+type StatusState = {
+  type: "labor_started" | "gone_to_hospital" | "born";
+  date: string | null; // date string in "YYYY-MM-DD HH:mm" format
+};
+
+// Status data - tuple of states in order
+// Update dates as events happen
+const states: [
+  StatusState & { type: "labor_started" },
+  StatusState & { type: "gone_to_hospital" },
+  StatusState & { type: "born" },
+] = [
+  {
+    type: "labor_started",
+    date: null, //
+    // date: "2026-01-03 12:00",
+  },
+  {
+    type: "gone_to_hospital",
+    date: null,
+    // date: "2026-01-03 12:00",
+  },
+  {
+    type: "born",
+    date: null,
+    // date: "2026-01-03 11:00",
+  },
+];
+
 export const Route = createFileRoute("/")({
   component: App,
   head: () => {
@@ -80,36 +110,6 @@ export const Route = createFileRoute("/")({
 
 // Timezone for all states (Malmö, Sweden)
 const TIMEZONE = "Europe/Stockholm";
-
-// Type definitions
-type StatusState = {
-  type: "labor_started" | "gone_to_hospital" | "born";
-  date: string | null; // date string in "YYYY-MM-DD HH:mm" format
-};
-
-// Status data - tuple of states in order
-// Update dates as events happen
-const states: [
-  StatusState & { type: "labor_started" },
-  StatusState & { type: "gone_to_hospital" },
-  StatusState & { type: "born" },
-] = [
-  {
-    type: "labor_started",
-    date: null, //
-    // date: "2026-01-03 12:00",
-  },
-  {
-    type: "gone_to_hospital",
-    date: null,
-    // date: "2026-01-03 12:00",
-  },
-  {
-    type: "born",
-    date: null,
-    // date: "2026-01-03 11:00",
-  },
-];
 
 // Helper function to calculate overdue days from due date (31st December 2025)
 function getOverdueDays(): number {
@@ -429,7 +429,7 @@ function App() {
               {/* Progress bar */}
               <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-orange-700 transition-all duration-500"
+                  className="h-full bg-linear-to-r from-orange-600 via-orange-500 to-orange-700 transition-all duration-500"
                   style={{ width: `${(completedCount / states.length) * 100}%` }}
                 />
               </div>
