@@ -285,11 +285,7 @@ type StatusDateEditorProps = {
   currentDate: string;
   label: string;
   compact?: boolean;
-  baby: {
-    laborStarted: string | null;
-    wentToHospital: string | null;
-    babyBorn: string | null;
-  };
+  baby: Doc<"babies">;
 };
 
 function StatusDateEditor({
@@ -1119,11 +1115,7 @@ function BabyPage() {
                                       currentDate={state.date}
                                       label={stateLabels[state.type]}
                                       compact
-                                      baby={{
-                                        laborStarted: baby.laborStarted,
-                                        wentToHospital: baby.wentToHospital,
-                                        babyBorn: baby.babyBorn,
-                                      }}
+                                      baby={baby}
                                     />
                                   )}
                                   <StatusUpdateButton
