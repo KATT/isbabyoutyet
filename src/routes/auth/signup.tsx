@@ -3,8 +3,10 @@ import { z } from "zod";
 import { signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Form, useZodForm } from "@/components/Form";
+import { UserPlus } from "lucide-react";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,86 +37,109 @@ function SignupPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Gradient Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      </div>
+
       <div className="w-full max-w-md">
-        <div className="bg-card border rounded-2xl p-8 shadow-2xl">
-          <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Sign Up</h1>
-          <p className="text-muted-foreground text-center mb-6">
-            Create an account to start tracking
-          </p>
-
-          <Form
-            form={form}
-            handleSubmit={async (values) => {
-              const result = await signUp.email({
-                email: values.email,
-                password: values.password,
-                name: values.name,
-              });
-
-              if (result.error) {
-                throw new Error(result.error.message || "Failed to sign up");
-              }
-
-              await router.navigate({ to: "/dashboard" });
-            }}
-          >
-            <div className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Your name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="you@example.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? "Signing up..." : "Sign Up"}
-              </Button>
+        <Card>
+          <CardHeader>
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2 mx-auto">
+              <UserPlus className="w-8 h-8 text-primary" />
             </div>
-          </Form>
+            <CardTitle>Sign Up</CardTitle>
+            <CardDescription>Create an account to start tracking</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form
+              form={form}
+              handleSubmit={async (values) => {
+                const result = await signUp.email({
+                  email: values.email,
+                  password: values.password,
+                  name: values.name,
+                });
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/auth/login" className="text-primary hover:text-primary/80 underline">
-              Sign in
-            </Link>
-          </div>
-        </div>
+                if (result.error) {
+                  throw new Error(result.error.message || "Failed to sign up");
+                }
+
+                await router.navigate({ to: "/dashboard" });
+              }}
+            >
+              <div className="space-y-5">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Your name" className="border-2" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="email"
+                          placeholder="you@example.com"
+                          className="border-2"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" className="border-2" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button
+                  type="submit"
+                  className="w-full shadow-lg shadow-primary/20"
+                  disabled={form.formState.isSubmitting}
+                  size="lg"
+                >
+                  {form.formState.isSubmitting ? "Signing up..." : "Sign Up"}
+                </Button>
+              </div>
+            </Form>
+
+            <div className="mt-6 text-center text-sm text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                to="/auth/login"
+                className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
+              >
+                Sign in
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

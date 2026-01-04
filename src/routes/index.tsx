@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Heart, Users, Calendar } from "lucide-react";
+import { Baby, Heart, Users, Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/")({
@@ -23,34 +25,55 @@ function HomePage() {
   const sessionData = useSession();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto px-6 py-16">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Gradient Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32">
         {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tight mb-6">
-            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+        <div className="text-center mb-24">
+          <Badge
+            variant="outline"
+            className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
+          >
+            <Sparkles className="w-3 h-3 mr-1.5" />
+            Track your baby's journey
+          </Badge>
+          <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
+            <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is Baby Out Yet?
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Track the progress of labor and birth. Share real-time updates with family and friends.
+          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            Track the progress of labor and birth. Share real-time updates with family and friends
+            in a beautiful, simple way.
           </p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
               <Link to="/dashboard">
-                <Button size="lg" className="text-lg px-8 py-6">
+                <Button size="lg" className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20">
                   Go to Dashboard
                 </Button>
               </Link>
             ) : (
               <>
                 <Link to="/auth/signup">
-                  <Button size="lg" className="text-lg px-8 py-6">
+                  <Button
+                    size="lg"
+                    className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                  >
                     Get Started
                   </Button>
                 </Link>
                 <Link to="/auth/login">
-                  <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
+                  >
                     Sign In
                   </Button>
                 </Link>
@@ -60,109 +83,114 @@ function HomePage() {
         </div>
 
         {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <div className="bg-card border rounded-2xl p-8">
-            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
-              <Baby className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Track Progress</h3>
-            <p className="text-muted-foreground">
-              Update status as labor progresses - from labor started to baby born. Keep everyone in
-              the loop.
-            </p>
-          </div>
+        <div className="grid md:grid-cols-3 gap-6 mb-24">
+          <Card>
+            <CardHeader>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                <Baby className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle>Track Progress</CardTitle>
+              <CardDescription>
+                Update status as labor progresses - from labor started to baby born. Keep everyone
+                in the loop.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-          <div className="bg-card border rounded-2xl p-8">
-            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
-              <Users className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Share with Family</h3>
-            <p className="text-muted-foreground">
-              Create a shareable link for each baby. Family and friends can view updates in
-              real-time.
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                <Users className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle>Share with Family</CardTitle>
+              <CardDescription>
+                Create a shareable link for each baby. Family and friends can view updates in
+                real-time.
+              </CardDescription>
+            </CardHeader>
+          </Card>
 
-          <div className="bg-card border rounded-2xl p-8">
-            <div className="w-12 h-12 bg-primary/20 rounded-lg flex items-center justify-center mb-4">
-              <Calendar className="w-6 h-6 text-primary" />
-            </div>
-            <h3 className="text-xl font-bold text-foreground mb-2">Due Date Tracking</h3>
-            <p className="text-muted-foreground">
-              Set a due date and see how many days remain. Get notified when baby is overdue.
-            </p>
-          </div>
+          <Card>
+            <CardHeader>
+              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                <Calendar className="w-7 h-7 text-primary" />
+              </div>
+              <CardTitle>Due Date Tracking</CardTitle>
+              <CardDescription>
+                Set a due date and see how many days remain. Get notified when baby is overdue.
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
 
         {/* How It Works */}
-        <div className="bg-card border rounded-2xl p-8 md:p-12 mb-16">
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">How It Works</h2>
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <div className="shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Sign Up</h3>
-                <p className="text-muted-foreground">
-                  Create a free account to start tracking your baby's journey.
-                </p>
-              </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>How It Works</CardTitle>
+            <CardDescription>
+              Get started in minutes and share the journey with loved ones
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-8">
+              {[
+                {
+                  step: "1",
+                  title: "Sign Up",
+                  description: "Create a free account to start tracking your baby's journey.",
+                },
+                {
+                  step: "2",
+                  title: "Add Your Baby",
+                  description: "Add your baby's name and due date to create a tracking page.",
+                },
+                {
+                  step: "3",
+                  title: "Share the Link",
+                  description:
+                    "Share the unique link with family and friends so they can follow along.",
+                },
+                {
+                  step: "4",
+                  title: "Update Status",
+                  description:
+                    "Update the status as things progress - labor started, gone to hospital, baby born!",
+                },
+              ].map((item) => (
+                <div key={item.step} className="flex gap-4 group">
+                  <div className="shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                    {item.step}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex gap-4">
-              <div className="shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Add Your Baby</h3>
-                <p className="text-muted-foreground">
-                  Add your baby's name and due date to create a tracking page.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Share the Link</h3>
-                <p className="text-muted-foreground">
-                  Share the unique link with family and friends so they can follow along.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4">
-              <div className="shrink-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold">
-                4
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-foreground mb-1">Update Status</h3>
-                <p className="text-muted-foreground">
-                  Update the status as things progress - labor started, gone to hospital, baby born!
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
         {/* CTA Section */}
         <div className="text-center">
-          <Heart className="w-12 h-12 text-primary mx-auto mb-4" />
-          <h2 className="text-3xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
-          <p className="text-muted-foreground mb-8">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
+            <Heart className="w-10 h-10 text-primary" />
+          </div>
+          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
+          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             {sessionData.data
               ? "Continue tracking your baby's journey."
               : "Join families tracking their baby's journey today."}
           </p>
           {sessionData.data ? (
             <Link to="/dashboard">
-              <Button size="lg" className="text-lg px-8 py-6">
+              <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
                 Go to Dashboard
               </Button>
             </Link>
           ) : (
             <Link to="/auth/signup">
-              <Button size="lg" className="text-lg px-8 py-6">
+              <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
                 Create Your Account
               </Button>
             </Link>

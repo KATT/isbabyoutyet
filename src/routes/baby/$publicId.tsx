@@ -1029,37 +1029,20 @@ function BabyPage() {
     born: CheckCircle,
   };
 
-  const getStateClasses = (
-    _stateType: (typeof states)[number]["type"],
-    isCompleted: boolean,
-    isCurrent: boolean,
-  ) => {
-    if (isCompleted) {
-      return {
-        circle: "bg-primary text-primary-foreground",
-        text: "text-foreground",
-      };
-    }
-    if (isCurrent) {
-      return {
-        circle: "bg-primary/50 border-2 border-primary text-primary",
-        text: "text-primary",
-      };
-    }
-    return {
-      circle: "bg-muted text-muted-foreground",
-      text: "text-muted-foreground",
-    };
-  };
-
   const overdueDays = getOverdueDays(baby.dueDate);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Gradient Background Elements */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
         <div className="relative">
-          <h1 className="text-3xl md:text-6xl font-black text-foreground tracking-[-0.08em] whitespace-nowrap py-4 md:py-8 px-6 text-center">
-            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
+            <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is {baby.name} out yet?
             </span>
           </h1>
@@ -1068,9 +1051,9 @@ function BabyPage() {
           </div>
         </div>
       </div>
-      <section className="relative px-6 text-center overflow-hidden">
-        <div className="relative max-w-4xl mx-auto">
-          <Card className="p-8 md:p-12 shadow-2xl">
+      <section className="relative px-6 py-12 text-center overflow-hidden">
+        <div className="relative max-w-5xl mx-auto">
+          <Card>
             {/* Owner-only update controls */}
             {isOwner && (
               <div className="mb-8 text-left">
@@ -1094,18 +1077,18 @@ function BabyPage() {
                           }));
                           return (
                             <div key={state.type}>
-                              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/50 rounded-md transition-colors">
+                              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
                                 <div className="flex items-center gap-3 flex-1 min-w-0">
                                   <div
-                                    className={`flex items-center justify-center w-8 h-8 rounded-md ${
+                                    className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
                                       isCompleted
-                                        ? "bg-primary text-primary-foreground"
+                                        ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                                         : isNextState(index)
-                                          ? "bg-primary/10 text-primary"
-                                          : "bg-muted text-muted-foreground"
+                                          ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20"
+                                          : "bg-muted/50 text-muted-foreground border border-border"
                                     }`}
                                   >
-                                    <StatusIcon className="w-4 h-4" />
+                                    <StatusIcon className="w-5 h-5" />
                                   </div>
                                   <div className="flex-1 min-w-0">
                                     <div className="text-sm font-medium text-foreground">
@@ -1151,10 +1134,10 @@ function BabyPage() {
                         <Separator className="my-3" />
 
                         {/* Baby Name */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/50 rounded-md transition-colors">
+                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
-                              <Baby className="w-4 h-4" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                              <Baby className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-foreground">Baby Name</div>
@@ -1169,10 +1152,10 @@ function BabyPage() {
                         <Separator className="my-3" />
 
                         {/* Due Date */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/50 rounded-md transition-colors">
+                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
-                              <Calendar className="w-4 h-4" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                              <Calendar className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-foreground">Due Date</div>
@@ -1187,10 +1170,10 @@ function BabyPage() {
                         <Separator className="my-3" />
 
                         {/* Custom Message */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/50 rounded-md transition-colors">
+                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
-                              <Hospital className="w-4 h-4" />
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                              <Hospital className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium text-foreground">
@@ -1216,18 +1199,22 @@ function BabyPage() {
 
             {/* Current status display */}
             {!currentStatus && (
-              <div className="flex flex-col items-center">
-                <Baby className="w-24 h-24 md:w-32 md:h-32 text-primary mb-6" />
-                <h2 className="text-2xl md:text-5xl font-bold text-foreground mb-4 whitespace-nowrap">
-                  Not yet
+              <div className="flex flex-col items-center py-8">
+                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                  <Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                </div>
+                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Not yet
+                  </span>
                 </h2>
-                <p className="text-xl text-muted-foreground mb-4">Baby is still on the way</p>
+                <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
                 {overdueDays > 0 && (
-                  <div className="mt-4 p-4 bg-primary/20 border border-primary/50 rounded-lg">
-                    <p className="text-lg font-semibold text-primary">
+                  <div className="mt-4 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
+                    <p className="text-xl font-bold text-primary">
                       {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
                     </p>
-                    <p className="text-sm text-primary/80 mt-1">
+                    <p className="text-sm text-primary/80 mt-2">
                       Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
                     </p>
                   </div>
@@ -1236,10 +1223,14 @@ function BabyPage() {
             )}
 
             {currentStatus?.type === "labor_started" && (
-              <div className="flex flex-col items-center">
-                <Activity className="w-24 h-24 md:w-32 md:h-32 text-primary mb-6" />
-                <h2 className="text-2xl md:text-5xl font-bold text-foreground mb-4 whitespace-nowrap">
-                  Labour started
+              <div className="flex flex-col items-center py-8">
+                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                  <Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                </div>
+                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Labour started
+                  </span>
                 </h2>
                 <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
                 {currentStatus.date && (
@@ -1252,29 +1243,37 @@ function BabyPage() {
             )}
 
             {currentStatus?.type === "gone_to_hospital" && (
-              <div className="flex flex-col items-center">
-                <Hospital className="w-24 h-24 md:w-32 md:h-32 text-primary mb-6" />
-                <h2 className="text-2xl md:text-5xl font-bold text-foreground mb-4 whitespace-nowrap">
-                  Gone to hospital
+              <div className="flex flex-col items-center py-8">
+                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                  <Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                </div>
+                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Gone to hospital
+                  </span>
                 </h2>
                 {currentStatus.date && (
-                  <p className="text-xl text-muted-foreground mb-2">
+                  <p className="text-xl text-muted-foreground mb-4">
                     {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
                   </p>
                 )}
                 {baby.customMessage && (
-                  <div className="mt-6 p-4 bg-primary/20 border border-primary/50 rounded-lg w-full max-w-md">
-                    <p className="text-lg font-semibold text-primary">{baby.customMessage}</p>
+                  <div className="mt-6 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+                    <p className="text-lg font-bold text-primary">{baby.customMessage}</p>
                   </div>
                 )}
               </div>
             )}
 
             {currentStatus?.type === "born" && (
-              <div className="flex flex-col items-center">
-                <CheckCircle className="w-24 h-24 md:w-32 md:h-32 text-primary mb-6" />
-                <h2 className="text-2xl md:text-5xl font-bold text-foreground mb-4 whitespace-nowrap">
-                  Yes! Baby is out
+              <div className="flex flex-col items-center py-8">
+                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-primary/30 mb-8 shadow-xl shadow-primary/20">
+                  <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />
+                </div>
+                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                    Yes! Baby is out
+                  </span>
                 </h2>
                 {currentStatus.date && (
                   <p className="text-xl text-muted-foreground">
@@ -1295,16 +1294,29 @@ function BabyPage() {
                   const isCompleted = isStateCompletedForProgress(state);
                   const isCurrent = currentStatus?.type === state.type;
                   const Icon = stateIcons[state.type];
-                  const classes = getStateClasses(state.type, isCompleted, isCurrent);
 
                   return (
                     <div key={state.type} className="flex flex-col items-center flex-1">
                       <div
-                        className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-2 transition-all ${classes.circle}`}
+                        className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+                          isCompleted
+                            ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                            : isCurrent
+                              ? "bg-gradient-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                        }`}
                       >
-                        <Icon className="w-8 h-8 md:w-10 md:h-10" />
+                        <Icon className="w-10 h-10 md:w-12 md:h-12" />
                       </div>
-                      <p className={`text-sm md:text-base font-medium ${classes.text}`}>
+                      <p
+                        className={`text-sm md:text-base font-semibold mb-1 ${
+                          isCompleted
+                            ? "text-foreground"
+                            : isCurrent
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        }`}
+                      >
                         {stateLabels[state.type]}
                       </p>
                       {state.date && (
@@ -1317,9 +1329,9 @@ function BabyPage() {
                 })}
               </div>
               {/* Progress bar */}
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+              <div className="w-full h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
                 <div
-                  className="h-full bg-primary transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 shadow-lg shadow-primary/20"
                   style={{ width: `${(completedCount / states.length) * 100}%` }}
                 />
               </div>
