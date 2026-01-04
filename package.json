@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true; lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
     "dev": "concurrently -n \"convex,vite\" -c \"cyan,yellow\" \"pnpm:dev:convex\" \"pnpm:dev:vite\"",
     "dev:convex": "convex dev",
     "dev:vite": "vite dev --port 3000",
