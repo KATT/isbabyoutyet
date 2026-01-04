@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { usePreloadedQuery, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { format } from "date-fns";
 import { Baby, Plus } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
