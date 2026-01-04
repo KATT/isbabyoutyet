@@ -4,8 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { useSession } from "@/lib/auth-client";
+import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,12 +23,11 @@ const addBabySchema = z.object({
 
 type AddBabyFormValues = z.infer<typeof addBabySchema>;
 
-export const Route = createFileRoute("/dashboard/add")({
+export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
 });
 
 function AddBabyPage() {
-  const { data: session } = useSession();
   const router = useRouter();
   const createBaby = useMutation(api.babies.create);
   const [isLoading, setIsLoading] = useState(false);
@@ -60,19 +58,6 @@ function AddBabyPage() {
       setIsLoading(false);
     }
   };
-
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-foreground mb-4">Please sign in to add a baby</p>
-          <Link to="/auth/login">
-            <Button>Sign In</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">

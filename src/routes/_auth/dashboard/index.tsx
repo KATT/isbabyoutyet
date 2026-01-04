@@ -1,32 +1,27 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
-import { useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Baby, Plus } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { usePreloadedQuery, useQuery } from "convex/react";
 import { format } from "date-fns";
+import { Baby, Plus } from "lucide-react";
+import { api } from "../../../../convex/_generated/api";
 
-export const Route = createFileRoute("/dashboard/")({
+export const Route = createFileRoute("/_auth/dashboard/")({
+  loader: async (opts) => {
+    const babies = await opts.context.convexQueryClient.serverHttpClient!.query(
+      api.babies.listByUser,
+    );
+
+    return { babies };
+  },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const { data: session } = useSession();
-  const babies = useQuery(api.babies.listByUser);
+  const loaderData = Route.useLoaderData();
 
-  if (!session) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-foreground mb-4">Please sign in to view your dashboard</p>
-          <Link to="/auth/login">
-            <Button>Sign In</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  // Use useQuery for reactivity - it will use the preloaded data from SSR
+  const babies = useQuery(api.babies.listByUser) ?? loaderData.babies;
 
   if (babies === undefined) {
     return (
