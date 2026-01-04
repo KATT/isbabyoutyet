@@ -17,6 +17,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { Doc } from "convex/_generated/dataModel";
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -839,11 +840,7 @@ type StatusUpdateButtonProps = {
   compact?: boolean;
   previousStatuses?: Array<{ label: string; isSet: boolean }>;
   subsequentStatuses?: Array<{ label: string }>;
-  baby: {
-    laborStarted: string | null;
-    wentToHospital: string | null;
-    babyBorn: string | null;
-  };
+  baby: Doc<"babies">;
 };
 
 function StatusUpdateButton({
@@ -1088,7 +1085,7 @@ function BabyPage() {
   return (
     <div className="min-h-screen bg-background">
       <h1 className="sticky top-0 z-10 text-3xl md:text-6xl font-black text-foreground tracking-[-0.08em] whitespace-nowrap py-4 md:py-8 px-6 text-center">
-        <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
           Is {baby.name} out yet?
         </span>
       </h1>
@@ -1167,11 +1164,7 @@ function BabyPage() {
                                     compact
                                     previousStatuses={previousStatuses}
                                     subsequentStatuses={subsequentStatuses}
-                                    baby={{
-                                      laborStarted: baby.laborStarted,
-                                      wentToHospital: baby.wentToHospital,
-                                      babyBorn: baby.babyBorn,
-                                    }}
+                                    baby={baby}
                                   />
                                 </div>
                               </div>
