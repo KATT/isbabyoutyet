@@ -941,23 +941,25 @@ export const Route = createFileRoute("/baby/$publicId")({
 });
 
 function BabyPage() {
-  const { publicId } = Route.useParams();
+  const params = Route.useParams();
   const navigate = useNavigate();
-  const { data: babyData } = useSuspenseQuery(convexQuery(api.babies.getByPublicId, { publicId }));
-  const { data: session } = useSession();
+  const queryResult = useSuspenseQuery(
+    convexQuery(api.babies.getByPublicId, { publicId: params.publicId }),
+  );
+  const sessionResult = useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
   useEffect(() => {
-    if (babyData && babyData.publicId !== publicId) {
+    if (queryResult.data && queryResult.data.publicId !== params.publicId) {
       navigate({
         to: "/baby/$publicId",
-        params: { publicId: babyData.publicId },
+        params: { publicId: queryResult.data.publicId },
         replace: true,
       });
     }
-  }, [babyData, publicId, navigate]);
+  }, [queryResult.data, params.publicId, navigate]);
 
-  if (babyData === null) {
+  if (queryResult.data === null) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-foreground">Baby not found</div>
@@ -965,9 +967,9 @@ function BabyPage() {
     );
   }
 
-  const baby = babyData;
+  const baby = queryResult.data;
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
-  const isOwner = session?.user?.id === baby.userId;
+  const isOwner = sessionResult.data?.user?.id === baby.userId;
 
   // Determine current status - find the latest date
   const states = [
