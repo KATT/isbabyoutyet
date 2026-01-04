@@ -1,35 +1,18 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { format } from "date-fns";
-import { Baby, Plus } from "lucide-react";
+import { Baby as BabyIcon, Plus } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
-  loader: async (opts) => {
-    const babies = await opts.context.convexQueryClient.serverHttpClient?.query(
-      api.babies.listByUser,
-    );
-
-    return { babies };
-  },
   component: DashboardPage,
 });
 
 function DashboardPage() {
-  const loaderData = Route.useLoaderData();
-
-  // Use useQuery for reactivity - it will use the preloaded data from SSR
-  const babies = useQuery(api.babies.listByUser) ?? loaderData.babies;
-
-  if (babies === undefined) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
-  }
+  const babiesQuery = useSuspenseQuery(convexQuery(api.babies.listByUser, {}));
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +27,7 @@ function DashboardPage() {
           </Link>
         </div>
 
-        {babies.length === 0 ? (
+        {babiesQuery.data.length === 0 ? (
           <div className="bg-card border rounded-2xl p-12 text-center">
             <p className="text-foreground text-lg mb-4">No babies added yet</p>
             <Link to="/dashboard/add">
@@ -53,7 +36,7 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {babies.map((baby) => {
+            {babiesQuery.data.map((baby) => {
               const dueDate = new Date(baby.dueDate);
               const now = new Date();
               const daysUntilDue = Math.ceil(
@@ -67,7 +50,7 @@ function DashboardPage() {
                     <CardHeader>
                       <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/20 rounded-lg">
-                          <Baby className="w-6 h-6 text-primary" />
+                          <BabyIcon className="w-6 h-6 text-primary" />
                         </div>
                         <div className="flex-1">
                           <CardTitle>{baby.name}</CardTitle>

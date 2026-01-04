@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useQuery, useMutation } from "convex/react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
 import { Baby, Hospital, CheckCircle, Activity, Calendar } from "lucide-react";
@@ -16,7 +18,6 @@ import {
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { Doc } from "convex/_generated/dataModel";
 
 const TIMEZONE = "Europe/Stockholm";
@@ -931,25 +932,6 @@ function StatusUpdateButton({
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
-  loader: async ({ context, params }) => {
-    const { convexQueryClient } = context as { convexQueryClient: ConvexQueryClient };
-    const { publicId } = params;
-
-    // Prefetch the baby data during SSR using serverHttpClient
-    const babyData = await convexQueryClient.serverHttpClient?.query(api.babies.getByPublicId, {
-      publicId,
-    });
-
-    // If baby found but current publicId doesn't match, redirect to current publicId
-    if (babyData && babyData.publicId !== publicId) {
-      throw redirect({
-        to: "/baby/$publicId",
-        params: { publicId: babyData.publicId },
-      });
-    }
-
-    return { babyData: babyData ?? null };
-  },
   head: () => {
     // This will be updated dynamically based on the baby data
     return {
@@ -964,10 +946,8 @@ export const Route = createFileRoute("/baby/$publicId")({
 
 function BabyPage() {
   const { publicId } = Route.useParams();
-  const { babyData: preloadedBabyData } = Route.useLoaderData();
   const navigate = useNavigate();
-  // Use useQuery for reactivity - it will use the preloaded data from SSR
-  const babyData = useQuery(api.babies.getByPublicId, { publicId }) ?? preloadedBabyData;
+  const { data: babyData } = useSuspenseQuery(convexQuery(api.babies.getByPublicId, { publicId }));
   const { data: session } = useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
@@ -980,14 +960,6 @@ function BabyPage() {
       });
     }
   }, [babyData, publicId, navigate]);
-
-  if (babyData === undefined) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
-  }
 
   if (babyData === null) {
     return (

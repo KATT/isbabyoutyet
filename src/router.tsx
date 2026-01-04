@@ -1,4 +1,6 @@
 import { createRouter } from "@tanstack/react-router";
+import { QueryClient } from "@tanstack/react-query";
+import { routerWithQueryClient } from "@tanstack/react-router-with-query";
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
@@ -10,18 +12,30 @@ export function getRouter() {
   }
 
   const convexQueryClient = new ConvexQueryClient(convexUrl);
-
-  const router = createRouter({
-    routeTree,
-    defaultPreload: "intent",
-    context: { convexQueryClient },
-    scrollRestoration: true,
-    defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
-    defaultNotFoundComponent: () => <p>not found</p>,
-    Wrap: ({ children }) => (
-      <ConvexProvider client={convexQueryClient.convexClient}>{children}</ConvexProvider>
-    ),
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        queryKeyHashFn: convexQueryClient.hashFn(),
+        queryFn: convexQueryClient.queryFn(),
+      },
+    },
   });
+  convexQueryClient.connect(queryClient);
+
+  const router = routerWithQueryClient(
+    createRouter({
+      routeTree,
+      defaultPreload: "intent",
+      context: { queryClient, convexQueryClient },
+      scrollRestoration: true,
+      defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
+      defaultNotFoundComponent: () => <p>not found</p>,
+      Wrap: ({ children }) => (
+        <ConvexProvider client={convexQueryClient.convexClient}>{children}</ConvexProvider>
+      ),
+    }),
+    queryClient,
+  );
 
   return router;
 }

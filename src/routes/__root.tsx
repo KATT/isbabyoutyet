@@ -6,6 +6,7 @@ import {
   createRootRouteWithContext,
   useRouteContext,
 } from "@tanstack/react-router";
+import type { QueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
@@ -17,6 +18,7 @@ import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
 }>()({
   head: () => ({
