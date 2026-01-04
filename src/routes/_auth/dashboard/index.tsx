@@ -8,7 +8,7 @@ import { api } from "../../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   loader: async (opts) => {
-    const babies = await opts.context.convexQueryClient.serverHttpClient!.query(
+    const babies = await opts.context.convexQueryClient.serverHttpClient?.query(
       api.babies.listByUser,
     );
 

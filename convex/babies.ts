@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { nanoid } from "nanoid";
+import { customAlphabet } from "nanoid";
 
 export const listByUser = query({
   args: {},
@@ -32,6 +32,15 @@ export const getByPublicId = query({
   },
 });
 
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 export const create = mutation({
   args: {
     name: v.string(),
@@ -43,7 +52,18 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const publicId = nanoid();
+    let publicId = slugify(args.name);
+    let tries = 0;
+
+    while (
+      await ctx.db
+        .query("babies")
+        .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
+        .first()
+    ) {
+      tries++;
+      publicId = `${slugify(args.name)}-${tries}`;
+    }
 
     const babyId = await ctx.db.insert("babies", {
       userId: identity.subject,

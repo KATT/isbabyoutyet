@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 
 const addBabySchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(2, "Name is required"),
   dueDate: z.string().min(1, "Due date is required"),
 });
 
@@ -30,7 +30,6 @@ export const Route = createFileRoute("/_auth/dashboard/add")({
 function AddBabyPage() {
   const router = useRouter();
   const createBaby = useMutation(api.babies.create);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<AddBabyFormValues>({
@@ -40,24 +39,6 @@ function AddBabyPage() {
       dueDate: "",
     },
   });
-
-  const onSubmit = async (values: AddBabyFormValues) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await createBaby({
-        name: values.name,
-        dueDate: values.dueDate,
-      });
-
-      router.navigate({ to: "/baby/$publicId", params: { publicId: result.publicId } });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create baby");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,7 +55,26 @@ function AddBabyPage() {
 
         <div className="bg-card border rounded-2xl p-8 shadow-2xl">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(async (values) => {
+                setError(null);
+
+                try {
+                  const result = await createBaby({
+                    name: values.name,
+                    dueDate: values.dueDate,
+                  });
+
+                  await router.navigate({
+                    to: "/baby/$publicId",
+                    params: { publicId: result.publicId },
+                  });
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to create baby");
+                }
+              })}
+              className="space-y-4"
+            >
               {error && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
@@ -109,8 +109,8 @@ function AddBabyPage() {
                 )}
               />
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating..." : "Add Baby"}
+              <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? "Creating..." : "Add Baby"}
               </Button>
             </form>
           </Form>
