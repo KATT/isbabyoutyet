@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
@@ -28,6 +29,7 @@ function DashboardPage() {
                 Add Baby
               </Button>
             </Link>
+            <ModeToggle />
             <Button
               variant="outline"
               onClick={async () => {
