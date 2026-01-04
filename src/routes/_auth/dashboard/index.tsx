@@ -1,11 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { format } from "date-fns";
-import { Baby as BabyIcon, Plus } from "lucide-react";
+import { Baby as BabyIcon, Plus, LogOut } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
+import { signOut } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
@@ -13,18 +14,31 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 
 function DashboardPage() {
   const babiesQuery = useSuspenseQuery(convexQuery(api.babies.listByUser, {}));
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-4xl font-bold text-foreground">Your Babies</h1>
-          <Link to="/dashboard/add">
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Baby
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard/add">
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Baby
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await signOut();
+                await router.navigate({ to: "/" });
+              }}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
             </Button>
-          </Link>
+          </div>
         </div>
 
         {babiesQuery.data.length === 0 ? (

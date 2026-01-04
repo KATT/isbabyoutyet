@@ -28,8 +28,6 @@ export function getRouter() {
       defaultPreload: "intent",
       context: { queryClient, convexQueryClient },
       scrollRestoration: true,
-      defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
-      defaultNotFoundComponent: () => <p>not found</p>,
       Wrap: ({ children }) => (
         <ConvexProvider client={convexQueryClient.convexClient}>{children}</ConvexProvider>
       ),

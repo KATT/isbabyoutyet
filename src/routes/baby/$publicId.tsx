@@ -1253,11 +1253,11 @@ function BabyPage() {
                     {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
                   </p>
                 )}
-                <div className="mt-6 p-4 bg-primary/20 border border-primary/50 rounded-lg w-full max-w-md">
-                  <p className="text-lg font-semibold text-primary">
-                    {baby.customMessage || "Do not disturb, only send messages to the parents"}
-                  </p>
-                </div>
+                {baby.customMessage && (
+                  <div className="mt-6 p-4 bg-primary/20 border border-primary/50 rounded-lg w-full max-w-md">
+                    <p className="text-lg font-semibold text-primary">{baby.customMessage}</p>
+                  </div>
+                )}
               </div>
             )}
 
