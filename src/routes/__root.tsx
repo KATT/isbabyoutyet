@@ -11,8 +11,10 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
+import { ThemeProvider } from "next-themes";
 import appCss from "../styles.css?url";
 import { authClient } from "@/lib/auth-client";
+import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext<{
   convexQueryClient: ConvexQueryClient;
@@ -48,14 +50,16 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   return (
-    <ConvexBetterAuthProvider
-      client={context.convexQueryClient.convexClient}
-      authClient={authClient}
-    >
-      <RootDocument>
-        <Outlet />
-      </RootDocument>
-    </ConvexBetterAuthProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <ConvexBetterAuthProvider
+        client={context.convexQueryClient.convexClient}
+        authClient={authClient}
+      >
+        <RootDocument>
+          <Outlet />
+        </RootDocument>
+      </ConvexBetterAuthProvider>
+    </ThemeProvider>
   );
 }
 
@@ -67,6 +71,7 @@ function RootDocument(props: { children: React.ReactNode }) {
       </head>
       <body>
         {props.children}
+        <Toaster />
         <TanStackDevtools
           config={{
             position: "bottom-right",

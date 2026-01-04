@@ -11,14 +11,12 @@ export default defineSchema({
     laborStarted: v.union(v.string(), v.null()), // ISO date string, nullable
     wentToHospital: v.union(v.string(), v.null()), // ISO date string, nullable
     babyBorn: v.union(v.string(), v.null()), // ISO date string, nullable
-    createdAt: v.number(),
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
   babyPublicIdHistory: defineTable({
     babyId: v.id("babies"),
     publicId: v.string(), // Historical publicId
-    createdAt: v.number(),
   })
     .index("by_publicId", ["publicId"])
     .index("by_babyId", ["babyId"]),

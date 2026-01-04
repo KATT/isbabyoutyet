@@ -1,19 +1,10 @@
-import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signUp } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, useZodForm } from "@/components/Form";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -21,51 +12,27 @@ const signupSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
-type SignupFormValues = z.infer<typeof signupSchema>;
-
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
 });
 
 function SignupPage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema as any),
-    defaultValues:
-      process.env.NODE_ENV === "development"
-        ? {
-            name: "Test User",
-            email: "test@example.com",
-            password: "password",
-          }
-        : {
-            name: "",
-            email: "",
-            password: "",
-          },
+  const form = useZodForm({
+    schema: signupSchema,
+    defaultValues: import.meta.env.DEV
+      ? {
+          name: "Test User",
+          email: "test@example.com",
+          password: "password",
+        }
+      : {
+          name: "",
+          email: "",
+          password: "",
+        },
   });
-
-  const onSubmit = async (values: SignupFormValues) => {
-    setError(null);
-
-    try {
-      const result = await signUp.email({
-        email: values.email,
-        password: values.password,
-        name: values.name,
-      });
-
-      if (result.error) {
-        setError(result.error.message || "Failed to sign up");
-      } else {
-        router.navigate({ to: "/dashboard" });
-      }
-    } catch {
-      setError("An unexpected error occurred");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -76,14 +43,23 @@ function SignupPage() {
             Create an account to start tracking
           </p>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
+          <Form
+            form={form}
+            handleSubmit={async (values) => {
+              const result = await signUp.email({
+                email: values.email,
+                password: values.password,
+                name: values.name,
+              });
 
+              if (result.error) {
+                throw new Error(result.error.message || "Failed to sign up");
+              }
+
+              await router.navigate({ to: "/dashboard" });
+            }}
+          >
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -129,7 +105,7 @@ function SignupPage() {
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Signing up..." : "Sign Up"}
               </Button>
-            </form>
+            </div>
           </Form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">

@@ -102,7 +102,6 @@ export const create = mutation({
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
-      createdAt: Date.now(),
     });
 
     return { babyId, publicId };
@@ -151,7 +150,6 @@ export const update = mutation({
         await ctx.db.insert("babyPublicIdHistory", {
           babyId,
           publicId: oldPublicId,
-          createdAt: Date.now(),
         });
       }
     }

@@ -1,27 +1,16 @@
-import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, useZodForm } from "@/components/Form";
 
 const addBabySchema = z.object({
   name: z.string().min(2, "Name is required"),
   dueDate: z.string().min(1, "Due date is required"),
 });
-
-type AddBabyFormValues = z.infer<typeof addBabySchema>;
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
@@ -30,10 +19,9 @@ export const Route = createFileRoute("/_auth/dashboard/add")({
 function AddBabyPage() {
   const router = useRouter();
   const createBaby = useMutation(api.babies.create);
-  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<AddBabyFormValues>({
-    resolver: zodResolver(addBabySchema as any),
+  const form = useZodForm({
+    schema: addBabySchema,
     defaultValues: {
       name: "",
       dueDate: "",
@@ -54,33 +42,21 @@ function AddBabyPage() {
         </div>
 
         <div className="bg-card border rounded-2xl p-8 shadow-2xl">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(async (values) => {
-                setError(null);
+          <Form
+            form={form}
+            handleSubmit={async (values) => {
+              const result = await createBaby({
+                name: values.name,
+                dueDate: values.dueDate,
+              });
 
-                try {
-                  const result = await createBaby({
-                    name: values.name,
-                    dueDate: values.dueDate,
-                  });
-
-                  await router.navigate({
-                    to: "/baby/$publicId",
-                    params: { publicId: result.publicId },
-                  });
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : "Failed to create baby");
-                }
-              })}
-              className="space-y-4"
-            >
-              {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
-
+              await router.navigate({
+                to: "/baby/$publicId",
+                params: { publicId: result.publicId },
+              });
+            }}
+          >
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -112,7 +88,7 @@ function AddBabyPage() {
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Creating..." : "Add Baby"}
               </Button>
-            </form>
+            </div>
           </Form>
         </div>
       </div>

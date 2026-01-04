@@ -1,26 +1,15 @@
-import { useState } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { signIn } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, useZodForm } from "@/components/Form";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
-
-type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -28,34 +17,14 @@ export const Route = createFileRoute("/auth/login")({
 
 function LoginPage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema as any),
+  const form = useZodForm({
+    schema: loginSchema,
     defaultValues: {
       email: "",
       password: "",
     },
   });
-
-  const onSubmit = async (values: LoginFormValues) => {
-    setError(null);
-
-    try {
-      const result = await signIn.email({
-        email: values.email,
-        password: values.password,
-      });
-
-      if (result.error) {
-        setError(result.error.message || "Failed to sign in");
-      } else {
-        router.navigate({ to: "/dashboard" });
-      }
-    } catch {
-      setError("An unexpected error occurred");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -64,14 +33,22 @@ function LoginPage() {
           <h1 className="text-3xl font-bold text-foreground mb-2 text-center">Sign In</h1>
           <p className="text-muted-foreground text-center mb-6">Sign in to track your babies</p>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {error && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
-                </div>
-              )}
+          <Form
+            form={form}
+            handleSubmit={async (values) => {
+              const result = await signIn.email({
+                email: values.email,
+                password: values.password,
+              });
 
+              if (result.error) {
+                throw new Error(result.error.message || "Failed to sign in");
+              }
+
+              await router.navigate({ to: "/dashboard" });
+            }}
+          >
+            <div className="space-y-4">
               <FormField
                 control={form.control}
                 name="email"
@@ -103,7 +80,7 @@ function LoginPage() {
               <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                 {form.formState.isSubmitting ? "Signing in..." : "Sign In"}
               </Button>
-            </form>
+            </div>
           </Form>
 
           <div className="mt-6 text-center text-sm text-muted-foreground">

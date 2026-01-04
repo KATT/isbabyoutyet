@@ -53,56 +53,46 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {babies.map(
-              (baby: {
-                _id: string;
-                name: string;
-                dueDate: string;
-                publicId: string;
-                createdAt: number;
-              }) => {
-                const dueDate = new Date(baby.dueDate);
-                const now = new Date();
-                const daysUntilDue = Math.ceil(
-                  (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-                );
-                const isOverdue = daysUntilDue < 0;
+            {babies.map((baby) => {
+              const dueDate = new Date(baby.dueDate);
+              const now = new Date();
+              const daysUntilDue = Math.ceil(
+                (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+              );
+              const isOverdue = daysUntilDue < 0;
 
-                return (
-                  <Link key={baby._id} to="/baby/$publicId" params={{ publicId: baby.publicId }}>
-                    <Card className="hover:bg-accent transition-colors cursor-pointer">
-                      <CardHeader>
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/20 rounded-lg">
-                            <Baby className="w-6 h-6 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <CardTitle>{baby.name}</CardTitle>
-                            <CardDescription>
-                              Due: {format(dueDate, "MMMM d, yyyy")}
-                            </CardDescription>
-                          </div>
+              return (
+                <Link key={baby._id} to="/baby/$publicId" params={{ publicId: baby.publicId }}>
+                  <Card className="hover:bg-accent transition-colors cursor-pointer">
+                    <CardHeader>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/20 rounded-lg">
+                          <Baby className="w-6 h-6 text-primary" />
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        {isOverdue ? (
-                          <div className="text-primary font-semibold">
-                            {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
-                            overdue
-                          </div>
-                        ) : daysUntilDue === 0 ? (
-                          <div className="text-primary font-semibold">Due today!</div>
-                        ) : (
-                          <div className="text-muted-foreground">
-                            {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              },
-            )}
+                        <div className="flex-1">
+                          <CardTitle>{baby.name}</CardTitle>
+                          <CardDescription>Due: {format(dueDate, "MMMM d, yyyy")}</CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {isOverdue ? (
+                        <div className="text-primary font-semibold">
+                          {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
+                          overdue
+                        </div>
+                      ) : daysUntilDue === 0 ? (
+                        <div className="text-primary font-semibold">Due today!</div>
+                      ) : (
+                        <div className="text-muted-foreground">
+                          {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
