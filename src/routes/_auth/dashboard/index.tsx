@@ -44,12 +44,14 @@ function DashboardPage() {
         </div>
 
         {babiesQuery.data.length === 0 ? (
-          <div className="bg-card border rounded-2xl p-12 text-center">
-            <p className="text-foreground text-lg mb-4">No babies added yet</p>
-            <Link to="/dashboard/add">
-              <Button>Add Your First Baby</Button>
-            </Link>
-          </div>
+          <Card className="p-12 text-center">
+            <CardContent className="pt-6">
+              <p className="text-foreground text-lg mb-4">No babies added yet</p>
+              <Link to="/dashboard/add">
+                <Button>Add Your First Baby</Button>
+              </Link>
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {babiesQuery.data.map((baby) => {

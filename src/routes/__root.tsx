@@ -67,7 +67,7 @@ function RootComponent() {
 
 function RootDocument(props: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <HeadContent />
       </head>

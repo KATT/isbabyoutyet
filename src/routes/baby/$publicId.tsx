@@ -10,6 +10,8 @@ import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Card } from "@/components/ui/card";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 import {
   Accordion,
   AccordionContent,
@@ -1054,14 +1056,21 @@ function BabyPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <h1 className="sticky top-0 z-10 text-3xl md:text-6xl font-black text-foreground tracking-[-0.08em] whitespace-nowrap py-4 md:py-8 px-6 text-center">
-        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Is {baby.name} out yet?
-        </span>
-      </h1>
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="relative">
+          <h1 className="text-3xl md:text-6xl font-black text-foreground tracking-[-0.08em] whitespace-nowrap py-4 md:py-8 px-6 text-center">
+            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              Is {baby.name} out yet?
+            </span>
+          </h1>
+          <div className="absolute top-4 right-6">
+            <ModeToggle />
+          </div>
+        </div>
+      </div>
       <section className="relative px-6 text-center overflow-hidden">
         <div className="relative max-w-4xl mx-auto">
-          <div className="bg-card border rounded-2xl p-8 md:p-12 shadow-2xl">
+          <Card className="p-8 md:p-12 shadow-2xl">
             {/* Owner-only update controls */}
             {isOwner && (
               <div className="mb-8 text-left">
@@ -1276,7 +1285,7 @@ function BabyPage() {
             )}
 
             {/* Horizontal divider */}
-            <div className="my-8 border-t border"></div>
+            <Separator className="my-8" />
 
             {/* Progress indicator */}
             <div>
@@ -1315,7 +1324,7 @@ function BabyPage() {
                 />
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </section>
     </div>
