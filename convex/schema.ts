@@ -15,4 +15,11 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
+  babyPublicIdHistory: defineTable({
+    babyId: v.id("babies"),
+    publicId: v.string(), // Historical publicId
+    createdAt: v.number(),
+  })
+    .index("by_publicId", ["publicId"])
+    .index("by_babyId", ["babyId"]),
 });

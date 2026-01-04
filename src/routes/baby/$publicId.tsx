@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
@@ -16,16 +16,6 @@ import {
 } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 
 const TIMEZONE = "Europe/Stockholm";
@@ -125,7 +115,6 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
     const date = parseDate(currentDueDate);
     return format(date, "yyyy-MM-dd");
   });
-  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const currentDateFormatted = format(parseDate(currentDueDate), "yyyy-MM-dd");
@@ -174,7 +163,6 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
                 const date = parseDate(currentDueDate);
                 setNewDate(format(date, "yyyy-MM-dd"));
                 setIsEditing(false);
-                setShowConfirm(false);
               }}
               variant="outline"
               size="sm"
@@ -183,15 +171,27 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
               Cancel
             </Button>
             <Button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
                 if (hasChanges) {
-                  setShowConfirm(true);
+                  setIsLoading(true);
+                  try {
+                    const dateObj = parseISO(newDate);
+                    const dateString = dateObj.toISOString();
+                    await updateBaby({
+                      babyId: babyId as any,
+                      dueDate: dateString,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
                 } else {
-                  const date = parseDate(currentDueDate);
-                  setNewDate(format(date, "yyyy-MM-dd"));
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }
               }}
               size="sm"
@@ -237,7 +237,6 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
                 const date = parseDate(currentDueDate);
                 setNewDate(format(date, "yyyy-MM-dd"));
                 setIsEditing(false);
-                setShowConfirm(false);
               }}
               variant="outline"
               disabled={isLoading}
@@ -245,14 +244,26 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (hasChanges) {
-                  setShowConfirm(true);
+                  setIsLoading(true);
+                  try {
+                    const dateObj = parseISO(newDate);
+                    const dateString = dateObj.toISOString();
+                    await updateBaby({
+                      babyId: babyId as any,
+                      dueDate: dateString,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
                 } else {
-                  const date = parseDate(currentDueDate);
-                  setNewDate(format(date, "yyyy-MM-dd"));
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }
               }}
               disabled={isLoading || !hasChanges}
@@ -262,56 +273,6 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
           </div>
         )}
       </div>
-
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change Due Date?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the due date from{" "}
-              <strong>{format(parseDate(currentDueDate), "MMMM d, yyyy")}</strong> to{" "}
-              <strong>{format(parseISO(newDate), "MMMM d, yyyy")}</strong>?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isLoading}
-              onClick={() => {
-                const date = parseDate(currentDueDate);
-                setNewDate(format(date, "yyyy-MM-dd"));
-                setIsEditing(false);
-                setShowConfirm(false);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setIsLoading(true);
-                try {
-                  const dateObj = parseISO(newDate);
-                  const dateString = dateObj.toISOString();
-                  await updateBaby({
-                    babyId: babyId as any,
-                    dueDate: dateString,
-                  });
-                  setShowConfirm(false);
-                  setIsEditing(false);
-                } catch (err) {
-                  if (err instanceof Error) {
-                    // Handle error appropriately
-                  }
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              disabled={isLoading}
-            >
-              {isLoading ? "Saving..." : "Change Date"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -333,7 +294,7 @@ function StatusDateEditor({
   babyId,
   status,
   currentDate,
-  label,
+  label: _label,
   compact = false,
   baby,
 }: StatusDateEditorProps) {
@@ -344,7 +305,6 @@ function StatusDateEditor({
     const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return localDate.toISOString().slice(0, 16);
   });
-  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const currentDateTimeFormatted = (() => {
@@ -398,7 +358,6 @@ function StatusDateEditor({
                 const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                 setNewDateTime(localDate.toISOString().slice(0, 16));
                 setIsEditing(false);
-                setShowConfirm(false);
               }}
               variant="outline"
               size="sm"
@@ -407,16 +366,44 @@ function StatusDateEditor({
               Cancel
             </Button>
             <Button
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
                 if (hasChanges) {
-                  setShowConfirm(true);
+                  setIsLoading(true);
+                  try {
+                    const dateObj = parseISO(newDateTime);
+                    const dateString = dateObj.toISOString();
+                    const updateFields: {
+                      laborStarted?: string | null;
+                      wentToHospital?: string | null;
+                      babyBorn?: string | null;
+                    } = {};
+
+                    if (status === "labor_started") {
+                      updateFields.laborStarted = dateString;
+                    } else if (status === "gone_to_hospital") {
+                      updateFields.wentToHospital = dateString;
+                    } else if (status === "born") {
+                      updateFields.babyBorn = dateString;
+                      if (!baby.wentToHospital) {
+                        updateFields.wentToHospital = dateString;
+                      }
+                    }
+
+                    await updateBaby({
+                      babyId: babyId as any,
+                      ...updateFields,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
                 } else {
-                  const date = parseDate(currentDate);
-                  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                  setNewDateTime(localDate.toISOString().slice(0, 16));
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }
               }}
               size="sm"
@@ -448,7 +435,6 @@ function StatusDateEditor({
                   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
                   setNewDateTime(localDate.toISOString().slice(0, 16));
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }}
                 variant="outline"
                 size="sm"
@@ -457,15 +443,43 @@ function StatusDateEditor({
                 Cancel
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   if (hasChanges) {
-                    setShowConfirm(true);
+                    setIsLoading(true);
+                    try {
+                      const dateObj = parseISO(newDateTime);
+                      const dateString = dateObj.toISOString();
+                      const updateFields: {
+                        laborStarted?: string | null;
+                        wentToHospital?: string | null;
+                        babyBorn?: string | null;
+                      } = {};
+
+                      if (status === "labor_started") {
+                        updateFields.laborStarted = dateString;
+                      } else if (status === "gone_to_hospital") {
+                        updateFields.wentToHospital = dateString;
+                      } else if (status === "born") {
+                        updateFields.babyBorn = dateString;
+                        if (!baby.wentToHospital) {
+                          updateFields.wentToHospital = dateString;
+                        }
+                      }
+
+                      await updateBaby({
+                        babyId: babyId as any,
+                        ...updateFields,
+                      });
+                      setIsEditing(false);
+                    } catch (err) {
+                      if (err instanceof Error) {
+                        // Handle error appropriately
+                      }
+                    } finally {
+                      setIsLoading(false);
+                    }
                   } else {
-                    const date = parseDate(currentDate);
-                    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                    setNewDateTime(localDate.toISOString().slice(0, 16));
                     setIsEditing(false);
-                    setShowConfirm(false);
                   }
                 }}
                 size="sm"
@@ -486,58 +500,47 @@ function StatusDateEditor({
           </>
         )}
       </div>
+    </div>
+  );
+}
 
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Change {label} Date?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to change the {label.toLowerCase()} date from{" "}
-              <strong>{formatDate(currentDate)}</strong> to{" "}
-              <strong>{formatDate(parseISO(newDateTime).toISOString())}</strong>?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isLoading}
-              onClick={() => {
-                const date = parseDate(currentDate);
-                const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-                setNewDateTime(localDate.toISOString().slice(0, 16));
-                setIsEditing(false);
-                setShowConfirm(false);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
+type NameEditorProps = {
+  babyId: string;
+  currentName: string;
+  compact?: boolean;
+};
+
+function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
+  const updateBaby = useMutation(api.babies.update);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newName, setNewName] = useState(currentName);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const hasChanges = newName.trim() !== currentName.trim();
+
+  if (compact) {
+    return (
+      <Popover open={isEditing} onOpenChange={setIsEditing}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm">
+            Edit
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-80">
+          <Input
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Baby name"
+            className="mb-3"
+            onKeyDown={async (e) => {
+              if (e.key === "Enter" && hasChanges) {
+                e.preventDefault();
                 setIsLoading(true);
                 try {
-                  const dateObj = parseISO(newDateTime);
-                  const dateString = dateObj.toISOString();
-                  const updateFields: {
-                    laborStarted?: string | null;
-                    wentToHospital?: string | null;
-                    babyBorn?: string | null;
-                  } = {};
-
-                  if (status === "labor_started") {
-                    updateFields.laborStarted = dateString;
-                  } else if (status === "gone_to_hospital") {
-                    updateFields.wentToHospital = dateString;
-                  } else if (status === "born") {
-                    updateFields.babyBorn = dateString;
-                    if (!baby.wentToHospital) {
-                      updateFields.wentToHospital = dateString;
-                    }
-                  }
-
                   await updateBaby({
                     babyId: babyId as any,
-                    ...updateFields,
+                    name: newName.trim(),
                   });
-                  setShowConfirm(false);
                   setIsEditing(false);
                 } catch (err) {
                   if (err instanceof Error) {
@@ -546,14 +549,141 @@ function StatusDateEditor({
                 } finally {
                   setIsLoading(false);
                 }
+              } else if (e.key === "Escape") {
+                setNewName(currentName);
+                setIsEditing(false);
+              }
+            }}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              onClick={() => {
+                setNewName(currentName);
+                setIsEditing(false);
               }}
+              variant="outline"
+              size="sm"
               disabled={isLoading}
             >
-              {isLoading ? "Saving..." : "Change Date"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (hasChanges) {
+                  setIsLoading(true);
+                  try {
+                    await updateBaby({
+                      babyId: babyId as any,
+                      name: newName.trim(),
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
+                } else {
+                  setIsEditing(false);
+                }
+              }}
+              size="sm"
+              disabled={isLoading || !hasChanges}
+            >
+              Save
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-lg font-semibold text-foreground mb-4">Baby Name</h3>
+      <div className="flex items-center gap-3">
+        <div className="flex-1">
+          {isEditing ? (
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Baby name"
+              className="w-full"
+              onKeyDown={async (e) => {
+                if (e.key === "Enter" && hasChanges) {
+                  e.preventDefault();
+                  setIsLoading(true);
+                  try {
+                    await updateBaby({
+                      babyId: babyId as any,
+                      name: newName.trim(),
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
+                } else if (e.key === "Escape") {
+                  setNewName(currentName);
+                  setIsEditing(false);
+                }
+              }}
+            />
+          ) : (
+            <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+              <Baby className="w-4 h-4 text-muted-foreground" />
+              <span className="text-foreground">{currentName}</span>
+            </div>
+          )}
+        </div>
+        {!isEditing ? (
+          <Button onClick={() => setIsEditing(true)} variant="outline">
+            Change
+          </Button>
+        ) : (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => {
+                setNewName(currentName);
+                setIsEditing(false);
+              }}
+              variant="outline"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async () => {
+                if (hasChanges) {
+                  setIsLoading(true);
+                  try {
+                    await updateBaby({
+                      babyId: babyId as any,
+                      name: newName.trim(),
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
+                } else {
+                  setIsEditing(false);
+                }
+              }}
+              disabled={isLoading || !hasChanges}
+            >
+              Save
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -572,7 +702,6 @@ function CustomMessageEditor({
   const updateBaby = useMutation(api.babies.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(currentMessage || "");
-  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const hasChanges = newMessage !== (currentMessage || "");
@@ -597,7 +726,6 @@ function CustomMessageEditor({
               onClick={() => {
                 setNewMessage(currentMessage || "");
                 setIsEditing(false);
-                setShowConfirm(false);
               }}
               variant="outline"
               size="sm"
@@ -606,13 +734,24 @@ function CustomMessageEditor({
               Cancel
             </Button>
             <Button
-              onClick={() => {
+              onClick={async () => {
                 if (hasChanges) {
-                  setShowConfirm(true);
+                  setIsLoading(true);
+                  try {
+                    await updateBaby({
+                      babyId: babyId as any,
+                      customMessage: newMessage.trim() || null,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    if (err instanceof Error) {
+                      // Handle error appropriately
+                    }
+                  } finally {
+                    setIsLoading(false);
+                  }
                 } else {
-                  setNewMessage(currentMessage || "");
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }
               }}
               size="sm"
@@ -642,7 +781,6 @@ function CustomMessageEditor({
                 onClick={() => {
                   setNewMessage(currentMessage || "");
                   setIsEditing(false);
-                  setShowConfirm(false);
                 }}
                 variant="outline"
                 disabled={isLoading}
@@ -650,13 +788,24 @@ function CustomMessageEditor({
                 Cancel
               </Button>
               <Button
-                onClick={() => {
+                onClick={async () => {
                   if (hasChanges) {
-                    setShowConfirm(true);
+                    setIsLoading(true);
+                    try {
+                      await updateBaby({
+                        babyId: babyId as any,
+                        customMessage: newMessage.trim() || null,
+                      });
+                      setIsEditing(false);
+                    } catch (err) {
+                      if (err instanceof Error) {
+                        // Handle error appropriately
+                      }
+                    } finally {
+                      setIsLoading(false);
+                    }
                   } else {
-                    setNewMessage(currentMessage || "");
                     setIsEditing(false);
-                    setShowConfirm(false);
                   }
                 }}
                 disabled={isLoading || !hasChanges}
@@ -676,53 +825,6 @@ function CustomMessageEditor({
           </>
         )}
       </div>
-
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Update Message?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {currentMessage
-                ? `Are you sure you want to change the message from "${currentMessage}" to "${newMessage || "(empty - will use default)"}"?`
-                : `Are you sure you want to set a custom message: "${newMessage}"?`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel
-              disabled={isLoading}
-              onClick={() => {
-                setNewMessage(currentMessage || "");
-                setIsEditing(false);
-                setShowConfirm(false);
-              }}
-            >
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setIsLoading(true);
-                try {
-                  await updateBaby({
-                    babyId: babyId as any,
-                    customMessage: newMessage.trim() || null,
-                  });
-                  setShowConfirm(false);
-                  setIsEditing(false);
-                } catch (err) {
-                  if (err instanceof Error) {
-                    // Handle error appropriately
-                  }
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              disabled={isLoading}
-            >
-              {isLoading ? "Saving..." : "Update Message"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
@@ -752,128 +854,81 @@ function StatusUpdateButton({
   icon,
   isNextState,
   compact = false,
-  previousStatuses = [],
-  subsequentStatuses = [],
+  previousStatuses: _previousStatuses = [],
+  subsequentStatuses: _subsequentStatuses = [],
   baby,
 }: StatusUpdateButtonProps) {
   const updateBaby = useMutation(api.babies.update);
   const [isLoading, setIsLoading] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   const isCompleted = !!currentStatus;
-  const missingPrevious = previousStatuses.filter((s) => !s.isSet);
+
+  const handleClick = async () => {
+    setIsLoading(true);
+    try {
+      const updateFields: {
+        laborStarted?: string | null;
+        wentToHospital?: string | null;
+        babyBorn?: string | null;
+      } = {};
+
+      if (isCompleted) {
+        if (status === "labor_started") {
+          updateFields.laborStarted = null;
+          updateFields.wentToHospital = null;
+          updateFields.babyBorn = null;
+        } else if (status === "gone_to_hospital") {
+          updateFields.wentToHospital = null;
+          updateFields.babyBorn = null;
+        } else {
+          updateFields.babyBorn = null;
+        }
+      } else {
+        const now = new Date();
+        const dateString = now.toISOString();
+
+        if (status === "labor_started") {
+          updateFields.laborStarted = dateString;
+        } else if (status === "gone_to_hospital") {
+          updateFields.wentToHospital = dateString;
+        } else if (status === "born") {
+          updateFields.babyBorn = dateString;
+          if (!baby.wentToHospital) {
+            updateFields.wentToHospital = dateString;
+          }
+        }
+      }
+
+      await updateBaby({
+        babyId: babyId as any,
+        ...updateFields,
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        // Handle error appropriately
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <>
-      <Button
-        onClick={() => setShowConfirm(true)}
-        disabled={isLoading}
-        variant={isNextState && !isCompleted ? "default" : isCompleted ? "default" : "outline"}
-        size={compact ? "sm" : "default"}
-        className={compact ? "" : "w-full"}
-      >
-        {icon}
-        {compact
-          ? isCompleted
-            ? "Unmark"
-            : "Mark"
-          : isCompleted
-            ? `Unmark ${label}`
-            : `Mark as ${label}`}
-      </Button>
-
-      <AlertDialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {isCompleted ? `Unmark ${label}?` : `Mark as ${label}?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {isCompleted ? (
-                <>
-                  Are you sure you want to unmark "{label}"?
-                  {subsequentStatuses.length > 0 && (
-                    <>
-                      {" "}
-                      This will also unmark: {subsequentStatuses.map((s) => s.label).join(", ")}.
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  Are you sure you want to mark "{label}"? This will update the status to the
-                  current time.
-                  {missingPrevious.length > 0 && (
-                    <>
-                      {" "}
-                      The following previous statuses will also be automatically set:{" "}
-                      {missingPrevious.map((s) => s.label).join(", ")}.
-                    </>
-                  )}
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setIsLoading(true);
-                try {
-                  const updateFields: {
-                    laborStarted?: string | null;
-                    wentToHospital?: string | null;
-                    babyBorn?: string | null;
-                  } = {};
-
-                  if (isCompleted) {
-                    if (status === "labor_started") {
-                      updateFields.laborStarted = null;
-                      updateFields.wentToHospital = null;
-                      updateFields.babyBorn = null;
-                    } else if (status === "gone_to_hospital") {
-                      updateFields.wentToHospital = null;
-                      updateFields.babyBorn = null;
-                    } else {
-                      updateFields.babyBorn = null;
-                    }
-                  } else {
-                    const now = new Date();
-                    const dateString = now.toISOString();
-
-                    if (status === "labor_started") {
-                      updateFields.laborStarted = dateString;
-                    } else if (status === "gone_to_hospital") {
-                      updateFields.wentToHospital = dateString;
-                    } else if (status === "born") {
-                      updateFields.babyBorn = dateString;
-                      if (!baby.wentToHospital) {
-                        updateFields.wentToHospital = dateString;
-                      }
-                    }
-                  }
-
-                  await updateBaby({
-                    babyId: babyId as any,
-                    ...updateFields,
-                  });
-                  setShowConfirm(false);
-                } catch (err) {
-                  if (err instanceof Error) {
-                    // Handle error appropriately
-                  }
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              disabled={isLoading}
-            >
-              {isLoading ? "Processing..." : isCompleted ? "Unmark" : "Mark"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    <Button
+      onClick={handleClick}
+      disabled={isLoading}
+      variant={isNextState && !isCompleted ? "default" : isCompleted ? "default" : "outline"}
+      size={compact ? "sm" : "default"}
+      className={compact ? "" : "w-full"}
+    >
+      {icon}
+      {compact
+        ? isCompleted
+          ? "Unmark"
+          : "Mark"
+        : isCompleted
+          ? `Unmark ${label}`
+          : `Mark as ${label}`}
+    </Button>
   );
 }
 
@@ -887,6 +942,14 @@ export const Route = createFileRoute("/baby/$publicId")({
     const babyData = await convexQueryClient.serverHttpClient?.query(api.babies.getByPublicId, {
       publicId,
     });
+
+    // If baby found but current publicId doesn't match, redirect to current publicId
+    if (babyData && babyData.publicId !== publicId) {
+      throw redirect({
+        to: "/baby/$publicId",
+        params: { publicId: babyData.publicId },
+      });
+    }
 
     return { babyData: babyData ?? null };
   },
@@ -905,9 +968,21 @@ export const Route = createFileRoute("/baby/$publicId")({
 function BabyPage() {
   const { publicId } = Route.useParams();
   const { babyData: preloadedBabyData } = Route.useLoaderData();
+  const navigate = useNavigate();
   // Use useQuery for reactivity - it will use the preloaded data from SSR
   const babyData = useQuery(api.babies.getByPublicId, { publicId }) ?? preloadedBabyData;
   const { data: session } = useSession();
+
+  // Redirect if baby found but current publicId doesn't match (client-side check)
+  useEffect(() => {
+    if (babyData && babyData.publicId !== publicId) {
+      navigate({
+        to: "/baby/$publicId",
+        params: { publicId: babyData.publicId },
+        replace: true,
+      });
+    }
+  }, [babyData, publicId, navigate]);
 
   if (babyData === undefined) {
     return (
@@ -1104,6 +1179,24 @@ function BabyPage() {
                             </div>
                           );
                         })}
+
+                        <Separator className="my-3" />
+
+                        {/* Baby Name */}
+                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/50 rounded-md transition-colors">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-md bg-muted text-muted-foreground">
+                              <Baby className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground">Baby Name</div>
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {baby.name}
+                              </div>
+                            </div>
+                          </div>
+                          <NameEditor babyId={baby._id} currentName={baby.name} compact />
+                        </div>
 
                         <Separator className="my-3" />
 

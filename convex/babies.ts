@@ -1,6 +1,7 @@
-import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { customAlphabet } from "nanoid";
+import { mutation, query } from "./_generated/server";
+import type { DatabaseReader } from "./_generated/server";
+import { Doc } from "./_generated/dataModel";
 
 export const listByUser = query({
   args: {},
@@ -23,14 +24,35 @@ export const listByUser = query({
 export const getByPublicId = query({
   args: { publicId: v.string() },
   handler: async (ctx, args) => {
+    // First check current publicIds
     const baby = await ctx.db
       .query("babies")
       .withIndex("by_publicId", (q) => q.eq("publicId", args.publicId))
       .first();
 
-    return baby;
+    if (baby) {
+      return baby;
+    }
+
+    // If not found, check historical publicIds
+    // Get the most recent historical entry with this publicId (last known publicId wins)
+    const latestHistoryEntry = await ctx.db
+      .query("babyPublicIdHistory")
+      .withIndex("by_publicId", (q) => q.eq("publicId", args.publicId))
+      .order("desc")
+      .first();
+
+    if (!latestHistoryEntry) {
+      return null;
+    }
+
+    const babyFromHistory = await ctx.db.get(latestHistoryEntry.babyId);
+
+    return babyFromHistory;
   },
 });
+
+export type Baby = Doc<"babies">;
 
 function slugify(name: string): string {
   return name
@@ -39,6 +61,23 @@ function slugify(name: string): string {
     .replace(/[^\w\s-]/g, "")
     .replace(/[\s_-]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+async function generateUniquePublicId(db: DatabaseReader, baseName: string): Promise<string> {
+  let publicId = slugify(baseName);
+  let tries = 0;
+
+  while (
+    await db
+      .query("babies")
+      .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
+      .first()
+  ) {
+    tries++;
+    publicId = `${slugify(baseName)}-${tries}`;
+  }
+
+  return publicId;
 }
 
 export const create = mutation({
@@ -52,18 +91,7 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    let publicId = slugify(args.name);
-    let tries = 0;
-
-    while (
-      await ctx.db
-        .query("babies")
-        .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
-        .first()
-    ) {
-      tries++;
-      publicId = `${slugify(args.name)}-${tries}`;
-    }
+    const publicId = await generateUniquePublicId(ctx.db, args.name);
 
     const babyId = await ctx.db.insert("babies", {
       userId: identity.subject,
@@ -89,6 +117,7 @@ export const update = mutation({
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
     customMessage: v.optional(v.union(v.string(), v.null())),
+    name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -97,7 +126,7 @@ export const update = mutation({
     }
 
     const { babyId, ...rest } = args;
-    // Verify ownership
+
     const baby = await ctx.db.get(babyId);
     if (!baby) {
       throw new Error("Baby not found");
@@ -107,6 +136,26 @@ export const update = mutation({
       throw new Error("Not authorized");
     }
 
-    await ctx.db.patch(babyId, rest);
+    const patch: Partial<typeof baby> = rest;
+    // If name changed and the slugified name would result in a different publicId
+    if (patch.name && patch.name !== baby.name) {
+      const newSlugifiedName = slugify(patch.name);
+      // Only update publicId if the slugified name is different from current publicId
+      if (newSlugifiedName !== baby.publicId) {
+        // Save the old publicId to history before updating
+        const oldPublicId = baby.publicId;
+        const newPublicId = await generateUniquePublicId(ctx.db, patch.name);
+        patch.publicId = newPublicId;
+
+        // Store the old publicId in history
+        await ctx.db.insert("babyPublicIdHistory", {
+          babyId,
+          publicId: oldPublicId,
+          createdAt: Date.now(),
+        });
+      }
+    }
+
+    await ctx.db.patch(babyId, patch);
   },
 });
