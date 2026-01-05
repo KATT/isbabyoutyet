@@ -6,10 +6,9 @@ import {
   createRootRouteWithContext,
   useRouteContext,
 } from "@tanstack/react-router";
-import type { QueryClient } from "@tanstack/react-query";
+import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
@@ -18,8 +17,7 @@ import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@/components/ui/sonner";
 
 export const Route = createRootRouteWithContext<{
-  queryClient: QueryClient;
-  convexQueryClient: ConvexQueryClient;
+  convexClient: ConvexReactClient;
 }>()({
   head: () => ({
     meta: [
@@ -53,10 +51,7 @@ function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ConvexBetterAuthProvider
-        client={context.convexQueryClient.convexClient}
-        authClient={authClient}
-      >
+      <ConvexBetterAuthProvider client={context.convexClient} authClient={authClient}>
         <RootDocument>
           <Outlet />
         </RootDocument>

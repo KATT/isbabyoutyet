@@ -47,7 +47,7 @@ function SignupPage() {
       <div className="w-full max-w-md">
         <Card>
           <CardHeader>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2 mx-auto">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2 mx-auto">
               <UserPlus className="w-8 h-8 text-primary" />
             </div>
             <CardTitle>Sign Up</CardTitle>

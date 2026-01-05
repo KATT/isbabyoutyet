@@ -47,7 +47,7 @@ function AddBabyPage() {
             </Button>
           </Link>
           <h1 className="text-5xl font-black text-foreground mb-3 tracking-tight">
-            <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Add a Baby
             </span>
           </h1>
@@ -56,7 +56,7 @@ function AddBabyPage() {
 
         <Card>
           <CardHeader>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2">
               <Baby className="w-8 h-8 text-primary" />
             </div>
             <CardTitle>Baby Information</CardTitle>

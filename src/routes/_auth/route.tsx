@@ -9,7 +9,7 @@ const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/_auth")({
-  beforeLoad: async ({ context }) => {
+  beforeLoad: async () => {
     // Check authentication server-side
     const authResult = await checkAuth();
 
@@ -18,10 +18,6 @@ export const Route = createFileRoute("/_auth")({
         to: "/",
       });
     }
-
-    // During SSR only (the only time serverHttpClient exists),
-    // set the auth token to make HTTP queries with.
-    context.convexQueryClient.serverHttpClient?.setAuth(authResult.token);
   },
   component: AuthLayout,
 });

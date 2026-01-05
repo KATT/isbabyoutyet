@@ -3,8 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "convex/react";
 import { format } from "date-fns";
 import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
@@ -15,7 +14,7 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 });
 
 function DashboardPage() {
-  const babiesQuery = useSuspenseQuery(convexQuery(api.babies.listByUser, {}));
+  const babies = useQuery(api.babies.listByUser, {});
   const router = useRouter();
 
   return (
@@ -60,7 +59,15 @@ function DashboardPage() {
           </div>
         </div>
 
-        {babiesQuery.data.length === 0 ? (
+        {!babies ? (
+          <Card>
+            <CardContent>
+              <div className="text-center py-8">
+                <div className="text-muted-foreground">Loading...</div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : babies.length === 0 ? (
           <Card>
             <CardContent>
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
@@ -80,7 +87,7 @@ function DashboardPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {babiesQuery.data.map((baby) => {
+            {babies.map((baby) => {
               const dueDate = new Date(baby.dueDate);
               const now = new Date();
               const daysUntilDue = Math.ceil(

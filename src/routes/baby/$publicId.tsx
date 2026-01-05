@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import * as React from "react";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMutation } from "convex/react";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { useMutation, useQuery } from "convex/react";
+import { z } from "zod";
 import { api } from "../../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
 import { Baby, Hospital, CheckCircle, Activity, Calendar, Settings } from "lucide-react";
@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/item";
 import { Doc } from "convex/_generated/dataModel";
 import { Progress } from "@/components/ui/progress";
+import { getConvexClient } from "@/router";
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -935,8 +936,30 @@ function StatusUpdateButton({
   );
 }
 
+const getBabyByPublicId = createServerFn({ method: "GET" })
+  .inputValidator(
+    z.object({
+      publicId: z.string(),
+    }),
+  )
+  .handler(async (opts) => {
+    const convexClient = getConvexClient();
+
+    const baby = await convexClient.query(api.babies.getByPublicId, {
+      publicId: opts.data.publicId,
+    });
+    return baby;
+  });
+
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
+  loader: async ({ params }) => {
+    const baby = await getBabyByPublicId({ data: { publicId: params.publicId } });
+    if (!baby) {
+      throw notFound();
+    }
+    return { prefetchedBaby: baby };
+  },
   head: () => {
     // This will be updated dynamically based on the baby data
     return {
@@ -952,31 +975,31 @@ export const Route = createFileRoute("/baby/$publicId")({
 function BabyPage() {
   const params = Route.useParams();
   const navigate = useNavigate();
-  const queryResult = useSuspenseQuery(
-    convexQuery(api.babies.getByPublicId, { publicId: params.publicId }),
-  );
+  const loaderData = Route.useLoaderData();
+  // Use prefetched data if available, otherwise use reactive query
+  const queryBaby = useQuery(api.babies.getByPublicId, { publicId: params.publicId });
+  // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
+  const baby = queryBaby ?? loaderData?.prefetchedBaby ?? undefined;
   const sessionResult = useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
   useEffect(() => {
-    if (queryResult.data && queryResult.data.publicId !== params.publicId) {
+    if (baby && baby.publicId !== params.publicId) {
       navigate({
         to: "/baby/$publicId",
-        params: { publicId: queryResult.data.publicId },
+        params: { publicId: baby.publicId },
         replace: true,
       });
     }
-  }, [queryResult.data, params.publicId, navigate]);
+  }, [baby, params.publicId, navigate]);
 
-  if (queryResult.data === null) {
+  if (baby === undefined) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Baby not found</div>
+        <div className="text-foreground">Loading...</div>
       </div>
     );
   }
-
-  const baby = queryResult.data;
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === baby.userId;
 
@@ -1038,7 +1061,7 @@ function BabyPage() {
 
   const overdueDays = getOverdueDays(baby.dueDate);
 
-  const [ownerControlsOpen, setOwnerControlsOpen] = useState(true);
+  const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
   const ownerControlsRef = useRef<HTMLDivElement>(null);
   return (
     <div>
@@ -1173,7 +1196,7 @@ function BabyPage() {
         <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
           <div className="relative">
             <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-              <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
                 Is {baby.name} out yet?
               </span>
             </h1>
@@ -1201,17 +1224,17 @@ function BabyPage() {
                 {/* Current status display */}
                 {!currentStatus && (
                   <div className="flex flex-col items-center py-8">
-                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
                       <Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />
                     </div>
                     <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                      <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                         Not yet
                       </span>
                     </h2>
                     <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
                     {overdueDays > 0 && (
-                      <div className="mt-4 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
+                      <div className="mt-4 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
                         <p className="text-xl font-bold text-primary">
                           {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
                         </p>
@@ -1225,11 +1248,11 @@ function BabyPage() {
 
                 {currentStatus?.type === "labor_started" && (
                   <div className="flex flex-col items-center py-8">
-                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
                       <Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />
                     </div>
                     <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                      <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                         Labour started
                       </span>
                     </h2>
@@ -1245,11 +1268,11 @@ function BabyPage() {
 
                 {currentStatus?.type === "gone_to_hospital" && (
                   <div className="flex flex-col items-center py-8">
-                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
                       <Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />
                     </div>
                     <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                      <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                         Gone to hospital
                       </span>
                     </h2>
@@ -1259,7 +1282,7 @@ function BabyPage() {
                       </p>
                     )}
                     {baby.customMessage && (
-                      <div className="mt-6 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+                      <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
                         <p className="text-lg font-bold text-primary">{baby.customMessage}</p>
                       </div>
                     )}
@@ -1268,11 +1291,11 @@ function BabyPage() {
 
                 {currentStatus?.type === "born" && (
                   <div className="flex flex-col items-center py-8">
-                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-primary/30 mb-8 shadow-xl shadow-primary/20">
+                    <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-linear-to-br from-primary to-primary/80 border-2 border-primary/30 mb-8 shadow-xl shadow-primary/20">
                       <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />
                     </div>
                     <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                      <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                         Yes! Baby is out
                       </span>
                     </h2>
@@ -1301,9 +1324,9 @@ function BabyPage() {
                           <div
                             className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
                               isCompleted
-                                ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                                ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                                 : isCurrent
-                                  ? "bg-gradient-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                                  ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
                                   : "bg-muted/50 text-muted-foreground border border-border"
                             }`}
                           >

@@ -43,7 +43,7 @@ function HomePage() {
             Track your baby's journey
           </Badge>
           <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
-            <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is Baby Out Yet?
             </span>
           </h1>
@@ -86,7 +86,7 @@ function HomePage() {
         <div className="grid md:grid-cols-3 gap-6 mb-24">
           <Card>
             <CardHeader>
-              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                 <Baby className="w-7 h-7 text-primary" />
               </div>
               <CardTitle>Track Progress</CardTitle>
@@ -158,7 +158,7 @@ function HomePage() {
                 },
               ].map((item) => (
                 <div key={item.step} className="flex gap-4 group">
-                  <div className="shrink-0 w-12 h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                  <div className="shrink-0 w-12 h-12 bg-linear-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
                     {item.step}
                   </div>
                   <div className="flex-1">
@@ -173,7 +173,7 @@ function HomePage() {
 
         {/* CTA Section */}
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
             <Heart className="w-10 h-10 text-primary" />
           </div>
           <h2 className="text-4xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
