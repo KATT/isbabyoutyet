@@ -11,10 +11,16 @@ import { signOut } from "@/lib/auth-client";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
+  loader: async (opts) => {
+    return {
+      babies: await opts.context.convexClient.query(api.baby.listByUser, {}),
+    };
+  },
 });
 
 function DashboardPage() {
-  const babies = useQuery(api.baby.listByUser, {});
+  const loaderData = Route.useLoaderData();
+  const babies = useQuery(api.baby.listByUser, {}) ?? loaderData.babies;
   const router = useRouter();
 
   return (
@@ -59,15 +65,7 @@ function DashboardPage() {
           </div>
         </div>
 
-        {!babies ? (
-          <Card>
-            <CardContent>
-              <div className="text-center py-8">
-                <div className="text-muted-foreground">Loading...</div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : babies.length === 0 ? (
+        {babies.length === 0 ? (
           <Card>
             <CardContent>
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
