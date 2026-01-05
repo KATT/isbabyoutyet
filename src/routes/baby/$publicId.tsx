@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import * as React from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "convex/react";
@@ -15,6 +16,16 @@ import { Card } from "@/components/ui/card";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Item,
+  ItemGroup,
+  ItemSeparator,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
+} from "@/components/ui/item";
 import { Doc } from "convex/_generated/dataModel";
 
 const TIMEZONE = "Europe/Stockholm";
@@ -1039,128 +1050,115 @@ function BabyPage() {
             className="overflow-hidden"
             ref={ownerControlsRef}
           >
-            <div className="space-y-1 bg-background">
+            <ItemGroup className="bg-background">
               {/* Baby Name */}
-              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                    <Baby className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground">Baby Name</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{baby.name}</div>
-                  </div>
-                </div>
-                <NameEditor babyId={baby._id} currentName={baby.name} compact />
-              </div>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Baby className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Baby Name</ItemTitle>
+                  <ItemDescription>{baby.name}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <NameEditor babyId={baby._id} currentName={baby.name} compact />
+                </ItemActions>
+              </Item>
 
-              <Separator className="my-3" />
+              <ItemSeparator />
 
               {/* Due Date */}
-              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                    <Calendar className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground">Due Date</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-                    </div>
-                  </div>
-                </div>
-                <DueDateEditor babyId={baby._id} currentDueDate={baby.dueDate} compact />
-              </div>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Calendar className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Due Date</ItemTitle>
+                  <ItemDescription>
+                    {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <DueDateEditor babyId={baby._id} currentDueDate={baby.dueDate} compact />
+                </ItemActions>
+              </Item>
 
-              <Separator className="my-3" />
+              <ItemSeparator />
 
               {/* Custom Message */}
-              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                    <Hospital className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-foreground">Hospital Message</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {baby.customMessage || "Default message"}
-                    </div>
-                  </div>
-                </div>
-                <CustomMessageEditor
-                  babyId={baby._id}
-                  currentMessage={baby.customMessage}
-                  compact
-                />
-              </div>
-            </div>
-            <Separator className="my-3" />
-            {/* Status Updates */}
-            {states.map((state, index) => {
-              const StatusIcon = stateIcons[state.type];
-              const isCompleted = !!state.date;
-              const previousStatuses = states.slice(0, index).map((s) => ({
-                label: stateLabels[s.type],
-                isSet: !!s.date,
-              }));
-              const subsequentStatuses = states.slice(index + 1).map((s) => ({
-                label: stateLabels[s.type],
-              }));
-              return (
-                <div key={state.type}>
-                  <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div
-                        className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
-                          isCompleted
-                            ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                            : isNextState(index)
-                              ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20"
-                              : "bg-muted/50 text-muted-foreground border border-border"
-                        }`}
-                      >
-                        <StatusIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-foreground">
-                          {stateLabels[state.type]}
-                        </div>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Hospital className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Hospital Message</ItemTitle>
+                  <ItemDescription>{baby.customMessage || "Default message"}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <CustomMessageEditor
+                    babyId={baby._id}
+                    currentMessage={baby.customMessage}
+                    compact
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              {/* Status Updates */}
+              {states.map((state, index) => {
+                const StatusIcon = stateIcons[state.type];
+                const previousStatuses = states.slice(0, index).map((s) => ({
+                  label: stateLabels[s.type],
+                  isSet: !!s.date,
+                }));
+                const subsequentStatuses = states.slice(index + 1).map((s) => ({
+                  label: stateLabels[s.type],
+                }));
+                return (
+                  <React.Fragment key={state.type}>
+                    <Item>
+                      <ItemMedia variant="icon">
+                        <StatusIcon className="w-4 h-4" />
+                      </ItemMedia>
+                      <ItemContent>
+                        <ItemTitle>{stateLabels[state.type]}</ItemTitle>
                         {state.date && (
-                          <div className="text-xs text-muted-foreground mt-0.5">
+                          <ItemDescription>
                             {formatDate(state.date)} ({getRelativeTime(state.date)})
-                          </div>
+                          </ItemDescription>
                         )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 relative">
-                      {state.date && (
-                        <StatusDateEditor
+                      </ItemContent>
+                      <ItemActions>
+                        {state.date && (
+                          <StatusDateEditor
+                            babyId={baby._id}
+                            status={state.type}
+                            currentDate={state.date}
+                            label={stateLabels[state.type]}
+                            compact
+                            baby={baby}
+                          />
+                        )}
+                        <StatusUpdateButton
                           babyId={baby._id}
                           status={state.type}
-                          currentDate={state.date}
+                          currentStatus={state.date}
                           label={stateLabels[state.type]}
+                          icon={<StatusIcon className="w-4 h-4" />}
+                          isNextState={isNextState(index)}
                           compact
+                          previousStatuses={previousStatuses}
+                          subsequentStatuses={subsequentStatuses}
                           baby={baby}
                         />
-                      )}
-                      <StatusUpdateButton
-                        babyId={baby._id}
-                        status={state.type}
-                        currentStatus={state.date}
-                        label={stateLabels[state.type]}
-                        icon={<StatusIcon className="w-4 h-4" />}
-                        isNextState={isNextState(index)}
-                        compact
-                        previousStatuses={previousStatuses}
-                        subsequentStatuses={subsequentStatuses}
-                        baby={baby}
-                      />
-                    </div>
-                  </div>
-                  {index < states.length - 1 && <Separator className="my-1" />}
-                </div>
-              );
-            })}
+                      </ItemActions>
+                    </Item>
+                    {index < states.length - 1 && <ItemSeparator />}
+                  </React.Fragment>
+                );
+              })}
+            </ItemGroup>
           </motion.div>
         )}
       </AnimatePresence>
