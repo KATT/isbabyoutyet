@@ -14,11 +14,11 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
-import { useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
-const SERVER_DATE_SNAPSHOT = "2024-01-15T10:30:00.000Z";
+const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -36,13 +36,19 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-function HomePage() {
-  const sessionData = authClient.useSession();
-  const currentDate = useSyncExternalStore(
-    (_callback) => () => {}, // No-op subscribe for demo dates
-    () => new Date().toISOString(), // Client snapshot
+function useCurrentDate() {
+  const clientDate = useMemo(() => new Date().toISOString(), []);
+  return useSyncExternalStore<string>(
+    () => () => {}, // No-op subscribe for demo dates
+    () => clientDate, // Client snapshot (cached)
     () => SERVER_DATE_SNAPSHOT, // Server snapshot for SSR/hydration
   );
+}
+
+function HomePage() {
+  const sessionData = authClient.useSession();
+
+  const currentDate = useCurrentDate();
 
   // Helper to calculate dates with offsets for realistic demo scenarios
   const hoursAgo = (hoursAgo: number) => {
