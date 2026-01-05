@@ -864,7 +864,6 @@ function BabyBornMessageEditor({
             </Button>
             <Button
               onClick={async (e) => {
-                debugger;
                 e.stopPropagation();
                 if (hasChanges) {
                   setIsLoading(true);
