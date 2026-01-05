@@ -17,7 +17,8 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth-client";
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
 import type { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parseISO } from "date-fns";
@@ -1057,6 +1058,9 @@ function StatusUpdateButton({
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
+  validateSearch: z.object({
+    settings: z.boolean().optional(),
+  }),
   loader: async (opts) => {
     const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
       publicId: opts.params.publicId,
@@ -1081,6 +1085,7 @@ export const Route = createFileRoute("/baby/$publicId")({
 function BabyPage() {
   const params = Route.useParams();
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
   const queryBaby = useQuery(api.baby.getByPublicId, { publicId: params.publicId });
@@ -1130,13 +1135,14 @@ function BabyPage() {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
-  const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
+  // Sync ownerControlsOpen with query string
+
   const ownerControlsRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   return (
     <div>
       <AnimatePresence>
-        {ownerControlsOpen && isOwner && (
+        {search.settings && isOwner && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -1381,6 +1387,7 @@ function BabyPage() {
               >
                 {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
               </Button>
+              <ModeToggle />
               {isOwner && (
                 <motion.div
                   initial={{ scale: 0 }}
@@ -1403,22 +1410,25 @@ function BabyPage() {
                     }}
                   >
                     <Button
-                      onClick={() => {
-                        setOwnerControlsOpen(!ownerControlsOpen);
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                      variant={ownerControlsOpen ? "default" : "outline"}
+                      asChild
+                      variant={search.settings ? "default" : "outline"}
                       size="icon"
                       className="rounded-full"
                     >
-                      <Settings className="w-4 h-4" />
+                      <Link
+                        to="/baby/$publicId"
+                        params={{ publicId: params.publicId }}
+                        search={search.settings ? {} : { settings: true }}
+                        onClick={() => {
+                          window.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Link>
                     </Button>
                   </motion.div>
                 </motion.div>
               )}
-            </div>
-            <div className="absolute top-4 right-6">
-              <ModeToggle />
             </div>
           </div>
         </div>
