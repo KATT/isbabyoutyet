@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Calendar, Heart, Sparkles, Users } from "lucide-react";
+import { Baby, Calendar, Github, Heart, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -210,6 +210,19 @@ function HomePage() {
               </Link>
             </Button>
           )}
+        </div>
+
+        {/* Footer */}
+        <div className="text-center pt-8 border-t border-border/50">
+          <a
+            href="https://github.com/KATT/isbabyoutyet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Github className="w-5 h-5" />
+            <span>Want to contribute? Check out the project on GitHub</span>
+          </a>
         </div>
       </div>
     </div>
