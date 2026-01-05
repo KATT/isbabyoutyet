@@ -37,7 +37,7 @@ const searchSchema = z.object({
   babyBorn: z.string().nullable().optional(),
   customMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
-  settings: z.boolean().default(true),
+  settings: z.boolean().default(false),
 });
 
 export const Route = createFileRoute("/preview")({
@@ -93,17 +93,15 @@ function PreviewPage() {
 
         <div className="border-b border-border/50">
           <BabyNav
-            shareButton={{ enabled: false }}
+            shareLink={null}
             settingsButton={{
-              visible: true,
-              isOpen: settings,
-              onToggle: () => {
-                navigate({
-                  search: { ...search, settings: !settings },
-                  replace: true,
-                });
+              to: "/preview",
+              search: {
+                ...search,
+                settings: settings ? undefined : true,
               },
             }}
+            settingsOpen={settings}
           />
 
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
