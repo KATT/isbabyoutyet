@@ -42,21 +42,64 @@ import twitterCss from "@/styles/themes/twitter.css?url";
 import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
+import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
 import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
-  { value: null, label: "Default" },
-  { value: "violet-bloom", label: "Violet Bloom", css: violetBloomCss },
-  { value: "twitter", label: "Twitter", css: twitterCss },
-  { value: "bubblegum", label: "Bubblegum", css: bubblegumCss },
-  { value: "catppuccin", label: "Catppuccin", css: catppuccinCss },
-  { value: "mocha-mousse", label: "Mocha Mousse", css: mochaMousseCss },
+  {
+    value: null,
+    label: "Default",
+    colors: ["#ea580c", "#fef3c7", "#fed7aa"],
+  }, // orange primary
+  {
+    value: "violet-bloom",
+    label: "Violet Bloom",
+    css: violetBloomCss,
+    colors: ["#7033ff", "#fdfdfd", "#e2ebff"],
+  },
+  {
+    value: "twitter",
+    label: "Twitter Blue",
+    css: twitterCss,
+    colors: ["#1e9df1", "#ffffff", "#e3ecf6"],
+  },
+  {
+    value: "bubblegum",
+    label: "Bubblegum",
+    css: bubblegumCss,
+    colors: ["#d04f99", "#f6e6ee", "#fbe2a7"],
+  },
+  {
+    value: "catppuccin",
+    label: "Catppuccin",
+    css: catppuccinCss,
+    colors: ["#8839ef", "#eff1f5", "#04a5e5"],
+  },
+  {
+    value: "mocha-mousse",
+    label: "Mocha Mousse",
+    css: mochaMousseCss,
+    colors: ["#a37764", "#f1f0e5", "#e4c7b8"],
+  },
+  {
+    value: "quantum-rose",
+    label: "Quantum Rose",
+    css: quantumRoseCss,
+    colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
+  },
 ] as const;
 
 function getThemeCssUrl(theme: string | null | undefined): string | null {
   if (!theme) return null;
   const option = THEME_OPTIONS.find((t) => t.value === theme);
   return option && "css" in option ? option.css : null;
+}
+
+function getThemePrimaryColor(theme: string | null | undefined): string {
+  const defaultColor = "#ea580c"; // Default orange primary
+  if (!theme) return defaultColor;
+  const option = THEME_OPTIONS.find((t) => t.value === theme);
+  return option?.colors[0] ?? defaultColor;
 }
 
 const TIMEZONE = "Europe/Stockholm";
@@ -1021,17 +1064,26 @@ function ThemeSelector({ baby }: ThemeSelectorProps) {
           Change
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-48">
+      <PopoverContent align="end" className="w-56">
         <div className="flex flex-col gap-1">
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
               variant={baby.theme === option.value ? "default" : "ghost"}
               size="sm"
-              className="justify-start"
+              className="justify-start gap-2"
               disabled={isLoading}
               onClick={() => handleThemeChange(option.value)}
             >
+              <div className="flex gap-0.5">
+                {option.colors.map((color, i) => (
+                  <div
+                    key={i}
+                    className="w-4 h-4 rounded-sm border border-border/50"
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
               {option.label}
             </Button>
           ))}
@@ -1165,6 +1217,10 @@ export const Route = createFileRoute("/baby/$publicId")({
             name: "description",
             content: "Track the progress of labor and birth - know when baby arrives!",
           },
+          {
+            name: "theme-color",
+            content: "#ea580c",
+          },
         ],
       };
     }
@@ -1185,6 +1241,8 @@ export const Route = createFileRoute("/baby/$publicId")({
 
     const description = `Track ${baby.name}'s journey - know when baby arrives!`;
 
+    const themeColor = getThemePrimaryColor(baby.theme);
+
     return {
       meta: [
         {
@@ -1193,6 +1251,10 @@ export const Route = createFileRoute("/baby/$publicId")({
         {
           name: "description",
           content: description,
+        },
+        {
+          name: "theme-color",
+          content: themeColor,
         },
       ],
     };
