@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Calendar, Heart, Sparkles, Users } from "lucide-react";
+import { Baby, Calendar, CheckCircle2, Heart, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Track the progress of labor and birth - know when baby arrives! Share updates with family and friends.",
+          "Keep your family and friends updated as your baby arrives. Completely free, no ads - just a simple way to share the journey.",
       },
     ],
   }),
@@ -40,17 +40,24 @@ function HomePage() {
             className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
           >
             <Sparkles className="w-3 h-3 mr-1.5" />
-            Track your baby's journey
+            Keep everyone in the loop
           </Badge>
           <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is Baby Out Yet?
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-            Track the progress of labor and birth. Share real-time updates with family and friends
-            in a beautiful, simple way.
+          <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto leading-relaxed">
+            Keep your family and friends updated as things progress.
           </p>
+          <div className="flex gap-3 justify-center flex-wrap mb-10">
+            <Badge variant="secondary" className="text-sm px-4 py-1.5">
+              Free
+            </Badge>
+            <Badge variant="secondary" className="text-sm px-4 py-1.5">
+              No Ads
+            </Badge>
+          </div>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
               <Button
@@ -97,8 +104,8 @@ function HomePage() {
               </div>
               <CardTitle>Track Progress</CardTitle>
               <CardDescription>
-                Update status as labor progresses - from labor started to baby born. Keep everyone
-                in the loop.
+                Update your status as things happen - labor started, heading to the hospital, baby's
+                here! Everyone stays in the loop.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -110,8 +117,8 @@ function HomePage() {
               </div>
               <CardTitle>Share with Family</CardTitle>
               <CardDescription>
-                Create a shareable link for each baby. Family and friends can view updates in
-                real-time.
+                Get a simple link you can share with anyone. They can check in anytime to see what's
+                happening - no account needed.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -123,7 +130,8 @@ function HomePage() {
               </div>
               <CardTitle>Due Date Tracking</CardTitle>
               <CardDescription>
-                Set a due date and see how many days remain. Get notified when baby is overdue.
+                Set your due date and see how many days are left. We'll let you know when baby's
+                running late.
               </CardDescription>
             </CardHeader>
           </Card>
@@ -134,7 +142,7 @@ function HomePage() {
           <CardHeader>
             <CardTitle>How It Works</CardTitle>
             <CardDescription>
-              Get started in minutes and share the journey with loved ones
+              Super simple - you'll be up and running in just a few minutes
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -143,24 +151,25 @@ function HomePage() {
                 {
                   step: "1",
                   title: "Sign Up",
-                  description: "Create a free account to start tracking your baby's journey.",
+                  description: "Create your free account",
                 },
                 {
                   step: "2",
                   title: "Add Your Baby",
-                  description: "Add your baby's name and due date to create a tracking page.",
+                  description:
+                    "Tell us your baby's name and due date, and we'll create a page for you.",
                 },
                 {
                   step: "3",
                   title: "Share the Link",
                   description:
-                    "Share the unique link with family and friends so they can follow along.",
+                    "Send the link to whoever you want - family, friends, whoever's waiting for updates.",
                 },
                 {
                   step: "4",
                   title: "Update Status",
                   description:
-                    "Update the status as things progress - labor started, gone to hospital, baby born!",
+                    "As things happen, just update your status - labor started, at the hospital, baby's here!",
                 },
               ].map((item) => (
                 <div key={item.step} className="flex gap-4 group">
@@ -182,11 +191,11 @@ function HomePage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
             <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to Get Started?</h2>
+          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to get started?</h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             {sessionData.data
-              ? "Continue tracking your baby's journey."
-              : "Join families tracking their baby's journey today."}
+              ? "Head back to your dashboard to keep everyone updated."
+              : "Join other families sharing their journey. It only takes a minute to set up."}
           </p>
           {sessionData.data ? (
             <Button size="lg" asChild>
@@ -197,7 +206,7 @@ function HomePage() {
           ) : (
             <Button size="lg" asChild>
               <Link to="/auth/signup" preload="viewport">
-                Create Your Account
+                Get Started Free
               </Link>
             </Button>
           )}
