@@ -1122,14 +1122,6 @@ function BabyPage() {
   const isGoneToHospitalCompletedForProgress = !!baby.wentToHospital || !!baby.babyBorn;
   const isBornCompletedForProgress = !!baby.babyBorn;
 
-  // Progress is based on how many fields are set (not order)
-  // For progress bar, count states as completed if they have dates OR if later statuses are set
-  const completedCount = [
-    isLaborCompletedForProgress,
-    isGoneToHospitalCompletedForProgress,
-    isBornCompletedForProgress,
-  ].filter(Boolean).length;
-
   // Determine the next state (first uncompleted state)
   const isLaborNextState = !baby.laborStarted;
   const isGoneToHospitalNextState = !!baby.laborStarted && !baby.wentToHospital;
@@ -1643,7 +1635,24 @@ function BabyPage() {
                     </div>
                   </div>
                   {/* Progress bar */}
-                  <Progress value={(completedCount / 3) * 100} />
+                  <Progress
+                    value={
+                      ((() => {
+                        switch (currentStatus?.type) {
+                          case "labor_started":
+                            return 1;
+                          case "gone_to_hospital":
+                            return 2;
+                          case "born":
+                            return 3;
+                          default:
+                            return 0;
+                        }
+                      })() /
+                        3) *
+                      100
+                    }
+                  />
                 </div>
               </CardFooter>
             </Card>
