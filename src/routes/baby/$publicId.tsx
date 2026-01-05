@@ -1130,13 +1130,13 @@ function BabyPage() {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
-  const [ownerControlsOpen, setOwnerControlsOpen] = useState(true);
+  const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
   const ownerControlsRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   return (
     <div>
       <AnimatePresence>
-        {ownerControlsOpen && (
+        {ownerControlsOpen && isOwner && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
