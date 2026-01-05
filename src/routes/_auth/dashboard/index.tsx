@@ -7,7 +7,8 @@ import { useQuery } from "convex/react";
 import { format } from "date-fns";
 import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
 import { api } from "../../../../convex/_generated/api";
-import { signOut } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
@@ -21,6 +22,7 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 function DashboardPage() {
   const loaderData = Route.useLoaderData();
   const babies = useQuery(api.baby.listByUser, {}) ?? loaderData.babies;
+
   const router = useRouter();
 
   return (
@@ -55,8 +57,16 @@ function DashboardPage() {
               variant="outline"
               className="shadow-lg shadow-primary/20"
               onClick={async () => {
-                await signOut();
-                await router.navigate({ to: "/" });
+                await authClient.signOut({
+                  fetchOptions: {
+                    onSuccess: () => {
+                      router.navigate({ to: "/" });
+                    },
+                    onError: (error) => {
+                      toast.error(error.error.message);
+                    },
+                  },
+                });
               }}
             >
               <LogOut className="w-4 h-4 mr-2" />

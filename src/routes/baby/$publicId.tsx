@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
 import { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -964,7 +964,7 @@ function BabyPage() {
   const queryBaby = useQuery(api.baby.getByPublicId, { publicId: params.publicId });
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const baby = queryBaby ?? loaderData.baby;
-  const sessionResult = useSession();
+  const sessionResult = authClient.useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
   useEffect(() => {

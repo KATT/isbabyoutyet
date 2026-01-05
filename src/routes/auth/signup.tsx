@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { signUp } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +57,7 @@ function SignupPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await signUp.email({
+                const result = await authClient.signUp.email({
                   email: values.email,
                   password: values.password,
                   name: values.name,

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { signIn } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,9 +49,10 @@ function LoginPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await signIn.email({
+                const result = await authClient.signIn.email({
                   email: values.email,
                   password: values.password,
+                  rememberMe: true,
                 });
 
                 if (result.error) {

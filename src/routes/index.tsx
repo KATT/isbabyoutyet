@@ -3,7 +3,7 @@ import { Baby, Heart, Users, Calendar, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useSession } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth-client";
 import { ButtonGroup } from "@/components/ui/button-group";
 
 export const Route = createFileRoute("/")({
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const sessionData = useSession();
+  const sessionData = authClient.useSession();
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
