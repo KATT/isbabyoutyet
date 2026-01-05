@@ -22,9 +22,10 @@ import { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parseISO } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Baby, Calendar, CheckCircle, Hospital, Settings } from "lucide-react";
+import { Activity, Baby, Calendar, CheckCircle, Hospital, Settings, Share2 } from "lucide-react";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 
 const TIMEZONE = "Europe/Stockholm";
@@ -1046,6 +1047,7 @@ function BabyPage() {
 
   const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
   const ownerControlsRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
   return (
     <div>
       <AnimatePresence>
@@ -1183,8 +1185,41 @@ function BabyPage() {
                 Is {baby.name} out yet?
               </span>
             </h1>
-            {isOwner && (
-              <div className="absolute top-4 left-6">
+            <div className="absolute top-4 left-6 flex gap-2">
+              <Button
+                onClick={async () => {
+                  const url = `${window.location.origin}/baby/${baby.publicId}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                    toast.success("Copied to clipboard");
+                  } catch (err) {
+                    // Fallback for older browsers
+                    const textArea = document.createElement("textarea");
+                    textArea.value = url;
+                    textArea.style.position = "fixed";
+                    textArea.style.opacity = "0";
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try {
+                      document.execCommand("copy");
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      toast.success("Copied to clipboard");
+                    } catch (fallbackErr) {
+                      // Handle error
+                    }
+                    document.body.removeChild(textArea);
+                  }
+                }}
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+              >
+                {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              </Button>
+              {isOwner && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1218,8 +1253,8 @@ function BabyPage() {
                     </Button>
                   </motion.div>
                 </motion.div>
-              </div>
-            )}
+              )}
+            </div>
             <div className="absolute top-4 right-6">
               <ModeToggle />
             </div>
