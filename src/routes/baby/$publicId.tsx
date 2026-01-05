@@ -42,6 +42,7 @@ import twitterCss from "@/styles/themes/twitter.css?url";
 import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
+import { cn } from "@/lib/utils";
 
 const THEME_OPTIONS = [
   { value: null, label: "Default" },
@@ -1198,6 +1199,77 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
 });
 
+function NavContent(props: { baby: Doc<"baby">; isOwner: boolean }) {
+  const params = Route.useParams();
+  const search = Route.useSearch();
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+
+    const timeout = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [copied]);
+
+  return (
+    <>
+      <Button
+        onClick={async () => {
+          const url = `${window.location.origin}/baby/${props.baby.publicId}`;
+          try {
+            await navigator.clipboard.writeText(url);
+            setCopied(true);
+
+            toast.success("Copied to clipboard");
+          } catch {
+            // Fallback for older browsers
+            const textArea = document.createElement("textarea");
+            textArea.value = url;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.select();
+            try {
+              document.execCommand("copy");
+              setCopied(true);
+
+              toast.success("Copied to clipboard");
+            } catch (cause) {
+              // Handle error
+              toast.error(
+                "Failed to copy to clipboard: " +
+                  (cause instanceof Error ? cause.message : "Unknown error"),
+              );
+            }
+            document.body.removeChild(textArea);
+          }
+        }}
+        variant="outline"
+        size="icon"
+        className="rounded-full"
+      >
+        {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+      </Button>
+      <ModeToggle />
+      {props.isOwner && (
+        <Button
+          asChild
+          variant={search.settings ? "default" : "outline"}
+          size="icon"
+          className="rounded-full"
+        >
+          <Link
+            to="/baby/$publicId"
+            params={{ publicId: params.publicId }}
+            search={search.settings ? {} : { settings: true }}
+          >
+            <Settings className="w-4 h-4" />
+          </Link>
+        </Button>
+      )}
+    </>
+  );
+}
+
 function BabyPage() {
   const params = Route.useParams();
   const navigate = useNavigate();
@@ -1255,7 +1327,6 @@ function BabyPage() {
   // Sync ownerControlsOpen with query string
 
   const ownerControlsRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
   return (
     <div>
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
@@ -1482,88 +1553,25 @@ function BabyPage() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         </div>
 
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
-          <div className="relative">
-            <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-              <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-                Is {baby.name} out yet?
-              </span>
-            </h1>
-            <div className="absolute top-4 left-6 flex gap-2">
-              <Button
-                onClick={async () => {
-                  const url = `${window.location.origin}/baby/${baby.publicId}`;
-                  try {
-                    await navigator.clipboard.writeText(url);
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
-                    toast.success("Copied to clipboard");
-                  } catch (err) {
-                    // Fallback for older browsers
-                    const textArea = document.createElement("textarea");
-                    textArea.value = url;
-                    textArea.style.position = "fixed";
-                    textArea.style.opacity = "0";
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    try {
-                      document.execCommand("copy");
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                      toast.success("Copied to clipboard");
-                    } catch (fallbackErr) {
-                      // Handle error
-                    }
-                    document.body.removeChild(textArea);
-                  }
-                }}
-                variant="outline"
-                size="icon"
-                className="rounded-full"
-              >
-                {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-              </Button>
-              <ModeToggle />
-              {isOwner && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 30,
-                  }}
-                >
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.15, 1],
-                    }}
-                    transition={{
-                      duration: 0.6,
-                      repeat: 3,
-                      repeatDelay: 0.5,
-                      ease: "easeInOut",
-                    }}
-                  >
-                    <Button
-                      asChild
-                      variant={search.settings ? "default" : "outline"}
-                      size="icon"
-                      className="rounded-full"
-                    >
-                      <Link
-                        to="/baby/$publicId"
-                        params={{ publicId: params.publicId }}
-                        search={search.settings ? {} : { settings: true }}
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                  </motion.div>
-                </motion.div>
-              )}
-            </div>
+        <div className="border-b border-border/50">
+          {/* Nav content desktop */}
+          <div
+            className={cn(
+              // general
+              "gap-2 p-4 z-10 flex",
+              // mobile
+              "fixed bottom-0 left-0",
+              // desktop
+              "md:absolute md:top-0 md:left-0",
+            )}
+          >
+            <NavContent baby={baby} isOwner={isOwner} />
           </div>
+          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
+            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+              Is {baby.name} out yet?
+            </span>
+          </h1>
         </div>
         <section className="relative px-6 py-12 text-center overflow-hidden">
           <div className="relative max-w-5xl mx-auto">
