@@ -42,7 +42,7 @@ function DashboardPage() {
               </span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Track and manage all your baby's journeys
+              Track and manage all your babies' journeys
             </p>
           </div>
           <div className="flex items-center gap-3">
