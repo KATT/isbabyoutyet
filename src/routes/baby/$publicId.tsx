@@ -1070,12 +1070,46 @@ export const Route = createFileRoute("/baby/$publicId")({
     }
     return { baby: baby };
   },
-  head: () => {
-    // This will be updated dynamically based on the baby data
+  head: (opts) => {
+    const baby = opts.loaderData?.baby;
+    if (!baby) {
+      return {
+        meta: [
+          {
+            title: "Is Baby Out Yet? - Track Your Baby's Journey",
+          },
+          {
+            name: "description",
+            content: "Track the progress of labor and birth - know when baby arrives!",
+          },
+        ],
+      };
+    }
+
+    const overdueDays = getOverdueDays(baby.dueDate);
+    const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+    const isBorn = !!baby.babyBorn;
+
+    let title = `Is ${baby.name} out yet?`;
+    if (!isBorn) {
+      if (overdueDays > 0) {
+        title = `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue - Is ${baby.name} out yet?`;
+      } else {
+        title = `${daysUntilDueDate} ${daysUntilDueDate === 1 ? "day" : "days"} until due date - Is ${baby.name} out yet?`;
+      }
+    }
+    title = `${title} - Track Your Baby's Journey`;
+
+    const description = `Track ${baby.name}'s journey - know when baby arrives!`;
+
     return {
       meta: [
         {
-          title: "Is Baby out yet?",
+          title,
+        },
+        {
+          name: "description",
+          content: description,
         },
       ],
     };
