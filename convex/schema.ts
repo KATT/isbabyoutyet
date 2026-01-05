@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  babies: defineTable({
+  baby: defineTable({
     userId: v.string(), // Better-auth user ID
     name: v.string(),
     dueDate: v.string(), // ISO date string
@@ -15,7 +15,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
   babyPublicIdHistory: defineTable({
-    babyId: v.id("babies"),
+    babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId
   })
     .index("by_publicId", ["publicId"])

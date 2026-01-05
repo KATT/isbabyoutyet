@@ -118,7 +118,7 @@ type DueDateEditorProps = {
 };
 
 function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEditorProps) {
-  const updateBaby = useMutation(api.babies.update);
+  const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newDate, setNewDate] = useState(() => {
     const date = parseDate(currentDueDate);
@@ -292,7 +292,7 @@ type StatusDateEditorProps = {
   currentDate: string;
   label: string;
   compact?: boolean;
-  baby: Doc<"babies">;
+  baby: Doc<"baby">;
 };
 
 function StatusDateEditor({
@@ -303,7 +303,7 @@ function StatusDateEditor({
   compact = false,
   baby,
 }: StatusDateEditorProps) {
-  const updateBaby = useMutation(api.babies.update);
+  const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newDateTime, setNewDateTime] = useState(() => {
     const date = parseDate(currentDate);
@@ -516,7 +516,7 @@ type NameEditorProps = {
 };
 
 function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
-  const updateBaby = useMutation(api.babies.update);
+  const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(currentName);
   const [isLoading, setIsLoading] = useState(false);
@@ -704,7 +704,7 @@ function CustomMessageEditor({
   currentMessage,
   compact = false,
 }: CustomMessageEditorProps) {
-  const updateBaby = useMutation(api.babies.update);
+  const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(currentMessage || "");
   const [isLoading, setIsLoading] = useState(false);
@@ -844,7 +844,7 @@ type StatusUpdateButtonProps = {
   compact?: boolean;
   previousStatuses?: Array<{ label: string; isSet: boolean }>;
   subsequentStatuses?: Array<{ label: string }>;
-  baby: Doc<"babies">;
+  baby: Doc<"baby">;
 };
 
 function StatusUpdateButton({
@@ -859,7 +859,7 @@ function StatusUpdateButton({
   subsequentStatuses: _subsequentStatuses = [],
   baby,
 }: StatusUpdateButtonProps) {
-  const updateBaby = useMutation(api.babies.update);
+  const updateBaby = useMutation(api.baby.update);
   const [isLoading, setIsLoading] = useState(false);
 
   const isCompleted = !!currentStatus;
@@ -936,7 +936,7 @@ function StatusUpdateButton({
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
   loader: async (opts) => {
-    const baby = await opts.context.convexClient.query(api.babies.getByPublicId, {
+    const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
       publicId: opts.params.publicId,
     });
     if (!baby) {
@@ -961,7 +961,7 @@ function BabyPage() {
   const navigate = useNavigate();
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
-  const queryBaby = useQuery(api.babies.getByPublicId, { publicId: params.publicId });
+  const queryBaby = useQuery(api.baby.getByPublicId, { publicId: params.publicId });
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const baby = queryBaby ?? loaderData.baby;
   const sessionResult = useSession();

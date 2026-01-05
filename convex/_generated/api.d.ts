@@ -9,7 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
-import type * as babies from "../babies.js";
+import type * as baby from "../baby.js";
 import type * as http from "../http.js";
 
 import type {
@@ -20,7 +20,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
-  babies: typeof babies;
+  baby: typeof baby;
   http: typeof http;
 }>;
 

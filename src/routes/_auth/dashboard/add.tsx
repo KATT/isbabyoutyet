@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_auth/dashboard/add")({
 
 function AddBabyPage() {
   const router = useRouter();
-  const createBaby = useMutation(api.babies.create);
+  const createBaby = useMutation(api.baby.create);
 
   const form = useZodForm({
     schema: addBabySchema,

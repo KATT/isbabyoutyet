@@ -12,7 +12,7 @@ export const listByUser = query({
     }
 
     const babies = await ctx.db
-      .query("babies")
+      .query("baby")
       .withIndex("by_user", (q) => q.eq("userId", identity.subject))
       .order("desc")
       .collect();
@@ -26,7 +26,7 @@ export const getByPublicId = query({
   handler: async (ctx, args) => {
     // First check current publicIds
     const baby = await ctx.db
-      .query("babies")
+      .query("baby")
       .withIndex("by_publicId", (q) => q.eq("publicId", args.publicId))
       .first();
 
@@ -52,7 +52,7 @@ export const getByPublicId = query({
   },
 });
 
-export type Baby = Doc<"babies">;
+export type Baby = Doc<"baby">;
 
 function slugify(name: string): string {
   return name
@@ -69,7 +69,7 @@ async function generateUniquePublicId(db: DatabaseReader, baseName: string): Pro
 
   while (
     await db
-      .query("babies")
+      .query("baby")
       .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
       .first()
   ) {
@@ -93,7 +93,7 @@ export const create = mutation({
 
     const publicId = await generateUniquePublicId(ctx.db, args.name);
 
-    const babyId = await ctx.db.insert("babies", {
+    const babyId = await ctx.db.insert("baby", {
       userId: identity.subject,
       name: args.name,
       dueDate: args.dueDate,
@@ -110,7 +110,7 @@ export const create = mutation({
 
 export const update = mutation({
   args: {
-    babyId: v.id("babies"),
+    babyId: v.id("baby"),
     laborStarted: v.optional(v.union(v.string(), v.null())),
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
