@@ -21,7 +21,7 @@ function getDefaultBabyData(): BabyData {
     name: "Baby",
     dueDate: dueDate.toISOString(),
     theme: null,
-    laborStarted: laborStarted.toISOString(),
+    laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
     customMessage: null,
@@ -37,7 +37,7 @@ const searchSchema = z.object({
   babyBorn: z.string().nullable().optional(),
   customMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
-  settings: z.boolean().default(false),
+  settings: z.boolean().optional(),
 });
 
 export const Route = createFileRoute("/preview")({
@@ -57,7 +57,7 @@ export const Route = createFileRoute("/preview")({
 });
 
 function PreviewPage() {
-  const { settings, ...search } = Route.useSearch();
+  const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
   const baby: BabyData = {
@@ -81,7 +81,7 @@ function PreviewPage() {
             replace: true,
           });
         }}
-        isOpen={settings}
+        isOpen={!!search.settings}
       />
 
       <div className="min-h-screen bg-background relative overflow-hidden">
@@ -98,10 +98,10 @@ function PreviewPage() {
               to: "/preview",
               search: {
                 ...search,
-                settings: settings ? undefined : true,
+                settings: search.settings ? undefined : true,
               },
             }}
-            settingsOpen={settings}
+            settingsOpen={!!search.settings}
           />
 
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">

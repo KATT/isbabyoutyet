@@ -14,6 +14,11 @@ import {
   Sparkles,
   Users,
 } from "lucide-react";
+import { useSyncExternalStore } from "react";
+
+// Static date snapshot for SSR/hydration
+// This ensures the same date is used on both server and client during hydration
+const SERVER_DATE_SNAPSHOT = "2024-01-15T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -33,6 +38,18 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const sessionData = authClient.useSession();
+  const currentDate = useSyncExternalStore(
+    (_callback) => () => {}, // No-op subscribe for demo dates
+    () => new Date().toISOString(), // Client snapshot
+    () => SERVER_DATE_SNAPSHOT, // Server snapshot for SSR/hydration
+  );
+
+  // Helper to calculate dates with offsets for realistic demo scenarios
+  const hoursAgo = (hoursAgo: number) => {
+    const date = new Date(currentDate);
+    date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000);
+    return date.toISOString();
+  };
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -159,10 +176,6 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Emma",
-                  laborStarted: null,
-                  wentToHospital: null,
-                  babyBorn: null,
-                  settings: false,
                 }}
                 className="group"
               >
@@ -179,7 +192,8 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Oliver",
-                  settings: false,
+                  dueDate: hoursAgo(0),
+                  laborStarted: hoursAgo(2), // Labor started 2 hours ago
                 }}
                 className="group"
               >
@@ -196,10 +210,10 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Sophia",
-                  wentToHospital: new Date().toISOString(),
+                  laborStarted: hoursAgo(4), // Labor started 4 hours ago
+                  wentToHospital: hoursAgo(1), // At hospital for 1 hour
                   customMessage: "We're at the hospital! Will update when baby arrives 💕",
                   theme: "bubblegum",
-                  settings: false,
                 }}
                 className="group"
               >
@@ -216,10 +230,11 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Liam",
-                  babyBorn: new Date().toISOString(),
+                  laborStarted: hoursAgo(6), // Labor started 6 hours ago
+                  wentToHospital: hoursAgo(3), // At hospital for 3 hours
+                  babyBorn: hoursAgo(0.5), // Baby born 30 minutes ago
                   babyBornMessage: "Welcome to the world, little one! 🎉",
                   theme: "violet-bloom",
-                  settings: false,
                 }}
                 className="group"
               >
