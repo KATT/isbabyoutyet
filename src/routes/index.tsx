@@ -1,10 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Heart, Users, Calendar, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { authClient } from "@/lib/auth-client";
-import { ButtonGroup } from "@/components/ui/button-group";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Baby, Calendar, Heart, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
