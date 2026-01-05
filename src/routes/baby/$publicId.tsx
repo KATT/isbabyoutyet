@@ -1,34 +1,31 @@
-import { useState, useEffect, useRef } from "react";
-import * as React from "react";
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { motion, AnimatePresence } from "framer-motion";
-import { useMutation, useQuery } from "convex/react";
-import { z } from "zod";
-import { api } from "../../../convex/_generated/api";
-import { useSession } from "@/lib/auth-client";
-import { Baby, Hospital, CheckCircle, Activity, Calendar, Settings } from "lucide-react";
-import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { ModeToggle } from "@/components/ui/mode-toggle";
-import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
   Item,
-  ItemGroup,
-  ItemSeparator,
-  ItemMedia,
-  ItemContent,
-  ItemTitle,
-  ItemDescription,
   ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemSeparator,
+  ItemTitle,
 } from "@/components/ui/item";
-import { Doc } from "convex/_generated/dataModel";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Progress } from "@/components/ui/progress";
-import { getConvexClient } from "@/get-convex-client";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useSession } from "@/lib/auth-client";
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import { Doc } from "convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
+import { format, parseISO } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { Activity, Baby, Calendar, CheckCircle, Hospital, Settings } from "lucide-react";
+import * as React from "react";
+import { useEffect, useRef, useState } from "react";
+import { api } from "../../../convex/_generated/api";
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -1183,7 +1180,10 @@ function BabyPage() {
             {isOwner && (
               <div className="absolute top-4 left-6">
                 <Button
-                  onClick={() => setOwnerControlsOpen(!ownerControlsOpen)}
+                  onClick={() => {
+                    setOwnerControlsOpen(!ownerControlsOpen);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
                   variant={ownerControlsOpen ? "default" : "outline"}
                   size="icon"
                   className="rounded-full"
