@@ -23,11 +23,40 @@ import type { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parseISO } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
-import { Activity, Baby, Calendar, CheckCircle, Hospital, Settings, Share2 } from "lucide-react";
+import {
+  Activity,
+  Baby,
+  Calendar,
+  CheckCircle,
+  Hospital,
+  Palette,
+  Settings,
+  Share2,
+} from "lucide-react";
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
+import violetBloomCss from "@/styles/themes/violet-bloom.css?url";
+import twitterCss from "@/styles/themes/twitter.css?url";
+import bubblegumCss from "@/styles/themes/bubblegum.css?url";
+import catppuccinCss from "@/styles/themes/catppuccin.css?url";
+import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
+
+const THEME_OPTIONS = [
+  { value: null, label: "Default" },
+  { value: "violet-bloom", label: "Violet Bloom", css: violetBloomCss },
+  { value: "twitter", label: "Twitter", css: twitterCss },
+  { value: "bubblegum", label: "Bubblegum", css: bubblegumCss },
+  { value: "catppuccin", label: "Catppuccin", css: catppuccinCss },
+  { value: "mocha-mousse", label: "Mocha Mousse", css: mochaMousseCss },
+] as const;
+
+function getThemeCssUrl(theme: string | null | undefined): string | null {
+  if (!theme) return null;
+  const option = THEME_OPTIONS.find((t) => t.value === theme);
+  return option && "css" in option ? option.css : null;
+}
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -960,6 +989,57 @@ function BabyBornMessageEditor({
   );
 }
 
+type ThemeSelectorProps = {
+  baby: Doc<"baby">;
+};
+
+function ThemeSelector({ baby }: ThemeSelectorProps) {
+  const updateBaby = useMutation(api.baby.update);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleThemeChange = async (theme: string | null) => {
+    setIsLoading(true);
+    try {
+      await updateBaby({
+        babyId: baby._id,
+        theme,
+      });
+      setIsOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update theme");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="sm">
+          Change
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-48">
+        <div className="flex flex-col gap-1">
+          {THEME_OPTIONS.map((option) => (
+            <Button
+              key={option.value ?? "default"}
+              variant={baby.theme === option.value ? "default" : "ghost"}
+              size="sm"
+              className="justify-start"
+              disabled={isLoading}
+              onClick={() => handleThemeChange(option.value)}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type StatusUpdateButtonProps = {
   baby: Doc<"baby">;
   status: "labor_started" | "gone_to_hospital" | "born";
@@ -1068,7 +1148,9 @@ export const Route = createFileRoute("/baby/$publicId")({
     if (!baby) {
       throw notFound();
     }
-    return { baby: baby };
+    return {
+      baby,
+    };
   },
   head: (opts) => {
     const baby = opts.loaderData?.baby;
@@ -1125,6 +1207,7 @@ function BabyPage() {
   const queryBaby = useQuery(api.baby.getByPublicId, { publicId: params.publicId });
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const baby = queryBaby ?? loaderData.baby;
+  const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
@@ -1175,6 +1258,7 @@ function BabyPage() {
   const [copied, setCopied] = useState(false);
   return (
     <div>
+      {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
       <AnimatePresence>
         {search.settings && isOwner && (
           <motion.div
@@ -1367,6 +1451,24 @@ function BabyPage() {
                     currentMessage={baby.babyBornMessage}
                     compact
                   />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              {/* Theme */}
+              <Item>
+                <ItemMedia variant="icon">
+                  <Palette className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Theme</ItemTitle>
+                  <ItemDescription>
+                    {THEME_OPTIONS.find((t) => t.value === baby.theme)?.label || "Default"}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <ThemeSelector baby={baby} />
                 </ItemActions>
               </Item>
             </ItemGroup>

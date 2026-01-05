@@ -12,6 +12,7 @@ export default defineSchema({
     laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
+    theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Calendar, CheckCircle2, Heart, Sparkles, Users } from "lucide-react";
+import { Baby, Calendar, Heart, Sparkles, Users } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
