@@ -133,6 +133,7 @@ function SignupPage() {
               Already have an account?{" "}
               <Link
                 to="/auth/login"
+                preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
                 Sign in

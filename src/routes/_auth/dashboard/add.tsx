@@ -40,8 +40,8 @@ function AddBabyPage() {
 
       <div className="max-w-2xl mx-auto px-6 py-12">
         <div className="mb-8">
-          <Link to="/dashboard">
-            <Button variant="ghost" className="mb-6 border-2 backdrop-blur-sm">
+          <Link to="/dashboard" preload="viewport">
+            <Button variant="outline" className="shadow-lg shadow-primary/20 mb-6">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
             </Button>

@@ -53,14 +53,14 @@ function HomePage() {
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
-              <Link to="/dashboard">
+              <Link to="/dashboard" preload="viewport">
                 <Button size="lg" className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20">
                   Go to Dashboard
                 </Button>
               </Link>
             ) : (
               <>
-                <Link to="/auth/signup">
+                <Link to="/auth/signup" preload="viewport">
                   <Button
                     size="lg"
                     className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
@@ -68,7 +68,7 @@ function HomePage() {
                     Get Started
                   </Button>
                 </Link>
-                <Link to="/auth/login">
+                <Link to="/auth/login" preload="viewport">
                   <Button
                     size="lg"
                     variant="outline"
@@ -183,13 +183,13 @@ function HomePage() {
               : "Join families tracking their baby's journey today."}
           </p>
           {sessionData.data ? (
-            <Link to="/dashboard">
+            <Link to="/dashboard" preload="viewport">
               <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
                 Go to Dashboard
               </Button>
             </Link>
           ) : (
-            <Link to="/auth/signup">
+            <Link to="/auth/signup" preload="viewport">
               <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
                 Create Your Account
               </Button>

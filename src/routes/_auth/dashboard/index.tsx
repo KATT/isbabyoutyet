@@ -44,7 +44,7 @@ function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/dashboard/add">
+            <Link to="/dashboard/add" preload="viewport">
               <Button className="shadow-lg shadow-primary/20">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Baby
@@ -53,7 +53,7 @@ function DashboardPage() {
             <ModeToggle />
             <Button
               variant="outline"
-              className="border-2 backdrop-blur-sm"
+              className="shadow-lg shadow-primary/20"
               onClick={async () => {
                 await signOut();
                 await router.navigate({ to: "/" });
@@ -75,7 +75,7 @@ function DashboardPage() {
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Get started by adding your first baby to track their journey
               </p>
-              <Link to="/dashboard/add">
+              <Link to="/dashboard/add" preload="viewport">
                 <Button size="lg" className="shadow-lg shadow-primary/20">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Baby
@@ -98,6 +98,7 @@ function DashboardPage() {
                   key={baby._id}
                   to="/baby/$publicId"
                   params={{ publicId: baby.publicId }}
+                  preload="viewport"
                   className="group"
                 >
                   <Card>

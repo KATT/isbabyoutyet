@@ -110,6 +110,7 @@ function LoginPage() {
               Don't have an account?{" "}
               <Link
                 to="/auth/signup"
+                preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
                 Sign up
