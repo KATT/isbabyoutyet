@@ -1,23 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMutation } from "convex/react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "../../../convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
-import { Baby, Hospital, CheckCircle, Activity, Calendar } from "lucide-react";
+import { Baby, Hospital, CheckCircle, Activity, Calendar, Settings } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Doc } from "convex/_generated/dataModel";
@@ -1031,314 +1026,322 @@ function BabyPage() {
 
   const overdueDays = getOverdueDays(baby.dueDate);
 
+  const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
+  const ownerControlsRef = useRef<HTMLDivElement>(null);
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="relative">
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-            <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is {baby.name} out yet?
-            </span>
-          </h1>
-          <div className="absolute top-4 right-6">
-            <ModeToggle />
-          </div>
-        </div>
-      </div>
-      <section className="relative px-6 py-12 text-center overflow-hidden">
-        <div className="relative max-w-5xl mx-auto">
-          <Card>
-            {/* Owner-only update controls */}
-            {isOwner && (
-              <div className="mb-8 text-left">
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="updates">
-                    <AccordionTrigger className="text-base font-semibold text-left">
-                      Update Status & Settings
-                    </AccordionTrigger>
-                    <AccordionContent className="text-left">
-                      <div className="space-y-1">
-                        {/* Status Updates */}
-                        {states.map((state, index) => {
-                          const StatusIcon = stateIcons[state.type];
-                          const isCompleted = !!state.date;
-                          const previousStatuses = states.slice(0, index).map((s) => ({
-                            label: stateLabels[s.type],
-                            isSet: !!s.date,
-                          }));
-                          const subsequentStatuses = states.slice(index + 1).map((s) => ({
-                            label: stateLabels[s.type],
-                          }));
-                          return (
-                            <div key={state.type}>
-                              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                  <div
-                                    className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
-                                      isCompleted
-                                        ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                                        : isNextState(index)
-                                          ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20"
-                                          : "bg-muted/50 text-muted-foreground border border-border"
-                                    }`}
-                                  >
-                                    <StatusIcon className="w-5 h-5" />
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium text-foreground">
-                                      {stateLabels[state.type]}
-                                    </div>
-                                    {state.date && (
-                                      <div className="text-xs text-muted-foreground mt-0.5">
-                                        {formatDate(state.date)} ({getRelativeTime(state.date)})
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 relative">
-                                  {state.date && (
-                                    <StatusDateEditor
-                                      babyId={baby._id}
-                                      status={state.type}
-                                      currentDate={state.date}
-                                      label={stateLabels[state.type]}
-                                      compact
-                                      baby={baby}
-                                    />
-                                  )}
-                                  <StatusUpdateButton
-                                    babyId={baby._id}
-                                    status={state.type}
-                                    currentStatus={state.date}
-                                    label={stateLabels[state.type]}
-                                    icon={<StatusIcon className="w-4 h-4" />}
-                                    isNextState={isNextState(index)}
-                                    compact
-                                    previousStatuses={previousStatuses}
-                                    subsequentStatuses={subsequentStatuses}
-                                    baby={baby}
-                                  />
-                                </div>
-                              </div>
-                              {index < states.length - 1 && <Separator className="my-1" />}
-                            </div>
-                          );
-                        })}
-
-                        <Separator className="my-3" />
-
-                        {/* Baby Name */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                              <Baby className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-foreground">Baby Name</div>
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {baby.name}
-                              </div>
-                            </div>
-                          </div>
-                          <NameEditor babyId={baby._id} currentName={baby.name} compact />
-                        </div>
-
-                        <Separator className="my-3" />
-
-                        {/* Due Date */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                              <Calendar className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-foreground">Due Date</div>
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-                              </div>
-                            </div>
-                          </div>
-                          <DueDateEditor babyId={baby._id} currentDueDate={baby.dueDate} compact />
-                        </div>
-
-                        <Separator className="my-3" />
-
-                        {/* Custom Message */}
-                        <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
-                              <Hospital className="w-5 h-5" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-foreground">
-                                Hospital Message
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {baby.customMessage || "Default message"}
-                              </div>
-                            </div>
-                          </div>
-                          <CustomMessageEditor
-                            babyId={baby._id}
-                            currentMessage={baby.customMessage}
-                            compact
-                          />
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-            )}
-
-            {/* Current status display */}
-            {!currentStatus && (
-              <div className="flex flex-col items-center py-8">
-                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
-                  <Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />
-                </div>
-                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    Not yet
-                  </span>
-                </h2>
-                <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-                {overdueDays > 0 && (
-                  <div className="mt-4 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
-                    <p className="text-xl font-bold text-primary">
-                      {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-                    </p>
-                    <p className="text-sm text-primary/80 mt-2">
-                      Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-                    </p>
+    <div>
+      <AnimatePresence>
+        {ownerControlsOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+            ref={ownerControlsRef}
+          >
+            <div className="space-y-1">
+              {/* Baby Name */}
+              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                    <Baby className="w-5 h-5" />
                   </div>
-                )}
-              </div>
-            )}
-
-            {currentStatus?.type === "labor_started" && (
-              <div className="flex flex-col items-center py-8">
-                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
-                  <Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />
-                </div>
-                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    Labour started
-                  </span>
-                </h2>
-                <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
-                {currentStatus.date && (
-                  <p className="text-lg text-muted-foreground mt-2">
-                    Started at {formatDate(currentStatus.date)} (
-                    {getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
-              </div>
-            )}
-
-            {currentStatus?.type === "gone_to_hospital" && (
-              <div className="flex flex-col items-center py-8">
-                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
-                  <Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />
-                </div>
-                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    Gone to hospital
-                  </span>
-                </h2>
-                {currentStatus.date && (
-                  <p className="text-xl text-muted-foreground mb-4">
-                    {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
-                {baby.customMessage && (
-                  <div className="mt-6 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-                    <p className="text-lg font-bold text-primary">{baby.customMessage}</p>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">Baby Name</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{baby.name}</div>
                   </div>
-                )}
-              </div>
-            )}
-
-            {currentStatus?.type === "born" && (
-              <div className="flex flex-col items-center py-8">
-                <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-primary/30 mb-8 shadow-xl shadow-primary/20">
-                  <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />
                 </div>
-                <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-                  <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                    Yes! Baby is out
-                  </span>
-                </h2>
-                {currentStatus.date && (
-                  <p className="text-xl text-muted-foreground">
-                    Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-                  </p>
-                )}
+                <NameEditor babyId={baby._id} currentName={baby.name} compact />
               </div>
-            )}
 
-            {/* Horizontal divider */}
-            <Separator className="my-8" />
+              <Separator className="my-3" />
 
-            {/* Progress indicator */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                {states.map((state) => {
-                  // For progress bar, show previous statuses as completed if later ones are set
-                  const isCompleted = isStateCompletedForProgress(state);
-                  const isCurrent = currentStatus?.type === state.type;
-                  const Icon = stateIcons[state.type];
-
-                  return (
-                    <div key={state.type} className="flex flex-col items-center flex-1">
-                      <div
-                        className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
-                          isCompleted
-                            ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
-                            : isCurrent
-                              ? "bg-gradient-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
-                              : "bg-muted/50 text-muted-foreground border border-border"
-                        }`}
-                      >
-                        <Icon className="w-10 h-10 md:w-12 md:h-12" />
-                      </div>
-                      <p
-                        className={`text-sm md:text-base font-semibold mb-1 ${
-                          isCompleted
-                            ? "text-foreground"
-                            : isCurrent
-                              ? "text-primary"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        {stateLabels[state.type]}
-                      </p>
-                      {state.date && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {getRelativeTime(state.date)}
-                        </p>
-                      )}
+              {/* Due Date */}
+              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                    <Calendar className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">Due Date</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
+                <DueDateEditor babyId={baby._id} currentDueDate={baby.dueDate} compact />
               </div>
-              {/* Progress bar */}
-              <div className="w-full h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
-                <div
-                  className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 shadow-lg shadow-primary/20"
-                  style={{ width: `${(completedCount / states.length) * 100}%` }}
+
+              <Separator className="my-3" />
+
+              {/* Custom Message */}
+              <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20">
+                    <Hospital className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">Hospital Message</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {baby.customMessage || "Default message"}
+                    </div>
+                  </div>
+                </div>
+                <CustomMessageEditor
+                  babyId={baby._id}
+                  currentMessage={baby.customMessage}
+                  compact
                 />
               </div>
             </div>
-          </Card>
+            <Separator className="my-3" />
+            {/* Status Updates */}
+            {states.map((state, index) => {
+              const StatusIcon = stateIcons[state.type];
+              const isCompleted = !!state.date;
+              const previousStatuses = states.slice(0, index).map((s) => ({
+                label: stateLabels[s.type],
+                isSet: !!s.date,
+              }));
+              const subsequentStatuses = states.slice(index + 1).map((s) => ({
+                label: stateLabels[s.type],
+              }));
+              return (
+                <div key={state.type}>
+                  <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div
+                        className={`flex items-center justify-center w-10 h-10 rounded-xl transition-all ${
+                          isCompleted
+                            ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
+                            : isNextState(index)
+                              ? "bg-gradient-to-br from-primary/20 to-primary/10 text-primary border border-primary/20"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                        }`}
+                      >
+                        <StatusIcon className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground">
+                          {stateLabels[state.type]}
+                        </div>
+                        {state.date && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {formatDate(state.date)} ({getRelativeTime(state.date)})
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 relative">
+                      {state.date && (
+                        <StatusDateEditor
+                          babyId={baby._id}
+                          status={state.type}
+                          currentDate={state.date}
+                          label={stateLabels[state.type]}
+                          compact
+                          baby={baby}
+                        />
+                      )}
+                      <StatusUpdateButton
+                        babyId={baby._id}
+                        status={state.type}
+                        currentStatus={state.date}
+                        label={stateLabels[state.type]}
+                        icon={<StatusIcon className="w-4 h-4" />}
+                        isNextState={isNextState(index)}
+                        compact
+                        previousStatuses={previousStatuses}
+                        subsequentStatuses={subsequentStatuses}
+                        baby={baby}
+                      />
+                    </div>
+                  </div>
+                  {index < states.length - 1 && <Separator className="my-1" />}
+                </div>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="min-h-screen bg-background relative overflow-hidden">
+        {/* Gradient Background Elements */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         </div>
-      </section>
+
+        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border/50">
+          <div className="relative">
+            <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
+              <span className="bg-gradient-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+                Is {baby.name} out yet?
+              </span>
+            </h1>
+            {isOwner && (
+              <div className="absolute top-4 left-6">
+                <Button
+                  onClick={() => setOwnerControlsOpen(!ownerControlsOpen)}
+                  variant={ownerControlsOpen ? "default" : "outline"}
+                  size="icon"
+                  className="rounded-full"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            <div className="absolute top-4 right-6">
+              <ModeToggle />
+            </div>
+          </div>
+        </div>
+        <section className="relative px-6 py-12 text-center overflow-hidden">
+          <div className="relative max-w-5xl mx-auto">
+            <Card>
+              {/* Current status display */}
+              {!currentStatus && (
+                <div className="flex flex-col items-center py-8">
+                  <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                    <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      Not yet
+                    </span>
+                  </h2>
+                  <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
+                  {overdueDays > 0 && (
+                    <div className="mt-4 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
+                      <p className="text-xl font-bold text-primary">
+                        {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+                      </p>
+                      <p className="text-sm text-primary/80 mt-2">
+                        Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStatus?.type === "labor_started" && (
+                <div className="flex flex-col items-center py-8">
+                  <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                    <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      Labour started
+                    </span>
+                  </h2>
+                  <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
+                  {currentStatus.date && (
+                    <p className="text-lg text-muted-foreground mt-2">
+                      Started at {formatDate(currentStatus.date)} (
+                      {getRelativeTime(currentStatus.date)})
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {currentStatus?.type === "gone_to_hospital" && (
+                <div className="flex flex-col items-center py-8">
+                  <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-8 shadow-lg shadow-primary/10">
+                    <Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                    <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      Gone to hospital
+                    </span>
+                  </h2>
+                  {currentStatus.date && (
+                    <p className="text-xl text-muted-foreground mb-4">
+                      {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+                    </p>
+                  )}
+                  {baby.customMessage && (
+                    <div className="mt-6 p-6 bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+                      <p className="text-lg font-bold text-primary">{baby.customMessage}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {currentStatus?.type === "born" && (
+                <div className="flex flex-col items-center py-8">
+                  <div className="inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-primary to-primary/80 border-2 border-primary/30 mb-8 shadow-xl shadow-primary/20">
+                    <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />
+                  </div>
+                  <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+                    <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                      Yes! Baby is out
+                    </span>
+                  </h2>
+                  {currentStatus.date && (
+                    <p className="text-xl text-muted-foreground">
+                      Born on {formatDate(currentStatus.date)} (
+                      {getRelativeTime(currentStatus.date)})
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Horizontal divider */}
+              <Separator className="my-8" />
+
+              {/* Progress indicator */}
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  {states.map((state) => {
+                    // For progress bar, show previous statuses as completed if later ones are set
+                    const isCompleted = isStateCompletedForProgress(state);
+                    const isCurrent = currentStatus?.type === state.type;
+                    const Icon = stateIcons[state.type];
+
+                    return (
+                      <div key={state.type} className="flex flex-col items-center flex-1">
+                        <div
+                          className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+                            isCompleted
+                              ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                              : isCurrent
+                                ? "bg-gradient-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                                : "bg-muted/50 text-muted-foreground border border-border"
+                          }`}
+                        >
+                          <Icon className="w-10 h-10 md:w-12 md:h-12" />
+                        </div>
+                        <p
+                          className={`text-sm md:text-base font-semibold mb-1 ${
+                            isCompleted
+                              ? "text-foreground"
+                              : isCurrent
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {stateLabels[state.type]}
+                        </p>
+                        {state.date && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {getRelativeTime(state.date)}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* Progress bar */}
+                <div className="w-full h-3 bg-muted/50 rounded-full overflow-hidden border border-border/50">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-500 shadow-lg shadow-primary/20"
+                    style={{ width: `${(completedCount / states.length) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }

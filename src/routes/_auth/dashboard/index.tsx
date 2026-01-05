@@ -30,7 +30,7 @@ function DashboardPage() {
         <div className="flex items-center justify-between mb-12">
           <div>
             <h1 className="text-5xl font-black text-foreground mb-2 tracking-tight">
-              <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
                 Your Babies
               </span>
             </h1>
@@ -63,7 +63,7 @@ function DashboardPage() {
         {babiesQuery.data.length === 0 ? (
           <Card>
             <CardContent>
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
                 <BabyIcon className="w-10 h-10 text-primary" />
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-3">No babies added yet</h3>
@@ -98,7 +98,7 @@ function DashboardPage() {
                   <Card>
                     <CardHeader>
                       <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/20 group-hover:scale-110 transition-transform">
+                        <div className="p-3 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/20 group-hover:scale-110 transition-transform">
                           <BabyIcon className="w-6 h-6 text-primary" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -114,7 +114,7 @@ function DashboardPage() {
                       {isOverdue ? (
                         <Badge
                           variant="default"
-                          className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
+                          className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                         >
                           {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
                           overdue
@@ -122,7 +122,7 @@ function DashboardPage() {
                       ) : daysUntilDue === 0 ? (
                         <Badge
                           variant="default"
-                          className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
+                          className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                         >
                           Due today!
                         </Badge>

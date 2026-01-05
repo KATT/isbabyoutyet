@@ -99,7 +99,7 @@ function HomePage() {
 
           <Card>
             <CardHeader>
-              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                 <Users className="w-7 h-7 text-primary" />
               </div>
               <CardTitle>Share with Family</CardTitle>
@@ -112,7 +112,7 @@ function HomePage() {
 
           <Card>
             <CardHeader>
-              <div className="w-14 h-14 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                 <Calendar className="w-7 h-7 text-primary" />
               </div>
               <CardTitle>Due Date Tracking</CardTitle>
