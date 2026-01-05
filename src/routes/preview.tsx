@@ -1,17 +1,13 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BabyNav } from "@/components/baby/baby-nav";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@/components/baby/types";
 import { getCurrentStatus } from "@/components/baby/types";
 import { getThemeCssUrl } from "@/components/baby/utils";
-import { cn } from "@/lib/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { RotateCcw, Settings, Share2 } from "lucide-react";
 import { z } from "zod";
 
 function getDefaultBabyData(): BabyData {
@@ -96,45 +92,19 @@ function PreviewPage() {
         </div>
 
         <div className="border-b border-border/50">
-          {/* Nav content */}
-          <div
-            className={cn(
-              // general
-              "gap-2 p-4 z-10 flex",
-              // mobile
-              "fixed bottom-0 left-0",
-              // desktop
-              "md:absolute md:top-0 md:left-0",
-            )}
-          >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="rounded-full" disabled>
-                  <Share2 className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Share (preview mode)</TooltipContent>
-            </Tooltip>
-            <ModeToggle />
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  onClick={() => {
-                    navigate({
-                      search: { ...search, settings: !settings },
-                      replace: true,
-                    });
-                  }}
-                  variant={settings ? "default" : "outline"}
-                  size="icon"
-                  className="rounded-full"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{settings ? "Hide settings" : "Show settings"}</TooltipContent>
-            </Tooltip>
-          </div>
+          <BabyNav
+            shareButton={{ enabled: false }}
+            settingsButton={{
+              visible: true,
+              isOpen: settings,
+              onToggle: () => {
+                navigate({
+                  search: { ...search, settings: !settings },
+                  replace: true,
+                });
+              },
+            }}
+          />
 
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">

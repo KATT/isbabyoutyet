@@ -1,8 +1,6 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { BabyNav } from "@/components/baby/baby-nav";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -15,14 +13,11 @@ import {
   getThemePrimaryColor,
 } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { CheckCircle, Settings, Share2 } from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import { useEffect } from "react";
 import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -113,87 +108,6 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
   };
 }
 
-function NavContent(props: { baby: Doc<"baby">; isOwner: boolean }) {
-  const params = Route.useParams();
-  const search = Route.useSearch();
-  const [copied, setCopied] = useState(false);
-  useEffect(() => {
-    if (!copied) return;
-
-    const timeout = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timeout);
-  }, [copied]);
-
-  return (
-    <>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={async () => {
-              const url = `${window.location.origin}/baby/${props.baby.publicId}`;
-              try {
-                await navigator.clipboard.writeText(url);
-                setCopied(true);
-
-                toast.success("Copied to clipboard");
-              } catch {
-                // Fallback for older browsers
-                const textArea = document.createElement("textarea");
-                textArea.value = url;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                textArea.select();
-                try {
-                  document.execCommand("copy");
-                  setCopied(true);
-
-                  toast.success("Copied to clipboard");
-                } catch (cause) {
-                  // Handle error
-                  toast.error(
-                    "Failed to copy to clipboard: " +
-                      (cause instanceof Error ? cause.message : "Unknown error"),
-                  );
-                }
-                document.body.removeChild(textArea);
-              }
-            }}
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-          >
-            {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
-      </Tooltip>
-      <ModeToggle />
-      {props.isOwner && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              asChild
-              variant={search.settings ? "default" : "outline"}
-              size="icon"
-              className="rounded-full"
-            >
-              <Link
-                to="/baby/$publicId"
-                params={{ publicId: params.publicId }}
-                search={search.settings ? {} : { settings: true }}
-              >
-                <Settings className="w-4 h-4" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{search.settings ? "Hide settings" : "Show settings"}</TooltipContent>
-        </Tooltip>
-      )}
-    </>
-  );
-}
-
 function BabyPage() {
   const params = Route.useParams();
   const navigate = useNavigate();
@@ -256,19 +170,23 @@ function BabyPage() {
         </div>
 
         <div className="border-b border-border/50">
-          {/* Nav content desktop */}
-          <div
-            className={cn(
-              // general
-              "gap-2 p-4 z-10 flex",
-              // mobile
-              "fixed bottom-0 left-0",
-              // desktop
-              "md:absolute md:top-0 md:left-0",
-            )}
-          >
-            <NavContent baby={babyDoc} isOwner={isOwner} />
-          </div>
+          <BabyNav
+            shareButton={{
+              enabled: true,
+              url: `${window.location.origin}/baby/${babyDoc.publicId}`,
+            }}
+            settingsButton={
+              isOwner
+                ? {
+                    visible: true,
+                    isOpen: !!search.settings,
+                    linkTo: "/baby/$publicId",
+                    linkParams: { publicId: params.publicId },
+                    linkSearch: search.settings ? {} : { settings: true },
+                  }
+                : undefined
+            }
+          />
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is {baby.name} out yet?
