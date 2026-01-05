@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
+import type { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parseISO } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
@@ -117,12 +118,12 @@ function getOverdueDays(dueDate: string): number {
 }
 
 type DueDateEditorProps = {
-  babyId: string;
+  baby: Doc<"baby">;
   currentDueDate: string;
   compact?: boolean;
 };
 
-function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEditorProps) {
+function DueDateEditor({ baby, currentDueDate, compact = false }: DueDateEditorProps) {
   const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newDate, setNewDate] = useState(() => {
@@ -193,7 +194,7 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
                     const dateObj = parseISO(newDate);
                     const dateString = dateObj.toISOString();
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       dueDate: dateString,
                     });
                     setIsEditing(false);
@@ -265,7 +266,7 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
                     const dateObj = parseISO(newDate);
                     const dateString = dateObj.toISOString();
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       dueDate: dateString,
                     });
                     setIsEditing(false);
@@ -292,7 +293,7 @@ function DueDateEditor({ babyId, currentDueDate, compact = false }: DueDateEdito
 }
 
 type StatusDateEditorProps = {
-  babyId: string;
+  baby: Doc<"baby">;
   status: "labor_started" | "gone_to_hospital" | "born";
   currentDate: string;
   label: string;
@@ -300,7 +301,7 @@ type StatusDateEditorProps = {
 };
 
 function StatusDateEditor({
-  babyId,
+  baby,
   status,
   currentDate,
   label: _label,
@@ -384,17 +385,17 @@ function StatusDateEditor({
 
                     if (status === "labor_started") {
                       await updateBaby({
-                        babyId: babyId as any,
+                        babyId: baby._id,
                         laborStarted: dateString,
                       });
                     } else if (status === "gone_to_hospital") {
                       await updateBaby({
-                        babyId: babyId as any,
+                        babyId: baby._id,
                         wentToHospital: dateString,
                       });
                     } else if (status === "born") {
                       await updateBaby({
-                        babyId: babyId as any,
+                        babyId: baby._id,
                         babyBorn: dateString,
                       });
                     }
@@ -457,17 +458,17 @@ function StatusDateEditor({
 
                       if (status === "labor_started") {
                         await updateBaby({
-                          babyId: babyId as any,
+                          babyId: baby._id,
                           laborStarted: dateString,
                         });
                       } else if (status === "gone_to_hospital") {
                         await updateBaby({
-                          babyId: babyId as any,
+                          babyId: baby._id,
                           wentToHospital: dateString,
                         });
                       } else if (status === "born") {
                         await updateBaby({
-                          babyId: babyId as any,
+                          babyId: baby._id,
                           babyBorn: dateString,
                         });
                       }
@@ -507,12 +508,12 @@ function StatusDateEditor({
 }
 
 type NameEditorProps = {
-  babyId: string;
+  baby: Doc<"baby">;
   currentName: string;
   compact?: boolean;
 };
 
-function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
+function NameEditor({ baby, currentName, compact = false }: NameEditorProps) {
   const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newName, setNewName] = useState(currentName);
@@ -540,7 +541,7 @@ function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
                 setIsLoading(true);
                 try {
                   await updateBaby({
-                    babyId: babyId as any,
+                    babyId: baby._id,
                     name: newName.trim(),
                   });
                   setIsEditing(false);
@@ -575,7 +576,7 @@ function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
                   setIsLoading(true);
                   try {
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       name: newName.trim(),
                     });
                     setIsEditing(false);
@@ -618,7 +619,7 @@ function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
                   setIsLoading(true);
                   try {
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       name: newName.trim(),
                     });
                     setIsEditing(false);
@@ -664,7 +665,7 @@ function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
                   setIsLoading(true);
                   try {
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       name: newName.trim(),
                     });
                     setIsEditing(false);
@@ -691,16 +692,12 @@ function NameEditor({ babyId, currentName, compact = false }: NameEditorProps) {
 }
 
 type CustomMessageEditorProps = {
-  babyId: string;
+  baby: Doc<"baby">;
   currentMessage: string | null | undefined;
   compact?: boolean;
 };
 
-function CustomMessageEditor({
-  babyId,
-  currentMessage,
-  compact = false,
-}: CustomMessageEditorProps) {
+function CustomMessageEditor({ baby, currentMessage, compact = false }: CustomMessageEditorProps) {
   const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
   const [newMessage, setNewMessage] = useState(currentMessage || "");
@@ -741,7 +738,7 @@ function CustomMessageEditor({
                   setIsLoading(true);
                   try {
                     await updateBaby({
-                      babyId: babyId as any,
+                      babyId: baby._id,
                       customMessage: newMessage.trim() || null,
                     });
                     setIsEditing(false);
@@ -795,7 +792,7 @@ function CustomMessageEditor({
                     setIsLoading(true);
                     try {
                       await updateBaby({
-                        babyId: babyId as any,
+                        babyId: baby._id,
                         customMessage: newMessage.trim() || null,
                       });
                       setIsEditing(false);
@@ -832,7 +829,7 @@ function CustomMessageEditor({
 }
 
 type StatusUpdateButtonProps = {
-  babyId: string;
+  baby: Doc<"baby">;
   status: "labor_started" | "gone_to_hospital" | "born";
   currentStatus: string | null;
   label: string;
@@ -844,7 +841,7 @@ type StatusUpdateButtonProps = {
 };
 
 function StatusUpdateButton({
-  babyId,
+  baby,
   status,
   currentStatus,
   label,
@@ -865,17 +862,17 @@ function StatusUpdateButton({
       if (isCompleted) {
         if (status === "labor_started") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             laborStarted: null,
           });
         } else if (status === "gone_to_hospital") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             wentToHospital: null,
           });
         } else if (status === "born") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             babyBorn: null,
           });
         }
@@ -885,17 +882,17 @@ function StatusUpdateButton({
 
         if (status === "labor_started") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             laborStarted: dateString,
           });
         } else if (status === "gone_to_hospital") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             wentToHospital: dateString,
           });
         } else if (status === "born") {
           await updateBaby({
-            babyId: babyId as any,
+            babyId: baby._id,
             babyBorn: dateString,
           });
         }
@@ -1060,7 +1057,7 @@ function BabyPage() {
                   <ItemDescription>{baby.name}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <NameEditor babyId={baby._id} currentName={baby.name} compact />
+                  <NameEditor baby={baby} currentName={baby.name} compact />
                 </ItemActions>
               </Item>
 
@@ -1078,7 +1075,7 @@ function BabyPage() {
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <DueDateEditor babyId={baby._id} currentDueDate={baby.dueDate} compact />
+                  <DueDateEditor baby={baby} currentDueDate={baby.dueDate} compact />
                 </ItemActions>
               </Item>
 
@@ -1094,11 +1091,7 @@ function BabyPage() {
                   <ItemDescription>{baby.customMessage || "Default message"}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <CustomMessageEditor
-                    babyId={baby._id}
-                    currentMessage={baby.customMessage}
-                    compact
-                  />
+                  <CustomMessageEditor baby={baby} currentMessage={baby.customMessage} compact />
                 </ItemActions>
               </Item>
 
@@ -1131,7 +1124,7 @@ function BabyPage() {
                       <ItemActions>
                         {state.date && (
                           <StatusDateEditor
-                            babyId={baby._id}
+                            baby={baby}
                             status={state.type}
                             currentDate={state.date}
                             label={stateLabels[state.type]}
@@ -1139,7 +1132,7 @@ function BabyPage() {
                           />
                         )}
                         <StatusUpdateButton
-                          babyId={baby._id}
+                          baby={baby}
                           status={state.type}
                           currentStatus={state.date}
                           label={stateLabels[state.type]}
