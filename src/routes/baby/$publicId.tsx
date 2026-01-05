@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/item";
 import { Doc } from "convex/_generated/dataModel";
 import { Progress } from "@/components/ui/progress";
-import { getConvexClient } from "@/router";
+import { getConvexClient } from "@/get-convex-client";
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -936,29 +936,16 @@ function StatusUpdateButton({
   );
 }
 
-const getBabyByPublicId = createServerFn({ method: "GET" })
-  .inputValidator(
-    z.object({
-      publicId: z.string(),
-    }),
-  )
-  .handler(async (opts) => {
-    const convexClient = getConvexClient();
-
-    const baby = await convexClient.query(api.babies.getByPublicId, {
-      publicId: opts.data.publicId,
-    });
-    return baby;
-  });
-
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
-  loader: async ({ params }) => {
-    const baby = await getBabyByPublicId({ data: { publicId: params.publicId } });
+  loader: async (opts) => {
+    const baby = await opts.context.convexClient.query(api.babies.getByPublicId, {
+      publicId: opts.params.publicId,
+    });
     if (!baby) {
       throw notFound();
     }
-    return { prefetchedBaby: baby };
+    return { baby: baby };
   },
   head: () => {
     // This will be updated dynamically based on the baby data
@@ -979,7 +966,7 @@ function BabyPage() {
   // Use prefetched data if available, otherwise use reactive query
   const queryBaby = useQuery(api.babies.getByPublicId, { publicId: params.publicId });
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
-  const baby = queryBaby ?? loaderData?.prefetchedBaby ?? undefined;
+  const baby = queryBaby ?? loaderData.baby;
   const sessionResult = useSession();
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
@@ -993,13 +980,6 @@ function BabyPage() {
     }
   }, [baby, params.publicId, navigate]);
 
-  if (baby === undefined) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
-      </div>
-    );
-  }
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === baby.userId;
 

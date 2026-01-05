@@ -1,7 +1,7 @@
 import { createRouter } from "@tanstack/react-router";
-import { ConvexReactClient } from "convex/react";
 import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
+import { getConvexClient } from "./get-convex-client";
 
 export function getRouter() {
   const convexClient = getConvexClient();
@@ -15,12 +15,4 @@ export function getRouter() {
   });
 
   return router;
-}
-
-export function getConvexClient() {
-  const convexUrl = import.meta.env.VITE_CONVEX_URL!;
-  if (!convexUrl) {
-    throw new Error("VITE_CONVEX_URL is not set");
-  }
-  return new ConvexReactClient(convexUrl);
 }
