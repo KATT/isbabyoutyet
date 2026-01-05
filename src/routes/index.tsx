@@ -33,9 +33,9 @@ function HomePage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32">
+      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-12">
         {/* Hero Section */}
-        <div className="text-center mb-24">
+        <div className="text-center">
           <Badge
             variant="outline"
             className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
@@ -90,7 +90,7 @@ function HomePage() {
         </div>
 
         {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-6 mb-24">
+        <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
               <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
@@ -196,18 +196,11 @@ function HomePage() {
               </Link>
             </Button>
           ) : (
-            <ButtonGroup>
-              <Button size="lg" asChild>
-                <Link to="/auth/signup" preload="viewport">
-                  Create Your Account
-                </Link>
-              </Button>
-              <Button size="lg" asChild>
-                <Link to="/auth/login" preload="viewport">
-                  Sign In
-                </Link>
-              </Button>
-            </ButtonGroup>
+            <Button size="lg" asChild>
+              <Link to="/auth/signup" preload="viewport">
+                Create Your Account
+              </Link>
+            </Button>
           )}
         </div>
       </div>
