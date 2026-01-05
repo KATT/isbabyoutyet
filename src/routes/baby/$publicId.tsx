@@ -18,7 +18,6 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router";
-import { Doc } from "convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { format, parseISO } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
@@ -298,7 +297,6 @@ type StatusDateEditorProps = {
   currentDate: string;
   label: string;
   compact?: boolean;
-  baby: Doc<"baby">;
 };
 
 function StatusDateEditor({
@@ -307,7 +305,6 @@ function StatusDateEditor({
   currentDate,
   label: _label,
   compact = false,
-  baby,
 }: StatusDateEditorProps) {
   const updateBaby = useMutation(api.baby.update);
   const [isEditing, setIsEditing] = useState(false);
@@ -384,27 +381,24 @@ function StatusDateEditor({
                   try {
                     const dateObj = parseISO(newDateTime);
                     const dateString = dateObj.toISOString();
-                    const updateFields: {
-                      laborStarted?: string | null;
-                      wentToHospital?: string | null;
-                      babyBorn?: string | null;
-                    } = {};
 
                     if (status === "labor_started") {
-                      updateFields.laborStarted = dateString;
+                      await updateBaby({
+                        babyId: babyId as any,
+                        laborStarted: dateString,
+                      });
                     } else if (status === "gone_to_hospital") {
-                      updateFields.wentToHospital = dateString;
+                      await updateBaby({
+                        babyId: babyId as any,
+                        wentToHospital: dateString,
+                      });
                     } else if (status === "born") {
-                      updateFields.babyBorn = dateString;
-                      if (!baby.wentToHospital) {
-                        updateFields.wentToHospital = dateString;
-                      }
+                      await updateBaby({
+                        babyId: babyId as any,
+                        babyBorn: dateString,
+                      });
                     }
 
-                    await updateBaby({
-                      babyId: babyId as any,
-                      ...updateFields,
-                    });
                     setIsEditing(false);
                   } catch (err) {
                     if (err instanceof Error) {
@@ -460,27 +454,24 @@ function StatusDateEditor({
                     try {
                       const dateObj = parseISO(newDateTime);
                       const dateString = dateObj.toISOString();
-                      const updateFields: {
-                        laborStarted?: string | null;
-                        wentToHospital?: string | null;
-                        babyBorn?: string | null;
-                      } = {};
 
                       if (status === "labor_started") {
-                        updateFields.laborStarted = dateString;
+                        await updateBaby({
+                          babyId: babyId as any,
+                          laborStarted: dateString,
+                        });
                       } else if (status === "gone_to_hospital") {
-                        updateFields.wentToHospital = dateString;
+                        await updateBaby({
+                          babyId: babyId as any,
+                          wentToHospital: dateString,
+                        });
                       } else if (status === "born") {
-                        updateFields.babyBorn = dateString;
-                        if (!baby.wentToHospital) {
-                          updateFields.wentToHospital = dateString;
-                        }
+                        await updateBaby({
+                          babyId: babyId as any,
+                          babyBorn: dateString,
+                        });
                       }
 
-                      await updateBaby({
-                        babyId: babyId as any,
-                        ...updateFields,
-                      });
                       setIsEditing(false);
                     } catch (err) {
                       if (err instanceof Error) {
@@ -850,7 +841,6 @@ type StatusUpdateButtonProps = {
   compact?: boolean;
   previousStatuses?: Array<{ label: string; isSet: boolean }>;
   subsequentStatuses?: Array<{ label: string }>;
-  baby: Doc<"baby">;
 };
 
 function StatusUpdateButton({
@@ -863,7 +853,6 @@ function StatusUpdateButton({
   compact = false,
   previousStatuses: _previousStatuses = [],
   subsequentStatuses: _subsequentStatuses = [],
-  baby,
 }: StatusUpdateButtonProps) {
   const updateBaby = useMutation(api.baby.update);
   const [isLoading, setIsLoading] = useState(false);
@@ -873,43 +862,44 @@ function StatusUpdateButton({
   const handleClick = async () => {
     setIsLoading(true);
     try {
-      const updateFields: {
-        laborStarted?: string | null;
-        wentToHospital?: string | null;
-        babyBorn?: string | null;
-      } = {};
-
       if (isCompleted) {
         if (status === "labor_started") {
-          updateFields.laborStarted = null;
-          updateFields.wentToHospital = null;
-          updateFields.babyBorn = null;
+          await updateBaby({
+            babyId: babyId as any,
+            laborStarted: null,
+          });
         } else if (status === "gone_to_hospital") {
-          updateFields.wentToHospital = null;
-          updateFields.babyBorn = null;
-        } else {
-          updateFields.babyBorn = null;
+          await updateBaby({
+            babyId: babyId as any,
+            wentToHospital: null,
+          });
+        } else if (status === "born") {
+          await updateBaby({
+            babyId: babyId as any,
+            babyBorn: null,
+          });
         }
       } else {
         const now = new Date();
         const dateString = now.toISOString();
 
         if (status === "labor_started") {
-          updateFields.laborStarted = dateString;
+          await updateBaby({
+            babyId: babyId as any,
+            laborStarted: dateString,
+          });
         } else if (status === "gone_to_hospital") {
-          updateFields.wentToHospital = dateString;
+          await updateBaby({
+            babyId: babyId as any,
+            wentToHospital: dateString,
+          });
         } else if (status === "born") {
-          updateFields.babyBorn = dateString;
-          if (!baby.wentToHospital) {
-            updateFields.wentToHospital = dateString;
-          }
+          await updateBaby({
+            babyId: babyId as any,
+            babyBorn: dateString,
+          });
         }
       }
-
-      await updateBaby({
-        babyId: babyId as any,
-        ...updateFields,
-      });
     } catch (err) {
       if (err instanceof Error) {
         // Handle error appropriately
@@ -1146,7 +1136,6 @@ function BabyPage() {
                             currentDate={state.date}
                             label={stateLabels[state.type]}
                             compact
-                            baby={baby}
                           />
                         )}
                         <StatusUpdateButton
@@ -1159,7 +1148,6 @@ function BabyPage() {
                           compact
                           previousStatuses={previousStatuses}
                           subsequentStatuses={subsequentStatuses}
-                          baby={baby}
                         />
                       </ItemActions>
                     </Item>
