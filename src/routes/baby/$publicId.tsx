@@ -1039,7 +1039,7 @@ function BabyPage() {
             className="overflow-hidden"
             ref={ownerControlsRef}
           >
-            <div className="space-y-1">
+            <div className="space-y-1 bg-background">
               {/* Baby Name */}
               <div className="flex items-center justify-between py-3 px-4 -mx-4 hover:bg-accent/30 rounded-lg transition-all duration-200">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
