@@ -1878,7 +1878,7 @@ function BabyPage() {
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Having a baby? Annoyed with people pestering you? Create your own page →
+            Having a baby? Are people messaging you non-stop? Create your own page →
           </Link>
         </div>
       </div>
