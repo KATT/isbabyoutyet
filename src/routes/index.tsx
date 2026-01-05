@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/lib/auth-client";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -53,30 +54,36 @@ function HomePage() {
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
-              <Link to="/dashboard" preload="viewport">
-                <Button size="lg" className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20">
+              <Button
+                size="lg"
+                className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                asChild
+              >
+                <Link to="/dashboard" preload="viewport">
                   Go to Dashboard
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             ) : (
               <>
-                <Link to="/auth/signup" preload="viewport">
-                  <Button
-                    size="lg"
-                    className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
-                  >
+                <Button
+                  size="lg"
+                  className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                  asChild
+                >
+                  <Link to="/auth/signup" preload="viewport">
                     Get Started
-                  </Button>
-                </Link>
-                <Link to="/auth/login" preload="viewport">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
-                  >
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
+                  asChild
+                >
+                  <Link to="/auth/login" preload="viewport">
                     Sign In
-                  </Button>
-                </Link>
+                  </Link>
+                </Button>
               </>
             )}
           </div>
@@ -183,17 +190,24 @@ function HomePage() {
               : "Join families tracking their baby's journey today."}
           </p>
           {sessionData.data ? (
-            <Link to="/dashboard" preload="viewport">
-              <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
+            <Button size="lg" asChild>
+              <Link to="/dashboard" preload="viewport">
                 Go to Dashboard
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           ) : (
-            <Link to="/auth/signup" preload="viewport">
-              <Button size="lg" className="text-lg px-10 py-7 h-auto shadow-lg shadow-primary/20">
-                Create Your Account
+            <ButtonGroup>
+              <Button size="lg" asChild>
+                <Link to="/auth/signup" preload="viewport">
+                  Create Your Account
+                </Link>
               </Button>
-            </Link>
+              <Button size="lg" asChild>
+                <Link to="/auth/login" preload="viewport">
+                  Sign In
+                </Link>
+              </Button>
+            </ButtonGroup>
           )}
         </div>
       </div>

@@ -40,12 +40,13 @@ function AddBabyPage() {
 
       <div className="max-w-2xl mx-auto px-6 py-12">
         <div className="mb-8">
-          <Link to="/dashboard" preload="viewport">
-            <Button variant="outline" className="shadow-lg shadow-primary/20 mb-6">
+          <Button variant="outline" className="shadow-lg shadow-primary/20 mb-6" asChild>
+            <Link to="/dashboard" preload="viewport">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
-            </Button>
-          </Link>
+            </Link>
+          </Button>
+
           <h1 className="text-5xl font-black text-foreground mb-3 tracking-tight">
             <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
               Add a Baby

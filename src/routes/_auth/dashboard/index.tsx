@@ -44,12 +44,12 @@ function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/dashboard/add" preload="viewport">
-              <Button className="shadow-lg shadow-primary/20">
+            <Button className="shadow-lg shadow-primary/20" asChild>
+              <Link to="/dashboard/add" preload="viewport">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Baby
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <ModeToggle />
             <Button
               variant="outline"
@@ -75,12 +75,12 @@ function DashboardPage() {
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                 Get started by adding your first baby to track their journey
               </p>
-              <Link to="/dashboard/add" preload="viewport">
-                <Button size="lg" className="shadow-lg shadow-primary/20">
+              <Button size="lg" className="shadow-lg shadow-primary/20" asChild>
+                <Link to="/dashboard/add" preload="viewport">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Your First Baby
-                </Button>
-              </Link>
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
