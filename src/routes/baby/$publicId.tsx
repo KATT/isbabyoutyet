@@ -1179,17 +1179,39 @@ function BabyPage() {
             </h1>
             {isOwner && (
               <div className="absolute top-4 left-6">
-                <Button
-                  onClick={() => {
-                    setOwnerControlsOpen(!ownerControlsOpen);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 30,
                   }}
-                  variant={ownerControlsOpen ? "default" : "outline"}
-                  size="icon"
-                  className="rounded-full"
                 >
-                  <Settings className="w-4 h-4" />
-                </Button>
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.15, 1],
+                    }}
+                    transition={{
+                      duration: 0.6,
+                      repeat: 3,
+                      repeatDelay: 0.5,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Button
+                      onClick={() => {
+                        setOwnerControlsOpen(!ownerControlsOpen);
+                        window.scrollTo({ top: 0, behavior: "smooth" });
+                      }}
+                      variant={ownerControlsOpen ? "default" : "outline"}
+                      size="icon"
+                      className="rounded-full"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </motion.div>
+                </motion.div>
               </div>
             )}
             <div className="absolute top-4 right-6">

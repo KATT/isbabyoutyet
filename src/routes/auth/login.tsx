@@ -22,10 +22,15 @@ function LoginPage() {
 
   const form = useZodForm({
     schema: loginSchema,
-    defaultValues: {
-      email: "",
-      password: "",
-    },
+    defaultValues: import.meta.env.DEV
+      ? {
+          email: "test@example.com",
+          password: "password",
+        }
+      : {
+          email: "",
+          password: "",
+        },
   });
 
   return (
