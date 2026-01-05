@@ -3,7 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby, Calendar, Github, Heart, Sparkles, Users } from "lucide-react";
+import {
+  Activity,
+  Baby,
+  Calendar,
+  CheckCircle,
+  Github,
+  Heart,
+  Hospital,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -136,6 +146,94 @@ function HomePage() {
             </CardHeader>
           </Card>
         </div>
+
+        {/* See It In Action */}
+        <Card>
+          <CardHeader>
+            <CardTitle>See It In Action</CardTitle>
+            <CardDescription>Click any stage below to see how your page will look</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Link
+                to="/preview"
+                search={{
+                  name: "Emma",
+                  laborStarted: null,
+                  wentToHospital: null,
+                  babyBorn: null,
+                  settings: false,
+                }}
+                className="group"
+              >
+                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
+                    <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">Waiting</h3>
+                  <p className="text-sm text-muted-foreground">Before labor starts</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/preview"
+                search={{
+                  name: "Oliver",
+                  settings: false,
+                }}
+                className="group"
+              >
+                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <Activity className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">Labour Started</h3>
+                  <p className="text-sm text-muted-foreground">Things are happening!</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/preview"
+                search={{
+                  name: "Sophia",
+                  wentToHospital: new Date().toISOString(),
+                  customMessage: "We're at the hospital! Will update when baby arrives 💕",
+                  theme: "bubblegum",
+                  settings: false,
+                }}
+                className="group"
+              >
+                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                    <Hospital className="w-6 h-6 text-primary" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">At Hospital</h3>
+                  <p className="text-sm text-muted-foreground">Almost there!</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/preview"
+                search={{
+                  name: "Liam",
+                  babyBorn: new Date().toISOString(),
+                  babyBornMessage: "Welcome to the world, little one! 🎉",
+                  theme: "violet-bloom",
+                  settings: false,
+                }}
+                className="group"
+              >
+                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
+                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <CheckCircle className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">Baby Born!</h3>
+                  <p className="text-sm text-muted-foreground">Celebrate the arrival</p>
+                </div>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* How It Works */}
         <Card>
