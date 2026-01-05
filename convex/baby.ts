@@ -99,6 +99,7 @@ export const create = mutation({
       dueDate: args.dueDate,
       publicId,
       customMessage: null,
+      babyBornMessage: null,
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
@@ -116,6 +117,7 @@ export const update = mutation({
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
     customMessage: v.optional(v.union(v.string(), v.null())),
+    babyBornMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

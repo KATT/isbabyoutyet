@@ -199,9 +199,7 @@ function DueDateEditor({ baby, currentDueDate, compact = false }: DueDateEditorP
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(err instanceof Error ? err.message : "Failed to update due date");
                   } finally {
                     setIsLoading(false);
                   }
@@ -271,9 +269,7 @@ function DueDateEditor({ baby, currentDueDate, compact = false }: DueDateEditorP
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(err instanceof Error ? err.message : "Failed to update due date");
                   } finally {
                     setIsLoading(false);
                   }
@@ -402,9 +398,9 @@ function StatusDateEditor({
 
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(
+                      err instanceof Error ? err.message : "Failed to update status date",
+                    );
                   } finally {
                     setIsLoading(false);
                   }
@@ -475,9 +471,9 @@ function StatusDateEditor({
 
                       setIsEditing(false);
                     } catch (err) {
-                      if (err instanceof Error) {
-                        // Handle error appropriately
-                      }
+                      toast.error(
+                        err instanceof Error ? err.message : "Failed to update status date",
+                      );
                     } finally {
                       setIsLoading(false);
                     }
@@ -546,9 +542,7 @@ function NameEditor({ baby, currentName, compact = false }: NameEditorProps) {
                   });
                   setIsEditing(false);
                 } catch (err) {
-                  if (err instanceof Error) {
-                    // Handle error appropriately
-                  }
+                  toast.error(err instanceof Error ? err.message : "Failed to update name");
                 } finally {
                   setIsLoading(false);
                 }
@@ -581,9 +575,7 @@ function NameEditor({ baby, currentName, compact = false }: NameEditorProps) {
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(err instanceof Error ? err.message : "Failed to update name");
                   } finally {
                     setIsLoading(false);
                   }
@@ -624,9 +616,7 @@ function NameEditor({ baby, currentName, compact = false }: NameEditorProps) {
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(err instanceof Error ? err.message : "Failed to update name");
                   } finally {
                     setIsLoading(false);
                   }
@@ -670,9 +660,7 @@ function NameEditor({ baby, currentName, compact = false }: NameEditorProps) {
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(err instanceof Error ? err.message : "Failed to update name");
                   } finally {
                     setIsLoading(false);
                   }
@@ -743,9 +731,9 @@ function CustomMessageEditor({ baby, currentMessage, compact = false }: CustomMe
                     });
                     setIsEditing(false);
                   } catch (err) {
-                    if (err instanceof Error) {
-                      // Handle error appropriately
-                    }
+                    toast.error(
+                      err instanceof Error ? err.message : "Failed to update hospital message",
+                    );
                   } finally {
                     setIsLoading(false);
                   }
@@ -797,9 +785,153 @@ function CustomMessageEditor({ baby, currentMessage, compact = false }: CustomMe
                       });
                       setIsEditing(false);
                     } catch (err) {
-                      if (err instanceof Error) {
-                        // Handle error appropriately
-                      }
+                      toast.error(
+                        err instanceof Error ? err.message : "Failed to update hospital message",
+                      );
+                    } finally {
+                      setIsLoading(false);
+                    }
+                  } else {
+                    setIsEditing(false);
+                  }
+                }}
+                disabled={isLoading || !hasChanges}
+              >
+                Save
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex-1 text-sm text-muted-foreground">
+              {currentMessage ? "Custom message set" : "Default message"}
+            </div>
+            <Button onClick={() => setIsEditing(true)} variant="outline" size="sm">
+              Edit
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+type BabyBornMessageEditorProps = {
+  baby: Doc<"baby">;
+  currentMessage: string | null | undefined;
+  compact?: boolean;
+};
+
+function BabyBornMessageEditor({
+  baby,
+  currentMessage,
+  compact = false,
+}: BabyBornMessageEditorProps) {
+  const updateBaby = useMutation(api.baby.update);
+  const [isEditing, setIsEditing] = useState(false);
+  const [newMessage, setNewMessage] = useState(currentMessage || "");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const hasChanges = newMessage !== (currentMessage || "");
+
+  if (compact) {
+    return (
+      <Popover open={isEditing} onOpenChange={setIsEditing}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm">
+            Edit
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" className="w-80">
+          <Textarea
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Custom message to show when baby is born"
+            className="mb-3 min-h-20"
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              onClick={(e) => {
+                e.stopPropagation();
+                setNewMessage(currentMessage || "");
+                setIsEditing(false);
+              }}
+              variant="outline"
+              size="sm"
+              disabled={isLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={async (e) => {
+                debugger;
+                e.stopPropagation();
+                if (hasChanges) {
+                  setIsLoading(true);
+                  try {
+                    await updateBaby({
+                      babyId: baby._id,
+                      babyBornMessage: newMessage.trim() || null,
+                    });
+                    setIsEditing(false);
+                  } catch (err) {
+                    toast.error(
+                      err instanceof Error ? err.message : "Failed to update baby born message",
+                    );
+                  } finally {
+                    setIsLoading(false);
+                  }
+                } else {
+                  setIsEditing(false);
+                }
+              }}
+              size="sm"
+              disabled={isLoading || !hasChanges}
+            >
+              Save
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-start gap-3">
+        {isEditing ? (
+          <>
+            <Textarea
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Custom message to show when baby is born"
+              className="flex-1 min-h-20"
+            />
+            <div className="flex flex-col gap-2">
+              <Button
+                onClick={() => {
+                  setNewMessage(currentMessage || "");
+                  setIsEditing(false);
+                }}
+                variant="outline"
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={async () => {
+                  if (hasChanges) {
+                    setIsLoading(true);
+                    try {
+                      await updateBaby({
+                        babyId: baby._id,
+                        babyBornMessage: newMessage.trim() || null,
+                      });
+                      setIsEditing(false);
+                    } catch (err) {
+                      toast.error(
+                        err instanceof Error ? err.message : "Failed to update baby born message",
+                      );
                     } finally {
                       setIsLoading(false);
                     }
@@ -898,9 +1030,7 @@ function StatusUpdateButton({
         }
       }
     } catch (err) {
-      if (err instanceof Error) {
-        // Handle error appropriately
-      }
+      toast.error(err instanceof Error ? err.message : "Failed to update status date");
     } finally {
       setIsLoading(false);
     }
@@ -1092,6 +1222,26 @@ function BabyPage() {
                 </ItemContent>
                 <ItemActions>
                   <CustomMessageEditor baby={baby} currentMessage={baby.customMessage} compact />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              {/* Baby Born Message */}
+              <Item>
+                <ItemMedia variant="icon">
+                  <CheckCircle className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Baby Born Message</ItemTitle>
+                  <ItemDescription>{baby.babyBornMessage || "Default message"}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <BabyBornMessageEditor
+                    baby={baby}
+                    currentMessage={baby.babyBornMessage}
+                    compact
+                  />
                 </ItemActions>
               </Item>
 
@@ -1342,10 +1492,15 @@ function BabyPage() {
                       </span>
                     </h2>
                     {currentStatus.date && (
-                      <p className="text-xl text-muted-foreground">
+                      <p className="text-xl text-muted-foreground mb-4">
                         Born on {formatDate(currentStatus.date)} (
                         {getRelativeTime(currentStatus.date)})
                       </p>
+                    )}
+                    {baby.babyBornMessage && (
+                      <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+                        <p className="text-lg font-bold text-primary">{baby.babyBornMessage}</p>
+                      </div>
                     )}
                   </div>
                 )}
