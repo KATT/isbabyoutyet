@@ -3,19 +3,24 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
 // Server function to check authentication
-const checkAuth = createServerFn({ method: "GET" }).handler(async () => {
+const getToken = createServerFn({ method: "GET" }).handler(async () => {
   const token = await authServer.getToken();
-  return { token };
+  return token;
 });
 
 export const Route = createFileRoute("/_auth")({
-  beforeLoad: async () => {
+  beforeLoad: async (opts) => {
     // Check authentication server-side
-    const authResult = await checkAuth();
+    const token = await getToken();
 
-    if (!authResult.token) {
+    if (!token) {
       throw redirect({
         to: "/",
+      });
+    }
+    if (typeof window === "undefined") {
+      opts.context.convexClient.setAuth(async () => {
+        return token;
       });
     }
   },

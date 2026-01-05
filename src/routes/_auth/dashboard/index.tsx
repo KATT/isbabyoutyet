@@ -21,7 +21,10 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 
 function DashboardPage() {
   const loaderData = Route.useLoaderData();
-  const babies = useQuery(api.baby.listByUser, {}) ?? loaderData.babies;
+  let babies = useQuery(api.baby.listByUser, {});
+  if (!babies || babies.length === 0) {
+    babies = loaderData.babies;
+  }
 
   const router = useRouter();
 
