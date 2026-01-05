@@ -1102,66 +1102,43 @@ function BabyPage() {
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === baby.userId;
 
-  // Determine current status - find the latest date
-  const states = [
-    { type: "labor_started" as const, date: baby.laborStarted || null },
-    { type: "gone_to_hospital" as const, date: baby.wentToHospital || null },
-    { type: "born" as const, date: baby.babyBorn || null },
-  ];
-
-  // Find the current status (the one with the latest date)
-  let currentStatus: (typeof states)[number] | null = null;
-  let latestDate: Date | null = null;
-  for (const state of states) {
-    if (state.date) {
-      const date = parseDate(state.date);
-      if (!latestDate || date > latestDate) {
-        latestDate = date;
-        currentStatus = state;
-      }
+  const currentStatus = (() => {
+    if (baby.babyBorn) {
+      return { type: "born" as const, date: baby.babyBorn };
     }
-  }
+    if (baby.wentToHospital) {
+      return { type: "gone_to_hospital" as const, date: baby.wentToHospital };
+    }
+    if (baby.laborStarted) {
+      return { type: "labor_started" as const, date: baby.laborStarted };
+    }
+    return null;
+  })();
 
   // For progress bar: if a later status is set, show previous statuses as completed
   // Status updates remain independent, but progress bar assumes logical progression
-  const isStateCompletedForProgress = (state: (typeof states)[number]): boolean => {
-    if (state.type === "labor_started") {
-      // Labor is completed if it has a date OR if gone_to_hospital or born is set
-      return !!state.date || !!baby.wentToHospital || !!baby.babyBorn;
-    }
-    if (state.type === "gone_to_hospital") {
-      // Gone to hospital is completed if it has a date OR if born is set
-      return !!state.date || !!baby.babyBorn;
-    }
-    // Born is only completed if it has a date
-    return !!state.date;
-  };
+  const isLaborCompletedForProgress =
+    !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn;
+  const isGoneToHospitalCompletedForProgress = !!baby.wentToHospital || !!baby.babyBorn;
+  const isBornCompletedForProgress = !!baby.babyBorn;
 
   // Progress is based on how many fields are set (not order)
   // For progress bar, count states as completed if they have dates OR if later statuses are set
-  const completedCount = states.filter((s) => isStateCompletedForProgress(s)).length;
+  const completedCount = [
+    isLaborCompletedForProgress,
+    isGoneToHospitalCompletedForProgress,
+    isBornCompletedForProgress,
+  ].filter(Boolean).length;
 
   // Determine the next state (first uncompleted state)
-  // For UI logic, only consider explicitly set statuses
-  const nextStateIndex = states.findIndex((s) => !s.date);
-  const isNextState = (index: number) => index === nextStateIndex;
-
-  const stateLabels = {
-    labor_started: "Labour started",
-    gone_to_hospital: "Gone to hospital",
-    born: "Baby born",
-  };
-
-  const stateIcons = {
-    labor_started: Activity,
-    gone_to_hospital: Hospital,
-    born: CheckCircle,
-  };
+  const isLaborNextState = !baby.laborStarted;
+  const isGoneToHospitalNextState = !!baby.laborStarted && !baby.wentToHospital;
+  const isBornNextState = !!baby.wentToHospital && !baby.babyBorn;
 
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
-  const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
+  const [ownerControlsOpen, setOwnerControlsOpen] = useState(true);
   const ownerControlsRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
   return (
@@ -1210,7 +1187,84 @@ function BabyPage() {
 
               <ItemSeparator />
 
-              {/* Custom Message */}
+              {/* Status Updates */}
+              {/* Labour started */}
+              <Item>
+                <ItemMedia variant="icon">
+                  <Activity className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Labour started</ItemTitle>
+                  {baby.laborStarted && (
+                    <ItemDescription>
+                      {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
+                    </ItemDescription>
+                  )}
+                </ItemContent>
+                <ItemActions>
+                  {baby.laborStarted && (
+                    <StatusDateEditor
+                      baby={baby}
+                      status="labor_started"
+                      currentDate={baby.laborStarted}
+                      label="Labour started"
+                      compact
+                    />
+                  )}
+                  <StatusUpdateButton
+                    baby={baby}
+                    status="labor_started"
+                    currentStatus={baby.laborStarted || null}
+                    label="Labour started"
+                    icon={<Activity className="w-4 h-4" />}
+                    isNextState={isLaborNextState}
+                    compact
+                    previousStatuses={[]}
+                    subsequentStatuses={[{ label: "Gone to hospital" }, { label: "Baby born" }]}
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              {/* Gone to hospital */}
+              <Item>
+                <ItemMedia variant="icon">
+                  <Hospital className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Gone to hospital</ItemTitle>
+                  {baby.wentToHospital && (
+                    <ItemDescription>
+                      {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
+                    </ItemDescription>
+                  )}
+                </ItemContent>
+                <ItemActions>
+                  {baby.wentToHospital && (
+                    <StatusDateEditor
+                      baby={baby}
+                      status="gone_to_hospital"
+                      currentDate={baby.wentToHospital}
+                      label="Gone to hospital"
+                      compact
+                    />
+                  )}
+                  <StatusUpdateButton
+                    baby={baby}
+                    status="gone_to_hospital"
+                    currentStatus={baby.wentToHospital || null}
+                    label="Gone to hospital"
+                    icon={<Hospital className="w-4 h-4" />}
+                    isNextState={isGoneToHospitalNextState}
+                    compact
+                    previousStatuses={[{ label: "Labour started", isSet: !!baby.laborStarted }]}
+                    subsequentStatuses={[{ label: "Baby born" }]}
+                  />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
                   <Hospital className="w-4 h-4" />
@@ -1225,6 +1279,46 @@ function BabyPage() {
               </Item>
 
               <ItemSeparator />
+
+              {/* Baby born */}
+              <Item>
+                <ItemMedia variant="icon">
+                  <CheckCircle className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Baby born</ItemTitle>
+                  {baby.babyBorn && (
+                    <ItemDescription>
+                      {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
+                    </ItemDescription>
+                  )}
+                </ItemContent>
+                <ItemActions>
+                  {baby.babyBorn && (
+                    <StatusDateEditor
+                      baby={baby}
+                      status="born"
+                      currentDate={baby.babyBorn}
+                      label="Baby born"
+                      compact
+                    />
+                  )}
+                  <StatusUpdateButton
+                    baby={baby}
+                    status="born"
+                    currentStatus={baby.babyBorn || null}
+                    label="Baby born"
+                    icon={<CheckCircle className="w-4 h-4" />}
+                    isNextState={isBornNextState}
+                    compact
+                    previousStatuses={[
+                      { label: "Labour started", isSet: !!baby.laborStarted },
+                      { label: "Gone to hospital", isSet: !!baby.wentToHospital },
+                    ]}
+                    subsequentStatuses={[]}
+                  />
+                </ItemActions>
+              </Item>
 
               {/* Baby Born Message */}
               <Item>
@@ -1243,60 +1337,6 @@ function BabyPage() {
                   />
                 </ItemActions>
               </Item>
-
-              <ItemSeparator />
-
-              {/* Status Updates */}
-              {states.map((state, index) => {
-                const StatusIcon = stateIcons[state.type];
-                const previousStatuses = states.slice(0, index).map((s) => ({
-                  label: stateLabels[s.type],
-                  isSet: !!s.date,
-                }));
-                const subsequentStatuses = states.slice(index + 1).map((s) => ({
-                  label: stateLabels[s.type],
-                }));
-                return (
-                  <React.Fragment key={state.type}>
-                    <Item>
-                      <ItemMedia variant="icon">
-                        <StatusIcon className="w-4 h-4" />
-                      </ItemMedia>
-                      <ItemContent>
-                        <ItemTitle>{stateLabels[state.type]}</ItemTitle>
-                        {state.date && (
-                          <ItemDescription>
-                            {formatDate(state.date)} ({getRelativeTime(state.date)})
-                          </ItemDescription>
-                        )}
-                      </ItemContent>
-                      <ItemActions>
-                        {state.date && (
-                          <StatusDateEditor
-                            baby={baby}
-                            status={state.type}
-                            currentDate={state.date}
-                            label={stateLabels[state.type]}
-                            compact
-                          />
-                        )}
-                        <StatusUpdateButton
-                          baby={baby}
-                          status={state.type}
-                          currentStatus={state.date}
-                          label={stateLabels[state.type]}
-                          icon={<StatusIcon className="w-4 h-4" />}
-                          isNextState={isNextState(index)}
-                          compact
-                          previousStatuses={previousStatuses}
-                          subsequentStatuses={subsequentStatuses}
-                        />
-                      </ItemActions>
-                    </Item>
-                    {index < states.length - 1 && <ItemSeparator />}
-                  </React.Fragment>
-                );
-              })}
             </ItemGroup>
           </motion.div>
         )}
@@ -1509,47 +1549,101 @@ function BabyPage() {
                 {/* Progress indicator */}
                 <div className="w-full">
                   <div className="flex items-center justify-between mb-4">
-                    {states.map((state) => {
-                      // For progress bar, show previous statuses as completed if later ones are set
-                      const isCompleted = isStateCompletedForProgress(state);
-                      const isCurrent = currentStatus?.type === state.type;
-                      const Icon = stateIcons[state.type];
+                    {/* Labour started */}
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+                          isLaborCompletedForProgress
+                            ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                            : currentStatus?.type === "labor_started"
+                              ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                        }`}
+                      >
+                        <Activity className="w-10 h-10 md:w-12 md:h-12" />
+                      </div>
+                      <p
+                        className={`text-sm md:text-base font-semibold mb-1 ${
+                          isLaborCompletedForProgress
+                            ? "text-foreground"
+                            : currentStatus?.type === "labor_started"
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        Labour started
+                      </p>
+                      {baby.laborStarted && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {getRelativeTime(baby.laborStarted)}
+                        </p>
+                      )}
+                    </div>
 
-                      return (
-                        <div key={state.type} className="flex flex-col items-center flex-1">
-                          <div
-                            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
-                              isCompleted
-                                ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
-                                : isCurrent
-                                  ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
-                                  : "bg-muted/50 text-muted-foreground border border-border"
-                            }`}
-                          >
-                            <Icon className="w-10 h-10 md:w-12 md:h-12" />
-                          </div>
-                          <p
-                            className={`text-sm md:text-base font-semibold mb-1 ${
-                              isCompleted
-                                ? "text-foreground"
-                                : isCurrent
-                                  ? "text-primary"
-                                  : "text-muted-foreground"
-                            }`}
-                          >
-                            {stateLabels[state.type]}
-                          </p>
-                          {state.date && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {getRelativeTime(state.date)}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
+                    {/* Gone to hospital */}
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+                          isGoneToHospitalCompletedForProgress
+                            ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                            : currentStatus?.type === "gone_to_hospital"
+                              ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                        }`}
+                      >
+                        <Hospital className="w-10 h-10 md:w-12 md:h-12" />
+                      </div>
+                      <p
+                        className={`text-sm md:text-base font-semibold mb-1 ${
+                          isGoneToHospitalCompletedForProgress
+                            ? "text-foreground"
+                            : currentStatus?.type === "gone_to_hospital"
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        Gone to hospital
+                      </p>
+                      {baby.wentToHospital && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {getRelativeTime(baby.wentToHospital)}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Baby born */}
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+                          isBornCompletedForProgress
+                            ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
+                            : currentStatus?.type === "born"
+                              ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
+                              : "bg-muted/50 text-muted-foreground border border-border"
+                        }`}
+                      >
+                        <CheckCircle className="w-10 h-10 md:w-12 md:h-12" />
+                      </div>
+                      <p
+                        className={`text-sm md:text-base font-semibold mb-1 ${
+                          isBornCompletedForProgress
+                            ? "text-foreground"
+                            : currentStatus?.type === "born"
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        Baby born
+                      </p>
+                      {baby.babyBorn && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {getRelativeTime(baby.babyBorn)}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   {/* Progress bar */}
-                  <Progress value={(completedCount / states.length) * 100} />
+                  <Progress value={(completedCount / 3) * 100} />
                 </div>
               </CardFooter>
             </Card>
