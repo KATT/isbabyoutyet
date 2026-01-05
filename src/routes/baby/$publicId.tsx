@@ -171,7 +171,7 @@ function BabyPage() {
 
         <div className="border-b border-border/50">
           <BabyNav
-            shareLink={`${window.location.origin}/baby/${babyDoc.publicId}`}
+            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
             settingsButton={
               isOwner
                 ? {
