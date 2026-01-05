@@ -69,7 +69,7 @@ function getRelativeTime(dateString: string): string {
   return rtf.format(0, "second");
 }
 
-function getOverdueDays(dueDate: string): number {
+function getDaysUntilDueDate(dueDate: string): number {
   const now = new Date();
   const due = parseDate(dueDate);
 
@@ -105,10 +105,15 @@ function getOverdueDays(dueDate: string): number {
   const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
   const dueDateObj = new Date(dueYear, dueMonth - 1, dueDay);
 
-  const diffInMs = currentDate.getTime() - dueDateObj.getTime();
+  const diffInMs = dueDateObj.getTime() - currentDate.getTime();
   const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 
-  return Math.max(0, diffInDays);
+  return diffInDays;
+}
+
+function getOverdueDays(dueDate: string): number {
+  const daysUntil = getDaysUntilDueDate(dueDate);
+  return Math.max(0, -daysUntil);
 }
 
 type DueDateEditorProps = {
@@ -1037,6 +1042,7 @@ function BabyPage() {
   };
 
   const overdueDays = getOverdueDays(baby.dueDate);
+  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
   const [ownerControlsOpen, setOwnerControlsOpen] = useState(false);
   const ownerControlsRef = useRef<HTMLDivElement>(null);
@@ -1235,16 +1241,34 @@ function BabyPage() {
                       </span>
                     </h2>
                     <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-                    {overdueDays > 0 && (
-                      <div className="mt-4 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl shadow-lg shadow-primary/10">
-                        <p className="text-xl font-bold text-primary">
-                          {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-                        </p>
-                        <p className="text-sm text-primary/80 mt-2">
-                          Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-                        </p>
-                      </div>
-                    )}
+                    <div
+                      className={`mt-4 p-6 rounded-xl shadow-lg ${
+                        overdueDays > 0
+                          ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
+                          : "bg-muted/50 border border-border"
+                      }`}
+                    >
+                      {overdueDays > 0 ? (
+                        <>
+                          <p className="text-xl font-bold text-primary">
+                            {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+                          </p>
+                          <p className="text-sm text-primary/80 mt-2">
+                            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-lg font-bold text-foreground">
+                            {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due
+                            date
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-2">
+                            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 
