@@ -1419,9 +1419,6 @@ function BabyPage() {
                         to="/baby/$publicId"
                         params={{ publicId: params.publicId }}
                         search={search.settings ? {} : { settings: true }}
-                        onClick={() => {
-                          window.scrollTo({ top: 0, behavior: "smooth" });
-                        }}
                       >
                         <Settings className="w-4 h-4" />
                       </Link>
