@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -125,59 +126,69 @@ function NavContent(props: { baby: Doc<"baby">; isOwner: boolean }) {
 
   return (
     <>
-      <Button
-        onClick={async () => {
-          const url = `${window.location.origin}/baby/${props.baby.publicId}`;
-          try {
-            await navigator.clipboard.writeText(url);
-            setCopied(true);
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={async () => {
+              const url = `${window.location.origin}/baby/${props.baby.publicId}`;
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
 
-            toast.success("Copied to clipboard");
-          } catch {
-            // Fallback for older browsers
-            const textArea = document.createElement("textarea");
-            textArea.value = url;
-            textArea.style.position = "fixed";
-            textArea.style.opacity = "0";
-            document.body.appendChild(textArea);
-            textArea.select();
-            try {
-              document.execCommand("copy");
-              setCopied(true);
+                toast.success("Copied to clipboard");
+              } catch {
+                // Fallback for older browsers
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                  document.execCommand("copy");
+                  setCopied(true);
 
-              toast.success("Copied to clipboard");
-            } catch (cause) {
-              // Handle error
-              toast.error(
-                "Failed to copy to clipboard: " +
-                  (cause instanceof Error ? cause.message : "Unknown error"),
-              );
-            }
-            document.body.removeChild(textArea);
-          }
-        }}
-        variant="outline"
-        size="icon"
-        className="rounded-full"
-      >
-        {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-      </Button>
+                  toast.success("Copied to clipboard");
+                } catch (cause) {
+                  // Handle error
+                  toast.error(
+                    "Failed to copy to clipboard: " +
+                      (cause instanceof Error ? cause.message : "Unknown error"),
+                  );
+                }
+                document.body.removeChild(textArea);
+              }
+            }}
+            variant="outline"
+            size="icon"
+            className="rounded-full"
+          >
+            {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
+      </Tooltip>
       <ModeToggle />
       {props.isOwner && (
-        <Button
-          asChild
-          variant={search.settings ? "default" : "outline"}
-          size="icon"
-          className="rounded-full"
-        >
-          <Link
-            to="/baby/$publicId"
-            params={{ publicId: params.publicId }}
-            search={search.settings ? {} : { settings: true }}
-          >
-            <Settings className="w-4 h-4" />
-          </Link>
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              asChild
+              variant={search.settings ? "default" : "outline"}
+              size="icon"
+              className="rounded-full"
+            >
+              <Link
+                to="/baby/$publicId"
+                params={{ publicId: params.publicId }}
+                search={search.settings ? {} : { settings: true }}
+              >
+                <Settings className="w-4 h-4" />
+              </Link>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{search.settings ? "Hide settings" : "Show settings"}</TooltipContent>
+        </Tooltip>
       )}
     </>
   );

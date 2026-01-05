@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -106,49 +107,33 @@ function PreviewPage() {
               "md:absolute md:top-0 md:left-0",
             )}
           >
-            <Button variant="outline" size="icon" className="rounded-full" disabled>
-              <Share2 className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="icon" className="rounded-full" disabled>
+                  <Share2 className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Share (preview mode)</TooltipContent>
+            </Tooltip>
             <ModeToggle />
-            <Button
-              onClick={() => {
-                navigate({
-                  search: { ...search, settings: !settings },
-                  replace: true,
-                });
-              }}
-              variant={settings ? "default" : "outline"}
-              size="icon"
-              className="rounded-full"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Reset button */}
-          <div
-            className={cn(
-              "gap-2 p-4 z-10 flex",
-              "fixed bottom-0 right-0",
-              "md:absolute md:top-0 md:right-0",
-            )}
-          >
-            <Button
-              onClick={() => {
-                navigate({
-                  search: {
-                    name: "Baby",
-                    settings: true,
-                  },
-                  replace: true,
-                });
-              }}
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={() => {
+                    navigate({
+                      search: { ...search, settings: !settings },
+                      replace: true,
+                    });
+                  }}
+                  variant={settings ? "default" : "outline"}
+                  size="icon"
+                  className="rounded-full"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{settings ? "Hide settings" : "Show settings"}</TooltipContent>
+            </Tooltip>
           </div>
 
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
