@@ -210,23 +210,23 @@ function BabyPage() {
         </section>
 
         {/* Encouragements Section */}
-        <section className="relative px-6 pb-12">
-          <div className="relative max-w-2xl mx-auto space-y-8">
-            {!babyDoc.encouragementsDisabled && (
+        {!baby.encouragementsDisabled && (
+          <section className="relative px-6 pb-12">
+            <div className="relative max-w-2xl mx-auto space-y-8">
               <Card>
                 <CardContent className="pt-6">
                   <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
                 </CardContent>
               </Card>
-            )}
 
-            <Card>
-              <CardContent className="pt-6">
-                <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
-              </CardContent>
-            </Card>
-          </div>
-        </section>
+              <Card>
+                <CardContent className="pt-6">
+                  <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
 
         {/* Footer */}
         <div className="text-center py-8 border-t border-border/50">
