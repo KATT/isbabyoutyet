@@ -194,7 +194,7 @@ function BabyPage() {
             <Card>
               <CardContent>
                 <StatusDisplay baby={baby} currentStatus={currentStatus} />
-                {search.beta && (
+                {(search.beta || params.publicId === "test-baby") && (
                   <NotificationSubscribe
                     babyId={babyDoc._id}
                     vapidPublicKey={loaderData.vapidPublicKey}
