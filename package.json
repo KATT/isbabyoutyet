@@ -76,6 +76,7 @@
     "react-resizable-panels": "^4.2.0",
     "recharts": "2.15.4",
     "sonner": "^2.0.7",
+    "streamdown": "^1.6.11",
     "tailwind-merge": "^3.4.0",
     "tailwindcss": "^4.0.6",
     "vaul": "^1.1.2",

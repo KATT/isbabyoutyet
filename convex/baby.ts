@@ -209,6 +209,7 @@ export const update = mutation({
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
+    encouragementsDisabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();

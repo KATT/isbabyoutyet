@@ -1,6 +1,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { EncouragementForm, EncouragementsFeed } from "@/components/baby/encouragements";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -106,6 +107,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     babyBorn: doc.babyBorn ?? null,
     hospitalMessage: doc.hospitalMessage ?? null,
     babyBornMessage: doc.babyBornMessage ?? null,
+    encouragementsDisabled: doc.encouragementsDisabled,
   };
 }
 
@@ -203,6 +205,25 @@ function BabyPage() {
               <CardFooter>
                 <ProgressIndicator baby={baby} currentStatus={currentStatus} />
               </CardFooter>
+            </Card>
+          </div>
+        </section>
+
+        {/* Encouragements Section */}
+        <section className="relative px-6 pb-12">
+          <div className="relative max-w-2xl mx-auto space-y-8">
+            {!babyDoc.encouragementsDisabled && (
+              <Card>
+                <CardContent className="pt-6">
+                  <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardContent className="pt-6">
+                <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
+              </CardContent>
             </Card>
           </div>
         </section>

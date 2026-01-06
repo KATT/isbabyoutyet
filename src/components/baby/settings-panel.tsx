@@ -8,8 +8,17 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@/components/ui/item";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
-import { Activity, Baby, Calendar, CheckCircle, Hospital, Palette } from "lucide-react";
+import {
+  Activity,
+  Baby,
+  Calendar,
+  CheckCircle,
+  Hospital,
+  MessageSquare,
+  Palette,
+} from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { getCurrentStatus, type BabyData, type BabyUpdateHandler } from "./types";
 import {
@@ -224,6 +233,27 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
               </ItemContent>
               <ItemActions>
                 <ThemeSelector baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+
+            {/* Encouragements */}
+            <Item>
+              <ItemMedia variant="icon">
+                <MessageSquare className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Encouragements</ItemTitle>
+                <ItemDescription>
+                  {baby.encouragementsDisabled ? "Form disabled" : "Visitors can send messages"}
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <Switch
+                  checked={!baby.encouragementsDisabled}
+                  onCheckedChange={(checked) => onUpdate({ encouragementsDisabled: !checked })}
+                />
               </ItemActions>
             </Item>
           </ItemGroup>

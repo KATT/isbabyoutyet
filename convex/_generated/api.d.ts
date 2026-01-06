@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as baby from "../baby.js";
+import type * as encouragements from "../encouragements.js";
 import type * as http from "../http.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   baby: typeof baby;
+  encouragements: typeof encouragements;
   http: typeof http;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;

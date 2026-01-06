@@ -13,6 +13,7 @@ export default defineSchema({
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
+    encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
@@ -47,4 +48,15 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_scheduledId", ["scheduledId"]),
+  encouragements: defineTable({
+    babyId: v.id("baby"), // Reference to the baby
+    authorName: v.string(), // Name of the person sending encouragement
+    message: v.string(), // The encouragement message
+    createdAt: v.number(), // Timestamp
+    // Metadata
+    visitorId: v.string(), // Unique visitor ID (stored in localStorage)
+    userAgent: v.optional(v.string()), // User agent string
+    locale: v.optional(v.string()), // Browser locale (e.g., "en-US")
+    timezone: v.optional(v.string()), // Timezone (e.g., "America/New_York")
+  }).index("by_babyId", ["babyId"]),
 });
