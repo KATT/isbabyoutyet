@@ -15,6 +15,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../styles.css?url";
+import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@/components/ui/sonner";
 import { Button } from "@/components/ui/button";
@@ -108,6 +109,7 @@ function RootDocument(props: { children: React.ReactNode }) {
       <body>
         {props.children}
         <Toaster />
+        <Analytics />
         <TanStackDevtools
           config={{
             position: "bottom-right",
