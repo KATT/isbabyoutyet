@@ -99,7 +99,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
-    theme: (doc.theme ?? null) as BabyData["theme"],
+    theme: doc.theme ?? null,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,

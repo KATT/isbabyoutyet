@@ -1,16 +1,9 @@
+import { Doc } from "convex/_generated/dataModel";
+
 /**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
-export type BabyData = {
-  name: string;
-  dueDate: string;
-  theme: string | null;
-  laborStarted: string | null;
-  wentToHospital: string | null;
-  babyBorn: string | null;
-  customMessage: string | null;
-  babyBornMessage: string | null;
-};
+export type BabyData = Omit<Doc<"baby">, "userId" | "publicId" | "_id" | "_creationTime">;
 
 /**
  * Partial update to baby data - used by editors
@@ -46,3 +39,5 @@ export function getCurrentStatus(baby: BabyData): BabyStatus {
   }
   return { type: "not_yet" };
 }
+
+export type Maybe<T> = T | null | undefined;

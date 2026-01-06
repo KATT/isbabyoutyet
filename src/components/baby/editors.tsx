@@ -7,7 +7,7 @@ import { Activity, Baby, Calendar, CheckCircle, Clock, Hospital } from "lucide-r
 import type * as React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { BabyData, BabyUpdateHandler } from "./types";
+import type { BabyData, BabyUpdateHandler, Maybe } from "./types";
 import { parseDate, THEME_OPTIONS } from "./utils";
 
 type DueDateEditorProps = {
@@ -470,7 +470,7 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
 type StatusUpdateButtonProps = {
   baby: BabyData;
   status: "labor_started" | "gone_to_hospital" | "born";
-  currentStatus: string | null;
+  currentStatus: Maybe<string>;
   label: string;
   icon: React.ReactNode;
   isNextState: boolean;
