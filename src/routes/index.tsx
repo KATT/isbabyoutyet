@@ -6,13 +6,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
   Baby,
+  Bell,
   Calendar,
   CheckCircle,
   Github,
   Heart,
   Hospital,
+  Link2,
+  MessageCircleHeart,
+  Palette,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 
@@ -25,12 +28,12 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       {
-        title: "Is Baby Out Yet? - Track Your Baby's Journey",
+        title: "Is Baby Out Yet? - Share Your Baby's Arrival",
       },
       {
         name: "description",
         content:
-          "Keep your family and friends updated as your baby arrives. Completely free, no ads - just a simple way to share the journey.",
+          "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
       },
     ],
   }),
@@ -51,9 +54,9 @@ function HomePage() {
   const currentDate = useCurrentDate();
 
   // Helper to calculate dates with offsets for realistic demo scenarios
-  const hoursAgo = (hoursAgo: number) => {
+  const hoursAgo = (hours: number) => {
     const date = new Date(currentDate);
-    date.setTime(date.getTime() - hoursAgo * 60 * 60 * 1000);
+    date.setTime(date.getTime() - hours * 60 * 60 * 1000);
     return date.toISOString();
   };
 
@@ -65,7 +68,7 @@ function HomePage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-12">
+      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-16">
         {/* Hero Section */}
         <div className="text-center">
           <Badge
@@ -73,24 +76,16 @@ function HomePage() {
             className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
           >
             <Sparkles className="w-3 h-3 mr-1.5" />
-            Keep everyone in the loop
+            Free forever, no ads
           </Badge>
           <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is Baby Out Yet?
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto leading-relaxed">
-            Keep your family and friends updated as things progress.
+          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+            Stop answering "any news yet?" texts. Share one link and let everyone follow along.
           </p>
-          <div className="flex gap-3 justify-center flex-wrap mb-10">
-            <Badge variant="secondary" className="text-sm px-4 py-1.5">
-              Free
-            </Badge>
-            <Badge variant="secondary" className="text-sm px-4 py-1.5">
-              No Ads
-            </Badge>
-          </div>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
               <Button
@@ -128,53 +123,107 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Features Section */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader>
-              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                <Baby className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle>Track Progress</CardTitle>
-              <CardDescription>
-                Update your status as things happen - labor started, heading to the hospital, baby's
-                here! Everyone stays in the loop.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+        {/* For You Section */}
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-foreground mb-2">For You</h2>
+            <p className="text-muted-foreground">Everything you need to share the journey</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <Baby className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>Update Your Status</CardTitle>
+                <CardDescription>
+                  One tap to update everyone - labour started, at the hospital, baby's here! No
+                  group texts, no repeated calls.
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                <Users className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle>Share with Family</CardTitle>
-              <CardDescription>
-                Get a simple link you can share with anyone. They can check in anytime to see what's
-                happening - no account needed.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <Calendar className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>Countdown to Due Date</CardTitle>
+                <CardDescription>
+                  Set your due date and everyone can see how many days are left. Plus a friendly
+                  "overdue" counter when baby takes their time.
+                </CardDescription>
+              </CardHeader>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                <Calendar className="w-7 h-7 text-primary" />
-              </div>
-              <CardTitle>Due Date Tracking</CardTitle>
-              <CardDescription>
-                Set your due date and see how many days are left. We'll let you know when baby's
-                running late.
-              </CardDescription>
-            </CardHeader>
-          </Card>
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <Palette className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>Make It Yours</CardTitle>
+                <CardDescription>
+                  Pick a theme that matches your style. From soft pastels to bold colours - your
+                  page, your vibe.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+
+        {/* For Your Visitors Section */}
+        <div className="space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-foreground mb-2">For Your Family & Friends</h2>
+            <p className="text-muted-foreground">What everyone you share with gets</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <Link2 className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>No Account Needed</CardTitle>
+                <CardDescription>
+                  Anyone with the link can check in anytime. Grandma doesn't need to download an app
+                  or create an account.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <MessageCircleHeart className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>Send Encouragement</CardTitle>
+                <CardDescription>
+                  Visitors can leave messages of love and support. Like a digital guestbook filled
+                  with well-wishes you'll treasure.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
+                  <Bell className="w-7 h-7 text-primary" />
+                </div>
+                <CardTitle>Get Notified</CardTitle>
+                <CardDescription>
+                  They can subscribe to push notifications and be the first to know the moment baby
+                  arrives. No constant page refreshing.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
         </div>
 
         {/* See It In Action */}
         <Card>
           <CardHeader>
             <CardTitle>See It In Action</CardTitle>
-            <CardDescription>Click any stage below to see how your page will look</CardDescription>
+            <CardDescription>Click any stage to see how your page will look</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -190,7 +239,7 @@ function HomePage() {
                     <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <h3 className="font-semibold text-foreground mb-1">Waiting</h3>
-                  <p className="text-sm text-muted-foreground">Before labor starts</p>
+                  <p className="text-sm text-muted-foreground">Before labour starts</p>
                 </div>
               </Link>
 
@@ -199,7 +248,7 @@ function HomePage() {
                 search={{
                   name: "Oliver",
                   dueDate: hoursAgo(0),
-                  laborStarted: hoursAgo(2), // Labor started 2 hours ago
+                  laborStarted: hoursAgo(2),
                 }}
                 className="group"
               >
@@ -216,8 +265,8 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Sophia",
-                  laborStarted: hoursAgo(4), // Labor started 4 hours ago
-                  wentToHospital: hoursAgo(1), // At hospital for 1 hour
+                  laborStarted: hoursAgo(4),
+                  wentToHospital: hoursAgo(1),
                   hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
                   theme: "bubblegum",
                 }}
@@ -236,9 +285,9 @@ function HomePage() {
                 to="/preview"
                 search={{
                   name: "Liam",
-                  laborStarted: hoursAgo(6), // Labor started 6 hours ago
-                  wentToHospital: hoursAgo(3), // At hospital for 3 hours
-                  babyBorn: hoursAgo(0.5), // Baby born 30 minutes ago
+                  laborStarted: hoursAgo(6),
+                  wentToHospital: hoursAgo(3),
+                  babyBorn: hoursAgo(0.5),
                   babyBornMessage: "Welcome to the world, little one! 🎉",
                   theme: "violet-bloom",
                 }}
@@ -260,45 +309,35 @@ function HomePage() {
         <Card>
           <CardHeader>
             <CardTitle>How It Works</CardTitle>
-            <CardDescription>
-              Super simple - you'll be up and running in just a few minutes
-            </CardDescription>
+            <CardDescription>Up and running in under a minute</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
                   step: "1",
-                  title: "Sign Up",
-                  description: "Create your free account",
+                  title: "Create Your Page",
+                  description: "Sign up and add your baby's name and due date. That's it.",
                 },
                 {
                   step: "2",
-                  title: "Add Your Baby",
+                  title: "Share the Link",
                   description:
-                    "Tell us your baby's name and due date, and we'll create a page for you.",
+                    "Send it to family and friends. They can check in anytime and subscribe for notifications.",
                 },
                 {
                   step: "3",
-                  title: "Share the Link",
+                  title: "Update as You Go",
                   description:
-                    "Send the link to whoever you want - family, friends, whoever's waiting for updates.",
-                },
-                {
-                  step: "4",
-                  title: "Update Status",
-                  description:
-                    "As things happen, just update your status - labor started, at the hospital, baby's here!",
+                    "When things start happening, update your status. Everyone gets notified automatically.",
                 },
               ].map((item) => (
-                <div key={item.step} className="flex gap-4 group">
-                  <div className="shrink-0 w-12 h-12 bg-linear-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center text-primary-foreground font-bold text-lg shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform">
+                <div key={item.step} className="flex flex-col items-center text-center group">
+                  <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
                     {item.step}
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                  </div>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
                 </div>
               ))}
             </div>
@@ -310,11 +349,11 @@ function HomePage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
             <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to get started?</h2>
+          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to share the journey?</h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             {sessionData.data
               ? "Head back to your dashboard to keep everyone updated."
-              : "Join other families sharing their journey. It only takes a minute to set up."}
+              : "Join families who've already shared their special moments. Takes less than a minute."}
           </p>
           {sessionData.data ? (
             <Button size="lg" asChild>
@@ -340,7 +379,7 @@ function HomePage() {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <Github className="w-5 h-5" />
-            <span>Want to contribute? Check out the project on GitHub</span>
+            <span>Open source on GitHub</span>
           </a>
         </div>
       </div>
