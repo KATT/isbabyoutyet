@@ -45,22 +45,9 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   head: (opts) => {
     const baby = opts.loaderData?.baby;
+
     if (!baby) {
-      return {
-        meta: [
-          {
-            title: "Is Baby Out Yet? - Track Your Baby's Journey",
-          },
-          {
-            name: "description",
-            content: "Track the progress of labor and birth - know when baby arrives!",
-          },
-          {
-            name: "theme-color",
-            content: "#ea580c",
-          },
-        ],
-      };
+      return {};
     }
 
     const overdueDays = getOverdueDays(baby.dueDate);
@@ -80,6 +67,9 @@ export const Route = createFileRoute("/baby/$publicId")({
     const description = `Track ${baby.name}'s journey - know when baby arrives!`;
 
     const themeColor = getThemePrimaryColor(baby.theme);
+    const appName = `Is ${baby.name} out yet?`;
+    const baseManifestUrl = `/api/manifest?start_url=/baby/${opts.params.publicId}`;
+    const manifestUrl = `${baseManifestUrl}&name=${encodeURIComponent(appName)}&theme_color=${encodeURIComponent(themeColor)}`;
 
     return {
       meta: [
@@ -93,6 +83,12 @@ export const Route = createFileRoute("/baby/$publicId")({
         {
           name: "theme-color",
           content: themeColor,
+        },
+      ],
+      links: [
+        {
+          rel: "manifest",
+          href: manifestUrl,
         },
       ],
     };
