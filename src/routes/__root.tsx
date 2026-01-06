@@ -14,6 +14,7 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
+import { Analytics } from "@vercel/analytics/react";
 import appCss from "../styles.css?url";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@/components/ui/sonner";
@@ -108,6 +109,7 @@ function RootDocument(props: { children: React.ReactNode }) {
       <body>
         {props.children}
         <Toaster />
+        <Analytics />
         <TanStackDevtools
           config={{
             position: "bottom-right",
