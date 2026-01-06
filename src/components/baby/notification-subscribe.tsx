@@ -1,4 +1,12 @@
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -148,39 +156,53 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   // Show iOS installation guide
   if (needsIOSInstall) {
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={() => {
-              toast.info(
-                <div className="space-y-2">
-                  <p className="font-semibold">To get notifications on iOS:</p>
-                  <ol className="list-decimal list-inside space-y-1 text-sm">
-                    <li>
-                      Tap the <Share className="inline w-4 h-4" /> Share button
-                    </li>
-                    <li>Scroll down and tap "Add to Home Screen"</li>
-                    <li>Open the app from your home screen</li>
-                    <li>Come back here and tap "Get Notifications"</li>
-                  </ol>
-                </div>,
-                { duration: 10000 },
-              );
-            }}
-            variant="default"
-            size="lg"
-          >
-            <Bell className="w-5 h-5" />
-            Get Notifications
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent className="max-w-xs">
-          <p>
-            To receive notifications on iOS, you need to add this page to your home screen first.
-            Tap for instructions.
-          </p>
-        </TooltipContent>
-      </Tooltip>
+      <Dialog>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DialogTrigger asChild>
+              <Button variant="default" size="lg">
+                <Bell className="w-5 h-5" />
+                Get Notifications
+              </Button>
+            </DialogTrigger>
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p>
+              To receive notifications on iOS, you need to add this page to your home screen first.
+              Tap for instructions.
+            </p>
+          </TooltipContent>
+        </Tooltip>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Get Notifications on iOS</DialogTitle>
+            <DialogDescription>
+              To receive push notifications on iOS, you need to install this app to your home screen
+              first.
+            </DialogDescription>
+          </DialogHeader>
+          <ol className="list-decimal list-inside space-y-3 text-sm">
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">1.</span>
+              <span>
+                Tap the <Share className="inline w-4 h-4 mx-1" /> Share button in Safari
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">2.</span>
+              <span>Scroll down and tap "Add to Home Screen"</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">3.</span>
+              <span>Open the app from your home screen</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">4.</span>
+              <span>Come back here and tap "Get Notifications"</span>
+            </li>
+          </ol>
+        </DialogContent>
+      </Dialog>
     );
   }
 
