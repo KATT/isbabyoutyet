@@ -152,7 +152,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.ceil((props.scheduledFor - Date.now()) / 1000));
+      const remaining = Math.max(0, Math.floor((props.scheduledFor - Date.now()) / 1000));
       setSeconds(remaining);
 
       if (remaining <= 0) {
