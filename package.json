@@ -79,6 +79,7 @@
     "tailwindcss": "^4.0.6",
     "vaul": "^1.1.2",
     "vite-tsconfig-paths": "^6.0.2",
+    "web-push": "^3.6.7",
     "zod": "^4.3.4"
   },
   "devDependencies": {
@@ -88,6 +89,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
+    "@types/web-push": "^3.6.4",
     "@vitejs/plugin-react": "^5.0.4",
     "concurrently": "^9.2.1",
     "jsdom": "^27.0.0",

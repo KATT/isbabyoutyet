@@ -1,4 +1,4 @@
-import { Doc } from "convex/_generated/dataModel";
+import { Doc } from "../../../convex/_generated/dataModel";
 
 /**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
@@ -38,6 +38,26 @@ export function getCurrentStatus(baby: BabyData): BabyStatus {
     return { type: "labor_started", date: baby.laborStarted };
   }
   return { type: "not_yet" };
+}
+
+const STATUS_ORDER = {
+  not_yet: 0,
+  labor_started: 1,
+  gone_to_hospital: 2,
+  born: 3,
+} as const;
+
+export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born";
+
+/**
+ * Check if status moved forward (e.g., not_yet → labor_started → gone_to_hospital → born)
+ * Type guard that narrows `after` to exclude "not_yet" when returning true
+ */
+export function isStatusForward(
+  before: BabyStatus,
+  after: BabyStatus,
+): after is BabyStatus & { type: NotifiableStatus } {
+  return STATUS_ORDER[after.type] > STATUS_ORDER[before.type];
 }
 
 export type Maybe<T> = T | null | undefined;

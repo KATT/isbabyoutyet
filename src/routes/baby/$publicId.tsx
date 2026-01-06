@@ -1,7 +1,9 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
+import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@/components/baby/types";
@@ -24,16 +26,21 @@ export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
   validateSearch: z.object({
     settings: z.boolean().optional(),
+    beta: z.boolean().optional(),
   }),
   loader: async (opts) => {
-    const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
-      publicId: opts.params.publicId,
-    });
+    const [baby, vapidPublicKey] = await Promise.all([
+      opts.context.convexClient.query(api.baby.getByPublicId, {
+        publicId: opts.params.publicId,
+      }),
+      opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
+    ]);
     if (!baby) {
       throw notFound();
     }
     return {
       baby,
+      vapidPublicKey,
     };
   },
   head: (opts) => {
@@ -143,16 +150,19 @@ function BabyPage() {
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
       {isOwner && (
-        <SettingsPanel
-          baby={baby}
-          onUpdate={async (update) => {
-            await updateBaby({
-              babyId: babyDoc._id,
-              ...update,
-            });
-          }}
-          isOpen={!!search.settings}
-        />
+        <>
+          <SettingsPanel
+            baby={baby}
+            onUpdate={async (update) => {
+              await updateBaby({
+                babyId: babyDoc._id,
+                ...update,
+              });
+            }}
+            isOpen={!!search.settings}
+          />
+          <ScheduledNotificationToast babyId={babyDoc._id} />
+        </>
       )}
 
       <div className="min-h-screen bg-background relative overflow-hidden">
@@ -190,7 +200,13 @@ function BabyPage() {
             <Card>
               <CardContent>
                 <StatusDisplay baby={baby} currentStatus={currentStatus} />
-                <Separator />
+                {search.beta && (
+                  <NotificationSubscribe
+                    babyId={babyDoc._id}
+                    vapidPublicKey={loaderData.vapidPublicKey}
+                  />
+                )}
+                <Separator className="my-4" />
               </CardContent>
               <CardFooter>
                 <ProgressIndicator baby={baby} currentStatus={currentStatus} />
