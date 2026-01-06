@@ -24,7 +24,7 @@ function getDefaultBabyData(): BabyData {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
-    customMessage: null,
+    hospitalMessage: null,
     babyBornMessage: null,
   };
 }
@@ -35,7 +35,7 @@ const searchSchema = z.object({
   laborStarted: z.string().nullable().optional(),
   wentToHospital: z.string().nullable().optional(),
   babyBorn: z.string().nullable().optional(),
-  customMessage: z.string().nullable().optional(),
+  hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
   settings: z.boolean().optional(),
 });

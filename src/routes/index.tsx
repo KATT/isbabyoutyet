@@ -218,7 +218,7 @@ function HomePage() {
                   name: "Sophia",
                   laborStarted: hoursAgo(4), // Labor started 4 hours ago
                   wentToHospital: hoursAgo(1), // At hospital for 1 hour
-                  customMessage: "We're at the hospital! Will update when baby arrives 💕",
+                  hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
                   theme: "bubblegum",
                 }}
                 className="group"

@@ -7,7 +7,7 @@ import { Activity, Baby, Calendar, CheckCircle, Clock, Hospital } from "lucide-r
 import type * as React from "react";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { BabyData, BabyUpdateHandler, Maybe } from "./types";
+import { getCurrentStatus, type BabyData, type BabyUpdateHandler, type Maybe } from "./types";
 import { parseDate, THEME_OPTIONS } from "./utils";
 
 type DueDateEditorProps = {
@@ -276,22 +276,24 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   );
 }
 
-type CustomMessageEditorProps = {
+type HospitalMessageEditorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
 };
 
-export function CustomMessageEditor({ baby, onUpdate }: CustomMessageEditorProps) {
+export function HospitalMessageEditor({ baby, onUpdate }: HospitalMessageEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.customMessage || "");
+  const [newMessage, setNewMessage] = useState(baby.hospitalMessage || "");
   const [isLoading, setIsLoading] = useState(false);
 
-  const hasChanges = newMessage !== (baby.customMessage || "");
+  const hasChanges = newMessage !== (baby.hospitalMessage || "");
+
+  const status = getCurrentStatus(baby);
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant={status.type === "gone_to_hospital" ? "default" : "outline"} size="sm">
           Edit
         </Button>
       </PopoverTrigger>
@@ -305,7 +307,7 @@ export function CustomMessageEditor({ baby, onUpdate }: CustomMessageEditorProps
         <div className="flex gap-2 justify-end">
           <Button
             onClick={() => {
-              setNewMessage(baby.customMessage || "");
+              setNewMessage(baby.hospitalMessage || "");
               setIsEditing(false);
             }}
             variant="outline"
@@ -319,7 +321,7 @@ export function CustomMessageEditor({ baby, onUpdate }: CustomMessageEditorProps
               if (hasChanges) {
                 setIsLoading(true);
                 try {
-                  await onUpdate({ customMessage: newMessage.trim() || null });
+                  await onUpdate({ hospitalMessage: newMessage.trim() || null });
                   setIsEditing(false);
                 } catch (err) {
                   toast.error(
@@ -355,10 +357,12 @@ export function BabyBornMessageEditor({ baby, onUpdate }: BabyBornMessageEditorP
 
   const hasChanges = newMessage !== (baby.babyBornMessage || "");
 
+  const status = getCurrentStatus(baby);
+
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant={status.type === "born" ? "default" : "outline"} size="sm">
           Edit
         </Button>
       </PopoverTrigger>

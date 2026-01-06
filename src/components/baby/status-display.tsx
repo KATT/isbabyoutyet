@@ -94,9 +94,9 @@ export function StatusDisplay({ baby, currentStatus }: StatusDisplayProps) {
         <p className="text-xl text-muted-foreground mb-4">
           {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.customMessage && (
+        {baby.hospitalMessage && (
           <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.customMessage}</p>
+            <p className="text-lg font-bold text-primary">{baby.hospitalMessage}</p>
           </div>
         )}
       </div>

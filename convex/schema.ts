@@ -7,7 +7,7 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    customMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
+    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
     babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
     laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable

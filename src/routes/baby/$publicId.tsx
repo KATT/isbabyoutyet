@@ -103,7 +103,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
-    customMessage: doc.customMessage ?? null,
+    hospitalMessage: doc.hospitalMessage ?? null,
     babyBornMessage: doc.babyBornMessage ?? null,
   };
 }

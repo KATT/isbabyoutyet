@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getCurrentStatus, type BabyData, type BabyUpdateHandler } from "./types";
 import {
   BabyBornMessageEditor,
-  CustomMessageEditor,
+  HospitalMessageEditor,
   DueDateEditor,
   NameEditor,
   StatusDateEditor,
@@ -139,7 +139,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                   currentStatus={baby.wentToHospital}
                   label="Gone to hospital"
                   icon={<Hospital className="w-4 h-4" />}
-                  isNextState={status.type === "labor_started" && !status.date}
+                  isNextState={status.type === "labor_started"}
                   onUpdate={onUpdate}
                 />
               </ItemActions>
@@ -152,10 +152,10 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>Hospital Message</ItemTitle>
-                <ItemDescription>{baby.customMessage || "Default message"}</ItemDescription>
+                <ItemDescription>{baby.hospitalMessage || "Default message"}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <CustomMessageEditor baby={baby} onUpdate={onUpdate} />
+                <HospitalMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 
