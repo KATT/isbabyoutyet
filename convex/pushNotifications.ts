@@ -31,6 +31,7 @@ async function sendNotificationToSubscription(
     body: string;
     url: string;
     icon?: string;
+    tag?: string;
   },
 ): Promise<boolean> {
   try {
@@ -75,10 +76,6 @@ export const sendNotification = internalAction({
       babyId: args.babyId,
     });
 
-    if (subscriptions.length === 0) {
-      return;
-    }
-
     // Generate notification content based on status
     let title: string;
     let body: string;
@@ -102,7 +99,7 @@ export const sendNotification = internalAction({
 
     // Send notification to all subscribers
     const results = await Promise.allSettled(
-      subscriptions.map((sub: { endpoint: string; p256dh: string; auth: string }) =>
+      subscriptions.map((sub) =>
         sendNotificationToSubscription(
           ctx,
           {
@@ -115,14 +112,14 @@ export const sendNotification = internalAction({
             body,
             url,
             icon: "/logo192.png",
+            // Unique tag per baby to prevent notifications from different babies replacing each other
+            tag: `baby-update-${args.publicId}-${args.status}`,
           },
         ),
       ),
     );
 
-    const successCount = results.filter(
-      (r: PromiseSettledResult<boolean>) => r.status === "fulfilled" && r.value === true,
-    ).length;
+    const successCount = results.filter((r) => r.status === "fulfilled" && r.value === true).length;
     const failureCount = results.length - successCount;
 
     console.log(`Sent notifications: ${successCount} succeeded, ${failureCount} failed`);

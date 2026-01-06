@@ -22,41 +22,26 @@ self.addEventListener("activate", (event) => {
 
 // Push event - handle incoming push notifications
 self.addEventListener("push", (event) => {
-  let notificationData = {
-    title: "Baby Update",
-    body: "Someone is on the way to the hospital!",
-    icon: "/logo192.png",
-    badge: "/logo192.png",
-    data: {
-      url: "/",
-    },
-  };
+  if (!event.data) {
+    console.error("Push event received without data");
+    return;
+  }
 
-  if (event.data) {
-    try {
-      const data = event.data.json();
-      notificationData = {
-        title: data.title || notificationData.title,
-        body: data.body || notificationData.body,
-        icon: data.icon || notificationData.icon,
-        badge: data.badge || notificationData.badge,
-        data: {
-          url: data.url || notificationData.data.url,
-        },
-      };
-    } catch (e) {
-      // If parsing fails, use default notification
-      console.error("Failed to parse push data:", e);
-    }
+  let data;
+  try {
+    data = event.data.json();
+  } catch (e) {
+    console.error("Failed to parse push data:", e);
+    return;
   }
 
   event.waitUntil(
-    self.registration.showNotification(notificationData.title, {
-      body: notificationData.body,
-      icon: notificationData.icon,
-      badge: notificationData.badge,
-      data: notificationData.data,
-      tag: "baby-update",
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon,
+      badge: data.icon, // Use same icon for badge
+      data: { url: data.url },
+      tag: data.tag,
       requireInteraction: false,
     }),
   );
@@ -66,7 +51,9 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "/";
+  const urlPath = event.notification.data?.url || "/";
+  // Convert relative URL to absolute for proper comparison with client.url
+  const urlToOpen = new URL(urlPath, self.location.origin).href;
 
   event.waitUntil(
     clients
@@ -77,6 +64,7 @@ self.addEventListener("notificationclick", (event) => {
       .then((clientList) => {
         // Check if there's already a window/tab open with the target URL
         for (const client of clientList) {
+          // Compare absolute URLs (client.url is always absolute)
           if (client.url === urlToOpen && "focus" in client) {
             return client.focus();
           }
