@@ -1,13 +1,29 @@
+import { getThemePrimaryColor } from "@/components/baby/utils";
 import { createFileRoute } from "@tanstack/react-router";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../convex/_generated/api";
 
-export const Route = createFileRoute("/api/manifest")({
+export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
     handlers: {
-      GET: ({ request }) => {
-        const url = new URL(request.url);
-        const startUrl = url.searchParams.get("start_url") || "/";
-        const name = url.searchParams.get("name") || "Is Baby Out Yet?";
-        const themeColor = url.searchParams.get("theme_color") || "#ea580c";
+      GET: async ({ params }) => {
+        const convexUrl = process.env.VITE_CONVEX_URL;
+        if (!convexUrl) {
+          return new Response("VITE_CONVEX_URL not set", { status: 500 });
+        }
+
+        const client = new ConvexHttpClient(convexUrl);
+        const baby = await client.query(api.baby.getByPublicId, {
+          id: params._id,
+        });
+
+        if (!baby) {
+          return new Response("Baby not found", { status: 404 });
+        }
+
+        const name = `Is ${baby.name} out yet?`;
+        const themeColor = getThemePrimaryColor(baby.theme);
+        const startUrl = `/baby/${baby.publicId}`;
 
         const manifest = {
           name,

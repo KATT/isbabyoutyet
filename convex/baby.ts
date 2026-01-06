@@ -24,12 +24,23 @@ export const listByUser = query({
 });
 
 export const getByPublicId = query({
-  args: { publicId: v.string() },
+  args: {
+    id: v.union(v.id("baby"), v.string()),
+  },
   handler: async (ctx, args) => {
-    // First check current publicIds
+    // Check if it's a valid Convex ID and try to fetch directly
+    const normalizedId = ctx.db.normalizeId("baby", args.id);
+    if (normalizedId) {
+      const byId = await ctx.db.get(normalizedId);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    // Fall back to publicId lookup
     const baby = await ctx.db
       .query("baby")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.publicId))
+      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
       .first();
 
     if (baby) {
@@ -37,10 +48,9 @@ export const getByPublicId = query({
     }
 
     // If not found, check historical publicIds
-    // Get the most recent historical entry with this publicId (last known publicId wins)
     const latestHistoryEntry = await ctx.db
       .query("babyPublicIdHistory")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.publicId))
+      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
       .order("desc")
       .first();
 
@@ -48,9 +58,7 @@ export const getByPublicId = query({
       return null;
     }
 
-    const babyFromHistory = await ctx.db.get(latestHistoryEntry.babyId);
-
-    return babyFromHistory;
+    return await ctx.db.get(latestHistoryEntry.babyId);
   },
 });
 

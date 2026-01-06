@@ -31,7 +31,7 @@ export const Route = createFileRoute("/baby/$publicId")({
   loader: async (opts) => {
     const [baby, vapidPublicKey] = await Promise.all([
       opts.context.convexClient.query(api.baby.getByPublicId, {
-        publicId: opts.params.publicId,
+        id: opts.params.publicId,
       }),
       opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
     ]);
@@ -67,9 +67,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     const description = `Track ${baby.name}'s journey - know when baby arrives!`;
 
     const themeColor = getThemePrimaryColor(baby.theme);
-    const appName = `Is ${baby.name} out yet?`;
-    const baseManifestUrl = `/api/manifest?start_url=/baby/${opts.params.publicId}`;
-    const manifestUrl = `${baseManifestUrl}&name=${encodeURIComponent(appName)}&theme_color=${encodeURIComponent(themeColor)}`;
+    const manifestUrl = `/baby/manifest/${baby._id}`;
 
     return {
       meta: [
@@ -117,7 +115,7 @@ function BabyPage() {
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
-  const queryBaby = useQuery(api.baby.getByPublicId, { publicId: params.publicId });
+  const queryBaby = useQuery(api.baby.getByPublicId, { id: params.publicId });
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const babyDoc = queryBaby ?? loaderData.baby;
   const baby = docToBabyData(babyDoc);
