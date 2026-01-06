@@ -3,7 +3,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConvex, useQuery as useConvexQuery } from "convex/react";
-import { Bell, BellOff } from "lucide-react";
+import { Bell, BellOff, Share } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -13,10 +13,42 @@ type NotificationSubscribeProps = {
   vapidPublicKey: string;
 };
 
+// Detect iOS Safari not running as PWA
+function getIOSStatus() {
+  if (typeof window === "undefined") return { isIOS: false, isStandalone: false };
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+    !(window as unknown as { MSStream?: unknown }).MSStream;
+  const isStandalone =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as unknown as { standalone?: boolean }).standalone === true;
+
+  return { isIOS, isStandalone };
+}
+
+// Wait for service worker with timeout
+async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
+  const timeoutPromise = new Promise<null>((_resolve, reject) => {
+    setTimeout(() => reject(new Error("Service worker ready timeout")), timeoutMs);
+  });
+
+  return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
+}
+
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { babyId, vapidPublicKey } = props;
   const convex = useConvex();
 
+  // Check iOS status
+  const iosStatusQuery = useQuery({
+    queryKey: ["iosStatus"],
+    queryFn: () => getIOSStatus(),
+  });
+  const iosStatus = iosStatusQuery.data ?? { isIOS: false, isStandalone: false };
+  const needsIOSInstall = iosStatus.isIOS && !iosStatus.isStandalone;
+
+  // Check basic push notification support
   const isSupportedQuery = useQuery({
     queryKey: ["isSupported"],
     queryFn: async () => {
@@ -30,17 +62,21 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
   const isSupported = isSupportedQuery.data ?? false;
 
-  // Get browser subscription endpoint
+  // Get browser subscription endpoint with timeout
   const pushSubscriptionQuery = useQuery({
     queryKey: ["browserSubscription"],
     queryFn: async () => {
-      const registration = await navigator.serviceWorker.ready;
-      return await registration.pushManager.getSubscription();
+      try {
+        const registration = await waitForServiceWorkerWithTimeout(5000);
+        if (!registration) return null;
+        return await registration.pushManager.getSubscription();
+      } catch {
+        // Service worker not ready (common on iOS Safari non-PWA)
+        return null;
+      }
     },
-    enabled: isSupported,
+    enabled: isSupported && !needsIOSInstall,
   });
-
-  console.log("subscriptionEndpointQuery", pushSubscriptionQuery.data);
 
   // Check subscription status on server using Convex query (skip in SSR)
   const isSubscribed =
@@ -50,6 +86,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         ? { babyId, endpoint: pushSubscriptionQuery.data.endpoint }
         : "skip",
     ) ?? false;
+
   // Subscribe mutation (TanStack mutation that handles browser permission + Convex)
   const subscribeMutation = useMutation({
     mutationFn: async () => {
@@ -108,6 +145,62 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
 
+  // Show iOS installation guide
+  if (needsIOSInstall) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            onClick={() => {
+              toast.info(
+                <div className="space-y-2">
+                  <p className="font-semibold">To get notifications on iOS:</p>
+                  <ol className="list-decimal list-inside space-y-1 text-sm">
+                    <li>
+                      Tap the <Share className="inline w-4 h-4" /> Share button
+                    </li>
+                    <li>Scroll down and tap "Add to Home Screen"</li>
+                    <li>Open the app from your home screen</li>
+                    <li>Come back here and tap "Get Notifications"</li>
+                  </ol>
+                </div>,
+                { duration: 10000 },
+              );
+            }}
+            variant="default"
+            size="lg"
+          >
+            <Bell className="w-5 h-5" />
+            Get Notifications
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">
+          <p>
+            To receive notifications on iOS, you need to add this page to your home screen first.
+            Tap for instructions.
+          </p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  // Not supported (non-iOS, older browser)
+  if (!isSupported) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="secondary" size="lg" disabled>
+            <Bell className="w-5 h-5" />
+            Notifications Unavailable
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Push notifications are not supported in this browser.</p>
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -136,7 +229,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
               });
             }
           }}
-          disabled={isLoading || pushSubscriptionQuery.isPending}
+          disabled={isLoading}
           variant={isSubscribed ? "secondary" : "default"}
           size="lg"
         >
