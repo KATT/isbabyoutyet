@@ -11,8 +11,7 @@ import {
 import { format } from "date-fns";
 import { Activity, Baby, Calendar, CheckCircle, Hospital, Palette } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef } from "react";
-import type { BabyData, BabyUpdateHandler } from "./types";
+import { getCurrentStatus, type BabyData, type BabyUpdateHandler } from "./types";
 import {
   BabyBornMessageEditor,
   CustomMessageEditor,
@@ -31,12 +30,7 @@ type SettingsPanelProps = {
 };
 
 export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
-  const ownerControlsRef = useRef<HTMLDivElement>(null);
-
-  // Determine the next state (first uncompleted state)
-  const isLaborNextState = !baby.laborStarted;
-  const isGoneToHospitalNextState = !!baby.laborStarted && !baby.wentToHospital;
-  const isBornNextState = !!baby.wentToHospital && !baby.babyBorn;
+  const status = getCurrentStatus(baby);
 
   return (
     <AnimatePresence>
@@ -46,7 +40,6 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
           animate={{ opacity: 1, height: "auto" }}
           exit={{ opacity: 0, height: 0 }}
           className="overflow-hidden"
-          ref={ownerControlsRef}
         >
           <ItemGroup className="">
             {/* Baby Name */}
@@ -59,7 +52,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                 <ItemDescription>{baby.name}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <NameEditor baby={baby} onUpdate={onUpdate} compact />
+                <NameEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 
@@ -75,7 +68,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                 <ItemDescription>{format(parseDate(baby.dueDate), "MMMM d, yyyy")}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <DueDateEditor baby={baby} onUpdate={onUpdate} compact />
+                <DueDateEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 
@@ -101,9 +94,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                     baby={baby}
                     status="labor_started"
                     currentDate={baby.laborStarted}
-                    label="Labour started"
                     onUpdate={onUpdate}
-                    compact
                   />
                 )}
                 <StatusUpdateButton
@@ -112,9 +103,8 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                   currentStatus={baby.laborStarted}
                   label="Labour started"
                   icon={<Activity className="w-4 h-4" />}
-                  isNextState={isLaborNextState}
+                  isNextState={status.type === "not_yet"}
                   onUpdate={onUpdate}
-                  compact
                 />
               </ItemActions>
             </Item>
@@ -140,9 +130,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                     baby={baby}
                     status="gone_to_hospital"
                     currentDate={baby.wentToHospital}
-                    label="Gone to hospital"
                     onUpdate={onUpdate}
-                    compact
                   />
                 )}
                 <StatusUpdateButton
@@ -151,9 +139,8 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                   currentStatus={baby.wentToHospital}
                   label="Gone to hospital"
                   icon={<Hospital className="w-4 h-4" />}
-                  isNextState={isGoneToHospitalNextState}
+                  isNextState={status.type === "labor_started" && !status.date}
                   onUpdate={onUpdate}
-                  compact
                 />
               </ItemActions>
             </Item>
@@ -168,7 +155,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                 <ItemDescription>{baby.customMessage || "Default message"}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <CustomMessageEditor baby={baby} onUpdate={onUpdate} compact />
+                <CustomMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 
@@ -193,9 +180,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                     baby={baby}
                     status="born"
                     currentDate={baby.babyBorn}
-                    label="Baby born"
                     onUpdate={onUpdate}
-                    compact
                   />
                 )}
                 <StatusUpdateButton
@@ -204,9 +189,8 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                   currentStatus={baby.babyBorn}
                   label="Baby born"
                   icon={<CheckCircle className="w-4 h-4" />}
-                  isNextState={isBornNextState}
+                  isNextState={status.type === "gone_to_hospital"}
                   onUpdate={onUpdate}
-                  compact
                 />
               </ItemActions>
             </Item>
@@ -221,7 +205,7 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                 <ItemDescription>{baby.babyBornMessage || "Default message"}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <BabyBornMessageEditor baby={baby} onUpdate={onUpdate} compact />
+                <BabyBornMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 

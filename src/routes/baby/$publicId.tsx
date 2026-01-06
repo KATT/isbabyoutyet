@@ -148,14 +148,7 @@ function BabyPage() {
           onUpdate={async (update) => {
             await updateBaby({
               babyId: babyDoc._id,
-              name: update.name,
-              dueDate: update.dueDate,
-              theme: update.theme,
-              laborStarted: update.laborStarted,
-              wentToHospital: update.wentToHospital,
-              babyBorn: update.babyBorn,
-              customMessage: update.customMessage,
-              babyBornMessage: update.babyBornMessage,
+              ...update,
             });
           }}
           isOpen={!!search.settings}
