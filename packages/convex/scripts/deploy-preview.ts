@@ -47,7 +47,7 @@ if (isPreview) {
   // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
   const deployCommand = `npx convex deploy --preview-create "${branchName}" --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
   console.log(`Executing: ${deployCommand}`);
-  
+
   try {
     execSync(deployCommand, {
       stdio: "inherit",
@@ -99,7 +99,7 @@ if (isPreview) {
   console.log(`Web app directory: ${webAppDir}`);
   const deployCommand = `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
   console.log(`Executing: ${deployCommand}`);
-  
+
   try {
     execSync(deployCommand, {
       stdio: "inherit",
