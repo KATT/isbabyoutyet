@@ -11,10 +11,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const env = envSchema.parse(process.env);
+
+// Determine the site URL for Convex backend
+// For preview: use VERCEL_BRANCH_URL
+// For production: use VERCEL_URL (available in all Vercel environments)
+const siteUrl =
+  env.VERCEL_ENV === "preview"
+    ? `https://${env.VERCEL_BRANCH_URL}`
+    : `https://${process.env.VERCEL_URL || "localhost:3000"}`;
+
 const convexEnv = convexEnvSchema.parse({
   ...env,
-  SITE_URL: `https://${env.VERCEL_BRANCH_URL}`,
+  SITE_URL: siteUrl,
 });
+
+// Helper command to derive VITE_CONVEX_SITE_URL from VITE_CONVEX_URL
+// Convex sets VITE_CONVEX_URL during the build, so we derive the site URL from it
+// by replacing .convex.cloud with .convex.site
+// Example: https://festive-frog-654.convex.cloud -> https://festive-frog-654.convex.site
+// Using bash parameter substitution: ${VITE_CONVEX_URL/.convex.cloud/.convex.site}
+const deriveConvexSiteUrl = `VITE_CONVEX_SITE_URL=\${VITE_CONVEX_URL/.convex.cloud/.convex.site}`;
 
 // Resolve the web app directory relative to the convex package
 // This script is in packages/convex/scripts/
@@ -46,7 +62,7 @@ async function syncEnvVarsToConvex() {
 }
 
 if (env.VERCEL_ENV !== "preview") {
-  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && ${deriveConvexSiteUrl} pnpm build"`;
   await syncEnvVarsToConvex();
   process.exit(0);
 }
@@ -65,7 +81,7 @@ console.log(`Web app directory: ${webAppDir}`);
 cd(convexPackageDir);
 
 try {
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && ${deriveConvexSiteUrl} pnpm build"`;
 } catch (error) {
   if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
     console.log(`Unexpected ZodError (expected on first deployment):`, error);
