@@ -1,13 +1,15 @@
 import * as z from "zod";
+import { proxied } from "./utils";
 
 export const envSchema = z.object({
+  NODE_ENV: z.enum(["production", "development", "test"]),
   // Better Auth secret for signing tokens and encrypting data
   BETTER_AUTH_SECRET: z.string().min(1, "BETTER_AUTH_SECRET is required"),
 
   // VAPID keys for push notifications
   VAPID_PUBLIC_KEY: z.string().min(1, "VAPID_PUBLIC_KEY is required"),
   VAPID_PRIVATE_KEY: z.string().min(1, "VAPID_PRIVATE_KEY is required"),
-  VAPID_SUBJECT: z.string().optional(),
+  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
 
   VITE_CONVEX_URL: z.url("VITE_CONVEX_URL must be a valid URL").optional(),
 
@@ -40,7 +42,9 @@ export const convexEnvSchema = envSchema
     VAPID_SUBJECT: true,
   })
   .extend({
-    SITE_URL: z.url("SITE_URL must be a valid URL").prefault(() => {
-      return `https://${process.env.VERCEL_BRANCH_URL}`;
-    }),
+    SITE_URL: z.url("SITE_URL must be a valid URL"),
   });
+
+export const convexEnv = proxied(() => {
+  return convexEnvSchema.parse(process.env);
+});

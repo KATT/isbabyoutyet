@@ -4,7 +4,7 @@ import { $, cd } from "zx";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { existsSync } from "node:fs";
-import { convexEnvSchema, envSchema } from "./env";
+import { convexEnvSchema, envSchema } from "../src/env";
 
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);

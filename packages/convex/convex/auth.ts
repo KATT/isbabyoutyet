@@ -6,8 +6,9 @@ import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
+import { convexEnv as env } from "../src/env";
 
-const siteUrl = process.env.SITE_URL!;
+const siteUrl = env.SITE_URL;
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.

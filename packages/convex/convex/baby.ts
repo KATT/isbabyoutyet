@@ -4,6 +4,7 @@ import type { DatabaseReader } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
+import { convexEnv as env } from "../src/env";
 
 export const listByUser = query({
   args: {},
@@ -286,7 +287,7 @@ export const update = mutation({
         customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
       }
 
-      const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000; // 1 minute delay in production, 10 seconds in development
+      const scheduleDelay = 60_000; // 1 minute delay
 
       const scheduledFor = Date.now() + scheduleDelay;
 
