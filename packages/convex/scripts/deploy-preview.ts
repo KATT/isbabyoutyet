@@ -9,6 +9,10 @@ import { $, cd, os } from "zx";
 import { convexEnvSchema, envSchema } from "../src/env";
 import z from "zod";
 
+const run = <T>(fn: () => T): T => {
+  return fn();
+};
+
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,25 +61,58 @@ async function syncEnvVarsToConvex() {
   );
 }
 
-async function handleZodError<T>(promise: Promise<T>) {
-  try {
-    return await promise;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
-      console.log(`Unexpected ZodError (expected on first deployment):`, error);
-    } else {
-      throw error;
+const safeDeploy = run(() => {
+  const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
+  const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
+
+  async function deployConvex<T>(promise: Promise<T>) {
+    cd(convexPackageDir);
+    try {
+      await promise;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
+        console.log(`Unexpected ZodError (expected on first deployment)`);
+      } else {
+        throw error;
+      }
     }
+
+    const VITE_CONTEXT_URL = fs.readFileSync(envFile, "utf8");
+    console.log("VITE_CONVEX_URL:", VITE_CONTEXT_URL);
+    z.url().parse(VITE_CONTEXT_URL);
+
+    const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
+    console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
+
+    console.log("Setting environment variables in Convex deployment...");
+    cd(convexPackageDir);
+    for (const [key, value] of Object.entries(convexEnv)) {
+      await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+    }
+
+    return {
+      VITE_CONTEXT_URL,
+      VITE_CONVEX_SITE_URL,
+      async buildWebApp() {
+        cd(workspaceRoot);
+        await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
+      },
+    };
   }
-}
+  return {
+    cmd,
+    deployConvex,
+  };
+});
 
 const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
   production: async () => {
     cd(convexPackageDir);
-    await handleZodError(
-      $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`,
+    const webEnv = await safeDeploy.deployConvex(
+      $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
     await syncEnvVarsToConvex();
+    await webEnv.buildWebApp();
   },
   development: async () => {
     throw new Error("Development deployment is not supported");
@@ -94,33 +131,13 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
     cd(convexPackageDir);
 
-    const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
-
-    const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
-    await handleZodError(
-      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${cmd}`,
+    const webEnv = await safeDeploy.deployConvex(
+      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
-    const VITE_CONTEXT_URL = fs.readFileSync(envFile, "utf8");
-    console.log("VITE_CONVEX_URL:", VITE_CONTEXT_URL);
-    z.url().parse(VITE_CONTEXT_URL);
 
-    const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
-    console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
-
-    console.log("Setting environment variables in Convex deployment...");
-    cd(convexPackageDir);
-    for (const [key, value] of Object.entries(convexEnv)) {
-      await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
-    }
-    // Seed the data
-    // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
-    // in the deploy command above, which runs automatically for preview deployments
-    console.log("Seeding preview data...");
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
-    // build the web app
-    cd(workspaceRoot);
-    await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
+    await webEnv.buildWebApp();
   },
 };
 
