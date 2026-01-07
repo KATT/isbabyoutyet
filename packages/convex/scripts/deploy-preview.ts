@@ -1,6 +1,7 @@
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
+import { existsSync } from "node:fs";
 
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
@@ -12,6 +13,17 @@ const __dirname = dirname(__filename);
 const convexPackageDir = resolve(__dirname, "..");
 const workspaceRoot = resolve(convexPackageDir, "../..");
 const webAppDir = join(workspaceRoot, "apps", "web");
+
+// Validate directories exist
+if (!existsSync(webAppDir)) {
+  console.error(`Error: Web app directory does not exist: ${webAppDir}`);
+  process.exit(1);
+}
+
+if (!existsSync(convexPackageDir)) {
+  console.error(`Error: Convex package directory does not exist: ${convexPackageDir}`);
+  process.exit(1);
+}
 
 // Get the branch name from Vercel environment variable
 const branchName =
@@ -33,16 +45,30 @@ if (isPreview) {
 
   // Deploy with preview flag and build command
   // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
+  const deployCommand = `npx convex deploy --preview-create "${branchName}" --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
+  console.log(`Executing: ${deployCommand}`);
+  
   try {
-    execSync(
-      `npx convex deploy --preview-create "${branchName}" --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
-      {
-        stdio: "inherit",
-        cwd: convexPackageDir,
-      },
-    );
+    execSync(deployCommand, {
+      stdio: "inherit",
+      cwd: convexPackageDir,
+      env: process.env,
+    });
   } catch (error) {
-    console.error("Failed to deploy Convex preview:", error);
+    // The error from execSync includes the command output when stdio is "inherit"
+    // but we can still log additional context
+    console.error("\n=== Deployment failed ===");
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      if ("status" in error) {
+        console.error("Exit status:", error.status);
+      }
+      if ("signal" in error) {
+        console.error("Signal:", error.signal);
+      }
+    }
+    console.error("Command that failed:", deployCommand);
+    console.error("Working directory:", convexPackageDir);
     throw error;
   }
 
