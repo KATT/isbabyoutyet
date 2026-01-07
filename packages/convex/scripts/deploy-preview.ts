@@ -66,13 +66,7 @@ if (isPreview) {
   cd(convexPackageDir);
 
   await syncEnvVarsToConvex();
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL`;
-
-  // Step 2: Run build after Convex deployment is complete
-  console.log("\n=== Running build ===");
-  console.log(`Building web app in: ${webAppDir}`);
-  cd(webAppDir);
-  await $`pnpm build`;
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
 
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
