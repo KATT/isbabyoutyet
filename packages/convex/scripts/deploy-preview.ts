@@ -68,8 +68,11 @@ if (isPreview) {
   try {
     await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   } catch (error) {
-    console.error("Error deploying Convex preview deployment:", error);
-    process.exit(1);
+    if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
+      console.log(`Unexpected ZodError: ${error.message}`);
+    } else {
+      throw error;
+    }
   }
 
   console.log("Setting environment variables in Convex deployment...");
