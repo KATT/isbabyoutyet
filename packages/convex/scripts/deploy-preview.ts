@@ -1,4 +1,6 @@
-import { execSync } from "node:child_process";
+#!/usr/bin/env zx
+
+import { $, cd } from "zx";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import { existsSync } from "node:fs";
@@ -36,19 +38,18 @@ if (!existsSync(convexPackageDir)) {
  * Syncs environment variables from process.env to Convex deployment
  * Only syncs variables defined in the env.ts schema
  */
-function syncEnvVarsToConvex() {
+async function syncEnvVarsToConvex() {
   console.log("Setting environment variables in Convex deployment...");
 
   // Set environment variables in Convex
-  for (const [key, value] of Object.entries(convexEnv)) {
-    // Escape the value for shell execution
-    const escapedValue = value.replace(/"/g, '\\"');
-    execSync(`npx convex env set ${key} "${escapedValue}"`, {
-      cwd: convexPackageDir,
-      stdio: "inherit",
-    });
-    console.log(`  ✓ Set ${key}`);
-  }
+  // zx automatically handles escaping, so we don't need to manually escape
+  cd(convexPackageDir);
+  await Promise.all(
+    Object.entries(convexEnv).map(async ([key, value]) => {
+      await $`npx convex env set ${key} ${value}`;
+      console.log(`  ✓ Set ${key}`);
+    }),
+  );
 }
 
 // Determine if this is a preview deployment
@@ -70,24 +71,22 @@ if (isPreview) {
   // Deploy with preview flag and build command
   // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
-  const deployCommand = `npx convex deploy --preview-create "${env.VERCEL_GIT_COMMIT_REF}" --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
-  console.log(`Executing: ${deployCommand}`);
+  cd(convexPackageDir);
 
+  const buildCommand = `cd ${webAppDir} && pnpm build`;
   try {
-    execSync(deployCommand, {
-      stdio: "inherit",
-      cwd: convexPackageDir,
-    });
+    await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd ${buildCommand} --cmd-url-env-var-name VITE_CONVEX_URL`;
   } catch (error) {
-    // The error from execSync includes the command output when stdio is "inherit"
-    // but we can still log additional context
     console.error("\n=== Deployment failed ===");
 
     // Check if this is the specific error about production key in preview environment
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorOutput = error instanceof Error ? error.toString() : String(error);
     if (
-      errorMessage.includes("non-production build environment") &&
-      errorMessage.includes("production Convex deployment")
+      (errorMessage.includes("non-production build environment") ||
+        errorOutput.includes("non-production build environment")) &&
+      (errorMessage.includes("production Convex deployment") ||
+        errorOutput.includes("production Convex deployment"))
     ) {
       console.error("\n❌ ERROR: Production Deploy Key detected in preview environment");
       console.error("\nTo fix this issue:");
@@ -103,23 +102,12 @@ if (isPreview) {
       console.error("\nSee: https://docs.convex.dev/production/hosting/vercel#preview-deployments");
     }
 
-    if (error instanceof Error) {
-      console.error("\nError message:", error.message);
-      if ("status" in error) {
-        console.error("Exit status:", error.status);
-      }
-      if ("signal" in error) {
-        console.error("Signal:", error.signal);
-      }
-    }
-    console.error("\nCommand that failed:", deployCommand);
-    console.error("Working directory:", convexPackageDir);
     throw error;
   }
 
   // After deployment, set environment variables in Convex
   // Use VITE_CONVEX_URL that was set by --cmd-url-env-var-name
-  syncEnvVarsToConvex();
+  await syncEnvVarsToConvex();
 
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
@@ -127,10 +115,7 @@ if (isPreview) {
   console.log("Seeding preview data...");
 
   try {
-    execSync("npx convex run seed:seedPreviewDataPublic", {
-      cwd: convexPackageDir,
-      stdio: "inherit",
-    });
+    await $`npx convex run seed:seedPreviewDataPublic`;
   } catch (cause) {
     console.warn("Warning: Seed function failed, but deployment succeeded", cause);
   }
@@ -139,31 +124,14 @@ if (isPreview) {
   console.log("Deploying Convex to production");
   console.log(`Working directory: ${process.cwd()}`);
   console.log(`Web app directory: ${webAppDir}`);
-  const deployCommand = `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
-  console.log(`Executing: ${deployCommand}`);
+  cd(convexPackageDir);
 
+  const buildCommand = `cd ${webAppDir} && pnpm build`;
   try {
-    execSync(
-      `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
-      {
-        stdio: "inherit",
-        cwd: convexPackageDir,
-      },
-    );
-    syncEnvVarsToConvex();
+    await $`npx convex deploy --cmd ${buildCommand} --cmd-url-env-var-name VITE_CONVEX_URL`;
+    await syncEnvVarsToConvex();
   } catch (error) {
     console.error("\n=== Deployment failed ===");
-    if (error instanceof Error) {
-      console.error("Error message:", error.message);
-      if ("status" in error) {
-        console.error("Exit status:", error.status);
-      }
-      if ("signal" in error) {
-        console.error("Signal:", error.signal);
-      }
-    }
-    console.error("Command that failed:", deployCommand);
-    console.error("Working directory:", convexPackageDir);
     throw error;
   }
 }
