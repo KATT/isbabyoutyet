@@ -1,11 +1,16 @@
 import { execSync } from "node:child_process";
 
 // Get the branch name from Vercel environment variable
-const branchName = process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || "main";
+const branchName =
+  process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || process.env.BRANCH_NAME || "main";
 
 // Determine if this is a preview deployment
 // Vercel sets VERCEL_ENV to "preview" for preview deployments
-const isPreview = process.env.VERCEL_ENV === "preview" || process.env.VERCEL_ENV === "development";
+// For local testing, set PREVIEW=true or VERCEL_ENV=preview
+const isPreview =
+  process.env.VERCEL_ENV === "preview" ||
+  process.env.VERCEL_ENV === "development" ||
+  process.env.PREVIEW === "true";
 
 if (isPreview) {
   // Preview deployment: use --preview flag

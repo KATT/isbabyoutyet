@@ -8,7 +8,7 @@
     "dev": "convex dev",
     "setup": "convex dev --until-success",
     "typecheck": "tsc --noEmit -p convex",
-    "deploy-preview": "tsx scripts/deploy.ts"
+    "deploy-preview": "tsx scripts/deploy-preview.ts"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.9",

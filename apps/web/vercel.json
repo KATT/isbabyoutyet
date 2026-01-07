@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd ../../packages/convex && pnpm deploy",
+  "buildCommand": "pnpm --filter @workspace/convex deploy-preview",
   "outputDirectory": ".output/public",
   "installCommand": "pnpm install",
   "framework": null
