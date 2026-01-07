@@ -47,7 +47,7 @@ if (isPreview) {
   // See: https://docs.convex.dev/production/hosting/vercel#preview-deployments
   // The key should be scoped to Preview environment only in Vercel
   const deployEnv = { ...process.env };
-  
+
   // Support both CONVEX_PREVIEW_DEPLOY_KEY (custom) and CONVEX_DEPLOY_KEY (standard)
   if (process.env.CONVEX_PREVIEW_DEPLOY_KEY) {
     deployEnv.CONVEX_DEPLOY_KEY = process.env.CONVEX_PREVIEW_DEPLOY_KEY;
@@ -77,8 +77,29 @@ if (isPreview) {
     // The error from execSync includes the command output when stdio is "inherit"
     // but we can still log additional context
     console.error("\n=== Deployment failed ===");
+
+    // Check if this is the specific error about production key in preview environment
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (
+      errorMessage.includes("non-production build environment") &&
+      errorMessage.includes("production Convex deployment")
+    ) {
+      console.error("\n❌ ERROR: Production Deploy Key detected in preview environment");
+      console.error("\nTo fix this issue:");
+      console.error("1. Go to your Convex Dashboard → Project Settings");
+      console.error("2. Click 'Generate Preview Deploy Key' (NOT Production Deploy Key)");
+      console.error("3. Copy the Preview Deploy Key");
+      console.error("4. In Vercel → Project Settings → Environment Variables:");
+      console.error("   - Set CONVEX_DEPLOY_KEY to your Preview Deploy Key");
+      console.error("   - Under 'Environment', uncheck all EXCEPT 'Preview'");
+      console.error("   - Save");
+      console.error("5. For Production deployments, create a separate CONVEX_DEPLOY_KEY");
+      console.error("   scoped ONLY to 'Production' environment with a Production Deploy Key");
+      console.error("\nSee: https://docs.convex.dev/production/hosting/vercel#preview-deployments");
+    }
+
     if (error instanceof Error) {
-      console.error("Error message:", error.message);
+      console.error("\nError message:", error.message);
       if ("status" in error) {
         console.error("Exit status:", error.status);
       }
@@ -86,7 +107,7 @@ if (isPreview) {
         console.error("Signal:", error.signal);
       }
     }
-    console.error("Command that failed:", deployCommand);
+    console.error("\nCommand that failed:", deployCommand);
     console.error("Working directory:", convexPackageDir);
     throw error;
   }
