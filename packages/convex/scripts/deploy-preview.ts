@@ -92,7 +92,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     cd(convexPackageDir);
 
     await handleZodError(
-      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo VITE_CONVEX_URL=$VITE_CONVEX_URL"`,
+      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo $VITE_CONVEX_URL"`,
     );
 
     console.log("Setting environment variables in Convex deployment...");
