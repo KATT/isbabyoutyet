@@ -69,7 +69,7 @@ if (isPreview) {
     await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   } catch (error) {
     console.error("Error deploying Convex preview deployment:", error);
-    // process.exit(1);
+    process.exit(1);
   }
 
   console.log("Setting environment variables in Convex deployment...");
@@ -82,7 +82,7 @@ if (isPreview) {
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
   // in the deploy command above, which runs automatically for preview deployments
   console.log("Seeding preview data...");
-  await $`npx convex run seed:seedPreviewDataPublic --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+  await $`npx convex run seed:seedPreviewDataPublic --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 } else {
   await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   await syncEnvVarsToConvex();
