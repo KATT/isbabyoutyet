@@ -7,7 +7,8 @@
     "predev": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "dev": "convex dev",
     "setup": "convex dev --until-success",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex",
+    "deploy:preview": "tsx scripts/deploy-preview.ts"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.9",
@@ -16,7 +17,9 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "@types/web-push": "^3.6.4",
+    "tsx": "^4.8.1",
     "typescript": "^5.7.2"
   },
   "exports": {

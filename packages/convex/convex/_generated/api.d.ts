@@ -14,6 +14,7 @@ import type * as encouragements from "../encouragements.js";
 import type * as http from "../http.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
+import type * as seed from "../seed.js";
 
 import type {
   ApiFromModules,
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
+  seed: typeof seed;
 }>;
 
 /**
