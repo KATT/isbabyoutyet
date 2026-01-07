@@ -94,7 +94,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     cd(convexPackageDir);
 
     const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
-    const cmd = `echo \\$VITE_CONVEX_URL >> ${envFile}`;
+    const cmd = `echo \\\\$VITE_CONVEX_URL >> ${envFile}`;
     await handleZodError(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${cmd}`,
     );
