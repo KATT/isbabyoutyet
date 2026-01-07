@@ -65,7 +65,12 @@ if (isPreview) {
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
   cd(convexPackageDir);
 
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}-2 --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+  try {
+    await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}-2 --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+  } catch (error) {
+    console.error("Error deploying Convex preview deployment:", error);
+    // process.exit(1);
+  }
   await syncEnvVarsToConvex();
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
@@ -73,27 +78,6 @@ if (isPreview) {
   console.log("Seeding preview data...");
   await $`npx convex run seed:seedPreviewDataPublic`;
 } else {
-  // Production deployment: regular deploy (no seeding)
-  console.log("Deploying Convex to production");
-  console.log(`Working directory: ${process.cwd()}`);
-  console.log(`Web app directory: ${webAppDir}`);
-  cd(convexPackageDir);
-
+  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   await syncEnvVarsToConvex();
-  const deployOutput = await $`npx convex deploy`;
-
-  // Extract Convex URL from deployment output
-  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
-  if (urlMatch) {
-    process.env.VITE_CONVEX_URL = urlMatch[0];
-    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
-  } else {
-    console.warn("Warning: Could not extract Convex URL from deployment output");
-  }
-
-  // Step 2: Run build after Convex deployment is complete
-  console.log("\n=== Running build ===");
-  console.log(`Building web app in: ${webAppDir}`);
-  cd(webAppDir);
-  await $`pnpm build`;
 }
