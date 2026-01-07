@@ -65,9 +65,8 @@ if (isPreview) {
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
   cd(convexPackageDir);
 
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}-2 --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   await syncEnvVarsToConvex();
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
-
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
   // in the deploy command above, which runs automatically for preview deployments
