@@ -1,10 +1,9 @@
 #!/usr/bin/env zx
 
-import { $, cd } from "zx";
-import { fileURLToPath } from "node:url";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { existsSync, writeFileSync, unlinkSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { $, cd } from "zx";
 import { convexEnvSchema, envSchema } from "../src/env";
 
 // Get the directory of this script
@@ -35,20 +34,15 @@ if (!existsSync(convexPackageDir)) {
   process.exit(1);
 }
 
-/**
- * Creates a temporary .env file with Convex environment variables
- * Returns the path to the temporary file
- */
-function createTempEnvFile(): string {
-  const envFileContent = Object.entries(convexEnv).map(([key, value]) => {
-    // Escape newlines and quotes in values
-    const escapedValue = String(value).replace(/\n/g, "\\n").replace(/"/g, '\\"');
-    return `${key}="${escapedValue}"`;
-  });
-  envFileContent.push(`CONVEX_DEPLOY_KEY=${env.CONVEX_DEPLOY_KEY}`);
-  const tempEnvFile = join(tmpdir(), `convex-env-${Date.now()}.env`);
-  writeFileSync(tempEnvFile, envFileContent.join("\n"), "utf-8");
-  return tempEnvFile;
+async function syncEnvVarsToConvex() {
+  console.log("Setting environment variables in Convex deployment...");
+  cd(convexPackageDir);
+  await Promise.all(
+    Object.entries(convexEnv).map(async ([key, value]) => {
+      await $`npx convex env set ${key} ${value}`;
+      console.log(`  ✓ Set ${key}`);
+    }),
+  );
 }
 
 // Determine if this is a preview deployment
@@ -71,10 +65,8 @@ if (isPreview) {
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
   cd(convexPackageDir);
 
-  // Create temporary env file and use it for deployment
-  const tempEnvFile = createTempEnvFile();
-
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --env-file ${tempEnvFile} --cmd-url-env-var-name VITE_CONVEX_URL`;
+  await syncEnvVarsToConvex();
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL`;
 
   // Step 2: Run build after Convex deployment is complete
   console.log("\n=== Running build ===");
@@ -94,23 +86,16 @@ if (isPreview) {
   console.log(`Web app directory: ${webAppDir}`);
   cd(convexPackageDir);
 
-  // Step 1: Deploy Convex first (without build command)
-  // Create temporary env file and use it for deployment
-  const tempEnvFile = createTempEnvFile();
-  try {
-    const deployOutput = await $`npx convex deploy --env-file ${tempEnvFile}`;
+  await syncEnvVarsToConvex();
+  const deployOutput = await $`npx convex deploy`;
 
-    // Extract Convex URL from deployment output
-    const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
-    if (urlMatch) {
-      process.env.VITE_CONVEX_URL = urlMatch[0];
-      console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
-    } else {
-      console.warn("Warning: Could not extract Convex URL from deployment output");
-    }
-  } finally {
-    // Clean up temporary env file
-    unlinkSync(tempEnvFile);
+  // Extract Convex URL from deployment output
+  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
+  if (urlMatch) {
+    process.env.VITE_CONVEX_URL = urlMatch[0];
+    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
+  } else {
+    console.warn("Warning: Could not extract Convex URL from deployment output");
   }
 
   // Step 2: Run build after Convex deployment is complete
