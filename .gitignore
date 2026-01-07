@@ -14,3 +14,4 @@ count.txt
 todos.json
 /src/routeTree.gen.ts
 .vercel
+.next
