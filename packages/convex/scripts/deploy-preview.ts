@@ -3,7 +3,8 @@
 import { $, cd } from "zx";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync, unlinkSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { convexEnvSchema, envSchema } from "../src/env";
 
 // Get the directory of this script
@@ -35,21 +36,21 @@ if (!existsSync(convexPackageDir)) {
 }
 
 /**
- * Syncs environment variables from process.env to Convex deployment
- * Only syncs variables defined in the env.ts schema
+ * Creates a temporary .env file with Convex environment variables
+ * Returns the path to the temporary file
  */
-async function syncEnvVarsToConvex() {
-  console.log("Setting environment variables in Convex deployment...");
+function createTempEnvFile(): string {
+  const envFileContent = Object.entries(convexEnv)
+    .map(([key, value]) => {
+      // Escape newlines and quotes in values
+      const escapedValue = String(value).replace(/\n/g, "\\n").replace(/"/g, '\\"');
+      return `${key}="${escapedValue}"`;
+    })
+    .join("\n");
 
-  // Set environment variables in Convex
-  // zx automatically handles escaping, so we don't need to manually escape
-  cd(convexPackageDir);
-  await Promise.all(
-    Object.entries(convexEnv).map(async ([key, value]) => {
-      await $`npx convex env set ${key} ${value}`;
-      console.log(`  ✓ Set ${key}`);
-    }),
-  );
+  const tempEnvFile = join(tmpdir(), `convex-env-${Date.now()}.env`);
+  writeFileSync(tempEnvFile, envFileContent, "utf-8");
+  return tempEnvFile;
 }
 
 // Determine if this is a preview deployment
@@ -72,19 +73,10 @@ if (isPreview) {
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
   cd(convexPackageDir);
 
-  const deployOutput = await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}`;
+  // Create temporary env file and use it for deployment
+  const tempEnvFile = createTempEnvFile();
 
-  // Extract Convex URL from deployment output
-  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
-  if (urlMatch) {
-    process.env.VITE_CONVEX_URL = urlMatch[0];
-    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
-  } else {
-    console.warn("Warning: Could not extract Convex URL from deployment output");
-  }
-
-  // After deployment, set environment variables in Convex
-  await syncEnvVarsToConvex();
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --env-file ${tempEnvFile} --cmd-url-env-var-name VITE_CONVEX_URL`;
 
   // Step 2: Run build after Convex deployment is complete
   console.log("\n=== Running build ===");
@@ -105,18 +97,23 @@ if (isPreview) {
   cd(convexPackageDir);
 
   // Step 1: Deploy Convex first (without build command)
-  const deployOutput = await $`npx convex deploy`;
+  // Create temporary env file and use it for deployment
+  const tempEnvFile = createTempEnvFile();
+  try {
+    const deployOutput = await $`npx convex deploy --env-file ${tempEnvFile}`;
 
-  // Extract Convex URL from deployment output
-  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
-  if (urlMatch) {
-    process.env.VITE_CONVEX_URL = urlMatch[0];
-    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
-  } else {
-    console.warn("Warning: Could not extract Convex URL from deployment output");
+    // Extract Convex URL from deployment output
+    const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
+    if (urlMatch) {
+      process.env.VITE_CONVEX_URL = urlMatch[0];
+      console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
+    } else {
+      console.warn("Warning: Could not extract Convex URL from deployment output");
+    }
+  } finally {
+    // Clean up temporary env file
+    unlinkSync(tempEnvFile);
   }
-
-  await syncEnvVarsToConvex();
 
   // Step 2: Run build after Convex deployment is complete
   console.log("\n=== Running build ===");
