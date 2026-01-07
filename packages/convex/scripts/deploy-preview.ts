@@ -107,10 +107,14 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
     console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
 
+    console.log("Setting environment variables in Convex deployment...");
     cd(convexPackageDir);
-    for (const [key, value] of Object.entries(convexEnv)) {
-      await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
-    }
+    await Promise.all(
+      Object.entries(convexEnv).map(async ([key, value]) => {
+        await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+        console.log(`  ✓ Set ${key}`);
+      }),
+    );
     // Seed the data
     // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
     // in the deploy command above, which runs automatically for preview deployments
