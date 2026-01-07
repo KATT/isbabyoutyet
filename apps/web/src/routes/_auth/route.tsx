@@ -9,6 +9,11 @@ const getToken = createServerFn({ method: "GET" }).handler(async () => {
 });
 
 export const Route = createFileRoute("/_auth")({
+  headers() {
+    return {
+      Vary: "Cookie",
+    };
+  },
   beforeLoad: async (opts) => {
     // Check authentication server-side
     const token = await getToken();
