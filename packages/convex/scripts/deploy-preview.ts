@@ -1,4 +1,17 @@
 import { execSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+
+// Get the directory of this script
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Resolve the web app directory relative to the convex package
+// This script is in packages/convex/scripts/
+// Web app is in apps/web/
+const convexPackageDir = resolve(__dirname, "..");
+const workspaceRoot = resolve(convexPackageDir, "../..");
+const webAppDir = join(workspaceRoot, "apps", "web");
 
 // Get the branch name from Vercel environment variable
 const branchName =
@@ -15,20 +28,26 @@ const isPreview =
 if (isPreview) {
   // Preview deployment: use --preview flag
   console.log(`Deploying Convex preview deployment for branch: ${branchName}`);
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log(`Web app directory: ${webAppDir}`);
 
   // Deploy with preview flag and build command
   // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
-  execSync(
-    `npx convex deploy --preview-create "${branchName}" --cmd "cd ../../apps/web && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
-    {
-      stdio: "inherit",
-      cwd: process.cwd(),
-    },
-  );
+  try {
+    execSync(
+      `npx convex deploy --preview-create "${branchName}" --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
+      {
+        stdio: "inherit",
+        cwd: convexPackageDir,
+      },
+    );
+  } catch (error) {
+    console.error("Failed to deploy Convex preview:", error);
+    throw error;
+  }
 
   // After deployment, seed the data
   console.log("Seeding preview data...");
-  const convexPath = process.cwd();
 
   // Use VITE_CONVEX_URL that was set by --cmd-url-env-var-name
   // convex run can use CONVEX_URL environment variable
@@ -40,7 +59,7 @@ if (isPreview) {
 
   try {
     execSync("npx convex run seed:seedPreviewDataPublic", {
-      cwd: convexPath,
+      cwd: convexPackageDir,
       stdio: "inherit",
       env: { ...process.env, CONVEX_URL: convexUrl || process.env.CONVEX_URL },
     });
@@ -50,11 +69,18 @@ if (isPreview) {
 } else {
   // Production deployment: regular deploy (no seeding)
   console.log("Deploying Convex to production");
-  execSync(
-    `npx convex deploy --cmd "cd ../../apps/web && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
-    {
-      stdio: "inherit",
-      cwd: process.cwd(),
-    },
-  );
+  console.log(`Working directory: ${process.cwd()}`);
+  console.log(`Web app directory: ${webAppDir}`);
+  try {
+    execSync(
+      `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
+      {
+        stdio: "inherit",
+        cwd: convexPackageDir,
+      },
+    );
+  } catch (error) {
+    console.error("Failed to deploy Convex to production:", error);
+    throw error;
+  }
 }
