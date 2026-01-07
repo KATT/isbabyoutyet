@@ -109,12 +109,9 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
 
     console.log("Setting environment variables in Convex deployment...");
     cd(convexPackageDir);
-    await Promise.all(
-      Object.entries(convexEnv).map(async ([key, value]) => {
-        await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
-        console.log(`  ✓ Set ${key}`);
-      }),
-    );
+    for (const [key, value] of Object.entries(convexEnv)) {
+      await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+    }
     // Seed the data
     // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
     // in the deploy command above, which runs automatically for preview deployments
@@ -122,8 +119,8 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     // build the web app
-    cd(webAppDir);
-    await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm build`;
+    cd(workspaceRoot);
+    await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
   },
 };
 
