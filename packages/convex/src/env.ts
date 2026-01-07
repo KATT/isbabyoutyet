@@ -2,7 +2,6 @@ import * as z from "zod";
 import { proxied } from "./utils";
 
 export const envSchema = z.object({
-  NODE_ENV: z.enum(["production", "development", "test"]),
   // Better Auth secret for signing tokens and encrypting data
   BETTER_AUTH_SECRET: z.string().min(1, "BETTER_AUTH_SECRET is required"),
 
