@@ -100,7 +100,6 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     const VITE_CONTEXT_URL = fs.readFileSync(envFile, "utf8");
     console.log("VITE_CONVEX_URL:", VITE_CONTEXT_URL);
 
-    //return convexUrl.replace(".convex.cloud", ".convex.site");
     const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
     console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
 
