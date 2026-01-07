@@ -87,17 +87,18 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
 
   // Check subscription status on server using Convex query (skip in SSR)
-  const isSubscribed =
-    useConvexQuery(
-      api.pushSubscriptions.isSubscribed,
-      pushSubscriptionQuery.data
-        ? { babyId, endpoint: pushSubscriptionQuery.data.endpoint }
-        : "skip",
-    ) ?? false;
+  const isSubscribed = useConvexQuery(
+    api.pushSubscriptions.isSubscribed,
+    pushSubscriptionQuery.data ? { babyId, endpoint: pushSubscriptionQuery.data.endpoint } : "skip",
+  );
 
   // Subscribe mutation (TanStack mutation that handles browser permission + Convex)
   const subscribeMutation = useMutation({
     mutationFn: async () => {
+      if (!isSupported) {
+        throw new Error("Push notifications are not supported in this browser.");
+      }
+
       // Request permission
       if (Notification.permission === "default") {
         const permissionResult = await Notification.requestPermission();
@@ -203,23 +204,6 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           </ol>
         </DialogContent>
       </Dialog>
-    );
-  }
-
-  // Not supported (non-iOS, older browser)
-  if (!isSupported) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="secondary" size="lg" disabled>
-            <Bell className="w-5 h-5" />
-            Notifications Unavailable
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>Push notifications are not supported in this browser.</p>
-        </TooltipContent>
-      </Tooltip>
     );
   }
 
