@@ -108,7 +108,6 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
-    await syncEnvVarsToConvex();
     await webEnv.buildWebApp();
   },
   development: async () => {
