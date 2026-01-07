@@ -74,7 +74,7 @@ console.log(`Web app directory: ${webAppDir}`);
 cd(convexPackageDir);
 
 try {
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "npx convex env set BETTER_AUTH_SECRET test-123 && cd ${webAppDir} && pnpm build"`;
+  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
 } catch (error) {
   if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
     console.log(`Unexpected ZodError (expected on first deployment):`, error);

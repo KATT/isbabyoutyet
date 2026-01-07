@@ -1,20 +1,15 @@
 import { getThemePrimaryColor } from "@/components/baby/utils";
+import { getConvexClient } from "@/get-convex-client";
 import { createFileRoute } from "@tanstack/react-router";
-import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
-        const convexUrl = process.env.VITE_CONVEX_URL;
-        if (!convexUrl) {
-          return new Response("VITE_CONVEX_URL not set", { status: 500 });
-        }
-
-        const client = new ConvexHttpClient(convexUrl);
+      GET: async (opts) => {
+        const client = getConvexClient();
         const baby = await client.query(api.baby.getByPublicId, {
-          id: params._id,
+          id: opts.params._id,
         });
 
         if (!baby) {
