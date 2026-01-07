@@ -40,16 +40,14 @@ if (!existsSync(convexPackageDir)) {
  * Returns the path to the temporary file
  */
 function createTempEnvFile(): string {
-  const envFileContent = Object.entries(convexEnv)
-    .map(([key, value]) => {
-      // Escape newlines and quotes in values
-      const escapedValue = String(value).replace(/\n/g, "\\n").replace(/"/g, '\\"');
-      return `${key}="${escapedValue}"`;
-    })
-    .join("\n");
-
+  const envFileContent = Object.entries(convexEnv).map(([key, value]) => {
+    // Escape newlines and quotes in values
+    const escapedValue = String(value).replace(/\n/g, "\\n").replace(/"/g, '\\"');
+    return `${key}="${escapedValue}"`;
+  });
+  envFileContent.push(`CONVEX_DEPLOY_KEY=${env.CONVEX_DEPLOY_KEY}`);
   const tempEnvFile = join(tmpdir(), `convex-env-${Date.now()}.env`);
-  writeFileSync(tempEnvFile, envFileContent, "utf-8");
+  writeFileSync(tempEnvFile, envFileContent.join("\n"), "utf-8");
   return tempEnvFile;
 }
 
