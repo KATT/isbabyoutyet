@@ -9,7 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const env = envSchema.parse(process.env);
-const convexEnv = convexEnvSchema.parse(process.env);
+const convexEnv = convexEnvSchema.parse({
+  ...env,
+  SITE_URL: `https://${env.VERCEL_BRANCH_URL}`,
+});
 
 // Resolve the web app directory relative to the convex package
 // This script is in packages/convex/scripts/
