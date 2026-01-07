@@ -17,13 +17,10 @@ function getConvexUrl(): string {
 function getConvexSiteUrl(): string {
   // If explicitly set, use it
   const siteUrl = import.meta.env.VITE_CONVEX_SITE_URL;
-  if (siteUrl) {
-    return siteUrl;
+  if (!siteUrl) {
+    throw new Error("VITE_CONVEX_SITE_URL must be set");
   }
-
-  // Derive from VITE_CONVEX_URL by replacing .convex.cloud with .convex.site
-  const convexUrl = getConvexUrl();
-  return convexUrl.replace(".convex.cloud", ".convex.site");
+  return siteUrl;
 }
 
 export const authServer = convexBetterAuthReactStart({
