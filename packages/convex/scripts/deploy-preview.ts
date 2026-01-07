@@ -55,7 +55,7 @@ async function syncEnvVarsToConvex() {
 }
 
 if (env.VERCEL_ENV !== "preview") {
-  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "npx convex env set BETTER_AUTH_SECRET test-123 && cd ${webAppDir} && pnpm build"`;
+  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "npx convex env set BETTER_AUTH_SECRET $BETTER_AUTH_SECRET && cd ${webAppDir} && pnpm build"`;
   await syncEnvVarsToConvex();
   process.exit(0);
 }
