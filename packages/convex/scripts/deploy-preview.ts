@@ -25,7 +25,7 @@ const env = envSchema.parse(process.env);
 const siteUrl =
   env.VERCEL_ENV === "preview"
     ? `https://${env.VERCEL_BRANCH_URL}`
-    : `https://${process.env.VERCEL_URL || "localhost:3000"}`;
+    : `https://${process.env.VERCEL_URL}`;
 
 const convexEnv = convexEnvSchema.parse({
   ...env,
