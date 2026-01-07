@@ -97,16 +97,28 @@ if (isPreview) {
   console.log("Deploying Convex to production");
   console.log(`Working directory: ${process.cwd()}`);
   console.log(`Web app directory: ${webAppDir}`);
+  const deployCommand = `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`;
+  console.log(`Executing: ${deployCommand}`);
+  
   try {
-    execSync(
-      `npx convex deploy --cmd "cd ${webAppDir} && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
-      {
-        stdio: "inherit",
-        cwd: convexPackageDir,
-      },
-    );
+    execSync(deployCommand, {
+      stdio: "inherit",
+      cwd: convexPackageDir,
+      env: process.env,
+    });
   } catch (error) {
-    console.error("Failed to deploy Convex to production:", error);
+    console.error("\n=== Deployment failed ===");
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      if ("status" in error) {
+        console.error("Exit status:", error.status);
+      }
+      if ("signal" in error) {
+        console.error("Signal:", error.signal);
+      }
+    }
+    console.error("Command that failed:", deployCommand);
+    console.error("Working directory:", convexPackageDir);
     throw error;
   }
 }
