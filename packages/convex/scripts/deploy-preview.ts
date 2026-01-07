@@ -1,9 +1,9 @@
 #!/usr/bin/env zx
 
 import * as fs from "node:fs";
-import { existsSync } from "node:fs";
+
 import * as path from "node:path";
-import { dirname, join, resolve } from "node:path";
+
 import { fileURLToPath } from "node:url";
 import { $, cd, os } from "zx";
 import { convexEnvSchema, envSchema } from "../src/env";
@@ -15,7 +15,7 @@ const run = <T>(fn: () => T): T => {
 
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 const env = envSchema.parse(process.env);
 
@@ -35,31 +35,9 @@ const convexEnv = convexEnvSchema.parse({
 // Resolve the web app directory relative to the convex package
 // This script is in packages/convex/scripts/
 // Web app is in apps/web/
-const convexPackageDir = resolve(__dirname, "..");
-const workspaceRoot = resolve(convexPackageDir, "../..");
-const webAppDir = join(workspaceRoot, "apps", "web");
-
-// Validate directories exist
-if (!existsSync(webAppDir)) {
-  console.error(`Error: Web app directory does not exist: ${webAppDir}`);
-  process.exit(1);
-}
-
-if (!existsSync(convexPackageDir)) {
-  console.error(`Error: Convex package directory does not exist: ${convexPackageDir}`);
-  process.exit(1);
-}
-
-async function syncEnvVarsToConvex() {
-  console.log("Setting environment variables in Convex deployment...");
-  cd(convexPackageDir);
-  await Promise.all(
-    Object.entries(convexEnv).map(async ([key, value]) => {
-      await $`npx convex env set ${key} ${value}`;
-      console.log(`  ✓ Set ${key}`);
-    }),
-  );
-}
+const convexPackageDir = path.resolve(__dirname, "..");
+const workspaceRoot = path.resolve(convexPackageDir, "../..");
+const webAppDir = path.join(workspaceRoot, "apps", "web");
 
 const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
