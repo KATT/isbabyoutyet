@@ -27,7 +27,7 @@ if (isPreview) {
       stdio: "inherit",
       env: { ...process.env, CONVEX_URL: convexUrl || process.env.CONVEX_URL },
     });
-  } catch (_error) {
-    console.warn("Warning: Seed function failed, but build succeeded");
+  } catch (cause) {
+    console.warn("Warning: Seed function failed, but build succeeded", cause);
   }
 }
