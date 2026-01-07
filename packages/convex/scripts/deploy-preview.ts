@@ -87,7 +87,6 @@ console.log("Setting environment variables in Convex deployment...");
 cd(convexPackageDir);
 for (const [key, value] of Object.entries(convexEnv)) {
   await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
-  console.log(`  ✓ Set ${key}`);
 }
 // Seed the data
 // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
