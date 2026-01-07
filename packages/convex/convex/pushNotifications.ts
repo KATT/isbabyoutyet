@@ -1,21 +1,12 @@
 "use node";
 
 import { v } from "convex/values";
-import _webPush from "web-push";
+import webPush from "web-push";
 import { convexEnv } from "../src/env";
 import { proxied } from "../src/utils";
 import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction } from "./_generated/server";
-
-const webPush = proxied(() => {
-  _webPush.setVapidDetails(
-    convexEnv.VAPID_SUBJECT,
-    convexEnv.VAPID_PUBLIC_KEY,
-    convexEnv.VAPID_PRIVATE_KEY,
-  );
-  return _webPush;
-});
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
@@ -32,6 +23,11 @@ async function sendNotificationToSubscription(
     tag?: string;
   },
 ): Promise<boolean> {
+  webPush.setVapidDetails(
+    convexEnv.VAPID_SUBJECT,
+    convexEnv.VAPID_PUBLIC_KEY,
+    convexEnv.VAPID_PRIVATE_KEY,
+  );
   try {
     const pushSubscription = {
       endpoint: subscription.endpoint,
