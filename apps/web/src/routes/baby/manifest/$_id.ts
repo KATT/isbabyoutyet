@@ -23,7 +23,7 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
 
         const name = `Is ${baby.name} out yet?`;
         const themeColor = getThemePrimaryColor(baby.theme);
-        const startUrl = `/baby/${baby.publicId}`;
+        const startUrl = `/baby/${baby._id}`;
 
         const manifest = {
           name,
