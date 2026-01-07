@@ -68,57 +68,35 @@ if (isPreview) {
   // See: https://docs.convex.dev/production/hosting/vercel#preview-deployments
   // The key should be scoped to Preview environment only in Vercel
 
-  // Deploy with preview flag and build command
-  // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
+  // Step 1: Deploy Convex first (without build command)
   // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
   cd(convexPackageDir);
 
-  const buildCommand = `cd ${webAppDir} && pnpm build`;
-  try {
-    await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd ${buildCommand} --cmd-url-env-var-name VITE_CONVEX_URL`;
-  } catch (error) {
-    console.error("\n=== Deployment failed ===");
+  const deployOutput = await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}`;
 
-    // Check if this is the specific error about production key in preview environment
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorOutput = error instanceof Error ? error.toString() : String(error);
-    if (
-      (errorMessage.includes("non-production build environment") ||
-        errorOutput.includes("non-production build environment")) &&
-      (errorMessage.includes("production Convex deployment") ||
-        errorOutput.includes("production Convex deployment"))
-    ) {
-      console.error("\n❌ ERROR: Production Deploy Key detected in preview environment");
-      console.error("\nTo fix this issue:");
-      console.error("1. Go to your Convex Dashboard → Project Settings");
-      console.error("2. Click 'Generate Preview Deploy Key' (NOT Production Deploy Key)");
-      console.error("3. Copy the Preview Deploy Key");
-      console.error("4. In Vercel → Project Settings → Environment Variables:");
-      console.error("   - Set CONVEX_DEPLOY_KEY to your Preview Deploy Key");
-      console.error("   - Under 'Environment', uncheck all EXCEPT 'Preview'");
-      console.error("   - Save");
-      console.error("5. For Production deployments, create a separate CONVEX_DEPLOY_KEY");
-      console.error("   scoped ONLY to 'Production' environment with a Production Deploy Key");
-      console.error("\nSee: https://docs.convex.dev/production/hosting/vercel#preview-deployments");
-    }
-
-    throw error;
+  // Extract Convex URL from deployment output
+  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
+  if (urlMatch) {
+    process.env.VITE_CONVEX_URL = urlMatch[0];
+    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
+  } else {
+    console.warn("Warning: Could not extract Convex URL from deployment output");
   }
 
   // After deployment, set environment variables in Convex
-  // Use VITE_CONVEX_URL that was set by --cmd-url-env-var-name
   await syncEnvVarsToConvex();
+
+  // Step 2: Run build after Convex deployment is complete
+  console.log("\n=== Running build ===");
+  console.log(`Building web app in: ${webAppDir}`);
+  cd(webAppDir);
+  await $`pnpm build`;
 
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
   // in the deploy command above, which runs automatically for preview deployments
   console.log("Seeding preview data...");
-
-  try {
-    await $`npx convex run seed:seedPreviewDataPublic`;
-  } catch (cause) {
-    console.warn("Warning: Seed function failed, but deployment succeeded", cause);
-  }
+  await $`npx convex run seed:seedPreviewDataPublic`;
 } else {
   // Production deployment: regular deploy (no seeding)
   console.log("Deploying Convex to production");
@@ -126,12 +104,23 @@ if (isPreview) {
   console.log(`Web app directory: ${webAppDir}`);
   cd(convexPackageDir);
 
-  const buildCommand = `cd ${webAppDir} && pnpm build`;
-  try {
-    await $`npx convex deploy --cmd ${buildCommand} --cmd-url-env-var-name VITE_CONVEX_URL`;
-    await syncEnvVarsToConvex();
-  } catch (error) {
-    console.error("\n=== Deployment failed ===");
-    throw error;
+  // Step 1: Deploy Convex first (without build command)
+  const deployOutput = await $`npx convex deploy`;
+
+  // Extract Convex URL from deployment output
+  const urlMatch = deployOutput.stdout.match(/https:\/\/[^\s]+\.cloud\.convex\.dev/);
+  if (urlMatch) {
+    process.env.VITE_CONVEX_URL = urlMatch[0];
+    console.log(`Detected Convex URL: ${process.env.VITE_CONVEX_URL}`);
+  } else {
+    console.warn("Warning: Could not extract Convex URL from deployment output");
   }
+
+  await syncEnvVarsToConvex();
+
+  // Step 2: Run build after Convex deployment is complete
+  console.log("\n=== Running build ===");
+  console.log(`Building web app in: ${webAppDir}`);
+  cd(webAppDir);
+  await $`pnpm build`;
 }
