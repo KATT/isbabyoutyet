@@ -93,16 +93,17 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
     cd(convexPackageDir);
 
-    const convexEnvVarName = "\\$VITE_CONVEX_URL";
-
     const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
     await handleZodError(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo \\\$VITE_CONVEX_URL >> ${envFile}"`,
     );
-    const envContent = fs.readFileSync(envFile, "utf8");
-    console.log("VITE_CONVEX_URL:", envContent);
+    const VITE_CONTEXT_URL = fs.readFileSync(envFile, "utf8");
+    console.log("VITE_CONVEX_URL:", VITE_CONTEXT_URL);
 
-    console.log("Setting environment variables in Convex deployment...");
+    //return convexUrl.replace(".convex.cloud", ".convex.site");
+    const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
+    console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
+
     cd(convexPackageDir);
     for (const [key, value] of Object.entries(convexEnv)) {
       await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
@@ -112,6 +113,10 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     // in the deploy command above, which runs automatically for preview deployments
     console.log("Seeding preview data...");
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
+
+    // build the web app
+    cd(webAppDir);
+    await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm build`;
   },
 };
 
