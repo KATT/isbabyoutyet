@@ -3,7 +3,6 @@
 import { v } from "convex/values";
 import webPush from "web-push";
 import { convexEnv } from "../src/env";
-import { proxied } from "../src/utils";
 import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction } from "./_generated/server";
