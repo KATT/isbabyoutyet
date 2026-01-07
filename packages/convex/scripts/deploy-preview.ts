@@ -66,12 +66,18 @@ if (isPreview) {
   cd(convexPackageDir);
 
   try {
-    await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF}-2 --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+    await $`npx convex deploy --preview-create --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   } catch (error) {
     console.error("Error deploying Convex preview deployment:", error);
     // process.exit(1);
   }
-  await syncEnvVarsToConvex();
+
+  console.log("Setting environment variables in Convex deployment...");
+  cd(convexPackageDir);
+  for (const [key, value] of Object.entries(convexEnv)) {
+    await $`npx convex env set ${key} ${value}`;
+    console.log(`  ✓ Set ${key}`);
+  }
   // Seed the data
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
   // in the deploy command above, which runs automatically for preview deployments
