@@ -91,7 +91,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
     cd(convexPackageDir);
 
-    const convexEnvVarName = "$VITE_CONVEX_URL";
+    const convexEnvVarName = "\\$VITE_CONVEX_URL";
     await handleZodError(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo VITE_CONVEX_URL=${convexEnvVarName} >> ${os.tmpdir()}/env.txt"`,
     );
