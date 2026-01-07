@@ -91,8 +91,6 @@ const safeDeploy = run(() => {
     }
 
     return {
-      VITE_CONTEXT_URL,
-      VITE_CONVEX_SITE_URL,
       async buildWebApp() {
         cd(workspaceRoot);
         await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
