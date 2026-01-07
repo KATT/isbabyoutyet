@@ -4,7 +4,6 @@ import type { DatabaseReader } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
-import { convexEnv as env } from "../src/env";
 
 export const listByUser = query({
   args: {},
