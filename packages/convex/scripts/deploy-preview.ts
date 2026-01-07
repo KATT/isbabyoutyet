@@ -1,9 +1,11 @@
 #!/usr/bin/env zx
 
+import * as fs from "node:fs";
 import { existsSync } from "node:fs";
+import * as path from "node:path";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { $, cd, fs, os } from "zx";
+import { $, cd, os } from "zx";
 import { convexEnvSchema, envSchema } from "../src/env";
 
 // Get the directory of this script
@@ -92,12 +94,13 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     cd(convexPackageDir);
 
     const convexEnvVarName = "\\$VITE_CONVEX_URL";
+
+    const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
     await handleZodError(
-      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo VITE_CONVEX_URL=\\\$VITE_CONVEX_URL >> ${os.tmpdir()}/env.txt"`,
+      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "echo \\\$VITE_CONVEX_URL >> ${envFile}"`,
     );
-    const envFile = join(os.tmpdir(), "env.txt");
     const envContent = fs.readFileSync(envFile, "utf8");
-    console.log("Environment variables:", envContent);
+    console.log("VITE_CONVEX_URL:", envContent);
 
     console.log("Setting environment variables in Convex deployment...");
     cd(convexPackageDir);
