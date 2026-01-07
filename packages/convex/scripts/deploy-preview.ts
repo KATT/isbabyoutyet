@@ -123,14 +123,6 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     console.log(`Working directory: ${process.cwd()}`);
     console.log(`Web app directory: ${webAppDir}`);
 
-    // For preview deployments, CONVEX_DEPLOY_KEY should be set to a Preview Deploy Key
-    // See: https://docs.convex.dev/production/hosting/vercel#preview-deployments
-    // The key should be scoped to Preview environment only in Vercel
-
-    // Step 1: Deploy Convex first (without build command)
-    // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
-    cd(convexPackageDir);
-
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
