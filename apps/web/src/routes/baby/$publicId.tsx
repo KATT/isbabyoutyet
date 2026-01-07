@@ -1,5 +1,4 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
-import { Separator } from "@workspace/ui/components/separator";
+import { Card, CardContent } from "@workspace/ui/components/card";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { EncouragementForm, EncouragementsFeed } from "@/components/baby/encouragements";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
@@ -185,42 +184,39 @@ function BabyPage() {
             }
             settingsOpen={!!search.settings}
           />
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
+          <h1 className="text-2xl sm:text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-3 sm:py-6 md:py-10 px-4 sm:px-6 text-center">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is {baby.name} out yet?
             </span>
           </h1>
         </div>
-        <section className="relative px-6 py-12 text-center overflow-hidden">
+        <section className="relative px-4 sm:px-6 py-4 sm:py-6 md:py-12 text-center overflow-hidden">
           <div className="relative max-w-5xl mx-auto">
-            <Card>
-              <CardContent>
+            <Card className="gap-4 sm:gap-6 py-4 sm:py-6">
+              <CardContent className="space-y-4 sm:space-y-6">
                 <StatusDisplay baby={baby} currentStatus={currentStatus} />
                 <NotificationSubscribe
                   babyId={babyDoc._id}
                   vapidPublicKey={loaderData.vapidPublicKey}
                 />
-                <Separator className="my-4" />
-              </CardContent>
-              <CardFooter>
                 <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-              </CardFooter>
+              </CardContent>
             </Card>
           </div>
         </section>
 
         {/* Encouragements Section */}
         {!baby.encouragementsDisabled && (
-          <section className="relative px-6 pb-12">
-            <div className="relative max-w-2xl mx-auto space-y-8">
-              <Card>
-                <CardContent className="pt-6">
+          <section className="relative px-4 sm:px-6 pb-6 md:pb-12">
+            <div className="relative max-w-2xl mx-auto space-y-4 sm:space-y-8">
+              <Card className="py-4 sm:py-6">
+                <CardContent className="pt-2 sm:pt-6">
                   <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardContent className="pt-6">
+              <Card className="py-4 sm:py-6">
+                <CardContent className="pt-2 sm:pt-6">
                   <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
                 </CardContent>
               </Card>
@@ -229,10 +225,10 @@ function BabyPage() {
         )}
 
         {/* Footer */}
-        <div className="text-center py-8 border-t border-border/50">
+        <div className="text-center py-4 sm:py-8 border-t border-border/50">
           <Link
             to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors px-4"
           >
             Having a baby? Are people messaging you non-stop? Create your own page →
           </Link>
