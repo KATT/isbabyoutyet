@@ -19,7 +19,7 @@ if (isPreview) {
   // Deploy with preview flag and build command
   // The --cmd-url-env-var-name sets VITE_CONVEX_URL for the build command
   execSync(
-    `npx convex deploy --preview "${branchName}" --cmd "cd ../../apps/web && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
+    `npx convex deploy --preview-create "${branchName}" --cmd "cd ../../apps/web && pnpm build" --cmd-url-env-var-name VITE_CONVEX_URL`,
     {
       stdio: "inherit",
       cwd: process.cwd(),
