@@ -1,0 +1,28 @@
+{
+  "name": "@workspace/convex",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
+    "dev": "convex dev",
+    "setup": "convex dev --until-success",
+    "typecheck": "tsc --noEmit -p convex"
+  },
+  "dependencies": {
+    "@convex-dev/better-auth": "^0.10.9",
+    "better-auth": "^1.4.9",
+    "convex": "^1.31.2",
+    "web-push": "^3.6.7"
+  },
+  "devDependencies": {
+    "@types/web-push": "^3.6.4",
+    "typescript": "^5.7.2"
+  },
+  "exports": {
+    "./convex/*": "./convex/*.ts",
+    "./convex/_generated/*": "./convex/_generated/*.js",
+    "./src/*": "./src/*.ts"
+  }
+}
+

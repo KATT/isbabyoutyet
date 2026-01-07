@@ -1,7 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx convex deploy --cmd 'pnpm build'",
-  "outputDirectory": ".output/public",
-  "installCommand": "pnpm install",
-  "framework": null
-}
