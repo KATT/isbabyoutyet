@@ -82,7 +82,7 @@ if (isPreview) {
   // Note: Alternatively, you could use --preview-run 'seed:seedPreviewDataPublic'
   // in the deploy command above, which runs automatically for preview deployments
   console.log("Seeding preview data...");
-  await $`npx convex run seed:seedPreviewDataPublic`;
+  await $`npx convex run seed:seedPreviewDataPublic --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
 } else {
   await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   await syncEnvVarsToConvex();
