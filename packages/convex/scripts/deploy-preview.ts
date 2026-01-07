@@ -107,7 +107,6 @@ const safeDeploy = run(() => {
 
 const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
   production: async () => {
-    cd(convexPackageDir);
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
