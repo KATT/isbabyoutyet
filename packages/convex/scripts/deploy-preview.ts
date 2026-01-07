@@ -62,13 +62,14 @@ const safeDeploy = run(() => {
     const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
     console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
 
-    console.log("Setting environment variables in Convex deployment...");
-    cd(convexPackageDir);
-    for (const [key, value] of Object.entries(convexEnv)) {
-      await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
-    }
-
     return {
+      async syncEnvVarsToConvex() {
+        console.log("Setting environment variables in Convex deployment...");
+        cd(convexPackageDir);
+        for (const [key, value] of Object.entries(convexEnv)) {
+          await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+        }
+      },
       async buildWebApp() {
         cd(workspaceRoot);
         await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
@@ -86,6 +87,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
+    await webEnv.syncEnvVarsToConvex();
     await webEnv.buildWebApp();
   },
   development: async () => {
@@ -103,6 +105,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
 
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
+    await webEnv.syncEnvVarsToConvex();
     await webEnv.buildWebApp();
   },
 };
