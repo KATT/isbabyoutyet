@@ -9,13 +9,6 @@ export const envSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1, "VAPID_PRIVATE_KEY is required"),
   VAPID_SUBJECT: z.string().optional(),
 
-  // Site URL for auth (automatically derived from VERCEL_URL if not explicitly set)
-  SITE_URL: z.url("SITE_URL must be a valid URL"),
-
-  // Add other environment variables that should be synced to Convex here
-  // Example:
-  // API_KEY: z.string().optional(),
-  // DATABASE_URL: z.string().url().optional(),
   VITE_CONVEX_URL: z.url("VITE_CONVEX_URL must be a valid URL").optional(),
 
   // Vercel system environment variables
@@ -39,10 +32,15 @@ export const envSchema = z.object({
   CONVEX_DEPLOY_KEY: z.string().min(1, "CONVEX_DEPLOY_KEY is required"),
 });
 
-export const convexEnvSchema = envSchema.pick({
-  BETTER_AUTH_SECRET: true,
-  VAPID_PUBLIC_KEY: true,
-  VAPID_PRIVATE_KEY: true,
-  VAPID_SUBJECT: true,
-  SITE_URL: true,
-});
+export const convexEnvSchema = envSchema
+  .pick({
+    BETTER_AUTH_SECRET: true,
+    VAPID_PUBLIC_KEY: true,
+    VAPID_PRIVATE_KEY: true,
+    VAPID_SUBJECT: true,
+  })
+  .extend({
+    SITE_URL: z.url("SITE_URL must be a valid URL").prefault(() => {
+      return `https://${process.env.VERCEL_BRANCH_URL}`;
+    }),
+  });
