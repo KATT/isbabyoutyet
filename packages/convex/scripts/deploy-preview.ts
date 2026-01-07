@@ -96,13 +96,13 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
 
     const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
 
-    const cmd = `echo \\\\\\$VITE_CONVEX_URL >> ${envFile}`;
+    const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
     await handleZodError(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${cmd}`,
     );
     const VITE_CONTEXT_URL = fs.readFileSync(envFile, "utf8");
     console.log("VITE_CONVEX_URL:", VITE_CONTEXT_URL);
-    z.string().url().parse(VITE_CONTEXT_URL);
+    z.url().parse(VITE_CONTEXT_URL);
 
     const VITE_CONVEX_SITE_URL = VITE_CONTEXT_URL.replace(".convex.cloud", ".convex.site");
     console.log("VITE_CONVEX_SITE_URL:", VITE_CONVEX_SITE_URL);
