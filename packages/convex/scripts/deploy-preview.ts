@@ -66,7 +66,7 @@ if (isPreview) {
   cd(convexPackageDir);
 
   try {
-    await $`npx convex deploy --preview-create --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+    await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
   } catch (error) {
     console.error("Error deploying Convex preview deployment:", error);
     // process.exit(1);
@@ -75,7 +75,7 @@ if (isPreview) {
   console.log("Setting environment variables in Convex deployment...");
   cd(convexPackageDir);
   for (const [key, value] of Object.entries(convexEnv)) {
-    await $`npx convex env set ${key} ${value}`;
+    await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
     console.log(`  ✓ Set ${key}`);
   }
   // Seed the data
