@@ -54,8 +54,22 @@ async function syncEnvVarsToConvex() {
   );
 }
 
+async function handleZodError<T>(promise: Promise<T>) {
+  try {
+    return await promise;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
+      console.log(`Unexpected ZodError (expected on first deployment):`, error);
+    } else {
+      throw error;
+    }
+  }
+}
+
 if (env.VERCEL_ENV !== "preview") {
-  await $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
+  await handleZodError(
+    $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`,
+  );
   await syncEnvVarsToConvex();
   process.exit(0);
 }
@@ -73,15 +87,9 @@ console.log(`Web app directory: ${webAppDir}`);
 // --preview-create customizes the deployment name (optional, Convex infers branch name automatically)
 cd(convexPackageDir);
 
-try {
-  await $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`;
-} catch (error) {
-  if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
-    console.log(`Unexpected ZodError (expected on first deployment):`, error);
-  } else {
-    throw error;
-  }
-}
+await handleZodError(
+  $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd "cd ${webAppDir} && pnpm build"`,
+);
 
 console.log("Setting environment variables in Convex deployment...");
 cd(convexPackageDir);
