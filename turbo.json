@@ -11,13 +11,15 @@
       "persistent": true
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
     },
     "checks": {
-      "dependsOn": ["^checks"]
+      "dependsOn": ["^build"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
     }
   }
 }

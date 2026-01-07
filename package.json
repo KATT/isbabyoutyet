@@ -7,11 +7,14 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "checks": "turbo checks",
-    "format": "turbo format"
+    "format": "turbo format",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "turbo": "^2.6.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
   },
   "engines": {
     "node": "^22.0.0"

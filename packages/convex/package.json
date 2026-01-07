@@ -7,7 +7,9 @@
     "predev": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "dev": "convex dev",
     "setup": "convex dev --until-success",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.10.9",
@@ -16,8 +18,11 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
     "@types/web-push": "^3.6.4",
-    "typescript": "^5.7.2"
+    "convex-test": "^0.0.36",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
   },
   "exports": {
     "./convex/*": "./convex/*.ts",

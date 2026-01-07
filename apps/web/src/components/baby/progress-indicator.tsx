@@ -30,11 +30,11 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2 md:mb-4">
         {/* Labour started */}
         <div className="flex flex-col items-center flex-1">
           <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 md:mb-3 transition-all duration-300 ${
               isLaborCompletedForProgress
                 ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                 : currentStatus.type === "labor_started"
@@ -42,10 +42,10 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "bg-muted/50 text-muted-foreground border border-border"
             }`}
           >
-            <Activity className="w-10 h-10 md:w-12 md:h-12" />
+            <Activity className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12" />
           </div>
           <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
+            className={`text-xs sm:text-sm md:text-base font-semibold mb-0.5 md:mb-1 ${
               isLaborCompletedForProgress
                 ? "text-foreground"
                 : currentStatus.type === "labor_started"
@@ -56,7 +56,7 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
             Labour started
           </p>
           {baby.laborStarted && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 md:mt-1">
               {getRelativeTime(baby.laborStarted)}
             </p>
           )}
@@ -65,7 +65,7 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
         {/* Gone to hospital */}
         <div className="flex flex-col items-center flex-1">
           <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 md:mb-3 transition-all duration-300 ${
               isGoneToHospitalCompletedForProgress
                 ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                 : currentStatus.type === "gone_to_hospital"
@@ -73,10 +73,10 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "bg-muted/50 text-muted-foreground border border-border"
             }`}
           >
-            <Hospital className="w-10 h-10 md:w-12 md:h-12" />
+            <Hospital className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12" />
           </div>
           <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
+            className={`text-xs sm:text-sm md:text-base font-semibold mb-0.5 md:mb-1 ${
               isGoneToHospitalCompletedForProgress
                 ? "text-foreground"
                 : currentStatus.type === "gone_to_hospital"
@@ -87,7 +87,7 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
             Gone to hospital
           </p>
           {baby.wentToHospital && (
-            <p className="text-xs text-muted-foreground mt-1">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 md:mt-1">
               {getRelativeTime(baby.wentToHospital)}
             </p>
           )}
@@ -96,7 +96,7 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
         {/* Baby born */}
         <div className="flex flex-col items-center flex-1">
           <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
+            className={`w-12 h-12 sm:w-16 sm:h-16 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-2 md:mb-3 transition-all duration-300 ${
               isBornCompletedForProgress
                 ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
                 : currentStatus.type === "born"
@@ -104,10 +104,10 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "bg-muted/50 text-muted-foreground border border-border"
             }`}
           >
-            <CheckCircle className="w-10 h-10 md:w-12 md:h-12" />
+            <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 md:w-12 md:h-12" />
           </div>
           <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
+            className={`text-xs sm:text-sm md:text-base font-semibold mb-0.5 md:mb-1 ${
               isBornCompletedForProgress
                 ? "text-foreground"
                 : currentStatus.type === "born"
@@ -118,7 +118,9 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
             Baby born
           </p>
           {baby.babyBorn && (
-            <p className="text-xs text-muted-foreground mt-1">{getRelativeTime(baby.babyBorn)}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 md:mt-1">
+              {getRelativeTime(baby.babyBorn)}
+            </p>
           )}
         </div>
       </div>
