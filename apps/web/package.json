@@ -5,6 +5,7 @@
   "scripts": {
     "predev": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
     "dev": "vite dev --port 3000",
+    "setup-dev": "cp .env.example .env.local",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
