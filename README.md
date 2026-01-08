@@ -2,11 +2,11 @@ mainly vibe coded
 
 ## dev setup
 
-### bootstrap
+### install
 
 ```sh
 pnpm install
-pnpm --recursive setup-dev
+pnpm setup-dev
 ```
 
 ### development

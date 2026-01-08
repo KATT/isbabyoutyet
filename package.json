@@ -7,7 +7,8 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "checks": "turbo checks",
-    "format": "turbo format"
+    "format": "turbo format",
+    "setup-dev": "pnpm --recursive setup-dev"
   },
   "devDependencies": {
     "turbo": "^2.6.3",
