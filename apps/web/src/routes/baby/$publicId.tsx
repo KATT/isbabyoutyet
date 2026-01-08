@@ -107,6 +107,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     babyBorn: doc.babyBorn ?? null,
     hospitalMessage: doc.hospitalMessage ?? null,
     babyBornMessage: doc.babyBornMessage ?? null,
+    laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
   };
 }

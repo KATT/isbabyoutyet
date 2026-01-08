@@ -76,6 +76,11 @@ export function StatusDisplay({ baby, currentStatus }: StatusDisplayProps) {
         <p className="text-lg text-muted-foreground mt-2">
           Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
+        {baby.laborStartedMessage && (
+          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+            <p className="text-lg font-bold text-primary">{baby.laborStartedMessage}</p>
+          </div>
+        )}
       </div>
     );
   }

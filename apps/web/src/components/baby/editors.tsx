@@ -350,6 +350,75 @@ export function HospitalMessageEditor({ baby, onUpdate }: HospitalMessageEditorP
   );
 }
 
+type LaborStartedMessageEditorProps = {
+  baby: BabyData;
+  onUpdate: BabyUpdateHandler;
+};
+
+export function LaborStartedMessageEditor({ baby, onUpdate }: LaborStartedMessageEditorProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newMessage, setNewMessage] = useState(baby.laborStartedMessage || "");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const hasChanges = newMessage !== (baby.laborStartedMessage || "");
+
+  const status = getCurrentStatus(baby);
+
+  return (
+    <Popover open={isEditing} onOpenChange={setIsEditing}>
+      <PopoverTrigger asChild>
+        <Button variant={status.type === "labor_started" ? "default" : "outline"} size="sm">
+          Edit
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80">
+        <Textarea
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          placeholder="Custom message to show when labour has started"
+          className="mb-3 min-h-20"
+        />
+        <div className="flex gap-2 justify-end">
+          <Button
+            onClick={() => {
+              setNewMessage(baby.laborStartedMessage || "");
+              setIsEditing(false);
+            }}
+            variant="outline"
+            size="sm"
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={async () => {
+              if (hasChanges) {
+                setIsLoading(true);
+                try {
+                  await onUpdate({ laborStartedMessage: newMessage.trim() || null });
+                  setIsEditing(false);
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error ? err.message : "Failed to update labour message",
+                  );
+                } finally {
+                  setIsLoading(false);
+                }
+              } else {
+                setIsEditing(false);
+              }
+            }}
+            size="sm"
+            disabled={isLoading || !hasChanges}
+          >
+            Save
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 type BabyBornMessageEditorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;

@@ -28,6 +28,7 @@ import {
 import {
   BabyBornMessageEditor,
   HospitalMessageEditor,
+  LaborStartedMessageEditor,
   DueDateEditor,
   NameEditor,
   StatusDateEditor,
@@ -119,6 +120,20 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                   isNextState={status.type === "not_yet"}
                   onUpdate={onUpdate}
                 />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+            <Item>
+              <ItemMedia variant="icon">
+                <Activity className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Labour Message</ItemTitle>
+                <ItemDescription>{baby.laborStartedMessage || "Default message"}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <LaborStartedMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 

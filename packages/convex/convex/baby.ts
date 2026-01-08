@@ -110,6 +110,7 @@ export const create = mutation({
       publicId,
       hospitalMessage: null,
       babyBornMessage: null,
+      laborStartedMessage: null,
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
@@ -207,6 +208,7 @@ export const update = mutation({
     dueDate: v.optional(v.string()),
     hospitalMessage: v.optional(v.union(v.string(), v.null())),
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
+    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
@@ -284,6 +286,8 @@ export const update = mutation({
         customMessage = patch.babyBornMessage ?? baby.babyBornMessage ?? null;
       } else if (statusAfter.type === "gone_to_hospital") {
         customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
+      } else if (statusAfter.type === "labor_started") {
+        customMessage = patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
       }
 
       const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000; // 1 minute delay in production, 10 seconds in development
