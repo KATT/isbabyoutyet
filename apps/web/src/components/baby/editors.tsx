@@ -645,12 +645,6 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5MB");
-      return;
-    }
-
     setIsUploading(true);
 
     // Show preview
@@ -758,7 +752,7 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Supported: JPG, PNG, GIF, WebP. Max 5MB.
+            Supported: JPG, PNG, GIF, WebP
           </p>
         </div>
       </PopoverContent>
