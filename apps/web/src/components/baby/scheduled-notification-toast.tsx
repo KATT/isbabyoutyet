@@ -123,7 +123,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
 
 type NotificationToastContentProps = {
   notificationId: Id<"scheduledNotifications">;
-  notificationType: "labor_started" | "gone_to_hospital" | "born";
+  notificationType: "labor_started" | "gone_to_hospital" | "born" | "photo_added";
   scheduledFor: number;
   subscriptionCount: number;
 };
@@ -190,7 +190,9 @@ function NotificationToastContent(props: NotificationToastContentProps) {
   );
 }
 
-function getNotificationTypeLabel(type: "labor_started" | "gone_to_hospital" | "born"): string {
+function getNotificationTypeLabel(
+  type: "labor_started" | "gone_to_hospital" | "born" | "photo_added",
+): string {
   switch (type) {
     case "labor_started":
       return "Labor started";
@@ -198,5 +200,7 @@ function getNotificationTypeLabel(type: "labor_started" | "gone_to_hospital" | "
       return "Gone to hospital";
     case "born":
       return "Baby born";
+    case "photo_added":
+      return "Photo added";
   }
 }

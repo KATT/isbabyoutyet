@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
-import { Doc } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
 
@@ -63,6 +63,106 @@ export const getByPublicId = query({
 });
 
 export type Baby = Doc<"baby">;
+
+// Generate upload URL for baby photo
+export const generateUploadUrl = mutation({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.userId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Get photo URL from storage ID
+export const getPhotoUrl = query({
+  args: { photoId: v.optional(v.union(v.id("_storage"), v.null())) },
+  handler: async (ctx, args) => {
+    if (!args.photoId) {
+      return null;
+    }
+    return await ctx.storage.getUrl(args.photoId);
+  },
+});
+
+// Update baby photo and optionally send notification
+export const updatePhoto = mutation({
+  args: {
+    babyId: v.id("baby"),
+    photoId: v.union(v.id("_storage"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.userId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    const hadPhotoBeforeUpdate = !!baby.photoId;
+
+    // Delete old photo from storage if replacing
+    if (baby.photoId && args.photoId && baby.photoId !== args.photoId) {
+      await ctx.storage.delete(baby.photoId);
+    }
+
+    // If removing photo, delete from storage
+    if (baby.photoId && !args.photoId) {
+      await ctx.storage.delete(baby.photoId);
+    }
+
+    await ctx.db.patch(args.babyId, { photoId: args.photoId });
+
+    // Send notification only if this is the first photo
+    if (!hadPhotoBeforeUpdate && args.photoId) {
+      const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+      const scheduledFor = Date.now() + scheduleDelay;
+
+      const notificationId = await ctx.db.insert("scheduledNotifications", {
+        babyId: args.babyId,
+        status: "pending",
+        scheduledFor,
+        notificationType: "photo_added",
+        customMessage: null,
+        createdAt: Date.now(),
+      });
+
+      const scheduledId = await ctx.scheduler.runAt(
+        scheduledFor,
+        internal.pushNotifications.sendNotification,
+        {
+          notificationId,
+          babyId: args.babyId,
+          babyName: baby.name,
+          publicId: baby.publicId,
+          status: "photo_added",
+          customMessage: null,
+        },
+      );
+
+      await ctx.db.patch(notificationId, { scheduledId });
+    }
+  },
+});
 
 function slugify(name: string): string {
   return name

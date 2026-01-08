@@ -15,6 +15,7 @@ export default defineSchema({
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
+    photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
@@ -43,6 +44,7 @@ export default defineSchema({
       v.literal("labor_started"),
       v.literal("gone_to_hospital"),
       v.literal("born"),
+      v.literal("photo_added"),
     ), // Type of notification
     customMessage: v.optional(v.union(v.string(), v.null())), // Optional custom message
     createdAt: v.number(), // Creation timestamp

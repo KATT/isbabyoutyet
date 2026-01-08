@@ -27,6 +27,7 @@ function getDefaultBabyData(): BabyData {
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
+    photoId: null,
   };
 }
 const searchSchema = z.object({
