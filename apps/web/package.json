@@ -19,7 +19,7 @@
     "format:check": "oxfmt --check"
   },
   "dependencies": {
-    "@convex-dev/better-auth": "^0.10.9",
+    "@convex-dev/better-auth": "^0.10.10",
     "@convex-dev/react-query": "^0.1.0",
     "@hookform/resolvers": "^5.2.2",
     "@tanstack/react-devtools": "^0.7.0",
@@ -32,8 +32,8 @@
     "@vercel/analytics": "^1.6.1",
     "@workspace/convex": "workspace:*",
     "@workspace/ui": "workspace:*",
-    "better-auth": "^1.4.9",
-    "convex": "^1.31.2",
+    "better-auth": "^1.4.17",
+    "convex": "^1.31.5",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.561.0",
