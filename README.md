@@ -1,13 +1,16 @@
 mainly vibe coded
 
-setup is something like this:
+## dev setup
 
-
-first time:
+### install
 
 ```sh
 pnpm install
-pnpm --filter @workspace/db setup-dev # (only first time) - don't login, use local)
-pnpm dev
+pnpm setup-dev
+```
 
+### development
+
+```sh
+pnpm dev
 ```
