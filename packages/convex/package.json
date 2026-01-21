@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./convex/*": "./convex/*.ts",
+    "./convex/_generated/*": "./convex/_generated/*.js",
+    "./src/*": "./src/*.ts"
+  },
   "scripts": {
     "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
@@ -14,6 +19,10 @@
     "setup-dev": "FORCE_COLOR=1 run-p setup-dev:* --print-label && echo '✅ Setup complete, you can now run `pnpm dev`'",
     "setup-dev:set-env": "wait-on tcp:3210 && echo 'Convex is ready, setting environment variables...' && sleep 1 && run-s dev-set-env:*",
     "setup-dev:dev": "CONVEX_AGENT_MODE=anonymous convex dev --until-success",
+    "lint": "oxlint",
+    "lint-fix": "oxlint --fix",
+    "format": "oxfmt && oxlint --fix",
+    "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit -p convex"
   },
   "dependencies": {
@@ -25,12 +34,9 @@
   },
   "devDependencies": {
     "@types/web-push": "^3.6.4",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "typescript": "catalog:",
     "wait-on": "^9.0.3"
-  },
-  "exports": {
-    "./convex/*": "./convex/*.ts",
-    "./convex/_generated/*": "./convex/_generated/*.js",
-    "./src/*": "./src/*.ts"
   }
 }

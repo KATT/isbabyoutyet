@@ -33,6 +33,12 @@ catalogs:
     next-themes:
       specifier: ^0.4.6
       version: 0.4.6
+    oxfmt:
+      specifier: ^0.21.0
+      version: 0.21.0
+    oxlint:
+      specifier: ^1.36.0
+      version: 1.38.0
     react:
       specifier: ^19.2.0
       version: 19.2.3
@@ -181,10 +187,10 @@ importers:
         specifier: ^27.0.0
         version: 27.4.0
       oxfmt:
-        specifier: ^0.21.0
+        specifier: 'catalog:'
         version: 0.21.0
       oxlint:
-        specifier: ^1.36.0
+        specifier: 'catalog:'
         version: 1.38.0
       tailwindcss:
         specifier: 'catalog:'
@@ -229,6 +235,12 @@ importers:
       '@types/web-push':
         specifier: ^3.6.4
         version: 3.6.4
+      oxfmt:
+        specifier: 'catalog:'
+        version: 0.21.0
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.38.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -374,6 +386,12 @@ importers:
       '@types/react-dom':
         specifier: 'catalog:'
         version: 19.2.3(@types/react@19.2.7)
+      oxfmt:
+        specifier: 'catalog:'
+        version: 0.21.0
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.38.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.1.18

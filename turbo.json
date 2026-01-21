@@ -20,6 +20,8 @@
     },
     "lint": {
     },
+    "lint-fix": {
+    },
     "format": {
     }
   }

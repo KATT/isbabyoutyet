@@ -67,7 +67,12 @@ export const sendNotification = internalAction({
     babyId: v.id("baby"),
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
-    status: v.union(v.literal("labor_started"), v.literal("gone_to_hospital"), v.literal("born"), v.literal("photo_added")),
+    status: v.union(
+      v.literal("labor_started"),
+      v.literal("gone_to_hospital"),
+      v.literal("born"),
+      v.literal("photo_added"),
+    ),
     customMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {

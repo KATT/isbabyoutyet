@@ -8,7 +8,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
-    "checks": "turbo run format lint typecheck"
+    "checks": "turbo run format lint-fix typecheck"
   },
   "devDependencies": {
     "turbo": "^2.6.3",

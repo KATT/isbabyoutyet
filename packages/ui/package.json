@@ -3,14 +3,18 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "typecheck": "tsc --noEmit"
-  },
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "lint-fix": "oxlint --fix",
+    "format": "oxfmt && oxlint --fix",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
@@ -60,9 +64,10 @@
     "@tailwindcss/vite": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
     "tailwindcss": "catalog:",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:"
   }
 }
-

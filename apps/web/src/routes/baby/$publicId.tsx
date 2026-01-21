@@ -166,76 +166,75 @@ function BabyPage() {
         </>
       )}
 
-      
-        <div className="border-b border-border/50">
-          <BabyNav
-            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
-            settingsButton={
-              isOwner
-                ? {
-                    to: "/baby/$publicId",
-                    params: { publicId: params.publicId },
-                    search: {
-                      ...search,
-                      settings: search.settings ? undefined : true,
-                    },
-                  }
-                : null
-            }
-            settingsOpen={!!search.settings}
-          />
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is {baby.name} out yet?
-            </span>
-          </h1>
+      <div className="border-b border-border/50">
+        <BabyNav
+          shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          settingsButton={
+            isOwner
+              ? {
+                  to: "/baby/$publicId",
+                  params: { publicId: params.publicId },
+                  search: {
+                    ...search,
+                    settings: search.settings ? undefined : true,
+                  },
+                }
+              : null
+          }
+          settingsOpen={!!search.settings}
+        />
+        <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
+          <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+            Is {baby.name} out yet?
+          </span>
+        </h1>
+      </div>
+      <section className="relative px-6 py-12 text-center overflow-hidden">
+        <div className="relative max-w-5xl mx-auto">
+          <Card>
+            <CardContent>
+              <StatusDisplay baby={baby} currentStatus={currentStatus} photoUrl={photoUrl} />
+              <NotificationSubscribe
+                babyId={babyDoc._id}
+                vapidPublicKey={loaderData.vapidPublicKey}
+              />
+              <Separator className="my-4" />
+            </CardContent>
+            <CardFooter>
+              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            </CardFooter>
+          </Card>
         </div>
-        <section className="relative px-6 py-12 text-center overflow-hidden">
-          <div className="relative max-w-5xl mx-auto">
+      </section>
+
+      {/* Encouragements Section */}
+      {!baby.encouragementsDisabled && (
+        <section className="relative px-6 pb-12">
+          <div className="relative max-w-2xl mx-auto space-y-8">
             <Card>
-              <CardContent>
-                <StatusDisplay baby={baby} currentStatus={currentStatus} photoUrl={photoUrl} />
-                <NotificationSubscribe
-                  babyId={babyDoc._id}
-                  vapidPublicKey={loaderData.vapidPublicKey}
-                />
-                <Separator className="my-4" />
+              <CardContent className="pt-6">
+                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </CardContent>
-              <CardFooter>
-                <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-              </CardFooter>
+            </Card>
+
+            <Card>
+              <CardContent className="pt-6">
+                <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
+              </CardContent>
             </Card>
           </div>
         </section>
+      )}
 
-        {/* Encouragements Section */}
-        {!baby.encouragementsDisabled && (
-          <section className="relative px-6 pb-12">
-            <div className="relative max-w-2xl mx-auto space-y-8">
-              <Card>
-                <CardContent className="pt-6">
-                  <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="pt-6">
-                  <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
-                </CardContent>
-              </Card>
-            </div>
-          </section>
-        )}
-
-        {/* Footer */}
-        <div className="text-center py-8 border-t border-border/50">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Having a baby? Are people messaging you non-stop? Create your own page →
-          </Link>
-        </div>
+      {/* Footer */}
+      <div className="text-center py-8 border-t border-border/50">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Having a baby? Are people messaging you non-stop? Create your own page →
+        </Link>
+      </div>
     </div>
   );
 }
