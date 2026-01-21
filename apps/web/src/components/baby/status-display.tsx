@@ -69,7 +69,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
 
   if (currentStatus.type === "not_yet") {
     return (
-      <div className="flex flex-col items-center py-8">
+      <div className="flex flex-col items-center">
         <PhotoAvatar
           photoUrl={photoUrl}
           fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
@@ -113,7 +113,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
 
   if (currentStatus.type === "labor_started") {
     return (
-      <div className="flex flex-col items-center py-8">
+      <div className="flex flex-col items-center">
         <PhotoAvatar
           photoUrl={photoUrl}
           fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
@@ -138,7 +138,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
 
   if (currentStatus.type === "gone_to_hospital") {
     return (
-      <div className="flex flex-col items-center py-8">
+      <div className="flex flex-col items-center">
         <PhotoAvatar
           photoUrl={photoUrl}
           fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}

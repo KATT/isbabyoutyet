@@ -4,6 +4,7 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
+    "dev-convex": "cd packages/convex && pnpm dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "checks": "turbo checks",
