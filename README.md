@@ -6,7 +6,6 @@ mainly vibe coded
 
 ```sh
 pnpm install
-pnpm setup-dev
 ```
 
 ### development

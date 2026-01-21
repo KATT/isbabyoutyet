@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
+    "predev": "run-s predev:*",
+    "predev:kill": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true",
+    "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
     "dev": "vite dev --port 3000",
     "build": "vite build",
     "preview": "vite preview",
@@ -13,6 +15,7 @@
     "format": "oxfmt && oxlint --fix",
     "typecheck": "tsc --noEmit",
     "checks": "pnpm format && pnpm typecheck",
+    "setup-dev": "cp .env.local.example .env.local",
     "format:check": "oxfmt --check"
   },
   "dependencies": {
