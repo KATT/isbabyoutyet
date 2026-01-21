@@ -173,18 +173,51 @@ function slugify(name: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-async function generateUniquePublicId(db: DatabaseReader, baseName: string): Promise<string> {
-  let publicId = slugify(baseName);
-  let tries = 0;
+async function isPublicIdTaken(opts: {
+  db: DatabaseReader;
+  publicId: string;
+  excludeUserId: string;
+}): Promise<boolean> {
+  // Check current baby publicIds
+  const existingBaby = await opts.db
+    .query("baby")
+    .withIndex("by_publicId", (q) => q.eq("publicId", opts.publicId))
+    .first();
 
-  while (
-    await db
-      .query("baby")
-      .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
-      .first()
-  ) {
+  if (existingBaby) {
+    return true;
+  }
+
+  // Check historical publicIds (but allow the same owner to reclaim their own)
+  const historicEntry = await opts.db
+    .query("babyPublicIdHistory")
+    .withIndex("by_publicId", (q) => q.eq("publicId", opts.publicId))
+    .first();
+
+  if (!historicEntry) {
+    return false;
+  }
+
+  const historicBaby = await opts.db.get(historicEntry.babyId);
+  if (historicBaby && historicBaby.userId !== opts.excludeUserId) {
+    return true;
+  }
+
+  return false;
+}
+
+async function generateUniquePublicId(opts: {
+  db: DatabaseReader;
+  baseName: string;
+  excludeUserId: string;
+}): Promise<string> {
+  const slug = slugify(opts.baseName);
+  let tries = 0;
+  let publicId = slug;
+
+  while (await isPublicIdTaken({ db: opts.db, publicId, excludeUserId: opts.excludeUserId })) {
     tries++;
-    publicId = `${slugify(baseName)}-${tries}`;
+    publicId = `${slug}-${tries}`;
   }
 
   return publicId;
@@ -201,7 +234,11 @@ export const create = mutation({
       throw new Error("Not authenticated");
     }
 
-    const publicId = await generateUniquePublicId(ctx.db, args.name);
+    const publicId = await generateUniquePublicId({
+      db: ctx.db,
+      baseName: args.name,
+      excludeUserId: identity.subject,
+    });
 
     const babyId = await ctx.db.insert("baby", {
       userId: identity.subject,
@@ -332,7 +369,11 @@ export const update = mutation({
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId(ctx.db, patch.name);
+        patch.publicId = await generateUniquePublicId({
+          db: ctx.db,
+          baseName: patch.name,
+          excludeUserId: identity.subject,
+        });
         await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
       }
     }
