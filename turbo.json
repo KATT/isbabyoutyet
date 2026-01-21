@@ -4,20 +4,23 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".output/**"]
+      "outputs": ["dist/**", ".output/**"],
+      "env": [
+        "BETTER_AUTH_SECRET",
+        "VITE_CONVEX_URL",
+        "VITE_CONVEX_SITE_URL"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^build"]
     },
     "checks": {
-      "dependsOn": ["^checks"]
     },
     "lint": {
-      "dependsOn": ["^lint"]
     }
   }
 }
