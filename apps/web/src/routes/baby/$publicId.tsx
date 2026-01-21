@@ -190,7 +190,7 @@ function BabyPage() {
             }
             settingsOpen={!!search.settings}
           />
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
+          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
               Is {baby.name} out yet?
             </span>
