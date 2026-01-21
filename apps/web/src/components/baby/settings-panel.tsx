@@ -14,11 +14,13 @@ import {
   Activity,
   Baby,
   Calendar,
+  Camera,
   CheckCircle,
   Hospital,
   MessageSquare,
   Palette,
 } from "lucide-react";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   getCurrentStatus,
@@ -31,6 +33,7 @@ import {
   LaborStartedMessageEditor,
   DueDateEditor,
   NameEditor,
+  PhotoUploader,
   StatusDateEditor,
   StatusUpdateButton,
   ThemeSelector,
@@ -39,11 +42,13 @@ import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
 
 type SettingsPanelProps = {
   baby: BabyData;
+  babyId?: Id<"baby">;
+  photoUrl?: string | null;
   onUpdate: BabyUpdateHandler;
   isOpen: boolean;
 };
 
-export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
+export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: SettingsPanelProps) {
   const status = getCurrentStatus(baby);
 
   return (
@@ -238,6 +243,30 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
             </Item>
 
             <ItemSeparator />
+
+            {/* Photo - only show when babyId is available (not in preview mode) */}
+            {babyId && (
+              <>
+                <Item>
+                  <ItemMedia variant="icon">
+                    <Camera className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Baby Photo</ItemTitle>
+                    <ItemDescription>{photoUrl ? "Photo uploaded" : "No photo"}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    {photoUrl && (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border border-border mr-2">
+                        <img src={photoUrl} alt="Baby" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <PhotoUploader babyId={babyId} photoUrl={photoUrl ?? null} />
+                  </ItemActions>
+                </Item>
+                <ItemSeparator />
+              </>
+            )}
 
             {/* Theme */}
             <Item>

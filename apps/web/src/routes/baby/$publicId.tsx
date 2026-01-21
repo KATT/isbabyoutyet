@@ -108,6 +108,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     babyBornMessage: doc.babyBornMessage ?? null,
     laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
+    photoId: doc.photoId ?? null,
   };
 }
 
@@ -124,6 +125,7 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const photoUrl = useQuery(api.baby.getPhotoUrl, { photoId: babyDoc.photoId });
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
   useEffect(() => {
@@ -149,6 +151,8 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
+            babyId={babyDoc._id}
+            photoUrl={photoUrl ?? null}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -193,9 +197,9 @@ function BabyPage() {
         </div>
         <section className="relative px-4 sm:px-6 py-4 sm:py-6 md:py-12 text-center overflow-hidden">
           <div className="relative max-w-5xl mx-auto">
-            <Card className="gap-4 sm:gap-6 py-4 sm:py-6">
+            <Card>
               <CardContent className="space-y-4 sm:space-y-6">
-                <StatusDisplay baby={baby} currentStatus={currentStatus} />
+                <StatusDisplay baby={baby} currentStatus={currentStatus} photoUrl={photoUrl} />
                 <NotificationSubscribe
                   babyId={babyDoc._id}
                   vapidPublicKey={loaderData.vapidPublicKey}

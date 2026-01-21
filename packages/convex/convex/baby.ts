@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
-import { Doc } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
 
@@ -63,6 +63,106 @@ export const getByPublicId = query({
 });
 
 export type Baby = Doc<"baby">;
+
+// Generate upload URL for baby photo
+export const generateUploadUrl = mutation({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.userId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Get photo URL from storage ID
+export const getPhotoUrl = query({
+  args: { photoId: v.optional(v.union(v.id("_storage"), v.null())) },
+  handler: async (ctx, args) => {
+    if (!args.photoId) {
+      return null;
+    }
+    return await ctx.storage.getUrl(args.photoId);
+  },
+});
+
+// Update baby photo and optionally send notification
+export const updatePhoto = mutation({
+  args: {
+    babyId: v.id("baby"),
+    photoId: v.union(v.id("_storage"), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.userId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    const hadPhotoBeforeUpdate = !!baby.photoId;
+
+    // Delete old photo from storage if replacing
+    if (baby.photoId && args.photoId && baby.photoId !== args.photoId) {
+      await ctx.storage.delete(baby.photoId);
+    }
+
+    // If removing photo, delete from storage
+    if (baby.photoId && !args.photoId) {
+      await ctx.storage.delete(baby.photoId);
+    }
+
+    await ctx.db.patch(args.babyId, { photoId: args.photoId });
+
+    // Send notification only if this is the first photo
+    if (!hadPhotoBeforeUpdate && args.photoId) {
+      const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+      const scheduledFor = Date.now() + scheduleDelay;
+
+      const notificationId = await ctx.db.insert("scheduledNotifications", {
+        babyId: args.babyId,
+        status: "pending",
+        scheduledFor,
+        notificationType: "photo_added",
+        customMessage: null,
+        createdAt: Date.now(),
+      });
+
+      const scheduledId = await ctx.scheduler.runAt(
+        scheduledFor,
+        internal.pushNotifications.sendNotification,
+        {
+          notificationId,
+          babyId: args.babyId,
+          babyName: baby.name,
+          publicId: baby.publicId,
+          status: "photo_added",
+          customMessage: null,
+        },
+      );
+
+      await ctx.db.patch(notificationId, { scheduledId });
+    }
+  },
+});
 
 function slugify(name: string): string {
   return name
@@ -215,20 +315,15 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
+    if (!identity) throw new Error("Not authenticated");
 
     const { babyId, ...rest } = args;
 
     const baby = await ctx.db.get(babyId);
-    if (!baby) {
-      throw new Error("Baby not found");
-    }
+    if (!baby) throw new Error("Baby not found");
+    if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    const statusBefore = getCurrentStatus(baby);
 
     const patch: Partial<typeof baby> = rest;
     // If name changed and the slugified name would result in a different publicId
@@ -236,89 +331,80 @@ export const update = mutation({
       const newSlugifiedName = slugify(patch.name);
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
-        // Save the old publicId to history before updating
         const oldPublicId = baby.publicId;
-        const newPublicId = await generateUniquePublicId(ctx.db, patch.name);
-        patch.publicId = newPublicId;
-
-        // Store the old publicId in history
-        await ctx.db.insert("babyPublicIdHistory", {
-          babyId,
-          publicId: oldPublicId,
-        });
+        patch.publicId = await generateUniquePublicId(ctx.db, patch.name);
+        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
       }
     }
 
-    // Get status before patch
-    const statusBefore = getCurrentStatus(baby);
+    await ctx.db.patch(babyId, patch);
 
-    // Cancel any existing pending notifications if status is changing
-    const allNotifications = await ctx.db
+    const updatedBaby = await ctx.db.get(babyId);
+    if (!updatedBaby) throw new Error("Baby not found after update");
+
+    const statusAfter = getCurrentStatus(updatedBaby);
+
+    if (statusBefore === statusAfter) {
+      // no notification change as status didn't change
+      return;
+    }
+
+    // Cancel any existing pending notifications
+    const pendingNotifications = await ctx.db
       .query("scheduledNotifications")
       .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
       .collect();
 
-    for (const notification of allNotifications.filter((n) => n.status === "pending")) {
+    for (const notification of pendingNotifications) {
       if (notification.scheduledId) {
         try {
           await ctx.scheduler.cancel(notification.scheduledId);
-        } catch (error) {
+        } catch (_error) {
           // Ignore errors if notification was already sent or doesn't exist
-          console.warn("Failed to cancel scheduled notification:", error);
         }
       }
       await ctx.db.patch(notification._id, { status: "cancelled" });
     }
 
-    await ctx.db.patch(babyId, patch);
+    // Only handle notifications if status moved forward
+    if (!isStatusForward(statusBefore, statusAfter)) return;
 
-    // Get status after patch
-    const updatedBaby = await ctx.db.get(babyId);
-    if (!updatedBaby) {
-      throw new Error("Baby not found after update");
+    // Schedule new notification
+    let customMessage: string | null = null;
+    if (statusAfter.type === "born") {
+      customMessage = patch.babyBornMessage ?? baby.babyBornMessage ?? null;
+    } else if (statusAfter.type === "gone_to_hospital") {
+      customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
+    } else if (statusAfter.type === "labor_started") {
+      customMessage = patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
     }
-    const statusAfter = getCurrentStatus(updatedBaby);
 
-    // Schedule notification only if status moved forward (not_yet → labor_started → gone_to_hospital → born)
-    if (isStatusForward(statusBefore, statusAfter)) {
-      let customMessage: string | null = null;
-      if (statusAfter.type === "born") {
-        customMessage = patch.babyBornMessage ?? baby.babyBornMessage ?? null;
-      } else if (statusAfter.type === "gone_to_hospital") {
-        customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
-      } else if (statusAfter.type === "labor_started") {
-        customMessage = patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
-      }
+    const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+    const scheduledFor = Date.now() + scheduleDelay;
 
-      const scheduleDelay = 60_000; // 1 minute delay
+    const notificationId = await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "pending",
+      scheduledFor,
+      notificationType: statusAfter.type,
+      customMessage,
+      createdAt: Date.now(),
+    });
 
-      const scheduledFor = Date.now() + scheduleDelay;
-
-      // Store the scheduled notification record first to get the ID
-      const notificationId = await ctx.db.insert("scheduledNotifications", {
+    const scheduledId = await ctx.scheduler.runAt(
+      scheduledFor,
+      internal.pushNotifications.sendNotification,
+      {
+        notificationId,
         babyId,
-        status: "pending",
-        scheduledFor,
-        notificationType: statusAfter.type,
+        babyName: updatedBaby.name,
+        publicId: updatedBaby.publicId,
+        status: statusAfter.type,
         customMessage,
-        createdAt: Date.now(),
-      });
+      },
+    );
 
-      const scheduledId = await ctx.scheduler.runAt(
-        scheduledFor,
-        internal.pushNotifications.sendNotification,
-        {
-          notificationId,
-          babyId,
-          babyName: updatedBaby.name,
-          publicId: updatedBaby.publicId,
-          status: statusAfter.type,
-          customMessage,
-        },
-      );
-
-      // Update the notification record with the scheduled ID
-      await ctx.db.patch(notificationId, { scheduledId });
-    }
+    await ctx.db.patch(notificationId, { scheduledId });
   },
 });

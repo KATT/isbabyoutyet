@@ -47,7 +47,7 @@ const STATUS_ORDER = {
   born: 3,
 } as const;
 
-export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born";
+export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "photo_added";
 
 /**
  * Check if status moved forward (e.g., not_yet → labor_started → gone_to_hospital → born)

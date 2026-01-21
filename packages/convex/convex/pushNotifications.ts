@@ -60,7 +60,7 @@ export const sendNotification = internalAction({
     babyId: v.id("baby"),
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
-    status: v.union(v.literal("labor_started"), v.literal("gone_to_hospital"), v.literal("born")),
+    status: v.union(v.literal("labor_started"), v.literal("gone_to_hospital"), v.literal("born"), v.literal("photo_added")),
     customMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
@@ -85,6 +85,10 @@ export const sendNotification = internalAction({
       case "born":
         title = `${args.babyName} is here! 🎉`;
         body = args.customMessage || "The baby has arrived! Check for updates!";
+        break;
+      case "photo_added":
+        title = `${args.babyName} - New photo! 📸`;
+        body = "A new photo has been added. Check it out!";
         break;
     }
 
