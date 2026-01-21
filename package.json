@@ -7,8 +7,8 @@
     "dev-convex": "cd packages/convex && pnpm dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
-    "checks": "turbo checks",
-    "format": "turbo format"
+    "format": "turbo format",
+    "checks": "turbo run format lint typecheck"
   },
   "devDependencies": {
     "turbo": "^2.6.3",

@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
+    "@convex-dev/migrations": "^0.2.0",
     "better-auth": "catalog:",
     "convex": "catalog:",
     "web-push": "^3.6.7"
