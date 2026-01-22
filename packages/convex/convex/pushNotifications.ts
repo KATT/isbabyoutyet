@@ -1,23 +1,11 @@
 "use node";
 
 import { v } from "convex/values";
-import { internalAction } from "./_generated/server";
-import type { ActionCtx } from "./_generated/server";
-import { api, internal } from "./_generated/api";
 import webPush from "web-push";
-
-// Get VAPID keys from environment
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@isbabyoutyet.com";
-
-if (!vapidPublicKey || !vapidPrivateKey) {
-  throw new Error(
-    "VAPID keys are required. Please set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.",
-  );
-}
-
-webPush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+import { convexEnv } from "../src/env";
+import { api, internal } from "./_generated/api";
+import type { ActionCtx } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
@@ -34,6 +22,11 @@ async function sendNotificationToSubscription(
     tag?: string;
   },
 ): Promise<boolean> {
+  webPush.setVapidDetails(
+    convexEnv.VAPID_SUBJECT,
+    convexEnv.VAPID_PUBLIC_KEY,
+    convexEnv.VAPID_PRIVATE_KEY,
+  );
   try {
     const pushSubscription = {
       endpoint: subscription.endpoint,
