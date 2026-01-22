@@ -13,7 +13,6 @@ const run = <T>(fn: () => T): T => {
   return fn();
 };
 
-
 const vercelEnvSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
@@ -65,10 +64,10 @@ const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
   const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
 
-  async function deployConvex<T>(promise: Promise<T>) {
+  async function deployConvex<T>(cb: () => Promise<T>) {
     cd(convexPackageDir);
     try {
-      await promise;
+      await cb();
     } catch (error) {
       if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
         console.log(`Unexpected ZodError (expected on first deployment)`);
@@ -88,8 +87,14 @@ const safeDeploy = run(() => {
       async syncEnvVarsToConvex() {
         console.log("Setting environment variables in Convex deployment...");
         cd(convexPackageDir);
+        await $`echo "Current working directory: $(pwd)"`;
+
         for (const [key, value] of Object.entries(convexEnv)) {
-          await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+          if (env.VERCEL_ENV === "preview") {
+            await $`pnpm convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+          } else {
+            await $`pnpm convex env set ${key} ${value}`;
+          }
         }
       },
       async buildWebApp() {
@@ -107,7 +112,7 @@ const safeDeploy = run(() => {
 const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
   production: async () => {
     const webEnv = await safeDeploy.deployConvex(
-      $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
+      () => $`pnpm convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
     await webEnv.syncEnvVarsToConvex();
     await webEnv.buildWebApp();
@@ -126,12 +131,13 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     console.log(`Convex package exists: ${fs.existsSync(convexPackageDir)}`);
 
     const webEnv = await safeDeploy.deployConvex(
-      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
+      () =>
+        $`pnpm convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
 
     console.log("Running seed script...");
     cd(convexPackageDir);
-    await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
+    await $`pnpm convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     await webEnv.syncEnvVarsToConvex();
     await webEnv.buildWebApp();

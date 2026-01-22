@@ -60,13 +60,13 @@
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "tailwindcss": "catalog:",
+    "tsx": "^4.8.1",
     "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vite": "^7.1.7",
     "vite-tsconfig-paths": "^6.0.2",
     "vitest": "^3.0.5",
     "web-vitals": "^5.1.0",
-    "tsx": "^4.8.1",
     "zx": "^8.8.5"
   }
 }
