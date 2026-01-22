@@ -16,11 +16,10 @@ import {
   getThemePrimaryColor,
 } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useEffect } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -38,6 +37,15 @@ export const Route = createFileRoute("/baby/$publicId")({
     ]);
     if (!baby) {
       throw notFound();
+    }
+    // Redirect if baby found but current publicId doesn't match (server-side check)
+    if (baby.publicId !== opts.params.publicId) {
+      throw redirect({
+        to: "/baby/$publicId",
+        params: { publicId: baby.publicId },
+        search: opts.location.search,
+        replace: true,
+      });
     }
     return {
       baby,
@@ -115,7 +123,6 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
 
 function BabyPage() {
   const params = Route.useParams();
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
@@ -130,18 +137,6 @@ function BabyPage() {
   const thumbnailUrl = useQuery(api.baby.getThumbnailUrl, {
     thumbnailId: babyDoc.thumbnailId,
   });
-
-  // Redirect if baby found but current publicId doesn't match (client-side check)
-  useEffect(() => {
-    if (babyDoc && babyDoc.publicId !== params.publicId) {
-      navigate({
-        to: "/baby/$publicId",
-        params: { publicId: babyDoc.publicId },
-        search,
-        replace: true,
-      });
-    }
-  }, [babyDoc, params.publicId, navigate, search]);
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -172,7 +167,7 @@ function BabyPage() {
 
       <div className="border-b border-border/50">
         <BabyNav
-          shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          shareLink={`${import.meta.env.VITE_SITE_URL}/baby/${babyDoc.publicId}`}
           settingsButton={
             isOwner
               ? {
