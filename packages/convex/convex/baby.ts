@@ -2,8 +2,21 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
+import { TableHistory } from "convex-table-history";
+import { Triggers, customMutation, customCtx, mutationGeneric } from "convex/server";
+import type { DataModel } from "./_generated/dataModel";
+
+// Initialize table history for baby table
+const babyAuditLog = new TableHistory<DataModel, "baby">(components.babyAuditLog);
+
+// Set up triggers for automatic history tracking
+const triggers = new Triggers<DataModel>();
+triggers.register("baby", babyAuditLog.trigger());
+
+// Create wrapped mutation that uses triggers
+const mutationWithTriggers = customMutation(mutationGeneric, customCtx(triggers.wrapDB));
 
 export const listByUser = query({
   args: {},
@@ -98,7 +111,7 @@ export const getPhotoUrl = query({
 });
 
 // Update baby photo and optionally send notification
-export const updatePhoto = mutation({
+export const updatePhoto = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photoId: v.union(v.id("_storage"), v.null()),
@@ -223,7 +236,7 @@ async function generateUniquePublicId(opts: {
   return publicId;
 }
 
-export const create = mutation({
+export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
@@ -336,7 +349,7 @@ export const markNotificationSent = internalMutation({
   },
 });
 
-export const update = mutation({
+export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     laborStarted: v.optional(v.union(v.string(), v.null())),
