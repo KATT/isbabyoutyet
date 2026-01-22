@@ -137,10 +137,11 @@ function BabyPage() {
       navigate({
         to: "/baby/$publicId",
         params: { publicId: babyDoc.publicId },
+        search,
         replace: true,
       });
     }
-  }, [babyDoc, params.publicId, navigate]);
+  }, [babyDoc, params.publicId, navigate, search]);
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
