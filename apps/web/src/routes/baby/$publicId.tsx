@@ -133,8 +133,6 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
-  const photoUrl = babyDoc.photoUrl;
-  const thumbnailUrl = babyDoc.thumbnailUrl;
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -150,7 +148,7 @@ function BabyPage() {
           <SettingsPanel
             baby={baby}
             babyId={babyDoc._id}
-            photoUrl={photoUrl ?? null}
+            photoUrl={babyDoc.photoUrl ?? null}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -193,8 +191,8 @@ function BabyPage() {
               <StatusDisplay
                 baby={baby}
                 currentStatus={currentStatus}
-                photoUrl={photoUrl}
-                thumbnailUrl={thumbnailUrl}
+                photoUrl={babyDoc.photoUrl}
+                thumbnailUrl={babyDoc.thumbnailUrl}
               />
               <NotificationSubscribe
                 babyId={babyDoc._id}
