@@ -1,4 +1,4 @@
-export function proxied<T extends object>(fn: () => T): T {
+export function lazyGetter<T extends object>(fn: () => T): T {
   let value: T | undefined;
   return new Proxy<T>({} as T, {
     get(_target, prop: string | symbol) {

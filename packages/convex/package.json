@@ -24,8 +24,7 @@
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
     "format:check": "oxfmt --check",
-    "typecheck": "tsc --noEmit -p convex",
-    "deploy-preview": "tsx scripts/deploy-preview.ts"
+    "typecheck": "tsc --noEmit -p convex"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
@@ -40,10 +39,8 @@
     "npm-run-all": "^4.1.5",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
-    "tsx": "^4.8.1",
     "typescript": "catalog:",
     "wait-on": "^9.0.3",
-    "zod": "catalog:",
-    "zx": "^8.8.5"
+    "zod": "catalog:"
   }
 }

@@ -198,6 +198,9 @@ importers:
       tailwindcss:
         specifier: 'catalog:'
         version: 4.1.18
+      tsx:
+        specifier: ^4.8.1
+        version: 4.21.0
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0
@@ -216,6 +219,9 @@ importers:
       web-vitals:
         specifier: ^5.1.0
         version: 5.1.0
+      zx:
+        specifier: ^8.8.5
+        version: 8.8.5
 
   packages/convex:
     dependencies:
@@ -250,9 +256,6 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.38.0
-      tsx:
-        specifier: ^4.8.1
-        version: 4.21.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -262,9 +265,6 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.3.5
-      zx:
-        specifier: ^8.8.5
-        version: 8.8.5
 
   packages/ui:
     dependencies:

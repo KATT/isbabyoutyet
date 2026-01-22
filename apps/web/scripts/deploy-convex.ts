@@ -6,18 +6,30 @@ import * as path from "node:path";
 
 import { fileURLToPath } from "node:url";
 import { $, cd, os } from "zx";
-import { convexEnvSchema, envSchema } from "../src/env";
+import { convexEnvSchema } from "@workspace/convex/src/env";
 import * as z from "zod";
 
 const run = <T>(fn: () => T): T => {
   return fn();
 };
 
+
+const vercelEnvSchema = z.object({
+  VERCEL_ENV: z.enum(["production", "preview", "development"]),
+  VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
+  VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
+
+  BETTER_AUTH_SECRET: z.string().min(1),
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
+});
+
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const env = envSchema.parse(process.env);
+const env = vercelEnvSchema.parse(process.env);
 
 // Determine the site URL for Convex backend
 // For preview: use VERCEL_BRANCH_URL
@@ -32,12 +44,22 @@ const convexEnv = convexEnvSchema.parse({
   SITE_URL: siteUrl,
 });
 
-// Resolve the web app directory relative to the convex package
-// This script is in packages/convex/scripts/
-// Web app is in apps/web/
-const convexPackageDir = path.resolve(__dirname, "..");
-const workspaceRoot = path.resolve(convexPackageDir, "../..");
-const webAppDir = path.join(workspaceRoot, "apps", "web");
+// Resolve paths relative to the web app scripts directory
+// This script is in apps/web/scripts/
+// Convex package is in packages/convex/
+const workspaceRoot = path.resolve(__dirname, "../../..");
+const convexPackageDir = path.resolve(workspaceRoot, "packages/convex");
+const webAppDir = path.resolve(__dirname, "..");
+
+// Verify the convex package directory exists
+if (!fs.existsSync(convexPackageDir)) {
+  throw new Error(
+    `Convex package directory not found: ${convexPackageDir}\n` +
+      `Workspace root: ${workspaceRoot}\n` +
+      `Script directory: ${__dirname}\n` +
+      `Current working directory: ${process.cwd()}`,
+  );
+}
 
 const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
@@ -96,13 +118,19 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
   preview: async () => {
     // Preview deployment: use --preview flag
     console.log(`Deploying Convex preview deployment for branch: ${env.VERCEL_GIT_COMMIT_REF}`);
+    console.log(`Script directory: ${__dirname}`);
+    console.log(`Workspace root: ${workspaceRoot}`);
     console.log(`Working directory: ${process.cwd()}`);
     console.log(`Web app directory: ${webAppDir}`);
+    console.log(`Convex package directory: ${convexPackageDir}`);
+    console.log(`Convex package exists: ${fs.existsSync(convexPackageDir)}`);
 
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
 
+    console.log("Running seed script...");
+    cd(convexPackageDir);
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     await webEnv.syncEnvVarsToConvex();
