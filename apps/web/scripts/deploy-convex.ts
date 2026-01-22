@@ -51,6 +51,16 @@ const workspaceRoot = path.resolve(__dirname, "../../..");
 const convexPackageDir = path.resolve(workspaceRoot, "packages/convex");
 const webAppDir = path.resolve(__dirname, "..");
 
+// Verify the convex package directory exists
+if (!fs.existsSync(convexPackageDir)) {
+  throw new Error(
+    `Convex package directory not found: ${convexPackageDir}\n` +
+      `Workspace root: ${workspaceRoot}\n` +
+      `Script directory: ${__dirname}\n` +
+      `Current working directory: ${process.cwd()}`,
+  );
+}
+
 const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
   const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
