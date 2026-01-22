@@ -152,15 +152,10 @@ export const updatePhoto = mutation({
 
     // Schedule thumbnail generation if a new photo was uploaded
     if (args.photoId) {
-      try {
-        await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
-          babyId: args.babyId,
-          photoId: args.photoId,
-        });
-      } catch (_error) {
-        // Thumbnail generation failure shouldn't block photo upload
-        // Error is intentionally ignored - thumbnail will be generated on next migration if needed
-      }
+      await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+        babyId: args.babyId,
+        photoId: args.photoId,
+      });
     }
 
     // Send notification only if this is the first photo
