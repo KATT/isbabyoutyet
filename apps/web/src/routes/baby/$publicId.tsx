@@ -133,10 +133,8 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
-  const photoUrl = useQuery(api.baby.getPhotoUrl, { photoId: babyDoc.photoId });
-  const thumbnailUrl = useQuery(api.baby.getThumbnailUrl, {
-    thumbnailId: babyDoc.thumbnailId,
-  });
+  const photoUrl = babyDoc.photoUrl;
+  const thumbnailUrl = babyDoc.thumbnailUrl;
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;

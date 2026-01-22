@@ -30,21 +30,17 @@ export const getByPublicId = query({
   handler: async (ctx, args) => {
     // Check if it's a valid Convex ID and try to fetch directly
     const normalizedId = ctx.db.normalizeId("baby", args.id);
+    let baby: Doc<"baby"> | null = null;
     if (normalizedId) {
-      const byId = await ctx.db.get(normalizedId);
-      if (byId) {
-        return byId;
-      }
+      baby = await ctx.db.get(normalizedId);
     }
 
     // Fall back to publicId lookup
-    const baby = await ctx.db
-      .query("baby")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-      .first();
-
-    if (baby) {
-      return baby;
+    if (!baby) {
+      baby = await ctx.db
+        .query("baby")
+        .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
+        .first();
     }
 
     // If not found, check historical publicIds
@@ -54,11 +50,22 @@ export const getByPublicId = query({
       .order("desc")
       .first();
 
-    if (!latestHistoryEntry) {
+    if (latestHistoryEntry) {
+      baby = await ctx.db.get(latestHistoryEntry.babyId);
+    }
+    
+    if (!baby) {
       return null;
     }
 
-    return await ctx.db.get(latestHistoryEntry.babyId);
+    const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
+    const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+
+    return {
+      ...baby,
+      photoUrl,
+      thumbnailUrl,
+    };
   },
 });
 
@@ -86,27 +93,6 @@ export const generateUploadUrl = mutation({
   },
 });
 
-// Get photo URL from storage ID
-export const getPhotoUrl = query({
-  args: { photoId: v.optional(v.union(v.id("_storage"), v.null())) },
-  handler: async (ctx, args) => {
-    if (!args.photoId) {
-      return null;
-    }
-    return await ctx.storage.getUrl(args.photoId);
-  },
-});
-
-// Get thumbnail URL from storage ID
-export const getThumbnailUrl = query({
-  args: { thumbnailId: v.optional(v.union(v.id("_storage"), v.null())) },
-  handler: async (ctx, args) => {
-    if (!args.thumbnailId) {
-      return null;
-    }
-    return await ctx.storage.getUrl(args.thumbnailId);
-  },
-});
 
 // Update baby photo and optionally send notification
 export const updatePhoto = mutation({
