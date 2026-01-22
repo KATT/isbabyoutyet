@@ -44,7 +44,7 @@
     "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "streamdown": "^1.6.11",
-    "zod": "^4.3.4"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",

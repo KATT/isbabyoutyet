@@ -60,6 +60,9 @@ catalogs:
     typescript:
       specifier: ^5.7.2
       version: 5.9.3
+    zod:
+      specifier: ^4.0.0
+      version: 4.3.5
 
 importers:
 
@@ -156,7 +159,7 @@ importers:
         specifier: ^1.6.11
         version: 1.6.11(@types/mdast@4.0.4)(micromark-util-types@2.0.2)(micromark@4.0.2)(react@19.2.3)
       zod:
-        specifier: ^4.3.4
+        specifier: 'catalog:'
         version: 4.3.5
     devDependencies:
       '@tailwindcss/vite':
@@ -232,21 +235,36 @@ importers:
         specifier: ^3.6.7
         version: 3.6.7
     devDependencies:
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.3
       '@types/web-push':
         specifier: ^3.6.4
         version: 3.6.4
+      npm-run-all:
+        specifier: ^4.1.5
+        version: 4.1.5
       oxfmt:
         specifier: 'catalog:'
         version: 0.21.0
       oxlint:
         specifier: 'catalog:'
         version: 1.38.0
+      tsx:
+        specifier: ^4.8.1
+        version: 4.21.0
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
       wait-on:
         specifier: ^9.0.3
         version: 9.0.3
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.5
+      zx:
+        specifier: ^8.8.5
+        version: 8.8.5
 
   packages/ui:
     dependencies:
@@ -5502,6 +5520,11 @@ packages:
 
   zwitch@2.0.4:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
+
+  zx@8.8.5:
+    resolution: {integrity: sha512-SNgDF5L0gfN7FwVOdEFguY3orU5AkfFZm9B5YSHog/UDHv+lvmd82ZAsOenOkQixigwH2+yyH198AwNdKhj+RA==}
+    engines: {node: '>= 12.17.0'}
+    hasBin: true
 
 snapshots:
 
@@ -11206,3 +11229,5 @@ snapshots:
   zod@4.3.5: {}
 
   zwitch@2.0.4: {}
+
+  zx@8.8.5: {}

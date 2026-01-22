@@ -11,6 +11,7 @@
   "scripts": {
     "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
+    "predev:seed": "wait-on tcp:3210 && echo 'Seeding preview data...' && npx convex run seed:seedPreviewData --push",
     "predev": "run-s predev:*",
     "dev": "CONVEX_AGENT_MODE=anonymous convex dev",
     "dev-set-env:BETTER_AUTH_SECRET": "convex env set BETTER_AUTH_SECRET localhost",
@@ -23,7 +24,8 @@
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
     "format:check": "oxfmt --check",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex",
+    "deploy-preview": "tsx scripts/deploy-preview.ts"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
@@ -33,10 +35,15 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "@types/web-push": "^3.6.4",
+    "npm-run-all": "^4.1.5",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "tsx": "^4.8.1",
     "typescript": "catalog:",
-    "wait-on": "^9.0.3"
+    "wait-on": "^9.0.3",
+    "zod": "catalog:",
+    "zx": "^8.8.5"
   }
 }

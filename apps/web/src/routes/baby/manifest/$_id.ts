@@ -7,7 +7,7 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
     handlers: {
       GET: async ({ params }) => {
-        const convexUrl = process.env.VITE_CONVEX_URL;
+        const convexUrl = import.meta.env.VITE_CONVEX_URL;
         if (!convexUrl) {
           return new Response("VITE_CONVEX_URL not set", { status: 500 });
         }
