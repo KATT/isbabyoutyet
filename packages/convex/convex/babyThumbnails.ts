@@ -4,7 +4,6 @@ import { v } from "convex/values";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import sharp from "sharp";
 
 // Generate thumbnail from a photo storage ID and update the baby record
 export const generateThumbnail = internalAction({
@@ -13,6 +12,9 @@ export const generateThumbnail = internalAction({
     photoId: v.id("_storage"),
   },
   handler: async (ctx: ActionCtx, args) => {
+    // Dynamically import sharp to avoid analysis-time loading issues with native modules
+    const sharp = (await import("sharp")).default;
+
     // Download the original image
     const imageBlob = await ctx.storage.get(args.photoId);
     if (!imageBlob) {
