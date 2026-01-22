@@ -119,7 +119,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
 
     console.log("Running migrations...");
     cd(convexPackageDir);
-    await $`pnpm convex run migrations:runAll --push`;
+    await $`pnpm convex run migrations:runAll`;
 
     await webEnv.buildWebApp();
   },
@@ -149,7 +149,7 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
 
     console.log("Running migrations...");
     cd(convexPackageDir);
-    await $`pnpm convex run migrations:runAll --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
+    await $`pnpm convex run migrations:runAll --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
 
     await webEnv.buildWebApp();
   },
