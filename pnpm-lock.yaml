@@ -116,9 +116,6 @@ importers:
       '@workspace/convex':
         specifier: workspace:*
         version: link:../../packages/convex
-      '@workspace/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@workspace/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -234,9 +231,6 @@ importers:
       '@convex-dev/migrations':
         specifier: ^0.2.0
         version: 0.2.9(convex@1.31.5(react@19.2.3))
-      '@workspace/shared':
-        specifier: workspace:*
-        version: link:../shared
       better-auth:
         specifier: 'catalog:'
         version: 1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.1(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0))
@@ -271,25 +265,6 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.3.5
-
-  packages/shared:
-    dependencies:
-      zod:
-        specifier: 'catalog:'
-        version: 4.3.5
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 22.19.3
-      oxfmt:
-        specifier: 'catalog:'
-        version: 0.21.0
-      oxlint:
-        specifier: 'catalog:'
-        version: 1.38.0
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
 
   packages/ui:
     dependencies:
