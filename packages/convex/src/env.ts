@@ -7,7 +7,7 @@ export const convexEnvSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
   SITE_URL: z.url("SITE_URL must be a valid URL"),
-})
+});
 
 export const convexEnv = lazyGetter(() => {
   return convexEnvSchema.parse(process.env);

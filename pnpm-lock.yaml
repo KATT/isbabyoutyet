@@ -237,6 +237,9 @@ importers:
       convex:
         specifier: 'catalog:'
         version: 1.31.5(react@19.2.3)
+      convex-table-history:
+        specifier: ^0.1.0
+        version: 0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
       web-push:
         specifier: ^3.6.7
         version: 3.6.7
@@ -3054,6 +3057,11 @@ packages:
         optional: true
       zod:
         optional: true
+
+  convex-table-history@0.1.2:
+    resolution: {integrity: sha512-MTM29i4vLiQvpas6x4NpGWD8xmvkxngsAjzsAHgmn/rg9G2uoJKZyiI8d169QT1kVchj/Z6F6trWtyx+hiSLzg==}
+    peerDependencies:
+      convex: ~1.16.5 || ~1.17.0 || ~1.18.0
 
   convex@1.31.5:
     resolution: {integrity: sha512-E1IuJKFwMCHDToNGukBPs6c7RFaarR3t8chLF9n98TM5/Tgmj8lM6l7sKM1aJ3VwqGaB4wbeUAPY8osbCOXBhQ==}
@@ -8216,6 +8224,17 @@ snapshots:
       react: 19.2.3
       typescript: 5.9.3
       zod: 4.3.5
+
+  convex-table-history@0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5):
+    dependencies:
+      convex: 1.31.5(react@19.2.3)
+      convex-helpers: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
+    transitivePeerDependencies:
+      - '@standard-schema/spec'
+      - hono
+      - react
+      - typescript
+      - zod
 
   convex@1.31.5(react@19.2.3):
     dependencies:
