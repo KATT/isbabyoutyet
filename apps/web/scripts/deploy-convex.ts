@@ -18,7 +18,6 @@ const vercelEnvSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
   VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
-  VITE_CONVEX_URL: z.url("VITE_CONVEX_URL must be a valid URL").optional(),
 
   BETTER_AUTH_SECRET: z.string().min(1),
   VAPID_PUBLIC_KEY: z.string().min(1),
