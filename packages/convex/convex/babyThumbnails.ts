@@ -24,9 +24,9 @@ export const generateThumbnail = internalAction({
     const arrayBuffer = await imageBlob.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Resize image to 300x300px with cover fit (maintains aspect ratio, crops to fit)
+    // Resize image to 900x300px with cover fit (maintains aspect ratio, crops to fit)
     const thumbnailBuffer = await sharp(buffer)
-      .resize(300, 300, {
+      .resize(900, 900, {
         fit: "cover",
         position: "center",
       })
