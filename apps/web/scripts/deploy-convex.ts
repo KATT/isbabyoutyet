@@ -6,18 +6,31 @@ import * as path from "node:path";
 
 import { fileURLToPath } from "node:url";
 import { $, cd, os } from "zx";
-import { convexEnvSchema, envSchema } from "@workspace/convex/src/env";
+import { convexEnvSchema } from "@workspace/convex/src/env";
 import * as z from "zod";
 
 const run = <T>(fn: () => T): T => {
   return fn();
 };
 
+
+const vercelEnvSchema = z.object({
+  VERCEL_ENV: z.enum(["production", "preview", "development"]),
+  VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
+  VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
+  VITE_CONVEX_URL: z.url("VITE_CONVEX_URL must be a valid URL").optional(),
+
+  BETTER_AUTH_SECRET: z.string().min(1),
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
+});
+
 // Get the directory of this script
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const env = envSchema.parse(process.env);
+const env = vercelEnvSchema.parse(process.env);
 
 // Determine the site URL for Convex backend
 // For preview: use VERCEL_BRANCH_URL
