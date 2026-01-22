@@ -3,6 +3,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { format, parseISO } from "date-fns";
+import { Image } from "@unpic/react";
 import {
   Activity,
   Baby,
@@ -711,10 +712,13 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
         <div className="space-y-4">
           {displayUrl && (
             <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border">
-              <img
+              <Image
                 src={displayUrl}
                 alt="Baby photo preview"
+                width={320}
+                height={320}
                 className="h-full w-full object-cover"
+                layout="constrained"
               />
             </div>
           )}

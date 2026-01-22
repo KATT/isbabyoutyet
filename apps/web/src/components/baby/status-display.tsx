@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { format } from "date-fns";
 import { Activity, Baby, CheckCircle, Hospital, X } from "lucide-react";
 import { useState } from "react";
+import { Image } from "@unpic/react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import {
   formatDate,
@@ -37,7 +38,13 @@ function PhotoAvatar({ photoUrl, fallbackIcon, variant = "default" }: PhotoAvata
         <button
           className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
         >
-          <img src={photoUrl} alt="Baby" className="w-full h-full object-cover" />
+          <Image
+            src={photoUrl}
+            alt="Baby"
+            width={160}
+            height={160}
+            className="w-full h-full object-cover"
+          />
         </button>
       </DialogTrigger>
       <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
@@ -47,10 +54,13 @@ function PhotoAvatar({ photoUrl, fallbackIcon, variant = "default" }: PhotoAvata
         >
           <X className="w-6 h-6" />
         </button>
-        <img
+        <Image
           src={photoUrl}
           alt="Baby"
+          width={1200}
+          height={1200}
           className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+          layout="constrained"
         />
       </DialogContent>
     </Dialog>
