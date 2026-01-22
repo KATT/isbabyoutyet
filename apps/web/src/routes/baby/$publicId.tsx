@@ -127,6 +127,9 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const photoUrl = useQuery(api.baby.getPhotoUrl, { photoId: babyDoc.photoId });
+  const thumbnailUrl = useQuery(api.baby.getThumbnailUrl, {
+    thumbnailId: babyDoc.thumbnailId,
+  });
 
   // Redirect if baby found but current publicId doesn't match (client-side check)
   useEffect(() => {
@@ -134,10 +137,11 @@ function BabyPage() {
       navigate({
         to: "/baby/$publicId",
         params: { publicId: babyDoc.publicId },
+        search,
         replace: true,
       });
     }
-  }, [babyDoc, params.publicId, navigate]);
+  }, [babyDoc, params.publicId, navigate, search]);
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -193,7 +197,12 @@ function BabyPage() {
         <div className="relative max-w-5xl mx-auto">
           <Card>
             <CardContent>
-              <StatusDisplay baby={baby} currentStatus={currentStatus} photoUrl={photoUrl} />
+              <StatusDisplay
+                baby={baby}
+                currentStatus={currentStatus}
+                photoUrl={photoUrl}
+                thumbnailUrl={thumbnailUrl}
+              />
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}

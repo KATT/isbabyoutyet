@@ -100,7 +100,7 @@ const safeDeploy = run(() => {
       },
       async buildWebApp() {
         cd(workspaceRoot);
-        await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
+        await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} VITE_SITE_URL=${siteUrl} pnpm turbo build --filter=web`;
       },
     };
   }
@@ -116,6 +116,11 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
       () => $`pnpm convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
     await webEnv.syncEnvVarsToConvex();
+
+    console.log("Running migrations...");
+    cd(convexPackageDir);
+    await $`pnpm convex run migrations:runAll --push`;
+
     await webEnv.buildWebApp();
   },
   development: async () => {
@@ -141,6 +146,11 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     await $`pnpm convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     await webEnv.syncEnvVarsToConvex();
+
+    console.log("Running migrations...");
+    cd(convexPackageDir);
+    await $`pnpm convex run migrations:runAll --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
+
     await webEnv.buildWebApp();
   },
 };
