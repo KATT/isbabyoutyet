@@ -49,7 +49,7 @@ const convexEnv = convexEnvSchema.parse({
 // This script is in apps/web/scripts/
 // Convex package is in packages/convex/
 const workspaceRoot = path.resolve(__dirname, "../..");
-const convexPackageDir = path.resolve(__dirname, "../../packages/convex");
+const convexPackageDir = path.resolve(workspaceRoot, "packages/convex");
 const webAppDir = path.resolve(__dirname, "..");
 
 const safeDeploy = run(() => {
