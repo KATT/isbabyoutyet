@@ -111,11 +111,14 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     console.log(`Deploying Convex preview deployment for branch: ${env.VERCEL_GIT_COMMIT_REF}`);
     console.log(`Working directory: ${process.cwd()}`);
     console.log(`Web app directory: ${webAppDir}`);
+    console.log(`Convex package directory: ${convexPackageDir}`);
 
     const webEnv = await safeDeploy.deployConvex(
       $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
 
+    console.log("Running seed script...");
+    cd(convexPackageDir);
     await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     await webEnv.syncEnvVarsToConvex();
