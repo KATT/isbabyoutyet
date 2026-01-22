@@ -35,7 +35,7 @@ function SignupPage() {
 
   const form = useZodForm({
     schema: signupSchema,
-    defaultValues: import.meta.env.DEV || import.meta.env.VERCEL_ENV === "preview"
+    defaultValues: import.meta.env.DEV
       ? {
           name: "Test User",
           email: "test@example.com",
