@@ -6,7 +6,7 @@ import * as path from "node:path";
 
 import { fileURLToPath } from "node:url";
 import { $, cd, os } from "zx";
-import { convexEnvSchema, envSchema } from "../src/env";
+import { convexEnvSchema, envSchema } from "@workspace/convex/src/env";
 import * as z from "zod";
 
 const run = <T>(fn: () => T): T => {
@@ -32,12 +32,12 @@ const convexEnv = convexEnvSchema.parse({
   SITE_URL: siteUrl,
 });
 
-// Resolve the web app directory relative to the convex package
-// This script is in packages/convex/scripts/
-// Web app is in apps/web/
-const convexPackageDir = path.resolve(__dirname, "..");
-const workspaceRoot = path.resolve(convexPackageDir, "../..");
-const webAppDir = path.join(workspaceRoot, "apps", "web");
+// Resolve paths relative to the web app scripts directory
+// This script is in apps/web/scripts/
+// Convex package is in packages/convex/
+const workspaceRoot = path.resolve(__dirname, "../..");
+const convexPackageDir = path.resolve(__dirname, "../../packages/convex");
+const webAppDir = path.resolve(__dirname, "..");
 
 const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
