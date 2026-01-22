@@ -17,6 +17,7 @@ const vercelEnvSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
   VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1), // The domain name of the production project URL
 
   BETTER_AUTH_SECRET: z.string().min(1),
   VAPID_PUBLIC_KEY: z.string().min(1),
@@ -36,7 +37,7 @@ const env = vercelEnvSchema.parse(process.env);
 const siteUrl =
   env.VERCEL_ENV === "preview"
     ? `https://${env.VERCEL_BRANCH_URL}`
-    : `https://${process.env.VERCEL_URL}`;
+    : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
 const convexEnv = convexEnvSchema.parse({
   ...env,
