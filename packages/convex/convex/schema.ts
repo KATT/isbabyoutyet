@@ -16,6 +16,7 @@ export default defineSchema({
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
+    thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),

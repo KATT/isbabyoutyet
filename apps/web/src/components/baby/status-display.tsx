@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { format } from "date-fns";
 import { Activity, Baby, CheckCircle, Hospital, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import {
   formatDate,
@@ -13,12 +13,36 @@ import {
 
 type PhotoAvatarProps = {
   photoUrl: string | null | undefined;
+  thumbnailUrl: string | null | undefined;
   fallbackIcon: React.ReactNode;
   variant?: "default" | "born";
 };
 
-function PhotoAvatar({ photoUrl, fallbackIcon, variant = "default" }: PhotoAvatarProps) {
+function PhotoAvatar({
+  photoUrl,
+  thumbnailUrl,
+  fallbackIcon,
+  variant = "default",
+}: PhotoAvatarProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Prefetch the full-size image when component mounts or photoUrl changes
+  useEffect(() => {
+    if (photoUrl) {
+      const link = document.createElement("link");
+      link.rel = "prefetch";
+      link.as = "image";
+      link.href = photoUrl;
+      document.head.appendChild(link);
+
+      return () => {
+        // Only remove if still in the document
+        if (document.head.contains(link)) {
+          document.head.removeChild(link);
+        }
+      };
+    }
+  }, [photoUrl]);
 
   const baseClasses =
     "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full border-2 mb-8 overflow-hidden";
@@ -27,7 +51,10 @@ function PhotoAvatar({ photoUrl, fallbackIcon, variant = "default" }: PhotoAvata
       ? "bg-linear-to-br from-primary to-primary/80 border-primary/30 shadow-xl shadow-primary/20"
       : "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20 shadow-lg shadow-primary/10";
 
-  if (!photoUrl) {
+  // Use thumbnail for avatar, fallback to full photo if thumbnail not available
+  const avatarImageUrl = thumbnailUrl ?? photoUrl;
+
+  if (!avatarImageUrl && !photoUrl) {
     return <div className={`${baseClasses} ${variantClasses}`}>{fallbackIcon}</div>;
   }
 
@@ -37,22 +64,32 @@ function PhotoAvatar({ photoUrl, fallbackIcon, variant = "default" }: PhotoAvata
         <button
           className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
         >
-          <img src={photoUrl} alt="Baby" className="w-full h-full object-cover" />
+          {avatarImageUrl && (
+            <img
+              src={avatarImageUrl}
+              alt="Baby"
+              width={160}
+              height={160}
+              className="w-full h-full object-cover"
+            />
+          )}
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-        <button
-          onClick={() => setIsOpen(false)}
-          className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <img
-          src={photoUrl}
-          alt="Baby"
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-        />
-      </DialogContent>
+      {photoUrl && (
+        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <img
+            src={photoUrl}
+            alt="Baby"
+            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+          />
+        </DialogContent>
+      )}
     </Dialog>
   );
 }
@@ -61,9 +98,10 @@ type StatusDisplayProps = {
   baby: BabyData;
   currentStatus: BabyStatus;
   photoUrl?: string | null;
+  thumbnailUrl?: string | null;
 };
 
-export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayProps) {
+export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
@@ -72,6 +110,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
           photoUrl={photoUrl}
+          thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
@@ -116,6 +155,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
           photoUrl={photoUrl}
+          thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
@@ -141,6 +181,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
           photoUrl={photoUrl}
+          thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
@@ -165,6 +206,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl }: StatusDisplayPr
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
         photoUrl={photoUrl}
+        thumbnailUrl={thumbnailUrl}
         fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
         variant="born"
       />
