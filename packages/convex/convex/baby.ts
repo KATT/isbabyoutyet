@@ -130,23 +130,7 @@ export const updatePhoto = mutationWithTriggers({
 
     const hadPhotoBeforeUpdate = !!baby.photoId;
 
-    // Delete old photo and thumbnail from storage if replacing
-    if (baby.photoId && args.photoId && baby.photoId !== args.photoId) {
-      await ctx.storage.delete(baby.photoId);
-      if (baby.thumbnailId) {
-        await ctx.storage.delete(baby.thumbnailId);
-      }
-    }
-
-    // If removing photo, delete from storage
-    if (baby.photoId && !args.photoId) {
-      await ctx.storage.delete(baby.photoId);
-      if (baby.thumbnailId) {
-        await ctx.storage.delete(baby.thumbnailId);
-      }
-    }
-
-    // Update photo first
+    // Update photo (retain old photos in storage for history)
     await ctx.db.patch(args.babyId, { photoId: args.photoId, thumbnailId: null });
 
     // Schedule thumbnail generation if a new photo was uploaded
