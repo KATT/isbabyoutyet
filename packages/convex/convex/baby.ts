@@ -5,7 +5,8 @@ import type { Doc } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
 import { TableHistory } from "convex-table-history";
-import { Triggers, customMutation, customCtx, mutationGeneric } from "convex/server";
+import { Triggers } from "convex-helpers/server/triggers";
+import { customMutation, customCtx } from "convex-helpers/server/customFunctions";
 import type { DataModel } from "./_generated/dataModel";
 
 // Initialize table history for baby table
@@ -16,7 +17,7 @@ const triggers = new Triggers<DataModel>();
 triggers.register("baby", babyAuditLog.trigger());
 
 // Create wrapped mutation that uses triggers
-const mutationWithTriggers = customMutation(mutationGeneric, customCtx(triggers.wrapDB));
+const mutationWithTriggers = customMutation(mutation, customCtx(triggers.wrapDB));
 
 export const listByUser = query({
   args: {},
@@ -66,7 +67,7 @@ export const getByPublicId = query({
     if (latestHistoryEntry) {
       baby = await ctx.db.get(latestHistoryEntry.babyId);
     }
-    
+
     if (!baby) {
       return null;
     }
@@ -105,7 +106,6 @@ export const generateUploadUrl = mutation({
     return await ctx.storage.generateUploadUrl();
   },
 });
-
 
 // Update baby photo and optionally send notification
 export const updatePhoto = mutationWithTriggers({

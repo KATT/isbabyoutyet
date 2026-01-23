@@ -30,6 +30,7 @@
     "@convex-dev/migrations": "^0.2.0",
     "better-auth": "catalog:",
     "convex": "catalog:",
+    "convex-helpers": "^0.1.111",
     "convex-table-history": "^0.1.0",
     "sharp": "^0.33.0",
     "web-push": "^3.6.7"
