@@ -30,7 +30,7 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen }: BabyNavProp
         // mobile
         "fixed bottom-0 left-0",
         // desktop
-        "md:absolute md:top-0 md:left-0",
+        "md:sticky md:top-0 md:left-0",
       )}
     >
       <Tooltip>

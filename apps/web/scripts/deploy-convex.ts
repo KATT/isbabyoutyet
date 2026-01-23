@@ -13,11 +13,11 @@ const run = <T>(fn: () => T): T => {
   return fn();
 };
 
-
 const vercelEnvSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview", "development"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
   VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
+  VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1), // The domain name of the production project URL
 
   BETTER_AUTH_SECRET: z.string().min(1),
   VAPID_PUBLIC_KEY: z.string().min(1),
@@ -37,7 +37,7 @@ const env = vercelEnvSchema.parse(process.env);
 const siteUrl =
   env.VERCEL_ENV === "preview"
     ? `https://${env.VERCEL_BRANCH_URL}`
-    : `https://${process.env.VERCEL_URL}`;
+    : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
 const convexEnv = convexEnvSchema.parse({
   ...env,
@@ -65,10 +65,10 @@ const safeDeploy = run(() => {
   const envFile = path.join(os.tmpdir(), "VITE_CONVEX_URL.txt");
   const cmd = `echo $VITE_CONVEX_URL >> ${envFile}`;
 
-  async function deployConvex<T>(promise: Promise<T>) {
+  async function deployConvex<T>(cb: () => Promise<T>) {
     cd(convexPackageDir);
     try {
-      await promise;
+      await cb();
     } catch (error) {
       if (error instanceof Error && error.message.includes("Uncaught ZodError:")) {
         console.log(`Unexpected ZodError (expected on first deployment)`);
@@ -88,13 +88,19 @@ const safeDeploy = run(() => {
       async syncEnvVarsToConvex() {
         console.log("Setting environment variables in Convex deployment...");
         cd(convexPackageDir);
+        await $`echo "Current working directory: $(pwd)"`;
+
         for (const [key, value] of Object.entries(convexEnv)) {
-          await $`npx convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+          if (env.VERCEL_ENV === "preview") {
+            await $`pnpm convex env set ${key} ${value} --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+          } else {
+            await $`pnpm convex env set ${key} ${value}`;
+          }
         }
       },
       async buildWebApp() {
         cd(workspaceRoot);
-        await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} pnpm turbo build --filter=web`;
+        await $`VITE_CONVEX_SITE_URL=${VITE_CONVEX_SITE_URL} VITE_CONVEX_URL=${VITE_CONTEXT_URL} VITE_SITE_URL=${siteUrl} pnpm turbo build --filter=web`;
       },
     };
   }
@@ -107,9 +113,14 @@ const safeDeploy = run(() => {
 const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
   production: async () => {
     const webEnv = await safeDeploy.deployConvex(
-      $`npx convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
+      () => $`pnpm convex deploy --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
     await webEnv.syncEnvVarsToConvex();
+
+    console.log("Running migrations...");
+    cd(convexPackageDir);
+    await $`pnpm convex run migrations:runAll`;
+
     await webEnv.buildWebApp();
   },
   development: async () => {
@@ -126,14 +137,20 @@ const cmds: Record<typeof env.VERCEL_ENV, () => Promise<void>> = {
     console.log(`Convex package exists: ${fs.existsSync(convexPackageDir)}`);
 
     const webEnv = await safeDeploy.deployConvex(
-      $`npx convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
+      () =>
+        $`pnpm convex deploy --preview-create ${env.VERCEL_GIT_COMMIT_REF} --cmd-url-env-var-name VITE_CONVEX_URL --cmd ${safeDeploy.cmd}`,
     );
 
     console.log("Running seed script...");
     cd(convexPackageDir);
-    await $`npx convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
+    await $`pnpm convex run seed:seedPreviewData --preview-name ${env.VERCEL_GIT_COMMIT_REF} --push`;
 
     await webEnv.syncEnvVarsToConvex();
+
+    console.log("Running migrations...");
+    cd(convexPackageDir);
+    await $`pnpm convex run migrations:runAll --preview-name ${env.VERCEL_GIT_COMMIT_REF}`;
+
     await webEnv.buildWebApp();
   },
 };

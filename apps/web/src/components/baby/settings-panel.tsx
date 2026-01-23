@@ -258,7 +258,13 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
                   <ItemActions>
                     {photoUrl && (
                       <div className="w-8 h-8 rounded-full overflow-hidden border border-border mr-2">
-                        <img src={photoUrl} alt="Baby" className="w-full h-full object-cover" />
+                        <img
+                          src={photoUrl}
+                          alt="Baby"
+                          width={64}
+                          height={64}
+                          className="w-full h-full object-cover"
+                        />
                       </div>
                     )}
                     <PhotoUploader babyId={babyId} photoUrl={photoUrl ?? null} />

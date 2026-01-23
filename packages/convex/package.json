@@ -11,7 +11,6 @@
   "scripts": {
     "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
-    "predev:seed": "wait-on tcp:3210 && echo 'Seeding preview data...' && npx convex run seed:seedPreviewData --push",
     "predev": "run-s predev:*",
     "dev": "CONVEX_AGENT_MODE=anonymous convex dev",
     "dev-set-env:BETTER_AUTH_SECRET": "convex env set BETTER_AUTH_SECRET localhost",
@@ -32,6 +31,7 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "convex-table-history": "^0.1.0",
+    "sharp": "^0.33.0",
     "web-push": "^3.6.7"
   },
   "devDependencies": {

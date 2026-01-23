@@ -43,21 +43,17 @@ export const getByPublicId = query({
   handler: async (ctx, args) => {
     // Check if it's a valid Convex ID and try to fetch directly
     const normalizedId = ctx.db.normalizeId("baby", args.id);
+    let baby: Doc<"baby"> | null = null;
     if (normalizedId) {
-      const byId = await ctx.db.get(normalizedId);
-      if (byId) {
-        return byId;
-      }
+      baby = await ctx.db.get(normalizedId);
     }
 
     // Fall back to publicId lookup
-    const baby = await ctx.db
-      .query("baby")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-      .first();
-
-    if (baby) {
-      return baby;
+    if (!baby) {
+      baby = await ctx.db
+        .query("baby")
+        .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
+        .first();
     }
 
     // If not found, check historical publicIds
@@ -67,11 +63,22 @@ export const getByPublicId = query({
       .order("desc")
       .first();
 
-    if (!latestHistoryEntry) {
+    if (latestHistoryEntry) {
+      baby = await ctx.db.get(latestHistoryEntry.babyId);
+    }
+    
+    if (!baby) {
       return null;
     }
 
-    return await ctx.db.get(latestHistoryEntry.babyId);
+    const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
+    const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+
+    return {
+      ...baby,
+      photoUrl,
+      thumbnailUrl,
+    };
   },
 });
 
@@ -99,16 +106,6 @@ export const generateUploadUrl = mutation({
   },
 });
 
-// Get photo URL from storage ID
-export const getPhotoUrl = query({
-  args: { photoId: v.optional(v.union(v.id("_storage"), v.null())) },
-  handler: async (ctx, args) => {
-    if (!args.photoId) {
-      return null;
-    }
-    return await ctx.storage.getUrl(args.photoId);
-  },
-});
 
 // Update baby photo and optionally send notification
 export const updatePhoto = mutationWithTriggers({
@@ -133,17 +130,32 @@ export const updatePhoto = mutationWithTriggers({
 
     const hadPhotoBeforeUpdate = !!baby.photoId;
 
-    // Delete old photo from storage if replacing
+    // Delete old photo and thumbnail from storage if replacing
     if (baby.photoId && args.photoId && baby.photoId !== args.photoId) {
       await ctx.storage.delete(baby.photoId);
+      if (baby.thumbnailId) {
+        await ctx.storage.delete(baby.thumbnailId);
+      }
     }
 
     // If removing photo, delete from storage
     if (baby.photoId && !args.photoId) {
       await ctx.storage.delete(baby.photoId);
+      if (baby.thumbnailId) {
+        await ctx.storage.delete(baby.thumbnailId);
+      }
     }
 
-    await ctx.db.patch(args.babyId, { photoId: args.photoId });
+    // Update photo first
+    await ctx.db.patch(args.babyId, { photoId: args.photoId, thumbnailId: null });
+
+    // Schedule thumbnail generation if a new photo was uploaded
+    if (args.photoId) {
+      await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+        babyId: args.babyId,
+        photoId: args.photoId,
+      });
+    }
 
     // Send notification only if this is the first photo
     if (!hadPhotoBeforeUpdate && args.photoId) {
@@ -346,6 +358,17 @@ export const markNotificationSent = internalMutation({
     if (notification.status === "pending") {
       await ctx.db.patch(args.notificationId, { status: "sent" });
     }
+  },
+});
+
+// Internal mutation to update thumbnail ID (called from action)
+export const updateThumbnail = internalMutation({
+  args: {
+    babyId: v.id("baby"),
+    thumbnailId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
   },
 });
 

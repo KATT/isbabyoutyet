@@ -714,6 +714,8 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
               <img
                 src={displayUrl}
                 alt="Baby photo preview"
+                width={320}
+                height={320}
                 className="h-full w-full object-cover"
               />
             </div>
