@@ -25,8 +25,8 @@ catalogs:
       specifier: ^1.4.17
       version: 1.4.17
     convex:
-      specifier: ^1.31.5
-      version: 1.31.5
+      specifier: ^1.31.6
+      version: 1.31.6
     lucide-react:
       specifier: ^0.561.0
       version: 0.561.0
@@ -82,10 +82,10 @@ importers:
     dependencies:
       '@convex-dev/better-auth':
         specifier: 'catalog:'
-        version: 0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.5(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+        version: 0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.6(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@convex-dev/react-query':
         specifier: ^0.1.0
-        version: 0.1.0(@tanstack/react-query@5.90.16(react@19.2.3))(convex@1.31.5(react@19.2.3))
+        version: 0.1.0(@tanstack/react-query@5.90.16(react@19.2.3))(convex@1.31.6(react@19.2.3))
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.70.0(react@19.2.3))
@@ -124,7 +124,7 @@ importers:
         version: 1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0))
       convex:
         specifier: 'catalog:'
-        version: 1.31.5(react@19.2.3)
+        version: 1.31.6(react@19.2.3)
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -227,22 +227,22 @@ importers:
     dependencies:
       '@convex-dev/better-auth':
         specifier: 'catalog:'
-        version: 0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.5(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
+        version: 0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.6(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)
       '@convex-dev/migrations':
-        specifier: ^0.2.0
-        version: 0.2.9(convex@1.31.5(react@19.2.3))
+        specifier: ^0.3.1
+        version: 0.3.1(convex@1.31.6(react@19.2.3))
       better-auth:
         specifier: 'catalog:'
         version: 1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0))
       convex:
         specifier: 'catalog:'
-        version: 1.31.5(react@19.2.3)
+        version: 1.31.6(react@19.2.3)
       convex-helpers:
         specifier: ^0.1.111
-        version: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
+        version: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
       convex-table-history:
-        specifier: ^0.1.0
-        version: 0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
+        specifier: ^0.1.2
+        version: 0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
       sharp:
         specifier: ^0.33.0
         version: 0.33.5
@@ -602,10 +602,10 @@ packages:
       react: ^18.3.1 || ^19.0.0
       react-dom: ^18.3.1 || ^19.0.0
 
-  '@convex-dev/migrations@0.2.9':
-    resolution: {integrity: sha512-HfIv6/F8VbtJ1NVT2bQRTumJGdaqROl/+s5IOnubHm7vvgie0RjcfO6YiB7JoLFWwS19vjDQDKl63ihoA08zOA==}
+  '@convex-dev/migrations@0.3.1':
+    resolution: {integrity: sha512-dGiN82vWMN415/AGMcVooDOJk8iTousZahBBs27uA03pL74Uo3ksucUW3CiCfPx75rv+x9UnenEakimQYYNIrA==}
     peerDependencies:
-      convex: ~1.16.5 || >=1.17.0 <1.35.0
+      convex: ^1.24.8
 
   '@convex-dev/react-query@0.1.0':
     resolution: {integrity: sha512-ULmBZCtAQDUePdBhUv7hj1Yy4QiCelhi6uEIOtMpjW8db6W9CFKvQwLt9heLngccFyMFfAZdOfSrT+cP4AH0Jw==}
@@ -3248,8 +3248,8 @@ packages:
     peerDependencies:
       convex: ~1.16.5 || ~1.17.0 || ~1.18.0
 
-  convex@1.31.5:
-    resolution: {integrity: sha512-E1IuJKFwMCHDToNGukBPs6c7RFaarR3t8chLF9n98TM5/Tgmj8lM6l7sKM1aJ3VwqGaB4wbeUAPY8osbCOXBhQ==}
+  convex@1.31.6:
+    resolution: {integrity: sha512-9cIsOzepa3s9DURRF+fZHxbNuzLgilg9XGQCc45v0Xx4FemqeIezpPFSJF9WHC9ckk43TDUUXLecvLVt9djPkw==}
     engines: {node: '>=18.0.0', npm: '>=7.0.0'}
     hasBin: true
     peerDependencies:
@@ -5927,14 +5927,14 @@ snapshots:
 
   '@chevrotain/utils@11.0.3': {}
 
-  '@convex-dev/better-auth@0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.5(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
+  '@convex-dev/better-auth@0.10.10(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@standard-schema/spec@1.1.0)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(convex@1.31.6(react@19.2.3))(nanostores@1.1.0)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(typescript@5.9.3)':
     dependencies:
       '@better-auth/passkey': 1.4.9(@better-auth/core@1.4.17(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-call@1.1.8(zod@4.3.5))(jose@6.1.3)(kysely@0.28.10)(nanostores@1.1.0))(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.21)(better-auth@1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)))(better-call@1.1.8(zod@4.3.5))(nanostores@1.1.0)
       '@better-fetch/fetch': 1.1.21
       better-auth: 1.4.17(@tanstack/react-start@1.145.9(crossws@0.4.3(srvx@0.10.1))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(vite@7.3.1(@types/node@22.19.3)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.21.0)))(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(solid-js@1.9.10)(vitest@3.2.4(@types/debug@4.1.12)(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0))
       common-tags: 1.8.2
-      convex: 1.31.5(react@19.2.3)
-      convex-helpers: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
+      convex: 1.31.6(react@19.2.3)
+      convex-helpers: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
       jose: 6.1.3
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
@@ -5951,14 +5951,14 @@ snapshots:
       - nanostores
       - typescript
 
-  '@convex-dev/migrations@0.2.9(convex@1.31.5(react@19.2.3))':
+  '@convex-dev/migrations@0.3.1(convex@1.31.6(react@19.2.3))':
     dependencies:
-      convex: 1.31.5(react@19.2.3)
+      convex: 1.31.6(react@19.2.3)
 
-  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.90.16(react@19.2.3))(convex@1.31.5(react@19.2.3))':
+  '@convex-dev/react-query@0.1.0(@tanstack/react-query@5.90.16(react@19.2.3))(convex@1.31.6(react@19.2.3))':
     dependencies:
       '@tanstack/react-query': 5.90.16(react@19.2.3)
-      convex: 1.31.5(react@19.2.3)
+      convex: 1.31.6(react@19.2.3)
 
   '@csstools/color-helpers@5.1.0': {}
 
@@ -8391,19 +8391,19 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  convex-helpers@0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5):
+  convex-helpers@0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5):
     dependencies:
-      convex: 1.31.5(react@19.2.3)
+      convex: 1.31.6(react@19.2.3)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
       react: 19.2.3
       typescript: 5.9.3
       zod: 4.3.5
 
-  convex-table-history@0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5):
+  convex-table-history@0.1.2(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5):
     dependencies:
-      convex: 1.31.5(react@19.2.3)
-      convex-helpers: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.5(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
+      convex: 1.31.6(react@19.2.3)
+      convex-helpers: 0.1.111(@standard-schema/spec@1.1.0)(convex@1.31.6(react@19.2.3))(react@19.2.3)(typescript@5.9.3)(zod@4.3.5)
     transitivePeerDependencies:
       - '@standard-schema/spec'
       - hono
@@ -8411,7 +8411,7 @@ snapshots:
       - typescript
       - zod
 
-  convex@1.31.5(react@19.2.3):
+  convex@1.31.6(react@19.2.3):
     dependencies:
       esbuild: 0.27.0
       prettier: 3.8.0
