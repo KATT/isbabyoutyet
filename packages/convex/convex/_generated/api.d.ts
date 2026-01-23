@@ -2109,6 +2109,7 @@ export declare const components: {
           fnHandle: string;
           name: string;
           next?: Array<{ fnHandle: string; name: string }>;
+          oneBatchOnly?: boolean;
         },
         {
           batchSize?: number;
@@ -2122,6 +2123,109 @@ export declare const components: {
           processed: number;
           state: "inProgress" | "success" | "failed" | "canceled" | "unknown";
         }
+      >;
+    };
+  };
+  babyAuditLog: {
+    lib: {
+      listDocumentHistory: FunctionReference<
+        "query",
+        "internal",
+        {
+          id: string;
+          maxTs: number;
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            attribution: any;
+            doc: any;
+            id: string;
+            isDeleted: boolean;
+            ts: number;
+          }>;
+        }
+      >;
+      listHistory: FunctionReference<
+        "query",
+        "internal",
+        {
+          maxTs: number;
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            attribution: any;
+            doc: any;
+            id: string;
+            isDeleted: boolean;
+            ts: number;
+          }>;
+        }
+      >;
+      listSnapshot: FunctionReference<
+        "query",
+        "internal",
+        {
+          currentTs: number;
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          snapshotTs: number;
+        },
+        {
+          continueCursor: string;
+          isDone: boolean;
+          page: Array<{
+            attribution: any;
+            doc: any;
+            id: string;
+            isDeleted: boolean;
+            ts: number;
+          }>;
+          pageStatus?: "SplitRecommended";
+          splitCursor?: string;
+        }
+      >;
+      update: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          attribution: any;
+          doc: any | null;
+          id: string;
+          serializability: "table" | "document" | "wallclock";
+        },
+        number
+      >;
+      vacuumHistory: FunctionReference<
+        "mutation",
+        "internal",
+        { minTsToKeep: number },
+        any
       >;
     };
   };

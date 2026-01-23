@@ -27,9 +27,11 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
-    "@convex-dev/migrations": "^0.2.0",
+    "@convex-dev/migrations": "^0.3.1",
     "better-auth": "catalog:",
     "convex": "catalog:",
+    "convex-helpers": "^0.1.111",
+    "convex-table-history": "^0.1.2",
     "sharp": "^0.33.0",
     "web-push": "^3.6.7"
   },

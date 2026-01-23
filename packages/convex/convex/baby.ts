@@ -2,8 +2,22 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { internal } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward } from "../src/types";
+import { TableHistory } from "convex-table-history";
+import { Triggers } from "convex-helpers/server/triggers";
+import { customMutation, customCtx } from "convex-helpers/server/customFunctions";
+import type { DataModel } from "./_generated/dataModel";
+
+// Initialize table history for baby table
+const babyAuditLog = new TableHistory<DataModel, "baby">(components.babyAuditLog);
+
+// Set up triggers for automatic history tracking
+const triggers = new Triggers<DataModel>();
+triggers.register("baby", babyAuditLog.trigger());
+
+// Create wrapped mutation that uses triggers
+const mutationWithTriggers = customMutation(mutation, customCtx(triggers.wrapDB));
 
 export const listByUser = query({
   args: {},
@@ -53,7 +67,7 @@ export const getByPublicId = query({
     if (latestHistoryEntry) {
       baby = await ctx.db.get(latestHistoryEntry.babyId);
     }
-    
+
     if (!baby) {
       return null;
     }
@@ -93,9 +107,8 @@ export const generateUploadUrl = mutation({
   },
 });
 
-
 // Update baby photo and optionally send notification
-export const updatePhoto = mutation({
+export const updatePhoto = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photoId: v.union(v.id("_storage"), v.null()),
@@ -117,23 +130,7 @@ export const updatePhoto = mutation({
 
     const hadPhotoBeforeUpdate = !!baby.photoId;
 
-    // Delete old photo and thumbnail from storage if replacing
-    if (baby.photoId && args.photoId && baby.photoId !== args.photoId) {
-      await ctx.storage.delete(baby.photoId);
-      if (baby.thumbnailId) {
-        await ctx.storage.delete(baby.thumbnailId);
-      }
-    }
-
-    // If removing photo, delete from storage
-    if (baby.photoId && !args.photoId) {
-      await ctx.storage.delete(baby.photoId);
-      if (baby.thumbnailId) {
-        await ctx.storage.delete(baby.thumbnailId);
-      }
-    }
-
-    // Update photo first
+    // Update photo (retain old photos in storage for history)
     await ctx.db.patch(args.babyId, { photoId: args.photoId, thumbnailId: null });
 
     // Schedule thumbnail generation if a new photo was uploaded
@@ -235,7 +232,7 @@ async function generateUniquePublicId(opts: {
   return publicId;
 }
 
-export const create = mutation({
+export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
@@ -359,7 +356,7 @@ export const updateThumbnail = internalMutation({
   },
 });
 
-export const update = mutation({
+export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     laborStarted: v.optional(v.union(v.string(), v.null())),

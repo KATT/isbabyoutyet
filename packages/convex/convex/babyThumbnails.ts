@@ -13,7 +13,6 @@ export const generateThumbnail = internalAction({
     photoId: v.id("_storage"),
   },
   handler: async (ctx: ActionCtx, args) => {
-
     // Download the original image
     const imageBlob = await ctx.storage.get(args.photoId);
     if (!imageBlob) {
