@@ -19,6 +19,7 @@ import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { Button } from "@workspace/ui/components/button";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Baby } from "lucide-react";
 
 export const Route = createRootRouteWithContext<{
@@ -136,21 +137,23 @@ function RootDocument(props: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        {props.children}
-        <Toaster />
-        <Analytics />
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
-        <Scripts />
+        <TooltipProvider>
+          {props.children}
+          <Toaster />
+          <Analytics />
+          <TanStackDevtools
+            config={{
+              position: "bottom-right",
+            }}
+            plugins={[
+              {
+                name: "Tanstack Router",
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+          <Scripts />
+        </TooltipProvider>
       </body>
     </html>
   );

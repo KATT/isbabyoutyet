@@ -45,25 +45,29 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const hasChanges = newDate !== currentDateFormatted;
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-80"
-        onInteractOutside={(e) => {
+    <Popover
+      open={isEditing}
+      onOpenChange={(open, eventDetails) => {
+        if (!open && eventDetails.reason === "outside-press") {
           const activeElement = document.activeElement;
           if (
             activeElement?.tagName === "INPUT" &&
             (activeElement as HTMLInputElement).type === "date"
           ) {
-            e.preventDefault();
+            eventDetails.cancel();
+            return;
           }
-        }}
-      >
+        }
+
+        setIsEditing(open);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm">
+          Edit
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-80">
         <Input
           type="date"
           value={newDate}
