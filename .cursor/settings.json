@@ -1,3 +1,11 @@
 {
-  "extensions.unwantedRecommendations": ["biomejs.biome", "dbaeumer.vscode-eslint"]
+  "extensions.unwantedRecommendations": [
+    "biomejs.biome",
+    "dbaeumer.vscode-eslint"
+  ],
+  "plugins": {
+    "convex": {
+      "enabled": true
+    }
+  }
 }
