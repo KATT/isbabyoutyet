@@ -20,15 +20,34 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { useMutation, usePaginatedQuery } from "convex/react";
-import { Check, Heart, Pencil, Send, Trash2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { Streamdown } from "streamdown";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { cn } from "@workspace/ui/lib/utils";
+import { useConvex, useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import MDEditor, { commands } from "@uiw/react-md-editor";
+import type { ICommand } from "@uiw/react-md-editor";
+import MarkdownPreview from "@uiw/react-markdown-preview";
+import {
+  Check,
+  Heart,
+  ImagePlus,
+  LoaderCircle,
+  Pencil,
+  Send,
+  Trash2,
+  X,
+} from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import {
+  createMarkdownImage,
+  extractEncouragementImageIds,
+  replaceEncouragementImageUrlsWithTokens,
+} from "@workspace/convex/src/encouragementMarkdown";
+import "@uiw/react-md-editor/markdown-editor.css";
+import "@uiw/react-markdown-preview/markdown.css";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -40,6 +59,9 @@ const PAGE_SIZE = 20;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 const STORAGE_KEY_NAME = "encouragement-author-name";
 const STORAGE_KEY_VISITOR_ID = "encouragement-visitor-id";
+const MARKDOWN_PLACEHOLDER = `Write your message of encouragement...
+
+You can use **bold**, *italic*, lists, links, and images.`;
 
 // Get or create a unique visitor ID (immutable once created) - client-side only
 function getVisitorId(): string {
@@ -60,10 +82,210 @@ const encouragementSchema = z.object({
   message: z.string().min(1, "Message is required"),
 });
 
+type EncouragementFormValues = z.infer<typeof encouragementSchema>;
+
+function MarkdownMessage(props: {
+  markdown: string;
+  className?: string;
+  emptyState?: string;
+}) {
+  if (!props.markdown.trim()) {
+    return <p className="text-sm text-muted-foreground">{props.emptyState ?? "Nothing to preview yet."}</p>;
+  }
+
+  return (
+    <MarkdownPreview
+      source={props.markdown}
+      wrapperElement={{ "data-color-mode": "light" }}
+      className={cn(
+        "bg-transparent text-sm text-foreground prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_.wmde-markdown]:bg-transparent [&_.wmde-markdown]:text-foreground [&_.wmde-markdown]:p-0 [&_.wmde-markdown-var]:bg-transparent",
+        props.className,
+      )}
+    />
+  );
+}
+
+async function uploadEncouragementImage(opts: {
+  babyId: Id<"baby">;
+  file: File;
+  generateImageUploadUrl: (args: { babyId: Id<"baby"> }) => Promise<string>;
+}) {
+  const uploadUrl = await opts.generateImageUploadUrl({ babyId: opts.babyId });
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Type": opts.file.type },
+    body: opts.file,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to upload image");
+  }
+
+  const body = (await response.json()) as { storageId?: string };
+  if (!body.storageId) {
+    throw new Error("Upload did not return a storage ID");
+  }
+
+  return body.storageId as Id<"_storage">;
+}
+
+type MarkdownComposerProps = {
+  babyId: Id<"baby">;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  emptyPreviewMessage?: string;
+  onImageUploaded?: (image: { imageId: Id<"_storage">; imageUrl: string }) => void;
+};
+
+function MarkdownComposer(props: MarkdownComposerProps) {
+  const convex = useConvex();
+  const generateImageUploadUrl = useMutation(api.encouragements.generateImageUploadUrl);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("write");
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const toolbarCommands = useMemo<ICommand[]>(
+    () => [
+      commands.bold,
+      commands.italic,
+      commands.strikethrough,
+      commands.divider,
+      commands.link,
+      commands.quote,
+      commands.code,
+      commands.codeBlock,
+      commands.divider,
+      commands.unorderedListCommand,
+      commands.orderedListCommand,
+    ],
+    [],
+  );
+
+  const handleUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const storageId = await uploadEncouragementImage({
+        babyId: props.babyId,
+        file,
+        generateImageUploadUrl,
+      });
+      const altText = file.name.replace(/\.[^.]+$/, "") || "Encouragement image";
+      const imageUrls = await convex.query(api.encouragements.getImageUrls, {
+        imageIds: [storageId],
+      });
+      const imageUrl = imageUrls[storageId];
+      if (!imageUrl) {
+        throw new Error("Uploaded image is not available yet");
+      }
+
+      const imageMarkdown = createMarkdownImage({ url: imageUrl, altText });
+      const separator = props.value.trim().length === 0 ? "" : "\n\n";
+      props.onChange(`${props.value}${separator}${imageMarkdown}`);
+      props.onImageUploaded?.({
+        imageId: storageId,
+        imageUrl,
+      });
+      setActiveTab("write");
+      toast.success("Image attached");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        disabled={props.disabled || isUploadingImage}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            void handleUpload(file);
+          }
+        }}
+      />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-3">
+        <div className="flex items-center justify-between gap-3">
+          <TabsList className="grid w-auto grid-cols-2">
+            <TabsTrigger value="write">Write</TabsTrigger>
+            <TabsTrigger value="preview">Preview</TabsTrigger>
+          </TabsList>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={props.disabled || isUploadingImage}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {isUploadingImage ? (
+              <LoaderCircle className="w-4 h-4 animate-spin" />
+            ) : (
+              <ImagePlus className="w-4 h-4" />
+            )}
+            {isUploadingImage ? "Uploading image..." : "Attach image"}
+          </Button>
+        </div>
+
+        <TabsContent value="write">
+          <div data-color-mode="light">
+            <MDEditor
+              value={props.value}
+              onChange={(value) => props.onChange(value ?? "")}
+              preview="edit"
+              visibleDragbar={false}
+              height={260}
+              hideToolbar={false}
+              commands={toolbarCommands}
+              extraCommands={[]}
+              textareaProps={{
+                placeholder: MARKDOWN_PLACEHOLDER,
+                disabled: props.disabled || isUploadingImage,
+              }}
+              previewOptions={{
+                wrapperElement: { "data-color-mode": "light" },
+              }}
+            />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="preview">
+          <div className="min-h-[260px] rounded-md border border-input bg-background px-4 py-3">
+            <MarkdownMessage
+              markdown={props.value}
+              emptyState={props.emptyPreviewMessage ?? "Nothing to preview yet."}
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      <p className="text-xs text-muted-foreground">
+        Supports Markdown, links, and image attachments. Images are inserted into your message.
+      </p>
+    </div>
+  );
+}
+
 export function EncouragementForm(props: EncouragementFormProps) {
   const createEncouragement = useMutation(api.encouragements.create);
+  const [draftImageIdsByUrl, setDraftImageIdsByUrl] = useState<Record<string, string>>({});
 
-  const form = useZodForm({
+  const form = useZodForm<EncouragementFormValues>({
     schema: encouragementSchema,
     defaultValues: {
       authorName: "",
@@ -96,13 +318,17 @@ export function EncouragementForm(props: EncouragementFormProps) {
         form={form}
         handleSubmit={async (values) => {
           const authorName = values.authorName.trim();
+          const normalizedMessage = replaceEncouragementImageUrlsWithTokens({
+            markdown: values.message.trim(),
+            imageIdsByUrl: draftImageIdsByUrl,
+          });
           // Save name to localStorage for next time
           localStorage.setItem(STORAGE_KEY_NAME, authorName);
 
           const promise = createEncouragement({
             babyId: props.babyId,
             authorName,
-            message: values.message.trim(),
+            message: normalizedMessage,
             visitorId: getVisitorId(),
             userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
             locale: typeof navigator !== "undefined" ? navigator.language : undefined,
@@ -120,6 +346,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
             error: (err) => (err instanceof Error ? err.message : "Failed to send encouragement"),
           });
           form.reset({ authorName, message: "" });
+          setDraftImageIdsByUrl({});
           await promise;
         }}
       >
@@ -127,11 +354,11 @@ export function EncouragementForm(props: EncouragementFormProps) {
           <FormField
             control={form.control}
             name="authorName"
-            render={({ field }) => (
+            render={(fieldProps) => (
               <FormItem>
                 <FormLabel>Your name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your name" maxLength={MAX_NAME_LENGTH} {...field} />
+                  <Input placeholder="Your name" maxLength={MAX_NAME_LENGTH} {...fieldProps.field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -141,14 +368,22 @@ export function EncouragementForm(props: EncouragementFormProps) {
           <FormField
             control={form.control}
             name="message"
-            render={({ field }) => (
+            render={(fieldProps) => (
               <FormItem>
                 <FormLabel>Message</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder="Write your message of encouragement..."
-                    className="min-h-24"
-                    {...field}
+                  <MarkdownComposer
+                    babyId={props.babyId}
+                    value={fieldProps.field.value}
+                    onChange={fieldProps.field.onChange}
+                    disabled={form.formState.isSubmitting}
+                    emptyPreviewMessage="Your encouragement preview will appear here."
+                    onImageUploaded={(image) => {
+                      setDraftImageIdsByUrl((current) => ({
+                        ...current,
+                        [image.imageUrl]: image.imageId,
+                      }));
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -201,10 +436,12 @@ function isWithinEditWindow(createdAt: number): boolean {
 }
 
 type EncouragementItemProps = {
+  babyId: Id<"baby">;
   encouragement: {
     _id: Id<"encouragements">;
     authorName: string;
     message: string;
+    renderedMessage: string;
     createdAt: number;
     visitorId?: string;
   };
@@ -216,21 +453,55 @@ type EncouragementItemProps = {
 
 function EncouragementItem(props: EncouragementItemProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editMessage, setEditMessage] = useState(props.encouragement.message);
+  const [editMessage, setEditMessage] = useState(props.encouragement.renderedMessage);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadedImageIdsByUrl, setUploadedImageIdsByUrl] = useState<Record<string, string>>({});
+  const imageIds = useMemo(
+    () => extractEncouragementImageIds(props.encouragement.message) as Id<"_storage">[],
+    [props.encouragement.message],
+  );
 
   const isOwnPost = props.encouragement.visitorId === props.currentVisitorId;
   const canEdit = isOwnPost && isWithinEditWindow(props.encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
+
+  const resolvedImageIds = useQuery(
+    api.encouragements.getImageUrls,
+    isEditing && imageIds.length > 0
+      ? {
+          imageIds,
+        }
+      : "skip",
+  );
 
   const handleSave = async () => {
     if (!editMessage.trim()) {
       toast.error("Message cannot be empty");
       return;
     }
+    if (imageIds.length > 0 && !resolvedImageIds) {
+      toast.error("Images are still loading. Please try again in a moment.");
+      return;
+    }
     setIsSaving(true);
     try {
-      await props.onUpdate(props.encouragement._id, props.currentVisitorId, editMessage);
+      const existingImageUrlsById = resolvedImageIds || {};
+      const uploadedImageUrlsById = Object.fromEntries(
+        Object.entries(uploadedImageIdsByUrl).map(([imageUrl, imageId]) => [imageId, imageUrl]),
+      );
+      const imageIdsByUrl = Object.fromEntries(
+        Object.entries({
+          ...existingImageUrlsById,
+          ...uploadedImageUrlsById,
+        }).flatMap(([imageId, imageUrl]) =>
+          imageUrl ? [[imageUrl, imageId]] : [],
+        ),
+      );
+      const normalizedMessage = replaceEncouragementImageUrlsWithTokens({
+        markdown: editMessage,
+        imageIdsByUrl,
+      });
+      await props.onUpdate(props.encouragement._id, props.currentVisitorId, normalizedMessage);
       setIsEditing(false);
     } finally {
       setIsSaving(false);
@@ -238,7 +509,8 @@ function EncouragementItem(props: EncouragementItemProps) {
   };
 
   const handleCancel = () => {
-    setEditMessage(props.encouragement.message);
+    setEditMessage(props.encouragement.renderedMessage);
+    setUploadedImageIdsByUrl({});
     setIsEditing(false);
   };
 
@@ -258,11 +530,18 @@ function EncouragementItem(props: EncouragementItemProps) {
 
           {isEditing ? (
             <div className="space-y-2">
-              <Textarea
+              <MarkdownComposer
+                babyId={props.babyId}
                 value={editMessage}
-                onChange={(e) => setEditMessage(e.target.value)}
-                className="min-h-20"
+                onChange={setEditMessage}
                 disabled={isSaving}
+                emptyPreviewMessage="Your updated encouragement preview will appear here."
+                onImageUploaded={(image) => {
+                  setUploadedImageIdsByUrl((current) => ({
+                    ...current,
+                    [image.imageUrl]: image.imageId,
+                  }));
+                }}
               />
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleSave} disabled={isSaving}>
@@ -276,9 +555,7 @@ function EncouragementItem(props: EncouragementItemProps) {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-              <Streamdown>{props.encouragement.message}</Streamdown>
-            </div>
+            <MarkdownMessage markdown={props.encouragement.renderedMessage} />
           )}
         </div>
 
@@ -428,6 +705,7 @@ export function EncouragementsFeed(props: EncouragementsFeedProps) {
         {results.map((encouragement) => (
           <EncouragementItem
             key={encouragement._id}
+            babyId={props.babyId}
             encouragement={encouragement}
             isOwner={props.isOwner}
             currentVisitorId={currentVisitorId}

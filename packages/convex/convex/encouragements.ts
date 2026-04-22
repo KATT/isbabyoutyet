@@ -1,12 +1,34 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
+import {
+  extractEncouragementImageIds,
+  resolveEncouragementImageMarkdown,
+} from "../src/encouragementMarkdown";
 
 const MAX_NAME_LENGTH = 50;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
+}
+
+async function getEncouragementImageUrls(opts: {
+  ctx: MutationCtx | QueryCtx;
+  imageIds: string[];
+}) {
+  const imageUrls = Object.fromEntries(
+    await Promise.all(
+      opts.imageIds.map(async (imageId) => {
+        const imageUrl = await opts.ctx.storage.getUrl(imageId as Id<"_storage">);
+        return [imageId, imageUrl];
+      }),
+    ),
+  );
+
+  return imageUrls;
 }
 
 export const create = mutation({
@@ -89,9 +111,18 @@ export const update = mutation({
       throw new Error("Message is required");
     }
 
+    const existingImageIds = new Set(extractEncouragementImageIds(encouragement.message));
+    const nextImageIds = new Set(extractEncouragementImageIds(trimmedMessage));
+
     await ctx.db.patch(args.encouragementId, {
       message: trimmedMessage,
     });
+
+    for (const imageId of existingImageIds) {
+      if (!nextImageIds.has(imageId)) {
+        await ctx.storage.delete(imageId as Id<"_storage">);
+      }
+    }
   },
 });
 
@@ -101,11 +132,64 @@ export const listByBaby = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const page = await ctx.db
       .query("encouragements")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
+
+    const imageIds = new Set<string>();
+    for (const encouragement of page.page) {
+      for (const imageId of extractEncouragementImageIds(encouragement.message)) {
+        imageIds.add(imageId);
+      }
+    }
+
+    const imageUrls = await getEncouragementImageUrls({
+      ctx,
+      imageIds: [...imageIds],
+    });
+
+    return {
+      ...page,
+      page: page.page.map((encouragement) => ({
+        ...encouragement,
+        renderedMessage: resolveEncouragementImageMarkdown({
+          markdown: encouragement.message,
+          imageUrls,
+        }),
+      })),
+    };
+  },
+});
+
+export const generateImageUploadUrl = mutation({
+  args: {
+    babyId: v.id("baby"),
+  },
+  handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.encouragementsDisabled) {
+      throw new Error("Encouragements are disabled for this baby");
+    }
+
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getImageUrls = query({
+  args: {
+    imageIds: v.array(v.id("_storage")),
+  },
+  handler: async (ctx, args) => {
+    return await getEncouragementImageUrls({
+      ctx,
+      imageIds: args.imageIds,
+    });
   },
 });
 
@@ -137,6 +221,10 @@ export const remove = mutation({
 
     if (!isOwner && !canVisitorDelete) {
       throw new Error("Not authorized to delete this encouragement");
+    }
+
+    for (const imageId of extractEncouragementImageIds(encouragement.message)) {
+      await ctx.storage.delete(imageId as Id<"_storage">);
     }
 
     await ctx.db.delete(args.encouragementId);
