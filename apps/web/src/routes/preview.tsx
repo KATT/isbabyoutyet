@@ -14,8 +14,6 @@ function getDefaultBabyData(): BabyData {
   const now = new Date();
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 7);
-  const laborStarted = new Date(now);
-  laborStarted.setHours(laborStarted.getHours() - 2);
 
   return {
     name: "Baby",
@@ -24,6 +22,7 @@ function getDefaultBabyData(): BabyData {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
+    notYetMessage: null,
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
@@ -37,6 +36,8 @@ const searchSchema = z.object({
   laborStarted: z.string().nullable().optional(),
   wentToHospital: z.string().nullable().optional(),
   babyBorn: z.string().nullable().optional(),
+  notYetMessage: z.string().nullable().optional(),
+  laborStartedMessage: z.string().nullable().optional(),
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
   settings: z.boolean().optional(),

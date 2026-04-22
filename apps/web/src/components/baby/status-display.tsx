@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { format } from "date-fns";
 import { Activity, Baby, CheckCircle, Hospital, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getStatusMessage, type BabyData, type BabyStatus } from "@workspace/convex/src/types";
 import {
   formatDate,
   getOverdueDays,
@@ -104,6 +104,7 @@ type StatusDisplayProps = {
 export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const currentStatusMessage = getStatusMessage(baby, currentStatus.type);
 
   if (currentStatus.type === "not_yet") {
     return (
@@ -146,6 +147,11 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
             </>
           )}
         </div>
+        {currentStatusMessage && (
+          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+            <p className="text-lg font-bold text-primary">{currentStatusMessage}</p>
+          </div>
+        )}
       </div>
     );
   }
@@ -167,9 +173,9 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
         <p className="text-lg text-muted-foreground mt-2">
           Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.laborStartedMessage && (
+        {currentStatusMessage && (
           <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.laborStartedMessage}</p>
+            <p className="text-lg font-bold text-primary">{currentStatusMessage}</p>
           </div>
         )}
       </div>
@@ -192,9 +198,9 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
         <p className="text-xl text-muted-foreground mb-4">
           {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.hospitalMessage && (
+        {currentStatusMessage && (
           <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.hospitalMessage}</p>
+            <p className="text-lg font-bold text-primary">{currentStatusMessage}</p>
           </div>
         )}
       </div>
@@ -218,9 +224,9 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
       <p className="text-xl text-muted-foreground mb-4">
         Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
       </p>
-      {baby.babyBornMessage && (
+      {currentStatusMessage && (
         <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-          <p className="text-lg font-bold text-primary">{baby.babyBornMessage}</p>
+          <p className="text-lg font-bold text-primary">{currentStatusMessage}</p>
         </div>
       )}
     </div>

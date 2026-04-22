@@ -110,6 +110,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     name: doc.name,
     dueDate: doc.dueDate,
     theme: doc.theme ?? null,
+    notYetMessage: doc.notYetMessage ?? null,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,

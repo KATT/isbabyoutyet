@@ -18,24 +18,25 @@ import {
   CheckCircle,
   Hospital,
   MessageSquare,
+  MessageSquarePlus,
   Palette,
 } from "lucide-react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   getCurrentStatus,
+  getStatusLabel,
+  getStatusMessage,
   type BabyData,
   type BabyUpdateHandler,
 } from "@workspace/convex/src/types";
 import {
-  BabyBornMessageEditor,
-  HospitalMessageEditor,
-  LaborStartedMessageEditor,
+  ClearCurrentStatusButton,
   DueDateEditor,
   NameEditor,
   PhotoUploader,
+  PostUpdateEditor,
   StatusDateEditor,
-  StatusUpdateButton,
   ThemeSelector,
 } from "./editors";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
@@ -50,6 +51,7 @@ type SettingsPanelProps = {
 
 export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: SettingsPanelProps) {
   const status = getCurrentStatus(baby);
+  const currentStatusMessage = getStatusMessage(baby, status.type);
 
   return (
     <AnimatePresence>
@@ -61,7 +63,63 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
           className="overflow-hidden"
         >
           <ItemGroup className="">
-            {/* Baby Name */}
+            <Item>
+              <ItemMedia variant="icon">
+                <MessageSquarePlus className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Updates</ItemTitle>
+                <ItemDescription>
+                  Share news with visitors and optionally change the current status.
+                </ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <PostUpdateEditor baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+
+            <Item>
+              <ItemMedia variant="icon">
+                {status.type === "not_yet" ? (
+                  <Baby className="w-4 h-4" />
+                ) : status.type === "labor_started" ? (
+                  <Activity className="w-4 h-4" />
+                ) : status.type === "gone_to_hospital" ? (
+                  <Hospital className="w-4 h-4" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Current status</ItemTitle>
+                <ItemDescription>
+                  {getStatusLabel(status.type)}
+                  {"date" in status
+                    ? ` · ${formatDate(status.date)} (${getRelativeTime(status.date)})`
+                    : ""}
+                </ItemDescription>
+                {currentStatusMessage && (
+                  <ItemDescription className="text-foreground">
+                    {currentStatusMessage}
+                  </ItemDescription>
+                )}
+              </ItemContent>
+              <ItemActions>
+                {"date" in status && (
+                  <StatusDateEditor
+                    status={status.type}
+                    currentDate={status.date}
+                    onUpdate={onUpdate}
+                  />
+                )}
+                <ClearCurrentStatusButton baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+
             <Item>
               <ItemMedia variant="icon">
                 <Baby className="w-4 h-4" />
@@ -88,157 +146,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
               </ItemContent>
               <ItemActions>
                 <DueDateEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            {/* Status Updates */}
-            {/* Labour started */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Activity className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Labour started</ItemTitle>
-                {baby.laborStarted && (
-                  <ItemDescription>
-                    {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.laborStarted && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="labor_started"
-                    currentDate={baby.laborStarted}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="labor_started"
-                  currentStatus={baby.laborStarted}
-                  label="Labour started"
-                  icon={<Activity className="w-4 h-4" />}
-                  isNextState={status.type === "not_yet"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-            <Item>
-              <ItemMedia variant="icon">
-                <Activity className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Labour Message</ItemTitle>
-                <ItemDescription>{baby.laborStartedMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <LaborStartedMessageEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            {/* Gone to hospital */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Hospital className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Gone to hospital</ItemTitle>
-                {baby.wentToHospital && (
-                  <ItemDescription>
-                    {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.wentToHospital && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="gone_to_hospital"
-                    currentDate={baby.wentToHospital}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="gone_to_hospital"
-                  currentStatus={baby.wentToHospital}
-                  label="Gone to hospital"
-                  icon={<Hospital className="w-4 h-4" />}
-                  isNextState={status.type === "labor_started"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-            <Item>
-              <ItemMedia variant="icon">
-                <Hospital className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Hospital Message</ItemTitle>
-                <ItemDescription>{baby.hospitalMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <HospitalMessageEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            {/* Baby born */}
-            <Item>
-              <ItemMedia variant="icon">
-                <CheckCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Baby born</ItemTitle>
-                {baby.babyBorn && (
-                  <ItemDescription>
-                    {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.babyBorn && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="born"
-                    currentDate={baby.babyBorn}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="born"
-                  currentStatus={baby.babyBorn}
-                  label="Baby born"
-                  icon={<CheckCircle className="w-4 h-4" />}
-                  isNextState={status.type === "gone_to_hospital"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
-
-            {/* Baby Born Message */}
-            <Item>
-              <ItemMedia variant="icon">
-                <CheckCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Baby Born Message</ItemTitle>
-                <ItemDescription>{baby.babyBornMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <BabyBornMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 

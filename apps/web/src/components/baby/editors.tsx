@@ -1,6 +1,28 @@
 import { Button } from "@workspace/ui/components/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@workspace/ui/components/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
+import { Label } from "@workspace/ui/components/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { format, parseISO } from "date-fns";
 import {
@@ -9,24 +31,30 @@ import {
   Calendar,
   Camera,
   CheckCircle,
+  ChevronDown,
   Clock,
   Hospital,
+  MessageSquarePlus,
   Trash2,
   Upload,
 } from "lucide-react";
 import type * as React from "react";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useMutation } from "convex/react";
 import { toast } from "sonner";
+import { api } from "@workspace/convex/convex/_generated/api";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import {
   getCurrentStatus,
+  getStatusLabel,
+  getStatusMessage,
   type BabyData,
+  type BabyStatus,
+  type BabyUpdate,
   type BabyUpdateHandler,
   type Maybe,
 } from "@workspace/convex/src/types";
 import { parseDate, THEME_OPTIONS } from "./utils";
-import { useMutation } from "convex/react";
-import { api } from "@workspace/convex/convex/_generated/api";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 
 type DueDateEditorProps = {
   baby: BabyData;
@@ -117,31 +145,19 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
 }
 
 type StatusDateEditorProps = {
-  baby: BabyData;
-  status: "labor_started" | "gone_to_hospital" | "born";
+  status: Exclude<BabyStatus["type"], "not_yet">;
   currentDate: string;
   onUpdate: BabyUpdateHandler;
 };
 
-export function StatusDateEditor({
-  baby: _baby,
-  status,
-  currentDate,
-  onUpdate,
-}: StatusDateEditorProps) {
+export function StatusDateEditor({ status, currentDate, onUpdate }: StatusDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [newDateTime, setNewDateTime] = useState(() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
+    return formatLocalDateTime(currentDate);
   });
   const [isLoading, setIsLoading] = useState(false);
 
-  const currentDateTimeFormatted = (() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  })();
+  const currentDateTimeFormatted = formatLocalDateTime(currentDate);
   const hasChanges = newDateTime !== currentDateTimeFormatted;
 
   return (
@@ -163,9 +179,7 @@ export function StatusDateEditor({
           <Button
             onClick={(e) => {
               e.stopPropagation();
-              const date = parseDate(currentDate);
-              const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-              setNewDateTime(localDate.toISOString().slice(0, 16));
+              setNewDateTime(formatLocalDateTime(currentDate));
               setIsEditing(false);
             }}
             variant="outline"
@@ -182,14 +196,7 @@ export function StatusDateEditor({
                 try {
                   const dateObj = parseISO(newDateTime);
                   const dateString = dateObj.toISOString();
-
-                  if (status === "labor_started") {
-                    await onUpdate({ laborStarted: dateString });
-                  } else if (status === "gone_to_hospital") {
-                    await onUpdate({ wentToHospital: dateString });
-                  } else if (status === "born") {
-                    await onUpdate({ babyBorn: dateString });
-                  }
+                  await onUpdate(buildStatusDatePatch({ status, dateString }));
 
                   setIsEditing(false);
                 } catch (err) {
@@ -294,215 +301,6 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   );
 }
 
-type HospitalMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function HospitalMessageEditor({ baby, onUpdate }: HospitalMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.hospitalMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.hospitalMessage || "");
-
-  const status = getCurrentStatus(baby);
-
-  return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "gone_to_hospital" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Do not disturb, only send messages to the parents"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewMessage(baby.hospitalMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ hospitalMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update hospital message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-type LaborStartedMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function LaborStartedMessageEditor({ baby, onUpdate }: LaborStartedMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.laborStartedMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.laborStartedMessage || "");
-
-  const status = getCurrentStatus(baby);
-
-  return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "labor_started" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Custom message to show when labour has started"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewMessage(baby.laborStartedMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ laborStartedMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update labour message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-type BabyBornMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function BabyBornMessageEditor({ baby, onUpdate }: BabyBornMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.babyBornMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.babyBornMessage || "");
-
-  const status = getCurrentStatus(baby);
-
-  return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "born" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Custom message to show when baby is born"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setNewMessage(baby.babyBornMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ babyBornMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update baby born message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
 type ThemeSelectorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
@@ -558,66 +356,212 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
   );
 }
 
-type StatusUpdateButtonProps = {
+type ClearCurrentStatusButtonProps = {
   baby: BabyData;
-  status: "labor_started" | "gone_to_hospital" | "born";
-  currentStatus: Maybe<string>;
-  label: string;
-  icon: React.ReactNode;
-  isNextState: boolean;
   onUpdate: BabyUpdateHandler;
 };
 
-export function StatusUpdateButton({
-  baby: _baby,
-  status,
-  currentStatus,
-  label,
-  icon,
-  isNextState,
-  onUpdate,
-}: StatusUpdateButtonProps) {
+export function ClearCurrentStatusButton({ baby, onUpdate }: ClearCurrentStatusButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const currentStatus = getCurrentStatus(baby);
 
-  const isCompleted = !!currentStatus;
+  if (currentStatus.type === "not_yet") {
+    return null;
+  }
 
   return (
     <Button
       onClick={async () => {
         setIsLoading(true);
         try {
-          if (isCompleted) {
-            if (status === "labor_started") {
-              await onUpdate({ laborStarted: null });
-            } else if (status === "gone_to_hospital") {
-              await onUpdate({ wentToHospital: null });
-            } else if (status === "born") {
-              await onUpdate({ babyBorn: null });
-            }
-          } else {
-            const now = new Date();
-            const dateString = now.toISOString();
-
-            if (status === "labor_started") {
-              await onUpdate({ laborStarted: dateString });
-            } else if (status === "gone_to_hospital") {
-              await onUpdate({ wentToHospital: dateString });
-            } else if (status === "born") {
-              await onUpdate({ babyBorn: dateString });
-            }
-          }
+          await onUpdate(buildStatusDatePatch({ status: currentStatus.type, dateString: null }));
         } catch (err) {
-          toast.error(err instanceof Error ? err.message : "Failed to update status date");
+          toast.error(err instanceof Error ? err.message : "Failed to clear current status");
         } finally {
           setIsLoading(false);
         }
       }}
       disabled={isLoading}
-      variant={isNextState && !isCompleted ? "default" : "outline"}
+      variant="outline"
     >
-      {icon}
-      {isCompleted ? `Unmark ${label}` : `Mark as ${label}`}
+      <Trash2 className="w-4 h-4" />
+      Clear status
     </Button>
+  );
+}
+
+type PostUpdateEditorProps = {
+  baby: BabyData;
+  onUpdate: BabyUpdateHandler;
+};
+
+type PostUpdateSelection = "keep_current" | Exclude<BabyStatus["type"], "not_yet">;
+
+type PostUpdateOption = {
+  value: PostUpdateSelection;
+  label: string;
+};
+
+export function PostUpdateEditor({ baby, onUpdate }: PostUpdateEditorProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<PostUpdateSelection>("keep_current");
+  const [message, setMessage] = useState("");
+  const [lastAutofillMessage, setLastAutofillMessage] = useState("");
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [dateTime, setDateTime] = useState(() => formatLocalDateTime(new Date().toISOString()));
+  const [isLoading, setIsLoading] = useState(false);
+
+  const currentStatus = getCurrentStatus(baby);
+  const statusOptions = useMemo(
+    () => getPostUpdateOptions(currentStatus.type),
+    [currentStatus.type],
+  );
+  const currentStatusMessage = getStatusMessage(baby, currentStatus.type) ?? "";
+
+  function resetForm() {
+    setSelectedStatus("keep_current");
+    setMessage(currentStatusMessage);
+    setLastAutofillMessage(currentStatusMessage);
+    setDateTime(formatLocalDateTime(new Date().toISOString()));
+    setIsAdvancedOpen(false);
+  }
+
+  const targetStatus = selectedStatus === "keep_current" ? currentStatus.type : selectedStatus;
+  const targetStatusMessage = getStatusMessage(baby, targetStatus) ?? "";
+  const trimmedMessage = message.trim();
+  const normalizedCurrentMessage = targetStatusMessage.trim();
+  const isStatusChanging = selectedStatus !== "keep_current";
+  const isMessageChanging = trimmedMessage !== normalizedCurrentMessage;
+  const canSubmit = isStatusChanging || isMessageChanging;
+
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(nextOpen) => {
+        setIsOpen(nextOpen);
+        if (nextOpen) {
+          resetForm();
+        }
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <MessageSquarePlus className="w-4 h-4" />
+          Post update
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-xl">
+        <DialogHeader>
+          <DialogTitle>Post update</DialogTitle>
+          <DialogDescription>
+            Share a new update and optionally change the baby&apos;s current status.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="post-update-message">Message</Label>
+            <Textarea
+              id="post-update-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder={getMessagePlaceholder(currentStatus.type)}
+              className="min-h-28"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="post-update-status">Status</Label>
+            <p className="text-sm text-muted-foreground">
+              Current: {getStatusLabel(currentStatus.type)}
+            </p>
+            <Select
+              value={selectedStatus}
+              onValueChange={(value: PostUpdateSelection) => {
+                const nextMessage = getMessageForSelection({
+                  baby,
+                  currentStatus,
+                  selectedStatus: value,
+                });
+                if (message.trim() === lastAutofillMessage.trim()) {
+                  setMessage(nextMessage);
+                }
+                setLastAutofillMessage(nextMessage);
+                setSelectedStatus(value);
+              }}
+            >
+              <SelectTrigger id="post-update-status" className="w-full">
+                <SelectValue placeholder="Choose what this update does" />
+              </SelectTrigger>
+              <SelectContent>
+                {statusOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Choose keep current status if this is just a message.
+            </p>
+          </div>
+
+          {isStatusChanging && (
+            <Collapsible open={isAdvancedOpen} onOpenChange={setIsAdvancedOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="px-0 text-sm">
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${isAdvancedOpen ? "rotate-180" : ""}`}
+                  />
+                  Advanced options
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                <Label htmlFor="post-update-time">When did this happen?</Label>
+                <Input
+                  id="post-update-time"
+                  type="datetime-local"
+                  value={dateTime}
+                  onChange={(e) => setDateTime(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Changing status will notify subscribers automatically.
+                </p>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
+            Cancel
+          </Button>
+          <Button
+            disabled={isLoading || !canSubmit}
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                await onUpdate(
+                  buildPostUpdatePatch({
+                    currentStatus,
+                    selectedStatus,
+                    message: trimmedMessage,
+                    dateTime,
+                  }),
+                );
+                setIsOpen(false);
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : "Failed to post update");
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+          >
+            {isStatusChanging ? "Post update and change status" : "Post update"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -760,6 +704,117 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
       </PopoverContent>
     </Popover>
   );
+}
+
+function getPostUpdateOptions(currentStatus: BabyStatus["type"]): PostUpdateOption[] {
+  switch (currentStatus) {
+    case "not_yet":
+      return [
+        { value: "keep_current", label: "Keep current status" },
+        { value: "labor_started", label: "Change to Labour started" },
+        { value: "gone_to_hospital", label: "Change to Gone to hospital" },
+        { value: "born", label: "Change to Baby born" },
+      ];
+    case "labor_started":
+      return [
+        { value: "keep_current", label: "Keep current status" },
+        { value: "gone_to_hospital", label: "Change to Gone to hospital" },
+        { value: "born", label: "Change to Baby born" },
+      ];
+    case "gone_to_hospital":
+      return [
+        { value: "keep_current", label: "Keep current status" },
+        { value: "born", label: "Change to Baby born" },
+      ];
+    case "born":
+      return [{ value: "keep_current", label: "Keep current status" }];
+  }
+}
+
+function buildPostUpdatePatch(opts: {
+  currentStatus: BabyStatus;
+  selectedStatus: PostUpdateSelection;
+  message: string;
+  dateTime: string;
+}): BabyUpdate {
+  const nextStatus =
+    opts.selectedStatus === "keep_current" ? opts.currentStatus.type : opts.selectedStatus;
+  const normalizedMessage = opts.message || null;
+  const patch: BabyUpdate = buildStatusMessagePatch({
+    status: nextStatus,
+    message: normalizedMessage,
+  });
+
+  if (opts.selectedStatus === "keep_current") {
+    return patch;
+  }
+
+  return {
+    ...patch,
+    ...buildStatusDatePatch({
+      status: opts.selectedStatus,
+      dateString: parseISO(opts.dateTime).toISOString(),
+    }),
+  };
+}
+
+function buildStatusMessagePatch(opts: {
+  status: BabyStatus["type"];
+  message: Maybe<string>;
+}): BabyUpdate {
+  switch (opts.status) {
+    case "not_yet":
+      return { notYetMessage: opts.message ?? null };
+    case "labor_started":
+      return { laborStartedMessage: opts.message ?? null };
+    case "gone_to_hospital":
+      return { hospitalMessage: opts.message ?? null };
+    case "born":
+      return { babyBornMessage: opts.message ?? null };
+  }
+}
+
+function buildStatusDatePatch(opts: {
+  status: Exclude<BabyStatus["type"], "not_yet">;
+  dateString: Maybe<string>;
+}): BabyUpdate {
+  switch (opts.status) {
+    case "labor_started":
+      return { laborStarted: opts.dateString ?? null };
+    case "gone_to_hospital":
+      return { wentToHospital: opts.dateString ?? null };
+    case "born":
+      return { babyBorn: opts.dateString ?? null };
+  }
+}
+
+function getMessageForSelection(opts: {
+  baby: BabyData;
+  currentStatus: BabyStatus;
+  selectedStatus: PostUpdateSelection;
+}): string {
+  const status =
+    opts.selectedStatus === "keep_current" ? opts.currentStatus.type : opts.selectedStatus;
+  return getStatusMessage(opts.baby, status) ?? "";
+}
+
+function getMessagePlaceholder(status: BabyStatus["type"]): string {
+  switch (status) {
+    case "not_yet":
+      return "Share an update with family and friends...";
+    case "labor_started":
+      return "How are things progressing?";
+    case "gone_to_hospital":
+      return "Want to share a quick update from the hospital?";
+    case "born":
+      return "Share the good news...";
+  }
+}
+
+function formatLocalDateTime(dateString: string): string {
+  const date = parseDate(dateString);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return localDate.toISOString().slice(0, 16);
 }
 
 // Re-export icons for convenience

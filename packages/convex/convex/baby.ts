@@ -3,7 +3,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
-import { getCurrentStatus, isStatusForward } from "../src/types";
+import { getCurrentStatus, isSameStatus, isStatusForward } from "../src/types";
 import { TableHistory } from "convex-table-history";
 import { Triggers } from "convex-helpers/server/triggers";
 import { customMutation, customCtx } from "convex-helpers/server/customFunctions";
@@ -257,6 +257,7 @@ export const create = mutationWithTriggers({
       hospitalMessage: null,
       babyBornMessage: null,
       laborStartedMessage: null,
+      notYetMessage: null,
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
@@ -366,6 +367,7 @@ export const update = mutationWithTriggers({
     hospitalMessage: v.optional(v.union(v.string(), v.null())),
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
     laborStartedMessage: v.optional(v.union(v.string(), v.null())),
+    notYetMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
@@ -405,7 +407,7 @@ export const update = mutationWithTriggers({
 
     const statusAfter = getCurrentStatus(updatedBaby);
 
-    if (statusBefore === statusAfter) {
+    if (isSameStatus(statusBefore, statusAfter)) {
       // no notification change as status didn't change
       return;
     }
@@ -421,7 +423,7 @@ export const update = mutationWithTriggers({
       if (notification.scheduledId) {
         try {
           await ctx.scheduler.cancel(notification.scheduledId);
-        } catch (_error) {
+        } catch {
           // Ignore errors if notification was already sent or doesn't exist
         }
       }

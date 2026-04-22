@@ -24,6 +24,8 @@ export type BabyStatus =
   | { type: "gone_to_hospital"; date: string }
   | { type: "born"; date: string };
 
+export type Maybe<T> = T | null | undefined;
+
 /**
  * Derive the current status from baby data
  */
@@ -38,6 +40,49 @@ export function getCurrentStatus(baby: BabyData): BabyStatus {
     return { type: "labor_started", date: baby.laborStarted };
   }
   return { type: "not_yet" };
+}
+
+export function getStatusLabel(status: BabyStatus["type"]): string {
+  switch (status) {
+    case "not_yet":
+      return "Not yet";
+    case "labor_started":
+      return "Labour started";
+    case "gone_to_hospital":
+      return "Gone to hospital";
+    case "born":
+      return "Baby born";
+  }
+}
+
+export function getStatusDate(baby: BabyData, status: BabyStatus["type"]): Maybe<string> {
+  switch (status) {
+    case "not_yet":
+      return null;
+    case "labor_started":
+      return baby.laborStarted;
+    case "gone_to_hospital":
+      return baby.wentToHospital;
+    case "born":
+      return baby.babyBorn;
+  }
+}
+
+export function getStatusMessage(baby: BabyData, status: BabyStatus["type"]): Maybe<string> {
+  switch (status) {
+    case "not_yet":
+      return baby.notYetMessage;
+    case "labor_started":
+      return baby.laborStartedMessage;
+    case "gone_to_hospital":
+      return baby.hospitalMessage;
+    case "born":
+      return baby.babyBornMessage;
+  }
+}
+
+export function isSameStatus(before: BabyStatus, after: BabyStatus): boolean {
+  return before.type === after.type;
 }
 
 const STATUS_ORDER = {
@@ -59,5 +104,3 @@ export function isStatusForward(
 ): after is BabyStatus & { type: NotifiableStatus } {
   return STATUS_ORDER[after.type] > STATUS_ORDER[before.type];
 }
-
-export type Maybe<T> = T | null | undefined;
