@@ -15,3 +15,6 @@ todos.json
 /src/routeTree.gen.ts
 .vercel
 .next
+playwright-report
+test-results
+blob-report

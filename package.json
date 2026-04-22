@@ -6,6 +6,9 @@
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",
     "lint": "turbo lint",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "test:e2e:headed": "pnpm --filter web test:e2e:headed",
+    "test:e2e:install": "pnpm --filter web test:e2e:install",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
     "checks": "turbo run format lint-fix typecheck"

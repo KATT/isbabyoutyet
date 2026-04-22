@@ -10,6 +10,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install": "playwright install chromium",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
@@ -48,6 +51,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/devtools-vite": "^0.3.11",
     "@testing-library/dom": "^10.4.0",
