@@ -25,21 +25,40 @@ export function uniqueUser(prefix: string): TestUser {
 
 export async function goToSignupFromHome(page: Page) {
   await page.goto("/");
-  await page.getByRole("link", { name: "Get Started" }).click();
+  await page.getByRole("link", { name: "Get Started", exact: true }).click();
   await expect(page).toHaveURL(/\/auth\/signup$/);
 }
 
+async function waitForAuthHydration(page: Page) {
+  await page.waitForResponse((response) => {
+    return response.url().includes("/api/auth/get-session");
+  });
+}
+
+export async function waitForPublicPageReady(page: Page) {
+  await expect(page.getByRole("button", { name: "Send Encouragement" })).toBeVisible();
+  await page.waitForTimeout(2000);
+}
+
 export async function signUp(page: Page, user: TestUser) {
+  await waitForAuthHydration(page);
   await page.getByLabel("Name").fill(user.name);
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
-  await page.getByRole("button", { name: "Sign Up" }).click();
+  await Promise.all([
+    page.waitForURL(/\/dashboard$/),
+    page.getByRole("button", { name: "Sign Up" }).click(),
+  ]);
 }
 
 export async function signIn(page: Page, user: TestUser) {
+  await waitForAuthHydration(page);
   await page.getByLabel("Email").fill(user.email);
   await page.getByLabel("Password").fill(user.password);
-  await page.getByRole("button", { name: "Sign In" }).click();
+  await Promise.all([
+    page.waitForURL(/\/dashboard$/),
+    page.getByRole("button", { name: "Sign In" }).click(),
+  ]);
 }
 
 export async function expectOnDashboard(page: Page) {
@@ -90,8 +109,14 @@ export async function visitPublicBabyPage(
   await page.goto(url.toString());
 }
 
-export async function markBabyStatus(page: Page, label: "Labour started" | "Gone to hospital" | "Baby born") {
-  await page.locator('a[href*="settings=true"]').click();
-  await expect(page.getByRole("button", { name: `Mark as ${label}` })).toBeVisible();
-  await page.getByRole("button", { name: `Mark as ${label}` }).click();
+export async function markBabyStatus(
+  page: Page,
+  label: "Labour started" | "Gone to hospital" | "Baby born",
+) {
+  const markButton = page.getByRole("button", { name: `Mark as ${label}` });
+  if (!(await markButton.isVisible())) {
+    await page.locator('a[href*="settings=true"]').click();
+  }
+  await expect(markButton).toBeVisible();
+  await markButton.click();
 }

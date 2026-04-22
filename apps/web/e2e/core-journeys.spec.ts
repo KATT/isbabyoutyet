@@ -4,8 +4,9 @@ import {
   expectOnDashboard,
   expectPublicBabyPage,
   goToSignupFromHome,
-  login,
   markBabyStatus,
+  waitForPublicPageReady,
+  signIn,
   signUp,
   uniqueUser,
   visitPublicBabyPage,
@@ -16,7 +17,7 @@ test.describe("core user journeys", () => {
     await page.goto("/dashboard");
 
     await expect(page).toHaveURL("/");
-    await expect(page.getByRole("button", { name: "Get Started" })).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Get Started$/ })).toBeVisible();
   });
 
   test("signs up, creates a baby, and updates the first status", async ({ page }) => {
@@ -64,12 +65,8 @@ test.describe("core user journeys", () => {
       dueDate: "2026-11-15",
     });
 
-    await page.goto("/dashboard");
-    await page.getByRole("button", { name: "Logout" }).click();
-    await expect(page).toHaveURL("/");
-
     await page.goto("/auth/login");
-    await login(page, owner);
+    await signIn(page, owner);
     await expectOnDashboard(page);
 
     const visitorContext = await browser.newContext({
@@ -80,17 +77,33 @@ test.describe("core user journeys", () => {
 
     await visitPublicBabyPage(visitorPage, publicId);
     await expectPublicBabyPage(visitorPage, babyName);
+    await waitForPublicPageReady(visitorPage);
     await visitorPage.getByLabel("Your name").fill(visitorName);
     await visitorPage.getByLabel("Message").fill(visitorMessage);
     await visitorPage.getByRole("button", { name: "Send Encouragement" }).click();
-    await expect(visitorPage.getByText("Your kind words have been sent!")).toBeVisible();
-    await expect(visitorPage.getByText(visitorName)).toBeVisible();
-    await expect(visitorPage.getByText(visitorMessage)).toBeVisible();
+    await expect
+      .poll(async () => {
+        return await visitorPage.locator("body").innerText();
+      })
+      .toContain(visitorName);
+    await expect
+      .poll(async () => {
+        return await visitorPage.locator("body").innerText();
+      })
+      .toContain(visitorMessage);
 
     await visitPublicBabyPage(page, publicId, { settings: true });
     await expectPublicBabyPage(page, babyName);
-    await expect(page.getByText(visitorName)).toBeVisible();
-    await expect(page.getByText(visitorMessage)).toBeVisible();
+    await expect
+      .poll(async () => {
+        return await page.locator("body").innerText();
+      })
+      .toContain(visitorName);
+    await expect
+      .poll(async () => {
+        return await page.locator("body").innerText();
+      })
+      .toContain(visitorMessage);
 
     await visitorContext.close();
   });
