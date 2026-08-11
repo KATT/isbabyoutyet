@@ -19,6 +19,7 @@ import appCss from "../../../../packages/ui/src/styles/globals.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
 import { Baby } from "lucide-react";
 
@@ -41,6 +42,10 @@ export const Route = createRootRouteWithContext<{
       {
         name: "theme-color",
         content: "#ea580c",
+      },
+      {
+        name: "mobile-web-app-capable",
+        content: "yes",
       },
       {
         name: "apple-mobile-web-app-capable",
@@ -108,9 +113,11 @@ function RootComponent() {
         client={context.convexClient}
         authClient={authClient as unknown as AuthClient}
       >
-        <RootDocument>
-          <Outlet />
-        </RootDocument>
+        <TooltipProvider>
+          <RootDocument>
+            <Outlet />
+          </RootDocument>
+        </TooltipProvider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );
@@ -128,8 +135,8 @@ function NotFoundComponent() {
         <p className="text-muted-foreground">
           Looks like this page hasn't arrived yet. Let's get you back home!
         </p>
-        <Button size="lg" asChild>
-          <Link to="/">Go Home</Link>
+        <Button size="lg" render={<Link to="/" />} nativeButton={false}>
+          Go Home
         </Button>
       </div>
     </div>

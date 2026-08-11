@@ -60,21 +60,23 @@ function PhotoAvatar({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <button
-          className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
-        >
-          {avatarImageUrl && (
-            <img
-              src={avatarImageUrl}
-              alt="Baby"
-              width={160}
-              height={160}
-              className="w-full h-full object-cover"
-            />
-          )}
-        </button>
-      </DialogTrigger>
+      <DialogTrigger
+        render={
+          <button
+            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+          >
+            {avatarImageUrl && (
+              <img
+                src={avatarImageUrl}
+                alt="Baby"
+                width={160}
+                height={160}
+                className="w-full h-full object-cover"
+              />
+            )}
+          </button>
+        }
+      />
       {photoUrl && (
         <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
           <button

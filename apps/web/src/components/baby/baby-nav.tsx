@@ -34,43 +34,45 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen }: BabyNavProp
       )}
     >
       <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={async () => {
-              if (!shareLink) return;
-              try {
-                await navigator.clipboard.writeText(shareLink);
-                setCopied(true);
-                toast.success("Copied to clipboard");
-              } catch {
-                // Fallback for older browsers
-                const textArea = document.createElement("textarea");
-                textArea.value = shareLink;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                textArea.select();
+        <TooltipTrigger
+          render={
+            <Button
+              onClick={async () => {
+                if (!shareLink) return;
                 try {
-                  document.execCommand("copy");
+                  await navigator.clipboard.writeText(shareLink);
                   setCopied(true);
                   toast.success("Copied to clipboard");
-                } catch (cause) {
-                  toast.error(
-                    "Failed to copy to clipboard: " +
-                      (cause instanceof Error ? cause.message : "Unknown error"),
-                  );
+                } catch {
+                  // Fallback for older browsers
+                  const textArea = document.createElement("textarea");
+                  textArea.value = shareLink;
+                  textArea.style.position = "fixed";
+                  textArea.style.opacity = "0";
+                  document.body.appendChild(textArea);
+                  textArea.select();
+                  try {
+                    document.execCommand("copy");
+                    setCopied(true);
+                    toast.success("Copied to clipboard");
+                  } catch (cause) {
+                    toast.error(
+                      "Failed to copy to clipboard: " +
+                        (cause instanceof Error ? cause.message : "Unknown error"),
+                    );
+                  }
+                  document.body.removeChild(textArea);
                 }
-                document.body.removeChild(textArea);
-              }
-            }}
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            disabled={!shareLink}
-          >
-            {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-          </Button>
-        </TooltipTrigger>
+              }}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              disabled={!shareLink}
+            >
+              {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            </Button>
+          }
+        />
         <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
       </Tooltip>
 
@@ -78,18 +80,19 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen }: BabyNavProp
 
       {settingsButton && (
         <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              asChild
-              variant={settingsOpen ? "default" : "outline"}
-              size="icon"
-              className="rounded-full"
-            >
-              <Link {...(settingsButton as any)}>
+          <TooltipTrigger
+            render={
+              <Button
+                variant={settingsOpen ? "default" : "outline"}
+                size="icon"
+                className="rounded-full"
+                render={<Link {...(settingsButton as any)} />}
+                nativeButton={false}
+              >
                 <Settings className="w-4 h-4" />
-              </Link>
-            </Button>
-          </TooltipTrigger>
+              </Button>
+            }
+          />
           <TooltipContent>{settingsOpen ? "Hide settings" : "Show settings"}</TooltipContent>
         </Tooltip>
       )}

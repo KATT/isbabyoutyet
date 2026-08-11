@@ -45,25 +45,36 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const hasChanges = newDate !== currentDateFormatted;
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        className="w-80"
-        onInteractOutside={(e) => {
+    <Popover
+      open={isEditing}
+      onOpenChange={(open, eventDetails) => {
+        // Keep the popover open while the native date picker (rendered outside
+        // the popover) is in use; Base UI replaces onInteractOutside with
+        // onOpenChange reasons + eventDetails.cancel()
+        if (
+          !open &&
+          (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
+        ) {
           const activeElement = document.activeElement;
           if (
             activeElement?.tagName === "INPUT" &&
             (activeElement as HTMLInputElement).type === "date"
           ) {
-            e.preventDefault();
+            eventDetails.cancel();
+            return;
           }
-        }}
-      >
+        }
+        setIsEditing(open);
+      }}
+    >
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm">
+            Edit
+          </Button>
+        }
+      />
+      <PopoverContent align="end" className="w-80">
         <Input
           type="date"
           value={newDate}
@@ -146,12 +157,14 @@ export function StatusDateEditor({
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Clock className="w-4 h-4 mr-2" />
-          Edit
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm">
+            <Clock className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <Input
           type="datetime-local"
@@ -226,11 +239,13 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm">
+            Edit
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <Input
           value={newName}
@@ -310,11 +325,13 @@ export function HospitalMessageEditor({ baby, onUpdate }: HospitalMessageEditorP
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "gone_to_hospital" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant={status.type === "gone_to_hospital" ? "default" : "outline"} size="sm">
+            Edit
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <Textarea
           value={newMessage}
@@ -379,11 +396,13 @@ export function LaborStartedMessageEditor({ baby, onUpdate }: LaborStartedMessag
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "labor_started" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant={status.type === "labor_started" ? "default" : "outline"} size="sm">
+            Edit
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <Textarea
           value={newMessage}
@@ -448,11 +467,13 @@ export function BabyBornMessageEditor({ baby, onUpdate }: BabyBornMessageEditorP
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger asChild>
-        <Button variant={status.type === "born" ? "default" : "outline"} size="sm">
-          Edit
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant={status.type === "born" ? "default" : "outline"} size="sm">
+            Edit
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <Textarea
           value={newMessage}
@@ -514,11 +535,13 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          Change
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm">
+            Change
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-56">
         <div className="flex flex-col gap-1">
           {THEME_OPTIONS.map((option) => (
@@ -702,11 +725,13 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm">
-          {photoUrl ? "Change" : "Add"}
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm">
+            {photoUrl ? "Change" : "Add"}
+          </Button>
+        }
+      />
       <PopoverContent align="end" className="w-80">
         <div className="space-y-4">
           {displayUrl && (

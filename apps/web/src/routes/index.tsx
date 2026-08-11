@@ -105,32 +105,29 @@ function HomePage() {
               <Button
                 size="lg"
                 className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
-                asChild
+                render={<Link to="/dashboard" preload="viewport" />}
+                nativeButton={false}
               >
-                <Link to="/dashboard" preload="viewport">
-                  Go to Dashboard
-                </Link>
+                Go to Dashboard
               </Button>
             ) : (
               <>
                 <Button
                   size="lg"
                   className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
-                  asChild
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
                 >
-                  <Link to="/auth/signup" preload="viewport">
-                    Get Started
-                  </Link>
+                  Get Started
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
                   className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
-                  asChild
+                  render={<Link to="/auth/login" preload="viewport" />}
+                  nativeButton={false}
                 >
-                  <Link to="/auth/login" preload="viewport">
-                    Sign In
-                  </Link>
+                  Sign In
                 </Button>
               </>
             )}
@@ -370,16 +367,20 @@ function HomePage() {
               : "Join families who've already shared their special moments. Takes less than a minute."}
           </p>
           {sessionData.data ? (
-            <Button size="lg" asChild>
-              <Link to="/dashboard" preload="viewport">
-                Go to Dashboard
-              </Link>
+            <Button
+              size="lg"
+              render={<Link to="/dashboard" preload="viewport" />}
+              nativeButton={false}
+            >
+              Go to Dashboard
             </Button>
           ) : (
-            <Button size="lg" asChild>
-              <Link to="/auth/signup" preload="viewport">
-                Get Started Free
-              </Link>
+            <Button
+              size="lg"
+              render={<Link to="/auth/signup" preload="viewport" />}
+              nativeButton={false}
+            >
+              Get Started Free
             </Button>
           )}
         </div>
