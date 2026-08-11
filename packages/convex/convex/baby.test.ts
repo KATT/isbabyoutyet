@@ -85,6 +85,105 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   expect(byOldPublicId).toMatchObject({ _id: created.babyId, name: "Final Name" });
 });
 
+test("updatePhoto stores the photo, schedules a thumbnail and notifies on first photo only", async () => {
+  await using _timers = useFakeTimersResource();
+
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  const firstPhotoId = await t.run(async (ctx) => await ctx.storage.store(new Blob(["photo-1"])));
+  await asAlice.mutation(api.baby.updatePhoto, {
+    babyId: created.babyId,
+    photoId: firstPhotoId,
+  });
+
+  const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(baby).toMatchObject({ photoId: firstPhotoId, thumbnailId: null });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(notifications).toMatchObject([{ status: "pending", notificationType: "photo_added" }]);
+
+  // A second photo shouldn't trigger another notification
+  const secondPhotoId = await t.run(async (ctx) => await ctx.storage.store(new Blob(["photo-2"])));
+  await asAlice.mutation(api.baby.updatePhoto, {
+    babyId: created.babyId,
+    photoId: secondPhotoId,
+  });
+
+  const afterSecondPhoto = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(afterSecondPhoto).toHaveLength(1);
+});
+
+test("updatePhoto rejects anonymous users and non-owners", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await expect(
+    t.mutation(api.baby.updatePhoto, { babyId: created.babyId, photoId: null }),
+  ).rejects.toThrow("Not authenticated");
+
+  const asBob = t.withIdentity({ subject: "bob" });
+  await expect(
+    asBob.mutation(api.baby.updatePhoto, { babyId: created.babyId, photoId: null }),
+  ).rejects.toThrow("Not authorized");
+});
+
+test("cancelScheduledNotification cancels a pending notification exactly once", async () => {
+  await using _timers = useFakeTimersResource();
+
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-20T08:00:00.000Z",
+  });
+
+  const [pending] = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(pending).toMatchObject({ status: "pending" });
+
+  // Only the owner may cancel
+  const asBob = t.withIdentity({ subject: "bob" });
+  await expect(
+    asBob.mutation(api.baby.cancelScheduledNotification, { notificationId: pending._id }),
+  ).rejects.toThrow("Not authorized");
+  await expect(
+    t.mutation(api.baby.cancelScheduledNotification, { notificationId: pending._id }),
+  ).rejects.toThrow("Not authenticated");
+
+  await asAlice.mutation(api.baby.cancelScheduledNotification, { notificationId: pending._id });
+
+  const afterCancel = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(afterCancel).toMatchObject([{ status: "cancelled" }]);
+
+  // Cancelling again is rejected because it is no longer pending
+  await expect(
+    asAlice.mutation(api.baby.cancelScheduledNotification, { notificationId: pending._id }),
+  ).rejects.toThrow("Notification is not pending");
+});
+
 test("moving the status forward schedules a push notification", async () => {
   await using _timers = useFakeTimersResource();
 

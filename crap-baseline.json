@@ -11,15 +11,10 @@
     "apps/web/src/components/baby/encouragements.tsx::EncouragementItem": 132,
     "apps/web/src/components/baby/notification-subscribe.tsx::NotificationSubscribe": 182,
     "apps/web/src/components/baby/notification-subscribe.tsx::subscribeMutation.mutationFn": 110,
-    "apps/web/src/components/baby/progress-indicator.tsx::ProgressIndicator": 380,
     "apps/web/src/components/baby/scheduled-notification-toast.tsx::<anonymous>": 110,
-    "apps/web/src/components/baby/settings-panel.tsx::SettingsPanel": 342,
-    "apps/web/src/components/baby/status-display.tsx::StatusDisplay": 31.7,
     "apps/web/src/routes/baby/$publicId.tsx::BabyPage": 110,
     "apps/web/src/routes/baby/$publicId.tsx::docToBabyData": 90,
     "apps/web/src/routes/baby/$publicId.tsx::Route.head": 56,
-    "packages/convex/convex/baby.ts::cancelScheduledNotification.handler": 72,
-    "packages/convex/convex/baby.ts::updatePhoto.handler": 72,
     "packages/convex/convex/pushNotifications.ts::sendNotification.handler": 56,
     "packages/convex/convex/pushNotifications.ts::sendNotificationToSubscription": 42
   }
