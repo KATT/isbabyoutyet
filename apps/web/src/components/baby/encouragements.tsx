@@ -296,11 +296,13 @@ function EncouragementItem(props: EncouragementItemProps) {
             )}
             {canDelete && (
               <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                </AlertDialogTrigger>
+                <AlertDialogTrigger
+                  render={
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                    </Button>
+                  }
+                />
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Delete Encouragement?</AlertDialogTitle>

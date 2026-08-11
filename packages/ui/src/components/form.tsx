@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import type * as LabelPrimitive from "@radix-ui/react-label";
-import { Slot } from "@radix-ui/react-slot";
+import { useRender } from "@base-ui/react/use-render";
 import {
   Controller,
   FormProvider,
@@ -79,7 +78,7 @@ function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
-function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
+function FormLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
   const { error, formItemId } = useFormField();
 
   return (
@@ -93,18 +92,23 @@ function FormLabel({ className, ...props }: React.ComponentProps<typeof LabelPri
   );
 }
 
-function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
+function FormControl(
+  allProps: React.HTMLAttributes<HTMLElement> & { children: React.ReactElement },
+) {
+  const { children, ...props } = allProps;
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
 
-  return (
-    <Slot
-      data-slot="form-control"
-      id={formItemId}
-      aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
-      aria-invalid={!!error}
-      {...props}
-    />
-  );
+  // Base UI has no Slot primitive; useRender merges props onto the child element
+  return useRender({
+    render: children,
+    props: {
+      "data-slot": "form-control",
+      id: formItemId,
+      "aria-describedby": !error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`,
+      "aria-invalid": !!error,
+      ...props,
+    },
+  });
 }
 
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {

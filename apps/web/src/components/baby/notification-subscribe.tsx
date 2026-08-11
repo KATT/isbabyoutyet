@@ -159,14 +159,18 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     return (
       <Dialog>
         <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button variant="default" size="lg">
-                <Bell className="w-5 h-5" />
-                Get Notifications
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <DialogTrigger
+                render={
+                  <Button variant="default" size="lg">
+                    <Bell className="w-5 h-5" />
+                    Get Notifications
+                  </Button>
+                }
+              />
+            }
+          />
           <TooltipContent className="max-w-xs">
             <p>
               To receive notifications on iOS, you need to add this page to your home screen first.
@@ -209,49 +213,54 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          onClick={() => {
-            if (isSubscribed) {
-              if (!pushSubscriptionQuery.data) {
-                toast.error("No subscription endpoint found");
-                return;
+      <TooltipTrigger
+        render={
+          <Button
+            onClick={() => {
+              if (isSubscribed) {
+                if (!pushSubscriptionQuery.data) {
+                  toast.error("No subscription endpoint found");
+                  return;
+                }
+                toast.promise(
+                  unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint),
+                  {
+                    loading: "Unsubscribing from notifications...",
+                    success: "Unsubscribed from notifications!",
+                    error: (error) =>
+                      error instanceof Error
+                        ? error.message
+                        : "Failed to unsubscribe from notifications",
+                  },
+                );
+                pushSubscriptionQuery.refetch();
+              } else {
+                toast.promise(subscribeMutation.mutateAsync(), {
+                  loading: "Subscribing to notifications...",
+                  success: "Subscribed to notifications!",
+                  error: (error) =>
+                    error instanceof Error ? error.message : "Failed to subscribe to notifications",
+                });
               }
-              toast.promise(unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint), {
-                loading: "Unsubscribing from notifications...",
-                success: "Unsubscribed from notifications!",
-                error: (error) =>
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to unsubscribe from notifications",
-              });
-              pushSubscriptionQuery.refetch();
-            } else {
-              toast.promise(subscribeMutation.mutateAsync(), {
-                loading: "Subscribing to notifications...",
-                success: "Subscribed to notifications!",
-                error: (error) =>
-                  error instanceof Error ? error.message : "Failed to subscribe to notifications",
-              });
-            }
-          }}
-          disabled={isLoading}
-          variant={isSubscribed ? "secondary" : "default"}
-          size="lg"
-        >
-          {isSubscribed ? (
-            <>
-              {isLoading ? <Spinner className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-              Unsubscribe
-            </>
-          ) : (
-            <>
-              {isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-              Get Notifications
-            </>
-          )}
-        </Button>
-      </TooltipTrigger>
+            }}
+            disabled={isLoading}
+            variant={isSubscribed ? "secondary" : "default"}
+            size="lg"
+          >
+            {isSubscribed ? (
+              <>
+                {isLoading ? <Spinner className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                Unsubscribe
+              </>
+            ) : (
+              <>
+                {isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                Get Notifications
+              </>
+            )}
+          </Button>
+        }
+      />
       <TooltipContent>
         <p>
           {isSubscribed
