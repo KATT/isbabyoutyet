@@ -4,7 +4,11 @@ import type { DataModel, Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
-import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
+import {
+  findMilestoneUpdate,
+  insertEncouragementTimelineItem,
+  insertUpdateWithTimelineItem,
+} from "./timeline";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -29,19 +33,19 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
 /**
  * Backfills the timeline with a baby's existing milestones (using their
  * historical dates and legacy per-stage messages) and its current photo.
- * Idempotent: skips babies that already have update rows.
+ *
+ * Idempotent PER ITEM (not per baby): dual-writes go live before `runAll`
+ * runs during a deploy, so a baby may already have some rows — each missing
+ * milestone/photo is still backfilled individually.
  */
 export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  const existingUpdate = await ctx.db
-    .query("updates")
-    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
-    .first();
-  if (existingUpdate) return;
-
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
     const isoDate = baby[fields.date];
     if (!isoDate) continue;
+
+    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    if (existing) continue;
 
     const parsed = Date.parse(isoDate);
     await insertUpdateWithTimelineItem(ctx, {
@@ -53,20 +57,30 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
   }
 
   if (baby.photoId) {
-    // The original upload date isn't stored anywhere; use "now" so the
-    // current photo lands at the top of the backfilled feed.
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId: baby._id,
-      postedAt: Date.now(),
-      photoId: baby.photoId,
-      thumbnailId: baby.thumbnailId ?? null,
-    });
-    if (!baby.thumbnailId) {
-      await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+    const existingUpdates = await ctx.db
+      .query("updates")
+      .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
+      .collect();
+    const currentPhotoAlreadyInFeed = existingUpdates.some(
+      (update) => update.photoId === baby.photoId,
+    );
+
+    if (!currentPhotoAlreadyInFeed) {
+      // The original upload date isn't stored anywhere; use "now" so the
+      // current photo lands at the top of the backfilled feed.
+      const { updateId } = await insertUpdateWithTimelineItem(ctx, {
         babyId: baby._id,
+        postedAt: Date.now(),
         photoId: baby.photoId,
-        updateId,
+        thumbnailId: baby.thumbnailId ?? null,
       });
+      if (!baby.thumbnailId) {
+        await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+          babyId: baby._id,
+          photoId: baby.photoId,
+          updateId,
+        });
+      }
     }
   }
 }
