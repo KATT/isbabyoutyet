@@ -27,22 +27,22 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
-    "@convex-dev/migrations": "^0.3.1",
+    "@convex-dev/migrations": "^0.3.6",
     "better-auth": "catalog:",
     "convex": "catalog:",
-    "convex-helpers": "^0.1.111",
+    "convex-helpers": "^0.1.122",
     "convex-table-history": "^0.1.2",
-    "sharp": "^0.33.0",
+    "sharp": "^0.35.3",
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.20.1",
     "@types/web-push": "^3.6.4",
     "npm-run-all": "^4.1.5",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:",
-    "wait-on": "^9.0.3",
+    "wait-on": "^9.1.0",
     "zod": "catalog:"
   }
 }
