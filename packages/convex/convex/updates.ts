@@ -16,6 +16,8 @@ const milestoneValidator = v.union(
   v.literal("born"),
 );
 
+export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
+
 /**
  * Owner posts an update to the timeline: a message and/or a photo, optionally
  * marking a milestone. Marking a milestone also sets the canonical status
@@ -42,6 +44,9 @@ export const post = mutationWithTriggers({
 
     if (!message && !milestone && !photoId) {
       throw new Error("An update needs a message, a photo, or a milestone");
+    }
+    if (message && message.length > MAX_UPDATE_MESSAGE_LENGTH) {
+      throw new Error(`Message must be ${MAX_UPDATE_MESSAGE_LENGTH} characters or less`);
     }
 
     if (milestone) {
