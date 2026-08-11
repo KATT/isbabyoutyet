@@ -7,12 +7,10 @@ import { internal } from "./_generated/api";
 import sharp from "sharp";
 
 // Generate thumbnail from a photo storage ID and update the baby record
-// (and the timeline update row that carries the photo, when provided)
 export const generateThumbnail = internalAction({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
-    updateId: v.optional(v.id("updates")),
   },
   handler: async (ctx: ActionCtx, args) => {
     // Download the original image
@@ -39,12 +37,10 @@ export const generateThumbnail = internalAction({
       new Blob([new Uint8Array(thumbnailBuffer)], { type: "image/jpeg" }),
     );
 
-    // Update the baby record (and update row, if any) with the thumbnail ID
+    // Update the baby record with the thumbnail ID
     await ctx.runMutation(internal.baby.updateThumbnail, {
       babyId: args.babyId,
       thumbnailId,
-      photoId: args.photoId,
-      updateId: args.updateId,
     });
 
     return thumbnailId;
