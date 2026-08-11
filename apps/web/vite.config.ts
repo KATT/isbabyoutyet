@@ -9,7 +9,10 @@ import { nitro } from "nitro/vite";
 const config = defineConfig({
   plugins: [
     devtools(),
-    nitro(),
+    // Keep the Nitro SSR entry in one chunk. With Base UI, Rolldown otherwise
+    // splits into circular ssr/ssr2 chunks and drops the `ssr_exports` binding
+    // Nitro needs (`Export 'ssr_exports' is not defined in module` → preview 500).
+    nitro({ inlineDynamicImports: true }),
     // this is the plugin that enables path aliases
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
