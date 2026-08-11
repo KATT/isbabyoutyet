@@ -28,9 +28,6 @@ import {
   type BabyUpdateHandler,
 } from "@workspace/convex/src/types";
 import {
-  BabyBornMessageEditor,
-  HospitalMessageEditor,
-  LaborStartedMessageEditor,
   DueDateEditor,
   NameEditor,
   PhotoUploader,
@@ -129,20 +126,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             </Item>
 
             <ItemSeparator />
-            <Item>
-              <ItemMedia variant="icon">
-                <Activity className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Labour Message</ItemTitle>
-                <ItemDescription>{baby.laborStartedMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <LaborStartedMessageEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
 
             {/* Gone to hospital */}
             <Item>
@@ -179,20 +162,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             </Item>
 
             <ItemSeparator />
-            <Item>
-              <ItemMedia variant="icon">
-                <Hospital className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Hospital Message</ItemTitle>
-                <ItemDescription>{baby.hospitalMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <HospitalMessageEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
 
             {/* Baby born */}
             <Item>
@@ -225,20 +194,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
                   isNextState={status.type === "gone_to_hospital"}
                   onUpdate={onUpdate}
                 />
-              </ItemActions>
-            </Item>
-
-            {/* Baby Born Message */}
-            <Item>
-              <ItemMedia variant="icon">
-                <CheckCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Baby Born Message</ItemTitle>
-                <ItemDescription>{baby.babyBornMessage || "Default message"}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <BabyBornMessageEditor baby={baby} onUpdate={onUpdate} />
               </ItemActions>
             </Item>
 

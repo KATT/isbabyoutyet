@@ -462,10 +462,9 @@ export async function syncStatusNotifications(
 /**
  * Keeps the timeline's milestone update rows in sync with the canonical
  * status fields on the baby doc:
- * - marking a milestone creates its update row (message = the stage message)
+ * - marking a milestone creates its update row
  * - redating a milestone moves its timeline row's `postedAt`
  * - unmarking a milestone deletes its update + timeline rows
- * - editing a stage message keeps the milestone row's message in sync
  */
 async function syncMilestoneUpdates(
   ctx: MutationCtx,
@@ -475,9 +474,6 @@ async function syncMilestoneUpdates(
       laborStarted?: string | null;
       wentToHospital?: string | null;
       babyBorn?: string | null;
-      laborStartedMessage?: string | null;
-      hospitalMessage?: string | null;
-      babyBornMessage?: string | null;
     };
   },
 ) {
@@ -485,7 +481,7 @@ async function syncMilestoneUpdates(
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
     const dateArg = opts.patch[fields.date];
-    const messageArg = opts.patch[fields.message];
+    if (dateArg === undefined) continue;
     const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
 
     if (dateArg === null) {
@@ -496,29 +492,17 @@ async function syncMilestoneUpdates(
       continue;
     }
 
-    if (typeof dateArg === "string") {
-      const parsed = Date.parse(dateArg);
-      const postedAt = Number.isNaN(parsed) ? Date.now() : parsed;
-      if (existing) {
-        // Redate: move the timeline row; refresh the message if it changed too
-        await ctx.db.patch(existing.timelineItemId, { postedAt });
-        if (messageArg !== undefined) {
-          await ctx.db.patch(existing._id, { message: messageArg });
-        }
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          postedAt,
-          milestone,
-          message: messageArg !== undefined ? messageArg : (baby[fields.message] ?? null),
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: keep the milestone row's message in sync when edited
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
+    const parsed = Date.parse(dateArg);
+    const postedAt = Number.isNaN(parsed) ? Date.now() : parsed;
+    if (existing) {
+      // Redate: move the timeline row
+      await ctx.db.patch(existing.timelineItemId, { postedAt });
+    } else {
+      await insertUpdateWithTimelineItem(ctx, {
+        babyId: baby._id,
+        postedAt,
+        milestone,
+      });
     }
   }
 }
@@ -530,9 +514,6 @@ export const update = mutationWithTriggers({
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
@@ -572,14 +553,11 @@ export const update = mutationWithTriggers({
     const updatedBaby = await ctx.db.get(babyId);
     if (!updatedBaby) throw new Error("Baby not found after update");
 
+    // Status buttons don't carry a message; attach one by posting an update
     await syncStatusNotifications(ctx, {
       statusBefore,
       updatedBaby,
-      customMessageByMilestone: {
-        labor_started: rest.laborStartedMessage ?? baby.laborStartedMessage ?? null,
-        gone_to_hospital: rest.hospitalMessage ?? baby.hospitalMessage ?? null,
-        born: rest.babyBornMessage ?? baby.babyBornMessage ?? null,
-      },
+      customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
     });
   },
 });

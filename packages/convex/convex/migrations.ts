@@ -99,10 +99,35 @@ export const backfillEncouragementTimeline = migrations.define({
   migrateOne: backfillEncouragementTimelineDoc,
 });
 
+/**
+ * Clears the legacy per-stage message fields: their content lives on the
+ * milestone update rows since the timeline backfill (which runs first).
+ */
+export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (
+    baby.laborStartedMessage == null &&
+    baby.hospitalMessage == null &&
+    baby.babyBornMessage == null
+  ) {
+    return;
+  }
+  await ctx.db.patch(baby._id, {
+    laborStartedMessage: null,
+    hospitalMessage: null,
+    babyBornMessage: null,
+  });
+}
+
+export const clearLegacyStageMessages = migrations.define({
+  table: "baby",
+  migrateOne: clearLegacyStageMessagesDoc,
+});
+
 // Run all pending migrations - called automatically during deployment
 // When adding migrations, import `internal` from "./_generated/api" and add references:
 export const runAll = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
+  internal.migrations.clearLegacyStageMessages,
 ]);

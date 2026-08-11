@@ -2,7 +2,11 @@ import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { backfillBabyTimelineDoc, backfillEncouragementTimelineDoc } from "./migrations";
+import {
+  backfillBabyTimelineDoc,
+  backfillEncouragementTimelineDoc,
+  clearLegacyStageMessagesDoc,
+} from "./migrations";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
@@ -115,14 +119,13 @@ test("a milestone update sets the canonical status and schedules a push", async 
   );
 });
 
-test("baby.update keeps milestone rows in sync: mark, redate, edit message, unmark", async () => {
+test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () => {
   const { t, asAlice, babyId } = await setup();
 
-  // Mark labour started with a stage message
+  // Mark labour started
   await asAlice.mutation(api.baby.update, {
     babyId,
     laborStarted: "2026-08-20T08:00:00.000Z",
-    laborStartedMessage: "It has begun!",
   });
 
   let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
@@ -130,7 +133,7 @@ test("baby.update keeps milestone rows in sync: mark, redate, edit message, unma
     {
       kind: "update",
       postedAt: Date.parse("2026-08-20T08:00:00.000Z"),
-      update: { milestone: "labor_started", message: "It has begun!" },
+      update: { milestone: "labor_started" },
     },
   ]);
 
@@ -141,14 +144,6 @@ test("baby.update keeps milestone rows in sync: mark, redate, edit message, unma
   });
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([{ postedAt: Date.parse("2026-08-20T10:30:00.000Z") }]);
-
-  // Editing the stage message keeps the row in sync
-  await asAlice.mutation(api.baby.update, {
-    babyId,
-    laborStartedMessage: "Contractions every 5 minutes",
-  });
-  feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([{ update: { message: "Contractions every 5 minutes" } }]);
 
   // Unmarking removes the milestone from the feed
   await asAlice.mutation(api.baby.update, { babyId, laborStarted: null });
@@ -258,18 +253,31 @@ test("backfill migrations preserve historical order and are idempotent", async (
       photoId: photo,
       thumbnailId: thumbnail,
     });
+    // timelineItemId is required by now (PR 1's backfill linked all rows)
+    const grandmaTimelineItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: grandmaAt.getTime(),
+    });
     await ctx.db.insert("encouragements", {
       babyId,
       authorName: "Grandma",
       message: "Waiting by the phone!",
       createdAt: grandmaAt.getTime(),
+      timelineItemId: grandmaTimelineItemId,
       visitorId: "visitor-legacy-1",
+    });
+    const auntMegTimelineItemId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: auntMegAt.getTime(),
     });
     await ctx.db.insert("encouragements", {
       babyId,
       authorName: "Aunt Meg",
       message: "Thinking of you!",
       createdAt: auntMegAt.getTime(),
+      timelineItemId: auntMegTimelineItemId,
       visitorId: "visitor-legacy-2",
     });
   });
@@ -300,6 +308,30 @@ test("backfill migrations preserve historical order and are idempotent", async (
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
     { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
     { kind: "encouragement", encouragement: { authorName: "Aunt Meg" } },
+  ]);
+
+  // Clearing the legacy stage messages keeps the feed content intact
+  await t.run(async (ctx) => {
+    const baby = await ctx.db.get(babyId);
+    if (!baby) throw new Error("Baby not found");
+    await clearLegacyStageMessagesDoc(ctx, baby);
+  });
+  const clearedBaby = await getBaby(t, babyId);
+  expect(clearedBaby).toMatchObject({
+    laborStartedMessage: null,
+    hospitalMessage: null,
+    babyBornMessage: null,
+  });
+  const feedAfterClear = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(feedAfterClear.page).toMatchObject([
+    { kind: "update" },
+    { kind: "update" },
+    { kind: "encouragement" },
+    { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
+    { kind: "encouragement" },
   ]);
 
   // Dual-writes stay consistent post-backfill: unmarking removes the

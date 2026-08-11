@@ -147,8 +147,6 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.encouragementId);
-    if (encouragement.timelineItemId) {
-      await ctx.db.delete(encouragement.timelineItemId);
-    }
+    await ctx.db.delete(encouragement.timelineItemId);
   },
 });

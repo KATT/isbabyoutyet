@@ -64,9 +64,9 @@ export const seedPreviewData = internalMutation({
       encouragementsDisabled: false,
     });
 
-    // Seed encouragements WITHOUT timeline pointers on purpose: the
-    // backfillEncouragementTimeline migration (run right after seeding on
-    // previews) links them, so every preview exercises the backfill path.
+    // Seed encouragements with their timeline rows (the pointer is required).
+    // The milestone/message backfill is still exercised on previews via the
+    // legacy laborStartedMessage above.
     const seedEncouragements: Array<{
       babyId: typeof baby1Id;
       authorName: string;
@@ -100,11 +100,18 @@ export const seedPreviewData = internalMutation({
     ];
 
     for (const seedEncouragement of seedEncouragements) {
+      const createdAt = now.getTime() - seedEncouragement.minutesAgo * 60_000;
+      const timelineItemId = await ctx.db.insert("timelineItems", {
+        babyId: seedEncouragement.babyId,
+        kind: "encouragement",
+        postedAt: createdAt,
+      });
       await ctx.db.insert("encouragements", {
         babyId: seedEncouragement.babyId,
         authorName: seedEncouragement.authorName,
         message: seedEncouragement.message,
-        createdAt: now.getTime() - seedEncouragement.minutesAgo * 60_000,
+        createdAt,
+        timelineItemId,
         visitorId: `preview-visitor-${seedEncouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`,
       });
     }
