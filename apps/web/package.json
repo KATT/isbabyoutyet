@@ -68,7 +68,6 @@
     "vite": "^8.2.1",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10",
-    "web-vitals": "^6.1.0",
-    "zx": "^8.8.5"
+    "web-vitals": "^6.1.0"
   }
 }
