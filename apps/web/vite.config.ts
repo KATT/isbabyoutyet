@@ -13,7 +13,10 @@ import { nitro } from "nitro/vite";
  * `createRequire` call. On Vercel that fails with `Cannot find module 'react'`
  * because the serverless function has no node_modules (nitrojs/nitro#4171,
  * rolldown#9407). React 19 already exports `useSyncExternalStore`, so alias the
- * shim to `react`.
+ * basic shim to `react`.
+ *
+ * Do NOT alias `shim/with-selector` — that exports `useSyncExternalStoreWithSelector`,
+ * which is not on the React package (client crash: "is not a function").
  */
 function aliasUseSyncExternalStoreShim(): Plugin {
   return {
@@ -24,19 +27,11 @@ function aliasUseSyncExternalStoreShim(): Plugin {
         resolve: {
           alias: [
             {
-              find: "use-sync-external-store/shim/with-selector.js",
+              find: /^use-sync-external-store\/shim$/,
               replacement: "react",
             },
             {
-              find: "use-sync-external-store/shim/with-selector",
-              replacement: "react",
-            },
-            {
-              find: "use-sync-external-store/shim/index.js",
-              replacement: "react",
-            },
-            {
-              find: "use-sync-external-store/shim",
+              find: /^use-sync-external-store\/shim\/index\.js$/,
               replacement: "react",
             },
           ],
