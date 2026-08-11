@@ -9,11 +9,14 @@ import { nitro } from "nitro/vite";
 const config = defineConfig({
   plugins: [
     devtools(),
-    // Keep the Nitro SSR entry in one chunk. With Base UI, Rolldown otherwise
-    // splits into circular ssr/ssr2 chunks and drops the `ssr_exports` binding
-    // Nitro needs (`Export 'ssr_exports' is not defined in module` → preview 500).
-    nitro({ inlineDynamicImports: true }),
-    // this is the plugin that enables path aliases
+    // Keep the Nitro SSR service in one chunk. With Base UI, Rolldown otherwise
+    // splits it into circular chunks and drops `ssr_exports`, which makes Vercel
+    // previews return 500 (`Export 'ssr_exports' is not defined in module`).
+    nitro({
+      inlineDynamicImports: true,
+      // Temporarily surface the real SSR error on previews while we verify the fix.
+      errorHandler: "./src/ssr-error-handler.ts",
+    }),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
