@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { convexTest } from "convex-test";
 import type { ReactElement } from "react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
@@ -10,6 +10,13 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
+
+function useFakeTimersResource(now: Date) {
+  vi.useFakeTimers({ now });
+  return makeResource({}, () => {
+    vi.useRealTimers();
+  });
+}
 
 /**
  * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
@@ -55,6 +62,9 @@ function renderResource(ui: ReactElement) {
 }
 
 test("renders a baby detail page from local convex-test data", async () => {
+  // Freeze "now" so StatusDisplay's until-due / overdue copy stays deterministic
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+
   const t = convexTest(schema, modules);
   await registerComponents(t);
 
@@ -79,5 +89,6 @@ test("renders a baby detail page from local convex-test data", async () => {
   expect(view.getByRole("heading", { name: "Is Baby Smith out yet?" })).toBeTruthy();
   expect(view.getByText("Not yet")).toBeTruthy();
   expect(view.getByText("Baby is still on the way")).toBeTruthy();
-  expect(view.getByText(/until due date/i)).toBeTruthy();
+  expect(view.getByText("21 days until due date")).toBeTruthy();
+  expect(view.getByText("Due date: September 1, 2026")).toBeTruthy();
 });
