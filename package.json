@@ -8,7 +8,7 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
-    "checks": "turbo run format lint-fix typecheck"
+    "checks": "turbo run format lint-fix typecheck test"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5",
