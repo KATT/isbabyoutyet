@@ -1,7 +1,8 @@
 import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
-import { EncouragementForm, EncouragementsFeed } from "@/components/baby/encouragements";
+import { EncouragementForm } from "@/components/baby/encouragements";
+import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -133,6 +134,7 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const latestUpdate = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -193,6 +195,11 @@ function BabyPage() {
                 currentStatus={currentStatus}
                 photoUrl={babyDoc.photoUrl}
                 thumbnailUrl={babyDoc.thumbnailUrl}
+                latestUpdate={
+                  latestUpdate
+                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                    : null
+                }
               />
               <NotificationSubscribe
                 babyId={babyDoc._id}
@@ -207,24 +214,32 @@ function BabyPage() {
         </div>
       </section>
 
-      {/* Encouragements Section */}
-      {!baby.encouragementsDisabled && (
-        <section className="relative px-6 pb-12">
-          <div className="relative max-w-2xl mx-auto space-y-8">
+      {/* Timeline Section: owner updates interleaved with encouragements */}
+      <section className="relative px-6 pb-12">
+        <div className="relative max-w-2xl mx-auto space-y-8">
+          {isOwner && (
+            <Card>
+              <CardContent className="pt-6">
+                <UpdateComposer babyId={babyDoc._id} baby={baby} babyName={baby.name} />
+              </CardContent>
+            </Card>
+          )}
+
+          {!baby.encouragementsDisabled && (
             <Card>
               <CardContent className="pt-6">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </CardContent>
             </Card>
+          )}
 
-            <Card>
-              <CardContent className="pt-6">
-                <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      )}
+          <Card>
+            <CardContent className="pt-6">
+              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+            </CardContent>
+          </Card>
+        </div>
+      </section>
 
       {/* Footer */}
       <div className="text-center py-8 border-t border-border/50">

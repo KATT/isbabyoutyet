@@ -96,14 +96,44 @@ function PhotoAvatar({
   );
 }
 
+/**
+ * The newest owner update, shown on top of the status card regardless of
+ * stage — a text-only post refreshes it without a status change.
+ */
+export type LatestUpdateMessage = {
+  message?: string | null;
+  postedAt: number;
+};
+
 type StatusDisplayProps = {
   baby: BabyData;
   currentStatus: BabyStatus;
   photoUrl?: string | null;
   thumbnailUrl?: string | null;
+  latestUpdate?: LatestUpdateMessage | null;
 };
 
-export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: StatusDisplayProps) {
+function LatestUpdateBox({ latestUpdate }: { latestUpdate?: LatestUpdateMessage | null }) {
+  if (!latestUpdate?.message) {
+    return null;
+  }
+  return (
+    <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+      <p className="text-lg font-bold text-primary">{latestUpdate.message}</p>
+      <p className="text-xs text-primary/70 mt-2">
+        Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
+      </p>
+    </div>
+  );
+}
+
+export function StatusDisplay({
+  baby,
+  currentStatus,
+  photoUrl,
+  thumbnailUrl,
+  latestUpdate,
+}: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
@@ -121,6 +151,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
           </span>
         </h2>
         <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
+        <LatestUpdateBox latestUpdate={latestUpdate} />
         <div
           className={`mt-4 p-6 rounded-xl shadow-lg ${
             overdueDays > 0
@@ -169,11 +200,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
         <p className="text-lg text-muted-foreground mt-2">
           Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.laborStartedMessage && (
-          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.laborStartedMessage}</p>
-          </div>
-        )}
+        <LatestUpdateBox latestUpdate={latestUpdate} />
       </div>
     );
   }
@@ -194,11 +221,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
         <p className="text-xl text-muted-foreground mb-4">
           {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.hospitalMessage && (
-          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.hospitalMessage}</p>
-          </div>
-        )}
+        <LatestUpdateBox latestUpdate={latestUpdate} />
       </div>
     );
   }
@@ -220,11 +243,7 @@ export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: S
       <p className="text-xl text-muted-foreground mb-4">
         Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
       </p>
-      {baby.babyBornMessage && (
-        <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-          <p className="text-lg font-bold text-primary">{baby.babyBornMessage}</p>
-        </div>
-      )}
+      <LatestUpdateBox latestUpdate={latestUpdate} />
     </div>
   );
 }

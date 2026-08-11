@@ -69,6 +69,20 @@ function PreviewPage() {
   const currentStatus = getCurrentStatus(baby);
   const themeCssUrl = getThemeCssUrl(baby.theme);
 
+  // The preview has no timeline; simulate the latest update from the stage message
+  const stageMessage =
+    currentStatus.type === "born"
+      ? baby.babyBornMessage
+      : currentStatus.type === "gone_to_hospital"
+        ? baby.hospitalMessage
+        : currentStatus.type === "labor_started"
+          ? baby.laborStartedMessage
+          : null;
+  const latestUpdate =
+    currentStatus.type !== "not_yet" && stageMessage
+      ? { message: stageMessage, postedAt: Date.parse(currentStatus.date) }
+      : null;
+
   return (
     <div>
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
@@ -117,7 +131,11 @@ function PreviewPage() {
           <div className="relative max-w-5xl mx-auto">
             <Card>
               <CardContent>
-                <StatusDisplay baby={baby} currentStatus={currentStatus} />
+                <StatusDisplay
+                  baby={baby}
+                  currentStatus={currentStatus}
+                  latestUpdate={latestUpdate}
+                />
                 <Separator />
               </CardContent>
               <CardFooter>
