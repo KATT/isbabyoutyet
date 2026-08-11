@@ -9,16 +9,9 @@
     "./src/*": "./src/*.ts"
   },
   "scripts": {
-    "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
-    "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
-    "predev": "run-s predev:*",
+    "predev": "node scripts/setup-dev-env.mjs",
     "dev": "CONVEX_AGENT_MODE=anonymous convex dev",
-    "dev-set-env:BETTER_AUTH_SECRET": "convex env set BETTER_AUTH_SECRET localhost",
-    "dev-set-env:SITE_URL": "convex env set SITE_URL http://localhost:3000",
-    "dev-set-env:vapid": "web-push generate-vapid-keys --json | jq -r '\"npx convex env set VAPID_PUBLIC_KEY \" + .publicKey + \"\\nnpx convex env set VAPID_PRIVATE_KEY \" + .privateKey' | sh",
-    "setup-dev": "FORCE_COLOR=1 run-p setup-dev:* --print-label && echo '✅ Setup complete, you can now run `pnpm dev`'",
-    "setup-dev:set-env": "wait-on tcp:3210 && echo 'Convex is ready, setting environment variables...' && sleep 1 && run-s dev-set-env:*",
-    "setup-dev:dev": "CONVEX_AGENT_MODE=anonymous convex dev --until-success",
+    "setup-dev": "node scripts/setup-dev-env.mjs",
     "test": "vitest run",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",
@@ -41,13 +34,11 @@
     "@types/node": "^22.20.1",
     "@types/web-push": "^3.6.4",
     "convex-test": "^0.0.55",
-    "npm-run-all": "^4.1.5",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "typescript": "catalog:",
     "vite": "^8.2.1",
     "vitest": "^4.1.10",
-    "wait-on": "^9.1.0",
     "zod": "catalog:"
   }
 }
