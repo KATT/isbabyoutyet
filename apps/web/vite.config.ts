@@ -97,8 +97,6 @@ const config = defineConfig({
           },
         },
       },
-      // Temporary: surface the real SSR error on previews while verifying the fix.
-      errorHandler: "./src/ssr-error-handler.ts",
     }),
     patchLeakedReactRequire(),
     viteTsConfigPaths({
