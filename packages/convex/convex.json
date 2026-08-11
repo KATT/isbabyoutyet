@@ -3,8 +3,5 @@
   "node": {
     "externalPackages": ["web-push", "sharp"],
     "nodeVersion": "22"
-  },
-  "aiFiles": {
-    "enabled": false
   }
 }
