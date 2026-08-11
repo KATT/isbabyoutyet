@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { getCurrentStatus, MILESTONE_FIELDS } from "../src/types";
@@ -92,6 +93,40 @@ export const post = mutationWithTriggers({
     }
 
     return updateId;
+  },
+});
+
+/**
+ * Owner pins a photo from the timeline as the baby's current page photo.
+ * New photo uploads still take over by default (latest wins) — this lets the
+ * owner bring back any earlier photo without re-uploading it.
+ */
+export const setAsCurrentPhoto = mutationWithTriggers({
+  args: { updateId: v.id("updates") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Not authenticated");
+
+    const update = await ctx.db.get(args.updateId);
+    if (!update) throw new Error("Update not found");
+    if (!update.photoId) throw new Error("This update has no photo");
+
+    const baby = await ctx.db.get(update.babyId);
+    if (!baby) throw new Error("Baby not found");
+    if (baby.userId !== identity.subject) throw new Error("Not authorized");
+
+    await ctx.db.patch(baby._id, {
+      photoId: update.photoId,
+      thumbnailId: update.thumbnailId ?? null,
+    });
+
+    if (!update.thumbnailId) {
+      await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+        babyId: baby._id,
+        photoId: update.photoId,
+        updateId: update._id,
+      });
+    }
   },
 });
 

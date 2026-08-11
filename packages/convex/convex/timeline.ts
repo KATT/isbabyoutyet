@@ -27,7 +27,12 @@ async function findEncouragementByTimelineItem(ctx: QueryCtx, timelineItemId: Id
     .first();
 }
 
-async function hydrateUpdate(ctx: QueryCtx, item: Doc<"timelineItems">, update: Doc<"updates">) {
+async function hydrateUpdate(
+  ctx: QueryCtx,
+  item: Doc<"timelineItems">,
+  update: Doc<"updates">,
+  currentPhotoId: Id<"_storage"> | null,
+) {
   const photoUrl = update.photoId ? await ctx.storage.getUrl(update.photoId) : null;
   const thumbnailUrl = update.thumbnailId ? await ctx.storage.getUrl(update.thumbnailId) : null;
   return {
@@ -40,6 +45,8 @@ async function hydrateUpdate(ctx: QueryCtx, item: Doc<"timelineItems">, update: 
       milestone: update.milestone ?? null,
       photoUrl,
       thumbnailUrl,
+      // Whether this update's photo is the baby's current page photo
+      isCurrentPagePhoto: !!update.photoId && update.photoId === currentPhotoId,
     },
   };
 }
@@ -60,12 +67,16 @@ function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId?:
   };
 }
 
-async function hydrateTimelineItem(ctx: QueryCtx, item: Doc<"timelineItems">, visitorId?: string) {
+async function hydrateTimelineItem(
+  ctx: QueryCtx,
+  item: Doc<"timelineItems">,
+  opts: { visitorId?: string; currentPhotoId: Id<"_storage"> | null },
+) {
   switch (item.kind) {
     case "update": {
       const update = await findUpdateByTimelineItem(ctx, item._id);
       if (!update) return null;
-      return await hydrateUpdate(ctx, item, update);
+      return await hydrateUpdate(ctx, item, update, opts.currentPhotoId);
     }
     case "encouragement": {
       const encouragement = await findEncouragementByTimelineItem(ctx, item._id);
@@ -74,7 +85,7 @@ async function hydrateTimelineItem(ctx: QueryCtx, item: Doc<"timelineItems">, vi
         _id: item._id,
         kind: "encouragement" as const,
         postedAt: item.postedAt,
-        encouragement: toPublicEncouragement(encouragement, visitorId),
+        encouragement: toPublicEncouragement(encouragement, opts.visitorId),
       };
     }
   }
@@ -90,6 +101,9 @@ export const listByBaby = query({
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    const currentPhotoId = baby?.photoId ?? null;
+
     const result = await ctx.db
       .query("timelineItems")
       .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", args.babyId))
@@ -98,7 +112,10 @@ export const listByBaby = query({
 
     const page: TimelineItem[] = [];
     for (const item of result.page) {
-      const hydrated = await hydrateTimelineItem(ctx, item, args.visitorId);
+      const hydrated = await hydrateTimelineItem(ctx, item, {
+        visitorId: args.visitorId,
+        currentPhotoId,
+      });
       if (hydrated) {
         page.push(hydrated);
       }
@@ -135,7 +152,8 @@ export const latestUpdate = query({
     }
 
     if (!latest) return null;
-    return await hydrateUpdate(ctx, latest.item, latest.update);
+    const baby = await ctx.db.get(args.babyId);
+    return await hydrateUpdate(ctx, latest.item, latest.update, baby?.photoId ?? null);
   },
 });
 
