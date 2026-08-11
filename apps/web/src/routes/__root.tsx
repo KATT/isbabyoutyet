@@ -11,6 +11,7 @@ import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
+import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
@@ -100,7 +101,13 @@ function RootComponent() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <ConvexBetterAuthProvider client={context.convexClient} authClient={authClient}>
+      {/* Cast: better-auth >=1.6.18 broke assignability to @convex-dev/better-auth's
+          AuthClient type (upstream types against better-auth 1.6.15). Runtime is
+          compatible per the peer range (>=1.6.11 <1.7.0). */}
+      <ConvexBetterAuthProvider
+        client={context.convexClient}
+        authClient={authClient as unknown as AuthClient}
+      >
         <RootDocument>
           <Outlet />
         </RootDocument>
