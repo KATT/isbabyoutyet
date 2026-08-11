@@ -45,10 +45,13 @@ type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
 type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }>;
 
+const MAX_UPDATE_MESSAGE_LENGTH = 1000;
+const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
   gone_to_hospital: { label: "Gone to hospital", icon: Hospital },
-  born: { label: "Born!", icon: CheckCircle },
+  born: { label: "Born", icon: CheckCircle },
 };
 
 function getRelativeTimeFromTimestamp(timestamp: number): string {
@@ -105,7 +108,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
     return !props.baby.babyBorn;
   });
 
-  const canPost = !isPosting && (message.trim().length > 0 || milestone !== null || !!photoFile);
+  // Guard against a stale selection: the milestone may have been marked from
+  // the settings panel (or another tab) while it was selected here
+  const selectedMilestone = milestone && availableMilestones.includes(milestone) ? milestone : null;
+
+  const canPost =
+    !isPosting && (message.trim().length > 0 || selectedMilestone !== null || !!photoFile);
 
   const clearPhoto = () => {
     if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
@@ -119,6 +127,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Please select an image file");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE_BYTES) {
+      toast.error("Photo must be 10 MB or smaller");
       return;
     }
     if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
@@ -147,7 +159,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
       await postUpdate({
         babyId: props.babyId,
         message: message.trim() || undefined,
-        milestone: milestone ?? undefined,
+        milestone: selectedMilestone ?? undefined,
         photoId,
       });
 
@@ -176,7 +188,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
         value={message}
         onChange={(e) => setMessage(e.target.value)}
         placeholder="Share an update with everyone…"
+        aria-label="Update message"
         className="min-h-20"
+        maxLength={MAX_UPDATE_MESSAGE_LENGTH}
         disabled={isPosting}
       />
 
@@ -201,27 +215,36 @@ export function UpdateComposer(props: UpdateComposerProps) {
       )}
 
       {availableMilestones.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Mark a milestone:</span>
-          {availableMilestones.map((candidate) => {
-            const meta = MILESTONE_META[candidate];
-            const MilestoneIcon = meta.icon;
-            const isSelected = milestone === candidate;
-            return (
-              <Button
-                key={candidate}
-                type="button"
-                size="sm"
-                variant={isSelected ? "default" : "outline"}
-                className="rounded-full"
-                onClick={() => setMilestone(isSelected ? null : candidate)}
-                disabled={isPosting}
-              >
-                <MilestoneIcon className="w-3.5 h-3.5" />
-                {meta.label}
-              </Button>
-            );
-          })}
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Mark a milestone:</span>
+            {availableMilestones.map((candidate) => {
+              const meta = MILESTONE_META[candidate];
+              const MilestoneIcon = meta.icon;
+              const isSelected = selectedMilestone === candidate;
+              return (
+                <Button
+                  key={candidate}
+                  type="button"
+                  size="sm"
+                  variant={isSelected ? "default" : "outline"}
+                  className="rounded-full"
+                  aria-pressed={isSelected}
+                  onClick={() => setMilestone(isSelected ? null : candidate)}
+                  disabled={isPosting}
+                >
+                  <MilestoneIcon className="w-3.5 h-3.5" />
+                  {meta.label}
+                </Button>
+              );
+            })}
+          </div>
+          {selectedMilestone && (
+            <p className="text-xs text-muted-foreground">
+              This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
+              notifies everyone subscribed.
+            </p>
+          )}
         </div>
       )}
 
@@ -246,7 +269,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
         </Button>
         <Button onClick={handlePost} disabled={!canPost}>
           <Send className="w-4 h-4" />
-          {isPosting ? "Posting..." : "Post update"}
+          {isPosting
+            ? "Posting..."
+            : selectedMilestone
+              ? `Post & mark "${MILESTONE_META[selectedMilestone].label}"`
+              : "Post update"}
         </Button>
       </div>
     </div>
@@ -278,7 +305,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 <MilestoneIcon className="w-3 h-3" />
                 {milestoneMeta.label}
               </Badge>
-            ) : update.photoId ? (
+            ) : update.photoUrl ? (
               <Badge variant="secondary" className="shrink-0">
                 <Camera className="w-3 h-3" />
                 New photo
@@ -288,7 +315,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 Update
               </Badge>
             )}
-            <span className="text-xs text-muted-foreground shrink-0">
+            <span
+              className="text-xs text-muted-foreground shrink-0"
+              title={new Date(props.item.postedAt).toLocaleString()}
+            >
               {getRelativeTimeFromTimestamp(props.item.postedAt)}
             </span>
           </div>
@@ -305,11 +335,16 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         </div>
 
         {props.isOwner && (
-          <div className="md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
             <AlertDialog>
               <AlertDialogTrigger
                 render={
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Delete update"
+                  >
                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                   </Button>
                 }
@@ -321,6 +356,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                     {update.milestone
                       ? "This also unmarks the milestone on the status card."
                       : "This removes the update from the timeline."}{" "}
+                    {update.photoUrl
+                      ? "If this photo is the current page photo, the previous one takes its place. "
+                      : ""}
                     This action cannot be undone.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -352,7 +390,10 @@ function TimelinePhoto(props: TimelinePhotoProps) {
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger
         render={
-          <button className="mt-2 block cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary">
+          <button
+            aria-label="View photo full size"
+            className="mt-2 block cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+          >
             <img
               src={inlineUrl}
               alt="Baby update"
@@ -365,6 +406,7 @@ function TimelinePhoto(props: TimelinePhotoProps) {
       <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
         <button
           onClick={() => setIsOpen(false)}
+          aria-label="Close photo"
           className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
         >
           <X className="w-6 h-6" />
@@ -393,7 +435,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const [editMessage, setEditMessage] = useState(encouragement.message);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isOwnPost = encouragement.visitorId === props.currentVisitorId;
+  const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
 
@@ -422,7 +464,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-medium text-foreground truncate">{encouragement.authorName}</span>
-            <span className="text-xs text-muted-foreground shrink-0">
+            <span
+              className="text-xs text-muted-foreground shrink-0"
+              title={new Date(encouragement.createdAt).toLocaleString()}
+            >
               {getRelativeTimeFromTimestamp(encouragement.createdAt)}
             </span>
             {isOwnPost && <span className="text-xs text-primary/70 shrink-0">(you)</span>}
@@ -455,12 +500,13 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         </div>
 
         {!isEditing && (canEdit || canDelete) && (
-          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity shrink-0">
+          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
             {canEdit && (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
+                aria-label="Edit encouragement"
                 onClick={() => setIsEditing(true)}
               >
                 <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
@@ -470,7 +516,12 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               <AlertDialog>
                 <AlertDialogTrigger
                   render={
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      aria-label="Delete encouragement"
+                    >
                       <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                     </Button>
                   }
@@ -515,16 +566,18 @@ type TimelineFeedProps = {
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
+  const [currentVisitorId, setCurrentVisitorId] = useState("");
   const { results, status, loadMore } = usePaginatedQuery(
     api.timeline.listByBaby,
-    { babyId: props.babyId },
+    // visitorId only marks the caller's own encouragements (isMine); the
+    // credential itself is never returned by the query
+    { babyId: props.babyId, visitorId: currentVisitorId || undefined },
     { initialNumItems: PAGE_SIZE },
   );
   const removeUpdate = useMutation(api.updates.remove);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const [currentVisitorId, setCurrentVisitorId] = useState("");
 
   // Get visitor ID on client side
   useEffect(() => {
@@ -602,14 +655,22 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   if (results.length === 0) {
     return (
-      <div className="py-8 text-center">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
-          <Heart className="w-8 h-8 text-muted-foreground/50" />
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Heart className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
         </div>
-        <p className="text-muted-foreground">Nothing here yet</p>
-        <p className="text-sm text-muted-foreground/70">
-          Updates and encouragements will show up here!
-        </p>
+        <div className="py-8 text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
+            <Heart className="w-8 h-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-muted-foreground">Nothing here yet</p>
+          <p className="text-sm text-muted-foreground/70">
+            {props.isOwner
+              ? "Post your first update to keep everyone in the loop!"
+              : "Updates from the family will show up here."}
+          </p>
+        </div>
       </div>
     );
   }

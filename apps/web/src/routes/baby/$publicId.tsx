@@ -48,9 +48,14 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
+    // Prefetch so the status card doesn't flash without its message
+    const latestUpdate = await opts.context.convexClient.query(api.timeline.latestUpdate, {
+      babyId: baby._id,
+    });
     return {
       baby,
       vapidPublicKey,
+      latestUpdate,
     };
   },
   head: (opts) => {
@@ -134,7 +139,10 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
-  const latestUpdate = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
+  const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
+  // Prefer the reactive value; fall back to the loader's prefetch while loading
+  const latestUpdate =
+    latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -214,7 +222,8 @@ function BabyPage() {
         </div>
       </section>
 
-      {/* Timeline Section: owner updates interleaved with encouragements */}
+      {/* Timeline Section: owner updates interleaved with encouragements.
+          The news (feed) comes before the visitor's encouragement form. */}
       <section className="relative px-6 pb-12">
         <div className="relative max-w-2xl mx-auto space-y-8">
           {isOwner && (
@@ -225,6 +234,12 @@ function BabyPage() {
             </Card>
           )}
 
+          <Card>
+            <CardContent className="pt-6">
+              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+            </CardContent>
+          </Card>
+
           {!baby.encouragementsDisabled && (
             <Card>
               <CardContent className="pt-6">
@@ -232,12 +247,6 @@ function BabyPage() {
               </CardContent>
             </Card>
           )}
-
-          <Card>
-            <CardContent className="pt-6">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-            </CardContent>
-          </Card>
         </div>
       </section>
 

@@ -39,6 +39,7 @@ const searchSchema = z.object({
   babyBorn: z.string().nullable().optional(),
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
+  laborStartedMessage: z.string().nullable().optional(),
   settings: z.boolean().optional(),
 });
 

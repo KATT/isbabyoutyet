@@ -12,17 +12,19 @@ import type { Milestone } from "../src/types";
  */
 
 async function findUpdateByTimelineItem(ctx: QueryCtx, timelineItemId: Id<"timelineItems">) {
+  // .first() (not .unique()): a duplicate child row would be a data bug, but
+  // it must not take the whole public feed down.
   return await ctx.db
     .query("updates")
     .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", timelineItemId))
-    .unique();
+    .first();
 }
 
 async function findEncouragementByTimelineItem(ctx: QueryCtx, timelineItemId: Id<"timelineItems">) {
   return await ctx.db
     .query("encouragements")
     .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", timelineItemId))
-    .unique();
+    .first();
 }
 
 async function hydrateUpdate(ctx: QueryCtx, item: Doc<"timelineItems">, update: Doc<"updates">) {
@@ -32,11 +34,33 @@ async function hydrateUpdate(ctx: QueryCtx, item: Doc<"timelineItems">, update: 
     _id: item._id,
     kind: "update" as const,
     postedAt: item.postedAt,
-    update: { ...update, photoUrl, thumbnailUrl },
+    update: {
+      _id: update._id,
+      message: update.message ?? null,
+      milestone: update.milestone ?? null,
+      photoUrl,
+      thumbnailUrl,
+    },
   };
 }
 
-async function hydrateTimelineItem(ctx: QueryCtx, item: Doc<"timelineItems">) {
+/**
+ * Public shape of an encouragement in the feed. Deliberately excludes
+ * `visitorId` (it is the edit/delete credential) and the `userAgent` /
+ * `locale` / `timezone` metadata. `isMine` is computed from the
+ * caller-supplied visitorId so the client can offer edit/delete.
+ */
+function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId?: string) {
+  return {
+    _id: encouragement._id,
+    authorName: encouragement.authorName,
+    message: encouragement.message,
+    createdAt: encouragement.createdAt,
+    isMine: visitorId !== undefined && encouragement.visitorId === visitorId,
+  };
+}
+
+async function hydrateTimelineItem(ctx: QueryCtx, item: Doc<"timelineItems">, visitorId?: string) {
   switch (item.kind) {
     case "update": {
       const update = await findUpdateByTimelineItem(ctx, item._id);
@@ -50,7 +74,7 @@ async function hydrateTimelineItem(ctx: QueryCtx, item: Doc<"timelineItems">) {
         _id: item._id,
         kind: "encouragement" as const,
         postedAt: item.postedAt,
-        encouragement,
+        encouragement: toPublicEncouragement(encouragement, visitorId),
       };
     }
   }
@@ -61,6 +85,8 @@ export type TimelineItem = NonNullable<Awaited<ReturnType<typeof hydrateTimeline
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
+    // The caller's own visitor id, only used to mark their posts with `isMine`
+    visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -72,7 +98,7 @@ export const listByBaby = query({
 
     const page: TimelineItem[] = [];
     for (const item of result.page) {
-      const hydrated = await hydrateTimelineItem(ctx, item);
+      const hydrated = await hydrateTimelineItem(ctx, item, args.visitorId);
       if (hydrated) {
         page.push(hydrated);
       }
@@ -83,23 +109,33 @@ export const listByBaby = query({
 });
 
 /**
- * The newest owner update — powers the status card's "latest message on top".
+ * The newest owner update carrying a message — powers the status card's
+ * "latest message on top". Message-less (e.g. photo-only) updates are
+ * skipped so they don't blank the box while an older message exists.
+ *
+ * Bounded by the number of owner updates (only the owner creates them), so
+ * visitor activity cannot grow this query.
  */
 export const latestUpdate = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const items = ctx.db
-      .query("timelineItems")
-      .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", args.babyId))
-      .order("desc");
+    const updates = await ctx.db
+      .query("updates")
+      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .collect();
 
-    for await (const item of items) {
-      if (item.kind !== "update") continue;
-      const update = await findUpdateByTimelineItem(ctx, item._id);
-      if (!update) continue;
-      return await hydrateUpdate(ctx, item, update);
+    let latest: { update: Doc<"updates">; item: Doc<"timelineItems"> } | null = null;
+    for (const update of updates) {
+      if (!update.message) continue;
+      const item = await ctx.db.get(update.timelineItemId);
+      if (!item) continue;
+      if (!latest || item.postedAt > latest.item.postedAt) {
+        latest = { update, item };
+      }
     }
-    return null;
+
+    if (!latest) return null;
+    return await hydrateUpdate(ctx, latest.item, latest.update);
   },
 });
 

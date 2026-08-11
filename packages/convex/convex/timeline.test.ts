@@ -78,6 +78,53 @@ test("a text-only update tops the feed without changing the status", async () =>
   expect(notifications).toEqual([]);
 });
 
+test("the public feed never leaks visitor credentials or metadata", async () => {
+  const { t, babyId } = await setup();
+
+  await t.mutation(api.encouragements.create, {
+    babyId,
+    authorName: "Grandma",
+    message: "Hi!",
+    visitorId: "visitor-secret",
+    userAgent: "Mozilla/5.0",
+    locale: "en-US",
+    timezone: "Europe/Stockholm",
+  });
+
+  const anonymous = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  const item = anonymous.page[0];
+  if (item?.kind !== "encouragement") throw new Error("expected encouragement item");
+  expect(item.encouragement).not.toHaveProperty("visitorId");
+  expect(item.encouragement).not.toHaveProperty("userAgent");
+  expect(item.encouragement).not.toHaveProperty("locale");
+  expect(item.encouragement).not.toHaveProperty("timezone");
+  expect(item.encouragement.isMine).toBe(false);
+
+  // The author sees their own post marked as theirs
+  const asAuthor = await t.query(api.timeline.listByBaby, {
+    babyId,
+    visitorId: "visitor-secret",
+    paginationOpts: FIRST_PAGE,
+  });
+  const ownItem = asAuthor.page[0];
+  if (ownItem?.kind !== "encouragement") throw new Error("expected encouragement item");
+  expect(ownItem.encouragement.isMine).toBe(true);
+});
+
+test("a photo-only update does not blank the latest message", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const photo = await storeBlob(t);
+
+  await asAlice.mutation(api.updates.post, { babyId, message: "Still waiting!" });
+  await asAlice.mutation(api.updates.post, { babyId, photoId: photo });
+
+  const latest = await t.query(api.timeline.latestUpdate, { babyId });
+  expect(latest).toMatchObject({ update: { message: "Still waiting!" } });
+});
+
 test("posting requires content and ownership", async () => {
   const { t, asAlice, babyId } = await setup();
 
@@ -218,10 +265,11 @@ test("photo updates keep old photos; removing one falls back to the previous", a
 
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
-    { kind: "update", update: { photoId: photoB, message: "Bump week 39" } },
-    { kind: "update", update: { photoId: photoA } },
+    { kind: "update", update: { message: "Bump week 39" } },
+    { kind: "update", update: { message: null } },
   ]);
-  // The old photo stays fully resolvable in the feed
+  // Both photos (including the replaced one) stay fully resolvable in the feed
+  expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
   expect(feed.page[1]?.kind === "update" && feed.page[1].update.photoUrl).toBeTruthy();
 
   // Removing the newest photo update falls back to the previous photo
@@ -282,6 +330,14 @@ test("backfill migrations preserve historical order and are idempotent", async (
     });
   });
 
+  // Simulate the deploy window where dual-writes go live BEFORE the backfill
+  // runs: one milestone row already exists; the backfill must still fill in
+  // the other milestone and the photo (per-item idempotency, not per-baby)
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    wentToHospital: wentToHospitalAt.toISOString(),
+  });
+
   const runBackfills = async () => {
     await t.run(async (ctx) => {
       const baby = await ctx.db.get(babyId);
@@ -303,12 +359,14 @@ test("backfill migrations preserve historical order and are idempotent", async (
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
     // Photo backfills at "now" (no original upload date exists), so it's newest
-    { kind: "update", update: { photoId: photo, thumbnailId: thumbnail } },
+    { kind: "update", update: { milestone: null, message: null } },
     { kind: "update", update: { milestone: "gone_to_hospital" } },
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
     { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
     { kind: "encouragement", encouragement: { authorName: "Aunt Meg" } },
   ]);
+  expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
+  expect(feed.page[0]?.kind === "update" && feed.page[0].update.thumbnailUrl).toBeTruthy();
 
   // Clearing the legacy stage messages keeps the feed content intact
   await t.run(async (ctx) => {
