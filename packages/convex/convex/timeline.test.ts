@@ -283,6 +283,48 @@ test("photo updates keep old photos; removing one falls back to the previous", a
   expect(baby.photoId).toBe(photoA);
 });
 
+test("text updates never displace the current page photo; pinning brings back an older one", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const photoA = await storeBlob(t);
+  const photoB = await storeBlob(t);
+
+  await asAlice.mutation(api.updates.post, { babyId, photoId: photoA, message: "First pic" });
+  const updateB = await asAlice.mutation(api.updates.post, { babyId, photoId: photoB });
+
+  // Text-only posts after a photo upload leave the page photo alone
+  await asAlice.mutation(api.updates.post, { babyId, message: "Just a status, no new photo" });
+  await asAlice.mutation(api.updates.post, { babyId, message: "Another one" });
+  let baby = await getBaby(t, babyId);
+  expect(baby.photoId).toBe(photoB);
+
+  // The feed marks which photo is the current page photo
+  let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const photoFlags = feed.page
+    .filter((item) => item.kind === "update" && item.update.photoUrl)
+    .map((item) => item.kind === "update" && item.update.isCurrentPagePhoto);
+  expect(photoFlags).toEqual([true, false]); // newest photo (B) is current, A is not
+
+  // Pin the older photo back as the page photo
+  const photoUpdates = feed.page.filter((item) => item.kind === "update" && item.update.photoUrl);
+  const updateA = photoUpdates[photoUpdates.length - 1];
+  if (updateA?.kind !== "update") throw new Error("expected photo update");
+  await asAlice.mutation(api.updates.setAsCurrentPhoto, { updateId: updateA.update._id });
+  baby = await getBaby(t, babyId);
+  expect(baby.photoId).toBe(photoA);
+
+  // A brand-new photo upload takes over again (latest wins by default)
+  const photoC = await storeBlob(t);
+  await asAlice.mutation(api.updates.post, { babyId, photoId: photoC });
+  baby = await getBaby(t, babyId);
+  expect(baby.photoId).toBe(photoC);
+
+  // Only the owner can pin
+  const asBob = t.withIdentity({ subject: "bob" });
+  await expect(
+    asBob.mutation(api.updates.setAsCurrentPhoto, { updateId: updateB }),
+  ).rejects.toThrow("Not authorized");
+});
+
 test("backfill migrations preserve historical order and are idempotent", async () => {
   const { t, babyId, asAlice } = await setup();
   const thumbnail = await storeBlob(t);
