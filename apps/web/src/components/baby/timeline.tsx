@@ -25,6 +25,7 @@ import {
   ImagePlus,
   MessageCircleHeart,
   Pencil,
+  Pin,
   Send,
   Trash2,
   X,
@@ -287,12 +288,14 @@ type UpdateTimelineItemProps = {
   babyName: string;
   isOwner: boolean;
   onDelete: (updateId: Id<"updates">) => Promise<void>;
+  onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
 };
 
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const update = props.item.update;
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
+  const canPinPhoto = props.isOwner && !!update.photoUrl && !update.isCurrentPagePhoto;
 
   return (
     <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 border-l-4 border-l-primary relative group">
@@ -315,6 +318,12 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 Update
               </Badge>
             )}
+            {update.isCurrentPagePhoto && (
+              <Badge variant="outline" className="shrink-0">
+                <Pin className="w-3 h-3" />
+                Page photo
+              </Badge>
+            )}
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={new Date(props.item.postedAt).toLocaleString()}
@@ -335,7 +344,19 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         </div>
 
         {props.isOwner && (
-          <div className="md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+            {canPinPhoto && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Set as page photo"
+                title="Set as page photo"
+                onClick={() => props.onSetAsCurrentPhoto(update._id)}
+              >
+                <Pin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+              </Button>
+            )}
             <AlertDialog>
               <AlertDialogTrigger
                 render={
@@ -575,6 +596,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     { initialNumItems: PAGE_SIZE },
   );
   const removeUpdate = useMutation(api.updates.remove);
+  const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -615,6 +637,15 @@ export function TimelineFeed(props: TimelineFeedProps) {
       toast.success("Update removed");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to remove update");
+    }
+  };
+
+  const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
+    try {
+      await setAsCurrentPhoto({ updateId });
+      toast.success("Set as the page photo");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to set page photo");
     }
   };
 
@@ -691,6 +722,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               babyName={props.babyName}
               isOwner={props.isOwner}
               onDelete={handleDeleteUpdate}
+              onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
             />
           ) : (
             <EncouragementTimelineItem
