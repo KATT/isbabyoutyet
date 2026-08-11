@@ -1,3 +1,4 @@
+import type { Plugin } from "vite";
 import { defineConfig } from "vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
@@ -6,17 +7,105 @@ import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
 
+/**
+ * Base UI (and recharts, etc.) pull in `use-sync-external-store/shim`, a CJS-only
+ * module. Vite/Rolldown SSR lowers its `require("react")` to a runtime
+ * `createRequire` call. On Vercel that fails with `Cannot find module 'react'`
+ * because the serverless function has no node_modules (nitrojs/nitro#4171,
+ * rolldown#9407). React 19 already exports `useSyncExternalStore`, so alias the
+ * shim to `react`.
+ */
+function aliasUseSyncExternalStoreShim(): Plugin {
+  return {
+    name: "alias-use-sync-external-store-shim",
+    enforce: "pre",
+    config() {
+      return {
+        resolve: {
+          alias: [
+            {
+              find: "use-sync-external-store/shim/with-selector.js",
+              replacement: "react",
+            },
+            {
+              find: "use-sync-external-store/shim/with-selector",
+              replacement: "react",
+            },
+            {
+              find: "use-sync-external-store/shim/index.js",
+              replacement: "react",
+            },
+            {
+              find: "use-sync-external-store/shim",
+              replacement: "react",
+            },
+          ],
+        },
+      };
+    },
+  };
+}
+
+/**
+ * Belt-and-suspenders for any remaining leaked `__require("react")` after the
+ * shim alias (same rewrite as discussed on nitro#4171).
+ */
+function patchLeakedReactRequire(): Plugin {
+  return {
+    name: "patch-leaked-react-require",
+    enforce: "post",
+    generateBundle(_options, bundle) {
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type !== "chunk" || !chunk.code.includes('__require("react")')) {
+          continue;
+        }
+        const match = chunk.code.match(/\brequire_react(?:\$\d+)?\b/);
+        if (!match) {
+          continue;
+        }
+        chunk.code = chunk.code.replaceAll('__require("react")', `${match[0]}()`);
+      }
+    },
+  };
+}
+
 const config = defineConfig({
   plugins: [
+    aliasUseSyncExternalStoreShim(),
     devtools(),
-    // Keep the Nitro SSR service in one chunk. With Base UI, Rolldown otherwise
-    // splits it into circular chunks and drops `ssr_exports`, which makes Vercel
-    // previews return 500 (`Export 'ssr_exports' is not defined in module`).
+    // Base UI grows the Nitro SSR rebundle enough that Rolldown's default split
+    // creates circular `ssr`/`ssr2` chunks and drops `ssr_exports` (preview 500).
+    // Keep the SSR service graph in one chunk; still split real node_modules
+    // into `_libs`. Avoid `inlineDynamicImports` — it worsens the leaked
+    // `require('react')` failure on Vercel (nitro#4171).
     nitro({
-      inlineDynamicImports: true,
-      // Temporarily surface the real SSR error on previews while we verify the fix.
+      rolldownConfig: {
+        output: {
+          codeSplitting: {
+            groups: [
+              {
+                name: "ssr",
+                test: /[/\\]node_modules[/\\]\.nitro[/\\]vite[/\\]services[/\\]ssr[/\\]/,
+              },
+              {
+                test: /node_modules[/\\](?!(?:nitro|nitro-nightly)[/\\])[^.]/,
+                name(id: string) {
+                  const match =
+                    /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/]+[/\\]node_modules[/\\])?(?:(@[^/]+[/\\][^/]+)|([^/]+))/i.exec(
+                      id,
+                    );
+                  const name = match?.[1] ?? match?.[2];
+                  return name ? name.replace(/[/\\+@]/g, "_") : "vendor";
+                },
+              },
+            ],
+          },
+        },
+      },
+      // Temporary: surface the real SSR error on previews while verifying the fix.
       errorHandler: "./src/ssr-error-handler.ts",
     }),
+    patchLeakedReactRequire(),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
