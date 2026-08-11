@@ -113,13 +113,17 @@ type StatusDisplayProps = {
   latestUpdate?: LatestUpdateMessage | null;
 };
 
-function LatestUpdateBox({ latestUpdate }: { latestUpdate?: LatestUpdateMessage | null }) {
+function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
+  const latestUpdate = props.latestUpdate;
   if (!latestUpdate?.message) {
     return null;
   }
   return (
     <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-      <p className="text-lg font-bold text-primary">{latestUpdate.message}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-2">
+        Latest from the family
+      </p>
+      <p className="text-lg font-bold text-primary break-words">{latestUpdate.message}</p>
       <p className="text-xs text-primary/70 mt-2">
         Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
       </p>

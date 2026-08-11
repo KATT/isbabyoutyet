@@ -253,7 +253,10 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>Baby Photo</ItemTitle>
-                    <ItemDescription>{photoUrl ? "Photo uploaded" : "No photo"}</ItemDescription>
+                    <ItemDescription>
+                      {photoUrl ? "Photo uploaded" : "No photo"} · new photos are also posted to the
+                      timeline
+                    </ItemDescription>
                   </ItemContent>
                   <ItemActions>
                     {photoUrl && (
