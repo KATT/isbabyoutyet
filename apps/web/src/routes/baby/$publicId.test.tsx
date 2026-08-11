@@ -1,0 +1,83 @@
+import { render } from "@testing-library/react";
+import { convexTest } from "convex-test";
+import type { ReactElement } from "react";
+import { expect, test } from "vitest";
+import { StatusDisplay } from "@/components/baby/status-display";
+import { api } from "@workspace/convex/convex/_generated/api";
+import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
+import schema from "@workspace/convex/convex/schema";
+import { makeResource } from "@workspace/convex/convex/test.resource";
+import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
+import type { BabyData } from "@workspace/convex/src/types";
+import { getCurrentStatus } from "@workspace/convex/src/types";
+
+/**
+ * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
+ */
+function docToBabyData(doc: Doc<"baby">): BabyData {
+  return {
+    name: doc.name,
+    dueDate: doc.dueDate,
+    theme: doc.theme ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    hospitalMessage: doc.hospitalMessage ?? null,
+    babyBornMessage: doc.babyBornMessage ?? null,
+    laborStartedMessage: doc.laborStartedMessage ?? null,
+    encouragementsDisabled: doc.encouragementsDisabled,
+    photoId: doc.photoId ?? null,
+    thumbnailId: doc.thumbnailId ?? null,
+  };
+}
+
+/**
+ * Happy-path stand-in for the baby detail page: heading + status from
+ * data loaded via convex-test (in-memory local Convex).
+ */
+function BabyDetailPage(props: { baby: Doc<"baby"> }) {
+  const baby = docToBabyData(props.baby);
+  const currentStatus = getCurrentStatus(baby);
+
+  return (
+    <div>
+      <h1>Is {baby.name} out yet?</h1>
+      <StatusDisplay baby={baby} currentStatus={currentStatus} />
+    </div>
+  );
+}
+
+function renderResource(ui: ReactElement) {
+  const view = render(ui);
+  return makeResource(view, () => {
+    view.unmount();
+  });
+}
+
+test("renders a baby detail page from local convex-test data", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby Smith",
+    dueDate: "2026-09-01",
+  });
+
+  const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(baby).toMatchObject({
+    name: "Baby Smith",
+    publicId: "baby-smith",
+    dueDate: "2026-09-01",
+  });
+  if (!baby) {
+    throw new Error("expected baby from getByPublicId");
+  }
+
+  await using view = renderResource(<BabyDetailPage baby={baby} />);
+
+  expect(view.getByRole("heading", { name: "Is Baby Smith out yet?" })).toBeTruthy();
+  expect(view.getByText("Not yet")).toBeTruthy();
+  expect(view.getByText("Baby is still on the way")).toBeTruthy();
+  expect(view.getByText(/until due date/i)).toBeTruthy();
+});

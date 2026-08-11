@@ -2,12 +2,20 @@ import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   return t;
+}
+
+function useFakeTimersResource() {
+  vi.useFakeTimers();
+  return makeResource({}, () => {
+    vi.useRealTimers();
+  });
 }
 
 test("create a baby and list it for the owner", async () => {
@@ -78,48 +86,45 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
 });
 
 test("moving the status forward schedules a push notification", async () => {
-  vi.useFakeTimers();
-  try {
-    const t = await setup();
-    const asAlice = t.withIdentity({ subject: "alice" });
+  await using _timers = useFakeTimersResource();
 
-    const created = await asAlice.mutation(api.baby.create, {
-      name: "Baby",
-      dueDate: "2026-09-01",
-    });
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
 
-    await asAlice.mutation(api.baby.update, {
-      babyId: created.babyId,
-      laborStarted: "2026-08-20T08:00:00.000Z",
-      laborStartedMessage: "It has begun!",
-    });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
 
-    const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
-      babyId: created.babyId,
-    });
-    expect(notifications).toMatchObject([
-      {
-        status: "pending",
-        notificationType: "labor_started",
-        customMessage: "It has begun!",
-      },
-    ]);
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-20T08:00:00.000Z",
+    laborStartedMessage: "It has begun!",
+  });
 
-    // Moving further forward cancels the pending one and schedules the next
-    await asAlice.mutation(api.baby.update, {
-      babyId: created.babyId,
-      babyBorn: "2026-08-21T03:00:00.000Z",
-    });
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(notifications).toMatchObject([
+    {
+      status: "pending",
+      notificationType: "labor_started",
+      customMessage: "It has begun!",
+    },
+  ]);
 
-    const afterBirth = await asAlice.query(api.baby.getScheduledNotifications, {
-      babyId: created.babyId,
-    });
-    expect(afterBirth).toHaveLength(2);
-    expect(afterBirth).toMatchObject([
-      { status: "pending", notificationType: "born" },
-      { status: "cancelled", notificationType: "labor_started" },
-    ]);
-  } finally {
-    vi.useRealTimers();
-  }
+  // Moving further forward cancels the pending one and schedules the next
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    babyBorn: "2026-08-21T03:00:00.000Z",
+  });
+
+  const afterBirth = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(afterBirth).toHaveLength(2);
+  expect(afterBirth).toMatchObject([
+    { status: "pending", notificationType: "born" },
+    { status: "cancelled", notificationType: "labor_started" },
+  ]);
 });

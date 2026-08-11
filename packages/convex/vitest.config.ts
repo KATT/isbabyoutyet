@@ -1,7 +1,8 @@
-import { defineConfig } from "vitest/config";
+import { defineProject } from "vitest/config";
 
-export default defineConfig({
+export default defineProject({
   test: {
+    name: "convex",
     // Approximate the Convex runtime better than node
     environment: "edge-runtime",
     include: ["convex/**/*.test.ts"],
