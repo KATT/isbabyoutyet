@@ -57,41 +57,10 @@ export default defineSchema({
     authorName: v.string(), // Name of the person sending encouragement
     message: v.string(), // The encouragement message
     createdAt: v.number(), // Timestamp
-    timelineItemId: v.optional(v.id("timelineItems")), // Binding to the timeline feed (required once backfilled)
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
     userAgent: v.optional(v.string()), // User agent string
     locale: v.optional(v.string()), // Browser locale (e.g., "en-US")
     timezone: v.optional(v.string()), // Timezone (e.g., "America/New_York")
-  })
-    .index("by_babyId", ["babyId"])
-    .index("by_timelineItemId", ["timelineItemId"]),
-  // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
-  // discriminator; children (updates/encouragements) point at it via timelineItemId.
-  // postedAt is an explicit sort key because _creationTime cannot be backfilled
-  // with historical dates.
-  timelineItems: defineTable({
-    babyId: v.id("baby"),
-    kind: v.union(v.literal("update"), v.literal("encouragement")),
-    postedAt: v.number(), // ms epoch; backfilled rows carry historical dates
-  }).index("by_babyId_postedAt", ["babyId", "postedAt"]),
-  // Owner-posted feed content: a message and/or a photo, optionally marking a
-  // milestone. Each photo change is its own row, so old photos are never lost.
-  updates: defineTable({
-    babyId: v.id("baby"),
-    timelineItemId: v.id("timelineItems"),
-    message: v.optional(v.union(v.string(), v.null())),
-    milestone: v.optional(
-      v.union(
-        v.literal("labor_started"),
-        v.literal("gone_to_hospital"),
-        v.literal("born"),
-        v.null(),
-      ),
-    ),
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
-    thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
-  })
-    .index("by_babyId", ["babyId"])
-    .index("by_timelineItemId", ["timelineItemId"]),
+  }).index("by_babyId", ["babyId"]),
 });
