@@ -2,6 +2,20 @@
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "vitest"],
   "rules": {
-    "vitest/no-hooks": "error"
-  }
+    "vitest/no-hooks": "error",
+    // Cyclomatic complexity ratchet: 23 is the current worst first-party
+    // function (packages/convex/convex/baby.ts). Lower this number as
+    // offenders get refactored — never raise it.
+    "eslint/complexity": ["error", { "max": 23 }]
+  },
+  "overrides": [
+    {
+      // Vendored shadcn/ui registry components — not first-party code, so
+      // complexity limits are not enforced here.
+      "files": ["packages/ui/src/components/**"],
+      "rules": {
+        "eslint/complexity": "off"
+      }
+    }
+  ]
 }
