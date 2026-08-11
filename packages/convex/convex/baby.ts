@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { DatabaseReader } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { DatabaseReader, MutationCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { components, internal } from "./_generated/api";
+import type { NotifiableStatus } from "../src/types";
 import { getCurrentStatus, isStatusForward } from "../src/types";
 import { TableHistory } from "convex-table-history";
 import { Triggers } from "convex-helpers/server/triggers";
@@ -143,32 +144,13 @@ export const updatePhoto = mutationWithTriggers({
 
     // Send notification only if this is the first photo
     if (!hadPhotoBeforeUpdate && args.photoId) {
-      const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
-      const scheduledFor = Date.now() + scheduleDelay;
-
-      const notificationId = await ctx.db.insert("scheduledNotifications", {
+      await scheduleStatusNotification(ctx, {
         babyId: args.babyId,
-        status: "pending",
-        scheduledFor,
-        notificationType: "photo_added",
+        babyName: baby.name,
+        publicId: baby.publicId,
+        status: "photo_added",
         customMessage: null,
-        createdAt: Date.now(),
       });
-
-      const scheduledId = await ctx.scheduler.runAt(
-        scheduledFor,
-        internal.pushNotifications.sendNotification,
-        {
-          notificationId,
-          babyId: args.babyId,
-          babyName: baby.name,
-          publicId: baby.publicId,
-          status: "photo_added",
-          customMessage: null,
-        },
-      );
-
-      await ctx.db.patch(notificationId, { scheduledId });
     }
   },
 });
@@ -356,6 +338,104 @@ export const updateThumbnail = internalMutation({
   },
 });
 
+/**
+ * When the baby's name changes and its slug no longer matches the current
+ * publicId, generate a fresh unique publicId (mutating `patch`) and archive
+ * the old one so existing links keep working.
+ */
+async function maybeRotatePublicId(
+  ctx: MutationCtx,
+  baby: Doc<"baby">,
+  patch: Partial<Doc<"baby">>,
+): Promise<void> {
+  if (!patch.name || patch.name === baby.name) {
+    return;
+  }
+  if (slugify(patch.name) === baby.publicId) {
+    return;
+  }
+
+  const oldPublicId = baby.publicId;
+  patch.publicId = await generateUniquePublicId({
+    db: ctx.db,
+    baseName: patch.name,
+    excludeUserId: baby.userId,
+  });
+  await ctx.db.insert("babyPublicIdHistory", { babyId: baby._id, publicId: oldPublicId });
+}
+
+async function cancelPendingNotifications(ctx: MutationCtx, babyId: Id<"baby">): Promise<void> {
+  const pendingNotifications = await ctx.db
+    .query("scheduledNotifications")
+    .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+    .filter((q) => q.eq(q.field("status"), "pending"))
+    .collect();
+
+  for (const notification of pendingNotifications) {
+    if (notification.scheduledId) {
+      try {
+        await ctx.scheduler.cancel(notification.scheduledId);
+      } catch (_error) {
+        // Ignore errors if notification was already sent or doesn't exist
+      }
+    }
+    await ctx.db.patch(notification._id, { status: "cancelled" });
+  }
+}
+
+function resolveCustomMessage(
+  statusType: Exclude<NotifiableStatus, "photo_added">,
+  patch: Partial<Doc<"baby">>,
+  baby: Doc<"baby">,
+): string | null {
+  switch (statusType) {
+    case "born":
+      return patch.babyBornMessage ?? baby.babyBornMessage ?? null;
+    case "gone_to_hospital":
+      return patch.hospitalMessage ?? baby.hospitalMessage ?? null;
+    case "labor_started":
+      return patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
+  }
+}
+
+async function scheduleStatusNotification(
+  ctx: MutationCtx,
+  opts: {
+    babyId: Id<"baby">;
+    babyName: string;
+    publicId: string;
+    status: NotifiableStatus;
+    customMessage: string | null;
+  },
+): Promise<void> {
+  const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+  const scheduledFor = Date.now() + scheduleDelay;
+
+  const notificationId = await ctx.db.insert("scheduledNotifications", {
+    babyId: opts.babyId,
+    status: "pending",
+    scheduledFor,
+    notificationType: opts.status,
+    customMessage: opts.customMessage,
+    createdAt: Date.now(),
+  });
+
+  const scheduledId = await ctx.scheduler.runAt(
+    scheduledFor,
+    internal.pushNotifications.sendNotification,
+    {
+      notificationId,
+      babyId: opts.babyId,
+      babyName: opts.babyName,
+      publicId: opts.publicId,
+      status: opts.status,
+      customMessage: opts.customMessage,
+    },
+  );
+
+  await ctx.db.patch(notificationId, { scheduledId });
+}
+
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
@@ -383,20 +463,7 @@ export const update = mutationWithTriggers({
     const statusBefore = getCurrentStatus(baby);
 
     const patch: Partial<typeof baby> = rest;
-    // If name changed and the slugified name would result in a different publicId
-    if (patch.name && patch.name !== baby.name) {
-      const newSlugifiedName = slugify(patch.name);
-      // Only update publicId if the slugified name is different from current publicId
-      if (newSlugifiedName !== baby.publicId) {
-        const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId({
-          db: ctx.db,
-          baseName: patch.name,
-          excludeUserId: identity.subject,
-        });
-        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
-      }
-    }
+    await maybeRotatePublicId(ctx, baby, patch);
 
     await ctx.db.patch(babyId, patch);
 
@@ -405,67 +472,26 @@ export const update = mutationWithTriggers({
 
     const statusAfter = getCurrentStatus(updatedBaby);
 
+    // NOTE: preserved from the original code — this compares two freshly
+    // created objects by reference, so it is always false and every update
+    // falls through to cancelPendingNotifications. Kept as-is to make this a
+    // pure refactor; see the PR description for the suspected latent bug.
     if (statusBefore === statusAfter) {
       // no notification change as status didn't change
       return;
     }
 
-    // Cancel any existing pending notifications
-    const pendingNotifications = await ctx.db
-      .query("scheduledNotifications")
-      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect();
+    await cancelPendingNotifications(ctx, babyId);
 
-    for (const notification of pendingNotifications) {
-      if (notification.scheduledId) {
-        try {
-          await ctx.scheduler.cancel(notification.scheduledId);
-        } catch (_error) {
-          // Ignore errors if notification was already sent or doesn't exist
-        }
-      }
-      await ctx.db.patch(notification._id, { status: "cancelled" });
-    }
-
-    // Only handle notifications if status moved forward
+    // Only schedule a notification if status moved forward
     if (!isStatusForward(statusBefore, statusAfter)) return;
 
-    // Schedule new notification
-    let customMessage: string | null = null;
-    if (statusAfter.type === "born") {
-      customMessage = patch.babyBornMessage ?? baby.babyBornMessage ?? null;
-    } else if (statusAfter.type === "gone_to_hospital") {
-      customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
-    } else if (statusAfter.type === "labor_started") {
-      customMessage = patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
-    }
-
-    const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
-    const scheduledFor = Date.now() + scheduleDelay;
-
-    const notificationId = await ctx.db.insert("scheduledNotifications", {
+    await scheduleStatusNotification(ctx, {
       babyId,
-      status: "pending",
-      scheduledFor,
-      notificationType: statusAfter.type,
-      customMessage,
-      createdAt: Date.now(),
+      babyName: updatedBaby.name,
+      publicId: updatedBaby.publicId,
+      status: statusAfter.type,
+      customMessage: resolveCustomMessage(statusAfter.type, patch, baby),
     });
-
-    const scheduledId = await ctx.scheduler.runAt(
-      scheduledFor,
-      internal.pushNotifications.sendNotification,
-      {
-        notificationId,
-        babyId,
-        babyName: updatedBaby.name,
-        publicId: updatedBaby.publicId,
-        status: statusAfter.type,
-        customMessage,
-      },
-    );
-
-    await ctx.db.patch(notificationId, { scheduledId });
   },
 });

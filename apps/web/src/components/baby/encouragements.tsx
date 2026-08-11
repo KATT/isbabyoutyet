@@ -214,6 +214,35 @@ type EncouragementItemProps = {
   onUpdate: (id: Id<"encouragements">, visitorId: string, message: string) => Promise<void>;
 };
 
+function EncouragementEditForm(props: {
+  message: string;
+  isSaving: boolean;
+  onMessageChange: (message: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Textarea
+        value={props.message}
+        onChange={(e) => props.onMessageChange(e.target.value)}
+        className="min-h-20"
+        disabled={props.isSaving}
+      />
+      <div className="flex gap-2">
+        <Button size="sm" onClick={props.onSave} disabled={props.isSaving}>
+          <Check className="w-3 h-3" />
+          {props.isSaving ? "Saving..." : "Save"}
+        </Button>
+        <Button size="sm" variant="outline" onClick={props.onCancel} disabled={props.isSaving}>
+          <X className="w-3 h-3" />
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function EncouragementItem(props: EncouragementItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editMessage, setEditMessage] = useState(props.encouragement.message);
@@ -257,24 +286,13 @@ function EncouragementItem(props: EncouragementItemProps) {
           </div>
 
           {isEditing ? (
-            <div className="space-y-2">
-              <Textarea
-                value={editMessage}
-                onChange={(e) => setEditMessage(e.target.value)}
-                className="min-h-20"
-                disabled={isSaving}
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                  <Check className="w-3 h-3" />
-                  {isSaving ? "Saving..." : "Save"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
-                  <X className="w-3 h-3" />
-                  Cancel
-                </Button>
-              </div>
-            </div>
+            <EncouragementEditForm
+              message={editMessage}
+              isSaving={isSaving}
+              onMessageChange={setEditMessage}
+              onSave={handleSave}
+              onCancel={handleCancel}
+            />
           ) : (
             <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
               <Streamdown>{props.encouragement.message}</Streamdown>

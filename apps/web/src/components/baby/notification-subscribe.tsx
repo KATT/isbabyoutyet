@@ -44,6 +44,52 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
   return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 }
 
+type SubscribeToggleButtonProps = {
+  isSubscribed: boolean | undefined;
+  isLoading: boolean;
+  onClick: () => void;
+};
+
+function SubscribeToggleButton(props: SubscribeToggleButtonProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <Button
+            onClick={props.onClick}
+            disabled={props.isLoading}
+            variant={props.isSubscribed ? "secondary" : "default"}
+            size="lg"
+          >
+            {props.isSubscribed ? (
+              <>
+                {props.isLoading ? (
+                  <Spinner className="w-5 h-5" />
+                ) : (
+                  <BellOff className="w-5 h-5" />
+                )}
+                Unsubscribe
+              </>
+            ) : (
+              <>
+                {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                Get Notifications
+              </>
+            )}
+          </Button>
+        }
+      />
+      <TooltipContent>
+        <p>
+          {props.isSubscribed
+            ? "Stop receiving push notifications for updates"
+            : "Get notified when the baby's status changes"}
+        </p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { babyId, vapidPublicKey } = props;
   const convex = useConvex();
@@ -154,6 +200,29 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
 
+  const handleToggle = () => {
+    if (isSubscribed) {
+      if (!pushSubscriptionQuery.data) {
+        toast.error("No subscription endpoint found");
+        return;
+      }
+      toast.promise(unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint), {
+        loading: "Unsubscribing from notifications...",
+        success: "Unsubscribed from notifications!",
+        error: (error) =>
+          error instanceof Error ? error.message : "Failed to unsubscribe from notifications",
+      });
+      pushSubscriptionQuery.refetch();
+    } else {
+      toast.promise(subscribeMutation.mutateAsync(), {
+        loading: "Subscribing to notifications...",
+        success: "Subscribed to notifications!",
+        error: (error) =>
+          error instanceof Error ? error.message : "Failed to subscribe to notifications",
+      });
+    }
+  };
+
   // Show iOS installation guide
   if (needsIOSInstall) {
     return (
@@ -212,63 +281,11 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <Button
-            onClick={() => {
-              if (isSubscribed) {
-                if (!pushSubscriptionQuery.data) {
-                  toast.error("No subscription endpoint found");
-                  return;
-                }
-                toast.promise(
-                  unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint),
-                  {
-                    loading: "Unsubscribing from notifications...",
-                    success: "Unsubscribed from notifications!",
-                    error: (error) =>
-                      error instanceof Error
-                        ? error.message
-                        : "Failed to unsubscribe from notifications",
-                  },
-                );
-                pushSubscriptionQuery.refetch();
-              } else {
-                toast.promise(subscribeMutation.mutateAsync(), {
-                  loading: "Subscribing to notifications...",
-                  success: "Subscribed to notifications!",
-                  error: (error) =>
-                    error instanceof Error ? error.message : "Failed to subscribe to notifications",
-                });
-              }
-            }}
-            disabled={isLoading}
-            variant={isSubscribed ? "secondary" : "default"}
-            size="lg"
-          >
-            {isSubscribed ? (
-              <>
-                {isLoading ? <Spinner className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-                Unsubscribe
-              </>
-            ) : (
-              <>
-                {isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                Get Notifications
-              </>
-            )}
-          </Button>
-        }
-      />
-      <TooltipContent>
-        <p>
-          {isSubscribed
-            ? "Stop receiving push notifications for updates"
-            : "Get notified when the baby's status changes"}
-        </p>
-      </TooltipContent>
-    </Tooltip>
+    <SubscribeToggleButton
+      isSubscribed={isSubscribed}
+      isLoading={isLoading}
+      onClick={handleToggle}
+    />
   );
 }
 

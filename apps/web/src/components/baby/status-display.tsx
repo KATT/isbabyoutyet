@@ -103,128 +103,136 @@ type StatusDisplayProps = {
   thumbnailUrl?: string | null;
 };
 
-export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: StatusDisplayProps) {
-  const overdueDays = getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+type StatusHeroProps = {
+  photoUrl: string | null | undefined;
+  thumbnailUrl: string | null | undefined;
+  fallbackIcon: React.ReactNode;
+  variant?: "default" | "born";
+  title: string;
+  message?: string | null;
+  children: React.ReactNode;
+};
 
+function StatusHero(props: StatusHeroProps) {
+  return (
+    <div className="flex flex-col items-center py-8">
+      <PhotoAvatar
+        photoUrl={props.photoUrl}
+        thumbnailUrl={props.thumbnailUrl}
+        fallbackIcon={props.fallbackIcon}
+        variant={props.variant}
+      />
+      <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
+        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+          {props.title}
+        </span>
+      </h2>
+      {props.children}
+      {props.message && (
+        <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
+          <p className="text-lg font-bold text-primary">{props.message}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DueDateCountdown(props: { dueDate: string }) {
+  const overdueDays = getOverdueDays(props.dueDate);
+  const daysUntilDueDate = getDaysUntilDueDate(props.dueDate);
+
+  return (
+    <div
+      className={`mt-4 p-6 rounded-xl shadow-lg ${
+        overdueDays > 0
+          ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
+          : "bg-muted/50 border border-border"
+      }`}
+    >
+      {overdueDays > 0 ? (
+        <>
+          <p className="text-xl font-bold text-primary">
+            {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+          </p>
+          <p className="text-sm text-primary/80 mt-2">
+            Due date: {format(parseDate(props.dueDate), "MMMM d, yyyy")}
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-lg font-bold text-foreground">
+            {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
+          </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Due date: {format(parseDate(props.dueDate), "MMMM d, yyyy")}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+export function StatusDisplay({ baby, currentStatus, photoUrl, thumbnailUrl }: StatusDisplayProps) {
   if (currentStatus.type === "not_yet") {
     return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Not yet
-          </span>
-        </h2>
+      <StatusHero
+        photoUrl={photoUrl}
+        thumbnailUrl={thumbnailUrl}
+        fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
+        title="Not yet"
+      >
         <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-        <div
-          className={`mt-4 p-6 rounded-xl shadow-lg ${
-            overdueDays > 0
-              ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
-              : "bg-muted/50 border border-border"
-          }`}
-        >
-          {overdueDays > 0 ? (
-            <>
-              <p className="text-xl font-bold text-primary">
-                {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-              </p>
-              <p className="text-sm text-primary/80 mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-bold text-foreground">
-                {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+        <DueDateCountdown dueDate={baby.dueDate} />
+      </StatusHero>
     );
   }
 
   if (currentStatus.type === "labor_started") {
     return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Labour started
-          </span>
-        </h2>
+      <StatusHero
+        photoUrl={photoUrl}
+        thumbnailUrl={thumbnailUrl}
+        fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
+        title="Labour started"
+        message={baby.laborStartedMessage}
+      >
         <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
         <p className="text-lg text-muted-foreground mt-2">
           Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.laborStartedMessage && (
-          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.laborStartedMessage}</p>
-          </div>
-        )}
-      </div>
+      </StatusHero>
     );
   }
 
   if (currentStatus.type === "gone_to_hospital") {
     return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gone to hospital
-          </span>
-        </h2>
+      <StatusHero
+        photoUrl={photoUrl}
+        thumbnailUrl={thumbnailUrl}
+        fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
+        title="Gone to hospital"
+        message={baby.hospitalMessage}
+      >
         <p className="text-xl text-muted-foreground mb-4">
           {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        {baby.hospitalMessage && (
-          <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-            <p className="text-lg font-bold text-primary">{baby.hospitalMessage}</p>
-          </div>
-        )}
-      </div>
+      </StatusHero>
     );
   }
 
   // born
   return (
-    <div className="flex flex-col items-center py-8">
-      <PhotoAvatar
-        photoUrl={photoUrl}
-        thumbnailUrl={thumbnailUrl}
-        fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
-        variant="born"
-      />
-      <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Yes! Baby is out
-        </span>
-      </h2>
+    <StatusHero
+      photoUrl={photoUrl}
+      thumbnailUrl={thumbnailUrl}
+      fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
+      variant="born"
+      title="Yes! Baby is out"
+      message={baby.babyBornMessage}
+    >
       <p className="text-xl text-muted-foreground mb-4">
         Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
       </p>
-      {baby.babyBornMessage && (
-        <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-          <p className="text-lg font-bold text-primary">{baby.babyBornMessage}</p>
-        </div>
-      )}
-    </div>
+    </StatusHero>
   );
 }

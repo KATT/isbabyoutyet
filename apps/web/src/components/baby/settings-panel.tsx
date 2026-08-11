@@ -26,6 +26,7 @@ import {
   getCurrentStatus,
   type BabyData,
   type BabyUpdateHandler,
+  type Maybe,
 } from "@workspace/convex/src/types";
 import {
   BabyBornMessageEditor,
@@ -47,6 +48,79 @@ type SettingsPanelProps = {
   onUpdate: BabyUpdateHandler;
   isOpen: boolean;
 };
+
+type StatusSettingsItemProps = {
+  baby: BabyData;
+  onUpdate: BabyUpdateHandler;
+  status: "labor_started" | "gone_to_hospital" | "born";
+  currentDate: Maybe<string>;
+  label: string;
+  icon: React.ReactNode;
+  isNextState: boolean;
+};
+
+function StatusSettingsItem(props: StatusSettingsItemProps) {
+  return (
+    <Item>
+      <ItemMedia variant="icon">{props.icon}</ItemMedia>
+      <ItemContent>
+        <ItemTitle>{props.label}</ItemTitle>
+        {props.currentDate && (
+          <ItemDescription>
+            {formatDate(props.currentDate)} ({getRelativeTime(props.currentDate)})
+          </ItemDescription>
+        )}
+      </ItemContent>
+      <ItemActions>
+        {props.currentDate && (
+          <StatusDateEditor
+            baby={props.baby}
+            status={props.status}
+            currentDate={props.currentDate}
+            onUpdate={props.onUpdate}
+          />
+        )}
+        <StatusUpdateButton
+          baby={props.baby}
+          status={props.status}
+          currentStatus={props.currentDate}
+          label={props.label}
+          icon={props.icon}
+          isNextState={props.isNextState}
+          onUpdate={props.onUpdate}
+        />
+      </ItemActions>
+    </Item>
+  );
+}
+
+function PhotoSettingsItem(props: { babyId: Id<"baby">; photoUrl?: string | null }) {
+  return (
+    <Item>
+      <ItemMedia variant="icon">
+        <Camera className="w-4 h-4" />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>Baby Photo</ItemTitle>
+        <ItemDescription>{props.photoUrl ? "Photo uploaded" : "No photo"}</ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        {props.photoUrl && (
+          <div className="w-8 h-8 rounded-full overflow-hidden border border-border mr-2">
+            <img
+              src={props.photoUrl}
+              alt="Baby"
+              width={64}
+              height={64}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+        <PhotoUploader babyId={props.babyId} photoUrl={props.photoUrl ?? null} />
+      </ItemActions>
+    </Item>
+  );
+}
 
 export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: SettingsPanelProps) {
   const status = getCurrentStatus(baby);
@@ -95,38 +169,15 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
 
             {/* Status Updates */}
             {/* Labour started */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Activity className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Labour started</ItemTitle>
-                {baby.laborStarted && (
-                  <ItemDescription>
-                    {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.laborStarted && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="labor_started"
-                    currentDate={baby.laborStarted}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="labor_started"
-                  currentStatus={baby.laborStarted}
-                  label="Labour started"
-                  icon={<Activity className="w-4 h-4" />}
-                  isNextState={status.type === "not_yet"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
+            <StatusSettingsItem
+              baby={baby}
+              onUpdate={onUpdate}
+              status="labor_started"
+              currentDate={baby.laborStarted}
+              label="Labour started"
+              icon={<Activity className="w-4 h-4" />}
+              isNextState={status.type === "not_yet"}
+            />
 
             <ItemSeparator />
             <Item>
@@ -145,38 +196,15 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             <ItemSeparator />
 
             {/* Gone to hospital */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Hospital className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Gone to hospital</ItemTitle>
-                {baby.wentToHospital && (
-                  <ItemDescription>
-                    {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.wentToHospital && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="gone_to_hospital"
-                    currentDate={baby.wentToHospital}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="gone_to_hospital"
-                  currentStatus={baby.wentToHospital}
-                  label="Gone to hospital"
-                  icon={<Hospital className="w-4 h-4" />}
-                  isNextState={status.type === "labor_started"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
+            <StatusSettingsItem
+              baby={baby}
+              onUpdate={onUpdate}
+              status="gone_to_hospital"
+              currentDate={baby.wentToHospital}
+              label="Gone to hospital"
+              icon={<Hospital className="w-4 h-4" />}
+              isNextState={status.type === "labor_started"}
+            />
 
             <ItemSeparator />
             <Item>
@@ -195,38 +223,15 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             <ItemSeparator />
 
             {/* Baby born */}
-            <Item>
-              <ItemMedia variant="icon">
-                <CheckCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Baby born</ItemTitle>
-                {baby.babyBorn && (
-                  <ItemDescription>
-                    {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.babyBorn && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="born"
-                    currentDate={baby.babyBorn}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="born"
-                  currentStatus={baby.babyBorn}
-                  label="Baby born"
-                  icon={<CheckCircle className="w-4 h-4" />}
-                  isNextState={status.type === "gone_to_hospital"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
+            <StatusSettingsItem
+              baby={baby}
+              onUpdate={onUpdate}
+              status="born"
+              currentDate={baby.babyBorn}
+              label="Baby born"
+              icon={<CheckCircle className="w-4 h-4" />}
+              isNextState={status.type === "gone_to_hospital"}
+            />
 
             {/* Baby Born Message */}
             <Item>
@@ -247,29 +252,7 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             {/* Photo - only show when babyId is available (not in preview mode) */}
             {babyId && (
               <>
-                <Item>
-                  <ItemMedia variant="icon">
-                    <Camera className="w-4 h-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>Baby Photo</ItemTitle>
-                    <ItemDescription>{photoUrl ? "Photo uploaded" : "No photo"}</ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    {photoUrl && (
-                      <div className="w-8 h-8 rounded-full overflow-hidden border border-border mr-2">
-                        <img
-                          src={photoUrl}
-                          alt="Baby"
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <PhotoUploader babyId={babyId} photoUrl={photoUrl ?? null} />
-                  </ItemActions>
-                </Item>
+                <PhotoSettingsItem babyId={babyId} photoUrl={photoUrl} />
                 <ItemSeparator />
               </>
             )}

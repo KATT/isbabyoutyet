@@ -3,10 +3,9 @@
   "plugins": ["typescript", "unicorn", "oxc", "vitest"],
   "rules": {
     "vitest/no-hooks": "error",
-    // Cyclomatic complexity ratchet: 23 is the current worst first-party
-    // function (packages/convex/convex/baby.ts). Lower this number as
-    // offenders get refactored — never raise it.
-    "eslint/complexity": ["error", { "max": 23 }]
+    // Cyclomatic complexity ratchet: lower this number as offenders get
+    // refactored — never raise it.
+    "eslint/complexity": ["error", { "max": 10 }]
   },
   "overrides": [
     {
