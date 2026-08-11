@@ -66,11 +66,13 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     );
 
     if (!currentPhotoAlreadyInFeed) {
-      // The original upload date isn't stored anywhere; use "now" so the
-      // current photo lands at the top of the backfilled feed.
+      // The storage file's _creationTime is the original upload time — use it
+      // as the historical postedAt so the photo lands where it actually
+      // happened in the feed, not at migration time.
+      const fileMetadata = await ctx.db.system.get(baby.photoId);
       const { updateId } = await insertUpdateWithTimelineItem(ctx, {
         babyId: baby._id,
-        postedAt: Date.now(),
+        postedAt: fileMetadata?._creationTime ?? Date.now(),
         photoId: baby.photoId,
         thumbnailId: baby.thumbnailId ?? null,
       });
