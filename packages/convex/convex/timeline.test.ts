@@ -350,7 +350,8 @@ test("backfill migrations preserve historical order and are idempotent", async (
 
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
-    // Photo backfills at "now" (no original upload date exists), so it's newest
+    // The photo backfills at its storage file's upload time (just now in this
+    // test), so it sorts newest here
     { kind: "update", update: { milestone: null, message: null } },
     { kind: "update", update: { milestone: "gone_to_hospital" } },
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
@@ -359,6 +360,14 @@ test("backfill migrations preserve historical order and are idempotent", async (
   ]);
   expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
   expect(feed.page[0]?.kind === "update" && feed.page[0].update.thumbnailUrl).toBeTruthy();
+
+  // The photo row's postedAt is the storage file's original upload time
+  const photoUploadedAt = await t.run(async (ctx) => {
+    const fileMetadata = await ctx.db.system.get(photo);
+    return fileMetadata?._creationTime;
+  });
+  expect(photoUploadedAt).toBeTruthy();
+  expect(feed.page[0]?.postedAt).toBe(photoUploadedAt);
 
   // Dual-writes stay consistent post-backfill: unmarking removes the
   // backfilled milestone row too
