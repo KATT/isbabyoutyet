@@ -1,0 +1,7 @@
+{
+  "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "rules": {
+    "vitest/no-hooks": "error"
+  }
+}

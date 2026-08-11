@@ -150,10 +150,18 @@ import { z } from 'zod';
 
 - **ALWAYS** use `await using` for resource cleanup
 - Use `makeResource()` and `makeAsyncResource()` instead of manual disposal
+- **NEVER** use `try/finally` for cleanup in tests (or `beforeEach` / `afterEach` / `beforeAll` / `afterAll`) — use `await using` instead
+- Lint enforces no Vitest lifecycle hooks via `vitest/no-hooks` (oxlint vitest plugin). There is no oxlint rule that forbids `finally` specifically.
 
 ```typescript
 // ✅ CORRECT
 await using ctx = testServerAndClientResource(router);
+
+// ✅ CORRECT — fake timers / RTL cleanup
+await using _timers = makeResource({}, () => {
+  vi.useRealTimers();
+});
+vi.useFakeTimers();
 
 // ❌ INCORRECT
 const { close } = createServer();
@@ -162,6 +170,14 @@ try {
 } finally {
   await close();
 }
+
+// ❌ INCORRECT — forbidden by vitest/no-hooks
+beforeEach(() => {
+  vi.useFakeTimers();
+});
+afterEach(() => {
+  vi.useRealTimers();
+});
 ```
 
 #### Error Handling
