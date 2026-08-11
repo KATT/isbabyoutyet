@@ -114,8 +114,10 @@ export const backfillEncouragementTimeline = migrations.define({
 });
 
 /**
- * Clears the legacy per-stage message fields: their content lives on the
- * milestone update rows since the timeline backfill (which runs first).
+ * Clears the legacy per-stage message fields. Their content lives on the
+ * milestone update rows since the timeline backfill (which runs first in
+ * `runAll`) — but before destroying anything, verify each message actually
+ * made it to the timeline and heal the row if not.
  */
 export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (
@@ -125,6 +127,26 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
   ) {
     return;
   }
+
+  for (const milestone of MILESTONES) {
+    const fields = MILESTONE_FIELDS[milestone];
+    const legacyMessage = baby[fields.message];
+    if (legacyMessage == null || !baby[fields.date]) continue;
+
+    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    if (!existing) {
+      const parsed = Date.parse(baby[fields.date] ?? "");
+      await insertUpdateWithTimelineItem(ctx, {
+        babyId: baby._id,
+        postedAt: Number.isNaN(parsed) ? Date.now() : parsed,
+        milestone,
+        message: legacyMessage,
+      });
+    } else if (existing.message == null) {
+      await ctx.db.patch(existing._id, { message: legacyMessage });
+    }
+  }
+
   await ctx.db.patch(baby._id, {
     laborStartedMessage: null,
     hospitalMessage: null,

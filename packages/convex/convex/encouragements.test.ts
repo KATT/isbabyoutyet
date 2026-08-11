@@ -39,14 +39,18 @@ test("visitors can create encouragements and list them", async () => {
 
   const result = await t.query(api.encouragements.listByBaby, {
     babyId,
+    visitorId: "visitor-2",
     paginationOpts: FIRST_PAGE,
   });
 
-  // Newest first; names and messages are trimmed
+  // Newest first; names and messages are trimmed; visitor credential and
+  // metadata are never exposed — only an isMine marker for the caller
   expect(result.page).toMatchObject([
-    { authorName: "Uncle Bob", message: "Good luck!", visitorId: "visitor-2" },
-    { authorName: "Grandma", message: "We can't wait to meet you!", visitorId: "visitor-1" },
+    { authorName: "Uncle Bob", message: "Good luck!", isMine: true },
+    { authorName: "Grandma", message: "We can't wait to meet you!", isMine: false },
   ]);
+  expect(result.page[0]).not.toHaveProperty("visitorId");
+  expect(result.page[0]).not.toHaveProperty("userAgent");
 });
 
 test("the author can edit their encouragement within the edit window", async () => {

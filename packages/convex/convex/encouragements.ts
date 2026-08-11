@@ -105,14 +105,29 @@ export const update = mutation({
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
+    // The caller's own visitor id, only used to mark their posts with `isMine`
+    visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const result = await ctx.db
       .query("encouragements")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
+
+    // Public DTO: never return visitorId (the edit/delete credential) or the
+    // userAgent/locale/timezone metadata
+    return {
+      ...result,
+      page: result.page.map((encouragement) => ({
+        _id: encouragement._id,
+        authorName: encouragement.authorName,
+        message: encouragement.message,
+        createdAt: encouragement.createdAt,
+        isMine: args.visitorId !== undefined && encouragement.visitorId === args.visitorId,
+      })),
+    };
   },
 });
 
