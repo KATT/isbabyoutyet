@@ -76,7 +76,13 @@ const composerSchema = z
   .refine(
     (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
     { error: "Add a message, a photo, or a milestone to post" },
-  );
+  )
+  // A cleared/garbled event-time must block posting rather than silently
+  // meaning "now" (the untouched prefill always parses)
+  .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
+    error: "Pick a valid time — or leave it as now",
+    path: ["occurredAt"],
+  });
 
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
