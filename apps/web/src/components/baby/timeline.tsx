@@ -22,6 +22,7 @@ import {
   Camera,
   Check,
   CheckCircle,
+  Clock,
   Heart,
   Hospital,
   ImagePlus,
@@ -59,7 +60,8 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * A post's three fields are mutually inclusive: any combination works, as
  * long as at least one is present. The message is trimmed BEFORE validation,
  * so a whitespace-only message counts as no message (matching the backend).
- * `occurredAt` is prefilled with "now" and only posted when explicitly edited.
+ * `occurredAt` stays blank until the owner opts into a custom time; empty
+ * still means "now".
  */
 const composerSchema = z
   .object({
@@ -77,12 +79,17 @@ const composerSchema = z
     (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
     { error: "Add a message, a photo, or a milestone to post" },
   )
-  // A cleared/garbled event-time must block posting rather than silently
-  // meaning "now" (the untouched prefill always parses)
-  .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
-    error: "Pick a valid time — or leave it as now",
-    path: ["occurredAt"],
-  });
+  // Empty = "now". A partially typed/garbled value must block posting.
+  .refine(
+    (draft) =>
+      draft.milestone === "none" ||
+      draft.occurredAt === "" ||
+      !Number.isNaN(Date.parse(draft.occurredAt)),
+    {
+      error: "Pick a valid time — or leave it blank for now",
+      path: ["occurredAt"],
+    },
+  );
 
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
@@ -150,6 +157,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const occurredAtInputRef = useRef<HTMLInputElement>(null);
+  // Hidden until the owner asks to backdate — keeps "now" as the calm default
+  const [isCustomizingOccurredAt, setIsCustomizingOccurredAt] = useState(false);
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
@@ -163,15 +173,19 @@ export function UpdateComposer(props: UpdateComposerProps) {
     defaultValues: {
       message: "",
       milestone: "none",
-      // Prefilled with "now" so the owner sees what will be recorded; only
-      // posted when explicitly edited (checked via dirtyFields on submit)
-      occurredAt: toDatetimeLocalValue(new Date()),
+      // Empty until "Change time"; blank still means happening now
+      occurredAt: "",
       photo: null,
     },
   });
   const isPosting = form.formState.isSubmitting;
 
   const draft = form.watch();
+
+  const resetOccurredAt = () => {
+    form.resetField("occurredAt");
+    setIsCustomizingOccurredAt(false);
+  };
 
   // Guard against a stale selection: the status may have advanced from
   // another tab while a milestone was selected here. The mask keeps the
@@ -186,8 +200,15 @@ export function UpdateComposer(props: UpdateComposerProps) {
     if (value !== "none" && STATUS_ORDER[value] <= STATUS_ORDER[currentStatus.type]) {
       form.setValue("milestone", "none");
       form.resetField("occurredAt");
+      setIsCustomizingOccurredAt(false);
     }
   }, [form, currentStatus.type]);
+
+  useEffect(() => {
+    if (isCustomizingOccurredAt) {
+      occurredAtInputRef.current?.focus();
+    }
+  }, [isCustomizingOccurredAt]);
 
   const photoPreviewUrl = useMemo(
     () => (draft.photo ? URL.createObjectURL(draft.photo) : null),
@@ -239,10 +260,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
       photoId = uploaded.storageId;
     }
 
-    // An explicitly edited event-time picker means the milestone is
-    // backdated; untouched means "it's happening now" (the backend default)
+    // Only a filled custom time backdates; collapsed "now" or blank picker
+    // leave occurredAt unset so the backend uses the announce clock
     const occurredAtMs =
-      milestone && form.formState.dirtyFields.occurredAt
+      milestone && isCustomizingOccurredAt && values.occurredAt !== ""
         ? new Date(values.occurredAt).getTime()
         : null;
 
@@ -328,7 +349,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     onValueChange={(value) => {
                       field.onChange(value);
                       // Deselecting forgets any backdate; reselecting starts from "now"
-                      if (value === "none") form.resetField("occurredAt");
+                      if (value === "none") resetOccurredAt();
                     }}
                     disabled={isPosting}
                     className="gap-1.5"
@@ -360,32 +381,64 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
                     notifies everyone subscribed.
                   </p>
-                  <FormField
-                    control={form.control}
-                    name="occurredAt"
-                    render={({ field }) => (
-                      <FormItem>
-                        <label className="block space-y-1">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            When did it happen?
-                          </span>
-                          <FormControl>
-                            <Input
-                              type="datetime-local"
-                              max={toDatetimeLocalValue(new Date())}
-                              disabled={isPosting}
-                              className="w-fit"
-                              {...field}
-                            />
-                          </FormControl>
-                        </label>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">When did it happen?</p>
+                    {isCustomizingOccurredAt ? (
+                      <FormField
+                        control={form.control}
+                        name="occurredAt"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <FormControl>
+                                <Input
+                                  type="datetime-local"
+                                  aria-label="When did it happen?"
+                                  max={toDatetimeLocalValue(new Date())}
+                                  disabled={isPosting}
+                                  className="w-fit"
+                                  {...field}
+                                  ref={(element) => {
+                                    field.ref(element);
+                                    occurredAtInputRef.current = element;
+                                  }}
+                                />
+                              </FormControl>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                disabled={isPosting}
+                                onClick={resetOccurredAt}
+                              >
+                                Use now
+                              </Button>
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-foreground">Happening now</span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isPosting}
+                          onClick={() => setIsCustomizingOccurredAt(true)}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Change time
+                        </Button>
+                      </div>
                     )}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Defaults to now — set an earlier time if you're sharing the news after the fact.
-                  </p>
+                    <p className="text-xs text-muted-foreground">
+                      {isCustomizingOccurredAt
+                        ? "Leave blank for now, or pick when it happened if you're sharing after the fact."
+                        : "Defaults to now — change the time if you're sharing the news after the fact."}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

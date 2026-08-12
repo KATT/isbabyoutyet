@@ -99,14 +99,14 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   );
 });
 
-test("an untouched event-time picker does not post occurredAt", async () => {
+test("happening-now default does not post occurredAt", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  // The picker appears, prefilled with "now" — leave it untouched
-  expect(view.getByLabelText(/when did it happen/i)).toBeTruthy();
+  expect(view.getByText("Happening now")).toBeTruthy();
+  expect(view.queryByLabelText(/when did it happen/i)).toBeNull();
   fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
@@ -116,26 +116,54 @@ test("an untouched event-time picker does not post occurredAt", async () => {
   });
 });
 
-test("a cleared event-time picker blocks posting instead of silently meaning now", async () => {
+test("change-time reveals an empty picker that still means now until filled", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  fireEvent.change(view.getByLabelText(/when did it happen/i), { target: { value: "" } });
+  fireEvent.click(view.getByRole("button", { name: /change time/i }));
 
-  const postButton = view.getByRole("button", { name: /post & mark/i }) as HTMLButtonElement;
-  expect(postButton.disabled).toBe(true);
-  fireEvent.click(postButton);
-  expect(mocks.mutate).not.toHaveBeenCalled();
+  const picker = view.getByLabelText(/when did it happen/i) as HTMLInputElement;
+  expect(picker.value).toBe("");
+  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+
+  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
+  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    milestone: "labor_started",
+    occurredAt: undefined,
+  });
 });
 
-test("an explicitly edited event-time picker posts the backdated occurredAt", async () => {
+test("use-now collapses the picker and forgets a backdate", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
+  fireEvent.click(view.getByRole("button", { name: /change time/i }));
+  fireEvent.change(view.getByLabelText(/when did it happen/i), {
+    target: { value: "2026-08-10T08:30" },
+  });
+  fireEvent.click(view.getByRole("button", { name: /use now/i }));
+
+  expect(view.getByText("Happening now")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+
+  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
+  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    milestone: "labor_started",
+    occurredAt: undefined,
+  });
+});
+
+test("a filled change-time picker posts the backdated occurredAt", async () => {
+  mocks.mutate.mockReset().mockResolvedValue("update-id");
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
+  fireEvent.click(view.getByRole("button", { name: /change time/i }));
   const backdated = "2026-08-10T08:30";
   fireEvent.change(view.getByLabelText(/when did it happen/i), {
     target: { value: backdated },
