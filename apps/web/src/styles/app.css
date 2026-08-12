@@ -1,0 +1,21 @@
+/*
+ * App type layer: Inter (variable) app-wide with product-style alternates.
+ * Loaded after globals.css so the overrides win; per-baby themes still
+ * override any variable they want.
+ */
+:root,
+.dark {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --radius: 0.625rem;
+}
+
+body {
+  font-family:
+    "Inter Variable",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}

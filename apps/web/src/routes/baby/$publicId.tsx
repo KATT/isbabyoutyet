@@ -1,6 +1,6 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { Separator } from "@workspace/ui/components/separator";
+import { AppHeader } from "@/components/baby/app-header";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
@@ -164,7 +164,7 @@ function BabyPage() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-background">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
       {isOwner && (
@@ -202,7 +202,7 @@ function BabyPage() {
         </>
       )}
 
-      <div className="border-b border-border/50">
+      <AppHeader>
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
           postUpdateButton={
@@ -234,70 +234,62 @@ function BabyPage() {
           }
           settingsOpen={!!search.settings}
         />
-        <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
-          <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-            Is {baby.name} out yet?
-          </span>
+      </AppHeader>
+
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 md:py-12">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+          Is {baby.name} out yet?
         </h1>
-      </div>
-      <section className="relative px-6 py-12 text-center overflow-hidden">
-        <div className="relative max-w-5xl mx-auto">
-          <Card>
-            <CardContent>
-              <StatusDisplay
-                baby={baby}
-                currentStatus={currentStatus}
-                photoUrl={babyDoc.photoUrl}
-                thumbnailUrl={babyDoc.thumbnailUrl}
-                latestUpdate={
-                  latestUpdate
-                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
-                    : null
-                }
-              />
+
+        {/* Two columns on desktop: sticky status panel + scrolling feed */}
+        <div className="mt-8 grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+          <section className="rounded-xl border border-border/70 bg-card p-5 md:p-6 lg:sticky lg:top-20">
+            <StatusDisplay
+              baby={baby}
+              currentStatus={currentStatus}
+              photoUrl={babyDoc.photoUrl}
+              thumbnailUrl={babyDoc.thumbnailUrl}
+              latestUpdate={
+                latestUpdate
+                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  : null
+              }
+            />
+            <div className="mt-5 [&_button]:w-full">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
-              <Separator className="my-4" />
-            </CardContent>
-            <CardFooter>
-              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-            </CardFooter>
-          </Card>
-        </div>
-      </section>
+            </div>
+            <Separator className="my-6" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
 
-      {/* Timeline Section: owner updates interleaved with encouragements.
-          The news (feed) comes before the visitor's encouragement form; the
-          owner posts via the "Post update" button in the fixed nav bar. */}
-      <section className="relative px-6 pb-12">
-        <div className="relative max-w-2xl mx-auto space-y-8">
-          <Card>
-            <CardContent className="pt-6">
+          {/* Timeline: owner updates interleaved with encouragements. The
+              feed comes before the visitor's encouragement form; the owner
+              posts via the "Post update" button in the header. */}
+          <div className="space-y-6">
+            <section className="rounded-xl border border-border/70 bg-card p-5 md:p-6">
               <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-            </CardContent>
-          </Card>
+            </section>
 
-          {!baby.encouragementsDisabled && (
-            <Card>
-              <CardContent className="pt-6">
+            {!baby.encouragementsDisabled && (
+              <section className="rounded-xl border border-border/70 bg-card p-5 md:p-6">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </CardContent>
-            </Card>
-          )}
+              </section>
+            )}
+          </div>
         </div>
-      </section>
+      </main>
 
-      {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-      <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+      <footer className="border-t border-border/60 py-8 text-center">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Having a baby? Are people messaging you non-stop? Create your own page →
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

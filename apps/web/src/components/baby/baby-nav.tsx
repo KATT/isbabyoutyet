@@ -15,6 +15,7 @@ type BabyNavProps = {
   /** Owner-only "Post update" link; open state is mirrored in the URL search */
   postUpdateButton?: null | LinkProps;
   postUpdateOpen?: boolean;
+  className?: string;
 };
 
 export function BabyNav({
@@ -23,6 +24,7 @@ export function BabyNav({
   settingsOpen,
   postUpdateButton,
   postUpdateOpen,
+  className,
 }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
   const hasOwnerActions = !!(postUpdateButton || settingsButton);
@@ -115,17 +117,9 @@ export function BabyNav({
     </ButtonGroup>
   );
 
+  // Positionless: the app header decides placement
   return (
-    <div
-      className={cn(
-        // general
-        "p-4 z-10",
-        // mobile
-        "fixed bottom-0 left-0",
-        // desktop
-        "md:sticky md:top-0 md:left-0",
-      )}
-    >
+    <div className={cn("flex items-center", className)}>
       <ButtonGroup>
         {ownerActions}
         {pageActions}

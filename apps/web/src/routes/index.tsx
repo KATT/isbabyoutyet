@@ -1,26 +1,20 @@
-import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
+import { Progress } from "@workspace/ui/components/progress";
+import { AppHeader } from "@/components/baby/app-header";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Activity,
+  ArrowRight,
   Baby,
   Bell,
   Calendar,
+  Check,
   CheckCircle,
-  Heart,
   Hospital,
   Link2,
   MessageCircleHeart,
   Palette,
-  Sparkles,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 
@@ -62,6 +56,98 @@ function useCurrentDate() {
   );
 }
 
+const FEATURES = [
+  {
+    icon: Baby,
+    title: "One-tap status updates",
+    description:
+      "Labour started, at the hospital, baby's here — everyone finds out at once. No group texts, no repeated calls.",
+  },
+  {
+    icon: Calendar,
+    title: "Due-date countdown",
+    description:
+      'Days remaining at a glance, plus a friendly "overdue" counter when baby takes their time.',
+  },
+  {
+    icon: Bell,
+    title: "Push notifications",
+    description:
+      "Family subscribes once and hears the news the moment it happens. No constant page refreshing.",
+  },
+  {
+    icon: Link2,
+    title: "No account needed",
+    description:
+      "Anyone with the link can check in anytime. Grandma doesn't need to download an app.",
+  },
+  {
+    icon: MessageCircleHeart,
+    title: "Encouragements",
+    description:
+      "Visitors leave messages of love and support — a guestbook of well-wishes you'll keep forever.",
+  },
+  {
+    icon: Palette,
+    title: "Themes",
+    description:
+      "Pick a look that matches your style, from soft pastels to bold colours. Your page, your vibe.",
+  },
+];
+
+const HOW_IT_WORKS = [
+  {
+    step: "01",
+    title: "Create your page",
+    description: "Sign up and add your baby's name and due date. That's it.",
+  },
+  {
+    step: "02",
+    title: "Share the link",
+    description: "Send it to family and friends. They can check in anytime and subscribe.",
+  },
+  {
+    step: "03",
+    title: "Update as you go",
+    description: "When things start happening, update your status. Everyone gets notified.",
+  },
+];
+
+/** Static mock of a baby page status panel, for the hero */
+function HeroMock() {
+  return (
+    <div className="mx-auto w-full max-w-md rounded-xl border border-border/70 bg-card p-5 text-left shadow-sm">
+      <div className="flex items-start gap-3.5">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-border bg-primary/10">
+          <Baby className="h-7 w-7 text-primary" />
+        </span>
+        <div>
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Is Nora out yet?
+          </p>
+          <p className="mt-0.5 text-2xl font-bold tracking-tight text-primary">Not yet</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Baby is still on the way</p>
+        </div>
+      </div>
+      <div className="mt-4 rounded-lg bg-muted/50 px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">6 days until due date</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Everyone you shared with can see this
+        </p>
+      </div>
+      <div className="mt-4">
+        <div className="mb-2 flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Journey
+          </p>
+          <p className="text-xs tabular-nums text-muted-foreground">0%</p>
+        </div>
+        <Progress value={0} className="h-1" />
+      </div>
+    </div>
+  );
+}
+
 function HomePage() {
   const sessionData = authClient.useSession();
 
@@ -74,330 +160,251 @@ function HomePage() {
     return date.toISOString();
   };
 
+  const previewStages = [
+    {
+      icon: Baby,
+      title: "Waiting",
+      description: "Before labour starts",
+      search: { name: "Emma" },
+    },
+    {
+      icon: Activity,
+      title: "Labour started",
+      description: "Things are happening!",
+      search: { name: "Oliver", dueDate: hoursAgo(0), laborStarted: hoursAgo(2) },
+    },
+    {
+      icon: Hospital,
+      title: "At hospital",
+      description: "Almost there!",
+      search: {
+        name: "Sophia",
+        laborStarted: hoursAgo(4),
+        wentToHospital: hoursAgo(1),
+        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        theme: "porcelain",
+      },
+    },
+    {
+      icon: CheckCircle,
+      title: "Baby born!",
+      description: "Celebrate the arrival",
+      search: {
+        name: "Liam",
+        laborStarted: hoursAgo(6),
+        wentToHospital: hoursAgo(3),
+        babyBorn: hoursAgo(0.5),
+        babyBornMessage: "Welcome to the world, little one! 🎉",
+        theme: "violet-bloom",
+      },
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-16">
-        {/* Hero Section */}
-        <div className="text-center">
-          <Badge
-            variant="outline"
-            className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
-          >
-            <Sparkles className="w-3 h-3 mr-1.5" />
-            Free forever, no ads
-          </Badge>
-          <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is Baby Out Yet?
-            </span>
-          </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-            Stop answering "any news yet?" texts. Share one link and let everyone follow along.
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            {sessionData.data ? (
-              <Button
-                size="lg"
-                className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
-                render={<Link to="/dashboard" preload="viewport" />}
-                nativeButton={false}
-              >
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
-                <Button
-                  size="lg"
-                  className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
-                  render={<Link to="/auth/signup" preload="viewport" />}
-                  nativeButton={false}
-                >
-                  Get Started
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
-                  render={<Link to="/auth/login" preload="viewport" />}
-                  nativeButton={false}
-                >
-                  Sign In
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* For You Section */}
-        <div className="space-y-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For You</h2>
-            <p className="text-muted-foreground">Everything you need to share the journey</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Baby className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Update Your Status</CardTitle>
-                <CardDescription>
-                  One tap to update everyone - labour started, at the hospital, baby's here! No
-                  group texts, no repeated calls.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Calendar className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Countdown to Due Date</CardTitle>
-                <CardDescription>
-                  Set your due date and everyone can see how many days are left. Plus a friendly
-                  "overdue" counter when baby takes their time.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Palette className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Make It Yours</CardTitle>
-                <CardDescription>
-                  Pick a theme that matches your style. From soft pastels to bold colours - your
-                  page, your vibe.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* For Your Visitors Section */}
-        <div className="space-y-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For Your Family & Friends</h2>
-            <p className="text-muted-foreground">What everyone you share with gets</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Link2 className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>No Account Needed</CardTitle>
-                <CardDescription>
-                  Anyone with the link can check in anytime. Grandma doesn't need to download an app
-                  or create an account.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <MessageCircleHeart className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Send Encouragement</CardTitle>
-                <CardDescription>
-                  Visitors can leave messages of love and support. Like a digital guestbook filled
-                  with well-wishes you'll treasure.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Bell className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Get Notified</CardTitle>
-                <CardDescription>
-                  They can subscribe to push notifications and be the first to know the moment baby
-                  arrives. No constant page refreshing.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* See It In Action */}
-        <Card>
-          <CardHeader>
-            <CardTitle>See It In Action</CardTitle>
-            <CardDescription>Click any stage to see how your page will look</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link
-                to="/preview"
-                search={{
-                  name: "Emma",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                    <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Waiting</h3>
-                  <p className="text-sm text-muted-foreground">Before labour starts</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Oliver",
-                  dueDate: hoursAgo(0),
-                  laborStarted: hoursAgo(2),
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Activity className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Labour Started</h3>
-                  <p className="text-sm text-muted-foreground">Things are happening!</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Sophia",
-                  laborStarted: hoursAgo(4),
-                  wentToHospital: hoursAgo(1),
-                  hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
-                  theme: "bubblegum",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Hospital className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">At Hospital</h3>
-                  <p className="text-sm text-muted-foreground">Almost there!</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Liam",
-                  laborStarted: hoursAgo(6),
-                  wentToHospital: hoursAgo(3),
-                  babyBorn: hoursAgo(0.5),
-                  babyBornMessage: "Welcome to the world, little one! 🎉",
-                  theme: "violet-bloom",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <CheckCircle className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Baby Born!</h3>
-                  <p className="text-sm text-muted-foreground">Celebrate the arrival</p>
-                </div>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* How It Works */}
-        <Card>
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-            <CardDescription>Up and running in under a minute</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  step: "1",
-                  title: "Create Your Page",
-                  description: "Sign up and add your baby's name and due date. That's it.",
-                },
-                {
-                  step: "2",
-                  title: "Share the Link",
-                  description:
-                    "Send it to family and friends. They can check in anytime and subscribe for notifications.",
-                },
-                {
-                  step: "3",
-                  title: "Update as You Go",
-                  description:
-                    "When things start happening, update your status. Everyone gets notified automatically.",
-                },
-              ].map((item) => (
-                <div key={item.step} className="flex flex-col items-center text-center group">
-                  <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
-            <Heart className="w-10 h-10 text-primary" />
-          </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to share the journey?</h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            {sessionData.data
-              ? "Head back to your dashboard to keep everyone updated."
-              : "Join families who've already shared their special moments. Takes less than a minute."}
-          </p>
+    <div className="min-h-screen bg-background">
+      <AppHeader>
+        <div className="flex items-center gap-2">
           {sessionData.data ? (
             <Button
-              size="lg"
+              size="sm"
               render={<Link to="/dashboard" preload="viewport" />}
               nativeButton={false}
             >
-              Go to Dashboard
+              Dashboard
             </Button>
           ) : (
-            <Button
-              size="lg"
-              render={<Link to="/auth/signup" preload="viewport" />}
-              nativeButton={false}
-            >
-              Get Started Free
-            </Button>
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                render={<Link to="/auth/login" preload="viewport" />}
+                nativeButton={false}
+              >
+                Sign in
+              </Button>
+              <Button
+                size="sm"
+                render={<Link to="/auth/signup" preload="viewport" />}
+                nativeButton={false}
+              >
+                Get started
+              </Button>
+            </>
           )}
         </div>
+      </AppHeader>
 
-        {/* Footer */}
-        <div className="text-center pt-8 border-t border-border/50">
-          <a
-            href="https://github.com/KATT/isbabyoutyet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <GithubIcon className="w-5 h-5" />
-            <span>Open source on GitHub</span>
-          </a>
-        </div>
-      </div>
+      <main className="mx-auto max-w-6xl px-6">
+        {/* Hero */}
+        <section className="grid items-center gap-12 py-16 md:py-24 lg:grid-cols-2">
+          <div>
+            <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+              <Check className="h-3 w-3 text-primary" />
+              Free forever · No ads · Open source
+            </p>
+            <h1 className="mt-5 text-4xl font-bold tracking-tight text-foreground text-balance md:text-6xl">
+              One link answers "any news yet?"
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Create a page for your baby's arrival. Family checks in anytime, subscribes to
+              notifications, and hears the news the moment it happens.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              {sessionData.data ? (
+                <Button
+                  size="lg"
+                  render={<Link to="/dashboard" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Go to Dashboard
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    size="lg"
+                    render={<Link to="/auth/signup" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    Create your page
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    render={<Link to="/auth/login" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+          <HeroMock />
+        </section>
+
+        {/* Features */}
+        <section className="border-t border-border/60 py-16">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            Everything the family needs
+          </h2>
+          <p className="mt-1.5 text-muted-foreground">
+            For you, and for everyone waiting by the phone
+          </p>
+          <div className="mt-10 grid gap-px overflow-hidden rounded-xl border border-border/70 bg-border/70 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature) => (
+              <div key={feature.title} className="bg-card p-6">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+                  <feature.icon className="h-4 w-4 text-primary" />
+                </span>
+                <h3 className="mt-3.5 text-sm font-semibold text-foreground">{feature.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* See it in action */}
+        <section className="border-t border-border/60 py-16">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            See it in action
+          </h2>
+          <p className="mt-1.5 text-muted-foreground">
+            Click any stage to see how your page will look
+          </p>
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {previewStages.map((stage, index) => {
+              const isLast = index === previewStages.length - 1;
+              return (
+                <Link key={stage.title} to="/preview" search={stage.search} className="group">
+                  <div className="h-full rounded-xl border border-border/70 bg-card p-5 transition-colors hover:border-primary/50 hover:bg-muted/30">
+                    <span
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                        isLast ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"
+                      }`}
+                    >
+                      <stage.icon className="h-4 w-4" />
+                    </span>
+                    <h3 className="mt-3.5 flex items-center gap-1 text-sm font-semibold text-foreground">
+                      {stage.title}
+                      <ArrowRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{stage.description}</p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="border-t border-border/60 py-16">
+          <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+            How it works
+          </h2>
+          <p className="mt-1.5 text-muted-foreground">Up and running in under a minute</p>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {HOW_IT_WORKS.map((item) => (
+              <div key={item.step}>
+                <p className="font-mono text-sm font-medium text-primary">{item.step}</p>
+                <h3 className="mt-2 text-sm font-semibold text-foreground">{item.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="border-t border-border/60 py-16">
+          <div className="rounded-xl border border-border/70 bg-muted/30 px-6 py-12 text-center md:px-12">
+            <h2 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Ready to share the journey?
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+              {sessionData.data
+                ? "Head back to your dashboard to keep everyone updated."
+                : "Join families who've already shared their special moments. Takes less than a minute."}
+            </p>
+            <div className="mt-7">
+              {sessionData.data ? (
+                <Button
+                  size="lg"
+                  render={<Link to="/dashboard" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Get Started Free
+                </Button>
+              )}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border/60 py-8 text-center">
+        <a
+          href="https://github.com/KATT/isbabyoutyet"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <GithubIcon className="h-4 w-4" />
+          <span>Open source on GitHub</span>
+        </a>
+      </footer>
     </div>
   );
 }

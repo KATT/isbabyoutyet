@@ -5,6 +5,7 @@ import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
 import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
+import porcelainCss from "@/styles/themes/porcelain.css?url";
 
 export const THEME_OPTIONS = [
   {
@@ -47,6 +48,12 @@ export const THEME_OPTIONS = [
     label: "Quantum Rose",
     css: quantumRoseCss,
     colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
+  },
+  {
+    value: "porcelain",
+    label: "Porcelain",
+    css: porcelainCss,
+    colors: ["#4f46e5", "#f7f7f8", "#e8eafd"],
   },
 ] as const;
 

@@ -1,0 +1,73 @@
+/* Porcelain theme - Quiet neutral surfaces with an indigo accent */
+/* An original theme for the minimal look */
+
+:root {
+  --background: #f7f7f8;
+  --foreground: #1b1c1f;
+  --card: #ffffff;
+  --card-foreground: #1b1c1f;
+  --popover: #ffffff;
+  --popover-foreground: #1b1c1f;
+  --primary: #4f46e5;
+  --primary-foreground: #ffffff;
+  --secondary: #eceef1;
+  --secondary-foreground: #33353a;
+  --muted: #f0f1f3;
+  --muted-foreground: #6d7076;
+  --accent: #e8eafd;
+  --accent-foreground: #3730a3;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e4e5e9;
+  --input: #e4e5e9;
+  --ring: #4f46e5;
+  --chart-1: #4f46e5;
+  --chart-2: #0ea5e9;
+  --chart-3: #14b8a6;
+  --chart-4: #8b5cf6;
+  --chart-5: #f59e0b;
+  --sidebar: #f0f1f3;
+  --sidebar-foreground: #1b1c1f;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8eafd;
+  --sidebar-accent-foreground: #3730a3;
+  --sidebar-border: #e4e5e9;
+  --sidebar-ring: #4f46e5;
+  --radius: 0.625rem;
+}
+
+.dark {
+  --background: #131316;
+  --foreground: #ececee;
+  --card: #1b1b1f;
+  --card-foreground: #ececee;
+  --popover: #1b1b1f;
+  --popover-foreground: #ececee;
+  --primary: #818cf8;
+  --primary-foreground: #171732;
+  --secondary: #26262b;
+  --secondary-foreground: #d9d9dd;
+  --muted: #222227;
+  --muted-foreground: #94959c;
+  --accent: #26264a;
+  --accent-foreground: #c7d2fe;
+  --destructive: #f87171;
+  --destructive-foreground: #2b0f0f;
+  --border: #2a2a30;
+  --input: #2a2a30;
+  --ring: #818cf8;
+  --chart-1: #818cf8;
+  --chart-2: #38bdf8;
+  --chart-3: #2dd4bf;
+  --chart-4: #a78bfa;
+  --chart-5: #fbbf24;
+  --sidebar: #0f0f12;
+  --sidebar-foreground: #ececee;
+  --sidebar-primary: #818cf8;
+  --sidebar-primary-foreground: #171732;
+  --sidebar-accent: #26264a;
+  --sidebar-accent-foreground: #c7d2fe;
+  --sidebar-border: #2a2a30;
+  --sidebar-ring: #818cf8;
+}

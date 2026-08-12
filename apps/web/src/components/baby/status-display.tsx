@@ -45,11 +45,11 @@ function PhotoAvatar({
   }, [photoUrl]);
 
   const baseClasses =
-    "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full border-2 mb-8 overflow-hidden";
+    "inline-flex shrink-0 items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-2xl overflow-hidden border";
   const variantClasses =
     variant === "born"
-      ? "bg-linear-to-br from-primary to-primary/80 border-primary/30 shadow-xl shadow-primary/20"
-      : "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20 shadow-lg shadow-primary/10";
+      ? "bg-primary border-primary text-primary-foreground"
+      : "bg-primary/10 border-border text-primary";
 
   // Use thumbnail for avatar, fallback to full photo if thumbnail not available
   const avatarImageUrl = thumbnailUrl ?? photoUrl;
@@ -63,7 +63,7 @@ function PhotoAvatar({
       <DialogTrigger
         render={
           <button
-            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+            className={`${baseClasses} ${variantClasses} cursor-pointer transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
           >
             {avatarImageUrl && (
               <img
@@ -119,17 +119,26 @@ function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
     return null;
   }
   return (
-    <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-2">
+    <div className="mt-5 border-l-2 border-primary/50 pl-3.5">
+      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         Latest from the family
       </p>
-      <p className="text-lg font-bold text-primary break-words">{latestUpdate.message}</p>
-      <p className="text-xs text-primary/70 mt-2">
+      <p className="mt-1 text-sm font-medium leading-relaxed text-foreground break-words">
+        {latestUpdate.message}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">
         Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
       </p>
     </div>
   );
 }
+
+const STATUS_META = {
+  not_yet: { icon: Baby, answer: "Not yet", subline: "Baby is still on the way" },
+  labor_started: { icon: Activity, answer: "Labour started", subline: "Not gone to hospital yet" },
+  gone_to_hospital: { icon: Hospital, answer: "Gone to hospital", subline: "Almost there now" },
+  born: { icon: CheckCircle, answer: "Yes! Baby is out", subline: "Welcome to the world" },
+} as const;
 
 export function StatusDisplay({
   baby,
@@ -140,113 +149,57 @@ export function StatusDisplay({
 }: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const meta = STATUS_META[currentStatus.type];
+  const StatusIcon = meta.icon;
+  const isBorn = currentStatus.type === "born";
 
-  if (currentStatus.type === "not_yet") {
-    return (
-      <div className="flex flex-col items-center py-8">
+  return (
+    <div>
+      <div className="flex items-start gap-4">
         <PhotoAvatar
           photoUrl={photoUrl}
           thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
+          variant={isBorn ? "born" : "default"}
+          fallbackIcon={<StatusIcon className="w-8 h-8 md:w-9 md:h-9" />}
         />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Not yet
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-        <div
-          className={`mt-4 p-6 rounded-xl shadow-lg ${
-            overdueDays > 0
-              ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
-              : "bg-muted/50 border border-border"
-          }`}
-        >
-          {overdueDays > 0 ? (
-            <>
-              <p className="text-xl font-bold text-primary">
-                {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-              </p>
-              <p className="text-sm text-primary/80 mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-bold text-foreground">
-                {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          )}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Current status
+          </p>
+          <h2 className="mt-1 text-3xl font-bold tracking-tight text-primary md:text-4xl">
+            {meta.answer}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">{meta.subline}</p>
         </div>
       </div>
-    );
-  }
 
-  if (currentStatus.type === "labor_started") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Labour started
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
-        <p className="text-lg text-muted-foreground mt-2">
-          Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-        </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
+      {currentStatus.type === "not_yet" ? (
+        <div
+          className={`mt-5 rounded-lg px-4 py-3 ${
+            overdueDays > 0 ? "bg-primary/10" : "bg-muted/50"
+          }`}
+        >
+          <p
+            className={`text-sm font-semibold ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
+          >
+            {overdueDays > 0
+              ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue`
+              : `${daysUntilDueDate} ${daysUntilDueDate === 1 ? "day" : "days"} until due date`}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5 rounded-lg bg-muted/50 px-4 py-3">
+          <p className="text-sm font-semibold text-foreground">
+            {isBorn ? "Born" : currentStatus.type === "labor_started" ? "Started" : "Since"}{" "}
+            {getRelativeTime(currentStatus.date)}
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">{formatDate(currentStatus.date)}</p>
+        </div>
+      )}
 
-  if (currentStatus.type === "gone_to_hospital") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gone to hospital
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-4">
-          {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-        </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
-
-  // born
-  return (
-    <div className="flex flex-col items-center py-8">
-      <PhotoAvatar
-        photoUrl={photoUrl}
-        thumbnailUrl={thumbnailUrl}
-        fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
-        variant="born"
-      />
-      <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Yes! Baby is out
-        </span>
-      </h2>
-      <p className="text-xl text-muted-foreground mb-4">
-        Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-      </p>
       <LatestUpdateBox latestUpdate={latestUpdate} />
     </div>
   );

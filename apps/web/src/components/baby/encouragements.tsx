@@ -69,14 +69,16 @@ export function EncouragementForm(props: EncouragementFormProps) {
 
   return (
     <div className="space-y-4">
-      <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-          <Heart className="w-6 h-6 text-primary" />
+      <div className="mb-5 flex items-start gap-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Heart className="h-3.5 w-3.5 text-primary" />
+        </span>
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">Send encouragement</h3>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Leave a message of support for {props.babyName}'s family
+          </p>
         </div>
-        <h3 className="text-lg font-semibold text-foreground">Send Encouragement</h3>
-        <p className="text-sm text-muted-foreground">
-          Leave a message of support for {props.babyName}'s family
-        </p>
       </div>
 
       <Form

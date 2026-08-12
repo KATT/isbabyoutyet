@@ -1,5 +1,5 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Separator } from "@workspace/ui/components/separator";
+import { AppHeader } from "@/components/baby/app-header";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
@@ -110,14 +110,8 @@ function PreviewPage() {
         }}
       />
 
-      <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Gradient Background Elements */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="border-b border-border/50">
+      <div className="min-h-screen bg-background">
+        <AppHeader>
           <BabyNav
             shareLink={null}
             settingsButton={{
@@ -129,41 +123,28 @@ function PreviewPage() {
             }}
             settingsOpen={!!search.settings}
           />
+        </AppHeader>
 
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is {baby.name} out yet?
-            </span>
+        <main className="mx-auto w-full max-w-xl px-4 py-8 md:py-12">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground md:text-4xl">
+            Is {baby.name} out yet?
           </h1>
-        </div>
 
-        <section className="relative px-6 py-12 text-center overflow-hidden">
-          <div className="relative max-w-5xl mx-auto">
-            <Card>
-              <CardContent>
-                <StatusDisplay
-                  baby={baby}
-                  currentStatus={currentStatus}
-                  latestUpdate={latestUpdate}
-                />
-                <Separator />
-              </CardContent>
-              <CardFooter>
-                <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-              </CardFooter>
-            </Card>
-          </div>
-        </section>
+          <section className="mt-8 rounded-xl border border-border/70 bg-card p-5 md:p-6">
+            <StatusDisplay baby={baby} currentStatus={currentStatus} latestUpdate={latestUpdate} />
+            <Separator className="my-6" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
+        </main>
 
-        {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-        <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+        <footer className="border-t border-border/60 py-8 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Having a baby? Are people messaging you non-stop? Create your own page →
           </Link>
-        </div>
+        </footer>
       </div>
     </div>
   );

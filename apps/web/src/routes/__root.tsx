@@ -16,6 +16,8 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
+import typeCss from "@/styles/app.css?url";
+import interCss from "@fontsource-variable/inter/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
@@ -59,7 +61,15 @@ export const Route = createRootRouteWithContext<{
     links: [
       {
         rel: "stylesheet",
+        href: interCss,
+      },
+      {
+        rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "stylesheet",
+        href: typeCss,
       },
       {
         rel: "apple-touch-icon",
@@ -126,16 +136,16 @@ function RootComponent() {
 function NotFoundComponent() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="text-center space-y-6 max-w-md">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20 mb-4">
-          <Baby className="w-10 h-10 text-primary" />
+      <div className="text-center space-y-4 max-w-md">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10">
+          <Baby className="w-6 h-6 text-primary" />
         </div>
-        <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-bold text-foreground">Page Not Found</h2>
-        <p className="text-muted-foreground">
+        <h1 className="text-5xl font-bold tracking-tight text-foreground">404</h1>
+        <h2 className="text-lg font-semibold text-foreground">Page not found</h2>
+        <p className="text-sm text-muted-foreground">
           Looks like this page hasn't arrived yet. Let's get you back home!
         </p>
-        <Button size="lg" render={<Link to="/" />} nativeButton={false}>
+        <Button render={<Link to="/" />} nativeButton={false}>
           Go Home
         </Button>
       </div>
