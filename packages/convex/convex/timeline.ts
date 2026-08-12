@@ -209,8 +209,7 @@ export async function deleteUpdateWithTimelineItem(ctx: MutationCtx, update: Doc
 export async function findMilestoneUpdate(ctx: QueryCtx, babyId: Id<"baby">, milestone: Milestone) {
   return await ctx.db
     .query("updates")
-    .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
-    .filter((q) => q.eq(q.field("milestone"), milestone))
+    .withIndex("by_babyId_milestone", (q) => q.eq("babyId", babyId).eq("milestone", milestone))
     .first();
 }
 

@@ -98,8 +98,7 @@ test("moving the status forward schedules a push notification", async () => {
 
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
-    laborStarted: "2026-08-20T08:00:00.000Z",
-    laborStartedMessage: "It has begun!",
+    laborStarted: "2026-08-10T08:00:00.000Z",
   });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -109,14 +108,14 @@ test("moving the status forward schedules a push notification", async () => {
     {
       status: "pending",
       notificationType: "labor_started",
-      customMessage: "It has begun!",
+      customMessage: null,
     },
   ]);
 
   // Moving further forward cancels the pending one and schedules the next
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
-    babyBorn: "2026-08-21T03:00:00.000Z",
+    babyBorn: "2026-08-11T03:00:00.000Z",
   });
 
   const afterBirth = await asAlice.query(api.baby.getScheduledNotifications, {
