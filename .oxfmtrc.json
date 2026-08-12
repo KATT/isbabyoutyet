@@ -1,0 +1,3 @@
+{
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts"]
+}
