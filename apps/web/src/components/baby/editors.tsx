@@ -1,28 +1,38 @@
+import { Form, useZodForm } from "@/components/Form";
 import { Button } from "@workspace/ui/components/button";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { format, parseISO } from "date-fns";
 import { Clock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import * as z from "zod";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { parseDate, THEME_OPTIONS } from "./utils";
+
+/** Format a date for a `datetime-local` input in the viewer's timezone. */
+function toDatetimeLocalValue(date: Date): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
 
 type DueDateEditorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
 };
 
+const dueDateSchema = z.object({
+  date: z.string().min(1, "Pick a date"),
+});
+
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newDate, setNewDate] = useState(() => {
-    const date = parseDate(baby.dueDate);
-    return format(date, "yyyy-MM-dd");
-  });
-  const [isLoading, setIsLoading] = useState(false);
 
-  const currentDateFormatted = format(parseDate(baby.dueDate), "yyyy-MM-dd");
-  const hasChanges = newDate !== currentDateFormatted;
+  const form = useZodForm({
+    schema: dueDateSchema,
+    defaultValues: { date: format(parseDate(baby.dueDate), "yyyy-MM-dd") },
+  });
 
   return (
     <Popover
@@ -44,6 +54,9 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
             return;
           }
         }
+        if (open) {
+          form.reset({ date: format(parseDate(baby.dueDate), "yyyy-MM-dd") });
+        }
         setIsEditing(open);
       }}
     >
@@ -55,53 +68,50 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80">
-        <Input
-          type="date"
-          value={newDate}
-          onChange={(e) => setNewDate(e.target.value)}
-          className="mb-3"
-          onMouseDown={(e) => e.stopPropagation()}
-          onFocus={(e) => e.stopPropagation()}
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              const date = parseDate(baby.dueDate);
-              setNewDate(format(date, "yyyy-MM-dd"));
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  const dateObj = parseISO(newDate);
-                  const dateString = dateObj.toISOString();
-                  await onUpdate({ dueDate: dateString });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update due date");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
+        <Form
+          form={form}
+          handleSubmit={async (values) => {
+            await onUpdate({ dueDate: parseISO(values.date).toISOString() });
+            setIsEditing(false);
+          }}
+        >
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem className="mb-3">
+                <FormControl>
+                  <Input
+                    type="date"
+                    aria-label="Due date"
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onFocus={(e) => e.stopPropagation()}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              variant="outline"
+              size="sm"
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={form.formState.isSubmitting || !form.formState.isDirty}
+            >
+              Save
+            </Button>
+          </div>
+        </Form>
       </PopoverContent>
     </Popover>
   );
@@ -114,6 +124,10 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
+const statusDateSchema = z.object({
+  dateTime: z.string().min(1, "Pick a date and time"),
+});
+
 export function StatusDateEditor({
   baby: _baby,
   status,
@@ -121,22 +135,22 @@ export function StatusDateEditor({
   onUpdate,
 }: StatusDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newDateTime, setNewDateTime] = useState(() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  });
-  const [isLoading, setIsLoading] = useState(false);
 
-  const currentDateTimeFormatted = (() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  })();
-  const hasChanges = newDateTime !== currentDateTimeFormatted;
+  const form = useZodForm({
+    schema: statusDateSchema,
+    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(currentDate)) },
+  });
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
+    <Popover
+      open={isEditing}
+      onOpenChange={(open) => {
+        if (open) {
+          form.reset({ dateTime: toDatetimeLocalValue(parseDate(currentDate)) });
+        }
+        setIsEditing(open);
+      }}
+    >
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -146,60 +160,51 @@ export function StatusDateEditor({
         }
       />
       <PopoverContent align="end" className="w-80">
-        <Input
-          type="datetime-local"
-          value={newDateTime}
-          onChange={(e) => setNewDateTime(e.target.value)}
-          className="mb-3"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              const date = parseDate(currentDate);
-              const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-              setNewDateTime(localDate.toISOString().slice(0, 16));
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  const dateObj = parseISO(newDateTime);
-                  const dateString = dateObj.toISOString();
-
-                  if (status === "labor_started") {
-                    await onUpdate({ laborStarted: dateString });
-                  } else if (status === "gone_to_hospital") {
-                    await onUpdate({ wentToHospital: dateString });
-                  } else if (status === "born") {
-                    await onUpdate({ babyBorn: dateString });
-                  }
-
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update status date");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
+        <Form
+          form={form}
+          handleSubmit={async (values) => {
+            const dateString = parseISO(values.dateTime).toISOString();
+            if (status === "labor_started") {
+              await onUpdate({ laborStarted: dateString });
+            } else if (status === "gone_to_hospital") {
+              await onUpdate({ wentToHospital: dateString });
+            } else {
+              await onUpdate({ babyBorn: dateString });
+            }
+            setIsEditing(false);
+          }}
+        >
+          <FormField
+            control={form.control}
+            name="dateTime"
+            render={({ field }) => (
+              <FormItem className="mb-3">
+                <FormControl>
+                  <Input type="datetime-local" aria-label="Status date and time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              variant="outline"
+              size="sm"
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={form.formState.isSubmitting || !form.formState.isDirty}
+            >
+              Save
+            </Button>
+          </div>
+        </Form>
       </PopoverContent>
     </Popover>
   );
@@ -210,15 +215,28 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
+const nameSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+});
+
 export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newName, setNewName] = useState(baby.name);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const hasChanges = newName.trim() !== baby.name.trim();
+  const form = useZodForm({
+    schema: nameSchema,
+    defaultValues: { name: baby.name },
+  });
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
+    <Popover
+      open={isEditing}
+      onOpenChange={(open) => {
+        if (open) {
+          form.reset({ name: baby.name });
+        }
+        setIsEditing(open);
+      }}
+    >
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -227,67 +245,48 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80">
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Baby name"
-          className="mb-3"
-          onKeyDown={async (e) => {
-            if (e.key === "Enter" && hasChanges) {
-              e.preventDefault();
-              setIsLoading(true);
-              try {
-                await onUpdate({ name: newName.trim() });
-                setIsEditing(false);
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : "Failed to update name");
-              } finally {
-                setIsLoading(false);
-              }
-            } else if (e.key === "Escape") {
-              setNewName(baby.name);
-              setIsEditing(false);
-            }
+        <Form
+          form={form}
+          handleSubmit={async (values) => {
+            await onUpdate({ name: values.name.trim() });
+            setIsEditing(false);
           }}
-        />
-        <p className="text-xs text-muted-foreground mb-3">
-          Renaming may change the page address, but don't worry — any link you've already shared
-          keeps working.
-        </p>
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewName(baby.name);
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ name: newName.trim() });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update name");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
+        >
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem className="mb-3">
+                <FormControl>
+                  <Input placeholder="Baby name" aria-label="Baby name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <p className="text-xs text-muted-foreground mb-3">
+            Renaming may change the page address, but don't worry — any link you've already shared
+            keeps working.
+          </p>
+          <div className="flex gap-2 justify-end">
+            <Button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              variant="outline"
+              size="sm"
+              disabled={form.formState.isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={form.formState.isSubmitting || !form.formState.isDirty}
+            >
+              Save
+            </Button>
+          </div>
+        </Form>
       </PopoverContent>
     </Popover>
   );
