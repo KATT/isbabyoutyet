@@ -5,7 +5,12 @@ import { post, setAsCurrentPhoto, remove } from "./updates";
 import updatesSpec from "./updates.spec";
 
 const postImpl = FunctionImpl.make(databaseSchema, updatesSpec, "post", post);
-const setAsCurrentPhotoImpl = FunctionImpl.make(databaseSchema, updatesSpec, "setAsCurrentPhoto", setAsCurrentPhoto);
+const setAsCurrentPhotoImpl = FunctionImpl.make(
+  databaseSchema,
+  updatesSpec,
+  "setAsCurrentPhoto",
+  setAsCurrentPhoto,
+);
 const removeImpl = FunctionImpl.make(databaseSchema, updatesSpec, "remove", remove);
 
 export default GroupImpl.make(databaseSchema, updatesSpec).pipe(

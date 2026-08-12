@@ -9,12 +9,7 @@ export default Table.make(() =>
     scheduledId: Schema.optional(GenericId.GenericId("_scheduled_functions")),
     status: Schema.Literals(["pending", "sent", "cancelled"]),
     scheduledFor: Schema.Number,
-    notificationType: Schema.Literals([
-      "labor_started",
-      "gone_to_hospital",
-      "born",
-      "photo_added",
-    ]),
+    notificationType: Schema.Literals(["labor_started", "gone_to_hospital", "born", "photo_added"]),
     customMessage: Schema.optional(Schema.NullOr(Schema.String)),
     createdAt: Schema.Number,
   }),

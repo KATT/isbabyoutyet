@@ -9,13 +9,13 @@ import timelineItems from "./tables/timelineItems";
 import updates from "./tables/updates";
 
 const databaseSchema: $DatabaseSchema.DatabaseSchema<
-  typeof baby |
-  typeof babyPublicIdHistory |
-  typeof encouragements |
-  typeof pushSubscriptions |
-  typeof scheduledNotifications |
-  typeof timelineItems |
-  typeof updates
+  | typeof baby
+  | typeof babyPublicIdHistory
+  | typeof encouragements
+  | typeof pushSubscriptions
+  | typeof scheduledNotifications
+  | typeof timelineItems
+  | typeof updates
 > = $DatabaseSchema.make({
   baby,
   babyPublicIdHistory,

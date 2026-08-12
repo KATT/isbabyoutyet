@@ -21,6 +21,16 @@ const spec: Spec.Spec<
   | GroupSpec.NamedAt<typeof seed, "seed">
   | GroupSpec.NamedAt<typeof timeline, "timeline">
   | GroupSpec.NamedAt<typeof updates, "updates">
-> = Spec.make().addAt("baby", baby).addAt("babyThumbnails", babyThumbnails).addAt("betterAuth", betterAuth).addAt("encouragements", encouragements).addAt("migrations", migrations).addAt("pushNotifications", pushNotifications).addAt("pushSubscriptions", pushSubscriptions).addAt("seed", seed).addAt("timeline", timeline).addAt("updates", updates);
+> = Spec.make()
+  .addAt("baby", baby)
+  .addAt("babyThumbnails", babyThumbnails)
+  .addAt("betterAuth", betterAuth)
+  .addAt("encouragements", encouragements)
+  .addAt("migrations", migrations)
+  .addAt("pushNotifications", pushNotifications)
+  .addAt("pushSubscriptions", pushSubscriptions)
+  .addAt("seed", seed)
+  .addAt("timeline", timeline)
+  .addAt("updates", updates);
 
 export default spec;

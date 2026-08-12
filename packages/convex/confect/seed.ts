@@ -4,10 +4,7 @@ import type { MutationCtx } from "../convex/_generated/server";
 import type { Id } from "../convex/_generated/dataModel";
 import { createAuth } from "./betterAuth";
 import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
-import {
-  insertEncouragementTimelineItem,
-  insertUpdateWithTimelineItem,
-} from "./timelineHelpers";
+import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timelineHelpers";
 import type { Milestone } from "../src/types";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {

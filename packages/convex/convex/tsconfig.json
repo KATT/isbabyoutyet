@@ -20,6 +20,6 @@
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*"],
+  "include": ["./**/*", "../convex-table-history-component.d.ts"],
   "exclude": ["./_generated"]
 }

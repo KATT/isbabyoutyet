@@ -5,10 +5,7 @@ import type { convexTest } from "convex-test";
  * All Convex function modules for convex-test.
  * Lives under convex/ (Confect codegen target); tests live outside it.
  */
-export const modules = import.meta.glob([
-  "../convex/**/*.{js,ts}",
-  "!../convex/**/*.d.ts",
-]);
+export const modules = import.meta.glob(["../convex/**/*.{js,ts}", "!../convex/**/*.d.ts"]);
 
 /**
  * Module glob for the convex-table-history component ("babyAuditLog" in

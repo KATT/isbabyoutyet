@@ -4,7 +4,12 @@ import databaseSchema from "./_generated/schema";
 import { getCurrentUser } from "./betterAuth";
 import betterAuthSpec from "./betterAuth.spec";
 
-const getCurrentUserImpl = FunctionImpl.make(databaseSchema, betterAuthSpec, "getCurrentUser", getCurrentUser);
+const getCurrentUserImpl = FunctionImpl.make(
+  databaseSchema,
+  betterAuthSpec,
+  "getCurrentUser",
+  getCurrentUser,
+);
 
 export default GroupImpl.make(databaseSchema, betterAuthSpec).pipe(
   Layer.provide(getCurrentUserImpl),

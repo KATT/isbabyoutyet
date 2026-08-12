@@ -40,10 +40,7 @@
     "react-hook-form": "catalog:",
     "sonner": "catalog:",
     "streamdown": "^2.5.0",
-    "zod": "catalog:",
-    "@confect/core": "catalog:",
-    "@confect/react": "catalog:",
-    "effect": "catalog:"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
