@@ -11,10 +11,12 @@
     "format": "turbo format",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "checks": "turbo run format lint-fix typecheck && pnpm test:coverage"
+    "knip": "knip --production",
+    "checks": "turbo run format lint-fix typecheck && pnpm test:coverage && pnpm knip"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.10",
+    "knip": "^6.32.2",
     "npm-run-all": "^4.1.5",
     "turbo": "^2.10.9",
     "typescript": "catalog:",
