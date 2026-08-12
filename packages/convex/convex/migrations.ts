@@ -4,6 +4,7 @@ import type { DataModel, Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { backfillHistoricalPhotosFromAuditLogDoc } from "./photoTimelineBackfill";
 import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
@@ -115,10 +116,23 @@ export const backfillEncouragementTimeline = migrations.define({
   migrateOne: backfillEncouragementTimelineDoc,
 });
 
+/**
+ * Replays baby-table audit log photo changes into the timeline. Each distinct
+ * `photoId` from the audit log becomes its own update row at the storage file's
+ * original upload time (falling back to the audit timestamp). Skips photos
+ * already present in the feed or whose storage blob was deleted by the legacy
+ * replace-on-upload behavior.
+ */
+export const backfillHistoricalPhotosFromAuditLog = migrations.define({
+  table: "baby",
+  migrateOne: backfillHistoricalPhotosFromAuditLogDoc,
+});
+
 // Run all pending migrations - called automatically during deployment
 // When adding migrations, import `internal` from "./_generated/api" and add references:
 export const runAll = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
+  internal.migrations.backfillHistoricalPhotosFromAuditLog,
 ]);

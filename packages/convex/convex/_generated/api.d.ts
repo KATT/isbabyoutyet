@@ -19,7 +19,7 @@ import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
 import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
-import type * as updates from "../updates.js";
+import type * as photoTimelineBackfill from "../photoTimelineBackfill.js";
 
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
@@ -30,6 +30,7 @@ declare const fullApi: ApiFromModules<{
   encouragements: typeof encouragements;
   http: typeof http;
   migrations: typeof migrations;
+  photoTimelineBackfill: typeof photoTimelineBackfill;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;
