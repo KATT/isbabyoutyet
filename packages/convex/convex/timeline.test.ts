@@ -164,10 +164,17 @@ test("a milestone update sets the canonical status and schedules a push", async 
     { status: "pending", notificationType: "born", customMessage: "She's here!" },
   ]);
 
-  // The same milestone can't be marked twice
+  // The status only moves forward: re-marking the same milestone — or any
+  // earlier stage — is rejected once a later stage is reached
   await expect(asAlice.mutation(api.updates.post, { babyId, milestone: "born" })).rejects.toThrow(
-    "This milestone is already marked",
+    "Only a future status can be marked",
   );
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" }),
+  ).rejects.toThrow("Only a future status can be marked");
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("Only a future status can be marked");
 });
 
 test("baby.update keeps milestone rows in sync: mark, redate, edit message, unmark", async () => {

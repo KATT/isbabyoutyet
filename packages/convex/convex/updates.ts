@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { getCurrentStatus, MILESTONE_FIELDS } from "../src/types";
+import { getCurrentStatus, MILESTONE_FIELDS, STATUS_ORDER } from "../src/types";
 import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
 import {
   deleteUpdateWithTimelineItem,
@@ -50,14 +50,20 @@ export const post = mutationWithTriggers({
       throw new Error(`Message must be ${MAX_UPDATE_MESSAGE_LENGTH} characters or less`);
     }
 
+    const statusBefore = getCurrentStatus(baby);
+
     if (milestone) {
+      // The status only moves forward: once a later stage is reached, earlier
+      // (or equal) stages can no longer be marked
+      if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {
+        throw new Error("Only a future status can be marked");
+      }
       const existing = await findMilestoneUpdate(ctx, args.babyId, milestone);
       if (existing) {
         throw new Error("This milestone is already marked");
       }
     }
 
-    const statusBefore = getCurrentStatus(baby);
     const postedAt = Date.now();
 
     const { updateId } = await insertUpdateWithTimelineItem(ctx, {
