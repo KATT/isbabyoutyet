@@ -204,7 +204,12 @@ function StatusDateForm(props: {
         render={({ field }) => (
           <FormItem className="mb-3">
             <FormControl>
-              <Input type="datetime-local" aria-label="Status date and time" {...field} />
+              <Input
+                type="datetime-local"
+                aria-label="Status date and time"
+                max={toDatetimeLocalValue(new Date())}
+                {...field}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
