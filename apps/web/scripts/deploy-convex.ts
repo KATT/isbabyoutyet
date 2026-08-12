@@ -111,11 +111,14 @@ convexCli([
   "--cmd",
   "node ../../apps/web/scripts/build-web.mjs",
   ...previewArgs,
-  ...(deployment.isPreview ? ["--preview-run", "seed:seedDemoData"] : []),
 ]);
 
 for (const [key, value] of Object.entries(convexEnv)) {
   convexCli(["env", "set", key, value, ...previewArgs]);
+}
+
+if (deployment.isPreview) {
+  convexCli(["run", "seed:seedDemoData", ...previewArgs]);
 }
 
 convexCli(["run", "migrations:runAll", ...previewArgs]);
