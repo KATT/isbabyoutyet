@@ -19,9 +19,9 @@ type EncouragementDoc = Docs["encouragements"];
 const getStorageUrlString = (storageId: GenericId<"_storage">) =>
   Effect.gen(function* () {
     const storage = yield* StorageReader;
-    const url = yield* storage.getUrl(storageId).pipe(
-      Effect.catchTag("BlobNotFoundError", () => Effect.succeed(null as URL | null)),
-    );
+    const url = yield* storage
+      .getUrl(storageId)
+      .pipe(Effect.catchTag("BlobNotFoundError", () => Effect.succeed(null as URL | null)));
     return url === null ? null : url.href;
   });
 
@@ -32,9 +32,7 @@ const hydrateUpdate = (
 ) =>
   Effect.gen(function* () {
     const photoUrl = update.photoId ? yield* getStorageUrlString(update.photoId) : null;
-    const thumbnailUrl = update.thumbnailId
-      ? yield* getStorageUrlString(update.thumbnailId)
-      : null;
+    const thumbnailUrl = update.thumbnailId ? yield* getStorageUrlString(update.thumbnailId) : null;
     return {
       _id: item._id,
       kind: "update" as const,
@@ -159,41 +157,33 @@ const listByBaby = FunctionImpl.make(
  * Bounded by the number of owner updates (only the owner creates them), so
  * visitor activity cannot grow this query.
  */
-const latestUpdate = FunctionImpl.make(
-  databaseSchema,
-  timelineSpec,
-  "latestUpdate",
-  ({ babyId }) =>
-    Effect.gen(function* () {
-      const reader = yield* DatabaseReader;
-      const updates = yield* reader
-        .table("updates")
-        .index("by_babyId", (q) => q.eq("babyId", babyId))
-        .collect();
+const latestUpdate = FunctionImpl.make(databaseSchema, timelineSpec, "latestUpdate", ({ babyId }) =>
+  Effect.gen(function* () {
+    const reader = yield* DatabaseReader;
+    const updates = yield* reader
+      .table("updates")
+      .index("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
 
-      let latest: { update: UpdateDoc; item: TimelineItemDoc } | null = null;
-      for (const update of updates) {
-        if (!update.message) continue;
-        const item = yield* reader
-          .table("timelineItems")
-          .get(update.timelineItemId)
-          .pipe(Effect.catchTag("GetByIdFailure", () => Effect.succeed(null)));
-        if (!item) continue;
-        if (!latest || item.postedAt > latest.item.postedAt) {
-          latest = { update, item };
-        }
+    let latest: { update: UpdateDoc; item: TimelineItemDoc } | null = null;
+    for (const update of updates) {
+      if (!update.message) continue;
+      const item = yield* reader
+        .table("timelineItems")
+        .get(update.timelineItemId)
+        .pipe(Effect.catchTag("GetByIdFailure", () => Effect.succeed(null)));
+      if (!item) continue;
+      if (!latest || item.postedAt > latest.item.postedAt) {
+        latest = { update, item };
       }
+    }
 
-      if (!latest) return Option.none();
+    if (!latest) return Option.none();
 
-      const baby = yield* getBabyOrNull(babyId);
-      const hydrated = yield* hydrateUpdate(
-        latest.item,
-        latest.update,
-        baby?.photoId ?? null,
-      );
-      return Option.some(hydrated);
-    }).pipe(Effect.orDie),
+    const baby = yield* getBabyOrNull(babyId);
+    const hydrated = yield* hydrateUpdate(latest.item, latest.update, baby?.photoId ?? null);
+    return Option.some(hydrated);
+  }).pipe(Effect.orDie),
 );
 
 export default GroupImpl.make(databaseSchema, timelineSpec).pipe(
