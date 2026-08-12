@@ -114,3 +114,29 @@ test("allDone when every step is effective", async () => {
     effectiveSteps: [...ONBOARDING_STEP_IDS],
   });
 });
+
+test("setMinimized toggles the checklist chip state", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  await asAlice.mutation(api.onboarding.setMinimized, { minimized: true });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({ minimized: true });
+
+  await asAlice.mutation(api.onboarding.setMinimized, { minimized: false });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({ minimized: false });
+});
+
+test("mutations require authentication", async () => {
+  const t = await setup();
+  await expect(t.mutation(api.onboarding.dismissWelcome, {})).rejects.toThrow(/Not authenticated/);
+  await expect(t.mutation(api.onboarding.dismissChecklist, {})).rejects.toThrow(
+    /Not authenticated/,
+  );
+  await expect(t.mutation(api.onboarding.restart, {})).rejects.toThrow(/Not authenticated/);
+  await expect(t.mutation(api.onboarding.setMinimized, { minimized: true })).rejects.toThrow(
+    /Not authenticated/,
+  );
+  await expect(t.mutation(api.onboarding.completeStep, { stepId: "share_link" })).rejects.toThrow(
+    /Not authenticated/,
+  );
+});

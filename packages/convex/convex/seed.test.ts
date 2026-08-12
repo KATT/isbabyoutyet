@@ -80,6 +80,21 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
     where: [{ field: "email", value: DEMO_USER.email }],
   });
   expect(authUser).toMatchObject({ email: DEMO_USER.email, name: DEMO_USER.name });
+  if (!authUser) {
+    throw new Error("expected demo auth user");
+  }
+
+  const onboarding = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userOnboarding")
+      .withIndex("by_user", (q) => q.eq("userId", String(authUser._id)))
+      .unique();
+  });
+  expect(onboarding).toMatchObject({
+    welcomeDismissed: true,
+    checklistDismissed: true,
+  });
+  expect(onboarding?.completedSteps.length).toBeGreaterThan(0);
 
   const second = await t.mutation(internal.seed.seedDemoData, {});
   expect(second).toMatchObject({
