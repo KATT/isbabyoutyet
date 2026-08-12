@@ -8,7 +8,11 @@
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "build:cloudflare": "CLOUDFLARE_BUILD=1 vite build",
     "preview": "vite preview",
+    "preview:cloudflare": "CLOUDFLARE_BUILD=1 vite preview",
+    "deploy:cloudflare": "CLOUDFLARE_BUILD=1 vite build && wrangler deploy",
+    "cf-typegen": "wrangler types",
     "test": "vitest run",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",
@@ -42,6 +46,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.52.0",
     "@edge-runtime/vm": "^5.0.0",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/devtools-vite": "^0.8.3",
@@ -63,6 +68,7 @@
     "vite": "^8.2.1",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10",
-    "web-vitals": "^6.1.0"
+    "web-vitals": "^6.1.0",
+    "wrangler": "^4.122.0"
   }
 }

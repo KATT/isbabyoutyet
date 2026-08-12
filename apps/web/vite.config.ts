@@ -1,5 +1,6 @@
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
+import { cloudflare } from "@cloudflare/vite-plugin";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
@@ -64,8 +65,12 @@ function patchLeakedReactRequire(): Plugin {
   };
 }
 
+const isCloudflareBuild =
+  process.env.WORKERS_CI === "1" || process.env.CLOUDFLARE_BUILD === "1";
+
 const config = defineConfig({
   plugins: [
+    ...(isCloudflareBuild ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
     aliasUseSyncExternalStoreShim(),
     devtools(),
     // Base UI grows the Nitro SSR rebundle enough that Rolldown's default split
@@ -73,32 +78,36 @@ const config = defineConfig({
     // Keep the SSR service graph in one chunk; still split real node_modules
     // into `_libs`. Avoid `inlineDynamicImports` — it worsens the leaked
     // `require('react')` failure on Vercel (nitro#4171).
-    nitro({
-      rolldownConfig: {
-        output: {
-          codeSplitting: {
-            groups: [
-              {
-                name: "ssr",
-                test: /[/\\]node_modules[/\\]\.nitro[/\\]vite[/\\]services[/\\]ssr[/\\]/,
-              },
-              {
-                test: /node_modules[/\\](?!(?:nitro|nitro-nightly)[/\\])[^.]/,
-                name(id: string) {
-                  const match =
-                    /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/]+[/\\]node_modules[/\\])?(?:(@[^/]+[/\\][^/]+)|([^/]+))/i.exec(
-                      id,
-                    );
-                  const name = match?.[1] ?? match?.[2];
-                  return name ? name.replace(/[/\\+@]/g, "_") : "vendor";
+    ...(!isCloudflareBuild
+      ? [
+          nitro({
+            rolldownConfig: {
+              output: {
+                codeSplitting: {
+                  groups: [
+                    {
+                      name: "ssr",
+                      test: /[/\\]node_modules[/\\]\.nitro[/\\]vite[/\\]services[/\\]ssr[/\\]/,
+                    },
+                    {
+                      test: /node_modules[/\\](?!(?:nitro|nitro-nightly)[/\\])[^.]/,
+                      name(id: string) {
+                        const match =
+                          /[/\\]node_modules[/\\](?:\.pnpm[/\\][^/]+[/\\]node_modules[/\\])?(?:(@[^/]+[/\\][^/]+)|([^/]+))/i.exec(
+                            id,
+                          );
+                        const name = match?.[1] ?? match?.[2];
+                        return name ? name.replace(/[/\\+@]/g, "_") : "vendor";
+                      },
+                    },
+                  ],
                 },
               },
-            ],
-          },
-        },
-      },
-    }),
-    patchLeakedReactRequire(),
+            },
+          }),
+        ]
+      : []),
+    ...(!isCloudflareBuild ? [patchLeakedReactRequire()] : []),
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
