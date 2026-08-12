@@ -10,6 +10,13 @@ Works" card). Assets:
 "Post update" dialog, timeline feed, encouragement form, nav bar) so the
 homepage never demos a stale UI.
 
+> **Pending re-record**: the current cut predates the composer-clarity copy
+> and the slimmed settings, and the next version should be **mobile-first**:
+> record in a phone-portrait browser window (~440 px wide — the nav bar sits
+> fixed at the BOTTOM below the `md` breakpoint), crop to the window's page
+> content, and present it on the homepage as a centered phone-framed portrait
+> player (`mx-auto max-w-xs rounded-2xl`). Regenerate once the UX PRs merge.
+
 ## What the video shows (shot list)
 
 A scripted three-act walkthrough on a real deployment, using a freshly
@@ -61,11 +68,21 @@ how-it-works video following apps/web/docs/how-it-works-video.md".
    PR branch gets its own seeded Convex preview). Sign in with a throwaway
    test account, create a fresh baby ("Nora", due ~5 days out) so the page
    starts empty. Have a pleasant bump photo file ready for the upload step.
-2. **Recording**: one continuous screen recording of a maximized browser
-   window (recorded at 1920×1200 here), acting out the shot list above at a
-   calm pace — pause ~2 s on every meaningful state change. Use a **separate
-   incognito window** for the visitor acts so the owner session stays logged
-   in and the two windows demonstrate the real-time sync in Act 3.
+2. **Recording**: one continuous screen recording of the browser window,
+   acting out the shot list above at a calm pace — pause ~2 s on every
+   meaningful state change. Use a **separate incognito window** for the
+   visitor acts (positioned/sized identically to the owner window so window
+   switches don't move the crop) so the owner session stays logged in and
+   the two windows demonstrate the real-time sync in Act 3. Gotchas learned
+   the hard way:
+   - **Hide the Vercel toolbar first** (the floating dark circle on preview
+     deployments — click it → "Hide Toolbar"), or it hovers over the page in
+     the recording.
+   - Visit the page in the incognito window BEFORE recording; preview
+     deployments sometimes show a bot check on first anonymous visit.
+   - Chrome's saved-input autofill dropdown loves to appear over the
+     encouragement name field; press Escape to dismiss it, or expect to cut
+     the moment in editing.
 3. **Editing** (ffmpeg): cut the boring/ugly bits — OS file picker, incognito
    window setup, the denied notification-permission toast, any typing
    fumbles, and the recorder's shutdown frames at the tail. Crop away browser
