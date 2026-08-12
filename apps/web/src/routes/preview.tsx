@@ -39,6 +39,7 @@ const searchSchema = z.object({
   babyBorn: z.string().nullable().optional(),
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
+  laborStartedMessage: z.string().nullable().optional(),
   settings: z.boolean().optional(),
 });
 
@@ -68,6 +69,20 @@ function PreviewPage() {
   };
   const currentStatus = getCurrentStatus(baby);
   const themeCssUrl = getThemeCssUrl(baby.theme);
+
+  // The preview has no timeline; simulate the latest update from the stage message
+  const stageMessage =
+    currentStatus.type === "born"
+      ? baby.babyBornMessage
+      : currentStatus.type === "gone_to_hospital"
+        ? baby.hospitalMessage
+        : currentStatus.type === "labor_started"
+          ? baby.laborStartedMessage
+          : null;
+  const latestUpdate =
+    currentStatus.type !== "not_yet" && stageMessage
+      ? { message: stageMessage, postedAt: Date.parse(currentStatus.date) }
+      : null;
 
   return (
     <div>
@@ -117,7 +132,11 @@ function PreviewPage() {
           <div className="relative max-w-5xl mx-auto">
             <Card>
               <CardContent>
-                <StatusDisplay baby={baby} currentStatus={currentStatus} />
+                <StatusDisplay
+                  baby={baby}
+                  currentStatus={currentStatus}
+                  latestUpdate={latestUpdate}
+                />
                 <Separator />
               </CardContent>
               <CardFooter>
@@ -127,8 +146,8 @@ function PreviewPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <div className="text-center py-8 border-t border-border/50">
+        {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
+        <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"

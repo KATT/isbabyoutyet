@@ -1,7 +1,9 @@
 import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
+import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
-import { EncouragementForm, EncouragementsFeed } from "@/components/baby/encouragements";
+import { EncouragementForm } from "@/components/baby/encouragements";
+import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -20,6 +22,7 @@ import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-route
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -47,9 +50,14 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
+    // Prefetch so the status card doesn't flash without its message
+    const latestUpdate = await opts.context.convexClient.query(api.timeline.latestUpdate, {
+      babyId: baby._id,
+    });
     return {
       baby,
       vapidPublicKey,
+      latestUpdate,
     };
   },
   head: (opts) => {
@@ -133,6 +141,11 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
+  // Prefer the reactive value; fall back to the loader's prefetch while loading
+  const latestUpdate =
+    latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
   // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
@@ -147,8 +160,6 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
-            babyId={babyDoc._id}
-            photoUrl={babyDoc.photoUrl ?? null}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -158,12 +169,24 @@ function BabyPage() {
             isOpen={!!search.settings}
           />
           <ScheduledNotificationToast babyId={babyDoc._id} />
+          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogTitle className="sr-only">Post an update</DialogTitle>
+              <UpdateComposer
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                onPosted={() => setComposerOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </>
       )}
 
       <div className="border-b border-border/50">
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          onPostUpdate={isOwner ? () => setComposerOpen(true) : null}
           settingsButton={
             isOwner
               ? {
@@ -193,6 +216,11 @@ function BabyPage() {
                 currentStatus={currentStatus}
                 photoUrl={babyDoc.photoUrl}
                 thumbnailUrl={babyDoc.thumbnailUrl}
+                latestUpdate={
+                  latestUpdate
+                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                    : null
+                }
               />
               <NotificationSubscribe
                 babyId={babyDoc._id}
@@ -207,27 +235,29 @@ function BabyPage() {
         </div>
       </section>
 
-      {/* Encouragements Section */}
-      {!baby.encouragementsDisabled && (
-        <section className="relative px-6 pb-12">
-          <div className="relative max-w-2xl mx-auto space-y-8">
+      {/* Timeline Section: owner updates interleaved with encouragements.
+          The news (feed) comes before the visitor's encouragement form; the
+          owner posts via the "Post update" button in the fixed nav bar. */}
+      <section className="relative px-6 pb-12">
+        <div className="relative max-w-2xl mx-auto space-y-8">
+          <Card>
+            <CardContent className="pt-6">
+              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+            </CardContent>
+          </Card>
+
+          {!baby.encouragementsDisabled && (
             <Card>
               <CardContent className="pt-6">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </CardContent>
             </Card>
+          )}
+        </div>
+      </section>
 
-            <Card>
-              <CardContent className="pt-6">
-                <EncouragementsFeed babyId={babyDoc._id} isOwner={isOwner} />
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      )}
-
-      {/* Footer */}
-      <div className="text-center py-8 border-t border-border/50">
+      {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
+      <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
