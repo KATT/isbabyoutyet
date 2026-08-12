@@ -1,4 +1,5 @@
 import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
+import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { EncouragementForm } from "@/components/baby/encouragements";
@@ -21,6 +22,7 @@ import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-route
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -139,6 +141,7 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const [composerOpen, setComposerOpen] = useState(false);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
@@ -157,8 +160,6 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
-            babyId={babyDoc._id}
-            photoUrl={babyDoc.photoUrl ?? null}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -168,12 +169,24 @@ function BabyPage() {
             isOpen={!!search.settings}
           />
           <ScheduledNotificationToast babyId={babyDoc._id} />
+          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogTitle className="sr-only">Post an update</DialogTitle>
+              <UpdateComposer
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                onPosted={() => setComposerOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </>
       )}
 
       <div className="border-b border-border/50">
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          onPostUpdate={isOwner ? () => setComposerOpen(true) : null}
           settingsButton={
             isOwner
               ? {
@@ -223,17 +236,10 @@ function BabyPage() {
       </section>
 
       {/* Timeline Section: owner updates interleaved with encouragements.
-          The news (feed) comes before the visitor's encouragement form. */}
+          The news (feed) comes before the visitor's encouragement form; the
+          owner posts via the "Post update" button in the fixed nav bar. */}
       <section className="relative px-6 pb-12">
         <div className="relative max-w-2xl mx-auto space-y-8">
-          {isOwner && (
-            <Card>
-              <CardContent className="pt-6">
-                <UpdateComposer babyId={babyDoc._id} baby={baby} babyName={baby.name} />
-              </CardContent>
-            </Card>
-          )}
-
           <Card>
             <CardContent className="pt-6">
               <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
