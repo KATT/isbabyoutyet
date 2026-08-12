@@ -169,10 +169,38 @@ test("a milestone update sets the canonical status and schedules a push", async 
     { status: "pending", notificationType: "born", customMessage: "She's here!" },
   ]);
 
-  // The same milestone can't be marked twice
+  // The status only moves forward: re-marking the same milestone — or any
+  // earlier stage — is rejected once a later stage is reached
   await expect(asAlice.mutation(api.updates.post, { babyId, milestone: "born" })).rejects.toThrow(
-    "This milestone is already marked",
+    "Only a future status can be marked",
   );
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" }),
+  ).rejects.toThrow("Only a future status can be marked");
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("Only a future status can be marked");
+});
+
+test("the forward-only guard enforces order at every intermediate stage", async () => {
+  await using _timers = useFakeTimersResource();
+  const { asAlice, babyId } = await setup();
+
+  // From labor_started: re-marking it is rejected, later stages are open
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("Only a future status can be marked");
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" });
+
+  // From gone_to_hospital: same and earlier stages are rejected, born is open
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" }),
+  ).rejects.toThrow("Only a future status can be marked");
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("Only a future status can be marked");
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
 });
 
 test("baby.update keeps milestone rows in sync: mark, redate, edit message, unmark", async () => {

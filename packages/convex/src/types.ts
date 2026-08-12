@@ -40,7 +40,7 @@ export function getCurrentStatus(baby: BabyData): BabyStatus {
   return { type: "not_yet" };
 }
 
-const STATUS_ORDER = {
+export const STATUS_ORDER = {
   not_yet: 0,
   labor_started: 1,
   gone_to_hospital: 2,
