@@ -63,10 +63,7 @@ function getDeploymentContext(): DeploymentContext {
   }
 
   const workersSubdomain = normalizeWorkersSubdomain(env.CLOUDFLARE_WORKERS_SUBDOMAIN);
-  const previewAlias = createCloudflarePreviewAlias(
-    env.WORKERS_CI_BRANCH,
-    CLOUDFLARE_WORKER_NAME,
-  );
+  const previewAlias = createCloudflarePreviewAlias(env.WORKERS_CI_BRANCH, CLOUDFLARE_WORKER_NAME);
   return {
     deployKey: env.CONVEX_PREVIEW_DEPLOY_KEY,
     isPreview: true,
@@ -105,9 +102,7 @@ function convexCli(args: string[]) {
   });
 }
 
-const previewArgs = deployment.previewName
-  ? ["--preview-name", deployment.previewName]
-  : [];
+const previewArgs = deployment.previewName ? ["--preview-name", deployment.previewName] : [];
 
 convexCli([
   "deploy",
