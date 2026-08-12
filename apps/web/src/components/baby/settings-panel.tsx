@@ -8,12 +8,7 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@workspace/ui/components/item";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@workspace/ui/components/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Switch } from "@workspace/ui/components/switch";
 import { format } from "date-fns";
 import {
