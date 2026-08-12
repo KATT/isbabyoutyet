@@ -6,6 +6,9 @@ alwaysApply: true
 
 - Assume the app is running in dev mode at http://localhost:3000
 - Always run `pnpm checks` before consider yourself done with a task
+- `packages/ui` only contains the shadcn components we actually use. If you
+  need one that isn't there, install it at your own discretion — see
+  `packages/ui/AGENTS.md`
 
 ## TypeScript & Code Style
 
