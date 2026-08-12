@@ -67,16 +67,12 @@ dialog.
 **Act 3 — the big moment** (owner, then visitor)
 
 6. Back in the owner window (Aunt Meg's message has appeared live), the owner
-   opens "Post update", types "It's happening!! Off to the hospital soon 🚨",
-   selects **Labour started** in the status radio group (the "When did it
-   happen?" field appears — left untouched, meaning "now"), and posts via
-   _Post & mark "Labour started"_.
-7. The status card flips to "Labour started" with the message; the progress
-   indicator advances.
-8. The visitor window shows the flipped status live (real-time sync), then
-   slowly scrolls the feed: milestone update with badge → Aunt Meg's
-   encouragement → the pinned bump photo → the first text update. End on the
-   feed view.
+   posts "It's happening!! Off to the hospital soon 🚨" marking **Labour
+   started**. The current cut shows the RESULT (montage cut): the status card
+   flipped with the message and a "Sending notification…" toast.
+7. The visitor's view of the flipped "Labour started" status, then a slow
+   scroll of the feed: milestone update with badge → Aunt Meg's encouragement
+   → the bump photo → the first text update. End on the feed view.
 
 ## How to regenerate
 
@@ -88,11 +84,18 @@ video following apps/web/src/assets/how-it-works/README.md".
    (previews are seeded — log in with the demo credentials from
    `packages/convex/src/seedCredentials.ts`). Create a fresh baby so the page
    starts empty. Have a pleasant bump photo ready for the upload step.
-2. **Recording**: one continuous capture of a phone-portrait browser window
-   (~380–440 px wide), acting out the shot list at a calm pace — pause ~2 s on
-   every meaningful state change. Use a **separate incognito window** for the
-   visitor acts, positioned/sized identically so window switches don't move
-   the crop. Gotchas learned the hard way:
+2. **Recording**: capture EACH ACT as its own short clip of a phone-portrait
+   browser window (~400×850), acting out the shot list at a calm pace —
+   pause ~2 s on every meaningful state change. Use a **separate incognito
+   window** for the visitor acts, positioned/sized identically. Gotchas
+   learned the hard way:
+   - **Screen recorders with auto-zoom ruin single-take footage**: window
+     switches, OS file dialogs, and dialog opens make the framing jump. Record
+     one window per clip, do the file picking BETWEEN clips (stage the dialog
+     with the photo preview before hitting record), and expect the first ~5 s
+     of each clip to be zoom-warped — plan a still hold at the start and trim
+     it. The recorder also fades to black at the end of each clip: trim ~2 s
+     off every tail.
    - **Hide the Vercel toolbar first** (the floating dark circle on preview
      deployments — click it → "Hide Toolbar"), or it hovers over the page.
    - Visit the page in the incognito window BEFORE recording; previews
@@ -129,4 +132,4 @@ video following apps/web/src/assets/how-it-works/README.md".
    over ~5 s, ends on the feed view (not a black frame), total under ~100 s,
    file ~1–3 MB. Update this README if the shot list changed.
 
-<!-- v3: re-recorded 2026-08-12, mobile-first portrait, radio-group composer with event-time field -->
+<!-- v3: re-recorded 2026-08-12, mobile-first portrait (~62 s), assembled from per-act clips -->
