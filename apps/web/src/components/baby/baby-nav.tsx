@@ -12,20 +12,13 @@ type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
-  /** Owner-only "Post update" link; open state is mirrored in the URL search */
-  postUpdateButton?: null | LinkProps;
-  postUpdateOpen?: boolean;
+  /** Owner-only "Post update" action */
+  onPostUpdate?: (() => void) | null;
 };
 
-export function BabyNav({
-  shareLink,
-  settingsButton,
-  settingsOpen,
-  postUpdateButton,
-  postUpdateOpen,
-}: BabyNavProps) {
+export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
-  const hasOwnerActions = !!(postUpdateButton || settingsButton);
+  const hasOwnerActions = !!(onPostUpdate || settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -35,12 +28,8 @@ export function BabyNav({
 
   const ownerActions = hasOwnerActions ? (
     <ButtonGroup aria-label="Owner actions">
-      {postUpdateButton && (
-        <Button
-          variant={postUpdateOpen ? "default" : "outline"}
-          render={<Link {...(postUpdateButton as any)} />}
-          nativeButton={false}
-        >
+      {onPostUpdate && (
+        <Button variant="outline" onClick={onPostUpdate}>
           <MessageCircleHeart data-icon="inline-start" />
           Post update
         </Button>
