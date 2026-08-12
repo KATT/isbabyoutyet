@@ -54,6 +54,7 @@ export function BabyNav({
                 size="icon"
                 render={<Link {...(settingsButton as any)} />}
                 nativeButton={false}
+                aria-label={settingsOpen ? "Close settings" : "Settings"}
               >
                 <Settings />
               </Button>
@@ -101,6 +102,7 @@ export function BabyNav({
               variant="outline"
               size="icon"
               disabled={!shareLink}
+              aria-label={copied ? "Copied!" : "Copy link to share"}
             >
               {copied ? <CheckCircle /> : <Share2 />}
             </Button>
