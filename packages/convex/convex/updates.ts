@@ -29,9 +29,6 @@ export const post = mutationWithTriggers({
     babyId: v.id("baby"),
     message: v.optional(v.union(v.string(), v.null())),
     milestone: v.optional(v.union(milestoneValidator, v.null())),
-    // Event clock for a milestone (ms epoch): when it actually happened.
-    // Defaults to "now"; lets the owner backdate when posting after the fact.
-    occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
   },
   handler: async (ctx, args) => {
@@ -66,25 +63,17 @@ export const post = mutationWithTriggers({
         throw new Error("This milestone is already marked");
       }
     }
-    if (args.occurredAt != null && !milestone) {
-      throw new Error("A backdated time requires a status change");
-    }
 
     const postedAt = Date.now();
-    // Event clock: when the milestone actually happened. Defaults to the
-    // announce time; a backdated value must be in the past.
-    const occurredAt = milestone ? (args.occurredAt ?? postedAt) : null;
-    if (occurredAt != null && occurredAt > postedAt + 60_000) {
-      throw new Error("The event time cannot be in the future");
-    }
 
     const { updateId } = await insertUpdateWithTimelineItem(ctx, {
       babyId: args.babyId,
       postedAt,
       message,
       milestone,
-      // Settings can still redate occurredAt later without moving the feed position
-      occurredAt,
+      // Milestone event clock starts as "now"; settings can redate occurredAt later
+      // without moving the feed position.
+      occurredAt: milestone ? postedAt : null,
       photoId,
     });
 
@@ -93,12 +82,9 @@ export const post = mutationWithTriggers({
     }
 
     if (milestone) {
-      // The canonical status timestamp is the event clock, not the announce time
       const dateField = MILESTONE_FIELDS[milestone].date;
       if (!baby[dateField]) {
-        await ctx.db.patch(args.babyId, {
-          [dateField]: new Date(occurredAt ?? postedAt).toISOString(),
-        });
+        await ctx.db.patch(args.babyId, { [dateField]: new Date(postedAt).toISOString() });
       }
 
       const updatedBaby = await ctx.db.get(args.babyId);

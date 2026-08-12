@@ -5,7 +5,6 @@ import type { Doc, Id } from "./_generated/dataModel";
 import {
   backfillBabyTimelineDoc,
   backfillEncouragementTimelineDoc,
-  clearLegacyStageMessagesDoc,
   separateMilestoneOccurredAtDoc,
 } from "./migrations";
 import schema from "./schema";
@@ -204,7 +203,7 @@ test("the forward-only guard enforces order at every intermediate stage", async 
   await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
 });
 
-test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () => {
+test("baby.update keeps milestone rows in sync: mark, redate, edit message, unmark", async () => {
   const { t, asAlice, babyId } = await setup();
 
   // Mark labour started with a historical event clock
@@ -212,6 +211,7 @@ test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () 
   await asAlice.mutation(api.baby.update, {
     babyId,
     laborStarted: "2026-08-20T08:00:00.000Z",
+    laborStartedMessage: "It has begun!",
   });
   const afterMark = Date.now();
 
@@ -224,6 +224,7 @@ test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () 
   expect(marked.postedAt).toBeLessThanOrEqual(afterMark);
   expect(marked.update).toMatchObject({
     milestone: "labor_started",
+    message: "It has begun!",
     occurredAt: Date.parse("2026-08-20T08:00:00.000Z"),
   });
 
@@ -240,6 +241,14 @@ test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () 
       update: { occurredAt: Date.parse("2026-08-20T10:30:00.000Z") },
     },
   ]);
+
+  // Editing the stage message keeps the row in sync
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    laborStartedMessage: "Contractions every 5 minutes",
+  });
+  feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([{ update: { message: "Contractions every 5 minutes" } }]);
 
   // Unmarking removes the milestone from the feed
   await asAlice.mutation(api.baby.update, { babyId, laborStarted: null });
@@ -401,31 +410,18 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
       customMessage: null,
       createdAt: laborAnnouncedAt,
     });
-    // timelineItemId is required by now (PR 1's backfill linked all rows)
-    const grandmaTimelineItemId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "encouragement",
-      postedAt: grandmaAt.getTime(),
-    });
     await ctx.db.insert("encouragements", {
       babyId,
       authorName: "Grandma",
       message: "Waiting by the phone!",
       createdAt: grandmaAt.getTime(),
-      timelineItemId: grandmaTimelineItemId,
       visitorId: "visitor-legacy-1",
-    });
-    const auntMegTimelineItemId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "encouragement",
-      postedAt: auntMegAt.getTime(),
     });
     await ctx.db.insert("encouragements", {
       babyId,
       authorName: "Aunt Meg",
       message: "Thinking of you!",
       createdAt: auntMegAt.getTime(),
-      timelineItemId: auntMegTimelineItemId,
       visitorId: "visitor-legacy-2",
     });
   });
@@ -491,30 +487,6 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
   });
   expect(photoUploadedAt).toBeTruthy();
   expect(photoItem?.postedAt).toBe(photoUploadedAt);
-
-  // Clearing the legacy stage messages keeps the feed content intact
-  await t.run(async (ctx) => {
-    const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Baby not found");
-    await clearLegacyStageMessagesDoc(ctx, baby);
-  });
-  const clearedBaby = await getBaby(t, babyId);
-  expect(clearedBaby).toMatchObject({
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
-  });
-  const feedAfterClear = await t.query(api.timeline.listByBaby, {
-    babyId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(feedAfterClear.page).toMatchObject([
-    { kind: "update" },
-    { kind: "update" },
-    { kind: "encouragement" },
-    { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
-    { kind: "encouragement" },
-  ]);
 
   // Dual-writes stay consistent post-backfill: unmarking removes the
   // dual-written milestone row too
@@ -664,51 +636,4 @@ test("posting a milestone sets occurredAt to the announce time", async () => {
   expect(item.postedAt).toBeGreaterThanOrEqual(before);
   expect(item.postedAt).toBeLessThanOrEqual(after);
   expect(item.update.occurredAt).toBe(item.postedAt);
-});
-
-test("posting a milestone can backdate the event clock without moving the feed", async () => {
-  const { t, asAlice, babyId } = await setup();
-  const occurredAt = Date.now() - 6 * 60 * 60 * 1000;
-
-  const before = Date.now();
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    message: "Started overnight, telling you all now!",
-    occurredAt,
-  });
-  const after = Date.now();
-
-  // The feed slot is the announce time; the event clock is the backdated time
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toHaveLength(1);
-  const item = feed.page[0];
-  if (item?.kind !== "update") throw new Error("expected update");
-  expect(item.postedAt).toBeGreaterThanOrEqual(before);
-  expect(item.postedAt).toBeLessThanOrEqual(after);
-  expect(item.update.occurredAt).toBe(occurredAt);
-
-  // The canonical status timestamp on the baby doc is the event clock
-  const baby = await getBaby(t, babyId);
-  expect(baby.laborStarted).toBe(new Date(occurredAt).toISOString());
-});
-
-test("a backdated event time is rejected when in the future or without a milestone", async () => {
-  const { asAlice, babyId } = await setup();
-
-  await expect(
-    asAlice.mutation(api.updates.post, {
-      babyId,
-      milestone: "labor_started",
-      occurredAt: Date.now() + 60 * 60 * 1000,
-    }),
-  ).rejects.toThrow("The event time cannot be in the future");
-
-  await expect(
-    asAlice.mutation(api.updates.post, {
-      babyId,
-      message: "Just a message",
-      occurredAt: Date.now() - 60 * 60 * 1000,
-    }),
-  ).rejects.toThrow("A backdated time requires a status change");
 });

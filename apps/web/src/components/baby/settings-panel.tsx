@@ -21,7 +21,15 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
-import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
+import {
+  BabyBornMessageEditor,
+  HospitalMessageEditor,
+  LaborStartedMessageEditor,
+  DueDateEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "./editors";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
 
 type SettingsPanelProps = {
@@ -77,9 +85,11 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
               </ItemActions>
             </Item>
 
+            <ItemSeparator />
+
             {/* Marked milestones: correct their date here; mark new ones via
                 the "Post update" composer, unmark by deleting the timeline
-                update */}
+                update. Posting photos also happens through the composer. */}
             {baby.laborStarted && (
               <>
                 <ItemSeparator />
@@ -154,6 +164,51 @@ export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
                 </Item>
               </>
             )}
+
+            <ItemSeparator />
+
+            {/* Legacy per-stage messages (retired with the fields themselves
+                in the cleanup PR) */}
+            <Item>
+              <ItemMedia variant="icon">
+                <Activity className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Labour Message</ItemTitle>
+                <ItemDescription>{baby.laborStartedMessage || "Default message"}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <LaborStartedMessageEditor baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+            <Item>
+              <ItemMedia variant="icon">
+                <Hospital className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Hospital Message</ItemTitle>
+                <ItemDescription>{baby.hospitalMessage || "Default message"}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <HospitalMessageEditor baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
+
+            <ItemSeparator />
+            <Item>
+              <ItemMedia variant="icon">
+                <CheckCircle className="w-4 h-4" />
+              </ItemMedia>
+              <ItemContent>
+                <ItemTitle>Baby Born Message</ItemTitle>
+                <ItemDescription>{baby.babyBornMessage || "Default message"}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <BabyBornMessageEditor baby={baby} onUpdate={onUpdate} />
+              </ItemActions>
+            </Item>
 
             <ItemSeparator />
 

@@ -319,25 +319,10 @@ function HomePage() {
         {/* How It Works */}
         <Card>
           <CardHeader>
-            <CardTitle>Show Me How It Works</CardTitle>
-            <CardDescription>
-              Watch the whole journey in 90 seconds: post updates and photos as the parent, while
-              family cheers you on and subscribes for the big news
-            </CardDescription>
+            <CardTitle>How It Works</CardTitle>
+            <CardDescription>Up and running in under a minute</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-10">
-            {/* Demo walkthrough video. Contents + regeneration guide:
-                apps/web/docs/how-it-works-video.md */}
-            <video
-              src="/how-it-works.mp4"
-              poster="/how-it-works-poster.jpg"
-              controls
-              muted
-              playsInline
-              preload="metadata"
-              aria-label="Demo: posting updates as the parent while visitors send encouragement and subscribe for notifications"
-              className="w-full rounded-xl border border-border shadow-lg shadow-primary/5"
-            />
+          <CardContent>
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {

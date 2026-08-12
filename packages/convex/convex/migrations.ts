@@ -225,67 +225,10 @@ export const separateMilestoneOccurredAt = migrations.define({
   migrateOne: separateMilestoneOccurredAtDoc,
 });
 
-/**
- * Clears the legacy per-stage message fields. Their content lives on the
- * milestone update rows since the timeline backfill (which runs first in
- * `runAll`) — but before destroying anything, verify each message actually
- * made it to the timeline and heal the row if not.
- */
-export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (
-    baby.laborStartedMessage == null &&
-    baby.hospitalMessage == null &&
-    baby.babyBornMessage == null
-  ) {
-    return;
-  }
-
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const legacyMessage = baby[fields.message];
-    if (legacyMessage == null || !baby[fields.date]) continue;
-
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
-    if (!existing) {
-      // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
-      // event time on occurredAt
-      const occurredAt = parseIsoMs(baby[fields.date]) ?? Date.now();
-      const now = Date.now();
-      const postedAt = await resolveMilestoneAnnounceAt(ctx, {
-        babyId: baby._id,
-        milestone,
-        referenceMs: now,
-        fallbackMs: now,
-      });
-      await insertUpdateWithTimelineItem(ctx, {
-        babyId: baby._id,
-        postedAt,
-        occurredAt,
-        milestone,
-        message: legacyMessage,
-      });
-    } else if (existing.message == null) {
-      await ctx.db.patch(existing._id, { message: legacyMessage });
-    }
-  }
-
-  await ctx.db.patch(baby._id, {
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
-  });
-}
-
-export const clearLegacyStageMessages = migrations.define({
-  table: "baby",
-  migrateOne: clearLegacyStageMessagesDoc,
-});
-
 // Run all pending migrations - called automatically during deployment
 export const runAll = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
-  internal.migrations.clearLegacyStageMessages,
 ]);
