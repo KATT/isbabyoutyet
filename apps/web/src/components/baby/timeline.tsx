@@ -32,7 +32,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -41,6 +41,8 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { BabyData, Milestone } from "@workspace/convex/src/types";
 import { getCurrentStatus, STATUS_ORDER } from "@workspace/convex/src/types";
+import { Form, useZodForm } from "@/components/Form";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
 
 const PAGE_SIZE = 20;
@@ -57,16 +59,24 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * A post's three fields are mutually inclusive: any combination works, as
  * long as at least one is present. The message is trimmed BEFORE validation,
  * so a whitespace-only message counts as no message (matching the backend).
+ * `occurredAt` is prefilled with "now" and only posted when explicitly edited.
  */
-const updateDraftSchema = z
+const composerSchema = z
   .object({
     message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-    milestone: z.string().nullable(),
-    hasPhoto: z.boolean(),
+    milestone: z.union([
+      z.literal("none"),
+      z.literal("labor_started"),
+      z.literal("gone_to_hospital"),
+      z.literal("born"),
+    ]),
+    occurredAt: z.string(),
+    photo: z.custom<File>().nullable(),
   })
-  .refine((draft) => draft.message.length > 0 || draft.milestone !== null || draft.hasPhoto, {
-    error: "Add a message, a photo, or a milestone to post",
-  });
+  .refine(
+    (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+    { error: "Add a message, a photo, or a milestone to post" },
+  );
 
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
@@ -133,15 +143,6 @@ type UpdateComposerProps = {
 export function UpdateComposer(props: UpdateComposerProps) {
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
-
-  const [message, setMessage] = useState("");
-  const [milestone, setMilestone] = useState<Milestone | null>(null);
-  // Event clock for the selected milestone as a `datetime-local` string;
-  // null = untouched, meaning "it's happening now"
-  const [occurredAtInput, setOccurredAtInput] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-  const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The status only moves forward: offer only stages AFTER the current one,
@@ -151,27 +152,51 @@ export function UpdateComposer(props: UpdateComposerProps) {
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
 
-  // Guard against a stale selection: the status may have advanced from
-  // another tab while a milestone was selected here. Clear the state (not
-  // just mask it) so the old choice can't resurface if the status regresses
-  // later via unmarking.
-  if (milestone && !futureMilestones.includes(milestone)) {
-    setMilestone(null);
-    setOccurredAtInput(null);
-  }
-  const selectedMilestone = milestone && futureMilestones.includes(milestone) ? milestone : null;
-
-  const draft = updateDraftSchema.safeParse({
-    message,
-    milestone: selectedMilestone,
-    hasPhoto: !!photoFile,
+  const form = useZodForm({
+    schema: composerSchema,
+    defaultValues: {
+      message: "",
+      milestone: "none",
+      // Prefilled with "now" so the owner sees what will be recorded; only
+      // posted when explicitly edited (checked via dirtyFields on submit)
+      occurredAt: toDatetimeLocalValue(new Date()),
+      photo: null,
+    },
   });
-  const canPost = !isPosting && draft.success;
+  const isPosting = form.formState.isSubmitting;
+
+  const draft = form.watch();
+
+  // Guard against a stale selection: the status may have advanced from
+  // another tab while a milestone was selected here. The mask keeps the
+  // current render correct; the effect clears the value so the old choice
+  // can't resurface if the status regresses later via unmarking.
+  const selectedMilestone =
+    draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
+      ? draft.milestone
+      : null;
+  useEffect(() => {
+    const value = form.getValues("milestone");
+    if (value !== "none" && STATUS_ORDER[value] <= STATUS_ORDER[currentStatus.type]) {
+      form.setValue("milestone", "none");
+      form.resetField("occurredAt");
+    }
+  }, [form, currentStatus.type]);
+
+  const photoPreviewUrl = useMemo(
+    () => (draft.photo ? URL.createObjectURL(draft.photo) : null),
+    [draft.photo],
+  );
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
+
+  const canPost = !isPosting && composerSchema.safeParse(draft).success;
 
   const clearPhoto = () => {
-    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    setPhotoFile(null);
-    setPhotoPreviewUrl(null);
+    form.setValue("photo", null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -186,55 +211,52 @@ export function UpdateComposer(props: UpdateComposerProps) {
       toast.error("Photo must be 10 MB or smaller");
       return;
     }
-    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    setPhotoFile(file);
-    setPhotoPreviewUrl(URL.createObjectURL(file));
+    form.setValue("photo", file, { shouldDirty: true });
   };
 
-  const handlePost = async () => {
-    if (!draft.success) return;
-    setIsPosting(true);
-    try {
-      let photoId: Id<"_storage"> | undefined;
-      if (photoFile) {
-        const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
-        const response = await fetch(uploadUrl, {
-          method: "POST",
-          headers: { "Content-Type": photoFile.type },
-          body: photoFile,
-        });
-        if (!response.ok) {
-          throw new Error("Failed to upload photo");
-        }
-        const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
-        photoId = uploaded.storageId;
-      }
+  const handlePost = async (values: z.input<typeof composerSchema>) => {
+    const message = values.message.trim();
+    const milestone = values.milestone === "none" ? null : values.milestone;
 
-      // A touched event-time picker means the milestone is backdated;
-      // untouched means "it's happening now" (the backend defaults)
-      const occurredAtMs =
-        selectedMilestone && occurredAtInput ? new Date(occurredAtInput).getTime() : null;
-
-      await postUpdate({
-        babyId: props.babyId,
-        // draft.data.message is the trimmed message; empty means "no message"
-        message: draft.data.message || undefined,
-        milestone: selectedMilestone ?? undefined,
-        occurredAt: occurredAtMs != null && !Number.isNaN(occurredAtMs) ? occurredAtMs : undefined,
-        photoId,
+    let photoId: Id<"_storage"> | undefined;
+    if (values.photo) {
+      const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": values.photo.type },
+        body: values.photo,
       });
-
-      toast.success("Update posted!");
-      setMessage("");
-      setMilestone(null);
-      setOccurredAtInput(null);
-      clearPhoto();
-      props.onPosted?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to post update");
-    } finally {
-      setIsPosting(false);
+      if (!response.ok) {
+        throw new Error("Failed to upload photo");
+      }
+      const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
+      photoId = uploaded.storageId;
     }
+
+    // An explicitly edited event-time picker means the milestone is
+    // backdated; untouched means "it's happening now" (the backend default)
+    const occurredAtMs =
+      milestone && form.formState.dirtyFields.occurredAt
+        ? new Date(values.occurredAt).getTime()
+        : null;
+
+    await postUpdate({
+      babyId: props.babyId,
+      message: message || undefined,
+      milestone: milestone ?? undefined,
+      occurredAt: occurredAtMs != null && !Number.isNaN(occurredAtMs) ? occurredAtMs : undefined,
+      photoId,
+    });
+
+    toast.success("Update posted!");
+    form.reset({
+      message: "",
+      milestone: "none",
+      occurredAt: toDatetimeLocalValue(new Date()),
+      photo: null,
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    props.onPosted?.();
   };
 
   return (
@@ -248,128 +270,163 @@ export function UpdateComposer(props: UpdateComposerProps) {
         each is optional, any mix works.
       </p>
 
-      <Textarea
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Write a message (optional)…"
-        aria-label="Update message (optional)"
-        className="min-h-20"
-        maxLength={MAX_UPDATE_MESSAGE_LENGTH}
-        disabled={isPosting}
-      />
-
-      {photoPreviewUrl && (
-        <div className="relative w-fit">
-          <img
-            src={photoPreviewUrl}
-            alt="Photo to post"
-            className="max-h-40 rounded-lg border border-border object-cover"
+      <Form form={form} handleSubmit={handlePost}>
+        <div className="space-y-3">
+          <FormField
+            control={form.control}
+            name="message"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Textarea
+                    placeholder="Write a message (optional)…"
+                    aria-label="Update message (optional)"
+                    className="min-h-20"
+                    maxLength={MAX_UPDATE_MESSAGE_LENGTH}
+                    disabled={isPosting}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          <Button
-            variant="secondary"
-            size="icon"
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
-            onClick={clearPhoto}
-            disabled={isPosting}
-            aria-label="Remove photo"
-          >
-            <X className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
 
-      {futureMilestones.length > 0 && (
-        <div className="space-y-2">
-          <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
-            Status change (optional)
-          </p>
-          <RadioGroup
-            aria-labelledby="composer-status-label"
-            value={selectedMilestone ?? "none"}
-            onValueChange={(value) => {
-              setMilestone(value === "none" ? null : (value as Milestone));
-              if (value === "none") setOccurredAtInput(null);
-            }}
-            disabled={isPosting}
-            className="gap-1.5"
-          >
-            <label className="flex items-center gap-2 text-sm cursor-pointer">
-              <RadioGroupItem value="none" />
-              No status change
-            </label>
-            {futureMilestones.map((candidate) => {
-              const meta = MILESTONE_META[candidate];
-              const MilestoneIcon = meta.icon;
-              return (
-                <label key={candidate} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <RadioGroupItem value={candidate} />
-                  <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                  {meta.label}
-                </label>
-              );
-            })}
-          </RadioGroup>
-          {selectedMilestone && (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
-                notifies everyone subscribed.
-              </p>
-              <label className="block space-y-1">
-                <span className="text-xs font-medium text-muted-foreground">
-                  When did it happen?
-                </span>
-                <Input
-                  type="datetime-local"
-                  value={occurredAtInput ?? toDatetimeLocalValue(new Date())}
-                  max={toDatetimeLocalValue(new Date())}
-                  onChange={(e) => setOccurredAtInput(e.target.value)}
-                  disabled={isPosting}
-                  className="w-fit"
-                />
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Defaults to now — set an earlier time if you're sharing the news after the fact.
-              </p>
+          {photoPreviewUrl && (
+            <div className="relative w-fit">
+              <img
+                src={photoPreviewUrl}
+                alt="Photo to post"
+                className="max-h-40 rounded-lg border border-border object-cover"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
+                onClick={clearPhoto}
+                disabled={isPosting}
+                aria-label="Remove photo"
+              >
+                <X className="w-3 h-3" />
+              </Button>
             </div>
           )}
+
+          {futureMilestones.length > 0 && (
+            <div className="space-y-2">
+              <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
+                Status change (optional)
+              </p>
+              <FormField
+                control={form.control}
+                name="milestone"
+                render={({ field }) => (
+                  <RadioGroup
+                    aria-labelledby="composer-status-label"
+                    value={selectedMilestone ?? "none"}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Deselecting forgets any backdate; reselecting starts from "now"
+                      if (value === "none") form.resetField("occurredAt");
+                    }}
+                    disabled={isPosting}
+                    className="gap-1.5"
+                  >
+                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                      <RadioGroupItem value="none" />
+                      No status change
+                    </label>
+                    {futureMilestones.map((candidate) => {
+                      const meta = MILESTONE_META[candidate];
+                      const MilestoneIcon = meta.icon;
+                      return (
+                        <label
+                          key={candidate}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
+                          <RadioGroupItem value={candidate} />
+                          <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                          {meta.label}
+                        </label>
+                      );
+                    })}
+                  </RadioGroup>
+                )}
+              />
+              {selectedMilestone && (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">
+                    This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
+                    notifies everyone subscribed.
+                  </p>
+                  <FormField
+                    control={form.control}
+                    name="occurredAt"
+                    render={({ field }) => (
+                      <FormItem>
+                        <label className="block space-y-1">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            When did it happen?
+                          </span>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              max={toDatetimeLocalValue(new Date())}
+                              disabled={isPosting}
+                              className="w-fit"
+                              {...field}
+                            />
+                          </FormControl>
+                        </label>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Defaults to now — set an earlier time if you're sharing the news after the fact.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
+
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isPosting}
+            >
+              <ImagePlus className="w-4 h-4" />
+              {draft.photo ? "Change photo" : "Add photo (optional)"}
+            </Button>
+            <Button type="submit" disabled={!canPost}>
+              <Send className="w-4 h-4" />
+              {isPosting
+                ? "Posting..."
+                : selectedMilestone
+                  ? `Post & mark "${MILESTONE_META[selectedMilestone].label}"`
+                  : "Post update"}
+            </Button>
+          </div>
+
+          {!canPost && !isPosting && (
+            <p className="text-xs text-muted-foreground text-right">
+              Add a message, a photo, or a milestone — any one is enough.
+            </p>
+          )}
         </div>
-      )}
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isPosting}
-        >
-          <ImagePlus className="w-4 h-4" />
-          {photoFile ? "Change photo" : "Add photo (optional)"}
-        </Button>
-        <Button onClick={handlePost} disabled={!canPost}>
-          <Send className="w-4 h-4" />
-          {isPosting
-            ? "Posting..."
-            : selectedMilestone
-              ? `Post & mark "${MILESTONE_META[selectedMilestone].label}"`
-              : "Post update"}
-        </Button>
-      </div>
-
-      {!draft.success && (
-        <p className="text-xs text-muted-foreground text-right">
-          Add a message, a photo, or a milestone — any one is enough.
-        </p>
-      )}
+      </Form>
     </div>
   );
 }
@@ -555,32 +612,31 @@ type EncouragementTimelineItemProps = {
   onUpdate: (id: Id<"encouragements">, visitorId: string, message: string) => Promise<void>;
 };
 
+const encouragementEditSchema = z.object({
+  message: z.string().trim().min(1, "Message cannot be empty"),
+});
+
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const encouragement = props.item.encouragement;
   const [isEditing, setIsEditing] = useState(false);
-  const [editMessage, setEditMessage] = useState(encouragement.message);
-  const [isSaving, setIsSaving] = useState(false);
+
+  const form = useZodForm({
+    schema: encouragementEditSchema,
+    defaultValues: { message: encouragement.message },
+  });
+  const isSaving = form.formState.isSubmitting;
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
 
-  const handleSave = async () => {
-    if (!editMessage.trim()) {
-      toast.error("Message cannot be empty");
-      return;
-    }
-    setIsSaving(true);
-    try {
-      await props.onUpdate(encouragement._id, props.currentVisitorId, editMessage);
-      setIsEditing(false);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleSave = async (values: z.input<typeof encouragementEditSchema>) => {
+    await props.onUpdate(encouragement._id, props.currentVisitorId, values.message.trim());
+    setIsEditing(false);
   };
 
   const handleCancel = () => {
-    setEditMessage(encouragement.message);
+    form.reset({ message: encouragement.message });
     setIsEditing(false);
   };
 
@@ -600,24 +656,43 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
           </div>
 
           {isEditing ? (
-            <div className="space-y-2">
-              <Textarea
-                value={editMessage}
-                onChange={(e) => setEditMessage(e.target.value)}
-                className="min-h-20"
-                disabled={isSaving}
-              />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={handleSave} disabled={isSaving}>
-                  <Check className="w-3 h-3" />
-                  {isSaving ? "Saving..." : "Save"}
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
-                  <X className="w-3 h-3" />
-                  Cancel
-                </Button>
+            <Form form={form} handleSubmit={handleSave}>
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          aria-label="Edit your message"
+                          className="min-h-20"
+                          disabled={isSaving}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex gap-2">
+                  <Button size="sm" type="submit" disabled={isSaving}>
+                    <Check className="w-3 h-3" />
+                    {isSaving ? "Saving..." : "Save"}
+                  </Button>
+                  <Button
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    <X className="w-3 h-3" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
+            </Form>
           ) : (
             <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
               <Streamdown>{encouragement.message}</Streamdown>
@@ -633,7 +708,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 size="icon"
                 className="h-8 w-8"
                 aria-label="Edit encouragement"
-                onClick={() => setIsEditing(true)}
+                onClick={() => {
+                  form.reset({ message: encouragement.message });
+                  setIsEditing(true);
+                }}
               >
                 <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </Button>
