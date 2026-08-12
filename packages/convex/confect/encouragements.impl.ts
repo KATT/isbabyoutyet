@@ -100,10 +100,23 @@ const listByBaby = FunctionImpl.make(databaseSchema, encouragements, "listByBaby
   Effect.gen(function* () {
     const reader = yield* DatabaseReader;
 
-    return yield* reader
+    const result = yield* reader
       .table("encouragements")
       .index("by_babyId", (q) => q.eq("babyId", args.babyId), "desc")
       .paginate(args.paginationOpts);
+
+    // Public DTO: never return visitorId (the edit/delete credential) or the
+    // userAgent/locale/timezone metadata
+    return {
+      ...result,
+      page: result.page.map((encouragement) => ({
+        _id: encouragement._id,
+        authorName: encouragement.authorName,
+        message: encouragement.message,
+        createdAt: encouragement.createdAt,
+        isMine: args.visitorId !== undefined && encouragement.visitorId === args.visitorId,
+      })),
+    };
   }).pipe(Effect.orDie),
 );
 

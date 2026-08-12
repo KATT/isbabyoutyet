@@ -7,6 +7,7 @@ import {
   backfillBabyTimeline,
   backfillEncouragementTimeline,
   separateMilestoneOccurredAt,
+  clearLegacyStageMessages,
   runAll,
 } from "./migrations";
 import migrationsSpec from "./migrations.spec";
@@ -36,6 +37,12 @@ const separateMilestoneOccurredAtImpl = FunctionImpl.make(
   "separateMilestoneOccurredAt",
   separateMilestoneOccurredAt,
 );
+const clearLegacyStageMessagesImpl = FunctionImpl.make(
+  databaseSchema,
+  migrationsSpec,
+  "clearLegacyStageMessages",
+  clearLegacyStageMessages,
+);
 const runAllImpl = FunctionImpl.make(databaseSchema, migrationsSpec, "runAll", runAll);
 
 export default GroupImpl.make(databaseSchema, migrationsSpec).pipe(
@@ -44,6 +51,7 @@ export default GroupImpl.make(databaseSchema, migrationsSpec).pipe(
   Layer.provide(backfillBabyTimelineImpl),
   Layer.provide(backfillEncouragementTimelineImpl),
   Layer.provide(separateMilestoneOccurredAtImpl),
+  Layer.provide(clearLegacyStageMessagesImpl),
   Layer.provide(runAllImpl),
   GroupImpl.finalize,
 );

@@ -2,8 +2,8 @@ import registeredFunctions from "../confect/_generated/registeredFunctions/migra
 
 export const backfillBabyTimeline = registeredFunctions.backfillBabyTimeline;
 export const backfillEncouragementTimeline = registeredFunctions.backfillEncouragementTimeline;
-export const generateThumbnailsForExistingPhotos =
-  registeredFunctions.generateThumbnailsForExistingPhotos;
+export const clearLegacyStageMessages = registeredFunctions.clearLegacyStageMessages;
+export const generateThumbnailsForExistingPhotos = registeredFunctions.generateThumbnailsForExistingPhotos;
 export const run = registeredFunctions.run;
 export const runAll = registeredFunctions.runAll;
 export const separateMilestoneOccurredAt = registeredFunctions.separateMilestoneOccurredAt;

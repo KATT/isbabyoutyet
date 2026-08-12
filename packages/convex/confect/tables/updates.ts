@@ -17,4 +17,7 @@ export default Table.make(() =>
   }),
 )
   .index("by_babyId", ["babyId"])
+  // Milestone lookups (one row per marked stage) without scanning all of a
+  // baby's updates — used on every post/redate/unmark and by migrations
+  .index("by_babyId_milestone", ["babyId", "milestone"])
   .index("by_timelineItemId", ["timelineItemId"]);

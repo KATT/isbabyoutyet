@@ -8,6 +8,9 @@ export default Table.make(() =>
     authorName: Schema.String,
     message: Schema.String,
     createdAt: Schema.Number,
+    // Binding to the timeline feed. Still optional in the schema: making it
+    // required is split into a follow-up PR so the schema push can verify the
+    // PR 1 backfill completed in prod without blocking this cleanup.
     timelineItemId: Schema.optional(Id("timelineItems")),
     visitorId: Schema.String,
     userAgent: Schema.optional(Schema.String),

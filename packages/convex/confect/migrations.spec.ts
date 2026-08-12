@@ -5,6 +5,7 @@ import type {
   backfillBabyTimeline,
   backfillEncouragementTimeline,
   separateMilestoneOccurredAt,
+  clearLegacyStageMessages,
   runAll,
 } from "./migrations";
 
@@ -26,6 +27,11 @@ export default GroupSpec.make()
   .addFunction(
     FunctionSpec.convexInternalMutation<typeof separateMilestoneOccurredAt>()(
       "separateMilestoneOccurredAt",
+    ),
+  )
+  .addFunction(
+    FunctionSpec.convexInternalMutation<typeof clearLegacyStageMessages>()(
+      "clearLegacyStageMessages",
     ),
   )
   .addFunction(FunctionSpec.convexInternalMutation<typeof runAll>()("runAll"));
