@@ -1,11 +1,19 @@
 import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import type { ReactElement } from "react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
+
+// Observe what the composer submits: every useMutation hook in the component
+// returns this mock (only updates.post is actually invoked in these tests)
+const mocks = vi.hoisted(() => ({ mutate: vi.fn() }));
+vi.mock("convex/react", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("convex/react")>()),
+  useMutation: () => mocks.mutate,
+}));
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
@@ -89,4 +97,40 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   expect(view.getByRole("radio", { name: "No status change" }).getAttribute("aria-checked")).toBe(
     "true",
   );
+});
+
+test("an untouched event-time picker does not post occurredAt", async () => {
+  mocks.mutate.mockReset().mockResolvedValue("update-id");
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
+  // The picker appears, prefilled with "now" — leave it untouched
+  expect(view.getByLabelText(/when did it happen/i)).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+
+  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
+  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    milestone: "labor_started",
+    occurredAt: undefined,
+  });
+});
+
+test("an explicitly edited event-time picker posts the backdated occurredAt", async () => {
+  mocks.mutate.mockReset().mockResolvedValue("update-id");
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
+  const backdated = "2026-08-10T08:30";
+  fireEvent.change(view.getByLabelText(/when did it happen/i), {
+    target: { value: backdated },
+  });
+  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+
+  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
+  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    milestone: "labor_started",
+    occurredAt: new Date(backdated).getTime(),
+  });
 });

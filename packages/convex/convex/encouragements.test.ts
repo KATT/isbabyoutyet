@@ -76,6 +76,46 @@ test("the author can edit their encouragement within the edit window", async () 
   expect(result.page).toMatchObject([{ message: "Fixed message" }]);
 });
 
+test("editing is refused for the wrong visitor and after the edit window", async () => {
+  const { t, babyId } = await setupWithBaby();
+
+  const encouragementId = await t.mutation(api.encouragements.create, {
+    babyId,
+    authorName: "Grandma",
+    message: "Original message",
+    visitorId: "visitor-1",
+  });
+
+  // The visitorId is the edit credential — a different visitor is refused
+  await expect(
+    t.mutation(api.encouragements.update, {
+      encouragementId,
+      visitorId: "visitor-imposter",
+      message: "Hijacked",
+    }),
+  ).rejects.toThrow("Not authorized to edit this encouragement");
+
+  // ...and so is a stranger trying to delete it
+  await expect(
+    t.mutation(api.encouragements.remove, {
+      encouragementId,
+      visitorId: "visitor-imposter",
+    }),
+  ).rejects.toThrow("Not authorized to delete this encouragement");
+
+  // After the 15-minute window even the author can no longer edit
+  await t.run(async (ctx) => {
+    await ctx.db.patch(encouragementId, { createdAt: Date.now() - 16 * 60 * 1000 });
+  });
+  await expect(
+    t.mutation(api.encouragements.update, {
+      encouragementId,
+      visitorId: "visitor-1",
+      message: "Too late",
+    }),
+  ).rejects.toThrow("Edit window has expired");
+});
+
 test("the baby's owner can remove an encouragement", async () => {
   const { t, babyId } = await setupWithBaby();
 

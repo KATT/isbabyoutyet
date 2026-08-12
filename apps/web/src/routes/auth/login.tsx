@@ -19,6 +19,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
 import { LogIn } from "lucide-react";
+import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,15 +30,18 @@ export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
 });
 
+// Build-time flag: preview deploys set VITE_HAS_DEMO_LOGIN via deploy-convex.
+const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+
 function LoginPage() {
   const router = useRouter();
 
   const form = useZodForm({
     schema: loginSchema,
-    defaultValues: import.meta.env.DEV
+    defaultValues: hasDemoLogin
       ? {
-          email: "test@example.com",
-          password: "password",
+          email: DEMO_USER.email,
+          password: DEMO_USER.password,
         }
       : {
           email: "",
