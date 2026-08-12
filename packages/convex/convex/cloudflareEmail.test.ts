@@ -24,9 +24,7 @@ test("sends password reset email through Cloudflare Email Service", async () => 
 
   expect(fetchMock).toHaveBeenCalledOnce();
   const [url, init] = fetchMock.mock.calls[0] ?? [];
-  expect(url).toBe(
-    "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send",
-  );
+  expect(url).toBe("https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send");
   expect(init?.headers).toEqual({
     Authorization: "Bearer email-token",
     "Content-Type": "application/json",

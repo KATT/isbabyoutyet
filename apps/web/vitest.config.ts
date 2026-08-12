@@ -13,6 +13,11 @@ export default defineProject({
     name: "web",
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
+    env: {
+      VITE_CONVEX_URL: "https://example.convex.cloud",
+      VITE_CONVEX_SITE_URL: "https://example.convex.site",
+      VITE_SITE_URL: "https://example.workers.dev",
+    },
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component
