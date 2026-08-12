@@ -142,7 +142,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
   );
 
   // Guard against a stale selection: the status may have advanced from
-  // another tab while a milestone was selected here
+  // another tab while a milestone was selected here. Clear the state (not
+  // just mask it) so the old choice can't resurface if the status regresses
+  // later via unmarking.
+  if (milestone && !futureMilestones.includes(milestone)) {
+    setMilestone(null);
+  }
   const selectedMilestone = milestone && futureMilestones.includes(milestone) ? milestone : null;
 
   const draft = updateDraftSchema.safeParse({
@@ -257,8 +262,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
       {futureMilestones.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">Status change (optional)</p>
+          <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
+            Status change (optional)
+          </p>
           <RadioGroup
+            aria-labelledby="composer-status-label"
             value={selectedMilestone ?? "none"}
             onValueChange={(value) => setMilestone(value === "none" ? null : (value as Milestone))}
             disabled={isPosting}
