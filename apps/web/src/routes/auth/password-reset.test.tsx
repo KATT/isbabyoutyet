@@ -1,11 +1,26 @@
 import { render } from "@testing-library/react";
 import { RouterProvider, createMemoryHistory, createRouter } from "@tanstack/react-router";
 import { ConvexReactClient } from "convex/react";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { routeTree } from "@/routeTree.gen";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 async function renderRouteResource(path: string) {
+  vi.stubGlobal("matchMedia", (query: string) => {
+    return {
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener() {},
+      removeListener() {},
+      addEventListener() {},
+      removeEventListener() {},
+      dispatchEvent() {
+        return false;
+      },
+    } satisfies MediaQueryList;
+  });
+  vi.stubGlobal("scrollTo", () => {});
   const convexClient = new ConvexReactClient("https://example.convex.cloud");
   const router = createRouter({
     routeTree,
@@ -17,6 +32,7 @@ async function renderRouteResource(path: string) {
   return makeResource(view, async () => {
     view.unmount();
     await convexClient.close();
+    vi.unstubAllGlobals();
   });
 }
 
