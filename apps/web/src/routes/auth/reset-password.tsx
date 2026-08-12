@@ -130,11 +130,7 @@ function ResetPasswordPage() {
                       </FormItem>
                     )}
                   />
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={form.formState.isSubmitting}
-                  >
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? "Updating..." : "Update password"}
                   </Button>
                 </div>

@@ -56,9 +56,7 @@ function ForgotPasswordPage() {
           <CardContent>
             {submitted ? (
               <div className="space-y-4 text-sm text-muted-foreground">
-                <p>
-                  If an account exists for that address, a password reset email is on its way.
-                </p>
+                <p>If an account exists for that address, a password reset email is on its way.</p>
                 <Button render={<Link to="/auth/login" />} nativeButton={false} className="w-full">
                   Back to sign in
                 </Button>
@@ -97,11 +95,7 @@ function ForgotPasswordPage() {
                       </FormItem>
                     )}
                   />
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={form.formState.isSubmitting}
-                  >
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
                     {form.formState.isSubmitting ? "Sending..." : "Send reset link"}
                   </Button>
                   <div className="text-center text-sm">

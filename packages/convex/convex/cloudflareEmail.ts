@@ -8,10 +8,7 @@ function requireEnv(name: string) {
   return value;
 }
 
-export async function sendPasswordResetEmail(options: {
-  recipient: string;
-  resetUrl: string;
-}) {
+export async function sendPasswordResetEmail(options: { recipient: string; resetUrl: string }) {
   const accountId = requireEnv("CLOUDFLARE_ACCOUNT_ID");
   const apiToken = requireEnv("CLOUDFLARE_EMAIL_API_TOKEN");
   const from = requireEnv("EMAIL_FROM");
