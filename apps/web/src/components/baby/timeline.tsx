@@ -385,7 +385,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Leave blank for now — pick a time if you're sharing the news after the fact.
+                    Optional — leave blank for now. You can change the time later in settings.
                   </p>
                 </div>
               )}
