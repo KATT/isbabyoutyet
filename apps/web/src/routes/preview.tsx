@@ -98,7 +98,16 @@ function PreviewPage() {
             replace: true,
           });
         }}
-        isOpen={!!search.settings}
+        open={!!search.settings}
+        onOpenChange={(open) => {
+          void navigate({
+            search: {
+              ...search,
+              settings: open || undefined,
+            },
+            replace: true,
+          });
+        }}
       />
 
       <div className="min-h-screen bg-background relative overflow-hidden">
