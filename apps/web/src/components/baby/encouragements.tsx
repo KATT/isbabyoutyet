@@ -37,12 +37,14 @@ export function getVisitorId(): string {
   return visitorId;
 }
 
+// Trim before validating, so whitespace-only input doesn't pass "required"
 const encouragementSchema = z.object({
   authorName: z
     .string()
+    .trim()
     .min(1, "Name is required")
     .max(MAX_NAME_LENGTH, `Name must be ${MAX_NAME_LENGTH} characters or less`),
-  message: z.string().min(1, "Message is required"),
+  message: z.string().trim().min(1, "Message is required"),
 });
 
 export function EncouragementForm(props: EncouragementFormProps) {

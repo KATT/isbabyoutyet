@@ -132,6 +132,14 @@ test("posting requires content and ownership", async () => {
     "An update needs a message, a photo, or a milestone",
   );
 
+  // The three fields are mutually inclusive — any single one is enough, and
+  // a whitespace-only message is trimmed away rather than blocking the post
+  const photo = await storeBlob(t);
+  await asAlice.mutation(api.updates.post, { babyId, message: "   ", photoId: photo });
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page[0]).toMatchObject({ kind: "update", update: { message: null } });
+  expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
+
   const asBob = t.withIdentity({ subject: "bob" });
   await expect(asBob.mutation(api.updates.post, { babyId, message: "Hi" })).rejects.toThrow(
     "Not authorized",
