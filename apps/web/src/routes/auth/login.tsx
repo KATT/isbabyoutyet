@@ -30,6 +30,7 @@ export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
 });
 
+// Build-time flag: preview deploys set VITE_HAS_DEMO_LOGIN via deploy-convex.
 const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function LoginPage() {

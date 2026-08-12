@@ -50,7 +50,12 @@ function convexCli(args: string[]) {
   execFileSync("pnpm", ["convex", ...args], {
     cwd: convexPackageDir,
     stdio: "inherit",
-    env: { ...process.env, VITE_SITE_URL: siteUrl },
+    env: {
+      ...process.env,
+      VITE_SITE_URL: siteUrl,
+      // Bake demo-login prefills into the web build on preview only.
+      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
+    },
   });
 }
 
