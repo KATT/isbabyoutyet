@@ -1,0 +1,20 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**"],
+  "workspaces": {
+    ".": {},
+    "apps/web": {
+      "tanstack-router": {
+        "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
+      },
+      "entry": [
+        "public/sw.js!",
+        "vite.config.ts!",
+        "scripts/deploy-convex.ts!",
+        "scripts/build-web.mjs!"
+      ]
+    },
+    "packages/convex": {},
+    "packages/ui": {}
+  }
+}
