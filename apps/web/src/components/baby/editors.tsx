@@ -3,7 +3,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { format, parseISO } from "date-fns";
-import { Activity, Baby, Calendar, Camera, CheckCircle, Clock, Hospital } from "lucide-react";
+import { Clock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
@@ -565,6 +565,3 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
     </Popover>
   );
 }
-
-// Re-export icons for convenience
-export { Activity, Baby, Calendar, Camera, CheckCircle, Hospital };
