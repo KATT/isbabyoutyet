@@ -33,6 +33,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
+import * as z from "zod";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -48,6 +49,21 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+/**
+ * A post's three fields are mutually inclusive: any combination works, as
+ * long as at least one is present. The message is trimmed BEFORE validation,
+ * so a whitespace-only message counts as no message (matching the backend).
+ */
+const updateDraftSchema = z
+  .object({
+    message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+    milestone: z.string().nullable(),
+    hasPhoto: z.boolean(),
+  })
+  .refine((draft) => draft.message.length > 0 || draft.milestone !== null || draft.hasPhoto, {
+    error: "Add a message, a photo, or a milestone to post",
+  });
 
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
@@ -115,8 +131,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
   // the settings panel (or another tab) while it was selected here
   const selectedMilestone = milestone && availableMilestones.includes(milestone) ? milestone : null;
 
-  const canPost =
-    !isPosting && (message.trim().length > 0 || selectedMilestone !== null || !!photoFile);
+  const draft = updateDraftSchema.safeParse({
+    message,
+    milestone: selectedMilestone,
+    hasPhoto: !!photoFile,
+  });
+  const canPost = !isPosting && draft.success;
 
   const clearPhoto = () => {
     if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
@@ -142,6 +162,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   };
 
   const handlePost = async () => {
+    if (!draft.success) return;
     setIsPosting(true);
     try {
       let photoId: Id<"_storage"> | undefined;
@@ -161,7 +182,8 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
       await postUpdate({
         babyId: props.babyId,
-        message: message.trim() || undefined,
+        // draft.data.message is the trimmed message; empty means "no message"
+        message: draft.data.message || undefined,
         milestone: selectedMilestone ?? undefined,
         photoId,
       });
@@ -185,14 +207,15 @@ export function UpdateComposer(props: UpdateComposerProps) {
         <h3 className="text-lg font-semibold text-foreground">Post an update</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Share how it's going — everyone following {props.babyName}'s page will see it.
+        Everyone following {props.babyName}'s page will see it. A message, a photo, a milestone —
+        each is optional, any mix works.
       </p>
 
       <Textarea
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        placeholder="Share an update with everyone…"
-        aria-label="Update message"
+        placeholder="Write a message (optional)…"
+        aria-label="Update message (optional)"
         className="min-h-20"
         maxLength={MAX_UPDATE_MESSAGE_LENGTH}
         disabled={isPosting}
@@ -221,7 +244,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
       {availableMilestones.length > 0 && (
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Mark a milestone:</span>
+            <span className="text-xs text-muted-foreground">Mark a milestone (optional):</span>
             {availableMilestones.map((candidate) => {
               const meta = MILESTONE_META[candidate];
               const MilestoneIcon = meta.icon;
@@ -260,7 +283,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
         className="hidden"
       />
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <Button
           type="button"
           variant="outline"
@@ -269,7 +292,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
           disabled={isPosting}
         >
           <ImagePlus className="w-4 h-4" />
-          {photoFile ? "Change photo" : "Add photo"}
+          {photoFile ? "Change photo" : "Add photo (optional)"}
         </Button>
         <Button onClick={handlePost} disabled={!canPost}>
           <Send className="w-4 h-4" />
@@ -280,6 +303,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
               : "Post update"}
         </Button>
       </div>
+
+      {!draft.success && (
+        <p className="text-xs text-muted-foreground text-right">
+          Add a message, a photo, or a milestone — any one is enough.
+        </p>
+      )}
     </div>
   );
 }
