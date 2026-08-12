@@ -18,17 +18,17 @@ import {
   getThemePrimaryColor,
 } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
-import { createFileRoute, Link, notFound, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
   validateSearch: z.object({
     settings: z.boolean().optional(),
+    postUpdate: z.boolean().optional(),
     beta: z.boolean().optional(),
   }),
   loader: async (opts) => {
@@ -132,6 +132,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
 function BabyPage() {
   const params = Route.useParams();
   const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
   const queryBaby = useQuery(api.baby.getByPublicId, { id: params.publicId });
@@ -141,7 +142,6 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
-  const [composerOpen, setComposerOpen] = useState(false);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
@@ -151,6 +151,17 @@ function BabyPage() {
   const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
 
   const currentStatus = getCurrentStatus(baby);
+
+  function setSearchOpen(opts: { settings?: boolean; postUpdate?: boolean }) {
+    void navigate({
+      search: {
+        ...search,
+        settings: opts.settings || undefined,
+        postUpdate: opts.postUpdate || undefined,
+      },
+      replace: true,
+    });
+  }
 
   return (
     <div>
@@ -166,17 +177,25 @@ function BabyPage() {
                 ...update,
               });
             }}
-            isOpen={!!search.settings}
+            open={!!search.settings}
+            onOpenChange={(open) => {
+              setSearchOpen({ settings: open, postUpdate: false });
+            }}
           />
           <ScheduledNotificationToast babyId={babyDoc._id} />
-          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+          <Dialog
+            open={!!search.postUpdate}
+            onOpenChange={(open) => {
+              setSearchOpen({ postUpdate: open, settings: false });
+            }}
+          >
             <DialogContent className="sm:max-w-lg">
               <DialogTitle className="sr-only">Post an update</DialogTitle>
               <UpdateComposer
                 babyId={babyDoc._id}
                 baby={baby}
                 babyName={baby.name}
-                onPosted={() => setComposerOpen(false)}
+                onPosted={() => setSearchOpen({ postUpdate: false, settings: false })}
               />
             </DialogContent>
           </Dialog>
@@ -186,7 +205,20 @@ function BabyPage() {
       <div className="border-b border-border/50">
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
-          onPostUpdate={isOwner ? () => setComposerOpen(true) : null}
+          postUpdateButton={
+            isOwner
+              ? {
+                  to: "/baby/$publicId",
+                  params: { publicId: params.publicId },
+                  search: {
+                    ...search,
+                    postUpdate: search.postUpdate ? undefined : true,
+                    settings: undefined,
+                  },
+                }
+              : null
+          }
+          postUpdateOpen={!!search.postUpdate}
           settingsButton={
             isOwner
               ? {
@@ -195,6 +227,7 @@ function BabyPage() {
                   search: {
                     ...search,
                     settings: search.settings ? undefined : true,
+                    postUpdate: undefined,
                   },
                 }
               : null

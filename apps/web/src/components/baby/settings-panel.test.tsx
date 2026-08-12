@@ -1,0 +1,67 @@
+import { fireEvent, render } from "@testing-library/react";
+import { expect, test, vi } from "vitest";
+import { SettingsPanel } from "@/components/baby/settings-panel";
+import { makeResource } from "@workspace/convex/convex/test.resource";
+import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+
+const baby: BabyData = {
+  name: "Nova",
+  dueDate: "2026-09-01T00:00:00.000Z",
+  theme: null,
+  laborStarted: "2026-08-10T08:00:00.000Z",
+  wentToHospital: null,
+  babyBorn: null,
+  hospitalMessage: null,
+  babyBornMessage: null,
+  laborStartedMessage: null,
+  encouragementsDisabled: false,
+  photoId: null,
+};
+
+function renderResource(ui: React.ReactElement) {
+  const view = render(ui);
+  return makeResource(view, () => {
+    view.unmount();
+  });
+}
+
+test("settings dialog shows page fields when open and stays closed when not", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using closed = renderResource(
+    <SettingsPanel baby={baby} onUpdate={onUpdate} open={false} onOpenChange={onOpenChange} />,
+  );
+  expect(closed.queryByRole("dialog")).toBeNull();
+  expect(closed.queryByText("Settings")).toBeNull();
+
+  await using open = renderResource(
+    <SettingsPanel baby={baby} onUpdate={onUpdate} open={true} onOpenChange={onOpenChange} />,
+  );
+
+  expect(open.getByRole("dialog")).toBeTruthy();
+  expect(open.getByRole("heading", { name: "Settings" })).toBeTruthy();
+  expect(open.getByText("Baby Name")).toBeTruthy();
+  expect(open.getByText("Nova")).toBeTruthy();
+  expect(open.getByText("Due Date")).toBeTruthy();
+  expect(open.getByText("Labour started")).toBeTruthy();
+  expect(open.getByText("Theme")).toBeTruthy();
+  expect(open.getByText("Encouragements")).toBeTruthy();
+  expect(open.getByText("Visitors can send messages")).toBeTruthy();
+
+  fireEvent.click(open.getByRole("button", { name: "Close" }));
+  expect(onOpenChange).toHaveBeenCalled();
+  expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+});
+
+test("encouragements switch toggles the disabled flag via onUpdate", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel baby={baby} onUpdate={onUpdate} open={true} onOpenChange={onOpenChange} />,
+  );
+
+  fireEvent.click(view.getByRole("switch"));
+  expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
+});
