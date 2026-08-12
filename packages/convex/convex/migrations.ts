@@ -1,8 +1,9 @@
 import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
-import type { DataModel, Doc } from "./_generated/dataModel";
+import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import {
   findMilestoneUpdate,
@@ -31,8 +32,49 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
 });
 
 /**
- * Backfills the timeline with a baby's existing milestones (using their
- * historical dates and legacy per-stage messages) and its current photo.
+ * Best-effort "when this milestone was announced" timestamp: the notification
+ * for this milestone whose `createdAt` is closest to `referenceMs` (usually the
+ * update row's `_creationTime`). Preferring closest — not earliest — avoids
+ * picking a stale cancelled notification from a prior unmark/remark cycle.
+ * Falls back to `fallbackMs` when no matching notification exists.
+ */
+export async function resolveMilestoneAnnounceAt(
+  ctx: MutationCtx,
+  opts: {
+    babyId: Id<"baby">;
+    milestone: Milestone;
+    referenceMs: number;
+    fallbackMs: number;
+  },
+) {
+  const notifications = await ctx.db
+    .query("scheduledNotifications")
+    .withIndex("by_babyId", (q) => q.eq("babyId", opts.babyId))
+    .collect();
+
+  let bestCreatedAt: number | null = null;
+  let bestDistance = Infinity;
+  for (const notification of notifications) {
+    if (notification.notificationType !== opts.milestone) continue;
+    const distance = Math.abs(notification.createdAt - opts.referenceMs);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestCreatedAt = notification.createdAt;
+    }
+  }
+  return bestCreatedAt ?? opts.fallbackMs;
+}
+
+function parseIsoMs(iso: string | null | undefined) {
+  if (!iso) return null;
+  const parsed = Date.parse(iso);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * Backfills the timeline with a baby's existing milestones and its current
+ * photo. Milestone rows land at announce time (`postedAt`) with the event
+ * clock on `occurredAt`.
  *
  * Idempotent PER ITEM (not per baby): dual-writes go live before `runAll`
  * runs during a deploy, so a baby may already have some rows — each missing
@@ -47,10 +89,19 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
     if (existing) continue;
 
-    const parsed = Date.parse(isoDate);
+    const occurredAt = parseIsoMs(isoDate) ?? Date.now();
+    const now = Date.now();
+    const postedAt = await resolveMilestoneAnnounceAt(ctx, {
+      babyId: baby._id,
+      milestone,
+      // No update row yet — prefer the notification closest to "now" (latest cycle)
+      referenceMs: now,
+      fallbackMs: now,
+    });
     await insertUpdateWithTimelineItem(ctx, {
       babyId: baby._id,
-      postedAt: Number.isNaN(parsed) ? Date.now() : parsed,
+      postedAt,
+      occurredAt,
       milestone,
       message: baby[fields.message] ?? null,
     });
@@ -116,6 +167,65 @@ export const backfillEncouragementTimeline = migrations.define({
 });
 
 /**
+ * Splits milestone event time from feed position on existing rows:
+ * - `occurredAt` ← baby date field (when it happened)
+ * - `postedAt` ← announce time when the row still looks backdated
+ *
+ * Idempotent: once `postedAt` matches announce time (or no longer looks like
+ * the event clock), re-runs are a no-op. Having `occurredAt` already set does
+ * NOT skip the feed repair — a redate during the deploy window can set
+ * `occurredAt` while leaving a legacy event-clock `postedAt`.
+ */
+export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: Doc<"updates">) {
+  if (!update.milestone) return;
+
+  const baby = await ctx.db.get(update.babyId);
+  if (!baby) return;
+
+  const item = await ctx.db.get(update.timelineItemId);
+  if (!item) return;
+
+  const fields = MILESTONE_FIELDS[update.milestone];
+  const occurredAt = parseIsoMs(baby[fields.date]);
+  if (occurredAt == null) {
+    if (update.occurredAt == null) {
+      await ctx.db.patch(update._id, { occurredAt: item.postedAt });
+    }
+    return;
+  }
+
+  if (update.occurredAt !== occurredAt) {
+    await ctx.db.patch(update._id, { occurredAt });
+  }
+
+  const announceAt = await resolveMilestoneAnnounceAt(ctx, {
+    babyId: update.babyId,
+    milestone: update.milestone,
+    referenceMs: update._creationTime,
+    fallbackMs: update._creationTime,
+  });
+
+  // Already at announce time — done
+  if (Math.abs(item.postedAt - announceAt) <= 1000) return;
+
+  const looksLikeEventClock = Math.abs(item.postedAt - occurredAt) <= 1000;
+  // Redate-during-deploy: postedAt stuck on an older event clock, far from both
+  // the current baby date and the row's creation / announce time
+  const looksLikeStaleEventClock =
+    Math.abs(item.postedAt - update._creationTime) > 60_000 &&
+    Math.abs(item.postedAt - occurredAt) > 1000;
+
+  if (!looksLikeEventClock && !looksLikeStaleEventClock) return;
+
+  await ctx.db.patch(item._id, { postedAt: announceAt });
+}
+
+export const separateMilestoneOccurredAt = migrations.define({
+  table: "updates",
+  migrateOne: separateMilestoneOccurredAtDoc,
+});
+
+/**
  * Clears the legacy per-stage message fields. Their content lives on the
  * milestone update rows since the timeline backfill (which runs first in
  * `runAll`) — but before destroying anything, verify each message actually
@@ -137,10 +247,20 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
 
     const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
     if (!existing) {
-      const parsed = Date.parse(baby[fields.date] ?? "");
+      // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
+      // event time on occurredAt
+      const occurredAt = parseIsoMs(baby[fields.date]) ?? Date.now();
+      const now = Date.now();
+      const postedAt = await resolveMilestoneAnnounceAt(ctx, {
+        babyId: baby._id,
+        milestone,
+        referenceMs: now,
+        fallbackMs: now,
+      });
       await insertUpdateWithTimelineItem(ctx, {
         babyId: baby._id,
-        postedAt: Number.isNaN(parsed) ? Date.now() : parsed,
+        postedAt,
+        occurredAt,
         milestone,
         message: legacyMessage,
       });
@@ -162,10 +282,10 @@ export const clearLegacyStageMessages = migrations.define({
 });
 
 // Run all pending migrations - called automatically during deployment
-// When adding migrations, import `internal` from "./_generated/api" and add references:
 export const runAll = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
+  internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
 ]);

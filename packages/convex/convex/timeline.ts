@@ -43,6 +43,7 @@ async function hydrateUpdate(
       _id: update._id,
       message: update.message ?? null,
       milestone: update.milestone ?? null,
+      occurredAt: update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
       // Whether this update's photo is the baby's current page photo
@@ -161,6 +162,8 @@ export const latestUpdate = query({
 
 /**
  * Inserts an owner update together with its timeline row.
+ * `postedAt` is the feed sort key (when announced). `occurredAt` is the
+ * milestone's real event time for display — omit for non-milestone updates.
  */
 export async function insertUpdateWithTimelineItem(
   ctx: MutationCtx,
@@ -169,6 +172,7 @@ export async function insertUpdateWithTimelineItem(
     postedAt: number;
     message?: string | null;
     milestone?: Milestone | null;
+    occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
     thumbnailId?: Id<"_storage"> | null;
   },
@@ -183,6 +187,7 @@ export async function insertUpdateWithTimelineItem(
     timelineItemId,
     message: opts.message ?? null,
     milestone: opts.milestone ?? null,
+    occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
     thumbnailId: opts.thumbnailId ?? null,
   });

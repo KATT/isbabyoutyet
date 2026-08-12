@@ -462,8 +462,8 @@ export async function syncStatusNotifications(
 /**
  * Keeps the timeline's milestone update rows in sync with the canonical
  * status fields on the baby doc:
- * - marking a milestone creates its update row
- * - redating a milestone moves its timeline row's `postedAt`
+ * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
+ * - redating a milestone updates `occurredAt` only — feed position stays put
  * - unmarking a milestone deletes its update + timeline rows
  */
 async function syncMilestoneUpdates(
@@ -493,14 +493,16 @@ async function syncMilestoneUpdates(
     }
 
     const parsed = Date.parse(dateArg);
-    const postedAt = Number.isNaN(parsed) ? Date.now() : parsed;
+    const occurredAt = Number.isNaN(parsed) ? Date.now() : parsed;
     if (existing) {
-      // Redate: move the timeline row
-      await ctx.db.patch(existing.timelineItemId, { postedAt });
+      // Redate: update the event clock only — do not reshuffle the feed
+      await ctx.db.patch(existing._id, { occurredAt });
     } else {
       await insertUpdateWithTimelineItem(ctx, {
         babyId: baby._id,
-        postedAt,
+        // Announced now (settings mark), even if the event clock is historical
+        postedAt: Date.now(),
+        occurredAt,
         milestone,
       });
     }
