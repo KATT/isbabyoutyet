@@ -1,6 +1,6 @@
 /**
  * Shared demo login + seeded babies used by the Convex seeder and the web auth forms.
- * Available in local development and Vercel preview deployments — never production.
+ * Available in local development and Cloudflare preview deployments — never production.
  *
  * Keep AGENTS.md in sync when changing publicIds.
  */

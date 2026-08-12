@@ -16,4 +16,4 @@ Convex agent skills for common tasks can be installed by running
 
 Preview and local backends share `seed:seedDemoData` (login + babies in every
 status). When opening PRs, follow the root [`AGENTS.md`](../../AGENTS.md) and
-link each seeded baby on the Vercel preview.
+link each seeded baby on the Cloudflare preview.

@@ -14,7 +14,7 @@ pnpm install
 pnpm dev
 ```
 
-Local and Vercel preview backends are seeded with a demo login:
+Local and Cloudflare preview backends are seeded with a demo login:
 
 - email: `test@example.com`
 - password: `password`

@@ -14,8 +14,7 @@ if (!convexUrl) {
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
-const hasDemoLogin =
-  process.env.VITE_HAS_DEMO_LOGIN === "true" || process.env.VERCEL_ENV === "preview";
+const hasDemoLogin = process.env.VITE_HAS_DEMO_LOGIN === "true";
 
 execFileSync("pnpm", ["turbo", "build", "--filter=web"], {
   cwd: workspaceRoot,

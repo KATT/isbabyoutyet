@@ -37,7 +37,7 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
 }
 
 /**
- * Idempotent seeder for local development and Vercel preview deployments.
+ * Idempotent seeder for local development and Cloudflare preview deployments.
  * Creates DEMO_USER (test@example.com / password) and babies in every status.
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
