@@ -57,7 +57,10 @@ export default defineSchema({
     authorName: v.string(), // Name of the person sending encouragement
     message: v.string(), // The encouragement message
     createdAt: v.number(), // Timestamp
-    timelineItemId: v.id("timelineItems"), // Binding to the timeline feed
+    // Binding to the timeline feed. Still optional in the schema: making it
+    // required is split into a follow-up PR so the schema push can verify the
+    // PR 1 backfill completed in prod without blocking this cleanup.
+    timelineItemId: v.optional(v.id("timelineItems")),
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
     userAgent: v.optional(v.string()), // User agent string
