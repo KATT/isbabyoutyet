@@ -665,3 +665,50 @@ test("posting a milestone sets occurredAt to the announce time", async () => {
   expect(item.postedAt).toBeLessThanOrEqual(after);
   expect(item.update.occurredAt).toBe(item.postedAt);
 });
+
+test("posting a milestone can backdate the event clock without moving the feed", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const occurredAt = Date.now() - 6 * 60 * 60 * 1000;
+
+  const before = Date.now();
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+    message: "Started overnight, telling you all now!",
+    occurredAt,
+  });
+  const after = Date.now();
+
+  // The feed slot is the announce time; the event clock is the backdated time
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toHaveLength(1);
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+  expect(item.postedAt).toBeGreaterThanOrEqual(before);
+  expect(item.postedAt).toBeLessThanOrEqual(after);
+  expect(item.update.occurredAt).toBe(occurredAt);
+
+  // The canonical status timestamp on the baby doc is the event clock
+  const baby = await getBaby(t, babyId);
+  expect(baby.laborStarted).toBe(new Date(occurredAt).toISOString());
+});
+
+test("a backdated event time is rejected when in the future or without a milestone", async () => {
+  const { asAlice, babyId } = await setup();
+
+  await expect(
+    asAlice.mutation(api.updates.post, {
+      babyId,
+      milestone: "labor_started",
+      occurredAt: Date.now() + 60 * 60 * 1000,
+    }),
+  ).rejects.toThrow("The event time cannot be in the future");
+
+  await expect(
+    asAlice.mutation(api.updates.post, {
+      babyId,
+      message: "Just a message",
+      occurredAt: Date.now() - 60 * 60 * 1000,
+    }),
+  ).rejects.toThrow("A backdated time requires a status change");
+});

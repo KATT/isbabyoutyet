@@ -12,6 +12,7 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
+import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
@@ -113,6 +114,12 @@ function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
 
+/** Format a date for a `datetime-local` input in the viewer's timezone. */
+function toDatetimeLocalValue(date: Date): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 // --- Owner composer ---
 
 type UpdateComposerProps = {
@@ -129,6 +136,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
   const [message, setMessage] = useState("");
   const [milestone, setMilestone] = useState<Milestone | null>(null);
+  // Event clock for the selected milestone as a `datetime-local` string;
+  // null = untouched, meaning "it's happening now"
+  const [occurredAtInput, setOccurredAtInput] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [isPosting, setIsPosting] = useState(false);
@@ -147,6 +157,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   // later via unmarking.
   if (milestone && !futureMilestones.includes(milestone)) {
     setMilestone(null);
+    setOccurredAtInput(null);
   }
   const selectedMilestone = milestone && futureMilestones.includes(milestone) ? milestone : null;
 
@@ -199,17 +210,24 @@ export function UpdateComposer(props: UpdateComposerProps) {
         photoId = uploaded.storageId;
       }
 
+      // A touched event-time picker means the milestone is backdated;
+      // untouched means "it's happening now" (the backend defaults)
+      const occurredAtMs =
+        selectedMilestone && occurredAtInput ? new Date(occurredAtInput).getTime() : null;
+
       await postUpdate({
         babyId: props.babyId,
         // draft.data.message is the trimmed message; empty means "no message"
         message: draft.data.message || undefined,
         milestone: selectedMilestone ?? undefined,
+        occurredAt: occurredAtMs != null && !Number.isNaN(occurredAtMs) ? occurredAtMs : undefined,
         photoId,
       });
 
       toast.success("Update posted!");
       setMessage("");
       setMilestone(null);
+      setOccurredAtInput(null);
       clearPhoto();
       props.onPosted?.();
     } catch (err) {
@@ -268,7 +286,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
           <RadioGroup
             aria-labelledby="composer-status-label"
             value={selectedMilestone ?? "none"}
-            onValueChange={(value) => setMilestone(value === "none" ? null : (value as Milestone))}
+            onValueChange={(value) => {
+              setMilestone(value === "none" ? null : (value as Milestone));
+              if (value === "none") setOccurredAtInput(null);
+            }}
             disabled={isPosting}
             className="gap-1.5"
           >
@@ -289,10 +310,28 @@ export function UpdateComposer(props: UpdateComposerProps) {
             })}
           </RadioGroup>
           {selectedMilestone && (
-            <p className="text-xs text-muted-foreground">
-              This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
-              notifies everyone subscribed.
-            </p>
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
+                notifies everyone subscribed.
+              </p>
+              <label className="block space-y-1">
+                <span className="text-xs font-medium text-muted-foreground">
+                  When did it happen?
+                </span>
+                <Input
+                  type="datetime-local"
+                  value={occurredAtInput ?? toDatetimeLocalValue(new Date())}
+                  max={toDatetimeLocalValue(new Date())}
+                  onChange={(e) => setOccurredAtInput(e.target.value)}
+                  disabled={isPosting}
+                  className="w-fit"
+                />
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Defaults to now — set an earlier time if you're sharing the news after the fact.
+              </p>
+            </div>
           )}
         </div>
       )}
