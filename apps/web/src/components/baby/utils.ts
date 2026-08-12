@@ -50,7 +50,7 @@ export const THEME_OPTIONS = [
   },
 ] as const;
 
-export const TIMEZONE = "Europe/Stockholm";
+const TIMEZONE = "Europe/Stockholm";
 
 export function getThemeCssUrl(theme: string | null | undefined): string | null {
   if (!theme) return null;
