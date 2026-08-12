@@ -6,7 +6,7 @@ on:
 
 concurrency:
   group: cloudflare-preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   PREVIEW_IDENTIFIER: cloudflare-pr-${{ github.event.pull_request.number }}
@@ -15,7 +15,9 @@ env:
 
 jobs:
   deploy:
-    if: github.event.action != 'closed'
+    if: >-
+      github.event.action != 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -140,7 +142,9 @@ jobs:
             }
 
   cleanup:
-    if: github.event.action == 'closed'
+    if: >-
+      github.event.action == 'closed' &&
+      github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -149,6 +153,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

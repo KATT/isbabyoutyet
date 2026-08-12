@@ -38,7 +38,8 @@ deployment.
 
 Push or rerun the PR workflow after adding the settings. The
 `Cloudflare preview` workflow posts a comment containing the absolute seeded
-baby links.
+baby links. Fork pull requests are intentionally excluded because GitHub must
+not expose Cloudflare and Convex deployment secrets to untrusted fork code.
 
 ## Preview lifecycle and billing
 
