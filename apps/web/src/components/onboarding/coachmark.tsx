@@ -62,12 +62,8 @@ export function Coachmark(props: CoachmarkProps) {
     return null;
   }
 
-  const tipTop =
-    placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
-  const tipLeft = Math.min(
-    Math.max(12, rect.left + rect.width / 2 - 140),
-    window.innerWidth - 292,
-  );
+  const tipTop = placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
+  const tipLeft = Math.min(Math.max(12, rect.left + rect.width / 2 - 140), window.innerWidth - 292);
 
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">

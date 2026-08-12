@@ -1,12 +1,5 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import {
-  Baby,
-  Heart,
-  MessageCircleHeart,
-  Settings,
-  Share2,
-  type LucideIcon,
-} from "lucide-react";
+import { Baby, Heart, MessageCircleHeart, Settings, Share2, type LucideIcon } from "lucide-react";
 
 export type OnboardingStepCopy = {
   id: OnboardingStepId;

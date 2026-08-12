@@ -14,6 +14,7 @@ import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as encouragements from "../encouragements.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
+import type * as onboarding from "../onboarding.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
@@ -21,7 +22,11 @@ import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
 
-import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
@@ -30,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   encouragements: typeof encouragements;
   http: typeof http;
   migrations: typeof migrations;
+  onboarding: typeof onboarding;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;
@@ -46,7 +52,10 @@ declare const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
+export declare const api: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "public">
+>;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.
@@ -56,7 +65,10 @@ export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "publ
  * const myFunctionReference = internal.myModule.myFunction;
  * ```
  */
-export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
+export declare const internal: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "internal">
+>;
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;

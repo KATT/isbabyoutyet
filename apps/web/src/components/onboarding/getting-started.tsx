@@ -169,7 +169,11 @@ function NextStepHint(props: {
       </div>
       <div className="flex flex-wrap gap-2">
         {showDashboardCta ? (
-          <Button size="sm" render={<Link to="/dashboard/add" preload="viewport" />} nativeButton={false}>
+          <Button
+            size="sm"
+            render={<Link to="/dashboard/add" preload="viewport" />}
+            nativeButton={false}
+          >
             {props.step.ctaLabel ?? "Continue"}
           </Button>
         ) : null}
