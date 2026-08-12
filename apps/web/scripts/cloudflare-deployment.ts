@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 
 const MAX_DNS_LABEL_LENGTH = 63;
 const HASH_LENGTH = 4;
-const ALIAS_VALIDATION_PATTERN = /^[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+const ALIAS_VALIDATION_PATTERN = /^[a-z](?:[a-z0-9-]*[a-z0-9])?$/;
 
 export const CLOUDFLARE_WORKER_NAME = "isbabyoutyet";
 
