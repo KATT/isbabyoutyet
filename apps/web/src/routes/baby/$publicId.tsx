@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { Separator } from "@workspace/ui/components/separator";
@@ -143,13 +144,23 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
+  const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
     latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
-  const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
+  // Prefer server access (includes co-parents); fall back to session owner check
+  // while the query loads so owners don't flash without controls.
+  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
+  const canManage = myAccess?.canManage ?? isOwner;
+
+  // Claim pending email invites when a signed-in user lands on a baby page
+  useEffect(() => {
+    if (!sessionResult.data?.user) return;
+    void claimInvites({});
+  }, [sessionResult.data?.user, claimInvites]);
 
   const currentStatus = getCurrentStatus(baby);
 
@@ -168,7 +179,7 @@ function BabyPage() {
     <div>
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
-      {isOwner && (
+      {canManage && (
         <>
           <SettingsPanel
             baby={baby}
@@ -178,10 +189,15 @@ function BabyPage() {
                 ...update,
               });
             }}
-            onDelete={async () => {
-              await removeBaby({ babyId: babyDoc._id });
-              void navigate({ to: "/dashboard" });
-            }}
+            onDelete={
+              isOwner
+                ? async () => {
+                    await removeBaby({ babyId: babyDoc._id });
+                    void navigate({ to: "/dashboard" });
+                  }
+                : undefined
+            }
+            coParents={{ babyId: babyDoc._id, isOwner }}
             open={!!search.settings}
             onOpenChange={(open) => {
               setSearchOpen({ settings: open, postUpdate: false });
@@ -211,7 +227,7 @@ function BabyPage() {
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
           postUpdateButton={
-            isOwner
+            canManage
               ? {
                   to: "/baby/$publicId",
                   params: { publicId: params.publicId },
@@ -225,7 +241,7 @@ function BabyPage() {
           }
           postUpdateOpen={!!search.postUpdate}
           settingsButton={
-            isOwner
+            canManage
               ? {
                   to: "/baby/$publicId",
                   params: { publicId: params.publicId },
@@ -280,7 +296,7 @@ function BabyPage() {
         <div className="relative max-w-2xl mx-auto space-y-8">
           <Card>
             <CardContent className="pt-6">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={canManage} />
             </CardContent>
           </Card>
 

@@ -181,6 +181,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
     thumbnailId?: Id<"_storage"> | null;
+    postedByUserId?: string | null;
   },
 ) {
   const timelineItemId = await ctx.db.insert("timelineItems", {
@@ -196,6 +197,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
     thumbnailId: opts.thumbnailId ?? null,
+    postedByUserId: opts.postedByUserId ?? null,
   });
   return { timelineItemId, updateId };
 }

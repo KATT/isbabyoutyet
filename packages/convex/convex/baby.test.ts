@@ -37,6 +37,7 @@ test("create a baby and list it for the owner", async () => {
       dueDate: "2026-09-01",
       publicId: "baby-smith",
       userId: "alice",
+      role: "owner",
     },
   ]);
 

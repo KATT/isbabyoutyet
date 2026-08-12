@@ -103,6 +103,8 @@ export default defineSchema({
     occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+    // Who posted this update. Optional until backfill makes it required.
+    postedByUserId: v.optional(v.union(v.string(), v.null())),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
@@ -111,4 +113,28 @@ export default defineSchema({
     // baby's updates — used on every post/redate/unmark and by migrations
     .index("by_babyId_milestone", ["babyId", "milestone"])
     .index("by_timelineItemId", ["timelineItemId"]),
+  // Co-parents authorized to manage a baby page (not including the owner).
+  babyCoParents: defineTable({
+    babyId: v.id("baby"),
+    userId: v.string(), // Better Auth user id
+    email: v.string(), // Denormalized for settings display
+    name: v.optional(v.union(v.string(), v.null())),
+    addedByUserId: v.string(),
+    addedAt: v.number(),
+    deletedAt: v.optional(v.union(v.number(), v.null())),
+  })
+    .index("by_babyId", ["babyId"])
+    .index("by_userId", ["userId"])
+    .index("by_babyId_userId", ["babyId", "userId"]),
+  // Pending co-parent invites for emails that do not yet have an account.
+  babyCoParentInvites: defineTable({
+    babyId: v.id("baby"),
+    email: v.string(), // Normalized lowercase
+    invitedByUserId: v.string(),
+    createdAt: v.number(),
+    deletedAt: v.optional(v.union(v.number(), v.null())),
+  })
+    .index("by_babyId", ["babyId"])
+    .index("by_email", ["email"])
+    .index("by_babyId_email", ["babyId", "email"]),
 });

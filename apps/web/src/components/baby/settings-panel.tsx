@@ -32,9 +32,12 @@ import {
   MessageSquare,
   Palette,
   Trash2,
+  Users,
 } from "lucide-react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
+import { CoParentsSettings } from "./co-parents-settings";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
 
 type SettingsPanelProps = {
@@ -44,6 +47,11 @@ type SettingsPanelProps = {
   onOpenChange: (open: boolean) => void;
   /** Owner-only soft delete. Omitted on the preview page. */
   onDelete?: () => void | Promise<void>;
+  /** When set, shows the co-parents section (real baby pages only). */
+  coParents?: {
+    babyId: Id<"baby">;
+    isOwner: boolean;
+  };
 };
 
 /**
@@ -58,6 +66,7 @@ export function SettingsPanel({
   open,
   onOpenChange,
   onDelete,
+  coParents,
 }: SettingsPanelProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -212,6 +221,28 @@ export function SettingsPanel({
               />
             </ItemActions>
           </Item>
+
+          {coParents && (
+            <>
+              <ItemSeparator />
+              <Item variant="default" className="items-start">
+                <ItemMedia variant="icon">
+                  <Users className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent className="gap-3">
+                  <div>
+                    <ItemTitle>Co-parents</ItemTitle>
+                    <ItemDescription>
+                      {coParents.isOwner
+                        ? "People who can post updates and change settings"
+                        : "Others who can manage this page with you"}
+                    </ItemDescription>
+                  </div>
+                  <CoParentsSettings babyId={coParents.babyId} isOwner={coParents.isOwner} />
+                </ItemContent>
+              </Item>
+            </>
+          )}
 
           {onDelete && (
             <>

@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { getCurrentStatus, MILESTONE_FIELDS, STATUS_ORDER } from "../src/types";
 import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
+import { requireBabyManager } from "./babyAccess";
 import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
@@ -21,9 +22,9 @@ const milestoneValidator = v.union(
 export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 
 /**
- * Owner posts an update to the timeline: a message and/or a photo, optionally
- * marking a milestone. Marking a milestone also sets the canonical status
- * timestamp on the baby doc and schedules the push notification.
+ * Owner or co-parent posts an update to the timeline: a message and/or a photo,
+ * optionally marking a milestone. Marking a milestone also sets the canonical
+ * status timestamp on the baby doc and schedules the push notification.
  */
 export const post = mutationWithTriggers({
   args: {
@@ -36,12 +37,7 @@ export const post = mutationWithTriggers({
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby || !isActive(baby)) throw new Error("Baby not found");
-    if (baby.userId !== identity.subject) throw new Error("Not authorized");
+    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
 
     const message = args.message?.trim() || null;
     const milestone = args.milestone ?? null;
@@ -87,6 +83,7 @@ export const post = mutationWithTriggers({
       // Settings can still redate occurredAt later without moving the feed position
       occurredAt,
       photoId,
+      postedByUserId: identity.subject,
     });
 
     if (photoId) {
@@ -121,23 +118,21 @@ export const post = mutationWithTriggers({
 });
 
 /**
- * Owner pins a photo from the timeline as the baby's current page photo.
- * New photo uploads still take over by default (latest wins) — this lets the
- * owner bring back any earlier photo without re-uploading it.
+ * Pins a photo from the timeline as the baby's current page photo.
+ * New photo uploads still take over by default (latest wins) — this lets a
+ * manager bring back any earlier photo without re-uploading it.
  */
 export const setAsCurrentPhoto = mutationWithTriggers({
   args: { updateId: v.id("updates") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
     const update = await ctx.db.get(args.updateId);
     if (!update || !isActive(update)) throw new Error("Update not found");
     if (!update.photoId) throw new Error("This update has no photo");
 
+    await requireBabyManager(ctx, update.babyId);
+
     const baby = await ctx.db.get(update.babyId);
     if (!baby || !isActive(baby)) throw new Error("Baby not found");
-    if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     await ctx.db.patch(baby._id, {
       photoId: update.photoId,
@@ -155,22 +150,17 @@ export const setAsCurrentPhoto = mutationWithTriggers({
 });
 
 /**
- * Owner removes an update from the timeline. Removing a milestone update also
+ * Removes an update from the timeline. Removing a milestone update also
  * unmarks the milestone on the baby doc; removing the update carrying the
  * current photo falls back to the most recent remaining photo update.
  */
 export const remove = mutationWithTriggers({
   args: { updateId: v.id("updates") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
     const update = await ctx.db.get(args.updateId);
     if (!update || !isActive(update)) throw new Error("Update not found");
 
-    const baby = await ctx.db.get(update.babyId);
-    if (!baby || !isActive(baby)) throw new Error("Baby not found");
-    if (baby.userId !== identity.subject) throw new Error("Not authorized");
+    const { baby } = await requireBabyManager(ctx, update.babyId);
 
     const statusBefore = getCurrentStatus(baby);
 

@@ -2,6 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
+import { canManageBaby } from "./babyAccess";
 import { isActive } from "./softDelete";
 
 const MAX_NAME_LENGTH = 50;
@@ -148,9 +149,9 @@ export const remove = mutation({
       throw new Error("Baby not found");
     }
 
-    // Check if user is the baby's owner (authenticated)
+    // Check if user can manage the baby (owner or co-parent)
     const identity = await ctx.auth.getUserIdentity();
-    const isOwner = identity && baby.userId === identity.subject;
+    const isManager = identity ? await canManageBaby(ctx, baby, identity.subject) : false;
 
     // Check if visitor can delete (matches visitorId and within time window)
     const canVisitorDelete =
@@ -158,7 +159,7 @@ export const remove = mutation({
       encouragement.visitorId === args.visitorId &&
       isWithinEditWindow(encouragement.createdAt);
 
-    if (!isOwner && !canVisitorDelete) {
+    if (!isManager && !canVisitorDelete) {
       throw new Error("Not authorized to delete this encouragement");
     }
 

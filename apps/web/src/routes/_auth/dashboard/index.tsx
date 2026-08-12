@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import {
   Card,
@@ -9,7 +10,7 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -19,6 +20,8 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
+    // Claim pending co-parent invites before listing so shared babies appear
+    await opts.context.convexClient.mutation(api.coParents.claimPendingInvites, {});
     return {
       babies: await opts.context.convexClient.query(api.baby.listByUser, {}),
     };
@@ -31,6 +34,11 @@ function DashboardPage() {
   if (!babies || babies.length === 0) {
     babies = loaderData.babies;
   }
+
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
+  useEffect(() => {
+    void claimInvites({});
+  }, [claimInvites]);
 
   const router = useRouter();
 
@@ -141,26 +149,33 @@ function DashboardPage() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {isOverdue ? (
-                        <Badge
-                          variant="default"
-                          className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                        >
-                          {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
-                          overdue
-                        </Badge>
-                      ) : daysUntilDue === 0 ? (
-                        <Badge
-                          variant="default"
-                          className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                        >
-                          Due today!
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-primary/20 bg-primary/5">
-                          {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
-                        </Badge>
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {"role" in baby && baby.role === "coParent" ? (
+                          <Badge variant="outline" className="border-primary/20 bg-primary/5">
+                            Shared with you
+                          </Badge>
+                        ) : null}
+                        {isOverdue ? (
+                          <Badge
+                            variant="default"
+                            className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
+                          >
+                            {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
+                            overdue
+                          </Badge>
+                        ) : daysUntilDue === 0 ? (
+                          <Badge
+                            variant="default"
+                            className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
+                          >
+                            Due today!
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-primary/20 bg-primary/5">
+                            {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
+                          </Badge>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
                 </Link>
