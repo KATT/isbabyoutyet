@@ -3,17 +3,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { format, parseISO } from "date-fns";
-import {
-  Activity,
-  Baby,
-  Calendar,
-  Camera,
-  CheckCircle,
-  Clock,
-  Hospital,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Clock, Trash2, Upload } from "lucide-react";
 import type * as React from "react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
@@ -786,6 +776,3 @@ export function PhotoUploader({ babyId, photoUrl }: PhotoUploaderProps) {
     </Popover>
   );
 }
-
-// Re-export icons for convenience
-export { Activity, Baby, Calendar, Camera, CheckCircle, Hospital };

@@ -11,7 +11,7 @@
     "format": "turbo format",
     "test": "vitest run",
     "knip": "knip --production",
-    "checks": "turbo run format lint-fix typecheck test"
+    "checks": "turbo run format lint-fix typecheck test && pnpm knip"
   },
   "devDependencies": {
     "knip": "^6.32.2",
