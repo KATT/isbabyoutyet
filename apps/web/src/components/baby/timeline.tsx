@@ -59,7 +59,7 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * A post's three fields are mutually inclusive: any combination works, as
  * long as at least one is present. The message is trimmed BEFORE validation,
  * so a whitespace-only message counts as no message (matching the backend).
- * `occurredAt` is prefilled with "now" and only posted when explicitly edited.
+ * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
 const composerSchema = z
   .object({
@@ -77,13 +77,17 @@ const composerSchema = z
     (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
     { error: "Add a message, a photo, or a milestone to post" },
   )
-  // A cleared/garbled event-time must block posting rather than silently
-  // meaning "now" (the untouched prefill always parses)
-  .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
-    error: "Pick a valid time — or leave it as now",
-    path: ["occurredAt"],
-  });
-
+  // Empty = "now". A partially typed/garbled value must block posting.
+  .refine(
+    (draft) =>
+      draft.milestone === "none" ||
+      draft.occurredAt === "" ||
+      !Number.isNaN(Date.parse(draft.occurredAt)),
+    {
+      error: "Pick a valid time — or leave it blank for now",
+      path: ["occurredAt"],
+    },
+  );
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
   labor_started: { label: "Labour started", icon: Activity },
   gone_to_hospital: { label: "Gone to hospital", icon: Hospital },
@@ -163,9 +167,8 @@ export function UpdateComposer(props: UpdateComposerProps) {
     defaultValues: {
       message: "",
       milestone: "none",
-      // Prefilled with "now" so the owner sees what will be recorded; only
-      // posted when explicitly edited (checked via dirtyFields on submit)
-      occurredAt: toDatetimeLocalValue(new Date()),
+      // Empty means "happening now"; fill in to backdate
+      occurredAt: "",
       photo: null,
     },
   });
@@ -239,12 +242,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
       photoId = uploaded.storageId;
     }
 
-    // An explicitly edited event-time picker means the milestone is
-    // backdated; untouched means "it's happening now" (the backend default)
+    // A filled event-time means the milestone is backdated; empty means
+    // "it's happening now" (the backend default)
     const occurredAtMs =
-      milestone && form.formState.dirtyFields.occurredAt
-        ? new Date(values.occurredAt).getTime()
-        : null;
+      milestone && values.occurredAt !== "" ? new Date(values.occurredAt).getTime() : null;
 
     await postUpdate({
       babyId: props.babyId,
@@ -367,7 +368,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                       <FormItem>
                         <label className="block space-y-1">
                           <span className="text-xs font-medium text-muted-foreground">
-                            When did it happen?
+                            When did it happen? (optional)
                           </span>
                           <FormControl>
                             <Input
@@ -384,7 +385,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Defaults to now — set an earlier time if you're sharing the news after the fact.
+                    Leave blank for now — pick a time if you're sharing the news after the fact.
                   </p>
                 </div>
               )}
