@@ -15,6 +15,14 @@
       ]
     },
     "packages/convex": {},
-    "packages/ui": {}
+    "packages/ui": {
+      // All workspaces are private, so the package `exports` field is not a
+      // public API: exports of entry files that no workspace imports are
+      // dead code, including vendored shadcn components.
+      "includeEntryExports": true,
+      // ...but exports also used within their own file (e.g. cva variants
+      // like `buttonVariants`) stay untouched.
+      "ignoreExportsUsedInFile": true
+    }
   }
 }
