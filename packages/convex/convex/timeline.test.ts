@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import {
   backfillBabyTimelineDoc,
   backfillEncouragementTimelineDoc,
+  convertEncouragementToOwnerUpdate,
   separateMilestoneOccurredAtDoc,
 } from "./migrations";
 import schema from "./schema";
@@ -608,4 +609,43 @@ test("posting a milestone sets occurredAt to the announce time", async () => {
   expect(item.postedAt).toBeGreaterThanOrEqual(before);
   expect(item.postedAt).toBeLessThanOrEqual(after);
   expect(item.update.occurredAt).toBe(item.postedAt);
+});
+
+test("convertEncouragementToOwnerUpdate copies message and deletes the encouragement", async () => {
+  const { t, babyId } = await setup();
+
+  const encouragementId = await t.mutation(api.encouragements.create, {
+    babyId,
+    authorName: "Steph",
+    message: "placeholder — migration copies from the doc, not this literal in prod",
+    visitorId: "visitor-steph",
+  });
+
+  const before = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(before.page).toMatchObject([
+    { kind: "encouragement", encouragement: { authorName: "Steph" } },
+  ]);
+  const postedAt = before.page[0]?.postedAt;
+  const sourceMessage = await t.run(async (ctx) => {
+    const encouragement = await ctx.db.get(encouragementId);
+    return encouragement?.message ?? null;
+  });
+
+  await t.run(async (ctx) => {
+    await convertEncouragementToOwnerUpdate(ctx, encouragementId);
+    // Idempotent
+    await convertEncouragementToOwnerUpdate(ctx, encouragementId);
+  });
+
+  const after = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(after.page).toMatchObject([
+    {
+      kind: "update",
+      postedAt,
+      update: { message: sourceMessage, milestone: null },
+    },
+  ]);
+
+  const leftover = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(leftover).toBeNull();
 });

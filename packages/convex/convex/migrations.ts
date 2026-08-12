@@ -225,10 +225,48 @@ export const separateMilestoneOccurredAt = migrations.define({
   migrateOne: separateMilestoneOccurredAtDoc,
 });
 
+/**
+ * One-shot: promote a specific encouragement (by id) into an owner timeline
+ * update at the same `postedAt`, then delete the encouragement + its timeline
+ * row. Copies the message from the source doc — do not hardcode message text.
+ * Idempotent: missing source id is a no-op.
+ */
+export async function convertEncouragementToOwnerUpdate(
+  ctx: MutationCtx,
+  encouragementId: Id<"encouragements">,
+) {
+  const encouragement = await ctx.db.get(encouragementId);
+  if (!encouragement) return;
+
+  await insertUpdateWithTimelineItem(ctx, {
+    babyId: encouragement.babyId,
+    postedAt: encouragement.createdAt,
+    message: encouragement.message,
+  });
+
+  const timelineItemId = encouragement.timelineItemId;
+  await ctx.db.delete(encouragement._id);
+  if (timelineItemId) {
+    await ctx.db.delete(timelineItemId);
+  }
+}
+
+/** Alma page: Steph's post-birth thank-you encouragement → family update. */
+const ALMA_STEPH_ENCOURAGEMENT_ID = "js75t2xs6hv3j7p4cbmp7nbj5d7z4axz" as Id<"encouragements">;
+
+export const convertAlmaStephEncouragementToUpdate = migrations.define({
+  table: "encouragements",
+  migrateOne: async (ctx, encouragement) => {
+    if (encouragement._id !== ALMA_STEPH_ENCOURAGEMENT_ID) return;
+    await convertEncouragementToOwnerUpdate(ctx, encouragement._id);
+  },
+});
+
 // Run all pending migrations - called automatically during deployment
 export const runAll = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
+  internal.migrations.convertAlmaStephEncouragementToUpdate,
 ]);
