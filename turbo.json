@@ -10,6 +10,7 @@
         "VITE_CONVEX_URL",
         "VITE_CONVEX_SITE_URL",
         "VITE_SITE_URL",
+        "VITE_HAS_DEMO_LOGIN",
         "VERCEL",
         "VERCEL_ENV"
       ],
