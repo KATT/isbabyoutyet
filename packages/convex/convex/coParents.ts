@@ -232,7 +232,11 @@ export const claimPendingInvites = mutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
+    // After signup the first dashboard load can race the session cookie —
+    // treat missing auth as a no-op so the page doesn't crash.
+    if (!identity) {
+      return { claimed: 0 };
+    }
 
     const profile = await resolveCallerProfile(ctx, identity.subject);
     if (!profile) {

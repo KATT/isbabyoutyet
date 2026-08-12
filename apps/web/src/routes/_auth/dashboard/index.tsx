@@ -20,8 +20,6 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    // Claim pending co-parent invites before listing so shared babies appear
-    await opts.context.convexClient.mutation(api.coParents.claimPendingInvites, {});
     return {
       babies: await opts.context.convexClient.query(api.baby.listByUser, {}),
     };
