@@ -71,6 +71,9 @@ export const post = mutationWithTriggers({
       postedAt,
       message,
       milestone,
+      // Milestone event clock starts as "now"; settings can redate occurredAt later
+      // without moving the feed position.
+      occurredAt: milestone ? postedAt : null,
       photoId,
     });
 
