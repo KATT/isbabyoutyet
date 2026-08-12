@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { LogIn } from "lucide-react";
+import { Baby } from "lucide-react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 
 const loginSchema = z.object({
@@ -50,21 +50,23 @@ function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2 mx-auto">
-              <LogIn className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Sign in to track your babies</CardDescription>
+        <Link
+          to="/"
+          className="mb-8 flex items-center justify-center gap-2 text-foreground transition-opacity hover:opacity-80"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 ring-1 ring-primary/20">
+            <Baby className="h-5 w-5 text-primary" />
+          </span>
+          <span className="font-serif text-lg italic tracking-wide">isbabyoutyet</span>
+        </Link>
+        <Card className="rounded-3xl">
+          <CardHeader className="text-center">
+            <CardTitle className="font-serif text-3xl font-semibold tracking-tight">
+              Welcome back
+            </CardTitle>
+            <CardDescription>Sign in to keep everyone in the loop</CardDescription>
           </CardHeader>
           <CardContent>
             <Form
@@ -91,12 +93,7 @@ function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="you@example.com"
-                          className="border-2"
-                          {...field}
-                        />
+                        <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -110,7 +107,7 @@ function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" className="border-2" {...field} />
+                        <Input type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -119,7 +116,7 @@ function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full shadow-lg shadow-primary/20"
+                  className="w-full shadow-md shadow-primary/20"
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >

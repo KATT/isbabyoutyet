@@ -8,12 +8,34 @@ type ProgressIndicatorProps = {
   currentStatus: BabyStatus;
 };
 
-export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProps) {
-  // For progress bar: if a later status is set, show previous statuses as completed
-  const isLaborCompletedForProgress =
-    !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn;
-  const isGoneToHospitalCompletedForProgress = !!baby.wentToHospital || !!baby.babyBorn;
-  const isBornCompletedForProgress = !!baby.babyBorn;
+export function ProgressIndicator(props: ProgressIndicatorProps) {
+  const baby = props.baby;
+  const currentStatus = props.currentStatus;
+
+  // If a later status is set, earlier stages count as completed
+  const steps = [
+    {
+      key: "labor_started",
+      label: "Labour started",
+      icon: Activity,
+      date: baby.laborStarted,
+      completed: !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn,
+    },
+    {
+      key: "gone_to_hospital",
+      label: "Gone to hospital",
+      icon: Hospital,
+      date: baby.wentToHospital,
+      completed: !!baby.wentToHospital || !!baby.babyBorn,
+    },
+    {
+      key: "born",
+      label: "Baby born",
+      icon: CheckCircle,
+      date: baby.babyBorn,
+      completed: !!baby.babyBorn,
+    },
+  ] as const;
 
   const progressValue = (() => {
     switch (currentStatus.type) {
@@ -30,100 +52,42 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        {/* Labour started */}
-        <div className="flex flex-col items-center flex-1">
-          <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
-              isLaborCompletedForProgress
-                ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
-                : currentStatus.type === "labor_started"
-                  ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
-                  : "bg-muted/50 text-muted-foreground border border-border"
-            }`}
-          >
-            <Activity className="w-10 h-10 md:w-12 md:h-12" />
-          </div>
-          <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
-              isLaborCompletedForProgress
-                ? "text-foreground"
-                : currentStatus.type === "labor_started"
-                  ? "text-primary"
-                  : "text-muted-foreground"
-            }`}
-          >
-            Labour started
-          </p>
-          {baby.laborStarted && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {getRelativeTime(baby.laborStarted)}
-            </p>
-          )}
-        </div>
-
-        {/* Gone to hospital */}
-        <div className="flex flex-col items-center flex-1">
-          <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
-              isGoneToHospitalCompletedForProgress
-                ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
-                : currentStatus.type === "gone_to_hospital"
-                  ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
-                  : "bg-muted/50 text-muted-foreground border border-border"
-            }`}
-          >
-            <Hospital className="w-10 h-10 md:w-12 md:h-12" />
-          </div>
-          <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
-              isGoneToHospitalCompletedForProgress
-                ? "text-foreground"
-                : currentStatus.type === "gone_to_hospital"
-                  ? "text-primary"
-                  : "text-muted-foreground"
-            }`}
-          >
-            Gone to hospital
-          </p>
-          {baby.wentToHospital && (
-            <p className="text-xs text-muted-foreground mt-1">
-              {getRelativeTime(baby.wentToHospital)}
-            </p>
-          )}
-        </div>
-
-        {/* Baby born */}
-        <div className="flex flex-col items-center flex-1">
-          <div
-            className={`w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center mb-3 transition-all duration-300 ${
-              isBornCompletedForProgress
-                ? "bg-linear-to-br from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20 scale-110"
-                : currentStatus.type === "born"
-                  ? "bg-linear-to-br from-primary/30 to-primary/20 text-primary border-2 border-primary/30 shadow-md"
-                  : "bg-muted/50 text-muted-foreground border border-border"
-            }`}
-          >
-            <CheckCircle className="w-10 h-10 md:w-12 md:h-12" />
-          </div>
-          <p
-            className={`text-sm md:text-base font-semibold mb-1 ${
-              isBornCompletedForProgress
-                ? "text-foreground"
-                : currentStatus.type === "born"
-                  ? "text-primary"
-                  : "text-muted-foreground"
-            }`}
-          >
-            Baby born
-          </p>
-          {baby.babyBorn && (
-            <p className="text-xs text-muted-foreground mt-1">{getRelativeTime(baby.babyBorn)}</p>
-          )}
-        </div>
-      </div>
-      {/* Progress bar */}
-      <Progress value={progressValue} />
+      <ol className="mb-5 grid grid-cols-3 gap-2">
+        {steps.map((step) => {
+          const isCurrent = currentStatus.type === step.key;
+          const StepIcon = step.icon;
+          return (
+            <li key={step.key} className="flex flex-col items-center text-center">
+              <div
+                className={`mb-2 flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-300 ${
+                  step.completed
+                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
+                    : isCurrent
+                      ? "border border-primary/30 bg-primary/10 text-primary"
+                      : "border border-border bg-muted/40 text-muted-foreground"
+                }`}
+              >
+                <StepIcon className="h-5 w-5" />
+              </div>
+              <p
+                className={`text-xs md:text-sm font-medium ${
+                  step.completed
+                    ? "text-foreground"
+                    : isCurrent
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                }`}
+              >
+                {step.label}
+              </p>
+              {step.date && (
+                <p className="mt-0.5 text-xs text-muted-foreground">{getRelativeTime(step.date)}</p>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <Progress value={progressValue} className="h-1.5" />
     </div>
   );
 }

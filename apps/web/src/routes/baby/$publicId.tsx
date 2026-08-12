@@ -1,7 +1,6 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
-import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { PageHeader } from "@/components/baby/page-header";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
@@ -164,7 +163,7 @@ function BabyPage() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-background">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
       {isOwner && (
@@ -202,7 +201,7 @@ function BabyPage() {
         </>
       )}
 
-      <div className="border-b border-border/50">
+      <PageHeader>
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
           postUpdateButton={
@@ -234,70 +233,74 @@ function BabyPage() {
           }
           settingsOpen={!!search.settings}
         />
-        <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
-          <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+      </PageHeader>
+
+      <main className="mx-auto w-full max-w-2xl px-4 pb-16">
+        {/* Hero: the big question, set in the display serif */}
+        <section className="pt-10 pb-20 text-center md:pt-14 md:pb-24">
+          <p className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+            The big question
+          </p>
+          <h1 className="mt-3 font-serif text-4xl font-semibold italic tracking-tight text-foreground text-balance md:text-6xl">
             Is {baby.name} out yet?
-          </span>
-        </h1>
-      </div>
-      <section className="relative px-6 py-12 text-center overflow-hidden">
-        <div className="relative max-w-5xl mx-auto">
-          <Card>
-            <CardContent>
-              <StatusDisplay
-                baby={baby}
-                currentStatus={currentStatus}
-                photoUrl={babyDoc.photoUrl}
-                thumbnailUrl={babyDoc.thumbnailUrl}
-                latestUpdate={
-                  latestUpdate
-                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
-                    : null
-                }
-              />
-              <NotificationSubscribe
-                babyId={babyDoc._id}
-                vapidPublicKey={loaderData.vapidPublicKey}
-              />
-              <Separator className="my-4" />
-            </CardContent>
-            <CardFooter>
-              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-            </CardFooter>
-          </Card>
-        </div>
-      </section>
+          </h1>
+        </section>
 
-      {/* Timeline Section: owner updates interleaved with encouragements.
-          The news (feed) comes before the visitor's encouragement form; the
-          owner posts via the "Post update" button in the fixed nav bar. */}
-      <section className="relative px-6 pb-12">
-        <div className="relative max-w-2xl mx-auto space-y-8">
-          <Card>
-            <CardContent className="pt-6">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-            </CardContent>
-          </Card>
+        {/* Announcement card: the avatar overlaps the top edge */}
+        <section className="relative rounded-3xl border border-border bg-card px-6 pb-8 text-center shadow-sm md:px-10">
+          <StatusDisplay
+            baby={baby}
+            currentStatus={currentStatus}
+            photoUrl={babyDoc.photoUrl}
+            thumbnailUrl={babyDoc.thumbnailUrl}
+            latestUpdate={
+              latestUpdate
+                ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                : null
+            }
+          />
+          <div className="mt-6 flex justify-center">
+            <NotificationSubscribe
+              babyId={babyDoc._id}
+              vapidPublicKey={loaderData.vapidPublicKey}
+            />
+          </div>
+          {/* Ornament divider */}
+          <div className="my-8 flex items-center gap-4" aria-hidden="true">
+            <span className="h-px flex-1 bg-border" />
+            <span className="font-serif text-sm text-primary/60">✦</span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+          <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+        </section>
 
-          {!baby.encouragementsDisabled && (
-            <Card>
-              <CardContent className="pt-6">
-                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </section>
+        {/* Timeline: owner updates interleaved with encouragements. The feed
+            comes before the visitor's encouragement form; the owner posts
+            via the "Post update" button in the header. */}
+        <section className="mt-14">
+          <h2 className="font-serif text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+            The story so far
+          </h2>
+          <div className="mt-6">
+            <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+          </div>
+        </section>
 
-      {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-      <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+        {!baby.encouragementsDisabled && (
+          <section className="mt-12 rounded-3xl border border-primary/15 bg-accent/30 p-6 md:p-8">
+            <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+          </section>
+        )}
+      </main>
+
+      <footer className="border-t border-border/60 py-8 text-center">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           Having a baby? Are people messaging you non-stop? Create your own page →
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

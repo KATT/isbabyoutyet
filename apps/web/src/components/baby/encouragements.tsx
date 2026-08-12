@@ -70,12 +70,14 @@ export function EncouragementForm(props: EncouragementFormProps) {
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-          <Heart className="w-6 h-6 text-primary" />
+        <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-primary/10 ring-1 ring-primary/20 mb-3">
+          <Heart className="w-5 h-5 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground">Send Encouragement</h3>
-        <p className="text-sm text-muted-foreground">
-          Leave a message of support for {props.babyName}'s family
+        <h3 className="font-serif text-2xl font-semibold tracking-tight text-foreground">
+          Leave a note
+        </h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          A message of support for {props.babyName}'s family — they'll treasure it
         </p>
       </div>
 

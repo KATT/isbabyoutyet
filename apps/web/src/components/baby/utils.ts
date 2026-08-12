@@ -5,6 +5,7 @@ import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
 import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
+import sageGardenCss from "@/styles/themes/sage-garden.css?url";
 
 export const THEME_OPTIONS = [
   {
@@ -47,6 +48,12 @@ export const THEME_OPTIONS = [
     label: "Quantum Rose",
     css: quantumRoseCss,
     colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
+  },
+  {
+    value: "sage-garden",
+    label: "Sage Garden",
+    css: sageGardenCss,
+    colors: ["#5f7a54", "#f3f4ec", "#dfe7cd"],
   },
 ] as const;
 

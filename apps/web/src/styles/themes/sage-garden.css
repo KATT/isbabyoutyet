@@ -1,0 +1,73 @@
+/* Sage Garden theme - Calm sage green, cream paper, and warm clay */
+/* An original theme for the keepsake look */
+
+:root {
+  --background: #f3f4ec;
+  --foreground: #2c3327;
+  --card: #fbfcf5;
+  --card-foreground: #2c3327;
+  --popover: #fbfcf5;
+  --popover-foreground: #2c3327;
+  --primary: #5f7a54;
+  --primary-foreground: #ffffff;
+  --secondary: #e4e9d6;
+  --secondary-foreground: #37402f;
+  --muted: #eaeddd;
+  --muted-foreground: #6d7561;
+  --accent: #dfe7cd;
+  --accent-foreground: #37402f;
+  --destructive: #c0564a;
+  --destructive-foreground: #ffffff;
+  --border: #dbe0ca;
+  --input: #dbe0ca;
+  --ring: #5f7a54;
+  --chart-1: #5f7a54;
+  --chart-2: #a9bd8f;
+  --chart-3: #c9a227;
+  --chart-4: #8a9a5b;
+  --chart-5: #4a6741;
+  --sidebar: #edefe1;
+  --sidebar-foreground: #2c3327;
+  --sidebar-primary: #5f7a54;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dfe7cd;
+  --sidebar-accent-foreground: #37402f;
+  --sidebar-border: #dbe0ca;
+  --sidebar-ring: #5f7a54;
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: #171b13;
+  --foreground: #e8ebdd;
+  --card: #20261a;
+  --card-foreground: #e8ebdd;
+  --popover: #20261a;
+  --popover-foreground: #e8ebdd;
+  --primary: #a4bd8e;
+  --primary-foreground: #171b13;
+  --secondary: #2b3324;
+  --secondary-foreground: #dfe4d0;
+  --muted: #262d1f;
+  --muted-foreground: #9aa38b;
+  --accent: #303a27;
+  --accent-foreground: #dfe4d0;
+  --destructive: #d97b6f;
+  --destructive-foreground: #171b13;
+  --border: #303827;
+  --input: #303827;
+  --ring: #a4bd8e;
+  --chart-1: #a4bd8e;
+  --chart-2: #6f8a5e;
+  --chart-3: #d8bc5f;
+  --chart-4: #8a9a5b;
+  --chart-5: #c3d4ae;
+  --sidebar: #131710;
+  --sidebar-foreground: #e8ebdd;
+  --sidebar-primary: #a4bd8e;
+  --sidebar-primary-foreground: #171b13;
+  --sidebar-accent: #303a27;
+  --sidebar-accent-foreground: #dfe4d0;
+  --sidebar-border: #303827;
+  --sidebar-ring: #a4bd8e;
+}

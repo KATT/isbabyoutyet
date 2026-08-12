@@ -45,11 +45,11 @@ function PhotoAvatar({
   }, [photoUrl]);
 
   const baseClasses =
-    "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full border-2 mb-8 overflow-hidden";
+    "inline-flex items-center justify-center w-28 h-28 md:w-36 md:h-36 rounded-full overflow-hidden ring-4 ring-background shadow-lg";
   const variantClasses =
     variant === "born"
-      ? "bg-linear-to-br from-primary to-primary/80 border-primary/30 shadow-xl shadow-primary/20"
-      : "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20 shadow-lg shadow-primary/10";
+      ? "bg-linear-to-br from-primary to-primary/80 shadow-primary/25"
+      : "bg-linear-to-br from-primary/15 to-primary/5 shadow-primary/10 border border-primary/20";
 
   // Use thumbnail for avatar, fallback to full photo if thumbnail not available
   const avatarImageUrl = thumbnailUrl ?? photoUrl;
@@ -119,17 +119,26 @@ function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
     return null;
   }
   return (
-    <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-2">
+    <figure className="mt-8 w-full max-w-md rounded-2xl border border-primary/15 bg-accent/40 px-6 py-5 text-center">
+      <figcaption className="text-[0.7rem] font-semibold uppercase tracking-[0.2em] text-primary/80">
         Latest from the family
-      </p>
-      <p className="text-lg font-bold text-primary break-words">{latestUpdate.message}</p>
-      <p className="text-xs text-primary/70 mt-2">
+      </figcaption>
+      <blockquote className="mt-2 font-serif text-lg italic leading-snug text-foreground break-words">
+        “{latestUpdate.message}”
+      </blockquote>
+      <p className="mt-2 text-xs text-muted-foreground">
         Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
       </p>
-    </div>
+    </figure>
   );
 }
+
+const STATUS_ICONS = {
+  not_yet: Baby,
+  labor_started: Activity,
+  gone_to_hospital: Hospital,
+  born: CheckCircle,
+} as const;
 
 export function StatusDisplay({
   baby,
@@ -140,113 +149,74 @@ export function StatusDisplay({
 }: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const StatusIcon = STATUS_ICONS[currentStatus.type];
+  const isBorn = currentStatus.type === "born";
 
-  if (currentStatus.type === "not_yet") {
-    return (
-      <div className="flex flex-col items-center py-8">
+  const answer = {
+    not_yet: "Not yet",
+    labor_started: "Labour started",
+    gone_to_hospital: "Gone to hospital",
+    born: "Yes! Baby is out",
+  }[currentStatus.type];
+
+  const subline = {
+    not_yet: "Baby is still on the way",
+    labor_started: "Not gone to hospital yet",
+    gone_to_hospital: "Almost there now",
+    born: "Welcome to the world, little one",
+  }[currentStatus.type];
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="-mt-16 md:-mt-20 mb-6">
         <PhotoAvatar
           photoUrl={photoUrl}
           thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
+          variant={isBorn ? "born" : "default"}
+          fallbackIcon={
+            <StatusIcon
+              className={`w-12 h-12 md:w-16 md:h-16 ${isBorn ? "text-primary-foreground" : "text-primary"}`}
+            />
+          }
         />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Not yet
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-        <div
-          className={`mt-4 p-6 rounded-xl shadow-lg ${
-            overdueDays > 0
-              ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
-              : "bg-muted/50 border border-border"
-          }`}
-        >
-          {overdueDays > 0 ? (
-            <>
-              <p className="text-xl font-bold text-primary">
-                {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-              </p>
-              <p className="text-sm text-primary/80 mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-bold text-foreground">
-                {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          )}
-        </div>
       </div>
-    );
-  }
 
-  if (currentStatus.type === "labor_started") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Labour started
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
-        <p className="text-lg text-muted-foreground mt-2">
-          Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-        </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
+      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.25em] text-muted-foreground">
+        The answer is
+      </p>
+      <h2 className="mt-2 font-serif text-5xl md:text-7xl font-semibold tracking-tight text-primary text-balance">
+        {answer}
+      </h2>
+      <p className="mt-3 font-serif text-lg md:text-xl italic text-muted-foreground">{subline}</p>
 
-  if (currentStatus.type === "gone_to_hospital") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gone to hospital
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-4">
+      {currentStatus.type !== "not_yet" && (
+        <p className="mt-3 text-sm text-muted-foreground">
+          {isBorn ? "Born on" : currentStatus.type === "labor_started" ? "Started at" : ""}{" "}
           {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
         </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
+      )}
 
-  // born
-  return (
-    <div className="flex flex-col items-center py-8">
-      <PhotoAvatar
-        photoUrl={photoUrl}
-        thumbnailUrl={thumbnailUrl}
-        fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
-        variant="born"
-      />
-      <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Yes! Baby is out
-        </span>
-      </h2>
-      <p className="text-xl text-muted-foreground mb-4">
-        Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-      </p>
+      {currentStatus.type === "not_yet" && (
+        <div
+          className={`mt-6 inline-flex flex-col items-center gap-1 rounded-2xl px-6 py-4 ${
+            overdueDays > 0
+              ? "border border-primary/25 bg-primary/10"
+              : "border border-border bg-muted/40"
+          }`}
+        >
+          <p
+            className={`font-serif text-2xl font-semibold ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
+          >
+            {overdueDays > 0
+              ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue`
+              : `${daysUntilDueDate} ${daysUntilDueDate === 1 ? "day" : "days"} until due date`}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+          </p>
+        </div>
+      )}
+
       <LatestUpdateBox latestUpdate={latestUpdate} />
     </div>
   );

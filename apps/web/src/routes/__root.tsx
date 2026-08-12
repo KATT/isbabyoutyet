@@ -16,6 +16,9 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
+import typeCss from "@/styles/app.css?url";
+import frauncesCss from "@fontsource-variable/fraunces/opsz.css?url";
+import frauncesItalicCss from "@fontsource-variable/fraunces/opsz-italic.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
@@ -59,7 +62,19 @@ export const Route = createRootRouteWithContext<{
     links: [
       {
         rel: "stylesheet",
+        href: frauncesCss,
+      },
+      {
+        rel: "stylesheet",
+        href: frauncesItalicCss,
+      },
+      {
+        rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "stylesheet",
+        href: typeCss,
       },
       {
         rel: "apple-touch-icon",
@@ -126,12 +141,12 @@ function RootComponent() {
 function NotFoundComponent() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="text-center space-y-6 max-w-md">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20 mb-4">
-          <Baby className="w-10 h-10 text-primary" />
+      <div className="text-center space-y-5 max-w-md">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 ring-1 ring-primary/20">
+          <Baby className="w-8 h-8 text-primary" />
         </div>
-        <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-bold text-foreground">Page Not Found</h2>
+        <h1 className="font-serif text-7xl font-semibold text-foreground">404</h1>
+        <h2 className="font-serif text-2xl italic text-foreground">Not arrived yet</h2>
         <p className="text-muted-foreground">
           Looks like this page hasn't arrived yet. Let's get you back home!
         </p>

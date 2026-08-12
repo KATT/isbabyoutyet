@@ -1,0 +1,9 @@
+/*
+ * App type layer: Fraunces (variable, optical-sizing) is the display serif
+ * across every page; body copy stays on the system sans stack from
+ * globals.css. Loaded after globals.css so the variable override wins.
+ */
+:root,
+.dark {
+  --font-serif: "Fraunces Variable", "Fraunces", Georgia, serif;
+}

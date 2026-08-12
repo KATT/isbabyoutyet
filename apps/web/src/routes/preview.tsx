@@ -1,6 +1,5 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
-import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { PageHeader } from "@/components/baby/page-header";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -110,14 +109,8 @@ function PreviewPage() {
         }}
       />
 
-      <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Gradient Background Elements */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="border-b border-border/50">
+      <div className="min-h-screen bg-background">
+        <PageHeader>
           <BabyNav
             shareLink={null}
             settingsButton={{
@@ -129,41 +122,37 @@ function PreviewPage() {
             }}
             settingsOpen={!!search.settings}
           />
+        </PageHeader>
 
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
+        <main className="mx-auto w-full max-w-2xl px-4 pb-16">
+          <section className="pt-10 pb-20 text-center md:pt-14 md:pb-24">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-muted-foreground">
+              The big question
+            </p>
+            <h1 className="mt-3 font-serif text-4xl font-semibold italic tracking-tight text-foreground text-balance md:text-6xl">
               Is {baby.name} out yet?
-            </span>
-          </h1>
-        </div>
+            </h1>
+          </section>
 
-        <section className="relative px-6 py-12 text-center overflow-hidden">
-          <div className="relative max-w-5xl mx-auto">
-            <Card>
-              <CardContent>
-                <StatusDisplay
-                  baby={baby}
-                  currentStatus={currentStatus}
-                  latestUpdate={latestUpdate}
-                />
-                <Separator />
-              </CardContent>
-              <CardFooter>
-                <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-              </CardFooter>
-            </Card>
-          </div>
-        </section>
+          <section className="relative rounded-3xl border border-border bg-card px-6 pb-8 text-center shadow-sm md:px-10">
+            <StatusDisplay baby={baby} currentStatus={currentStatus} latestUpdate={latestUpdate} />
+            <div className="my-8 flex items-center gap-4" aria-hidden="true">
+              <span className="h-px flex-1 bg-border" />
+              <span className="font-serif text-sm text-primary/60">✦</span>
+              <span className="h-px flex-1 bg-border" />
+            </div>
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
+        </main>
 
-        {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-        <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+        <footer className="border-t border-border/60 py-8 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-6 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             Having a baby? Are people messaging you non-stop? Create your own page →
           </Link>
-        </div>
+        </footer>
       </div>
     </div>
   );

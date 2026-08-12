@@ -445,10 +445,17 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const update = props.item.update;
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
+  const DotIcon = milestoneMeta?.icon ?? (update.photoUrl ? Camera : MessageCircleHeart);
   const canPinPhoto = props.isOwner && !!update.photoUrl && !update.isCurrentPagePhoto;
 
   return (
-    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 border-l-4 border-l-primary relative group">
+    <li className="group relative pb-8 pl-10 last:pb-0">
+      <span
+        className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+        aria-hidden="true"
+      >
+        <DotIcon className="h-3.5 w-3.5" />
+      </span>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -556,7 +563,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           </div>
         )}
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -686,7 +693,13 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const canDelete = props.isOwner || canEdit;
 
   return (
-    <div className="p-4 rounded-lg bg-muted/30 border border-border/50 relative group">
+    <li className="group relative pb-8 pl-10 last:pb-0">
+      <span
+        className="absolute left-0 top-0 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-muted/60 text-muted-foreground"
+        aria-hidden="true"
+      >
+        <Heart className="h-3.5 w-3.5" />
+      </span>
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -770,7 +783,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
           </div>
         )}
       </div>
-    </div>
+    </li>
   );
 }
 
@@ -882,34 +895,24 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   if (results.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
+      <div className="rounded-3xl border border-dashed border-border py-12 text-center">
+        <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
+          <Heart className="h-7 w-7 text-muted-foreground/50" />
         </div>
-        <div className="py-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
-            <Heart className="w-8 h-8 text-muted-foreground/50" />
-          </div>
-          <p className="text-muted-foreground">Nothing here yet</p>
-          <p className="text-sm text-muted-foreground/70">
-            {props.isOwner
-              ? "Post your first update to keep everyone in the loop!"
-              : "Updates from the family will show up here."}
-          </p>
-        </div>
+        <p className="font-serif text-lg italic text-foreground">Nothing here yet</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {props.isOwner
+            ? "Post your first update to keep everyone in the loop!"
+            : "Updates from the family will show up here."}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
-      </div>
-
-      <div className="space-y-3">
+    <div>
+      {/* The rail: a hairline behind the timeline dots */}
+      <ol className="relative before:absolute before:bottom-6 before:left-[13px] before:top-2 before:w-px before:bg-border">
         {results.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
@@ -931,15 +934,15 @@ export function TimelineFeed(props: TimelineFeedProps) {
             />
           ),
         )}
+      </ol>
 
-        {/* Infinite scroll trigger */}
-        <div ref={loadMoreRef} className="py-2">
-          {status === "LoadingMore" && (
-            <div className="text-center text-muted-foreground">
-              <Spinner className="mx-auto" />
-            </div>
-          )}
-        </div>
+      {/* Infinite scroll trigger */}
+      <div ref={loadMoreRef} className="py-2">
+        {status === "LoadingMore" && (
+          <div className="text-center text-muted-foreground">
+            <Spinner className="mx-auto" />
+          </div>
+        )}
       </div>
     </div>
   );
