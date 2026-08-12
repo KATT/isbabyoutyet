@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { NameEditor } from "@/components/baby/editors";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeResource } from "@workspace/convex/tests/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 
 const baby: BabyData = {
