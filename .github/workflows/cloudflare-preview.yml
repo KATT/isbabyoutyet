@@ -35,6 +35,31 @@ jobs:
           node-version: "22"
           cache: "pnpm"
 
+      - name: Validate required preview settings
+        env:
+          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_WORKERS_SUBDOMAIN: ${{ vars.CLOUDFLARE_WORKERS_SUBDOMAIN }}
+          CONVEX_MANAGEMENT_TOKEN: ${{ secrets.CONVEX_MANAGEMENT_TOKEN }}
+          CONVEX_PREVIEW_DEPLOY_KEY: ${{ secrets.CONVEX_PREVIEW_DEPLOY_KEY }}
+          CONVEX_PROJECT_ID: ${{ vars.CONVEX_PROJECT_ID }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_PUBLIC_KEY: ${{ vars.VAPID_PUBLIC_KEY }}
+        run: |
+          missing=()
+          for name in BETTER_AUTH_SECRET CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_API_TOKEN \
+            CLOUDFLARE_WORKERS_SUBDOMAIN CONVEX_MANAGEMENT_TOKEN \
+            CONVEX_PREVIEW_DEPLOY_KEY CONVEX_PROJECT_ID VAPID_PRIVATE_KEY VAPID_PUBLIC_KEY; do
+            if [[ -z "${!name}" ]]; then
+              missing+=("$name")
+            fi
+          done
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error::Missing GitHub Actions settings: ${missing[*]}"
+            exit 1
+          fi
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
