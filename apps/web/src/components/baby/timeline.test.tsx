@@ -116,6 +116,20 @@ test("an untouched event-time picker does not post occurredAt", async () => {
   });
 });
 
+test("a cleared event-time picker blocks posting instead of silently meaning now", async () => {
+  mocks.mutate.mockReset().mockResolvedValue("update-id");
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
+  fireEvent.change(view.getByLabelText(/when did it happen/i), { target: { value: "" } });
+
+  const postButton = view.getByRole("button", { name: /post & mark/i }) as HTMLButtonElement;
+  expect(postButton.disabled).toBe(true);
+  fireEvent.click(postButton);
+  expect(mocks.mutate).not.toHaveBeenCalled();
+});
+
 test("an explicitly edited event-time picker posts the backdated occurredAt", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
