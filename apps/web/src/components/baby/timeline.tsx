@@ -96,6 +96,17 @@ function getRelativeTimeFromTimestamp(timestamp: number): string {
   return rtf.format(0, "second");
 }
 
+/** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
+function formatOccurredAtLocal(timestamp: number): string {
+  return new Date(timestamp).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
@@ -336,9 +347,21 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="font-medium text-foreground truncate">{props.babyName}'s family</span>
             {milestoneMeta ? (
-              <Badge className="shrink-0">
+              <Badge
+                className="shrink-0"
+                title={
+                  update.occurredAt
+                    ? `Happened ${formatOccurredAtLocal(update.occurredAt)}`
+                    : undefined
+                }
+              >
                 <MilestoneIcon className="w-3 h-3" />
                 {milestoneMeta.label}
+                {update.occurredAt != null && (
+                  <span className="font-normal opacity-90">
+                    · {formatOccurredAtLocal(update.occurredAt)}
+                  </span>
+                )}
               </Badge>
             ) : update.photoUrl ? (
               <Badge variant="secondary" className="shrink-0">
@@ -358,7 +381,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             )}
             <span
               className="text-xs text-muted-foreground shrink-0"
-              title={new Date(props.item.postedAt).toLocaleString()}
+              title={`Posted ${new Date(props.item.postedAt).toLocaleString()}`}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt)}
             </span>

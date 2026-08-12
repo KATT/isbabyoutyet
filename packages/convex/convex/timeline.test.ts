@@ -2,10 +2,15 @@ import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { backfillBabyTimelineDoc, backfillEncouragementTimelineDoc } from "./migrations";
+import {
+  backfillBabyTimelineDoc,
+  backfillEncouragementTimelineDoc,
+  separateMilestoneOccurredAtDoc,
+} from "./migrations";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
+import { insertUpdateWithTimelineItem } from "./timeline";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
 
@@ -173,29 +178,41 @@ test("a milestone update sets the canonical status and schedules a push", async 
 test("baby.update keeps milestone rows in sync: mark, redate, edit message, unmark", async () => {
   const { t, asAlice, babyId } = await setup();
 
-  // Mark labour started with a stage message
+  // Mark labour started with a historical event clock
+  const beforeMark = Date.now();
   await asAlice.mutation(api.baby.update, {
     babyId,
     laborStarted: "2026-08-20T08:00:00.000Z",
     laborStartedMessage: "It has begun!",
   });
+  const afterMark = Date.now();
 
   let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([
-    {
-      kind: "update",
-      postedAt: Date.parse("2026-08-20T08:00:00.000Z"),
-      update: { milestone: "labor_started", message: "It has begun!" },
-    },
-  ]);
+  expect(feed.page).toHaveLength(1);
+  const marked = feed.page[0];
+  if (marked?.kind !== "update") throw new Error("expected update");
+  // Feed position is announce time (now), not the historical event clock
+  expect(marked.postedAt).toBeGreaterThanOrEqual(beforeMark);
+  expect(marked.postedAt).toBeLessThanOrEqual(afterMark);
+  expect(marked.update).toMatchObject({
+    milestone: "labor_started",
+    message: "It has begun!",
+    occurredAt: Date.parse("2026-08-20T08:00:00.000Z"),
+  });
 
-  // Redate moves the timeline row
+  // Redate updates the event clock only — feed position stays put
+  const postedAtBeforeRedate = marked.postedAt;
   await asAlice.mutation(api.baby.update, {
     babyId,
     laborStarted: "2026-08-20T10:30:00.000Z",
   });
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([{ postedAt: Date.parse("2026-08-20T10:30:00.000Z") }]);
+  expect(feed.page).toMatchObject([
+    {
+      postedAt: postedAtBeforeRedate,
+      update: { occurredAt: Date.parse("2026-08-20T10:30:00.000Z") },
+    },
+  ]);
 
   // Editing the stage message keeps the row in sync
   await asAlice.mutation(api.baby.update, {
@@ -333,16 +350,16 @@ test("text updates never displace the current page photo; pinning brings back an
   ).rejects.toThrow("Not authorized");
 });
 
-test("backfill migrations preserve historical order and are idempotent", async () => {
+test("backfill migrations preserve announce-time order and are idempotent", async () => {
   const { t, babyId, asAlice } = await setup();
   const thumbnail = await storeBlob(t);
   const photo = await storeBlob(t);
 
-  // Shape legacy data directly: milestones + messages + photo, and
-  // encouragements without timeline pointers (as they exist pre-migration)
-  // Historical dates strictly in the past, so the photo row (backfilled at
-  // "now") is the newest item
+  // Shape legacy data: milestones + messages + photo, encouragements without
+  // timeline pointers. Milestone event clocks are historical; feed position
+  // uses announce time (notification createdAt / now).
   const laborStartedAt = new Date(Date.now() - 26 * 60 * 60 * 1000);
+  const laborAnnouncedAt = Date.now() - 24 * 60 * 60 * 1000;
   const grandmaAt = new Date(Date.now() - 22 * 60 * 60 * 1000);
   const wentToHospitalAt = new Date(Date.now() - 20 * 60 * 60 * 1000);
   const auntMegAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
@@ -355,6 +372,15 @@ test("backfill migrations preserve historical order and are idempotent", async (
       hospitalMessage: null,
       photoId: photo,
       thumbnailId: thumbnail,
+    });
+    // A sent push records when labour was announced to followers
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "sent",
+      scheduledFor: laborAnnouncedAt + 60_000,
+      notificationType: "labor_started",
+      customMessage: null,
+      createdAt: laborAnnouncedAt,
     });
     await ctx.db.insert("encouragements", {
       babyId,
@@ -400,16 +426,31 @@ test("backfill migrations preserve historical order and are idempotent", async (
 
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
-    // The photo backfills at its storage file's upload time (just now in this
-    // test), so it sorts newest here
+    // Hospital dual-write announces ~now; photo's storage upload is slightly earlier
+    {
+      kind: "update",
+      update: {
+        milestone: "gone_to_hospital",
+        occurredAt: wentToHospitalAt.getTime(),
+      },
+    },
     { kind: "update", update: { milestone: null, message: null } },
-    { kind: "update", update: { milestone: "gone_to_hospital" } },
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
-    { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
+    // Labour announced via notification (before Grandma replied)
+    {
+      kind: "update",
+      postedAt: laborAnnouncedAt,
+      update: {
+        milestone: "labor_started",
+        message: "It has begun!",
+        occurredAt: laborStartedAt.getTime(),
+      },
+    },
     { kind: "encouragement", encouragement: { authorName: "Aunt Meg" } },
   ]);
-  expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
-  expect(feed.page[0]?.kind === "update" && feed.page[0].update.thumbnailUrl).toBeTruthy();
+  const photoItem = feed.page[1];
+  expect(photoItem?.kind === "update" && photoItem.update.photoUrl).toBeTruthy();
+  expect(photoItem?.kind === "update" && photoItem.update.thumbnailUrl).toBeTruthy();
 
   // The photo row's postedAt is the storage file's original upload time
   const photoUploadedAt = await t.run(async (ctx) => {
@@ -417,11 +458,154 @@ test("backfill migrations preserve historical order and are idempotent", async (
     return fileMetadata?._creationTime;
   });
   expect(photoUploadedAt).toBeTruthy();
-  expect(feed.page[0]?.postedAt).toBe(photoUploadedAt);
+  expect(photoItem?.postedAt).toBe(photoUploadedAt);
 
   // Dual-writes stay consistent post-backfill: unmarking removes the
-  // backfilled milestone row too
+  // dual-written milestone row too
   await asAlice.mutation(api.baby.update, { babyId, wentToHospital: null });
   const after = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(after.page).toHaveLength(4);
+});
+
+test("separateMilestoneOccurredAt moves backdated milestones to announce time", async () => {
+  const { t, babyId } = await setup();
+  const eventAt = Date.parse("2026-01-11T04:14:00.000Z");
+  const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
+
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
+    // Legacy shape: postedAt was the event clock
+    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: eventAt,
+      milestone: "born",
+      message: "She's here!",
+    });
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "cancelled",
+      scheduledFor: announcedAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: announcedAt,
+    });
+    return updateId;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, update);
+    // Idempotent
+    const again = await ctx.db.get(updateId);
+    if (!again) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, again);
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([
+    {
+      kind: "update",
+      postedAt: announcedAt,
+      update: { milestone: "born", occurredAt: eventAt },
+    },
+  ]);
+});
+
+test("separateMilestoneOccurredAt prefers the notification closest to the update", async () => {
+  const { t, babyId } = await setup();
+  const eventAt = Date.parse("2026-03-01T12:00:00.000Z");
+  const staleAnnounceAt = Date.parse("2026-01-11T10:00:00.000Z");
+  const freshAnnounceAt = Date.parse("2026-03-01T12:05:00.000Z");
+
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
+    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: eventAt,
+      milestone: "born",
+    });
+    // Prior unmark left a cancelled notification; remark created a new one
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "cancelled",
+      scheduledFor: staleAnnounceAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: staleAnnounceAt,
+    });
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "sent",
+      scheduledFor: freshAnnounceAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: freshAnnounceAt,
+    });
+    return updateId;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, update);
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([{ postedAt: freshAnnounceAt, update: { occurredAt: eventAt } }]);
+});
+
+test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurredAt", async () => {
+  const { t, babyId } = await setup();
+  const originalEventAt = Date.parse("2026-01-11T04:14:00.000Z");
+  const redatedEventAt = Date.parse("2026-01-11T06:00:00.000Z");
+  const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
+
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { babyBorn: new Date(redatedEventAt).toISOString() });
+    const { updateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: originalEventAt,
+      occurredAt: redatedEventAt, // redate during deploy set this already
+      milestone: "born",
+    });
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "sent",
+      scheduledFor: announcedAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: announcedAt,
+    });
+    // Sanity: postedAt still on the old event clock
+    const item = await ctx.db.get(timelineItemId);
+    expect(item?.postedAt).toBe(originalEventAt);
+    return updateId;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, update);
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([
+    { postedAt: announcedAt, update: { occurredAt: redatedEventAt } },
+  ]);
+});
+
+test("posting a milestone sets occurredAt to the announce time", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const before = Date.now();
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  const after = Date.now();
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toHaveLength(1);
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+  expect(item.postedAt).toBeGreaterThanOrEqual(before);
+  expect(item.postedAt).toBeLessThanOrEqual(after);
+  expect(item.update.occurredAt).toBe(item.postedAt);
 });

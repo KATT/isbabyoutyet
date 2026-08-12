@@ -462,8 +462,8 @@ export async function syncStatusNotifications(
 /**
  * Keeps the timeline's milestone update rows in sync with the canonical
  * status fields on the baby doc:
- * - marking a milestone creates its update row (message = the stage message)
- * - redating a milestone moves its timeline row's `postedAt`
+ * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
+ * - redating a milestone updates `occurredAt` only — feed position stays put
  * - unmarking a milestone deletes its update + timeline rows
  * - editing a stage message keeps the milestone row's message in sync
  */
@@ -498,17 +498,19 @@ async function syncMilestoneUpdates(
 
     if (typeof dateArg === "string") {
       const parsed = Date.parse(dateArg);
-      const postedAt = Number.isNaN(parsed) ? Date.now() : parsed;
+      const occurredAt = Number.isNaN(parsed) ? Date.now() : parsed;
       if (existing) {
-        // Redate: move the timeline row; refresh the message if it changed too
-        await ctx.db.patch(existing.timelineItemId, { postedAt });
-        if (messageArg !== undefined) {
-          await ctx.db.patch(existing._id, { message: messageArg });
-        }
+        // Redate: update the event clock only — do not reshuffle the feed
+        await ctx.db.patch(existing._id, {
+          occurredAt,
+          ...(messageArg !== undefined ? { message: messageArg } : {}),
+        });
       } else {
         await insertUpdateWithTimelineItem(ctx, {
           babyId: baby._id,
-          postedAt,
+          // Announced now (settings mark), even if the event clock is historical
+          postedAt: Date.now(),
+          occurredAt,
           milestone,
           message: messageArg !== undefined ? messageArg : (baby[fields.message] ?? null),
         });
