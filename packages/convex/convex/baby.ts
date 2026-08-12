@@ -536,7 +536,8 @@ export const update = mutationWithTriggers({
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never
-    // written to the baby doc. Dropped for good in the schema follow-up PR.
+    // written to the baby doc. Remove in a later tidy-up once stale tabs are
+    // realistically gone.
     laborStartedMessage: v.optional(v.union(v.string(), v.null())),
     hospitalMessage: v.optional(v.union(v.string(), v.null())),
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
