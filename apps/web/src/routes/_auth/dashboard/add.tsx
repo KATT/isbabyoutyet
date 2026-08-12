@@ -70,7 +70,7 @@ function AddBabyPage() {
           <p className="text-muted-foreground text-lg">Track the progress of labor and birth</p>
         </div>
 
-        <Card>
+        <Card data-tour-id="add_baby">
           <CardHeader>
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2">
               <Baby className="w-8 h-8 text-primary" />

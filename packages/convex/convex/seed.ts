@@ -6,9 +6,13 @@ import { createAuth } from "./auth";
 import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
+import { markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
   const userId = await ensureDemoUser(ctx);
+
+  // Demo login is for exploring the product — skip the first-run tour.
+  await markUserOnboardingComplete(ctx, userId);
 
   const existingBabies = await ctx.db
     .query("baby")

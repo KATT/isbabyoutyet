@@ -9,6 +9,7 @@ import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
+import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import {
@@ -23,6 +24,7 @@ import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -142,6 +144,7 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const completeOnboardingStep = useCompleteOnboardingStep();
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
@@ -163,9 +166,20 @@ function BabyPage() {
     });
   }
 
+  // Opening settings counts toward the tour
+  useEffect(() => {
+    if (isOwner && search.settings) {
+      void completeOnboardingStep({ stepId: "explore_settings" });
+    }
+  }, [isOwner, search.settings, completeOnboardingStep]);
+
   return (
     <div>
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
+
+      {isOwner && (
+        <OnboardingHost surface="baby" spotlight={!search.settings && !search.postUpdate} />
+      )}
 
       {isOwner && (
         <>
@@ -195,7 +209,10 @@ function BabyPage() {
                 babyId={babyDoc._id}
                 baby={baby}
                 babyName={baby.name}
-                onPosted={() => setSearchOpen({ postUpdate: false, settings: false })}
+                onPosted={() => {
+                  setSearchOpen({ postUpdate: false, settings: false });
+                  void completeOnboardingStep({ stepId: "post_update" });
+                }}
               />
             </DialogContent>
           </Dialog>
@@ -205,6 +222,13 @@ function BabyPage() {
       <div className="border-b border-border/50">
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          onShareCopied={
+            isOwner
+              ? () => {
+                  void completeOnboardingStep({ stepId: "share_link" });
+                }
+              : undefined
+          }
           postUpdateButton={
             isOwner
               ? {
@@ -280,7 +304,7 @@ function BabyPage() {
           </Card>
 
           {!baby.encouragementsDisabled && (
-            <Card>
+            <Card data-tour-id="learn_encouragements">
               <CardContent className="pt-6">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </CardContent>

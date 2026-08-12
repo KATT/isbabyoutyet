@@ -15,6 +15,8 @@ type BabyNavProps = {
   /** Owner-only "Post update" link; open state is mirrored in the URL search */
   postUpdateButton?: null | LinkProps;
   postUpdateOpen?: boolean;
+  /** Fired after the share URL is copied (used by the first-run tour) */
+  onShareCopied?: () => void;
 };
 
 export function BabyNav({
@@ -23,6 +25,7 @@ export function BabyNav({
   settingsOpen,
   postUpdateButton,
   postUpdateOpen,
+  onShareCopied,
 }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
   const hasOwnerActions = !!(postUpdateButton || settingsButton);
@@ -40,6 +43,7 @@ export function BabyNav({
           variant={postUpdateOpen ? "default" : "outline"}
           render={<Link {...(postUpdateButton as any)} />}
           nativeButton={false}
+          data-tour-id="post_update"
         >
           <MessageCircleHeart data-icon="inline-start" />
           Post update
@@ -55,6 +59,7 @@ export function BabyNav({
                 render={<Link {...(settingsButton as any)} />}
                 nativeButton={false}
                 aria-label={settingsOpen ? "Close settings" : "Settings"}
+                data-tour-id="explore_settings"
               >
                 <Settings />
               </Button>
@@ -78,6 +83,7 @@ export function BabyNav({
                   await navigator.clipboard.writeText(shareLink);
                   setCopied(true);
                   toast.success("Copied to clipboard");
+                  onShareCopied?.();
                 } catch {
                   // Fallback for older browsers
                   const textArea = document.createElement("textarea");
@@ -90,6 +96,7 @@ export function BabyNav({
                     document.execCommand("copy");
                     setCopied(true);
                     toast.success("Copied to clipboard");
+                    onShareCopied?.();
                   } catch (cause) {
                     toast.error(
                       "Failed to copy to clipboard: " +
@@ -103,6 +110,7 @@ export function BabyNav({
               size="icon"
               disabled={!shareLink}
               aria-label={copied ? "Copied!" : "Copy link to share"}
+              data-tour-id="share_link"
             >
               {copied ? <CheckCircle /> : <Share2 />}
             </Button>

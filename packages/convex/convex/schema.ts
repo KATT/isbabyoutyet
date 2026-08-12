@@ -103,4 +103,16 @@ export default defineSchema({
     // baby's updates — used on every post/redate/unmark and by migrations
     .index("by_babyId_milestone", ["babyId", "milestone"])
     .index("by_timelineItemId", ["timelineItemId"]),
+  // Per-user first-run guided tour progress. One row per user.
+  userOnboarding: defineTable({
+    userId: v.string(), // Better-auth user ID (identity.subject)
+    /** Steps the user explicitly completed or acknowledged */
+    completedSteps: v.array(v.string()),
+    /** Welcome carousel seen or skipped */
+    welcomeDismissed: v.boolean(),
+    /** Floating checklist dismissed forever (until restart) */
+    checklistDismissed: v.boolean(),
+    /** Checklist collapsed to a small chip */
+    minimized: v.boolean(),
+  }).index("by_user", ["userId"]),
 });

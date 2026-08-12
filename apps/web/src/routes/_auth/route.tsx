@@ -1,6 +1,7 @@
 import { authServer } from "@/lib/auth-server";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 
 // Server function to check authentication
 const getToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -33,5 +34,10 @@ export const Route = createFileRoute("/_auth")({
 });
 
 function AuthLayout() {
-  return <Outlet />;
+  return (
+    <>
+      <OnboardingHost surface="dashboard" />
+      <Outlet />
+    </>
+  );
 }

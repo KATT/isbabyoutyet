@@ -9,9 +9,9 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
+import { Baby as BabyIcon, Plus, LogOut, Calendar, Sparkles } from "lucide-react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ function DashboardPage() {
   }
 
   const router = useRouter();
+  const restartTour = useMutation(api.onboarding.restart);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -59,9 +60,23 @@ function DashboardPage() {
               className="shadow-lg shadow-primary/20"
               render={<Link to="/dashboard/add" preload="viewport" />}
               nativeButton={false}
+              data-tour-id="add_baby"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Baby
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground"
+              aria-label="Restart getting started tour"
+              title="Restart tour"
+              onClick={async () => {
+                await restartTour({});
+                toast.success("Tour restarted");
+              }}
+            >
+              <Sparkles className="w-4 h-4" />
             </Button>
             <ModeToggle />
             <Button
@@ -101,6 +116,7 @@ function DashboardPage() {
                 className="shadow-lg shadow-primary/20"
                 render={<Link to="/dashboard/add" preload="viewport" />}
                 nativeButton={false}
+                data-tour-id="add_baby"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Baby
