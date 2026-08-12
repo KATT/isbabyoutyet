@@ -8,6 +8,18 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@workspace/ui/components/item";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
+import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Switch } from "@workspace/ui/components/switch";
 import { format } from "date-fns";
@@ -19,6 +31,7 @@ import {
   Hospital,
   MessageSquare,
   Palette,
+  Trash2,
 } from "lucide-react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
@@ -29,6 +42,8 @@ type SettingsPanelProps = {
   onUpdate: BabyUpdateHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Owner-only soft delete. Omitted on the preview page. */
+  onDelete?: () => void | Promise<void>;
 };
 
 /**
@@ -37,7 +52,13 @@ type SettingsPanelProps = {
  * here appear once marked, for correcting their date. Unmarking a milestone
  * is done by deleting its update in the timeline.
  */
-export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPanelProps) {
+export function SettingsPanel({
+  baby,
+  onUpdate,
+  open,
+  onOpenChange,
+  onDelete,
+}: SettingsPanelProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -191,6 +212,52 @@ export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPa
               />
             </ItemActions>
           </Item>
+
+          {onDelete && (
+            <>
+              <ItemSeparator />
+              <Item>
+                <ItemMedia variant="icon">
+                  <Trash2 className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>Delete page</ItemTitle>
+                  <ItemDescription>Hide this baby page from everyone</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={
+                        <Button variant="destructive" size="sm">
+                          Delete
+                        </Button>
+                      }
+                    />
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {baby.name}&apos;s page?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          The page will disappear from your dashboard and the public link will stop
+                          working. Only you (the owner) can do this.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => {
+                            void onDelete();
+                          }}
+                        >
+                          Delete page
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </ItemActions>
+              </Item>
+            </>
+          )}
         </ItemGroup>
       </DialogContent>
     </Dialog>

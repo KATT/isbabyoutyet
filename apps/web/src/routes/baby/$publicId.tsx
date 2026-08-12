@@ -142,6 +142,7 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const removeBaby = useMutation(api.baby.remove);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
@@ -176,6 +177,10 @@ function BabyPage() {
                 babyId: babyDoc._id,
                 ...update,
               });
+            }}
+            onDelete={async () => {
+              await removeBaby({ babyId: babyDoc._id });
+              void navigate({ to: "/dashboard" });
             }}
             open={!!search.settings}
             onOpenChange={(open) => {

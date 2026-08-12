@@ -4,6 +4,7 @@ import { query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { Milestone } from "../src/types";
+import { isActive, softDeletePatch } from "./softDelete";
 
 /**
  * The per-baby feed. `timelineItems` binds owner updates and visitor
@@ -73,15 +74,17 @@ async function hydrateTimelineItem(
   item: Doc<"timelineItems">,
   opts: { visitorId?: string; currentPhotoId: Id<"_storage"> | null },
 ) {
+  if (!isActive(item)) return null;
+
   switch (item.kind) {
     case "update": {
       const update = await findUpdateByTimelineItem(ctx, item._id);
-      if (!update) return null;
+      if (!update || !isActive(update)) return null;
       return await hydrateUpdate(ctx, item, update, opts.currentPhotoId);
     }
     case "encouragement": {
       const encouragement = await findEncouragementByTimelineItem(ctx, item._id);
-      if (!encouragement) return null;
+      if (!encouragement || !isActive(encouragement)) return null;
       return {
         _id: item._id,
         kind: "encouragement" as const,
@@ -103,7 +106,10 @@ export const listByBaby = query({
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
-    const currentPhotoId = baby?.photoId ?? null;
+    if (!baby || !isActive(baby)) {
+      return { page: [], isDone: true, continueCursor: "" };
+    }
+    const currentPhotoId = baby.photoId ?? null;
 
     const result = await ctx.db
       .query("timelineItems")
@@ -144,9 +150,9 @@ export const latestUpdate = query({
 
     let latest: { update: Doc<"updates">; item: Doc<"timelineItems"> } | null = null;
     for (const update of updates) {
-      if (!update.message) continue;
+      if (!isActive(update) || !update.message) continue;
       const item = await ctx.db.get(update.timelineItemId);
-      if (!item) continue;
+      if (!item || !isActive(item)) continue;
       if (!latest || item.postedAt > latest.item.postedAt) {
         latest = { update, item };
       }
@@ -195,22 +201,39 @@ export async function insertUpdateWithTimelineItem(
 }
 
 /**
- * Deletes an owner update and cascades to its timeline row.
+ * Soft-deletes an owner update and its timeline row (recoverable later).
  */
 export async function deleteUpdateWithTimelineItem(ctx: MutationCtx, update: Doc<"updates">) {
-  await ctx.db.delete(update._id);
-  await ctx.db.delete(update.timelineItemId);
+  const patch = softDeletePatch();
+  await ctx.db.patch(update._id, patch);
+  await ctx.db.patch(update.timelineItemId, patch);
 }
 
 /**
- * Finds the update row marking a given milestone for a baby, if any.
- * There is at most one per milestone (enforced by the write paths).
+ * Soft-deletes an encouragement and its timeline row when present.
+ */
+export async function deleteEncouragementWithTimelineItem(
+  ctx: MutationCtx,
+  encouragement: Doc<"encouragements">,
+) {
+  const patch = softDeletePatch();
+  await ctx.db.patch(encouragement._id, patch);
+  if (encouragement.timelineItemId) {
+    await ctx.db.patch(encouragement.timelineItemId, patch);
+  }
+}
+
+/**
+ * Finds the active update row marking a given milestone for a baby, if any.
+ * Soft-deleted rows are ignored so a milestone can be re-marked after unmark.
+ * There is at most one active row per milestone (enforced by the write paths).
  */
 export async function findMilestoneUpdate(ctx: QueryCtx, babyId: Id<"baby">, milestone: Milestone) {
-  return await ctx.db
+  const updates = await ctx.db
     .query("updates")
     .withIndex("by_babyId_milestone", (q) => q.eq("babyId", babyId).eq("milestone", milestone))
-    .first();
+    .collect();
+  return updates.find(isActive) ?? null;
 }
 
 /**
