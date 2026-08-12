@@ -2,7 +2,13 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { getCurrentStatus, MILESTONE_FIELDS, STATUS_ORDER } from "../src/types";
+import {
+  getBlockingLaterMilestone,
+  getCurrentStatus,
+  MILESTONE_FIELDS,
+  MILESTONE_LABELS,
+  STATUS_ORDER,
+} from "../src/types";
 import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
 import {
   deleteUpdateWithTimelineItem,
@@ -170,6 +176,13 @@ export const remove = mutationWithTriggers({
     const baby = await ctx.db.get(update.babyId);
     if (!baby) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
+
+    if (update.milestone) {
+      const blocker = getBlockingLaterMilestone(baby, update.milestone);
+      if (blocker) {
+        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
+      }
+    }
 
     const statusBefore = getCurrentStatus(baby);
 

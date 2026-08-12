@@ -1,13 +1,34 @@
 import { Form, useZodForm } from "@/components/Form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 import { format, parseISO } from "date-fns";
-import { Clock } from "lucide-react";
+import { Clock, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
+import {
+  getBlockingLaterMilestone,
+  MILESTONE_FIELDS,
+  MILESTONE_LABELS,
+} from "@workspace/convex/src/types";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { parseDate, THEME_OPTIONS } from "./utils";
 
@@ -162,6 +183,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <StatusDateForm
+          baby={props.baby}
           status={props.status}
           currentDate={props.currentDate}
           onUpdate={props.onUpdate}
@@ -173,15 +195,26 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
 }
 
 function StatusDateForm(props: {
+  baby: BabyData;
   status: StatusDateEditorProps["status"];
   currentDate: string;
   onUpdate: BabyUpdateHandler;
   onClose: () => void;
 }) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const form = useZodForm({
     schema: statusDateSchema,
     defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
   });
+  const blocker = getBlockingLaterMilestone(props.baby, props.status);
+  const statusLabel = MILESTONE_LABELS[props.status];
+
+  const deleteButton = (
+    <Button type="button" variant="destructive" size="sm" disabled={Boolean(blocker)}>
+      <Trash2 data-icon="inline-start" />
+      Delete
+    </Button>
+  );
 
   return (
     <Form
@@ -215,11 +248,63 @@ function StatusDateForm(props: {
           </FormItem>
         )}
       />
-      <EditorActions
-        onClose={props.onClose}
-        isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
-      />
+      <div className="flex items-center justify-between gap-2">
+        {blocker ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span
+                  className="inline-flex"
+                  aria-label={`Delete the ${MILESTONE_LABELS[blocker]} status first`}
+                />
+              }
+            >
+              {deleteButton}
+            </TooltipTrigger>
+            <TooltipContent>
+              Delete the {MILESTONE_LABELS[blocker]} status first
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <AlertDialog>
+            <AlertDialogTrigger render={deleteButton} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete {statusLabel} status?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This removes the status and deletes its timeline update, including any message or
+                  photo attached to it. This cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
+                      props.onClose();
+                    } catch (_error) {
+                      toast.error(`Could not delete the ${statusLabel} status`);
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                >
+                  Delete status
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <EditorActions
+          onClose={props.onClose}
+          isSubmitting={form.formState.isSubmitting || isDeleting}
+          isDirty={form.formState.isDirty}
+        />
+      </div>
     </Form>
   );
 }
