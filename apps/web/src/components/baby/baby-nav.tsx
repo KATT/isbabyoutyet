@@ -11,11 +11,18 @@ type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
-  /** Owner-only "Post update" action, shown as a labeled button in the bar */
-  onPostUpdate?: (() => void) | null;
+  /** Owner-only "Post update" link; open state is mirrored in the URL search */
+  postUpdateButton?: null | LinkProps;
+  postUpdateOpen?: boolean;
 };
 
-export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate }: BabyNavProps) {
+export function BabyNav({
+  shareLink,
+  settingsButton,
+  settingsOpen,
+  postUpdateButton,
+  postUpdateOpen,
+}: BabyNavProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -35,8 +42,13 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate 
         "md:sticky md:top-0 md:left-0",
       )}
     >
-      {onPostUpdate && (
-        <Button onClick={onPostUpdate} className="rounded-full shadow-lg shadow-primary/20">
+      {postUpdateButton && (
+        <Button
+          className="rounded-full shadow-lg shadow-primary/20"
+          variant={postUpdateOpen ? "default" : undefined}
+          render={<Link {...(postUpdateButton as any)} />}
+          nativeButton={false}
+        >
           <MessageCircleHeart className="w-4 h-4" />
           Post update
         </Button>
@@ -102,7 +114,7 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate 
               </Button>
             }
           />
-          <TooltipContent>{settingsOpen ? "Hide settings" : "Show settings"}</TooltipContent>
+          <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
         </Tooltip>
       )}
     </div>
