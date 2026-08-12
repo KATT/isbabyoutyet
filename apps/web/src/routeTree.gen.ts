@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from "./routes/__root";
 import { Route as IndexRouteImport } from "./routes/index";
 import { Route as AuthRouteRouteImport } from "./routes/_auth/route";
 import { Route as PreviewRouteImport } from "./routes/preview";
+import { Route as AuthForgotPasswordRouteImport } from "./routes/auth/forgot-password";
 import { Route as AuthLoginRouteImport } from "./routes/auth/login";
+import { Route as AuthResetPasswordRouteImport } from "./routes/auth/reset-password";
 import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
 import { Route as BabyPublicIdRouteImport } from "./routes/baby/$publicId";
 import { Route as AuthDashboardIndexRouteImport } from "./routes/_auth/dashboard/index";
@@ -41,9 +43,19 @@ const PreviewRoute = PreviewRouteImport.update({
   path: "/preview",
   getParentRoute: () => rootRouteImport,
 } as any);
+const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
+  id: "/auth/forgot-password",
+  path: "/auth/forgot-password",
+  getParentRoute: () => rootRouteImport,
+} as any);
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: "/auth/login",
   path: "/auth/login",
+  getParentRoute: () => rootRouteImport,
+} as any);
+const AuthResetPasswordRoute = AuthResetPasswordRouteImport.update({
+  id: "/auth/reset-password",
+  path: "/auth/reset-password",
   getParentRoute: () => rootRouteImport,
 } as any);
 const AuthSignupRoute = AuthSignupRouteImport.update({
@@ -115,7 +127,9 @@ const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
   "/preview": typeof PreviewRoute;
+  "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
+  "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
@@ -133,7 +147,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
   "/preview": typeof PreviewRoute;
+  "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
+  "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
@@ -153,7 +169,9 @@ export interface FileRoutesById {
   "/": typeof IndexRoute;
   "/_auth": typeof AuthRouteRouteWithChildren;
   "/preview": typeof PreviewRoute;
+  "/auth/forgot-password": typeof AuthForgotPasswordRoute;
   "/auth/login": typeof AuthLoginRoute;
+  "/auth/reset-password": typeof AuthResetPasswordRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/_auth/dashboard/add": typeof AuthDashboardAddRoute;
@@ -173,7 +191,9 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/preview"
+    | "/auth/forgot-password"
     | "/auth/login"
+    | "/auth/reset-password"
     | "/auth/signup"
     | "/baby/$publicId"
     | "/dashboard/add"
@@ -191,7 +211,9 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/preview"
+    | "/auth/forgot-password"
     | "/auth/login"
+    | "/auth/reset-password"
     | "/auth/signup"
     | "/baby/$publicId"
     | "/dashboard/add"
@@ -210,7 +232,9 @@ export interface FileRouteTypes {
     | "/"
     | "/_auth"
     | "/preview"
+    | "/auth/forgot-password"
     | "/auth/login"
+    | "/auth/reset-password"
     | "/auth/signup"
     | "/baby/$publicId"
     | "/_auth/dashboard/add"
@@ -230,7 +254,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   AuthRouteRoute: typeof AuthRouteRouteWithChildren;
   PreviewRoute: typeof PreviewRoute;
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute;
   AuthLoginRoute: typeof AuthLoginRoute;
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute;
   AuthSignupRoute: typeof AuthSignupRoute;
   BabyPublicIdRoute: typeof BabyPublicIdRoute;
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
@@ -267,11 +293,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof PreviewRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/auth/forgot-password": {
+      id: "/auth/forgot-password";
+      path: "/auth/forgot-password";
+      fullPath: "/auth/forgot-password";
+      preLoaderRoute: typeof AuthForgotPasswordRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     "/auth/login": {
       id: "/auth/login";
       path: "/auth/login";
       fullPath: "/auth/login";
       preLoaderRoute: typeof AuthLoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/auth/reset-password": {
+      id: "/auth/reset-password";
+      path: "/auth/reset-password";
+      fullPath: "/auth/reset-password";
+      preLoaderRoute: typeof AuthResetPasswordRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/auth/signup": {
@@ -384,7 +424,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
   PreviewRoute: PreviewRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignupRoute: AuthSignupRoute,
   BabyPublicIdRoute: BabyPublicIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
