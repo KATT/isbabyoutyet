@@ -160,8 +160,6 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
-            babyId={babyDoc._id}
-            photoUrl={babyDoc.photoUrl ?? null}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
