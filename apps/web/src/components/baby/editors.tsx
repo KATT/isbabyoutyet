@@ -67,7 +67,7 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <Form
           form={form}
           handleSubmit={async (values) => {
@@ -159,7 +159,7 @@ export function StatusDateEditor({
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <Form
           form={form}
           handleSubmit={async (values) => {
@@ -244,7 +244,7 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <Form
           form={form}
           handleSubmit={async (values) => {
