@@ -14,43 +14,37 @@ import {
   Activity,
   Baby,
   Calendar,
-  Camera,
   CheckCircle,
   Hospital,
   MessageSquare,
   Palette,
 } from "lucide-react";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  getCurrentStatus,
-  type BabyData,
-  type BabyUpdateHandler,
-} from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import {
   BabyBornMessageEditor,
   HospitalMessageEditor,
   LaborStartedMessageEditor,
   DueDateEditor,
   NameEditor,
-  PhotoUploader,
   StatusDateEditor,
-  StatusUpdateButton,
   ThemeSelector,
 } from "./editors";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
 
 type SettingsPanelProps = {
   baby: BabyData;
-  babyId?: Id<"baby">;
-  photoUrl?: string | null;
   onUpdate: BabyUpdateHandler;
   isOpen: boolean;
 };
 
-export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: SettingsPanelProps) {
-  const status = getCurrentStatus(baby);
-
+/**
+ * Owner settings: page metadata and corrections. Marking milestones and
+ * posting photos happens through the "Post update" composer; milestone rows
+ * here appear once marked, for correcting their date. Unmarking a milestone
+ * is done by deleting its update in the timeline.
+ */
+export function SettingsPanel({ baby, onUpdate, isOpen }: SettingsPanelProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -93,42 +87,88 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
 
             <ItemSeparator />
 
-            {/* Status Updates */}
-            {/* Labour started */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Activity className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Labour started</ItemTitle>
-                {baby.laborStarted && (
-                  <ItemDescription>
-                    {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.laborStarted && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="labor_started"
-                    currentDate={baby.laborStarted}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="labor_started"
-                  currentStatus={baby.laborStarted}
-                  label="Labour started"
-                  icon={<Activity className="w-4 h-4" />}
-                  isNextState={status.type === "not_yet"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
+            {/* Marked milestones: correct their date here; mark new ones via
+                the "Post update" composer, unmark by deleting the timeline
+                update. Posting photos also happens through the composer. */}
+            {baby.laborStarted && (
+              <>
+                <ItemSeparator />
+                <Item>
+                  <ItemMedia variant="icon">
+                    <Activity className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Labour started</ItemTitle>
+                    <ItemDescription>
+                      {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <StatusDateEditor
+                      baby={baby}
+                      status="labor_started"
+                      currentDate={baby.laborStarted}
+                      onUpdate={onUpdate}
+                    />
+                  </ItemActions>
+                </Item>
+              </>
+            )}
+
+            {baby.wentToHospital && (
+              <>
+                <ItemSeparator />
+                <Item>
+                  <ItemMedia variant="icon">
+                    <Hospital className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Gone to hospital</ItemTitle>
+                    <ItemDescription>
+                      {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <StatusDateEditor
+                      baby={baby}
+                      status="gone_to_hospital"
+                      currentDate={baby.wentToHospital}
+                      onUpdate={onUpdate}
+                    />
+                  </ItemActions>
+                </Item>
+              </>
+            )}
+
+            {baby.babyBorn && (
+              <>
+                <ItemSeparator />
+                <Item>
+                  <ItemMedia variant="icon">
+                    <CheckCircle className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>Baby born</ItemTitle>
+                    <ItemDescription>
+                      {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
+                    </ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <StatusDateEditor
+                      baby={baby}
+                      status="born"
+                      currentDate={baby.babyBorn}
+                      onUpdate={onUpdate}
+                    />
+                  </ItemActions>
+                </Item>
+              </>
+            )}
 
             <ItemSeparator />
+
+            {/* Legacy per-stage messages (retired with the fields themselves
+                in the cleanup PR) */}
             <Item>
               <ItemMedia variant="icon">
                 <Activity className="w-4 h-4" />
@@ -139,42 +179,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
               </ItemContent>
               <ItemActions>
                 <LaborStartedMessageEditor baby={baby} onUpdate={onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            {/* Gone to hospital */}
-            <Item>
-              <ItemMedia variant="icon">
-                <Hospital className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Gone to hospital</ItemTitle>
-                {baby.wentToHospital && (
-                  <ItemDescription>
-                    {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.wentToHospital && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="gone_to_hospital"
-                    currentDate={baby.wentToHospital}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="gone_to_hospital"
-                  currentStatus={baby.wentToHospital}
-                  label="Gone to hospital"
-                  icon={<Hospital className="w-4 h-4" />}
-                  isNextState={status.type === "labor_started"}
-                  onUpdate={onUpdate}
-                />
               </ItemActions>
             </Item>
 
@@ -193,42 +197,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             </Item>
 
             <ItemSeparator />
-
-            {/* Baby born */}
-            <Item>
-              <ItemMedia variant="icon">
-                <CheckCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>Baby born</ItemTitle>
-                {baby.babyBorn && (
-                  <ItemDescription>
-                    {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
-                  </ItemDescription>
-                )}
-              </ItemContent>
-              <ItemActions>
-                {baby.babyBorn && (
-                  <StatusDateEditor
-                    baby={baby}
-                    status="born"
-                    currentDate={baby.babyBorn}
-                    onUpdate={onUpdate}
-                  />
-                )}
-                <StatusUpdateButton
-                  baby={baby}
-                  status="born"
-                  currentStatus={baby.babyBorn}
-                  label="Baby born"
-                  icon={<CheckCircle className="w-4 h-4" />}
-                  isNextState={status.type === "gone_to_hospital"}
-                  onUpdate={onUpdate}
-                />
-              </ItemActions>
-            </Item>
-
-            {/* Baby Born Message */}
             <Item>
               <ItemMedia variant="icon">
                 <CheckCircle className="w-4 h-4" />
@@ -243,39 +211,6 @@ export function SettingsPanel({ baby, babyId, photoUrl, onUpdate, isOpen }: Sett
             </Item>
 
             <ItemSeparator />
-
-            {/* Photo - only show when babyId is available (not in preview mode) */}
-            {babyId && (
-              <>
-                <Item>
-                  <ItemMedia variant="icon">
-                    <Camera className="w-4 h-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>Baby Photo</ItemTitle>
-                    <ItemDescription>
-                      {photoUrl ? "Photo uploaded" : "No photo"} · new photos are also posted to the
-                      timeline
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    {photoUrl && (
-                      <div className="w-8 h-8 rounded-full overflow-hidden border border-border mr-2">
-                        <img
-                          src={photoUrl}
-                          alt="Baby"
-                          width={64}
-                          height={64}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    )}
-                    <PhotoUploader babyId={babyId} photoUrl={photoUrl ?? null} />
-                  </ItemActions>
-                </Item>
-                <ItemSeparator />
-              </>
-            )}
 
             {/* Theme */}
             <Item>
