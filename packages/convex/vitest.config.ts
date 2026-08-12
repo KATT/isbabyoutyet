@@ -5,7 +5,7 @@ export default defineProject({
     name: "convex",
     // Approximate the Convex runtime better than node
     environment: "edge-runtime",
-    include: ["convex/**/*.test.ts"],
+    include: ["convex/**/*.test.ts", "src/**/*.test.ts"],
     server: {
       deps: {
         // Bundle convex-table-history so its component source (.ts) can be
