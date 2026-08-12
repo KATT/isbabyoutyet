@@ -68,12 +68,12 @@ export default defineSchema({
     .index("by_timelineItemId", ["timelineItemId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
-  // postedAt is an explicit sort key because _creationTime cannot be backfilled
-  // with historical dates.
+  // postedAt is when the item entered the feed (announce/post time) — never the
+  // retrofitted event clock. Milestone event times live on updates.occurredAt.
   timelineItems: defineTable({
     babyId: v.id("baby"),
     kind: v.union(v.literal("update"), v.literal("encouragement")),
-    postedAt: v.number(), // ms epoch; backfilled rows carry historical dates
+    postedAt: v.number(), // ms epoch; feed sort key (when posted/announced)
   }).index("by_babyId_postedAt", ["babyId", "postedAt"]),
   // Owner-posted feed content: a message and/or a photo, optionally marking a
   // milestone. Each photo change is its own row, so old photos are never lost.
@@ -89,6 +89,9 @@ export default defineSchema({
         v.null(),
       ),
     ),
+    // When the milestone actually happened (ms). Display-only; does not affect
+    // feed order. Null/absent for non-milestone updates.
+    occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
   })
