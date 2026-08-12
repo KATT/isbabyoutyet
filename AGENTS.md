@@ -37,7 +37,9 @@ will work once Vercel finishes deploying, then update the PR once the URL is
 known.
 
 Locally the same seed is at `http://localhost:3000` after
-`pnpm --filter @workspace/convex seed` (also run by `setup-dev`).
+`pnpm --filter @workspace/convex seed` (also run by `setup-dev`). Login and
+signup forms autofill the demo credentials in local DEV and on Vercel preview
+builds (`VITE_HAS_DEMO_LOGIN`).
 
 ## Convex
 
