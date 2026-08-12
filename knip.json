@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": ["**/_generated/**", "coverage/**"],
+  "workspaces": {
+    ".": {},
+    "apps/web": {
+      "entry": [
+        "public/sw.js!",
+        "vite.config.ts!",
+        "scripts/deploy-convex.ts!",
+        "scripts/build-web.mjs!"
+      ]
+    },
+    "packages/convex": {},
+    "packages/ui": {}
+  }
+}
