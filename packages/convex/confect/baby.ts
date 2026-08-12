@@ -419,7 +419,7 @@ export async function syncStatusNotifications(
     if (notification.scheduledId) {
       try {
         await ctx.scheduler.cancel(notification.scheduledId);
-      } catch (_error) {
+      } catch {
         // Ignore errors if notification was already sent or doesn't exist
       }
     }

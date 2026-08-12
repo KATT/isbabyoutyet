@@ -14,7 +14,12 @@
         "scripts/build-web.mjs!"
       ]
     },
-    "packages/convex": {},
+    "packages/convex": {
+      "ignoreDependencies": [
+        // Invoked via package scripts (`confect codegen` / `confect dev`), not imported.
+        "@confect/cli"
+      ]
+    },
     "packages/ui": {}
   }
 }
