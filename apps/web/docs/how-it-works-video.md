@@ -3,7 +3,7 @@
 Embedded on the homepage (`apps/web/src/routes/index.tsx`, the "Show Me How It
 Works" card). Assets:
 
-- `apps/web/public/how-it-works.mp4` — 1280×720, H.264, ~92 s, no audio, ~1.6 MB
+- `apps/web/public/how-it-works.mp4` — 1280×720, H.264, ~91 s, no audio, ~1.6 MB
 - `apps/web/public/how-it-works-poster.jpg` — poster frame (the final feed view)
 
 **Re-record this video whenever the baby-page UX changes** (status card,
