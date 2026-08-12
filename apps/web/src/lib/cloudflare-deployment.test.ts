@@ -4,7 +4,7 @@ import {
   createCloudflarePreviewAlias,
   createCloudflareSiteUrl,
   normalizeWorkersSubdomain,
-} from "./cloudflare-deployment";
+} from "../../scripts/cloudflare-deployment";
 
 describe("createCloudflarePreviewAlias", () => {
   it("matches the alias normalization used by Workers Builds", () => {

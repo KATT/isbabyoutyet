@@ -60,12 +60,11 @@ function getDeploymentContext(): DeploymentContext {
   if (process.env.WORKERS_CI === "1") {
     const env = cloudflareEnvSchema.parse(process.env);
     const isProductionBranch = env.WORKERS_CI_BRANCH === env.CLOUDFLARE_PRODUCTION_BRANCH;
-    const canUseProductionConvex =
+    if (
       isProductionBranch &&
       env.CONVEX_PRODUCTION_DEPLOY_KEY !== undefined &&
-      env.CLOUDFLARE_PRODUCTION_SITE_URL !== undefined;
-
-    if (canUseProductionConvex) {
+      env.CLOUDFLARE_PRODUCTION_SITE_URL !== undefined
+    ) {
       return {
         deployKey: env.CONVEX_PRODUCTION_DEPLOY_KEY,
         isPreview: false,
