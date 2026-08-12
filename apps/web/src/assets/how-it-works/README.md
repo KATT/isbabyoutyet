@@ -70,7 +70,7 @@ dialog.
    opens "Post update", types "It's happening!! Off to the hospital soon 🚨",
    selects **Labour started** in the status radio group (the "When did it
    happen?" field appears — left untouched, meaning "now"), and posts via
-   *Post & mark "Labour started"*.
+   _Post & mark "Labour started"_.
 7. The status card flips to "Labour started" with the message; the progress
    indicator advances.
 8. The visitor window shows the flipped status live (real-time sync), then
