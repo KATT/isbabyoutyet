@@ -249,13 +249,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     });
 
     toast.success("Update posted!");
-    form.reset({
-      message: "",
-      milestone: "none",
-      occurredAt: toDatetimeLocalValue(new Date()),
-      photo: null,
-    });
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    // No reset needed: the composer lives in a dialog that unmounts on close
     props.onPosted?.();
   };
 
@@ -616,29 +610,74 @@ const encouragementEditSchema = z.object({
   message: z.string().trim().min(1, "Message cannot be empty"),
 });
 
+/**
+ * Mounted only while editing, so the form initializes from the current
+ * message on every reveal — no reset bookkeeping.
+ */
+function EncouragementEditForm(props: {
+  initialMessage: string;
+  onSave: (message: string) => Promise<void>;
+  onCancel: () => void;
+}) {
+  const form = useZodForm({
+    schema: encouragementEditSchema,
+    defaultValues: { message: props.initialMessage },
+  });
+  const isSaving = form.formState.isSubmitting;
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onSave(values.message.trim());
+      }}
+    >
+      <div className="space-y-2">
+        <FormField
+          control={form.control}
+          name="message"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Textarea
+                  aria-label="Edit your message"
+                  className="min-h-20"
+                  disabled={isSaving}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex gap-2">
+          <Button size="sm" type="submit" disabled={isSaving}>
+            <Check className="w-3 h-3" />
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={props.onCancel}
+            disabled={isSaving}
+          >
+            <X className="w-3 h-3" />
+            Cancel
+          </Button>
+        </div>
+      </div>
+    </Form>
+  );
+}
+
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const encouragement = props.item.encouragement;
   const [isEditing, setIsEditing] = useState(false);
 
-  const form = useZodForm({
-    schema: encouragementEditSchema,
-    defaultValues: { message: encouragement.message },
-  });
-  const isSaving = form.formState.isSubmitting;
-
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
-
-  const handleSave = async (values: z.input<typeof encouragementEditSchema>) => {
-    await props.onUpdate(encouragement._id, props.currentVisitorId, values.message.trim());
-    setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    form.reset({ message: encouragement.message });
-    setIsEditing(false);
-  };
 
   return (
     <div className="p-4 rounded-lg bg-muted/30 border border-border/50 relative group">
@@ -656,43 +695,14 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
           </div>
 
           {isEditing ? (
-            <Form form={form} handleSubmit={handleSave}>
-              <div className="space-y-2">
-                <FormField
-                  control={form.control}
-                  name="message"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormControl>
-                        <Textarea
-                          aria-label="Edit your message"
-                          className="min-h-20"
-                          disabled={isSaving}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="flex gap-2">
-                  <Button size="sm" type="submit" disabled={isSaving}>
-                    <Check className="w-3 h-3" />
-                    {isSaving ? "Saving..." : "Save"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={isSaving}
-                  >
-                    <X className="w-3 h-3" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </Form>
+            <EncouragementEditForm
+              initialMessage={encouragement.message}
+              onSave={async (message) => {
+                await props.onUpdate(encouragement._id, props.currentVisitorId, message);
+                setIsEditing(false);
+              }}
+              onCancel={() => setIsEditing(false)}
+            />
           ) : (
             <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
               <Streamdown>{encouragement.message}</Streamdown>
@@ -708,10 +718,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 size="icon"
                 className="h-8 w-8"
                 aria-label="Edit encouragement"
-                onClick={() => {
-                  form.reset({ message: encouragement.message });
-                  setIsEditing(true);
-                }}
+                onClick={() => setIsEditing(true)}
               >
                 <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </Button>
