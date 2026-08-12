@@ -188,14 +188,14 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
     const wentToHospital = hoursAgoIso(now, spec.hoursAgo?.wentToHospital);
     const babyBorn = hoursAgoIso(now, spec.hoursAgo?.babyBorn);
 
+    // The legacy per-stage message fields are retired (cleared by the
+    // clearLegacyStageMessages migration) — fixture messages live only on the
+    // timeline rows via seedMilestoneUpdates below.
     const babyId = await ctx.db.insert("baby", {
       userId,
       name: spec.name,
       dueDate: dueDate.toISOString(),
       publicId: spec.publicId,
-      laborStartedMessage: spec.laborStartedMessage ?? null,
-      hospitalMessage: spec.hospitalMessage ?? null,
-      babyBornMessage: spec.babyBornMessage ?? null,
       laborStarted,
       wentToHospital,
       babyBorn,

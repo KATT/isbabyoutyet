@@ -57,7 +57,10 @@ export default defineSchema({
     authorName: v.string(), // Name of the person sending encouragement
     message: v.string(), // The encouragement message
     createdAt: v.number(), // Timestamp
-    timelineItemId: v.optional(v.id("timelineItems")), // Binding to the timeline feed (required once backfilled)
+    // Binding to the timeline feed. Still optional in the schema: making it
+    // required is split into a follow-up PR so the schema push can verify the
+    // PR 1 backfill completed in prod without blocking this cleanup.
+    timelineItemId: v.optional(v.id("timelineItems")),
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
     userAgent: v.optional(v.string()), // User agent string
@@ -96,5 +99,8 @@ export default defineSchema({
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
   })
     .index("by_babyId", ["babyId"])
+    // Milestone lookups (one row per marked stage) without scanning all of a
+    // baby's updates — used on every post/redate/unmark and by migrations
+    .index("by_babyId_milestone", ["babyId", "milestone"])
     .index("by_timelineItemId", ["timelineItemId"]),
 });

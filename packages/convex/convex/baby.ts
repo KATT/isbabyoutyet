@@ -465,7 +465,7 @@ export async function syncStatusNotifications(
  * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
  * - redating a milestone updates `occurredAt` only — feed position stays put
  * - unmarking a milestone deletes its update + timeline rows
- * - editing a stage message keeps the milestone row's message in sync
+ * - a legacy stage-message arg (stale-client compat) lands on the row's message
  */
 async function syncMilestoneUpdates(
   ctx: MutationCtx,
@@ -475,17 +475,16 @@ async function syncMilestoneUpdates(
       laborStarted?: string | null;
       wentToHospital?: string | null;
       babyBorn?: string | null;
-      laborStartedMessage?: string | null;
-      hospitalMessage?: string | null;
-      babyBornMessage?: string | null;
     };
+    legacyMessages: Partial<Record<Milestone, string | null>>;
   },
 ) {
   const baby = opts.baby;
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
     const dateArg = opts.patch[fields.date];
-    const messageArg = opts.patch[fields.message];
+    const messageArg = opts.legacyMessages[milestone];
+    if (dateArg === undefined && messageArg === undefined) continue;
     const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
 
     if (dateArg === null) {
@@ -497,8 +496,8 @@ async function syncMilestoneUpdates(
     }
 
     if (typeof dateArg === "string") {
-      const parsed = Date.parse(dateArg);
-      const occurredAt = Number.isNaN(parsed) ? Date.now() : parsed;
+      // Validated parseable by the update handler
+      const occurredAt = Date.parse(dateArg);
       if (existing) {
         // Redate: update the event clock only — do not reshuffle the feed
         await ctx.db.patch(existing._id, {
@@ -512,13 +511,13 @@ async function syncMilestoneUpdates(
           postedAt: Date.now(),
           occurredAt,
           milestone,
-          message: messageArg !== undefined ? messageArg : (baby[fields.message] ?? null),
+          message: messageArg ?? null,
         });
       }
       continue;
     }
 
-    // Date untouched: keep the milestone row's message in sync when edited
+    // Date untouched: a stale client edited just the stage message
     if (messageArg !== undefined && existing) {
       await ctx.db.patch(existing._id, { message: messageArg });
     }
@@ -532,22 +531,46 @@ export const update = mutationWithTriggers({
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
+    // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
+    // during the deploy window): mapped onto the milestone update rows, never
+    // written to the baby doc. Remove in a later tidy-up once stale tabs are
+    // realistically gone.
+    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
+    hospitalMessage: v.optional(v.union(v.string(), v.null())),
+    babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const { babyId, ...rest } = args;
+    const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const legacyMessages = {
+      labor_started: laborStartedMessage,
+      gone_to_hospital: hospitalMessage,
+      born: babyBornMessage,
+    };
 
     const baby = await ctx.db.get(babyId);
     if (!baby) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
+
+    // Milestone dates are event clocks: they must parse and cannot be in the
+    // future (mirrors the `updates.post` occurredAt guard, so settings
+    // redating can't bypass it)
+    for (const milestone of MILESTONES) {
+      const dateArg = rest[MILESTONE_FIELDS[milestone].date];
+      if (typeof dateArg !== "string") continue;
+      const parsed = Date.parse(dateArg);
+      if (Number.isNaN(parsed)) {
+        throw new Error("Invalid date");
+      }
+      if (parsed > Date.now() + 60_000) {
+        throw new Error("The event time cannot be in the future");
+      }
+    }
 
     const statusBefore = getCurrentStatus(baby);
 
@@ -569,18 +592,20 @@ export const update = mutationWithTriggers({
 
     await ctx.db.patch(babyId, patch);
 
-    await syncMilestoneUpdates(ctx, { baby, patch: rest });
+    await syncMilestoneUpdates(ctx, { baby, patch: rest, legacyMessages });
 
     const updatedBaby = await ctx.db.get(babyId);
     if (!updatedBaby) throw new Error("Baby not found after update");
 
+    // Settings status changes don't carry a message (attach one by posting an
+    // update); a stale client's legacy message arg still rides along
     await syncStatusNotifications(ctx, {
       statusBefore,
       updatedBaby,
       customMessageByMilestone: {
-        labor_started: rest.laborStartedMessage ?? baby.laborStartedMessage ?? null,
-        gone_to_hospital: rest.hospitalMessage ?? baby.hospitalMessage ?? null,
-        born: rest.babyBornMessage ?? baby.babyBornMessage ?? null,
+        labor_started: legacyMessages.labor_started ?? null,
+        gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
+        born: legacyMessages.born ?? null,
       },
     });
   },

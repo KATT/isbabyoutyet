@@ -1,33 +1,62 @@
+import { Form, useZodForm } from "@/components/Form";
 import { Button } from "@workspace/ui/components/button";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { Textarea } from "@workspace/ui/components/textarea";
 import { format, parseISO } from "date-fns";
 import { Clock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import {
-  getCurrentStatus,
-  type BabyData,
-  type BabyUpdateHandler,
-} from "@workspace/convex/src/types";
+import * as z from "zod";
+import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { parseDate, THEME_OPTIONS } from "./utils";
+
+/** Format a date for a `datetime-local` input in the viewer's timezone. */
+function toDatetimeLocalValue(date: Date): string {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+// The popover editors follow one pattern: the outer component owns the
+// open state, the inner *Form component owns the form and is mounted fresh
+// on every open — so defaultValues are always current and no reset is needed.
+
+type EditorFormProps = {
+  baby: BabyData;
+  onUpdate: BabyUpdateHandler;
+  onClose: () => void;
+};
+
+function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+  return (
+    <div className="flex gap-2 justify-end">
+      <Button
+        type="button"
+        onClick={props.onClose}
+        variant="outline"
+        size="sm"
+        disabled={props.isSubmitting}
+      >
+        Cancel
+      </Button>
+      <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
+        Save
+      </Button>
+    </div>
+  );
+}
 
 type DueDateEditorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
 };
 
+const dueDateSchema = z.object({
+  date: z.string().min(1, "Pick a date"),
+});
+
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newDate, setNewDate] = useState(() => {
-    const date = parseDate(baby.dueDate);
-    return format(date, "yyyy-MM-dd");
-  });
-  const [isLoading, setIsLoading] = useState(false);
-
-  const currentDateFormatted = format(parseDate(baby.dueDate), "yyyy-MM-dd");
-  const hasChanges = newDate !== currentDateFormatted;
 
   return (
     <Popover
@@ -59,56 +88,51 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
-        <Input
-          type="date"
-          value={newDate}
-          onChange={(e) => setNewDate(e.target.value)}
-          className="mb-3"
-          onMouseDown={(e) => e.stopPropagation()}
-          onFocus={(e) => e.stopPropagation()}
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              const date = parseDate(baby.dueDate);
-              setNewDate(format(date, "yyyy-MM-dd"));
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  const dateObj = parseISO(newDate);
-                  const dateString = dateObj.toISOString();
-                  await onUpdate({ dueDate: dateString });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update due date");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+        <DueDateForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function DueDateForm(props: EditorFormProps) {
+  const form = useZodForm({
+    schema: dueDateSchema,
+    defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onUpdate({ dueDate: parseISO(values.date).toISOString() });
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="date"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input
+                type="date"
+                aria-label="Due date"
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
+      />
+    </Form>
   );
 }
 
@@ -119,26 +143,12 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-export function StatusDateEditor({
-  baby: _baby,
-  status,
-  currentDate,
-  onUpdate,
-}: StatusDateEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newDateTime, setNewDateTime] = useState(() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  });
-  const [isLoading, setIsLoading] = useState(false);
+const statusDateSchema = z.object({
+  dateTime: z.string().min(1, "Pick a date and time"),
+});
 
-  const currentDateTimeFormatted = (() => {
-    const date = parseDate(currentDate);
-    const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-    return localDate.toISOString().slice(0, 16);
-  })();
-  const hasChanges = newDateTime !== currentDateTimeFormatted;
+export function StatusDateEditor(props: StatusDateEditorProps) {
+  const [isEditing, setIsEditing] = useState(false);
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
@@ -150,63 +160,67 @@ export function StatusDateEditor({
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
-        <Input
-          type="datetime-local"
-          value={newDateTime}
-          onChange={(e) => setNewDateTime(e.target.value)}
-          className="mb-3"
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+        <StatusDateForm
+          status={props.status}
+          currentDate={props.currentDate}
+          onUpdate={props.onUpdate}
+          onClose={() => setIsEditing(false)}
         />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              const date = parseDate(currentDate);
-              const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-              setNewDateTime(localDate.toISOString().slice(0, 16));
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  const dateObj = parseISO(newDateTime);
-                  const dateString = dateObj.toISOString();
-
-                  if (status === "labor_started") {
-                    await onUpdate({ laborStarted: dateString });
-                  } else if (status === "gone_to_hospital") {
-                    await onUpdate({ wentToHospital: dateString });
-                  } else if (status === "born") {
-                    await onUpdate({ babyBorn: dateString });
-                  }
-
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update status date");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function StatusDateForm(props: {
+  status: StatusDateEditorProps["status"];
+  currentDate: string;
+  onUpdate: BabyUpdateHandler;
+  onClose: () => void;
+}) {
+  const form = useZodForm({
+    schema: statusDateSchema,
+    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        const dateString = parseISO(values.dateTime).toISOString();
+        if (props.status === "labor_started") {
+          await props.onUpdate({ laborStarted: dateString });
+        } else if (props.status === "gone_to_hospital") {
+          await props.onUpdate({ wentToHospital: dateString });
+        } else {
+          await props.onUpdate({ babyBorn: dateString });
+        }
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="dateTime"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input
+                type="datetime-local"
+                aria-label="Status date and time"
+                max={toDatetimeLocalValue(new Date())}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
+      />
+    </Form>
   );
 }
 
@@ -215,12 +229,12 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
+const nameSchema = z.object({
+  name: z.string().trim().min(1, "Name is required"),
+});
+
 export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [newName, setNewName] = useState(baby.name);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newName.trim() !== baby.name.trim();
 
   return (
     <Popover open={isEditing} onOpenChange={setIsEditing}>
@@ -231,281 +245,49 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80">
-        <Input
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder="Baby name"
-          className="mb-3"
-          onKeyDown={async (e) => {
-            if (e.key === "Enter" && hasChanges) {
-              e.preventDefault();
-              setIsLoading(true);
-              try {
-                await onUpdate({ name: newName.trim() });
-                setIsEditing(false);
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : "Failed to update name");
-              } finally {
-                setIsLoading(false);
-              }
-            } else if (e.key === "Escape") {
-              setNewName(baby.name);
-              setIsEditing(false);
-            }
-          }}
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewName(baby.name);
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ name: newName.trim() });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update name");
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
+      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+        <NameForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
   );
 }
 
-type HospitalMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function HospitalMessageEditor({ baby, onUpdate }: HospitalMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.hospitalMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.hospitalMessage || "");
-
-  const status = getCurrentStatus(baby);
+function NameForm(props: EditorFormProps) {
+  const form = useZodForm({
+    schema: nameSchema,
+    defaultValues: { name: props.baby.name },
+  });
 
   return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger
-        render={
-          <Button variant={status.type === "gone_to_hospital" ? "default" : "outline"} size="sm">
-            Edit
-          </Button>
-        }
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onUpdate({ name: values.name.trim() });
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input placeholder="Baby name" aria-label="Baby name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
       />
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Do not disturb, only send messages to the parents"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewMessage(baby.hospitalMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ hospitalMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update hospital message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-type LaborStartedMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function LaborStartedMessageEditor({ baby, onUpdate }: LaborStartedMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.laborStartedMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.laborStartedMessage || "");
-
-  const status = getCurrentStatus(baby);
-
-  return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger
-        render={
-          <Button variant={status.type === "labor_started" ? "default" : "outline"} size="sm">
-            Edit
-          </Button>
-        }
+      <p className="text-xs text-muted-foreground mb-3">
+        Renaming may change the page address, but don't worry — any link you've already shared keeps
+        working.
+      </p>
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
       />
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Custom message to show when labour has started"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={() => {
-              setNewMessage(baby.laborStartedMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async () => {
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ laborStartedMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update labour message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-type BabyBornMessageEditorProps = {
-  baby: BabyData;
-  onUpdate: BabyUpdateHandler;
-};
-
-export function BabyBornMessageEditor({ baby, onUpdate }: BabyBornMessageEditorProps) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [newMessage, setNewMessage] = useState(baby.babyBornMessage || "");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const hasChanges = newMessage !== (baby.babyBornMessage || "");
-
-  const status = getCurrentStatus(baby);
-
-  return (
-    <Popover open={isEditing} onOpenChange={setIsEditing}>
-      <PopoverTrigger
-        render={
-          <Button variant={status.type === "born" ? "default" : "outline"} size="sm">
-            Edit
-          </Button>
-        }
-      />
-      <PopoverContent align="end" className="w-80">
-        <Textarea
-          value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
-          placeholder="Custom message to show when baby is born"
-          className="mb-3 min-h-20"
-        />
-        <div className="flex gap-2 justify-end">
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setNewMessage(baby.babyBornMessage || "");
-              setIsEditing(false);
-            }}
-            variant="outline"
-            size="sm"
-            disabled={isLoading}
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={async (e) => {
-              e.stopPropagation();
-              if (hasChanges) {
-                setIsLoading(true);
-                try {
-                  await onUpdate({ babyBornMessage: newMessage.trim() || null });
-                  setIsEditing(false);
-                } catch (err) {
-                  toast.error(
-                    err instanceof Error ? err.message : "Failed to update baby born message",
-                  );
-                } finally {
-                  setIsLoading(false);
-                }
-              } else {
-                setIsEditing(false);
-              }
-            }}
-            size="sm"
-            disabled={isLoading || !hasChanges}
-          >
-            Save
-          </Button>
-        </div>
-      </PopoverContent>
-    </Popover>
+    </Form>
   );
 }
 
