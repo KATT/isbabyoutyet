@@ -511,3 +511,101 @@ test("separateMilestoneOccurredAt moves backdated milestones to announce time", 
     },
   ]);
 });
+
+test("separateMilestoneOccurredAt prefers the notification closest to the update", async () => {
+  const { t, babyId } = await setup();
+  const eventAt = Date.parse("2026-03-01T12:00:00.000Z");
+  const staleAnnounceAt = Date.parse("2026-01-11T10:00:00.000Z");
+  const freshAnnounceAt = Date.parse("2026-03-01T12:05:00.000Z");
+
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
+    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: eventAt,
+      milestone: "born",
+    });
+    // Prior unmark left a cancelled notification; remark created a new one
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "cancelled",
+      scheduledFor: staleAnnounceAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: staleAnnounceAt,
+    });
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "sent",
+      scheduledFor: freshAnnounceAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: freshAnnounceAt,
+    });
+    return updateId;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, update);
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([{ postedAt: freshAnnounceAt, update: { occurredAt: eventAt } }]);
+});
+
+test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurredAt", async () => {
+  const { t, babyId } = await setup();
+  const originalEventAt = Date.parse("2026-01-11T04:14:00.000Z");
+  const redatedEventAt = Date.parse("2026-01-11T06:00:00.000Z");
+  const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
+
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { babyBorn: new Date(redatedEventAt).toISOString() });
+    const { updateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: originalEventAt,
+      occurredAt: redatedEventAt, // redate during deploy set this already
+      milestone: "born",
+    });
+    await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "sent",
+      scheduledFor: announcedAt + 60_000,
+      notificationType: "born",
+      customMessage: null,
+      createdAt: announcedAt,
+    });
+    // Sanity: postedAt still on the old event clock
+    const item = await ctx.db.get(timelineItemId);
+    expect(item?.postedAt).toBe(originalEventAt);
+    return updateId;
+  });
+
+  await t.run(async (ctx) => {
+    const update = await ctx.db.get(updateId);
+    if (!update) throw new Error("update missing");
+    await separateMilestoneOccurredAtDoc(ctx, update);
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([
+    { postedAt: announcedAt, update: { occurredAt: redatedEventAt } },
+  ]);
+});
+
+test("posting a milestone sets occurredAt to the announce time", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const before = Date.now();
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  const after = Date.now();
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toHaveLength(1);
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+  expect(item.postedAt).toBeGreaterThanOrEqual(before);
+  expect(item.postedAt).toBeLessThanOrEqual(after);
+  expect(item.update.occurredAt).toBe(item.postedAt);
+});

@@ -32,26 +32,37 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
 });
 
 /**
- * Best-effort "when this milestone was announced" timestamp:
- * earliest scheduled-notification createdAt for that type, else the update's
- * _creationTime (live post or previous migration insert).
+ * Best-effort "when this milestone was announced" timestamp: the notification
+ * for this milestone whose `createdAt` is closest to `referenceMs` (usually the
+ * update row's `_creationTime`). Preferring closest — not earliest — avoids
+ * picking a stale cancelled notification from a prior unmark/remark cycle.
+ * Falls back to `fallbackMs` when no matching notification exists.
  */
 export async function resolveMilestoneAnnounceAt(
   ctx: MutationCtx,
-  opts: { babyId: Id<"baby">; milestone: Milestone; fallbackMs: number },
+  opts: {
+    babyId: Id<"baby">;
+    milestone: Milestone;
+    referenceMs: number;
+    fallbackMs: number;
+  },
 ) {
   const notifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId", (q) => q.eq("babyId", opts.babyId))
     .collect();
-  let earliest: number | null = null;
+
+  let bestCreatedAt: number | null = null;
+  let bestDistance = Infinity;
   for (const notification of notifications) {
     if (notification.notificationType !== opts.milestone) continue;
-    if (earliest === null || notification.createdAt < earliest) {
-      earliest = notification.createdAt;
+    const distance = Math.abs(notification.createdAt - opts.referenceMs);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestCreatedAt = notification.createdAt;
     }
   }
-  return earliest ?? opts.fallbackMs;
+  return bestCreatedAt ?? opts.fallbackMs;
 }
 
 function parseIsoMs(iso: string | null | undefined) {
@@ -79,10 +90,13 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     if (existing) continue;
 
     const occurredAt = parseIsoMs(isoDate) ?? Date.now();
+    const now = Date.now();
     const postedAt = await resolveMilestoneAnnounceAt(ctx, {
       babyId: baby._id,
       milestone,
-      fallbackMs: Date.now(),
+      // No update row yet — prefer the notification closest to "now" (latest cycle)
+      referenceMs: now,
+      fallbackMs: now,
     });
     await insertUpdateWithTimelineItem(ctx, {
       babyId: baby._id,
@@ -155,44 +169,55 @@ export const backfillEncouragementTimeline = migrations.define({
 /**
  * Splits milestone event time from feed position on existing rows:
  * - `occurredAt` ← baby date field (when it happened)
- * - `postedAt` ← announce time (notification createdAt, else update creation)
- *   when the row was previously backdated to the event clock
+ * - `postedAt` ← announce time when the row still looks backdated
  *
- * Idempotent: rows that already have `occurredAt` set are left alone.
+ * Idempotent: once `postedAt` matches announce time (or no longer looks like
+ * the event clock), re-runs are a no-op. Having `occurredAt` already set does
+ * NOT skip the feed repair — a redate during the deploy window can set
+ * `occurredAt` while leaving a legacy event-clock `postedAt`.
  */
 export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: Doc<"updates">) {
   if (!update.milestone) return;
-  if (update.occurredAt != null) return;
 
   const baby = await ctx.db.get(update.babyId);
   if (!baby) return;
 
-  const fields = MILESTONE_FIELDS[update.milestone];
-  const occurredAt = parseIsoMs(baby[fields.date]);
-  if (occurredAt == null) {
-    // No canonical event date — treat current postedAt as the event clock
-    const item = await ctx.db.get(update.timelineItemId);
-    await ctx.db.patch(update._id, { occurredAt: item?.postedAt ?? update._creationTime });
-    return;
-  }
-
-  await ctx.db.patch(update._id, { occurredAt });
-
   const item = await ctx.db.get(update.timelineItemId);
   if (!item) return;
 
-  // Only rewrite feed position when it was clearly the backdated event clock
-  // (within 1s of the baby date). Live posts already have announce-time postedAt.
-  if (Math.abs(item.postedAt - occurredAt) > 1000) return;
+  const fields = MILESTONE_FIELDS[update.milestone];
+  const occurredAt = parseIsoMs(baby[fields.date]);
+  if (occurredAt == null) {
+    if (update.occurredAt == null) {
+      await ctx.db.patch(update._id, { occurredAt: item.postedAt });
+    }
+    return;
+  }
 
-  const postedAt = await resolveMilestoneAnnounceAt(ctx, {
+  if (update.occurredAt !== occurredAt) {
+    await ctx.db.patch(update._id, { occurredAt });
+  }
+
+  const announceAt = await resolveMilestoneAnnounceAt(ctx, {
     babyId: update.babyId,
     milestone: update.milestone,
+    referenceMs: update._creationTime,
     fallbackMs: update._creationTime,
   });
-  if (postedAt !== item.postedAt) {
-    await ctx.db.patch(item._id, { postedAt });
-  }
+
+  // Already at announce time — done
+  if (Math.abs(item.postedAt - announceAt) <= 1000) return;
+
+  const looksLikeEventClock = Math.abs(item.postedAt - occurredAt) <= 1000;
+  // Redate-during-deploy: postedAt stuck on an older event clock, far from both
+  // the current baby date and the row's creation / announce time
+  const looksLikeStaleEventClock =
+    Math.abs(item.postedAt - update._creationTime) > 60_000 &&
+    Math.abs(item.postedAt - occurredAt) > 1000;
+
+  if (!looksLikeEventClock && !looksLikeStaleEventClock) return;
+
+  await ctx.db.patch(item._id, { postedAt: announceAt });
 }
 
 export const separateMilestoneOccurredAt = migrations.define({
