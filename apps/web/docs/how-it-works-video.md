@@ -3,44 +3,47 @@
 Embedded on the homepage (`apps/web/src/routes/index.tsx`, the "Show Me How It
 Works" card). Assets:
 
-- `apps/web/public/how-it-works.mp4` — 1280×720, H.264, ~91 s, no audio, ~1.6 MB
+- `apps/web/public/how-it-works.mp4` — 1280×720, H.264, ~99 s, no audio, ~1.6 MB
 - `apps/web/public/how-it-works-poster.jpg` — poster frame (the final feed view)
 
 **Re-record this video whenever the baby-page UX changes** (status card,
-composer, timeline feed, encouragement form) so the homepage never demos a
-stale UI.
+"Post update" dialog, timeline feed, encouragement form, nav bar) so the
+homepage never demos a stale UI.
 
 ## What the video shows (shot list)
 
-A scripted three-act walkthrough on a real deployment, using a baby named
-"Nora" with a due date ~5 days out:
+A scripted three-act walkthrough on a real deployment, using a freshly
+created baby (e.g. "Milo") with a due date ~5 days out. The owner posts via
+the **"Post update" button in the fixed nav bar**, which opens the composer
+in a dialog.
 
 **Act 1 — the owner keeps everyone posted** (owner window)
 
 1. The page in its "Not yet" state: hero, status card, due-date countdown.
-2. The owner types "Getting close now — bags are packed! 🎒" in the
-   "Post an update" composer and posts. Scroll to the top: the status card now
-   shows the message under "Latest from the family" — a status update without
-   a status change.
-3. The owner posts "Bump photo, week 39!" with a photo attached (the file
-   picker is cut in editing). The photo update appears in the feed with
+2. The owner clicks "Post update" in the bar, types "Getting close now —
+   bags are packed! 🎒" in the dialog and posts (the dialog closes itself).
+   The status card now shows the message under "Latest from the family" —
+   a status update without a status change.
+3. Same flow again for "Bump photo, week 39!" with a photo attached (the
+   file picker is cut in editing). The photo update appears in the feed with
    "New photo" + "Page photo" badges.
 
 **Act 2 — family & friends cheer you on** (visitor view, incognito window)
 
-4. The same page as a visitor: no composer, the "Get Notifications" subscribe
-   button visible on the status card. (The actual permission prompt is cut —
-   incognito auto-denies it, which looks broken on camera.)
+4. The same page as a visitor: no "Post update" button or settings in the
+   bar, the "Get Notifications" subscribe button visible on the status card.
+   (The actual permission prompt is cut — incognito auto-denies it, which
+   looks broken on camera.)
 5. The visitor sends an encouragement as "Aunt Meg": "Good luck!! You've got
    this ❤️". It appears at the top of the merged timeline, above the owner's
    updates.
 
 **Act 3 — the big moment** (owner, then visitor)
 
-6. Back in the owner window, Aunt Meg's message has appeared live. The owner
-   types "It's happening!! Off to the hospital soon 🚨", selects the
-   "Labour started" milestone chip (hint text + "Post & mark" button shown),
-   and posts.
+6. Back in the owner window, Aunt Meg's message has appeared live. Via the
+   "Post update" dialog the owner types "It's happening!! Off to the
+   hospital soon 🚨", selects the "Labour started" milestone chip (hint text
+   - "Post & mark" button shown), and posts.
 7. The status card flips to "Labour started" with the message; the progress
    indicator advances.
 8. The visitor window shows the flipped status live (real-time sync), then
@@ -94,4 +97,4 @@ how-it-works video following apps/web/docs/how-it-works-video.md".
    frame), total under ~100 s, file size ~1–3 MB. Update this document if the
    shot list changed.
 
-<!-- v1: initial cut recorded 2026-08-12 on the timeline-stack preview -->
+<!-- v2: re-recorded 2026-08-12 after the composer moved into the nav-bar "Post update" dialog -->
