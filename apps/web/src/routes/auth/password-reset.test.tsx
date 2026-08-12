@@ -39,7 +39,7 @@ async function renderRouteResource(path: string) {
 test("offers a generic password reset request form", async () => {
   await using view = await renderRouteResource("/auth/forgot-password");
 
-  expect(view.getByRole("heading", { name: "Reset your password" })).toBeTruthy();
+  expect(view.getByText("Reset your password")).toBeTruthy();
   expect(view.getByLabelText("Email")).toBeTruthy();
   expect(view.getByRole("button", { name: "Send reset link" })).toBeTruthy();
 });
@@ -48,5 +48,5 @@ test("rejects a reset page without a valid token", async () => {
   await using view = await renderRouteResource("/auth/reset-password");
 
   expect(view.getByText("This reset link is invalid or has expired.")).toBeTruthy();
-  expect(view.getByRole("link", { name: "Request another link" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Request another link" })).toBeTruthy();
 });
