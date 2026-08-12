@@ -1,4 +1,5 @@
 import { Button } from "@workspace/ui/components/button";
+import { ButtonGroup } from "@workspace/ui/components/button-group";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { CheckCircle, MessageCircleHeart, Settings, Share2 } from "lucide-react";
@@ -24,6 +25,7 @@ export function BabyNav({
   postUpdateOpen,
 }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
+  const hasOwnerActions = !!(postUpdateButton || settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -31,29 +33,40 @@ export function BabyNav({
     return () => clearTimeout(timeout);
   }, [copied]);
 
-  return (
-    <div
-      className={cn(
-        // general
-        "gap-2 p-4 z-10 flex",
-        // mobile
-        "fixed bottom-0 left-0",
-        // desktop
-        "md:sticky md:top-0 md:left-0",
-      )}
-    >
+  const ownerActions = hasOwnerActions ? (
+    <ButtonGroup aria-label="Owner actions">
       {postUpdateButton && (
         <Button
-          className="rounded-full shadow-lg shadow-primary/20"
-          variant={postUpdateOpen ? "default" : undefined}
+          variant={postUpdateOpen ? "default" : "outline"}
           render={<Link {...(postUpdateButton as any)} />}
           nativeButton={false}
         >
-          <MessageCircleHeart className="w-4 h-4" />
+          <MessageCircleHeart data-icon="inline-start" />
           Post update
         </Button>
       )}
+      {settingsButton && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant={settingsOpen ? "default" : "outline"}
+                size="icon"
+                render={<Link {...(settingsButton as any)} />}
+                nativeButton={false}
+              >
+                <Settings />
+              </Button>
+            }
+          />
+          <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
+        </Tooltip>
+      )}
+    </ButtonGroup>
+  ) : null;
 
+  const pageActions = (
+    <ButtonGroup aria-label="Page actions">
       <Tooltip>
         <TooltipTrigger
           render={
@@ -87,36 +100,34 @@ export function BabyNav({
               }}
               variant="outline"
               size="icon"
-              className="rounded-full"
               disabled={!shareLink}
             >
-              {copied ? <CheckCircle className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+              {copied ? <CheckCircle /> : <Share2 />}
             </Button>
           }
         />
         <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
       </Tooltip>
 
-      <ModeToggle />
+      <ModeToggle className="rounded-lg" />
+    </ButtonGroup>
+  );
 
-      {settingsButton && (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <Button
-                variant={settingsOpen ? "default" : "outline"}
-                size="icon"
-                className="rounded-full"
-                render={<Link {...(settingsButton as any)} />}
-                nativeButton={false}
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-            }
-          />
-          <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
-        </Tooltip>
+  return (
+    <div
+      className={cn(
+        // general
+        "p-4 z-10",
+        // mobile
+        "fixed bottom-0 left-0",
+        // desktop
+        "md:sticky md:top-0 md:left-0",
       )}
+    >
+      <ButtonGroup>
+        {ownerActions}
+        {pageActions}
+      </ButtonGroup>
     </div>
   );
 }
