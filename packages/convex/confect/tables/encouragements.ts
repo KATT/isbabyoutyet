@@ -1,0 +1,19 @@
+import { Table } from "@confect/server";
+import * as Schema from "effect/Schema";
+import { Id } from "../_generated/id";
+
+export default Table.make(() =>
+  Schema.Struct({
+    babyId: Id("baby"),
+    authorName: Schema.String,
+    message: Schema.String,
+    createdAt: Schema.Number,
+    timelineItemId: Schema.optional(Id("timelineItems")),
+    visitorId: Schema.String,
+    userAgent: Schema.optional(Schema.String),
+    locale: Schema.optional(Schema.String),
+    timezone: Schema.optional(Schema.String),
+  }),
+)
+  .index("by_babyId", ["babyId"])
+  .index("by_timelineItemId", ["timelineItemId"]);

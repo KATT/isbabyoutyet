@@ -3,14 +3,11 @@ import type { convexTest } from "convex-test";
 
 /**
  * All Convex function modules for convex-test.
- * Matches files with a single extension ending in `s` (ts/js), which
- * excludes *.test.ts and *.d.ts files.
+ * Lives under convex/ (Confect codegen target); tests live outside it.
  */
 export const modules = import.meta.glob([
-  "./**/*.{js,ts}",
-  "!./**/*.test.ts",
-  "!./**/*.d.ts",
-  "!./test.setup.ts",
+  "../convex/**/*.{js,ts}",
+  "!../convex/**/*.d.ts",
 ]);
 
 /**

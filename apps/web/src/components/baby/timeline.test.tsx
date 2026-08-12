@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { expect, test } from "vitest";
 import { UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeResource } from "@workspace/convex/tests/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 
 const notYetBaby: BabyData = {

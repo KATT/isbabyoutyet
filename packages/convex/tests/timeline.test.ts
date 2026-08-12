@@ -1,16 +1,16 @@
 import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
-import { api } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
+import { api } from "../convex/_generated/api";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 import {
   backfillBabyTimelineDoc,
   backfillEncouragementTimelineDoc,
   separateMilestoneOccurredAtDoc,
-} from "./migrations";
-import schema from "./schema";
+} from "../confect/migrations";
+import schema from "../convex/schema";
 import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
-import { insertUpdateWithTimelineItem } from "./timeline";
+import { insertUpdateWithTimelineItem } from "../confect/timelineHelpers";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
 

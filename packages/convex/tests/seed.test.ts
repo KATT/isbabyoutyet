@@ -1,10 +1,10 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { components, internal } from "./_generated/api";
-import schema from "./schema";
+import { components, internal } from "../convex/_generated/api";
+import schema from "../convex/schema";
 import { getCurrentStatus } from "../src/types";
 import { DEMO_USER } from "../src/seedCredentials";
-import { seedBabiesForUser } from "./seed";
+import { seedBabiesForUser } from "../confect/seed";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {

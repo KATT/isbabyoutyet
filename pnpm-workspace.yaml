@@ -17,6 +17,15 @@ catalog:
   "@convex-dev/better-auth": ^0.12.5
   zod: ^4.4.3
 
+  # Effect & Confect
+  effect: 4.0.0-beta.107
+  "@confect/core": 10.0.0-next.13
+  "@confect/server": 10.0.0-next.13
+  "@confect/react": 10.0.0-next.13
+  "@confect/cli": 10.0.0-next.13
+  "@confect/test": 10.0.0-next.13
+  "@confect/js": 10.0.0-next.13
+
   # UI & Styling
   lucide-react: ^1.31.0
   next-themes: ^0.4.6

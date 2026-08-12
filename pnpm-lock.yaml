@@ -6,6 +6,21 @@ settings:
 
 catalogs:
   default:
+    '@confect/cli':
+      specifier: 10.0.0-next.13
+      version: 10.0.0-next.13
+    '@confect/core':
+      specifier: 10.0.0-next.13
+      version: 10.0.0-next.13
+    '@confect/react':
+      specifier: 10.0.0-next.13
+      version: 10.0.0-next.13
+    '@confect/server':
+      specifier: 10.0.0-next.13
+      version: 10.0.0-next.13
+    '@confect/test':
+      specifier: 10.0.0-next.13
+      version: 10.0.0-next.13
     '@convex-dev/better-auth':
       specifier: ^0.12.5
       version: 0.12.5
@@ -27,6 +42,9 @@ catalogs:
     convex:
       specifier: ^1.43.0
       version: 1.43.0
+    effect:
+      specifier: 4.0.0-beta.107
+      version: 4.0.0-beta.107
     lucide-react:
       specifier: ^1.31.0
       version: 1.31.0
@@ -89,12 +107,18 @@ importers:
 
   apps/web:
     dependencies:
+      '@confect/core':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      '@confect/react':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)(react@19.2.8)
       '@convex-dev/better-auth':
         specifier: 'catalog:'
         version: 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.26(@tanstack/react-start@1.168.42(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.10))(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
       '@hookform/resolvers':
         specifier: ^5.7.1
-        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
+        version: 5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
       '@tanstack/react-devtools':
         specifier: ^0.10.10
         version: 0.10.10(@neodrag/core@3.0.0-next.11)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(csstype@3.2.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)
@@ -128,6 +152,9 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107
       framer-motion:
         specifier: ^13.1.0
         version: 13.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -191,7 +218,7 @@ importers:
         version: 30.0.1(@noble/hashes@2.3.0)
       nitro:
         specifier: latest
-        version: 3.0.260610-beta(chokidar@5.0.0)(jiti@2.7.0)(lru-cache@11.5.2)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
+        version: 3.0.260610-beta(chokidar@5.0.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.2)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       oxfmt:
         specifier: 'catalog:'
         version: 0.63.0
@@ -225,6 +252,15 @@ importers:
 
   packages/convex:
     dependencies:
+      '@confect/cli':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(effect@4.0.0-beta.107)(ioredis@5.11.1)
+      '@confect/core':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      '@confect/server':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
       '@convex-dev/better-auth':
         specifier: 'catalog:'
         version: 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.26(@tanstack/react-start@1.168.42(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.10))(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
@@ -243,6 +279,9 @@ importers:
       convex-table-history:
         specifier: ^0.1.2
         version: 0.1.2(@standard-schema/spec@1.1.0)(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)(zod@4.4.3)
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107
       sharp:
         specifier: ^0.35.3
         version: 0.35.3(@types/node@22.20.1)
@@ -250,6 +289,9 @@ importers:
         specifier: ^3.6.7
         version: 3.6.7
     devDependencies:
+      '@confect/test':
+        specifier: 'catalog:'
+        version: 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex-test@0.0.55(convex@1.43.0(react@19.2.8)))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
       '@edge-runtime/vm':
         specifier: ^5.0.0
         version: 5.0.0
@@ -577,6 +619,53 @@ packages:
   '@chevrotain/types@11.1.2':
     resolution: {integrity: sha512-U+HFai5+zmJCkK86QsaJtoITlboZHBqrVketcO2ROv865xfCMSFpELQoz1GkX5GzME8pTa+3kbKrZHQtI0gdbw==}
 
+  '@confect/cli@10.0.0-next.13':
+    resolution: {integrity: sha512-+X532/WVCq73XY78vxe5aYB0A6zn35NTbZrgTspKSk/UW1vRq6SudNdJ33NOtGcNfUZNMA7DAh8l9T4uMC9W9A==}
+    engines: {node: '>=22'}
+    hasBin: true
+    peerDependencies:
+      '@confect/core': ^10.0.0-next.13
+      '@confect/server': ^10.0.0-next.13
+      effect: ^4.0.0-beta.107
+
+  '@confect/core@10.0.0-next.13':
+    resolution: {integrity: sha512-AZbcT6112x7i6DzZuzHG7aIYfXkTP/bOfgvnJdTDrMLJmtnjRtyjIWTCcjJ2+qKj7tEr4YYOkrhxZsOL7JJphg==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      convex: ^1.32.0
+      effect: ^4.0.0-beta.107
+
+  '@confect/react@10.0.0-next.13':
+    resolution: {integrity: sha512-t2XjMt4r89y19w3nvHvlMXStyfMUzx1r3iRwCPRx+k4n0/F5FbB0gEXE/NEm9Q6HTA8wUPxU2hmVpuQ/8eIdsA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@confect/core': ^10.0.0-next.13
+      convex: ^1.36.0
+      effect: ^4.0.0-beta.107
+      react: ^18.0.0 || ^19.0.0
+
+  '@confect/server@10.0.0-next.13':
+    resolution: {integrity: sha512-nwfpaqEbTG7aC+HZ1i+DZjoVKsukZWQjdDrmNuuRNllbEur+jLv+bwWX5R4he+Qh7nYmRKfZAvtbtFtsTwf/KA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@confect/core': ^10.0.0-next.13
+      '@effect/platform-node': ^4.0.0-beta.107
+      convex: ^1.32.0
+      effect: ^4.0.0-beta.107
+    peerDependenciesMeta:
+      '@effect/platform-node':
+        optional: true
+
+  '@confect/test@10.0.0-next.13':
+    resolution: {integrity: sha512-8Ex7Ol71cDIbBBrijlGQqskaj43dxOLwAaZy5FFiHq7B8nZdx1DwQ8ocA6Da8onnMDd082o8gepYXAPfzjTnCw==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@confect/core': ^10.0.0-next.13
+      '@confect/server': ^10.0.0-next.13
+      convex: ^1.32.0
+      convex-test: '>=0.0.50 <0.1.0'
+      effect: ^4.0.0-beta.107
+
   '@convex-dev/better-auth@0.12.5':
     resolution: {integrity: sha512-YFUbGk04OlINno9FpOTNZN67AP+kSQsblfep5zs1f/WTgMWjD5FymU6rSSh3mu52gukmDNnBJTjC/lj4QRpjlQ==}
     peerDependencies:
@@ -636,6 +725,19 @@ packages:
   '@edge-runtime/vm@5.0.0':
     resolution: {integrity: sha512-NKBGBSIKUG584qrS1tyxVpX/AKJKQw5HgjYEnPLC0QsTw79JrGn+qUr8CXFb955Iy7GUdiiUv1rJ6JBGvaKb6w==}
     engines: {node: '>=18'}
+
+  '@effect/platform-node-shared@4.0.0-rc.108':
+    resolution: {integrity: sha512-g5dSRR+tHzFcWav5A6zbug78oV8WPJL5BJqgKlKtow0cQ2IpULcLZaP2xCYR3RJDvz5SETREmPCJ+BNONIsalw==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      effect: ^4.0.0-rc.108
+
+  '@effect/platform-node@4.0.0-rc.108':
+    resolution: {integrity: sha512-Nof78154BaHGdSYr4TPQFZ5+Dg+HkpmbI3SQUdwsby5QNs6yahGJPu2AgdIVqdx7pKZ2w7j/bvdnqoMmkG0PbA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      effect: ^4.0.0-rc.108
+      ioredis: '>=5.7.0 <6.0.0'
 
   '@emnapi/core@1.11.2':
     resolution: {integrity: sha512-TC8MkTuZUtcTSiFeuC0ksCh9QIJ5+F21MvZ4Wn4ORfYaFJ/0dsiudv5tVkejgwZlwQ39jL9WWDe2lz8x0WglOA==}
@@ -1235,6 +1337,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@ioredis/commands@1.10.0':
+    resolution: {integrity: sha512-UmeW7z4LfctwoQ5wkhVzgq8tXkreED2xZGpX+Bg+zA+WJFZCT6c062AfCK/Dfk81xZnnwdhJCUMkitihRaoC2Q==}
+
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -1253,6 +1358,36 @@ packages:
 
   '@mermaid-js/parser@1.2.0':
     resolution: {integrity: sha512-oYPyv8A4As1yH5Bx+04iQEQxXuIQDe0GKCNSRgao6z8AM9jixXIfP0vsppRLvGf+nKIOb9/LdpWA4YuJiVvESA==}
+
+  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
+    resolution: {integrity: sha512-LCkGo6JDfaBhgST7UpPWgNgLINpcpabaHfyz5OBx75nUYxBsaEPxjnyNjWpeb/xBup/682QnBfRBy2/LvPutZQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
+    resolution: {integrity: sha512-zExlW9zUJKZH/tOtVMttwjKa4Xm/3KcNjnE3dPN92uCktwavMxpgCA3MoJK/DOnTWsQgo224OaST27/mPNAf+w==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
+    resolution: {integrity: sha512-dgX0P/9wGPJeHFBG+ZmhgE6bmtMt7NP5CRBGyyktpopdk/mW4POnrpQsSLtKI1dwpc+pPLuXHDh6vvskyQE/sw==}
+    cpu: [arm64]
+    os: [linux]
+
+  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
+    resolution: {integrity: sha512-Tg3yX65f5GbtXLkrYEHE5oibZG9epyYWas7FogTTEJeDEF9JlXJzKgXaNhT3UXlTOeA+AfZpYZYZ0uPj7Cfquw==}
+    cpu: [arm]
+    os: [linux]
+
+  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
+    resolution: {integrity: sha512-8TNXMEjJc3QEy7R/x1INhgiU+XakDAFUzBhaz7+Rbrs8NH5UQeHQxxmzsSBJGyV6I1jW79undiQm8tOI+D+8FQ==}
+    cpu: [x64]
+    os: [linux]
+
+  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
+    resolution: {integrity: sha512-CmCXPQrkbwExx3j946/PtHWHbYJiCRBRDl4BlkRQcJB/YOwQxJRTpoo7aTsortjgoJ1x7opzTSxn7C+ASSLVjQ==}
+    cpu: [x64]
+    os: [win32]
 
   '@napi-rs/wasm-runtime@1.2.2':
     resolution: {integrity: sha512-JfB4kuJQjaoHuCTseIINHtHWeJnvgEcxjwA5t/Y00ZgaOO1Crz3fjT/p8kT28zA/Caz7oiUMn3d6H2yOVCVwuw==}
@@ -2670,6 +2805,9 @@ packages:
   '@types/web-push@3.6.4':
     resolution: {integrity: sha512-GnJmSr40H3RAnj0s34FNTcJi1hmWFV5KXugE0mYWnYhgTAHLJ/dJKAwDmvPJYMke0RplY2XE9LnM4hqSqKIjhQ==}
 
+  '@types/ws@8.18.1':
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
     engines: {node: '>=16.20.0'}
@@ -3043,6 +3181,12 @@ packages:
   buffer-equal-constant-time@1.0.1:
     resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
 
+  bundle-require@5.1.0:
+    resolution: {integrity: sha512-3WrrOuZiyaaZPWiEt4G3+IffISVC9HYlWueJEBWED4ZH4aIAC2PnkdnuRrR94M+w6yGWn4AglWtJtBI8YqvgoA==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
+    peerDependencies:
+      esbuild: '>=0.18'
+
   call-bind-apply-helpers@1.0.2:
     resolution: {integrity: sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==}
     engines: {node: '>= 0.4'}
@@ -3096,11 +3240,18 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
+  cluster-key-slot@1.1.1:
+    resolution: {integrity: sha512-rwHwUfXL40Chm1r08yrhU3qpUvdVlgkKNeyeGPOxnW8/SyVDvgRaed/Uz54AqWNaTCAThlj6QAs3TZcKI0xDEw==}
+    engines: {node: '>=0.10.0'}
+
   cmdk@1.1.1:
     resolution: {integrity: sha512-Vsv7kFaXm+ptHDMZ7izaRsP70GgrW9NBNGswt9OZaVBLlE0SNpDq8eu/VGXyF9r7M0azK3Wy7OlYXsuyYLFzHg==}
     peerDependencies:
       react: ^18 || ^19 || ^19.0.0-rc
       react-dom: ^18 || ^19 || ^19.0.0-rc
+
+  code-block-writer@13.0.3:
+    resolution: {integrity: sha512-Oofo0pq3IKnsFtuHqSF7TqBfr71aeyZDVJ0HpmqB7FBM2qEigL0iPONSCZSO9pE9dZTAxANe5XHG9Uy0YMv8cg==}
 
   color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
@@ -3453,6 +3604,10 @@ packages:
     resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
     engines: {node: '>=0.4.0'}
 
+  denque@2.1.0:
+    resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
+    engines: {node: '>=0.10'}
+
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
@@ -3483,6 +3638,9 @@ packages:
 
   ecdsa-sig-formatter@1.0.11:
     resolution: {integrity: sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==}
+
+  effect@4.0.0-beta.107:
+    resolution: {integrity: sha512-OoBAv8eF+yanc+C6xhgEUnWeXUSHA6ynnscYqpkAY9GSnzZWystsIjBowVqCkLpHGlnRtdIqYT3wHwpOY6JDnQ==}
 
   electron-to-chromium@1.5.404:
     resolution: {integrity: sha512-3WJtd7/lVq2Jnuz6wed1l9+1ZD2u2Tet1/1NBc4Iedkmgbu+I7YuAqdAQ8T+VZtnwysMsAf3IqSq9D1gyZjA2g==}
@@ -3607,6 +3765,10 @@ packages:
 
   extend@3.0.2:
     resolution: {integrity: sha512-fjquC59cD7CyW6urNXK0FBufkZcoiGG80wTuPujX590cB5Ttln20E2UB4S/WARVqhXffZl2LNgS+gQdPIIim/g==}
+
+  fast-check@4.9.0:
+    resolution: {integrity: sha512-7ms6T7SybUev/PQITciI0yLM2pOSFy5zpG8Ty7tQofcVaQUvrMXp6CBwqF6fThLCLOrfBtuHAtwq6Yu4XPCllg==}
+    engines: {node: '>=12.17.0'}
 
   fd-package-json@2.0.0:
     resolution: {integrity: sha512-jKmm9YtsNXN789RS/0mSzOC1NUq9mkVd65vbSSVsKdjGvYXBuE4oWe2QOEoFeRmJg+lPuZxpmrfFclNhoRMneQ==}
@@ -3862,6 +4024,10 @@ packages:
     resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
     engines: {node: '>=12'}
 
+  ioredis@5.11.1:
+    resolution: {integrity: sha512-ehuGcf94bQXhfagULNXrJdfnWO38v070jxSx/qE87Kjzmu2fU7ro5EFAb+OPituLqgfyuQaym5DlrNydW2sJ9A==}
+    engines: {node: '>=12.22.0'}
+
   is-alphabetical@2.0.1:
     resolution: {integrity: sha512-FWyyY60MeTNyeSRpkM2Iry0G9hpr7/9kD40mD/cGQEuilcZYS4okz8SN2Q6rLCJ8gbCt6fN+rC+6tMGS99LaxQ==}
 
@@ -4059,6 +4225,9 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
+  kubernetes-types@1.30.0:
+    resolution: {integrity: sha512-Dew1okvhM/SQcIa2rcgujNndZwU8VnSapDgdxlYoB84ZlpAD43U6KLAFqYo17ykSFGHNPrg0qry0bP+GJd9v7Q==}
+
   kysely@0.29.5:
     resolution: {integrity: sha512-ooa+eSbBNPTo3MycPEuW5jdrxQdQwdtB3LC3h43FiXQbIry5tR0C5lDG7eealK0E4D7XjrnOP5DIUg/LyjRMYQ==}
     engines: {node: '>=22.0.0'}
@@ -4215,6 +4384,10 @@ packages:
   load-json-file@4.0.0:
     resolution: {integrity: sha512-Kx8hMakjX03tiGTLAIdJ+lL0htKnXjEZN6hk/tozf/WOuYGdZBJrZ+rCJRbVCugsjB3jMLn9746NsQIf5VjBMw==}
     engines: {node: '>=4'}
+
+  load-tsconfig@0.2.5:
+    resolution: {integrity: sha512-IXO6OCs9yg8tMKzfPZ1YmheJbZCiEsnBdcB03l0OcfK9prKnJb96siuHCr5Fl37/yo9DnKU+TLpxzTUspw9shg==}
+    engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
 
   lodash-es@4.18.1:
     resolution: {integrity: sha512-J8xewKD/Gk22OZbhpOVSwcs60zhd95ESDwezOFuA3/099925PdHJ7OFHNTGtajL3AlZkykD32HykiMo+BIBI8A==}
@@ -4415,6 +4588,11 @@ packages:
     resolution: {integrity: sha512-ZDY+bPm5zTTF+YpCrAU9nK0UgICYPT0QtT1NZWFv4s++TNkcgVaT0g6+4R2uI4MjQjzysHB1zxuWL50hzaeXiw==}
     engines: {node: '>= 0.6'}
 
+  mime@4.1.0:
+    resolution: {integrity: sha512-X5ju04+cAzsojXKes0B/S4tcYtFAJ6tTMuSPBEn9CPGlrWr8Fiw7qYeLT0XyH80HSoAoqWCaz+MWKh22P7G1cw==}
+    engines: {node: '>=16'}
+    hasBin: true
+
   minimalistic-assert@1.0.1:
     resolution: {integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==}
 
@@ -4432,6 +4610,13 @@ packages:
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
+
+  msgpackr-extract@3.0.4:
+    resolution: {integrity: sha512-4kmO/MdyUIkLIvTPr8VHLil4AtoKIoniWPIEk5+CDy0xnWC84azhSFmuJ7PxZdsYtiP5kEeQsORAVIeMgxT+Hw==}
+    hasBin: true
+
+  msgpackr@2.0.5:
+    resolution: {integrity: sha512-cef05H/dSYpLpqp3sj/qyZh5vhUYCalnaLO7j1yOmpsR0y/XwLVtK7r5gn+U/F7CTEfMowcGhlUQJDLcLf7jcA==}
 
   nanoid@3.3.18:
     resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
@@ -4484,6 +4669,10 @@ packages:
         optional: true
       zephyr-agent:
         optional: true
+
+  node-gyp-build-optional-packages@5.2.2:
+    resolution: {integrity: sha512-s+w+rBWnpTMwSFbaE0UXsRlg7hU4FjekKU4eyAih5T8nJuNZT1nNsskXpxmeqSK9UzkBl6UgRlnKc8hz8IEqOw==}
+    hasBin: true
 
   node-releases@2.0.53:
     resolution: {integrity: sha512-D9UOmYG3UH1V+ENW56t5QXBwJw1YEY18ruVeus89Rw+SyIgjPkCO84bRzO3uNIYosJbNwiabWVn48o3uJLjxFQ==}
@@ -4646,6 +4835,9 @@ packages:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
 
+  pure-rand@8.4.2:
+    resolution: {integrity: sha512-vvuOGgcuPJAirlHvuQw1TrOiw7ptaIXXmIbNuiNOY6lNGJJH49PQ1Kj4nd783nPdQhQdicgOjVI2yI/9BD6/Ng==}
+
   react-day-picker@10.0.1:
     resolution: {integrity: sha512-eNh6BlwcYInWaJtRv18mXQ06Ys/H6rdTZAnTaSdOYJuTpwP1JMCHNd1FDRadA+gbeinq+psdULN5Xnowy9mV8w==}
     engines: {node: '>=18'}
@@ -4740,6 +4932,14 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-is: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
+  redis-errors@1.2.0:
+    resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
+    engines: {node: '>=4'}
+
+  redis-parser@3.0.0:
+    resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
+    engines: {node: '>=4'}
 
   redux-thunk@3.1.0:
     resolution: {integrity: sha512-NW2r5T6ksUKXCabzhL9z+h206HQw/NJkcLm1GPImRQ8IzfXwRGqjVhKJGauHirT0DAuyy6hjdnMZaRoAcy0Klw==}
@@ -4983,6 +5183,9 @@ packages:
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
+
+  standard-as-callback@2.1.0:
+    resolution: {integrity: sha512-qoRRSyROncaz1z0mvYqIE4lCd9p2R90i6GxW3uZv5ucSu8tU7B5HXUP1gG8pVZsYNVaXjk8ClXHPttLyxAL48A==}
 
   std-env@4.2.0:
     resolution: {integrity: sha512-oCUKSupKTHX53EyjDtuZQ64pjLJ6yYCtpmEw0goYxtjG9KpbRe8KAsl2tBUGU9DyMcJ0RwJ8GqJAFzMXcXW1Rw==}
@@ -5789,6 +5992,49 @@ snapshots:
 
   '@chevrotain/types@11.1.2': {}
 
+  '@confect/cli@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(effect@4.0.0-beta.107)(ioredis@5.11.1)':
+    dependencies:
+      '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      '@confect/server': 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      '@effect/platform-node': 4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1)
+      bundle-require: 5.1.0(esbuild@0.28.2)
+      code-block-writer: 13.0.3
+      effect: 4.0.0-beta.107
+      esbuild: 0.28.2
+      exsolve: 1.1.1
+    transitivePeerDependencies:
+      - bufferutil
+      - ioredis
+      - utf-8-validate
+
+  '@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)':
+    dependencies:
+      convex: 1.43.0(react@19.2.8)
+      effect: 4.0.0-beta.107
+
+  '@confect/react@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)(react@19.2.8)':
+    dependencies:
+      '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      convex: 1.43.0(react@19.2.8)
+      effect: 4.0.0-beta.107
+      react: 19.2.8
+
+  '@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)':
+    dependencies:
+      '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      convex: 1.43.0(react@19.2.8)
+      effect: 4.0.0-beta.107
+    optionalDependencies:
+      '@effect/platform-node': 4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1)
+
+  '@confect/test@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex-test@0.0.55(convex@1.43.0(react@19.2.8)))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)':
+    dependencies:
+      '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      '@confect/server': 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
+      convex: 1.43.0(react@19.2.8)
+      convex-test: 0.0.55(convex@1.43.0(react@19.2.8))
+      effect: 4.0.0-beta.107
+
   '@convex-dev/better-auth@0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.26(@tanstack/react-start@1.168.42(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.10))(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)':
     dependencies:
       '@better-fetch/fetch': 1.3.1
@@ -5843,6 +6089,26 @@ snapshots:
   '@edge-runtime/vm@5.0.0':
     dependencies:
       '@edge-runtime/primitives': 6.0.0
+
+  '@effect/platform-node-shared@4.0.0-rc.108(effect@4.0.0-beta.107)':
+    dependencies:
+      '@types/ws': 8.18.1
+      effect: 4.0.0-beta.107
+      ws: 8.21.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1)':
+    dependencies:
+      '@effect/platform-node-shared': 4.0.0-rc.108(effect@4.0.0-beta.107)
+      effect: 4.0.0-beta.107
+      ioredis: 5.11.1
+      mime: 4.1.0
+      undici: 8.10.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@emnapi/core@1.11.2':
     dependencies:
@@ -6058,12 +6324,13 @@ snapshots:
     dependencies:
       '@hapi/hoek': 11.0.7
 
-  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
+  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.85.0(react@19.2.8)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
+      effect: 4.0.0-beta.107
       zod: 4.4.3
 
   '@iconify/types@2.0.0': {}
@@ -6180,6 +6447,8 @@ snapshots:
   '@img/sharp-win32-x64@0.35.3':
     optional: true
 
+  '@ioredis/commands@1.10.0': {}
+
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
@@ -6202,6 +6471,24 @@ snapshots:
   '@mermaid-js/parser@1.2.0':
     dependencies:
       '@chevrotain/types': 11.1.2
+
+  '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.4':
+    optional: true
+
+  '@msgpackr-extract/msgpackr-extract-darwin-x64@3.0.4':
+    optional: true
+
+  '@msgpackr-extract/msgpackr-extract-linux-arm64@3.0.4':
+    optional: true
+
+  '@msgpackr-extract/msgpackr-extract-linux-arm@3.0.4':
+    optional: true
+
+  '@msgpackr-extract/msgpackr-extract-linux-x64@3.0.4':
+    optional: true
+
+  '@msgpackr-extract/msgpackr-extract-win32-x64@3.0.4':
+    optional: true
 
   '@napi-rs/wasm-runtime@1.2.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.2)':
     dependencies:
@@ -7404,6 +7691,10 @@ snapshots:
     dependencies:
       '@types/node': 22.20.1
 
+  '@types/ws@8.18.1':
+    dependencies:
+      '@types/node': 22.20.1
+
   '@typescript/typescript-aix-ppc64@7.0.2':
     optional: true
 
@@ -7693,6 +7984,11 @@ snapshots:
 
   buffer-equal-constant-time@1.0.1: {}
 
+  bundle-require@5.1.0(esbuild@0.28.2):
+    dependencies:
+      esbuild: 0.28.2
+      load-tsconfig: 0.2.5
+
   call-bind-apply-helpers@1.0.2:
     dependencies:
       es-errors: 1.3.0
@@ -7742,6 +8038,8 @@ snapshots:
 
   clsx@2.1.1: {}
 
+  cluster-key-slot@1.1.1: {}
+
   cmdk@1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8):
     dependencies:
       '@radix-ui/react-compose-refs': 1.1.5(@types/react@19.2.18)(react@19.2.8)
@@ -7753,6 +8051,8 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - '@types/react-dom'
+
+  code-block-writer@13.0.3: {}
 
   color-convert@1.9.3:
     dependencies:
@@ -8089,6 +8389,8 @@ snapshots:
 
   delayed-stream@1.0.0: {}
 
+  denque@2.1.0: {}
+
   dequal@2.0.3: {}
 
   detect-libc@2.1.2: {}
@@ -8116,6 +8418,14 @@ snapshots:
   ecdsa-sig-formatter@1.0.11:
     dependencies:
       safe-buffer: 5.2.1
+
+  effect@4.0.0-beta.107:
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      fast-check: 4.9.0
+      kubernetes-types: 1.30.0
+      msgpackr: 2.0.5
+      uuid: 14.0.1
 
   electron-to-chromium@1.5.404: {}
 
@@ -8320,6 +8630,10 @@ snapshots:
   exsolve@1.1.1: {}
 
   extend@3.0.2: {}
+
+  fast-check@4.9.0:
+    dependencies:
+      pure-rand: 8.4.2
 
   fd-package-json@2.0.0:
     dependencies:
@@ -8606,6 +8920,18 @@ snapshots:
 
   internmap@2.0.3: {}
 
+  ioredis@5.11.1:
+    dependencies:
+      '@ioredis/commands': 1.10.0
+      cluster-key-slot: 1.1.1
+      debug: 4.4.3
+      denque: 2.1.0
+      redis-errors: 1.2.0
+      redis-parser: 3.0.0
+      standard-as-callback: 2.1.0
+    transitivePeerDependencies:
+      - supports-color
+
   is-alphabetical@2.0.1: {}
 
   is-alphanumerical@2.0.1:
@@ -8833,6 +9159,8 @@ snapshots:
       yaml: 2.9.0
       zod: 4.4.3
 
+  kubernetes-types@1.30.0: {}
+
   kysely@0.29.5: {}
 
   launch-editor@2.14.1:
@@ -8948,6 +9276,8 @@ snapshots:
       parse-json: 4.0.0
       pify: 3.0.0
       strip-bom: 3.0.0
+
+  load-tsconfig@0.2.5: {}
 
   lodash-es@4.18.1: {}
 
@@ -9367,6 +9697,8 @@ snapshots:
     dependencies:
       mime-db: 1.52.0
 
+  mime@4.1.0: {}
+
   minimalistic-assert@1.0.1: {}
 
   minimatch@3.1.5:
@@ -9383,6 +9715,22 @@ snapshots:
 
   ms@2.1.3: {}
 
+  msgpackr-extract@3.0.4:
+    dependencies:
+      node-gyp-build-optional-packages: 5.2.2
+    optionalDependencies:
+      '@msgpackr-extract/msgpackr-extract-darwin-arm64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-darwin-x64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-arm': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-arm64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-linux-x64': 3.0.4
+      '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.4
+    optional: true
+
+  msgpackr@2.0.5:
+    optionalDependencies:
+      msgpackr-extract: 3.0.4
+
   nanoid@3.3.18: {}
 
   nanostores@1.4.2: {}
@@ -9396,7 +9744,7 @@ snapshots:
 
   nice-try@1.0.5: {}
 
-  nitro@3.0.260610-beta(chokidar@5.0.0)(jiti@2.7.0)(lru-cache@11.5.2)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)):
+  nitro@3.0.260610-beta(chokidar@5.0.0)(ioredis@5.11.1)(jiti@2.7.0)(lru-cache@11.5.2)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.10(srvx@0.11.22)
@@ -9411,7 +9759,7 @@ snapshots:
       rolldown: 1.2.3
       srvx: 0.11.22
       unenv: 2.0.0-rc.24
-      unstorage: 2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(lru-cache@11.5.2)(ofetch@2.0.0-alpha.3)
+      unstorage: 2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(ioredis@5.11.1)(lru-cache@11.5.2)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
       jiti: 2.7.0
       vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
@@ -9446,6 +9794,11 @@ snapshots:
       - sqlite3
       - uploadthing
       - wrangler
+
+  node-gyp-build-optional-packages@5.2.2:
+    dependencies:
+      detect-libc: 2.1.2
+    optional: true
 
   node-releases@2.0.53: {}
 
@@ -9692,6 +10045,8 @@ snapshots:
 
   punycode@2.3.1: {}
 
+  pure-rand@8.4.2: {}
+
   react-day-picker@10.0.1(@types/react@19.2.18)(react@19.2.8):
     dependencies:
       '@date-fns/tz': 1.5.0
@@ -9783,6 +10138,12 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - redux
+
+  redis-errors@1.2.0: {}
+
+  redis-parser@3.0.0:
+    dependencies:
+      redis-errors: 1.2.0
 
   redux-thunk@3.1.0(redux@5.0.1):
     dependencies:
@@ -10096,6 +10457,8 @@ snapshots:
 
   stackback@0.0.2: {}
 
+  standard-as-callback@2.1.0: {}
+
   std-env@4.2.0: {}
 
   stop-iteration-iterator@1.1.0:
@@ -10379,10 +10742,11 @@ snapshots:
       rolldown: 1.2.3
       vite: 8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
 
-  unstorage@2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(lru-cache@11.5.2)(ofetch@2.0.0-alpha.3):
+  unstorage@2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4)(ioredis@5.11.1)(lru-cache@11.5.2)(ofetch@2.0.0-alpha.3):
     optionalDependencies:
       chokidar: 5.0.0
       db0: 0.3.4
+      ioredis: 5.11.1
       lru-cache: 11.5.2
       ofetch: 2.0.0-alpha.3
 

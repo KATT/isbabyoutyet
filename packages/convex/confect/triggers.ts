@@ -1,9 +1,9 @@
 import { TableHistory } from "convex-table-history";
 import { Triggers } from "convex-helpers/server/triggers";
 import { customCtx, customMutation } from "convex-helpers/server/customFunctions";
-import { components } from "./_generated/api";
-import type { DataModel } from "./_generated/dataModel";
-import { mutation } from "./_generated/server";
+import { components } from "./_generated/components";
+import type { DataModel } from "../convex/_generated/dataModel";
+import { mutation } from "../convex/_generated/server";
 
 // Table history for the baby table, recorded via triggers on every write.
 const babyAuditLog = new TableHistory<DataModel, "baby">(components.babyAuditLog);

@@ -1,7 +1,14 @@
 {
   "node": {
-    "externalPackages": ["web-push", "sharp"],
+    "externalPackages": [
+      "web-push",
+      "sharp"
+    ],
     "nodeVersion": "22"
   },
-  "$schema": "https://raw.githubusercontent.com/get-convex/convex-backend/refs/heads/main/npm-packages/convex/schemas/convex.schema.json"
+  "$schema": "https://raw.githubusercontent.com/get-convex/convex-backend/refs/heads/main/npm-packages/convex/schemas/convex.schema.json",
+  "codegen": {
+    "staticApi": false,
+    "staticDataModel": false
+  }
 }

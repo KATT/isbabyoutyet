@@ -6,8 +6,8 @@ import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import schema from "@workspace/convex/convex/schema";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
+import { makeResource } from "@workspace/convex/tests/test.resource";
+import { modules, registerComponents } from "@workspace/convex/tests/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 

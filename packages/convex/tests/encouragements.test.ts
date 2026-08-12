@@ -1,8 +1,8 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
-import schema from "./schema";
+import { api } from "../convex/_generated/api";
+import type { Id } from "../convex/_generated/dataModel";
+import schema from "../convex/schema";
 import { modules, registerComponents } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 10, cursor: null };

@@ -8,9 +8,9 @@
  * @module
  */
 
-import type * as auth from "../auth.js";
 import type * as baby from "../baby.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
+import type * as betterAuth from "../betterAuth.js";
 import type * as encouragements from "../encouragements.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
@@ -18,15 +18,14 @@ import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
 import type * as timeline from "../timeline.js";
-import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
 
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  auth: typeof auth;
   baby: typeof baby;
   babyThumbnails: typeof babyThumbnails;
+  betterAuth: typeof betterAuth;
   encouragements: typeof encouragements;
   http: typeof http;
   migrations: typeof migrations;
@@ -34,7 +33,6 @@ declare const fullApi: ApiFromModules<{
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;
   timeline: typeof timeline;
-  triggers: typeof triggers;
   updates: typeof updates;
 }>;
 

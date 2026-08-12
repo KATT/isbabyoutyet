@@ -5,14 +5,20 @@
   "type": "module",
   "exports": {
     "./convex/*": "./convex/*.ts",
+    "./convex/_generated/api": "./convex/_generated/api.js",
+    "./convex/_generated/api.js": "./convex/_generated/api.js",
     "./convex/_generated/*": "./convex/_generated/*.js",
-    "./src/*": "./src/*.ts"
+    "./confect/*": "./confect/*.ts",
+    "./confect/_generated/refs": "./confect/_generated/refs.ts",
+    "./confect/_generated/*": "./confect/_generated/*.ts",
+    "./src/*": "./src/*.ts",
+    "./tests/*": "./tests/*.ts"
   },
   "scripts": {
     "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
     "predev": "run-s predev:*",
-    "dev": "CONVEX_AGENT_MODE=anonymous convex dev",
+    "dev": "run-p --print-label confect:dev dev:convex",
     "dev-set-env:BETTER_AUTH_SECRET": "convex env set BETTER_AUTH_SECRET localhost",
     "dev-set-env:SITE_URL": "convex env set SITE_URL http://localhost:3000",
     "dev-set-env:vapid": "web-push generate-vapid-keys --json | jq -r '\"npx convex env set VAPID_PUBLIC_KEY \" + .publicKey + \"\\nnpx convex env set VAPID_PRIVATE_KEY \" + .privateKey' | sh",
@@ -25,7 +31,10 @@
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
     "format:check": "oxfmt --check",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex && tsc --noEmit -p confect",
+    "confect:codegen": "confect codegen",
+    "confect:dev": "confect dev",
+    "dev:convex": "CONVEX_AGENT_MODE=anonymous convex dev"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
@@ -35,7 +44,11 @@
     "convex-helpers": "^0.1.122",
     "convex-table-history": "^0.1.2",
     "sharp": "^0.35.3",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "@confect/core": "catalog:",
+    "@confect/server": "catalog:",
+    "@confect/cli": "catalog:",
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
@@ -49,6 +62,7 @@
     "vite": "^8.2.1",
     "vitest": "^4.1.10",
     "wait-on": "^9.1.0",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@confect/test": "catalog:"
   }
 }
