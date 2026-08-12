@@ -90,6 +90,8 @@ type UpdateComposerProps = {
   babyId: Id<"baby">;
   baby: BabyData;
   babyName: string;
+  /** Called after a successful post (e.g. to close the containing dialog) */
+  onPosted?: () => void;
 };
 
 export function UpdateComposer(props: UpdateComposerProps) {
@@ -168,6 +170,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
       setMessage("");
       setMilestone(null);
       clearPhoto();
+      props.onPosted?.();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to post update");
     } finally {

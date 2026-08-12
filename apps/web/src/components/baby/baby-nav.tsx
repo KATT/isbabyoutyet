@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { CheckCircle, Settings, Share2 } from "lucide-react";
+import { CheckCircle, MessageCircleHeart, Settings, Share2 } from "lucide-react";
 import { Link, LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,9 +11,11 @@ type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
+  /** Owner-only "Post update" action, shown as a labeled button in the bar */
+  onPostUpdate?: (() => void) | null;
 };
 
-export function BabyNav({ shareLink, settingsButton, settingsOpen }: BabyNavProps) {
+export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,13 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen }: BabyNavProp
         "md:sticky md:top-0 md:left-0",
       )}
     >
+      {onPostUpdate && (
+        <Button onClick={onPostUpdate} className="rounded-full shadow-lg shadow-primary/20">
+          <MessageCircleHeart className="w-4 h-4" />
+          Post update
+        </Button>
+      )}
+
       <Tooltip>
         <TooltipTrigger
           render={
