@@ -146,8 +146,8 @@ function PreviewPage() {
           </div>
         </section>
 
-        {/* Footer */}
-        <div className="text-center py-8 border-t border-border/50">
+        {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
+        <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
