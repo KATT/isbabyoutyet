@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "setup-dev": "cp .env.local.example .env.local",
     "format:check": "oxfmt --check",
-    "deploy-convex": "tsx scripts/deploy-convex.ts"
+    "deploy-convex": "tsx scripts/deploy-convex.ts",
+    "delete-convex-preview": "node scripts/delete-convex-preview.mjs"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",

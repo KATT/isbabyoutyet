@@ -1,7 +1,7 @@
 #!/usr/bin/env tsx
 /**
- * Workers Builds command: deploys the matching Convex backend and builds the
- * web app.
+ * Cloudflare CI command: deploys the matching Convex backend and builds the web
+ * app.
  *
  * 1. `convex deploy` pushes functions and runs the web build via `--cmd`,
  *    with the deployment URL exposed as VITE_CONVEX_URL.
@@ -28,6 +28,7 @@ const cloudflareEnvSchema = z.object({
   WORKERS_CI_BRANCH: z.string().min(1),
   CLOUDFLARE_WORKERS_SUBDOMAIN: z.string().min(1),
   CLOUDFLARE_PRODUCTION_BRANCH: z.string().min(1).default("main"),
+  CLOUDFLARE_PREVIEW_SITE_URL: z.url().optional(),
   CONVEX_PREVIEW_DEPLOY_KEY: z.string().min(1),
   CONVEX_PRODUCTION_DEPLOY_KEY: z.string().min(1).optional(),
   CLOUDFLARE_PRODUCTION_SITE_URL: z.url().optional(),
@@ -71,12 +72,14 @@ function getDeploymentContext(): DeploymentContext {
     deployKey: env.CONVEX_PREVIEW_DEPLOY_KEY,
     isPreview: true,
     previewName: `cloudflare-${previewAlias}`,
-    siteUrl: createCloudflareSiteUrl({
-      branchName: env.WORKERS_CI_BRANCH,
-      productionBranch: env.CLOUDFLARE_PRODUCTION_BRANCH,
-      workerName: CLOUDFLARE_WORKER_NAME,
-      workersSubdomain,
-    }),
+    siteUrl:
+      env.CLOUDFLARE_PREVIEW_SITE_URL ??
+      createCloudflareSiteUrl({
+        branchName: env.WORKERS_CI_BRANCH,
+        productionBranch: env.CLOUDFLARE_PRODUCTION_BRANCH,
+        workerName: CLOUDFLARE_WORKER_NAME,
+        workersSubdomain,
+      }),
   };
 }
 

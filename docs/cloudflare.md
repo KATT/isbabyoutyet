@@ -3,43 +3,69 @@
 No custom domain or DNS route is declared in `wrangler.jsonc`, so setting up the
 Worker does not change the main domain.
 
-The app uses Workers Builds rather than Pages. Workers Builds supports TanStack
-Start SSR and creates both a commit URL and a stable branch URL for every pull
-request.
+Pull requests deploy through GitHub Actions. Each PR gets its own Worker and
+Convex preview. Closing the PR deletes both resources; the workflow fails loudly
+if either deletion fails.
 
-## One-time dashboard setup
+## One-time GitHub setup
 
-1. In **Workers & Pages**, create a Worker by importing this GitHub repository.
-2. Set the production branch to `main` and the root directory to `apps/web`.
-3. Configure these build commands:
+Add these repository **Variables** under **Settings → Secrets and variables →
+Actions → Variables**:
 
-   | Setting | Command |
-   | --- | --- |
-   | Build command | `pnpm deploy-convex` |
-   | Deploy command | `pnpm exec wrangler deploy` |
-   | Non-production branch deploy command | `pnpm exec wrangler versions upload` |
+| Name | Value |
+| --- | --- |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `CLOUDFLARE_WORKERS_SUBDOMAIN` | Account workers.dev subdomain, without `.workers.dev` |
+| `CONVEX_PROJECT_ID` | Numeric Convex project ID |
+| `VAPID_PUBLIC_KEY` | Existing VAPID public key |
+| `VAPID_SUBJECT` | Optional; defaults to `mailto:admin@isbabyoutyet.com` |
+| `EMAIL_FROM` | Optional until Email Service is onboarded |
 
-4. Enable builds for all non-production branches and leave pull request
-   comments enabled. Cloudflare will post stable branch and commit preview URLs
-   to each pull request.
-5. Add these **build** variables and secrets (not Worker runtime variables):
+Add these repository **Secrets**:
 
-   | Name | Type | Value |
-   | --- | --- | --- |
-   | `CLOUDFLARE_WORKERS_SUBDOMAIN` | Variable | The account's workers.dev subdomain, without `.workers.dev` |
-   | `CONVEX_PREVIEW_DEPLOY_KEY` | Secret | A Convex Preview Deploy Key |
-   | `BETTER_AUTH_SECRET` | Secret | The same application secret used by the existing deployment |
-   | `VAPID_PUBLIC_KEY` | Variable | The existing VAPID public key |
-   | `VAPID_PRIVATE_KEY` | Secret | The existing VAPID private key |
-   | `VAPID_SUBJECT` | Variable | Optional; defaults to `mailto:admin@isbabyoutyet.com` |
-   | `CLOUDFLARE_ACCOUNT_ID` | Variable | Cloudflare account ID used by Email Service |
-   | `CLOUDFLARE_EMAIL_API_TOKEN` | Secret | Scoped token with **Email Sending: Edit** |
-   | `EMAIL_FROM` | Variable | Onboarded sender, for example `Is Baby Out Yet? <account@isbabyoutyet.com>` |
+| Name | Value |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Token with Account Settings Read, Workers Scripts Edit, User Details Read, and Memberships Read |
+| `CONVEX_PREVIEW_DEPLOY_KEY` | Convex Preview Deploy Key |
+| `CONVEX_MANAGEMENT_TOKEN` | Convex Team Access Token used only to delete closed-PR previews |
+| `BETTER_AUTH_SECRET` | Stable secret of at least 32 high-entropy characters |
+| `VAPID_PRIVATE_KEY` | Existing VAPID private key |
+| `CLOUDFLARE_EMAIL_API_TOKEN` | Optional scoped token with **Email Sending: Edit** |
 
-Workers Builds supplies `WORKERS_CI` and `WORKERS_CI_BRANCH` automatically. The
-build script derives the same stable branch alias as Wrangler, configures that
-URL as `SITE_URL`, deploys a provider-specific Convex preview, seeds its demo
-data, runs migrations, and builds the Worker.
+Create the Convex Team Access Token under **Team Settings → Access Tokens**.
+The Management API is required because the Convex CLI cannot delete a preview
+deployment.
+
+Push or rerun the PR workflow after adding the settings. The
+`Cloudflare preview` workflow posts a comment containing the absolute seeded
+baby links.
+
+## Preview lifecycle and billing
+
+For PR 57 the resources are named:
+
+- Worker: `isbabyoutyet-pr-57`
+- Convex preview identifier: `cloudflare-pr-57`
+
+The workflow uses full Worker deployments instead of persistent version aliases.
+On the `pull_request.closed` event it:
+
+1. runs `wrangler delete isbabyoutyet-pr-57 --force`, deleting the Worker and
+   its static assets;
+2. finds only the matching `preview` deployment through the documented Convex
+   Management API and permanently deletes it;
+3. reports a failed cleanup check if either operation fails.
+
+Cloudflare Workers scale to zero, so an idle preview has no request charges even
+before deletion. Explicit close-event deletion also prevents stale links from
+receiving billable traffic. Convex previews expire automatically after 5 days
+(14 days on higher plans), but the workflow deletes them immediately instead of
+relying on that fallback.
+
+This workflow must be present on `main` to guarantee cleanup for future PRs.
+When testing the workflow on this infrastructure PR, merge it rather than
+closing it unmerged so the `closed` event can run from the updated default
+branch.
 
 ## Convex previews
 
@@ -65,7 +91,7 @@ Paid plan to send to arbitrary recipients. It also requires Cloudflare DNS:
 2. Onboard `isbabyoutyet.com`. This adds bounce MX, SPF, DKIM, and DMARC records
    but does not route web traffic or attach the domain to the Worker.
 3. Create a scoped API token with **Email Sending: Edit**.
-4. Add the three Email Service build settings from the table above.
+4. Add the Email Service secret and sender variable from the tables above.
 
 Without those settings the app still builds and signs users in, but password
 reset requests cannot send mail.
@@ -99,7 +125,7 @@ keys and deploys a Convex backend.
 
 Do not add these settings during parallel deployment. At cutover:
 
-1. Add `CONVEX_PRODUCTION_DEPLOY_KEY` as a Workers Builds secret.
+1. Add `CONVEX_PRODUCTION_DEPLOY_KEY` as a GitHub Actions secret.
 2. Add `CLOUDFLARE_PRODUCTION_SITE_URL=https://isbabyoutyet.com`.
 3. Attach the custom domain to the Worker and update DNS.
 4. Trigger a successful `main` build. The script will then deploy production

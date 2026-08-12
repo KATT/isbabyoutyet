@@ -11,6 +11,7 @@
         "public/sw.js!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
+        "scripts/delete-convex-preview.mjs!",
         "scripts/build-web.mjs!"
       ]
     },
