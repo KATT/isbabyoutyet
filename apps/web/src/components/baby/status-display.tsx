@@ -100,7 +100,7 @@ function PhotoAvatar({
  * The newest owner update, shown on top of the status card regardless of
  * stage — a text-only post refreshes it without a status change.
  */
-export type LatestUpdateMessage = {
+type LatestUpdateMessage = {
   message?: string | null;
   postedAt: number;
 };
