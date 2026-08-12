@@ -226,24 +226,32 @@ export const separateMilestoneOccurredAt = migrations.define({
 });
 
 /**
- * Clears the legacy per-stage message fields. Their content lives on the
- * milestone update rows since the timeline backfill (which runs first in
- * `runAll`) — but before destroying anything, verify each message actually
- * made it to the timeline and heal the row if not.
+ * Clears the legacy per-stage message fields — but a field is only nulled
+ * once its value has a PROVEN durable destination on the milestone's timeline
+ * update row (healing the row if the backfill missed it). Fields whose value
+ * has nowhere to live are left intact rather than destroyed:
+ *
+ * - a message for an unmarked stage (old Settings allowed prepping messages
+ *   for future stages) — no row exists and creating a public update for a
+ *   stage that never happened would be wrong
+ * - a message that differs from the row's existing message (the row was
+ *   edited since; the legacy value is superseded but not represented)
+ *
+ * Idempotent: cleared fields are skipped on re-runs; retained fields are
+ * re-evaluated (and stay retained until they gain a destination).
  */
 export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (
-    baby.laborStartedMessage == null &&
-    baby.hospitalMessage == null &&
-    baby.babyBornMessage == null
-  ) {
-    return;
-  }
+  const patch: Partial<
+    Pick<Doc<"baby">, "laborStartedMessage" | "hospitalMessage" | "babyBornMessage">
+  > = {};
 
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
     const legacyMessage = baby[fields.message];
-    if (legacyMessage == null || !baby[fields.date]) continue;
+    if (legacyMessage == null) continue;
+
+    // No milestone date → no timeline row to carry the message. Keep it.
+    if (!baby[fields.date]) continue;
 
     const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
     if (!existing) {
@@ -266,18 +274,25 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
       });
     } else if (existing.message == null) {
       await ctx.db.patch(existing._id, { message: legacyMessage });
+    } else if (existing.message !== legacyMessage) {
+      // The row carries a different message; the legacy value has no durable
+      // destination. Keep the field.
+      continue;
     }
+
+    patch[fields.message] = null;
   }
 
-  await ctx.db.patch(baby._id, {
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
-  });
+  if (Object.keys(patch).length > 0) {
+    await ctx.db.patch(baby._id, patch);
+  }
 }
 
 export const clearLegacyStageMessages = migrations.define({
   table: "baby",
+  // Each document can heal rows + scan notifications; keep batches small so a
+  // batch (one transaction) stays far from Convex transaction limits.
+  batchSize: 10,
   migrateOne: clearLegacyStageMessagesDoc,
 });
 
