@@ -15,83 +15,115 @@
  *    per-preview value.
  * 3. Pending migrations are run.
  */
-import { execFileSync } from "node:child_process";
+import { ConvexEnv } from "@workspace/convex/src/env";
+import { NodeRuntime, NodeServices } from "@effect/platform-node";
+import * as Config from "effect/Config";
+import * as Console from "effect/Console";
+import * as Effect from "effect/Effect";
+import * as Schema from "effect/Schema";
+import * as ChildProcess from "effect/unstable/process/ChildProcess";
+import { ChildProcessSpawner } from "effect/unstable/process/ChildProcessSpawner";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
-import { convexEnvSchema } from "@workspace/convex/src/env";
-import * as z from "zod";
 
-const vercelEnvSchema = z.object({
-  VERCEL_ENV: z.enum(["production", "preview"]),
-  VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
-  VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
-  VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1), // The domain name of the production project URL
+class CommandFailed extends Schema.TaggedError<CommandFailed>()("CommandFailed", {
+  command: Schema.String,
+  args: Schema.Array(Schema.String),
+  exitCode: Schema.Number,
+}) {}
 
-  BETTER_AUTH_SECRET: z.string().min(1),
-  VAPID_PUBLIC_KEY: z.string().min(1),
-  VAPID_PRIVATE_KEY: z.string().min(1),
-  VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),
+const vercelEnv = Config.all({
+  VERCEL_ENV: Config.literals(["production", "preview"], "VERCEL_ENV"),
+  VERCEL_GIT_COMMIT_REF: Config.string("VERCEL_GIT_COMMIT_REF"),
+  VERCEL_BRANCH_URL: Config.string("VERCEL_BRANCH_URL"),
+  VERCEL_PROJECT_PRODUCTION_URL: Config.string("VERCEL_PROJECT_PRODUCTION_URL"),
+  BETTER_AUTH_SECRET: Config.string("BETTER_AUTH_SECRET"),
+  VAPID_PUBLIC_KEY: Config.string("VAPID_PUBLIC_KEY"),
+  VAPID_PRIVATE_KEY: Config.string("VAPID_PRIVATE_KEY"),
+  VAPID_SUBJECT: Config.string("VAPID_SUBJECT").pipe(
+    Config.withDefault("mailto:admin@isbabyoutyet.com"),
+  ),
 });
-
-const env = vercelEnvSchema.parse(process.env);
-const isPreview = env.VERCEL_ENV === "preview";
-
-const siteUrl = isPreview
-  ? `https://${env.VERCEL_BRANCH_URL}`
-  : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
-
-const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
 
-function runInConvexPackage(command: string, args: string[]) {
-  console.log(`\n$ ${command} ${args.join(" ")}`);
-  execFileSync("pnpm", ["exec", command, ...args], {
-    cwd: convexPackageDir,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      VITE_SITE_URL: siteUrl,
-      // Bake demo-login prefills into the web build on preview only.
-      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
-    },
+const runPnpm = Effect.fn("runPnpm")(function* (
+  label: string,
+  pnpmArgs: ReadonlyArray<string>,
+  env: Record<string, string>,
+) {
+  yield* Console.log(`\n$ ${label}`);
+
+  const spawner = yield* ChildProcessSpawner;
+  const exitCode = yield* spawner.exitCode(
+    ChildProcess.make("pnpm", pnpmArgs, {
+      cwd: convexPackageDir,
+      extendEnv: true,
+      env,
+      stdin: "inherit",
+      stdout: "inherit",
+      stderr: "inherit",
+    }),
+  );
+
+  if (Number(exitCode) !== 0) {
+    return yield* new CommandFailed({
+      command: "pnpm",
+      args: [...pnpmArgs],
+      exitCode: Number(exitCode),
+    });
+  }
+});
+
+const program = Effect.gen(function* () {
+  const env = yield* vercelEnv;
+  const isPreview = env.VERCEL_ENV === "preview";
+
+  const siteUrl = isPreview
+    ? `https://${env.VERCEL_BRANCH_URL}`
+    : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
+
+  const convexEnv = yield* Schema.decodeUnknownEffect(ConvexEnv)({
+    ...env,
+    SITE_URL: siteUrl,
   });
-}
 
-function convexCli(args: string[]) {
-  console.log(`\n$ convex ${args.join(" ")}`);
-  execFileSync("pnpm", ["convex", ...args], {
-    cwd: convexPackageDir,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      VITE_SITE_URL: siteUrl,
-      // Bake demo-login prefills into the web build on preview only.
-      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
-    },
-  });
-}
+  const childEnv = {
+    VITE_SITE_URL: siteUrl,
+    ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
+  };
 
-// Refresh Confect → Convex codegen so deploy always ships a consistent
-// convex/ tree (even if a local edit forgot to run `confect codegen`).
-runInConvexPackage("confect", ["codegen"]);
+  const runInConvexPackage = (command: string, args: ReadonlyArray<string>) =>
+    runPnpm(`${command} ${args.join(" ")}`, ["exec", command, ...args], childEnv);
 
-convexCli([
-  "deploy",
-  "--cmd-url-env-var-name",
-  "VITE_CONVEX_URL",
-  "--cmd",
-  "node ../../apps/web/scripts/build-web.mjs",
-  ...(isPreview ? ["--preview-run", "seed:seedDemoData"] : []),
-]);
+  const convexCli = (args: ReadonlyArray<string>) =>
+    runPnpm(`convex ${args.join(" ")}`, ["convex", ...args], childEnv);
 
-// `convex deploy` infers the preview name from the git branch; the other
-// commands need it passed explicitly.
-const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
+  // Refresh Confect → Convex codegen so deploy always ships a consistent
+  // convex/ tree (even if a local edit forgot to run `confect codegen`).
+  yield* runInConvexPackage("confect", ["codegen"]);
 
-for (const [key, value] of Object.entries(convexEnv)) {
-  convexCli(["env", "set", key, value, ...previewArgs]);
-}
+  yield* convexCli([
+    "deploy",
+    "--cmd-url-env-var-name",
+    "VITE_CONVEX_URL",
+    "--cmd",
+    "pnpm exec tsx ../../apps/web/scripts/build-web.ts",
+    ...(isPreview ? (["--preview-run", "seed:seedDemoData"] as const) : []),
+  ]);
 
-convexCli(["run", "migrations:runAll", ...previewArgs]);
+  // `convex deploy` infers the preview name from the git branch; the other
+  // commands need it passed explicitly.
+  const previewArgs = isPreview
+    ? (["--preview-name", env.VERCEL_GIT_COMMIT_REF] as const)
+    : ([] as const);
+
+  for (const [key, value] of Object.entries(convexEnv)) {
+    yield* convexCli(["env", "set", key, value, ...previewArgs]);
+  }
+
+  yield* convexCli(["run", "migrations:runAll", ...previewArgs]);
+}).pipe(Effect.provide(NodeServices.layer), Effect.orDie);
+
+NodeRuntime.runMain(program);

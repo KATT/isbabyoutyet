@@ -11,7 +11,7 @@
         "public/sw.js!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
-        "scripts/build-web.mjs!"
+        "scripts/build-web.ts!"
       ]
     },
     "packages/convex": {

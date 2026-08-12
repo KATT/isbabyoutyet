@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
+    "@effect/platform-node": "catalog:",
     "@hookform/resolvers": "^5.7.1",
     "@tanstack/react-devtools": "^0.10.10",
     "@tanstack/react-query": "^5.101.4",
@@ -32,6 +33,7 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "date-fns": "^4.4.0",
+    "effect": "catalog:",
     "framer-motion": "^13.1.0",
     "lucide-react": "catalog:",
     "next-themes": "catalog:",

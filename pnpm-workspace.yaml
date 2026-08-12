@@ -19,6 +19,7 @@ catalog:
 
   # Effect & Confect
   effect: 4.0.0-beta.107
+  "@effect/platform-node": 4.0.0-beta.107
   "@confect/core": 10.0.0-next.13
   "@confect/server": 10.0.0-next.13
   "@confect/react": 10.0.0-next.13

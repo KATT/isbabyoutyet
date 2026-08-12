@@ -62,7 +62,6 @@
     "typescript": "catalog:",
     "vite": "^8.2.1",
     "vitest": "^4.1.10",
-    "wait-on": "^9.1.0",
-    "zod": "catalog:"
+    "wait-on": "^9.1.0"
   }
 }

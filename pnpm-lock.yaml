@@ -21,6 +21,9 @@ catalogs:
     '@convex-dev/better-auth':
       specifier: ^0.12.5
       version: 0.12.5
+    '@effect/platform-node':
+      specifier: 4.0.0-beta.107
+      version: 4.0.0-beta.107
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
@@ -107,9 +110,12 @@ importers:
       '@convex-dev/better-auth':
         specifier: 'catalog:'
         version: 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.26(@tanstack/react-start@1.168.42(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.10))(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
+      '@effect/platform-node':
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107(effect@4.0.0-beta.107)(ioredis@5.11.1)
       '@hookform/resolvers':
         specifier: ^5.7.1
-        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
+        version: 5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
       '@tanstack/react-devtools':
         specifier: ^0.10.10
         version: 0.10.10(@neodrag/core@3.0.0-next.11)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(csstype@3.2.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)
@@ -143,6 +149,9 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.107
       framer-motion:
         specifier: ^13.1.0
         version: 13.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -313,9 +322,6 @@ importers:
       wait-on:
         specifier: ^9.1.0
         version: 9.1.0
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
 
   packages/ui:
     dependencies:
@@ -710,6 +716,13 @@ packages:
     engines: {node: '>=18.0.0'}
     peerDependencies:
       effect: ^4.0.0-rc.108
+
+  '@effect/platform-node@4.0.0-beta.107':
+    resolution: {integrity: sha512-k+6YNbV4Ck0L6YXtlgkvEnuP5tlxWD8EeWOrpn46PDqbGEwt4ONpRltTwm3tn2cyBXD0i+2P11cUH/6sdFagTA==}
+    engines: {node: '>=18.0.0'}
+    peerDependencies:
+      effect: ^4.0.0-beta.107
+      ioredis: '>=5.7.0 <6.0.0'
 
   '@effect/platform-node@4.0.0-rc.108':
     resolution: {integrity: sha512-Nof78154BaHGdSYr4TPQFZ5+Dg+HkpmbI3SQUdwsby5QNs6yahGJPu2AgdIVqdx7pKZ2w7j/bvdnqoMmkG0PbA==}
@@ -6071,6 +6084,17 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  '@effect/platform-node@4.0.0-beta.107(effect@4.0.0-beta.107)(ioredis@5.11.1)':
+    dependencies:
+      '@effect/platform-node-shared': 4.0.0-rc.108(effect@4.0.0-beta.107)
+      effect: 4.0.0-beta.107
+      ioredis: 5.11.1
+      mime: 4.1.0
+      undici: 8.10.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1)':
     dependencies:
       '@effect/platform-node-shared': 4.0.0-rc.108(effect@4.0.0-beta.107)
@@ -6296,12 +6320,13 @@ snapshots:
     dependencies:
       '@hapi/hoek': 11.0.7
 
-  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
+  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.85.0(react@19.2.8)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
+      effect: 4.0.0-beta.107
       zod: 4.4.3
 
   '@iconify/types@2.0.0': {}
