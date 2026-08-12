@@ -12,6 +12,7 @@ import {
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
+import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation, usePaginatedQuery } from "convex/react";
@@ -38,6 +39,7 @@ import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { BabyData, Milestone } from "@workspace/convex/src/types";
+import { getCurrentStatus, STATUS_ORDER } from "@workspace/convex/src/types";
 import { getVisitorId } from "./encouragements";
 
 const PAGE_SIZE = 20;
@@ -132,15 +134,21 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const [isPosting, setIsPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const availableMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter((candidate) => {
-    if (candidate === "labor_started") return !props.baby.laborStarted;
-    if (candidate === "gone_to_hospital") return !props.baby.wentToHospital;
-    return !props.baby.babyBorn;
-  });
+  // The status only moves forward: offer only stages AFTER the current one,
+  // and none at all once "Born" is reached
+  const currentStatus = getCurrentStatus(props.baby);
+  const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
+    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
+  );
 
-  // Guard against a stale selection: the milestone may have been marked from
-  // the settings panel (or another tab) while it was selected here
-  const selectedMilestone = milestone && availableMilestones.includes(milestone) ? milestone : null;
+  // Guard against a stale selection: the status may have advanced from
+  // another tab while a milestone was selected here. Clear the state (not
+  // just mask it) so the old choice can't resurface if the status regresses
+  // later via unmarking.
+  if (milestone && !futureMilestones.includes(milestone)) {
+    setMilestone(null);
+  }
+  const selectedMilestone = milestone && futureMilestones.includes(milestone) ? milestone : null;
 
   const draft = updateDraftSchema.safeParse({
     message,
@@ -252,31 +260,34 @@ export function UpdateComposer(props: UpdateComposerProps) {
         </div>
       )}
 
-      {availableMilestones.length > 0 && (
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Mark a milestone (optional):</span>
-            {availableMilestones.map((candidate) => {
+      {futureMilestones.length > 0 && (
+        <div className="space-y-2">
+          <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
+            Status change (optional)
+          </p>
+          <RadioGroup
+            aria-labelledby="composer-status-label"
+            value={selectedMilestone ?? "none"}
+            onValueChange={(value) => setMilestone(value === "none" ? null : (value as Milestone))}
+            disabled={isPosting}
+            className="gap-1.5"
+          >
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <RadioGroupItem value="none" />
+              No status change
+            </label>
+            {futureMilestones.map((candidate) => {
               const meta = MILESTONE_META[candidate];
               const MilestoneIcon = meta.icon;
-              const isSelected = selectedMilestone === candidate;
               return (
-                <Button
-                  key={candidate}
-                  type="button"
-                  size="sm"
-                  variant={isSelected ? "default" : "outline"}
-                  className="rounded-full"
-                  aria-pressed={isSelected}
-                  onClick={() => setMilestone(isSelected ? null : candidate)}
-                  disabled={isPosting}
-                >
-                  <MilestoneIcon className="w-3.5 h-3.5" />
+                <label key={candidate} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value={candidate} />
+                  <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
                   {meta.label}
-                </Button>
+                </label>
               );
             })}
-          </div>
+          </RadioGroup>
           {selectedMilestone && (
             <p className="text-xs text-muted-foreground">
               This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
