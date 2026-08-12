@@ -23,6 +23,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
+import howItWorksVideo from "@/assets/how-it-works/how-it-works.mp4";
+import howItWorksPoster from "@/assets/how-it-works/poster.jpg";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -319,10 +321,25 @@ function HomePage() {
         {/* How It Works */}
         <Card>
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-            <CardDescription>Up and running in under a minute</CardDescription>
+            <CardTitle>Show Me How It Works</CardTitle>
+            <CardDescription>
+              Watch the whole journey in 90 seconds: post updates and photos as the parent, while
+              family cheers you on and subscribes for the big news
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-10">
+            {/* Demo walkthrough video (phone-portrait). Contents + regeneration
+                guide live next to the asset: src/assets/how-it-works/README.md */}
+            <video
+              src={howItWorksVideo}
+              poster={howItWorksPoster}
+              controls
+              muted
+              playsInline
+              preload="metadata"
+              aria-label="Demo: posting updates as the parent while visitors send encouragement and subscribe for notifications"
+              className="mx-auto w-full max-w-xs rounded-2xl border border-border shadow-lg shadow-primary/5"
+            />
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 {
