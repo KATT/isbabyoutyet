@@ -34,8 +34,7 @@
     "react-resizable-panels": "^4.12.2",
     "recharts": "^3.10.1",
     "sonner": "catalog:",
-    "tailwind-merge": "^3.6.0",
-    "vaul": "^1.1.2"
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
