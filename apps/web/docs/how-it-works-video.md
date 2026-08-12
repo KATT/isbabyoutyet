@@ -93,3 +93,5 @@ how-it-works video following apps/web/docs/how-it-works-video.md".
    fumbles, no dead time over ~5 s, ends on the feed view (not a black
    frame), total under ~100 s, file size ~1–3 MB. Update this document if the
    shot list changed.
+
+<!-- v1: initial cut recorded 2026-08-12 on the timeline-stack preview -->
