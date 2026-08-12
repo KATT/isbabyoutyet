@@ -14,11 +14,7 @@ import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@workspace/ui/components/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { format, parseISO } from "date-fns";
 import { Clock, Trash2 } from "lucide-react";
 import { useState } from "react";
@@ -261,9 +257,7 @@ function StatusDateForm(props: {
             >
               {deleteButton}
             </TooltipTrigger>
-            <TooltipContent>
-              Delete the {MILESTONE_LABELS[blocker]} status first
-            </TooltipContent>
+            <TooltipContent>Delete the {MILESTONE_LABELS[blocker]} status first</TooltipContent>
           </Tooltip>
         ) : (
           <AlertDialog>
@@ -286,7 +280,7 @@ function StatusDateForm(props: {
                     try {
                       await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
                       props.onClose();
-                    } catch (_error) {
+                    } catch {
                       toast.error(`Could not delete the ${statusLabel} status`);
                     } finally {
                       setIsDeleting(false);

@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { NameEditor, StatusDateEditor } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import type { BabyData } from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 
 const baby: BabyData = {
   name: "Nova",
@@ -21,7 +21,7 @@ function renderResource(ui: React.ReactElement) {
 }
 
 test("name editor mounts fresh on open: current name, reassurance note, trimmed save", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
@@ -45,7 +45,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 });
 
 test("reopening the editor picks up the latest name without any reset", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   // Open, type a draft, then cancel — the draft must not survive
@@ -64,7 +64,7 @@ test("reopening the editor picks up the latest name without any reset", async ()
 });
 
 test("status editor confirms destructive deletion", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     laborStarted: "2026-08-10T08:00:00.000Z",
@@ -91,7 +91,7 @@ test("status editor confirms destructive deletion", async () => {
 });
 
 test("status deletion is disabled until later statuses are deleted", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     wentToHospital: "2026-08-10T12:00:00.000Z",

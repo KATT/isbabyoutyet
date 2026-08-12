@@ -311,9 +311,9 @@ test("milestones must be deleted in reverse order", async () => {
     milestone: "born",
   });
 
-  await expect(
-    asAlice.mutation(api.baby.update, { babyId, wentToHospital: null }),
-  ).rejects.toThrow("Delete the Born status first");
+  await expect(asAlice.mutation(api.baby.update, { babyId, wentToHospital: null })).rejects.toThrow(
+    "Delete the Born status first",
+  );
   await expect(asAlice.mutation(api.updates.remove, { updateId: laborUpdateId })).rejects.toThrow(
     "Delete the Born status first",
   );
