@@ -275,7 +275,12 @@ function BabyPage() {
         <div className="relative max-w-2xl mx-auto space-y-8">
           <Card>
             <CardContent className="pt-6">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+              <TimelineFeed
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                isOwner={isOwner}
+              />
             </CardContent>
           </Card>
 

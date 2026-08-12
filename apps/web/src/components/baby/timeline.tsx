@@ -16,6 +16,7 @@ import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import {
   Activity,
@@ -40,7 +41,12 @@ import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { BabyData, Milestone } from "@workspace/convex/src/types";
-import { getCurrentStatus, STATUS_ORDER } from "@workspace/convex/src/types";
+import {
+  getBlockingLaterMilestone,
+  getCurrentStatus,
+  MILESTONE_LABELS,
+  STATUS_ORDER,
+} from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
@@ -435,6 +441,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  baby: BabyData;
   babyName: string;
   isOwner: boolean;
   onDelete: (updateId: Id<"updates">) => Promise<void>;
@@ -446,6 +453,21 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
   const canPinPhoto = props.isOwner && !!update.photoUrl && !update.isCurrentPagePhoto;
+  const deleteBlocker = update.milestone
+    ? getBlockingLaterMilestone(props.baby, update.milestone)
+    : null;
+
+  const deleteButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      aria-label="Delete update"
+      disabled={Boolean(deleteBlocker)}
+    >
+      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+    </Button>
+  );
 
   return (
     <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 border-l-4 border-l-primary relative group">
@@ -519,40 +541,50 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 <Pin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </Button>
             )}
-            <AlertDialog>
-              <AlertDialogTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Delete update"
-                  >
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                }
-              />
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete update?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    {update.milestone
-                      ? "This also unmarks the milestone on the status card."
-                      : "This removes the update from the timeline."}{" "}
-                    {update.photoUrl
-                      ? "If this photo is the current page photo, the previous one takes its place. "
-                      : ""}
-                    This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => props.onDelete(update._id)}>
-                    Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+            {deleteBlocker ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span
+                      className="inline-flex"
+                      aria-label={`Delete the ${MILESTONE_LABELS[deleteBlocker]} status first`}
+                    />
+                  }
+                >
+                  {deleteButton}
+                </TooltipTrigger>
+                <TooltipContent>
+                  Delete the {MILESTONE_LABELS[deleteBlocker]} status first
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <AlertDialog>
+                <AlertDialogTrigger render={deleteButton} />
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {update.milestone
+                        ? "This also unmarks the milestone on the status card."
+                        : "This removes the update from the timeline."}{" "}
+                      {update.photoUrl
+                        ? "If this photo is the current page photo, the previous one takes its place. "
+                        : ""}
+                      This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={() => props.onDelete(update._id)}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         )}
       </div>
@@ -778,6 +810,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  baby: BabyData;
   babyName: string;
   isOwner: boolean;
 };
@@ -915,6 +948,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
               onDelete={handleDeleteUpdate}
