@@ -56,58 +56,12 @@ export const seedPreviewData = internalMutation({
       publicId: "baby-in-labor",
       hospitalMessage: null,
       babyBornMessage: null,
-      laborStartedMessage: "It's happening! Bags are packed and we're timing contractions.",
       laborStarted: laborStarted2.toISOString(),
       wentToHospital: null,
       babyBorn: null,
       theme: null,
       encouragementsDisabled: false,
     });
-
-    // Seed encouragements WITHOUT timeline pointers on purpose: the
-    // backfillEncouragementTimeline migration (run right after seeding on
-    // previews) links them, so every preview exercises the backfill path.
-    const seedEncouragements: Array<{
-      babyId: typeof baby1Id;
-      authorName: string;
-      message: string;
-      minutesAgo: number;
-    }> = [
-      {
-        babyId: baby1Id,
-        authorName: "Grandma",
-        message: "We can't wait to meet you, little one!",
-        minutesAgo: 60 * 26,
-      },
-      {
-        babyId: baby1Id,
-        authorName: "Uncle Bob",
-        message: "Any day now! Sending love.",
-        minutesAgo: 60 * 3,
-      },
-      {
-        babyId: baby2Id,
-        authorName: "Aunt Meg",
-        message: "Good luck!! You've got this ❤️",
-        minutesAgo: 90,
-      },
-      {
-        babyId: baby2Id,
-        authorName: "Grandpa Jim",
-        message: "Thinking of you all — keep us posted!",
-        minutesAgo: 45,
-      },
-    ];
-
-    for (const seedEncouragement of seedEncouragements) {
-      await ctx.db.insert("encouragements", {
-        babyId: seedEncouragement.babyId,
-        authorName: seedEncouragement.authorName,
-        message: seedEncouragement.message,
-        createdAt: now.getTime() - seedEncouragement.minutesAgo * 60_000,
-        visitorId: `preview-visitor-${seedEncouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`,
-      });
-    }
 
     return {
       success: true,

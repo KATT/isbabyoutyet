@@ -1,7 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { insertEncouragementTimelineItem } from "./timeline";
 
 const MAX_NAME_LENGTH = 50;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -47,17 +46,11 @@ export const create = mutation({
       throw new Error("Message is required");
     }
 
-    const createdAt = Date.now();
-    const timelineItemId = await insertEncouragementTimelineItem(ctx, {
-      babyId: args.babyId,
-      postedAt: createdAt,
-    });
     const encouragementId = await ctx.db.insert("encouragements", {
       babyId: args.babyId,
       authorName: trimmedName,
       message: trimmedMessage,
-      createdAt,
-      timelineItemId,
+      createdAt: Date.now(),
       visitorId: args.visitorId,
       userAgent: args.userAgent,
       locale: args.locale,
@@ -147,8 +140,5 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.encouragementId);
-    if (encouragement.timelineItemId) {
-      await ctx.db.delete(encouragement.timelineItemId);
-    }
   },
 });

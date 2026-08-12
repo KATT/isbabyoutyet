@@ -50,23 +50,6 @@ const STATUS_ORDER = {
 export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "photo_added";
 
 /**
- * Owner-postable milestone kinds — the status stages a feed update can mark.
- */
-export type Milestone = "labor_started" | "gone_to_hospital" | "born";
-
-/**
- * Maps a milestone to the baby fields that hold its canonical timestamp and
- * its legacy per-stage message.
- */
-export const MILESTONE_FIELDS = {
-  labor_started: { date: "laborStarted", message: "laborStartedMessage" },
-  gone_to_hospital: { date: "wentToHospital", message: "hospitalMessage" },
-  born: { date: "babyBorn", message: "babyBornMessage" },
-} as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
-
-export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
-
-/**
  * Check if status moved forward (e.g., not_yet → labor_started → gone_to_hospital → born)
  * Type guard that narrows `after` to exclude "not_yet" when returning true
  */

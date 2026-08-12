@@ -1,16 +1,23 @@
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
-import type { DatabaseReader, MutationCtx } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
-import { internal } from "./_generated/api";
-import { getCurrentStatus, isStatusForward, MILESTONE_FIELDS, MILESTONES } from "../src/types";
-import type { BabyStatus, Milestone } from "../src/types";
-import { mutationWithTriggers } from "./triggers";
-import {
-  deleteUpdateWithTimelineItem,
-  findMilestoneUpdate,
-  insertUpdateWithTimelineItem,
-} from "./timeline";
+import type { DatabaseReader } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { components, internal } from "./_generated/api";
+import { getCurrentStatus, isStatusForward } from "../src/types";
+import { TableHistory } from "convex-table-history";
+import { Triggers } from "convex-helpers/server/triggers";
+import { customMutation, customCtx } from "convex-helpers/server/customFunctions";
+import type { DataModel } from "./_generated/dataModel";
+
+// Initialize table history for baby table
+const babyAuditLog = new TableHistory<DataModel, "baby">(components.babyAuditLog);
+
+// Set up triggers for automatic history tracking
+const triggers = new Triggers<DataModel>();
+triggers.register("baby", babyAuditLog.trigger());
+
+// Create wrapped mutation that uses triggers
+const mutationWithTriggers = customMutation(mutation, customCtx(triggers.wrapDB));
 
 export const listByUser = query({
   args: {},
@@ -100,58 +107,6 @@ export const generateUploadUrl = mutation({
   },
 });
 
-/**
- * Applies the side effects of a new photo attached to an update row: points
- * the baby doc at it (current photo), schedules thumbnail generation for both
- * the baby and the update row, and pushes a notification for the first photo.
- */
-export async function applyPhotoSideEffects(
-  ctx: MutationCtx,
-  opts: { baby: Doc<"baby">; photoId: Id<"_storage">; updateId: Id<"updates"> },
-) {
-  const baby = opts.baby;
-  const hadPhotoBeforeUpdate = !!baby.photoId;
-
-  // Update the current photo (retain old photos in storage + feed for history)
-  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null });
-
-  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
-    babyId: baby._id,
-    photoId: opts.photoId,
-    updateId: opts.updateId,
-  });
-
-  // Send notification only if this is the first photo
-  if (!hadPhotoBeforeUpdate) {
-    const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
-    const scheduledFor = Date.now() + scheduleDelay;
-
-    const notificationId = await ctx.db.insert("scheduledNotifications", {
-      babyId: baby._id,
-      status: "pending",
-      scheduledFor,
-      notificationType: "photo_added",
-      customMessage: null,
-      createdAt: Date.now(),
-    });
-
-    const scheduledId = await ctx.scheduler.runAt(
-      scheduledFor,
-      internal.pushNotifications.sendNotification,
-      {
-        notificationId,
-        babyId: baby._id,
-        babyName: baby.name,
-        publicId: baby.publicId,
-        status: "photo_added",
-        customMessage: null,
-      },
-    );
-
-    await ctx.db.patch(notificationId, { scheduledId });
-  }
-}
-
 // Update baby photo and optionally send notification
 export const updatePhoto = mutationWithTriggers({
   args: {
@@ -173,20 +128,48 @@ export const updatePhoto = mutationWithTriggers({
       throw new Error("Not authorized");
     }
 
-    if (!args.photoId) {
-      // Removing the current photo only affects the baby doc; photo updates
-      // already posted to the timeline keep their own copies.
-      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null });
-      return;
+    const hadPhotoBeforeUpdate = !!baby.photoId;
+
+    // Update photo (retain old photos in storage for history)
+    await ctx.db.patch(args.babyId, { photoId: args.photoId, thumbnailId: null });
+
+    // Schedule thumbnail generation if a new photo was uploaded
+    if (args.photoId) {
+      await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+        babyId: args.babyId,
+        photoId: args.photoId,
+      });
     }
 
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId: args.babyId,
-      postedAt: Date.now(),
-      photoId: args.photoId,
-    });
+    // Send notification only if this is the first photo
+    if (!hadPhotoBeforeUpdate && args.photoId) {
+      const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+      const scheduledFor = Date.now() + scheduleDelay;
 
-    await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
+      const notificationId = await ctx.db.insert("scheduledNotifications", {
+        babyId: args.babyId,
+        status: "pending",
+        scheduledFor,
+        notificationType: "photo_added",
+        customMessage: null,
+        createdAt: Date.now(),
+      });
+
+      const scheduledId = await ctx.scheduler.runAt(
+        scheduledFor,
+        internal.pushNotifications.sendNotification,
+        {
+          notificationId,
+          babyId: args.babyId,
+          babyName: baby.name,
+          publicId: baby.publicId,
+          status: "photo_added",
+          customMessage: null,
+        },
+      );
+
+      await ctx.db.patch(notificationId, { scheduledId });
+    }
   },
 });
 
@@ -367,161 +350,11 @@ export const updateThumbnail = internalMutation({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
-    photoId: v.optional(v.id("_storage")), // photo the thumbnail was generated from
-    updateId: v.optional(v.id("updates")), // timeline update row to also patch
   },
   handler: async (ctx, args) => {
-    const baby = await ctx.db.get(args.babyId);
-    // Skip the baby doc if its current photo changed while the thumbnail was
-    // generating — a newer generation owns the field now.
-    if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
-    }
-
-    if (args.updateId) {
-      const update = await ctx.db.get(args.updateId);
-      if (update && (!args.photoId || update.photoId === args.photoId)) {
-        await ctx.db.patch(args.updateId, { thumbnailId: args.thumbnailId });
-      }
-    }
+    await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
   },
 });
-
-/**
- * Cancels pending push notifications and schedules a new one when the derived
- * status moved forward. No-op when the status type is unchanged.
- */
-export async function syncStatusNotifications(
-  ctx: MutationCtx,
-  opts: {
-    statusBefore: BabyStatus;
-    updatedBaby: Doc<"baby">;
-    /** Message to attach to the push, per notifiable milestone. */
-    customMessageByMilestone: Record<Milestone, string | null>;
-  },
-) {
-  const updatedBaby = opts.updatedBaby;
-  const statusAfter = getCurrentStatus(updatedBaby);
-
-  if (opts.statusBefore.type === statusAfter.type) {
-    // no notification change as status didn't change
-    return;
-  }
-
-  // Cancel any existing pending notifications
-  const pendingNotifications = await ctx.db
-    .query("scheduledNotifications")
-    .withIndex("by_babyId", (q) => q.eq("babyId", updatedBaby._id))
-    .filter((q) => q.eq(q.field("status"), "pending"))
-    .collect();
-
-  for (const notification of pendingNotifications) {
-    if (notification.scheduledId) {
-      try {
-        await ctx.scheduler.cancel(notification.scheduledId);
-      } catch (_error) {
-        // Ignore errors if notification was already sent or doesn't exist
-      }
-    }
-    await ctx.db.patch(notification._id, { status: "cancelled" });
-  }
-
-  // Only handle notifications if status moved forward
-  if (!isStatusForward(opts.statusBefore, statusAfter)) return;
-
-  const customMessage = opts.customMessageByMilestone[statusAfter.type];
-
-  const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
-  const scheduledFor = Date.now() + scheduleDelay;
-
-  const notificationId = await ctx.db.insert("scheduledNotifications", {
-    babyId: updatedBaby._id,
-    status: "pending",
-    scheduledFor,
-    notificationType: statusAfter.type,
-    customMessage,
-    createdAt: Date.now(),
-  });
-
-  const scheduledId = await ctx.scheduler.runAt(
-    scheduledFor,
-    internal.pushNotifications.sendNotification,
-    {
-      notificationId,
-      babyId: updatedBaby._id,
-      babyName: updatedBaby.name,
-      publicId: updatedBaby.publicId,
-      status: statusAfter.type,
-      customMessage,
-    },
-  );
-
-  await ctx.db.patch(notificationId, { scheduledId });
-}
-
-/**
- * Keeps the timeline's milestone update rows in sync with the canonical
- * status fields on the baby doc:
- * - marking a milestone creates its update row (message = the stage message)
- * - redating a milestone moves its timeline row's `postedAt`
- * - unmarking a milestone deletes its update + timeline rows
- * - editing a stage message keeps the milestone row's message in sync
- */
-async function syncMilestoneUpdates(
-  ctx: MutationCtx,
-  opts: {
-    baby: Doc<"baby">;
-    patch: {
-      laborStarted?: string | null;
-      wentToHospital?: string | null;
-      babyBorn?: string | null;
-      laborStartedMessage?: string | null;
-      hospitalMessage?: string | null;
-      babyBornMessage?: string | null;
-    };
-  },
-) {
-  const baby = opts.baby;
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const dateArg = opts.patch[fields.date];
-    const messageArg = opts.patch[fields.message];
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
-
-    if (dateArg === null) {
-      // Unmarked: the milestone leaves the feed
-      if (existing) {
-        await deleteUpdateWithTimelineItem(ctx, existing);
-      }
-      continue;
-    }
-
-    if (typeof dateArg === "string") {
-      const parsed = Date.parse(dateArg);
-      const postedAt = Number.isNaN(parsed) ? Date.now() : parsed;
-      if (existing) {
-        // Redate: move the timeline row; refresh the message if it changed too
-        await ctx.db.patch(existing.timelineItemId, { postedAt });
-        if (messageArg !== undefined) {
-          await ctx.db.patch(existing._id, { message: messageArg });
-        }
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          postedAt,
-          milestone,
-          message: messageArg !== undefined ? messageArg : (baby[fields.message] ?? null),
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: keep the milestone row's message in sync when edited
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
-    }
-  }
-}
 
 export const update = mutationWithTriggers({
   args: {
@@ -567,19 +400,72 @@ export const update = mutationWithTriggers({
 
     await ctx.db.patch(babyId, patch);
 
-    await syncMilestoneUpdates(ctx, { baby, patch: rest });
-
     const updatedBaby = await ctx.db.get(babyId);
     if (!updatedBaby) throw new Error("Baby not found after update");
 
-    await syncStatusNotifications(ctx, {
-      statusBefore,
-      updatedBaby,
-      customMessageByMilestone: {
-        labor_started: rest.laborStartedMessage ?? baby.laborStartedMessage ?? null,
-        gone_to_hospital: rest.hospitalMessage ?? baby.hospitalMessage ?? null,
-        born: rest.babyBornMessage ?? baby.babyBornMessage ?? null,
-      },
+    const statusAfter = getCurrentStatus(updatedBaby);
+
+    if (statusBefore === statusAfter) {
+      // no notification change as status didn't change
+      return;
+    }
+
+    // Cancel any existing pending notifications
+    const pendingNotifications = await ctx.db
+      .query("scheduledNotifications")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const notification of pendingNotifications) {
+      if (notification.scheduledId) {
+        try {
+          await ctx.scheduler.cancel(notification.scheduledId);
+        } catch (_error) {
+          // Ignore errors if notification was already sent or doesn't exist
+        }
+      }
+      await ctx.db.patch(notification._id, { status: "cancelled" });
+    }
+
+    // Only handle notifications if status moved forward
+    if (!isStatusForward(statusBefore, statusAfter)) return;
+
+    // Schedule new notification
+    let customMessage: string | null = null;
+    if (statusAfter.type === "born") {
+      customMessage = patch.babyBornMessage ?? baby.babyBornMessage ?? null;
+    } else if (statusAfter.type === "gone_to_hospital") {
+      customMessage = patch.hospitalMessage ?? baby.hospitalMessage ?? null;
+    } else if (statusAfter.type === "labor_started") {
+      customMessage = patch.laborStartedMessage ?? baby.laborStartedMessage ?? null;
+    }
+
+    const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+    const scheduledFor = Date.now() + scheduleDelay;
+
+    const notificationId = await ctx.db.insert("scheduledNotifications", {
+      babyId,
+      status: "pending",
+      scheduledFor,
+      notificationType: statusAfter.type,
+      customMessage,
+      createdAt: Date.now(),
     });
+
+    const scheduledId = await ctx.scheduler.runAt(
+      scheduledFor,
+      internal.pushNotifications.sendNotification,
+      {
+        notificationId,
+        babyId,
+        babyName: updatedBaby.name,
+        publicId: updatedBaby.publicId,
+        status: statusAfter.type,
+        customMessage,
+      },
+    );
+
+    await ctx.db.patch(notificationId, { scheduledId });
   },
 });
