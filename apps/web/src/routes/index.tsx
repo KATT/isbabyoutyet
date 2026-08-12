@@ -1,27 +1,7 @@
-import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Activity,
-  Baby,
-  Bell,
-  Calendar,
-  CheckCircle,
-  Heart,
-  Hospital,
-  Link2,
-  MessageCircleHeart,
-  Palette,
-  Sparkles,
-} from "lucide-react";
+import { Baby } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 
 // Static date snapshot for SSR/hydration
@@ -62,6 +42,65 @@ function useCurrentDate() {
   );
 }
 
+const FEATURES = [
+  {
+    emoji: "📣",
+    title: "Update your status",
+    description:
+      "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.",
+  },
+  {
+    emoji: "📅",
+    title: "Countdown to due date",
+    description:
+      'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.',
+  },
+  {
+    emoji: "🎨",
+    title: "Make it yours",
+    description:
+      "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.",
+  },
+  {
+    emoji: "🔗",
+    title: "No account needed",
+    description:
+      "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.",
+  },
+  {
+    emoji: "💌",
+    title: "Send encouragement",
+    description:
+      "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.",
+  },
+  {
+    emoji: "🔔",
+    title: "Get notified",
+    description:
+      "Family can subscribe to push notifications and be the first to know the moment baby arrives.",
+  },
+];
+
+const HOW_IT_WORKS = [
+  {
+    step: "1",
+    title: "Create your page",
+    description: "Sign up and add your baby's name and due date. That's it.",
+  },
+  {
+    step: "2",
+    title: "Share the link",
+    description:
+      "Send it to family and friends. They can check in anytime and subscribe for notifications.",
+  },
+  {
+    step: "3",
+    title: "Update as you go",
+    description:
+      "When things start happening, update your status. Everyone gets notified automatically.",
+  },
+];
+
 function HomePage() {
   const sessionData = authClient.useSession();
 
@@ -74,37 +113,118 @@ function HomePage() {
     return date.toISOString();
   };
 
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-      </div>
+  const previewStages = [
+    {
+      emoji: "👶",
+      title: "Waiting",
+      description: "Before labour starts",
+      rotate: "group-hover:-rotate-1",
+      search: { name: "Emma" },
+    },
+    {
+      emoji: "💫",
+      title: "Labour started",
+      description: "Things are happening!",
+      rotate: "group-hover:rotate-1",
+      search: { name: "Oliver", dueDate: hoursAgo(0), laborStarted: hoursAgo(2) },
+    },
+    {
+      emoji: "🏥",
+      title: "At hospital",
+      description: "Almost there!",
+      rotate: "group-hover:-rotate-1",
+      search: {
+        name: "Sophia",
+        laborStarted: hoursAgo(4),
+        wentToHospital: hoursAgo(1),
+        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        theme: "bubblegum",
+      },
+    },
+    {
+      emoji: "🎉",
+      title: "Baby born!",
+      description: "Celebrate the arrival",
+      rotate: "group-hover:rotate-1",
+      search: {
+        name: "Liam",
+        laborStarted: hoursAgo(6),
+        wentToHospital: hoursAgo(3),
+        babyBorn: hoursAgo(0.5),
+        babyBornMessage: "Welcome to the world, little one! 🎉",
+        theme: "sunny-days",
+      },
+    },
+  ];
 
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-16">
-        {/* Hero Section */}
-        <div className="text-center">
-          <Badge
-            variant="outline"
-            className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
-          >
-            <Sparkles className="w-3 h-3 mr-1.5" />
-            Free forever, no ads
-          </Badge>
-          <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is Baby Out Yet?
+  return (
+    <div className="min-h-screen bg-background bg-dots">
+      {/* Floating header */}
+      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+          <span className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+              <Baby className="h-4 w-4 text-primary" />
             </span>
+            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          </span>
+          <div className="flex items-center gap-2">
+            {sessionData.data ? (
+              <Button
+                size="sm"
+                className="rounded-full font-bold"
+                render={<Link to="/dashboard" preload="viewport" />}
+                nativeButton={false}
+              >
+                Dashboard
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full font-bold border-2"
+                  render={<Link to="/auth/login" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Sign in
+                </Button>
+                <Button
+                  size="sm"
+                  className="rounded-full font-bold"
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Get started
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6">
+        {/* Hero */}
+        <section className="py-16 text-center md:py-24">
+          <span className="inline-block -rotate-2 rounded-full border-2 border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-extrabold text-primary pop-shadow">
+            ✨ Free forever, no ads
+          </span>
+          <h1 className="mx-auto mt-8 max-w-3xl text-5xl font-black tracking-tight text-foreground text-balance md:text-7xl">
+            Is{" "}
+            <span className="inline-block -rotate-1 rounded-3xl bg-primary/15 px-4 text-primary">
+              baby
+            </span>{" "}
+            out yet?
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-            Stop answering "any news yet?" texts. Share one link and let everyone follow along.
+          <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground md:text-xl">
+            Stop answering "any news yet?" texts. Share one link, let everyone follow along, and
+            tell them all at once when baby arrives. 🍼
           </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             {sessionData.data ? (
               <Button
                 size="lg"
-                className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
                 render={<Link to="/dashboard" preload="viewport" />}
                 nativeButton={false}
               >
@@ -114,290 +234,161 @@ function HomePage() {
               <>
                 <Button
                   size="lg"
-                  className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                  className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Get Started
+                  Create your page 🎈
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
+                  className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
                   render={<Link to="/auth/login" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Sign In
+                  Sign in
                 </Button>
               </>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* For You Section */}
-        <div className="space-y-6">
+        {/* Features */}
+        <section className="py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For You</h2>
-            <p className="text-muted-foreground">Everything you need to share the journey</p>
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              Everything the family needs
+            </h2>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              For you, and for everyone waiting by the phone
+            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Baby className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Update Your Status</CardTitle>
-                <CardDescription>
-                  One tap to update everyone - labour started, at the hospital, baby's here! No
-                  group texts, no repeated calls.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Calendar className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Countdown to Due Date</CardTitle>
-                <CardDescription>
-                  Set your due date and everyone can see how many days are left. Plus a friendly
-                  "overdue" counter when baby takes their time.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Palette className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Make It Yours</CardTitle>
-                <CardDescription>
-                  Pick a theme that matches your style. From soft pastels to bold colours - your
-                  page, your vibe.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature, index) => (
+              <div
+                key={feature.title}
+                className={`rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform hover:-translate-y-1 ${
+                  index % 2 === 0 ? "hover:-rotate-1" : "hover:rotate-1"
+                }`}
+              >
+                <span className="text-3xl" aria-hidden="true">
+                  {feature.emoji}
+                </span>
+                <h3 className="mt-3 text-lg font-extrabold text-foreground">{feature.title}</h3>
+                <p className="mt-1.5 text-sm font-medium leading-relaxed text-muted-foreground">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* For Your Visitors Section */}
-        <div className="space-y-6">
+        {/* See it in action */}
+        <section className="py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For Your Family & Friends</h2>
-            <p className="text-muted-foreground">What everyone you share with gets</p>
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              See it in action
+            </h2>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              Click any stage to see how your page will look
+            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Link2 className="w-7 h-7 text-primary" />
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {previewStages.map((stage) => (
+              <Link key={stage.title} to="/preview" search={stage.search} className="group">
+                <div
+                  className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
+                >
+                  <span className="text-4xl" aria-hidden="true">
+                    {stage.emoji}
+                  </span>
+                  <h3 className="mt-3 font-extrabold text-foreground">{stage.title}</h3>
+                  <p className="mt-0.5 text-sm font-medium text-muted-foreground">
+                    {stage.description}
+                  </p>
                 </div>
-                <CardTitle>No Account Needed</CardTitle>
-                <CardDescription>
-                  Anyone with the link can check in anytime. Grandma doesn't need to download an app
-                  or create an account.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <MessageCircleHeart className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Send Encouragement</CardTitle>
-                <CardDescription>
-                  Visitors can leave messages of love and support. Like a digital guestbook filled
-                  with well-wishes you'll treasure.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Bell className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>Get Notified</CardTitle>
-                <CardDescription>
-                  They can subscribe to push notifications and be the first to know the moment baby
-                  arrives. No constant page refreshing.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* See It In Action */}
-        <Card>
-          <CardHeader>
-            <CardTitle>See It In Action</CardTitle>
-            <CardDescription>Click any stage to see how your page will look</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link
-                to="/preview"
-                search={{
-                  name: "Emma",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                    <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Waiting</h3>
-                  <p className="text-sm text-muted-foreground">Before labour starts</p>
+        {/* How it works */}
+        <section className="py-12">
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              How it works
+            </h2>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              Up and running in under a minute
+            </p>
+          </div>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {HOW_IT_WORKS.map((item) => (
+              <div key={item.step} className="flex flex-col items-center text-center">
+                <div className="flex h-14 w-14 -rotate-3 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary/15 text-2xl font-black text-primary pop-shadow">
+                  {item.step}
                 </div>
-              </Link>
+                <h3 className="mt-4 text-lg font-extrabold text-foreground">{item.title}</h3>
+                <p className="mt-1.5 font-medium leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-              <Link
-                to="/preview"
-                search={{
-                  name: "Oliver",
-                  dueDate: hoursAgo(0),
-                  laborStarted: hoursAgo(2),
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Activity className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Labour Started</h3>
-                  <p className="text-sm text-muted-foreground">Things are happening!</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Sophia",
-                  laborStarted: hoursAgo(4),
-                  wentToHospital: hoursAgo(1),
-                  hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
-                  theme: "bubblegum",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Hospital className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">At Hospital</h3>
-                  <p className="text-sm text-muted-foreground">Almost there!</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Liam",
-                  laborStarted: hoursAgo(6),
-                  wentToHospital: hoursAgo(3),
-                  babyBorn: hoursAgo(0.5),
-                  babyBornMessage: "Welcome to the world, little one! 🎉",
-                  theme: "violet-bloom",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <CheckCircle className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">Baby Born!</h3>
-                  <p className="text-sm text-muted-foreground">Celebrate the arrival</p>
-                </div>
-              </Link>
+        {/* CTA */}
+        <section className="py-16 text-center">
+          <div className="mx-auto max-w-2xl rounded-[2rem] border-2 border-primary/25 bg-primary/10 px-8 py-12 pop-shadow-strong">
+            <p className="text-4xl" aria-hidden="true">
+              💖
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              Ready to share the journey?
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-lg font-semibold text-muted-foreground">
+              {sessionData.data
+                ? "Head back to your dashboard to keep everyone updated."
+                : "Join families who've already shared their special moments. Takes less than a minute."}
+            </p>
+            <div className="mt-7">
+              {sessionData.data ? (
+                <Button
+                  size="lg"
+                  className="rounded-full font-extrabold"
+                  render={<Link to="/dashboard" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Go to Dashboard
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="rounded-full font-extrabold"
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  Get Started Free 🎉
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* How It Works */}
-        <Card>
-          <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-            <CardDescription>Up and running in under a minute</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  step: "1",
-                  title: "Create Your Page",
-                  description: "Sign up and add your baby's name and due date. That's it.",
-                },
-                {
-                  step: "2",
-                  title: "Share the Link",
-                  description:
-                    "Send it to family and friends. They can check in anytime and subscribe for notifications.",
-                },
-                {
-                  step: "3",
-                  title: "Update as You Go",
-                  description:
-                    "When things start happening, update your status. Everyone gets notified automatically.",
-                },
-              ].map((item) => (
-                <div key={item.step} className="flex flex-col items-center text-center group">
-                  <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
-            <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to share the journey?</h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            {sessionData.data
-              ? "Head back to your dashboard to keep everyone updated."
-              : "Join families who've already shared their special moments. Takes less than a minute."}
-          </p>
-          {sessionData.data ? (
-            <Button
-              size="lg"
-              render={<Link to="/dashboard" preload="viewport" />}
-              nativeButton={false}
-            >
-              Go to Dashboard
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              render={<Link to="/auth/signup" preload="viewport" />}
-              nativeButton={false}
-            >
-              Get Started Free
-            </Button>
-          )}
-        </div>
+        </section>
+      </main>
 
-        {/* Footer */}
-        <div className="text-center pt-8 border-t border-border/50">
-          <a
-            href="https://github.com/KATT/isbabyoutyet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <GithubIcon className="w-5 h-5" />
-            <span>Open source on GitHub</span>
-          </a>
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
+        <a
+          href="https://github.com/KATT/isbabyoutyet"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <GithubIcon className="h-5 w-5" />
+          <span>Open source on GitHub</span>
+        </a>
+      </footer>
     </div>
   );
 }

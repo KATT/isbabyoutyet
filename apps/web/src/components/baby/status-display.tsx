@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { format } from "date-fns";
-import { Activity, Baby, CheckCircle, Hospital, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import {
@@ -14,14 +14,14 @@ import {
 type PhotoAvatarProps = {
   photoUrl: string | null | undefined;
   thumbnailUrl: string | null | undefined;
-  fallbackIcon: React.ReactNode;
+  fallbackEmoji: string;
   variant?: "default" | "born";
 };
 
 function PhotoAvatar({
   photoUrl,
   thumbnailUrl,
-  fallbackIcon,
+  fallbackEmoji,
   variant = "default",
 }: PhotoAvatarProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,17 +45,23 @@ function PhotoAvatar({
   }, [photoUrl]);
 
   const baseClasses =
-    "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full border-2 mb-8 overflow-hidden";
+    "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 mb-6";
   const variantClasses =
     variant === "born"
-      ? "bg-linear-to-br from-primary to-primary/80 border-primary/30 shadow-xl shadow-primary/20"
-      : "bg-linear-to-br from-primary/20 to-primary/10 border-primary/20 shadow-lg shadow-primary/10";
+      ? "bg-primary/15 border-primary pop-shadow-strong"
+      : "bg-primary/10 border-primary/25 pop-shadow";
 
   // Use thumbnail for avatar, fallback to full photo if thumbnail not available
   const avatarImageUrl = thumbnailUrl ?? photoUrl;
 
   if (!avatarImageUrl && !photoUrl) {
-    return <div className={`${baseClasses} ${variantClasses}`}>{fallbackIcon}</div>;
+    return (
+      <div className={`${baseClasses} ${variantClasses}`}>
+        <span className="text-6xl md:text-7xl" aria-hidden="true">
+          {fallbackEmoji}
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -63,7 +69,7 @@ function PhotoAvatar({
       <DialogTrigger
         render={
           <button
-            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
           >
             {avatarImageUrl && (
               <img
@@ -119,17 +125,26 @@ function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
     return null;
   }
   return (
-    <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
-      <p className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-2">
-        Latest from the family
+    <div className="mt-8 w-full max-w-md rounded-3xl rounded-bl-lg border-2 border-primary/25 bg-primary/10 px-6 py-5 text-left rotate-[-1deg] pop-shadow">
+      <p className="text-xs font-black uppercase tracking-widest text-primary/80">
+        Latest from the family 💬
       </p>
-      <p className="text-lg font-bold text-primary break-words">{latestUpdate.message}</p>
-      <p className="text-xs text-primary/70 mt-2">
+      <p className="mt-2 text-lg font-bold leading-snug text-foreground break-words">
+        {latestUpdate.message}
+      </p>
+      <p className="mt-2 text-xs font-semibold text-muted-foreground">
         Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
       </p>
     </div>
   );
 }
+
+const STATUS_META = {
+  not_yet: { emoji: "👶", answer: "Not yet", subline: "Baby is still on the way" },
+  labor_started: { emoji: "💫", answer: "Labour started!", subline: "Not gone to hospital yet" },
+  gone_to_hospital: { emoji: "🏥", answer: "Gone to hospital!", subline: "Almost there now" },
+  born: { emoji: "🎉", answer: "Yes! Baby is out", subline: "Welcome to the world, little one" },
+} as const;
 
 export function StatusDisplay({
   baby,
@@ -140,113 +155,49 @@ export function StatusDisplay({
 }: StatusDisplayProps) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const meta = STATUS_META[currentStatus.type];
+  const isBorn = currentStatus.type === "born";
 
-  if (currentStatus.type === "not_yet") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Not yet
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-        <div
-          className={`mt-4 p-6 rounded-xl shadow-lg ${
-            overdueDays > 0
-              ? "bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 shadow-primary/10"
-              : "bg-muted/50 border border-border"
-          }`}
-        >
-          {overdueDays > 0 ? (
-            <>
-              <p className="text-xl font-bold text-primary">
-                {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
-              </p>
-              <p className="text-sm text-primary/80 mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-lg font-bold text-foreground">
-                {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
-              </p>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (currentStatus.type === "labor_started") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Labour started
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
-        <p className="text-lg text-muted-foreground mt-2">
-          Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-        </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
-
-  if (currentStatus.type === "gone_to_hospital") {
-    return (
-      <div className="flex flex-col items-center py-8">
-        <PhotoAvatar
-          photoUrl={photoUrl}
-          thumbnailUrl={thumbnailUrl}
-          fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
-        />
-        <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-          <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gone to hospital
-          </span>
-        </h2>
-        <p className="text-xl text-muted-foreground mb-4">
-          {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-        </p>
-        <LatestUpdateBox latestUpdate={latestUpdate} />
-      </div>
-    );
-  }
-
-  // born
   return (
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
         photoUrl={photoUrl}
         thumbnailUrl={thumbnailUrl}
-        fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}
-        variant="born"
+        fallbackEmoji={meta.emoji}
+        variant={isBorn ? "born" : "default"}
       />
-      <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
-        <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Yes! Baby is out
-        </span>
+
+      <h2 className="text-4xl md:text-6xl font-black tracking-tight text-primary text-balance">
+        {meta.answer}
       </h2>
-      <p className="text-xl text-muted-foreground mb-4">
-        Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
-      </p>
+      <p className="mt-3 text-lg md:text-xl font-bold text-muted-foreground">{meta.subline}</p>
+
+      {currentStatus.type !== "not_yet" && (
+        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">
+          {isBorn ? "Born" : currentStatus.type === "labor_started" ? "Started" : "Since"}{" "}
+          {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+        </p>
+      )}
+
+      {currentStatus.type === "not_yet" && (
+        <div
+          className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
+            overdueDays > 0 ? "border-primary/40 bg-primary/10" : "border-border bg-card"
+          }`}
+        >
+          <p
+            className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
+          >
+            {overdueDays > 0
+              ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue`
+              : `${daysUntilDueDate} ${daysUntilDueDate === 1 ? "day" : "days"} until due date`}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+          </p>
+        </div>
+      )}
+
       <LatestUpdateBox latestUpdate={latestUpdate} />
     </div>
   );

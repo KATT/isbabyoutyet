@@ -10,7 +10,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
-import { Heart, Send } from "lucide-react";
+import { Send } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -70,11 +70,11 @@ export function EncouragementForm(props: EncouragementFormProps) {
   return (
     <div className="space-y-4">
       <div className="text-center mb-6">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
-          <Heart className="w-6 h-6 text-primary" />
-        </div>
-        <h3 className="text-lg font-semibold text-foreground">Send Encouragement</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-3xl" aria-hidden="true">
+          💛
+        </p>
+        <h3 className="mt-2 text-xl font-extrabold text-foreground">Send some love</h3>
+        <p className="mt-1 text-sm font-medium text-muted-foreground">
           Leave a message of support for {props.babyName}'s family
         </p>
       </div>
