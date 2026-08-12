@@ -250,6 +250,10 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
             }
           }}
         />
+        <p className="text-xs text-muted-foreground mb-3">
+          Renaming may change the page address, but don't worry — any link you've already shared
+          keeps working.
+        </p>
         <div className="flex gap-2 justify-end">
           <Button
             onClick={() => {
