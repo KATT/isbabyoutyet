@@ -20,5 +20,7 @@ execFileSync("pnpm", ["turbo", "build", "--filter=web"], {
   env: {
     ...process.env,
     VITE_CONVEX_SITE_URL: convexUrl.replace(".convex.cloud", ".convex.site"),
+    // Preview backends are seeded with DEMO_USER — prefill login forms there.
+    ...(process.env.VERCEL_ENV === "preview" ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
   },
 });

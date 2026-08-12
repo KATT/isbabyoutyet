@@ -19,6 +19,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
 import { UserPlus } from "lucide-react";
+import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -30,16 +31,18 @@ export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
 });
 
+const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+
 function SignupPage() {
   const router = useRouter();
 
   const form = useZodForm({
     schema: signupSchema,
-    defaultValues: import.meta.env.DEV
+    defaultValues: hasDemoLogin
       ? {
-          name: "Test User",
-          email: "test@example.com",
-          password: "password",
+          name: DEMO_USER.name,
+          email: DEMO_USER.email,
+          password: DEMO_USER.password,
         }
       : {
           name: "",
