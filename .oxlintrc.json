@@ -1,6 +1,8 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  // Generated code is not ours to lint — same exclusions as coverage/CRAP
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts"],
   "rules": {
     "vitest/no-hooks": "error",
     // Cyclomatic complexity ratchet: 23 is the current worst first-party
