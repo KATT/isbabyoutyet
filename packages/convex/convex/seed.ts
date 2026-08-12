@@ -3,7 +3,7 @@ import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
-import { DEMO_USER } from "../src/seedCredentials";
+import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 
@@ -75,11 +75,8 @@ async function ensureDemoUser(ctx: MutationCtx) {
   return result.user.id;
 }
 
-type SeedBabySpec = {
-  name: string;
-  publicId: string;
+type SeedBabyExtras = {
   dueDateOffsetDays: number;
-  state: "not_yet" | Milestone;
   laborStartedMessage?: string;
   hospitalMessage?: string;
   babyBornMessage?: string;
@@ -95,12 +92,12 @@ type SeedBabySpec = {
   }>;
 };
 
-const SEED_BABIES: SeedBabySpec[] = [
-  {
-    name: "Baby Waiting",
-    publicId: "baby-waiting",
+type SeedBabySpec = (typeof DEMO_BABIES)[number] & SeedBabyExtras;
+
+/** Fixture details keyed by publicId — identity fields come from DEMO_BABIES. */
+const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBabyExtras> = {
+  "baby-waiting": {
     dueDateOffsetDays: 14,
-    state: "not_yet",
     encouragements: [
       {
         authorName: "Grandma",
@@ -114,11 +111,8 @@ const SEED_BABIES: SeedBabySpec[] = [
       },
     ],
   },
-  {
-    name: "Baby In Labor",
-    publicId: "baby-in-labor",
+  "baby-in-labor": {
     dueDateOffsetDays: 3,
-    state: "labor_started",
     laborStartedMessage: "It's happening! Bags are packed and we're timing contractions.",
     hoursAgo: { laborStarted: 2 },
     encouragements: [
@@ -134,11 +128,8 @@ const SEED_BABIES: SeedBabySpec[] = [
       },
     ],
   },
-  {
-    name: "Baby At Hospital",
-    publicId: "baby-at-hospital",
+  "baby-at-hospital": {
     dueDateOffsetDays: 1,
-    state: "gone_to_hospital",
     laborStartedMessage: "Contractions got serious — heading in!",
     hospitalMessage: "Checked in and settling into the delivery room.",
     hoursAgo: { laborStarted: 8, wentToHospital: 3 },
@@ -150,11 +141,8 @@ const SEED_BABIES: SeedBabySpec[] = [
       },
     ],
   },
-  {
-    name: "Baby Born",
-    publicId: "baby-born",
+  "baby-born": {
     dueDateOffsetDays: -2,
-    state: "born",
     laborStartedMessage: "Here we go!",
     hospitalMessage: "At the hospital and ready.",
     babyBornMessage: "Welcome to the world — everyone is healthy and happy!",
@@ -172,7 +160,12 @@ const SEED_BABIES: SeedBabySpec[] = [
       },
     ],
   },
-];
+};
+
+const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
+  ...baby,
+  ...SEED_BABY_EXTRAS[baby.publicId],
+}));
 
 /**
  * Inserts the demo babies (and their timeline/encouragement fixtures) for a user.

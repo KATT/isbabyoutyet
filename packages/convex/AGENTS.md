@@ -11,3 +11,9 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+## Demo seed
+
+Preview and local backends share `seed:seedDemoData` (login + babies in every
+status). When opening PRs, follow the root [`AGENTS.md`](../../AGENTS.md) and
+link each seeded baby on the Vercel preview.
