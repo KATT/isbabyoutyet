@@ -14,9 +14,7 @@
         "scripts/build-web.mjs!"
       ]
     },
-    "packages/convex": {
-      "entry": ["scripts/preview-photo-timeline-backfill.mjs!"]
-    },
+    "packages/convex": {},
     "packages/ui": {}
   }
 }
