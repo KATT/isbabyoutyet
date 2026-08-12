@@ -17,6 +17,35 @@ function toDatetimeLocalValue(date: Date): string {
   return local.toISOString().slice(0, 16);
 }
 
+// The popover editors follow one pattern: the outer component owns the
+// open state, the inner *Form component owns the form and is mounted fresh
+// on every open — so defaultValues are always current and no reset is needed.
+
+type EditorFormProps = {
+  baby: BabyData;
+  onUpdate: BabyUpdateHandler;
+  onClose: () => void;
+};
+
+function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+  return (
+    <div className="flex gap-2 justify-end">
+      <Button
+        type="button"
+        onClick={props.onClose}
+        variant="outline"
+        size="sm"
+        disabled={props.isSubmitting}
+      >
+        Cancel
+      </Button>
+      <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
+        Save
+      </Button>
+    </div>
+  );
+}
+
 type DueDateEditorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
@@ -28,11 +57,6 @@ const dueDateSchema = z.object({
 
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
-
-  const form = useZodForm({
-    schema: dueDateSchema,
-    defaultValues: { date: format(parseDate(baby.dueDate), "yyyy-MM-dd") },
-  });
 
   return (
     <Popover
@@ -54,9 +78,6 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
             return;
           }
         }
-        if (open) {
-          form.reset({ date: format(parseDate(baby.dueDate), "yyyy-MM-dd") });
-        }
         setIsEditing(open);
       }}
     >
@@ -68,52 +89,50 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <Form
-          form={form}
-          handleSubmit={async (values) => {
-            await onUpdate({ dueDate: parseISO(values.date).toISOString() });
-            setIsEditing(false);
-          }}
-        >
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="mb-3">
-                <FormControl>
-                  <Input
-                    type="date"
-                    aria-label="Due date"
-                    onMouseDown={(e) => e.stopPropagation()}
-                    onFocus={(e) => e.stopPropagation()}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              variant="outline"
-              size="sm"
-              disabled={form.formState.isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={form.formState.isSubmitting || !form.formState.isDirty}
-            >
-              Save
-            </Button>
-          </div>
-        </Form>
+        <DueDateForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function DueDateForm(props: EditorFormProps) {
+  const form = useZodForm({
+    schema: dueDateSchema,
+    defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onUpdate({ dueDate: parseISO(values.date).toISOString() });
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="date"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input
+                type="date"
+                aria-label="Due date"
+                onMouseDown={(e) => e.stopPropagation()}
+                onFocus={(e) => e.stopPropagation()}
+                {...field}
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
+      />
+    </Form>
   );
 }
 
@@ -128,29 +147,11 @@ const statusDateSchema = z.object({
   dateTime: z.string().min(1, "Pick a date and time"),
 });
 
-export function StatusDateEditor({
-  baby: _baby,
-  status,
-  currentDate,
-  onUpdate,
-}: StatusDateEditorProps) {
+export function StatusDateEditor(props: StatusDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const form = useZodForm({
-    schema: statusDateSchema,
-    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(currentDate)) },
-  });
-
   return (
-    <Popover
-      open={isEditing}
-      onOpenChange={(open) => {
-        if (open) {
-          form.reset({ dateTime: toDatetimeLocalValue(parseDate(currentDate)) });
-        }
-        setIsEditing(open);
-      }}
-    >
+    <Popover open={isEditing} onOpenChange={setIsEditing}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -160,53 +161,61 @@ export function StatusDateEditor({
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <Form
-          form={form}
-          handleSubmit={async (values) => {
-            const dateString = parseISO(values.dateTime).toISOString();
-            if (status === "labor_started") {
-              await onUpdate({ laborStarted: dateString });
-            } else if (status === "gone_to_hospital") {
-              await onUpdate({ wentToHospital: dateString });
-            } else {
-              await onUpdate({ babyBorn: dateString });
-            }
-            setIsEditing(false);
-          }}
-        >
-          <FormField
-            control={form.control}
-            name="dateTime"
-            render={({ field }) => (
-              <FormItem className="mb-3">
-                <FormControl>
-                  <Input type="datetime-local" aria-label="Status date and time" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              variant="outline"
-              size="sm"
-              disabled={form.formState.isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={form.formState.isSubmitting || !form.formState.isDirty}
-            >
-              Save
-            </Button>
-          </div>
-        </Form>
+        <StatusDateForm
+          status={props.status}
+          currentDate={props.currentDate}
+          onUpdate={props.onUpdate}
+          onClose={() => setIsEditing(false)}
+        />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function StatusDateForm(props: {
+  status: StatusDateEditorProps["status"];
+  currentDate: string;
+  onUpdate: BabyUpdateHandler;
+  onClose: () => void;
+}) {
+  const form = useZodForm({
+    schema: statusDateSchema,
+    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        const dateString = parseISO(values.dateTime).toISOString();
+        if (props.status === "labor_started") {
+          await props.onUpdate({ laborStarted: dateString });
+        } else if (props.status === "gone_to_hospital") {
+          await props.onUpdate({ wentToHospital: dateString });
+        } else {
+          await props.onUpdate({ babyBorn: dateString });
+        }
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="dateTime"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input type="datetime-local" aria-label="Status date and time" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
+      />
+    </Form>
   );
 }
 
@@ -222,21 +231,8 @@ const nameSchema = z.object({
 export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
 
-  const form = useZodForm({
-    schema: nameSchema,
-    defaultValues: { name: baby.name },
-  });
-
   return (
-    <Popover
-      open={isEditing}
-      onOpenChange={(open) => {
-        if (open) {
-          form.reset({ name: baby.name });
-        }
-        setIsEditing(open);
-      }}
-    >
+    <Popover open={isEditing} onOpenChange={setIsEditing}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -245,50 +241,48 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <Form
-          form={form}
-          handleSubmit={async (values) => {
-            await onUpdate({ name: values.name.trim() });
-            setIsEditing(false);
-          }}
-        >
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem className="mb-3">
-                <FormControl>
-                  <Input placeholder="Baby name" aria-label="Baby name" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <p className="text-xs text-muted-foreground mb-3">
-            Renaming may change the page address, but don't worry — any link you've already shared
-            keeps working.
-          </p>
-          <div className="flex gap-2 justify-end">
-            <Button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              variant="outline"
-              size="sm"
-              disabled={form.formState.isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              size="sm"
-              disabled={form.formState.isSubmitting || !form.formState.isDirty}
-            >
-              Save
-            </Button>
-          </div>
-        </Form>
+        <NameForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function NameForm(props: EditorFormProps) {
+  const form = useZodForm({
+    schema: nameSchema,
+    defaultValues: { name: props.baby.name },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onUpdate({ name: values.name.trim() });
+        props.onClose();
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem className="mb-3">
+            <FormControl>
+              <Input placeholder="Baby name" aria-label="Baby name" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <p className="text-xs text-muted-foreground mb-3">
+        Renaming may change the page address, but don't worry — any link you've already shared keeps
+        working.
+      </p>
+      <EditorActions
+        onClose={props.onClose}
+        isSubmitting={form.formState.isSubmitting}
+        isDirty={form.formState.isDirty}
+      />
+    </Form>
   );
 }
 
