@@ -165,7 +165,8 @@ const remove = FunctionImpl.make(
           ),
         );
 
-      const identity = yield* Auth.getUserIdentity.pipe(
+      const auth = yield* Auth;
+      const identity = yield* auth.getUserIdentity.pipe(
         Effect.catchTag("NoUserIdentityFoundError", () => Effect.succeed(null)),
       );
 
