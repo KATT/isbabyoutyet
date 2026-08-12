@@ -35,10 +35,10 @@ export default defineConfig({
         // by hand. Reset once after the confect/ move so the ratchet tracks
         // the new authoring surface; subsequent runs may only raise these.
         autoUpdate: true,
-        statements: 36.8,
-        branches: 29.85,
-        functions: 28.53,
-        lines: 37.5,
+        statements: 44.01,
+        branches: 36.89,
+        functions: 34.74,
+        lines: 44.85,
       },
     },
   },
