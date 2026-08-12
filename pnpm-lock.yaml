@@ -12,9 +12,6 @@ catalogs:
     '@confect/core':
       specifier: 10.0.0-next.13
       version: 10.0.0-next.13
-    '@confect/react':
-      specifier: 10.0.0-next.13
-      version: 10.0.0-next.13
     '@confect/server':
       specifier: 10.0.0-next.13
       version: 10.0.0-next.13
@@ -107,18 +104,12 @@ importers:
 
   apps/web:
     dependencies:
-      '@confect/core':
-        specifier: 'catalog:'
-        version: 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
-      '@confect/react':
-        specifier: 'catalog:'
-        version: 10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)(react@19.2.8)
       '@convex-dev/better-auth':
         specifier: 'catalog:'
         version: 0.12.5(@standard-schema/spec@1.1.0)(better-auth@1.6.26(@tanstack/react-start@1.168.42(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.20.1)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.10))(convex@1.43.0(react@19.2.8))(react@19.2.8)(typescript@7.0.2)
       '@hookform/resolvers':
         specifier: ^5.7.1
-        version: 5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
+        version: 5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)
       '@tanstack/react-devtools':
         specifier: ^0.10.10
         version: 0.10.10(@neodrag/core@3.0.0-next.11)(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(csstype@3.2.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)
@@ -152,9 +143,6 @@ importers:
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
-      effect:
-        specifier: 'catalog:'
-        version: 4.0.0-beta.107
       framer-motion:
         specifier: ^13.1.0
         version: 13.1.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -634,15 +622,6 @@ packages:
     peerDependencies:
       convex: ^1.32.0
       effect: ^4.0.0-beta.107
-
-  '@confect/react@10.0.0-next.13':
-    resolution: {integrity: sha512-t2XjMt4r89y19w3nvHvlMXStyfMUzx1r3iRwCPRx+k4n0/F5FbB0gEXE/NEm9Q6HTA8wUPxU2hmVpuQ/8eIdsA==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      '@confect/core': ^10.0.0-next.13
-      convex: ^1.36.0
-      effect: ^4.0.0-beta.107
-      react: ^18.0.0 || ^19.0.0
 
   '@confect/server@10.0.0-next.13':
     resolution: {integrity: sha512-nwfpaqEbTG7aC+HZ1i+DZjoVKsukZWQjdDrmNuuRNllbEur+jLv+bwWX5R4he+Qh7nYmRKfZAvtbtFtsTwf/KA==}
@@ -6012,13 +5991,6 @@ snapshots:
       convex: 1.43.0(react@19.2.8)
       effect: 4.0.0-beta.107
 
-  '@confect/react@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)(react@19.2.8)':
-    dependencies:
-      '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
-      convex: 1.43.0(react@19.2.8)
-      effect: 4.0.0-beta.107
-      react: 19.2.8
-
   '@confect/server@10.0.0-next.13(@confect/core@10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107))(@effect/platform-node@4.0.0-rc.108(effect@4.0.0-beta.107)(ioredis@5.11.1))(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)':
     dependencies:
       '@confect/core': 10.0.0-next.13(convex@1.43.0(react@19.2.8))(effect@4.0.0-beta.107)
@@ -6324,13 +6296,12 @@ snapshots:
     dependencies:
       '@hapi/hoek': 11.0.7
 
-  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(effect@4.0.0-beta.107)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
+  '@hookform/resolvers@5.7.1(@standard-schema/spec@1.1.0)(react-hook-form@7.85.0(react@19.2.8))(zod@4.4.3)':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.85.0(react@19.2.8)
     optionalDependencies:
       '@standard-schema/spec': 1.1.0
-      effect: 4.0.0-beta.107
       zod: 4.4.3
 
   '@iconify/types@2.0.0': {}

@@ -45,6 +45,20 @@ const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
 
+function runInConvexPackage(command: string, args: string[]) {
+  console.log(`\n$ ${command} ${args.join(" ")}`);
+  execFileSync("pnpm", ["exec", command, ...args], {
+    cwd: convexPackageDir,
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      VITE_SITE_URL: siteUrl,
+      // Bake demo-login prefills into the web build on preview only.
+      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
+    },
+  });
+}
+
 function convexCli(args: string[]) {
   console.log(`\n$ convex ${args.join(" ")}`);
   execFileSync("pnpm", ["convex", ...args], {
@@ -58,6 +72,10 @@ function convexCli(args: string[]) {
     },
   });
 }
+
+// Refresh Confect → Convex codegen so deploy always ships a consistent
+// convex/ tree (even if a local edit forgot to run `confect codegen`).
+runInConvexPackage("confect", ["codegen"]);
 
 convexCli([
   "deploy",
