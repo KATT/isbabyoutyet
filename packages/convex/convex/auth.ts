@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth/minimal";
 import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
+import { requireActionCtx } from "@convex-dev/better-auth/utils";
 import authConfig from "./auth.config";
+import { sendPasswordResetEmail } from "./cloudflareEmail";
 import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
@@ -21,6 +23,17 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
+      minPasswordLength: 8,
+      maxPasswordLength: 128,
+      resetPasswordTokenExpiresIn: 60 * 30,
+      revokeSessionsOnPasswordReset: true,
+      sendResetPassword: async (data) => {
+        requireActionCtx(ctx);
+        await sendPasswordResetEmail({
+          recipient: data.user.email,
+          resetUrl: data.url,
+        });
+      },
     },
     plugins: [
       // The Convex plugin is required for Convex compatibility

@@ -117,6 +117,15 @@ function LoginPage() {
                   )}
                 />
 
+                <div className="text-right text-sm">
+                  <Link
+                    to="/auth/forgot-password"
+                    className="text-primary hover:text-primary/80 underline underline-offset-4"
+                  >
+                    Forgot password?
+                  </Link>
+                </div>
+
                 <Button
                   type="submit"
                   className="w-full shadow-lg shadow-primary/20"

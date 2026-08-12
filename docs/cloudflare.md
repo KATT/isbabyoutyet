@@ -32,6 +32,9 @@ request.
    | `VAPID_PUBLIC_KEY` | Variable | The existing VAPID public key |
    | `VAPID_PRIVATE_KEY` | Secret | The existing VAPID private key |
    | `VAPID_SUBJECT` | Variable | Optional; defaults to `mailto:admin@isbabyoutyet.com` |
+   | `CLOUDFLARE_ACCOUNT_ID` | Variable | Cloudflare account ID used by Email Service |
+   | `CLOUDFLARE_EMAIL_API_TOKEN` | Secret | Scoped token with **Email Sending: Edit** |
+   | `EMAIL_FROM` | Variable | Onboarded sender, for example `Is Baby Out Yet? <account@isbabyoutyet.com>` |
 
 Workers Builds supplies `WORKERS_CI` and `WORKERS_CI_BRANCH` automatically. The
 build script derives the same stable branch alias as Wrangler, configures that
@@ -48,6 +51,34 @@ names. Until the main domain is attached, the `main` workers.dev deployment uses
 
 This requires a Convex plan that supports preview deployments and a Preview
 Deploy Key from **Convex dashboard → Project Settings → Deploy Keys**.
+
+## Password reset email
+
+Password resets use Cloudflare Email Service's REST API from Convex. The REST
+API is necessary because Better Auth runs in Convex rather than inside the
+Worker, where a `send_email` binding would be available.
+
+Cloudflare Email Sending is currently in public beta and requires the Workers
+Paid plan to send to arbitrary recipients. It also requires Cloudflare DNS:
+
+1. Open **Compute → Email Service → Email Sending**.
+2. Onboard `isbabyoutyet.com`. This adds bounce MX, SPF, DKIM, and DMARC records
+   but does not route web traffic or attach the domain to the Worker.
+3. Create a scoped API token with **Email Sending: Edit**.
+4. Add the three Email Service build settings from the table above.
+
+Without those settings the app still builds and signs users in, but password
+reset requests cannot send mail.
+
+## Analytics and observability
+
+Worker invocation metrics, structured logs, and automatic traces are enabled by
+`wrangler.jsonc` and become available in the Worker's **Observability** tab.
+No additional analytics service or application dependency is required.
+
+After the custom domain is proxied through Cloudflare, add it under
+**Analytics & Logs → Web Analytics**. Automatic setup injects Cloudflare's
+privacy-first RUM beacon and reports Core Web Vitals without a code change.
 
 ## Local verification
 
