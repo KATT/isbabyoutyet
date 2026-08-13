@@ -32,8 +32,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         onClick={() => props.onMinimize(false)}
         className={cn(
           "fixed z-40 flex items-center gap-2 rounded-full border border-primary/20 bg-popover/95 px-3 py-2 text-sm font-medium shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm transition hover:border-primary/40",
-          // Sit above the mobile bottom nav; corner on desktop
-          "right-4 bottom-20 md:bottom-6",
+          "right-4 bottom-6",
           props.className,
         )}
         aria-label={`Getting started: ${completedCount} of ${total} done. Expand.`}
@@ -53,7 +52,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
     <aside
       className={cn(
         "fixed z-40 w-[min(100%-2rem,22rem)] rounded-xl border border-border/60 bg-popover/95 p-4 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md",
-        "right-4 bottom-20 md:bottom-6",
+        "right-4 bottom-6",
         "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
         props.className,
       )}
