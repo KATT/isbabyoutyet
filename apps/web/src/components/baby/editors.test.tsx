@@ -1,9 +1,10 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { NameEditor, StatusDateEditor } from "@/components/baby/editors";
+import { DueDateEditor, NameEditor, StatusDateEditor } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { LocaleProvider } from "@/lib/i18n";
 
 const baby: BabyData = {
   name: "Nova",
@@ -27,9 +28,9 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
 
   // The form mounted with the current name and the link reassurance
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova");
-  expect(view.getByText(/any link you've already shared keeps working/i)).toBeTruthy();
+  expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
   // Save is dirty-gated
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
@@ -41,7 +42,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));
   // The popover closed after a successful save
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
 });
 
 test("reopening the editor picks up the latest name without any reset", async () => {
@@ -50,17 +51,29 @@ test("reopening the editor picks up the latest name without any reset", async ()
 
   // Open, type a draft, then cancel — the draft must not survive
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Scrapped draft" } });
+  fireEvent.change(view.getByLabelText("Baby Name"), { target: { value: "Scrapped draft" } });
   fireEvent.click(view.getByRole("button", { name: "Cancel" }));
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
 
   // The name changes from outside (e.g. the mutation round-trip)
   view.rerender(<NameEditor baby={{ ...baby, name: "Nova Rae" }} onUpdate={onUpdate} />);
 
   // Reopening mounts a fresh form seeded with the latest name
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
+});
+
+test("due date editor localizes its accessible label", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <LocaleProvider locale="pt-BR">
+      <DueDateEditor baby={baby} onUpdate={onUpdate} />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Editar" }));
+  expect(view.getByLabelText("Data prevista")).toBeTruthy();
 });
 
 test("status editor confirms destructive deletion", async () => {

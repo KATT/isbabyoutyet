@@ -6,6 +6,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
+import { useI18n } from "@/lib/i18n";
 
 type CoParentsSettingsProps = {
   babyId: Id<"baby">;
@@ -17,6 +18,7 @@ type CoParentsSettingsProps = {
  * Settings section for inviting co-parents by email and managing membership.
  */
 export function CoParentsSettings(props: CoParentsSettingsProps) {
+  const { t } = useI18n();
   const listing = useQuery(api.coParents.listForBaby, { babyId: props.babyId });
   const invite = useMutation(api.coParents.invite);
   const removeCoParent = useMutation(api.coParents.removeCoParent);
@@ -33,11 +35,11 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
       setEmail("");
       toast.success(
         result.status === "added"
-          ? "Co-parent added — they can manage this page now"
-          : "Invite sent — they'll get access after signing up with that email",
+          ? t("Co-parent added — they can manage this page now")
+          : t("Invite sent — they'll get access after signing up with that email"),
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not invite");
+      toast.error(error instanceof Error ? error.message : t("Could not invite"));
     } finally {
       setBusy(false);
     }
@@ -46,7 +48,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
   return (
     <div className="space-y-3 w-full">
       {listing === undefined ? (
-        <p className="text-sm text-muted-foreground">Loading co-parents…</p>
+        <p className="text-sm text-muted-foreground">{t("Loading co-parents…")}</p>
       ) : (
         <ul className="space-y-2">
           {listing.coParents.map((row) => (
@@ -62,12 +64,12 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`Remove ${row.email}`}
+                  aria-label={t("Remove {{email}}", { email: row.email })}
                   onClick={() => {
                     void removeCoParent({ coParentId: row._id })
-                      .then(() => toast.success("Co-parent removed"))
+                      .then(() => toast.success(t("Co-parent removed")))
                       .catch((error: unknown) => {
-                        toast.error(error instanceof Error ? error.message : "Could not remove");
+                        toast.error(error instanceof Error ? error.message : t("Could not remove"));
                       });
                   }}
                 >
@@ -80,19 +82,19 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
             <li key={row._id} className="flex items-center justify-between gap-2 text-sm">
               <div className="min-w-0">
                 <div className="font-medium truncate">{row.email}</div>
-                <div className="text-muted-foreground">Invite pending</div>
+                <div className="text-muted-foreground">{t("Invite pending")}</div>
               </div>
               {props.isOwner ? (
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`Cancel invite to ${row.email}`}
+                  aria-label={t("Cancel invite to {{email}}", { email: row.email })}
                   onClick={() => {
                     void cancelInvite({ inviteId: row._id })
-                      .then(() => toast.success("Invite cancelled"))
+                      .then(() => toast.success(t("Invite cancelled")))
                       .catch((error: unknown) => {
-                        toast.error(error instanceof Error ? error.message : "Could not cancel");
+                        toast.error(error instanceof Error ? error.message : t("Could not cancel"));
                       });
                   }}
                 >
@@ -103,7 +105,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
           ))}
           {listing.coParents.length === 0 && listing.invites.length === 0 ? (
             <li className="text-sm text-muted-foreground">
-              No co-parents yet. Add a partner so they can post updates too.
+              {t("No co-parents yet. Add a partner so they can post updates too.")}
             </li>
           ) : null}
         </ul>
@@ -120,7 +122,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
             className="flex-1"
           />
           <Button type="submit" size="sm" disabled={busy || !email.trim()}>
-            {busy ? <CircleNotch className="w-4 h-4 animate-spin" /> : "Add"}
+            {busy ? <CircleNotch className="w-4 h-4 animate-spin" /> : t("Add")}
           </Button>
         </form>
       ) : null}

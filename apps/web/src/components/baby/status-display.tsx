@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
-import { format } from "date-fns";
 import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
@@ -8,31 +7,29 @@ import {
   getOverdueDays,
   getDaysUntilDueDate,
   getRelativeTime,
-  parseDate,
+  formatDueDate,
 } from "./utils";
+import { useI18n } from "@/lib/i18n";
 
 type PhotoAvatarProps = {
+  babyName: string;
   photoUrl: string | null | undefined;
   thumbnailUrl: string | null | undefined;
   fallbackEmoji: string;
   variant?: "default" | "born";
 };
 
-function PhotoAvatar({
-  photoUrl,
-  thumbnailUrl,
-  fallbackEmoji,
-  variant = "default",
-}: PhotoAvatarProps) {
+function PhotoAvatar(props: PhotoAvatarProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
 
   // Prefetch the full-size image when component mounts or photoUrl changes
   useEffect(() => {
-    if (photoUrl) {
+    if (props.photoUrl) {
       const link = document.createElement("link");
       link.rel = "prefetch";
       link.as = "image";
-      link.href = photoUrl;
+      link.href = props.photoUrl;
       document.head.appendChild(link);
 
       return () => {
@@ -42,23 +39,23 @@ function PhotoAvatar({
         }
       };
     }
-  }, [photoUrl]);
+  }, [props.photoUrl]);
 
   const baseClasses =
     "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
   const variantClasses =
-    variant === "born"
+    props.variant === "born"
       ? "bg-primary/15 border-primary pop-shadow-strong"
       : "bg-primary/10 border-primary/25 pop-shadow";
 
   // Use thumbnail for avatar, fallback to full photo if thumbnail not available
-  const avatarImageUrl = thumbnailUrl ?? photoUrl;
+  const avatarImageUrl = props.thumbnailUrl ?? props.photoUrl;
 
-  if (!avatarImageUrl && !photoUrl) {
+  if (!avatarImageUrl && !props.photoUrl) {
     return (
       <div className={`${baseClasses} ${variantClasses}`}>
         <span className="text-6xl md:text-7xl" aria-hidden="true">
-          {fallbackEmoji}
+          {props.fallbackEmoji}
         </span>
       </div>
     );
@@ -74,7 +71,7 @@ function PhotoAvatar({
             {avatarImageUrl && (
               <img
                 src={avatarImageUrl}
-                alt="Baby"
+                alt={t("Photo of {{name}}", { name: props.babyName })}
                 width={160}
                 height={160}
                 className="w-full h-full object-cover"
@@ -83,17 +80,18 @@ function PhotoAvatar({
           </button>
         }
       />
-      {photoUrl && (
+      {props.photoUrl && (
         <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
           <button
             onClick={() => setIsOpen(false)}
+            aria-label={t("Close photo")}
             className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
           <img
-            src={photoUrl}
-            alt="Baby"
+            src={props.photoUrl}
+            alt={t("Photo of {{name}}", { name: props.babyName })}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
           />
         </DialogContent>
@@ -120,6 +118,7 @@ type StatusDisplayProps = {
 };
 
 function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
+  const { locale, t } = useI18n();
   const latestUpdate = props.latestUpdate;
   if (!latestUpdate?.message) {
     return null;
@@ -127,59 +126,74 @@ function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
   return (
     <div className="mt-8 w-full max-w-md rounded-3xl rounded-bl-lg border-2 border-primary/25 bg-primary/10 px-6 py-5 text-left rotate-[-1deg] pop-shadow">
       <p className="text-xs font-black uppercase tracking-widest text-primary/80">
-        Latest from the family 💬
+        {t("Latest from the family")} 💬
       </p>
       <p className="mt-2 text-lg font-bold leading-snug text-foreground break-words">
         {latestUpdate.message}
       </p>
       <p className="mt-2 text-xs font-semibold text-muted-foreground">
-        Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
+        {t("Updated {{relative}}", {
+          relative: getRelativeTime(new Date(latestUpdate.postedAt).toISOString(), locale),
+        })}
       </p>
     </div>
   );
 }
 
 const STATUS_META = {
-  not_yet: { emoji: "👶", answer: "Not yet", subline: "Baby is still on the way" },
-  labor_started: { emoji: "💫", answer: "Labour started!", subline: "Not gone to hospital yet" },
-  gone_to_hospital: { emoji: "🏥", answer: "Gone to hospital!", subline: "Almost there now" },
-  born: { emoji: "🎉", answer: "Yes! Baby is out", subline: "Welcome to the world, little one" },
+  not_yet: { emoji: "👶", answerKey: "Not yet", sublineKey: "Baby is still on the way" },
+  labor_started: {
+    emoji: "💫",
+    answerKey: "Labour started!",
+    sublineKey: "Not gone to hospital yet",
+  },
+  gone_to_hospital: {
+    emoji: "🏥",
+    answerKey: "Gone to hospital!",
+    sublineKey: "Almost there now",
+  },
+  born: {
+    emoji: "🎉",
+    answerKey: "Yes! Baby is out",
+    sublineKey: "Welcome to the world, little one",
+  },
 } as const;
 
-export function StatusDisplay({
-  baby,
-  currentStatus,
-  photoUrl,
-  thumbnailUrl,
-  latestUpdate,
-}: StatusDisplayProps) {
-  const overdueDays = getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
-  const meta = STATUS_META[currentStatus.type];
-  const isBorn = currentStatus.type === "born";
+export function StatusDisplay(props: StatusDisplayProps) {
+  const { locale, t } = useI18n();
+  const overdueDays = getOverdueDays(props.baby.dueDate);
+  const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
+  const meta = STATUS_META[props.currentStatus.type];
+  const isBorn = props.currentStatus.type === "born";
 
   return (
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
-        photoUrl={photoUrl}
-        thumbnailUrl={thumbnailUrl}
+        babyName={props.baby.name}
+        photoUrl={props.photoUrl}
+        thumbnailUrl={props.thumbnailUrl}
         fallbackEmoji={meta.emoji}
         variant={isBorn ? "born" : "default"}
       />
 
       <h2 className="text-4xl md:text-5xl font-black tracking-tight text-primary text-balance">
-        {meta.answer}
+        {t(meta.answerKey)}
       </h2>
-      <p className="mt-3 text-lg font-bold text-muted-foreground">{meta.subline}</p>
+      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(meta.sublineKey)}</p>
 
-      {currentStatus.type !== "not_yet" && (
+      {props.currentStatus.type !== "not_yet" && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">
-          {isBorn ? "Born" : currentStatus.type === "labor_started" ? "Started" : "Since"}{" "}
-          {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+          {isBorn
+            ? t("Born")
+            : props.currentStatus.type === "labor_started"
+              ? t("Started")
+              : t("Since")}{" "}
+          {formatDate(props.currentStatus.date, locale)} (
+          {getRelativeTime(props.currentStatus.date, locale)})
         </p>
       )}
 
-      {currentStatus.type === "not_yet" && (
+      {props.currentStatus.type === "not_yet" && (
         <div
           className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
             overdueDays > 0 ? "border-primary/40 bg-primary/10" : "border-border bg-card"
@@ -189,16 +203,23 @@ export function StatusDisplay({
             className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
           >
             {overdueDays > 0
-              ? `${overdueDays} ${overdueDays === 1 ? "day" : "days"} overdue`
-              : `${daysUntilDueDate} ${daysUntilDueDate === 1 ? "day" : "days"} until due date`}
+              ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
+                  count: overdueDays,
+                })
+              : t(
+                  daysUntilDueDate === 1
+                    ? "{{count}} day until due date"
+                    : "{{count}} days until due date",
+                  { count: daysUntilDueDate },
+                )}
           </p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+            {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
           </p>
         </div>
       )}
 
-      <LatestUpdateBox latestUpdate={latestUpdate} />
+      <LatestUpdateBox latestUpdate={props.latestUpdate} />
     </div>
   );
 }

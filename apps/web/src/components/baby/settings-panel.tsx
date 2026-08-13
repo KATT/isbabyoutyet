@@ -22,7 +22,14 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Switch } from "@workspace/ui/components/switch";
-import { format } from "date-fns";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import {
   Baby,
   CalendarHeart,
@@ -31,6 +38,7 @@ import {
   Heartbeat,
   Hospital,
   Palette,
+  Translate,
   Trash,
   Users,
 } from "@phosphor-icons/react";
@@ -38,13 +46,20 @@ import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
-import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
+import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
+import {
+  SUPPORTED_LOCALES,
+  isSupportedLocale,
+  type SupportedLocale,
+} from "@workspace/convex/src/i18n";
+import { getLanguageName, useI18n } from "@/lib/i18n";
 
 type SettingsPanelProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  profileLocale?: SupportedLocale;
   /** Owner-only soft delete. Omitted on the preview page. */
   onDelete?: () => void | Promise<void>;
   /** When set, shows the co-parents section (real baby pages only). */
@@ -60,19 +75,14 @@ type SettingsPanelProps = {
  * here appear once marked, for correcting their date. Unmarking a milestone
  * is done by deleting its update in the timeline.
  */
-export function SettingsPanel({
-  baby,
-  onUpdate,
-  open,
-  onOpenChange,
-  onDelete,
-  coParents,
-}: SettingsPanelProps) {
+export function SettingsPanel(props: SettingsPanelProps) {
+  const { locale, t } = useI18n();
+  const inheritedLocale = props.profileLocale ?? locale;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
+          <DialogTitle>{t("Settings")}</DialogTitle>
         </DialogHeader>
         <ItemGroup>
           {/* Baby Name */}
@@ -81,11 +91,11 @@ export function SettingsPanel({
               <Baby className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Baby Name</ItemTitle>
-              <ItemDescription>{baby.name}</ItemDescription>
+              <ItemTitle>{t("Baby Name")}</ItemTitle>
+              <ItemDescription>{props.baby.name}</ItemDescription>
             </ItemContent>
             <ItemActions>
-              <NameEditor baby={baby} onUpdate={onUpdate} />
+              <NameEditor baby={props.baby} onUpdate={props.onUpdate} />
             </ItemActions>
           </Item>
 
@@ -97,18 +107,18 @@ export function SettingsPanel({
               <CalendarHeart className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Due Date</ItemTitle>
-              <ItemDescription>{format(parseDate(baby.dueDate), "MMMM d, yyyy")}</ItemDescription>
+              <ItemTitle>{t("Due Date")}</ItemTitle>
+              <ItemDescription>{formatDueDate(props.baby.dueDate, locale)}</ItemDescription>
             </ItemContent>
             <ItemActions>
-              <DueDateEditor baby={baby} onUpdate={onUpdate} />
+              <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
             </ItemActions>
           </Item>
 
           {/* Marked milestones: correct their date here; mark new ones via
               the "Post update" composer, unmark by deleting the timeline
               update */}
-          {baby.laborStarted && (
+          {props.baby.laborStarted && (
             <>
               <ItemSeparator />
               <Item>
@@ -116,24 +126,25 @@ export function SettingsPanel({
                   <Heartbeat className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>Labour started</ItemTitle>
+                  <ItemTitle>{t("Labour started")}</ItemTitle>
                   <ItemDescription>
-                    {formatDate(baby.laborStarted)} ({getRelativeTime(baby.laborStarted)})
+                    {formatDate(props.baby.laborStarted, locale)} (
+                    {getRelativeTime(props.baby.laborStarted, locale)})
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <StatusDateEditor
-                    baby={baby}
+                    baby={props.baby}
                     status="labor_started"
-                    currentDate={baby.laborStarted}
-                    onUpdate={onUpdate}
+                    currentDate={props.baby.laborStarted}
+                    onUpdate={props.onUpdate}
                   />
                 </ItemActions>
               </Item>
             </>
           )}
 
-          {baby.wentToHospital && (
+          {props.baby.wentToHospital && (
             <>
               <ItemSeparator />
               <Item>
@@ -141,24 +152,25 @@ export function SettingsPanel({
                   <Hospital className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>Gone to hospital</ItemTitle>
+                  <ItemTitle>{t("Gone to hospital")}</ItemTitle>
                   <ItemDescription>
-                    {formatDate(baby.wentToHospital)} ({getRelativeTime(baby.wentToHospital)})
+                    {formatDate(props.baby.wentToHospital, locale)} (
+                    {getRelativeTime(props.baby.wentToHospital, locale)})
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <StatusDateEditor
-                    baby={baby}
+                    baby={props.baby}
                     status="gone_to_hospital"
-                    currentDate={baby.wentToHospital}
-                    onUpdate={onUpdate}
+                    currentDate={props.baby.wentToHospital}
+                    onUpdate={props.onUpdate}
                   />
                 </ItemActions>
               </Item>
             </>
           )}
 
-          {baby.babyBorn && (
+          {props.baby.babyBorn && (
             <>
               <ItemSeparator />
               <Item>
@@ -166,17 +178,18 @@ export function SettingsPanel({
                   <Confetti className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>Baby born</ItemTitle>
+                  <ItemTitle>{t("Baby born")}</ItemTitle>
                   <ItemDescription>
-                    {formatDate(baby.babyBorn)} ({getRelativeTime(baby.babyBorn)})
+                    {formatDate(props.baby.babyBorn, locale)} (
+                    {getRelativeTime(props.baby.babyBorn, locale)})
                   </ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <StatusDateEditor
-                    baby={baby}
+                    baby={props.baby}
                     status="born"
-                    currentDate={baby.babyBorn}
-                    onUpdate={onUpdate}
+                    currentDate={props.baby.babyBorn}
+                    onUpdate={props.onUpdate}
                   />
                 </ItemActions>
               </Item>
@@ -191,13 +204,62 @@ export function SettingsPanel({
               <Palette className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Theme</ItemTitle>
+              <ItemTitle>{t("Theme")}</ItemTitle>
               <ItemDescription>
-                {THEME_OPTIONS.find((t) => t.value === baby.theme)?.label || "Default"}
+                {t(
+                  THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.labelKey ??
+                    "Default",
+                )}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
-              <ThemeSelector baby={baby} onUpdate={onUpdate} />
+              <ThemeSelector baby={props.baby} onUpdate={props.onUpdate} />
+            </ItemActions>
+          </Item>
+
+          <ItemSeparator />
+
+          <Item>
+            <ItemMedia variant="icon">
+              <Translate />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>{t("Language")}</ItemTitle>
+              <ItemDescription>
+                {t("All visitors see this page in {{language}}.", {
+                  language: getLanguageName(props.baby.locale ?? inheritedLocale, locale),
+                })}
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Select
+                value={props.baby.locale ?? "inherit"}
+                onValueChange={(value) => {
+                  if (value === "inherit") {
+                    void props.onUpdate({ locale: null });
+                  } else if (typeof value === "string" && isSupportedLocale(value)) {
+                    void props.onUpdate({ locale: value });
+                  }
+                }}
+              >
+                <SelectTrigger aria-label={t("Language")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    <SelectItem value="inherit">
+                      {t("Use my profile language ({{language}})", {
+                        language: getLanguageName(inheritedLocale, locale),
+                      })}
+                    </SelectItem>
+                    {SUPPORTED_LOCALES.map((supportedLocale) => (
+                      <SelectItem key={supportedLocale} value={supportedLocale}>
+                        {getLanguageName(supportedLocale, locale)}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </ItemActions>
           </Item>
 
@@ -209,20 +271,22 @@ export function SettingsPanel({
               <ChatCircle className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>Encouragements</ItemTitle>
+              <ItemTitle>{t("Encouragements")}</ItemTitle>
               <ItemDescription>
-                {baby.encouragementsDisabled ? "Form disabled" : "Visitors can send messages"}
+                {props.baby.encouragementsDisabled
+                  ? t("Form disabled")
+                  : t("Visitors can send messages")}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
               <Switch
-                checked={!baby.encouragementsDisabled}
-                onCheckedChange={(checked) => onUpdate({ encouragementsDisabled: !checked })}
+                checked={!props.baby.encouragementsDisabled}
+                onCheckedChange={(checked) => props.onUpdate({ encouragementsDisabled: !checked })}
               />
             </ItemActions>
           </Item>
 
-          {coParents && (
+          {props.coParents && (
             <>
               <ItemSeparator />
               <Item variant="default" className="items-start">
@@ -231,20 +295,23 @@ export function SettingsPanel({
                 </ItemMedia>
                 <ItemContent className="gap-3">
                   <div>
-                    <ItemTitle>Co-parents</ItemTitle>
+                    <ItemTitle>{t("Co-parents")}</ItemTitle>
                     <ItemDescription>
-                      {coParents.isOwner
-                        ? "People who can post updates and change settings"
-                        : "Others who can manage this page with you"}
+                      {props.coParents.isOwner
+                        ? t("People who can post updates and change settings")
+                        : t("Others who can manage this page with you")}
                     </ItemDescription>
                   </div>
-                  <CoParentsSettings babyId={coParents.babyId} isOwner={coParents.isOwner} />
+                  <CoParentsSettings
+                    babyId={props.coParents.babyId}
+                    isOwner={props.coParents.isOwner}
+                  />
                 </ItemContent>
               </Item>
             </>
           )}
 
-          {onDelete && (
+          {props.onDelete && (
             <>
               <ItemSeparator />
               <Item>
@@ -252,35 +319,38 @@ export function SettingsPanel({
                   <Trash className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>Delete page</ItemTitle>
-                  <ItemDescription>Hide this baby page from everyone</ItemDescription>
+                  <ItemTitle>{t("Delete page")}</ItemTitle>
+                  <ItemDescription>{t("Hide this baby page from everyone")}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
                   <AlertDialog>
                     <AlertDialogTrigger
                       render={
                         <Button variant="destructive" size="sm">
-                          Delete
+                          {t("Delete")}
                         </Button>
                       }
                     />
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Delete {baby.name}&apos;s page?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                          {t("Delete {{name}}'s page?", { name: props.baby.name })}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                          The page will disappear from your dashboard and the public link will stop
-                          working. Only you (the owner) can do this.
+                          {t(
+                            "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
+                          )}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                         <AlertDialogAction
                           variant="destructive"
                           onClick={() => {
-                            void onDelete();
+                            void props.onDelete?.();
                           }}
                         >
-                          Delete page
+                          {t("Delete page")}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>

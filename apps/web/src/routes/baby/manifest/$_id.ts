@@ -2,6 +2,7 @@ import { getThemePrimaryColor } from "@/components/baby/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { translate } from "@/lib/i18n";
 
 export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
@@ -21,15 +22,21 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
           return new Response("Baby not found", { status: 404 });
         }
 
-        const name = `Is ${baby.name} out yet?`;
+        const locale = baby.resolvedLocale;
+        const name = translate(locale, "Is {{name}} out yet?", { name: baby.name });
         const themeColor = getThemePrimaryColor(baby.theme);
-        const startUrl = `/baby/${baby._id}`;
+        const startUrl = `/baby/${baby.publicId}`;
 
         const manifest = {
           name,
           short_name: name,
           id: startUrl,
           start_url: startUrl,
+          scope: `/baby/${baby.publicId}`,
+          lang: locale,
+          description: translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
+            name: baby.name,
+          }),
           display: "standalone",
           theme_color: themeColor,
           background_color: "#0f172a",

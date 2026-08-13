@@ -20,6 +20,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import { useI18n } from "@/lib/i18n";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/auth/login")({
 const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function LoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const form = useZodForm({
@@ -66,9 +68,9 @@ function LoginPage() {
             <p className="text-4xl" aria-hidden="true">
               👋
             </p>
-            <CardTitle className="text-2xl font-black">Welcome back!</CardTitle>
+            <CardTitle className="text-2xl font-black">{t("Welcome back!")}</CardTitle>
             <CardDescription className="font-medium">
-              Sign in to keep everyone in the loop
+              {t("Sign in to keep everyone in the loop")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -94,7 +96,7 @@ function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("Email")}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
@@ -108,7 +110,7 @@ function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t("Password")}</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
@@ -123,19 +125,19 @@ function LoginPage() {
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? "Signing in..." : "Sign In"}
+                  {form.formState.isSubmitting ? t("Signing in...") : t("Sign In")}
                 </Button>
               </div>
             </Form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              {t("Don't have an account?")}{" "}
               <Link
                 to="/auth/signup"
                 preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
-                Sign up
+                {t("Sign up")}
               </Link>
             </div>
           </CardContent>

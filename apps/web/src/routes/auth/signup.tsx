@@ -20,6 +20,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import { useI18n } from "@/lib/i18n";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/auth/signup")({
 const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function SignupPage() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const form = useZodForm({
@@ -69,9 +71,9 @@ function SignupPage() {
             <p className="text-4xl" aria-hidden="true">
               🎈
             </p>
-            <CardTitle className="text-2xl font-black">Join the fun!</CardTitle>
+            <CardTitle className="text-2xl font-black">{t("Join the fun!")}</CardTitle>
             <CardDescription className="font-medium">
-              Create an account to share your baby's arrival
+              {t("Create an account to share your baby's arrival")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,9 +99,9 @@ function SignupPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Name</FormLabel>
+                      <FormLabel>{t("Name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Your name" {...field} />
+                        <Input placeholder={t("Your name")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -111,7 +113,7 @@ function SignupPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("Email")}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
@@ -125,7 +127,7 @@ function SignupPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t("Password")}</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
@@ -140,19 +142,19 @@ function SignupPage() {
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? "Signing up..." : "Sign Up"}
+                  {form.formState.isSubmitting ? t("Signing up...") : t("Sign Up")}
                 </Button>
               </div>
             </Form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
+              {t("Already have an account?")}{" "}
               <Link
                 to="/auth/login"
                 preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
-                Sign in
+                {t("Sign in")}
               </Link>
             </div>
           </CardContent>

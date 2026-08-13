@@ -1,0 +1,1626 @@
+import { createContext, useContext, useMemo } from "react";
+import type { ReactNode } from "react";
+import { getLocale } from "@/paraglide/runtime";
+import {
+  DEFAULT_LOCALE,
+  resolveSupportedLocale,
+  type SupportedLocale,
+} from "@workspace/convex/src/i18n";
+
+/**
+ * Paraglide owns request-safe locale detection and cookie persistence. This
+ * catalog accepts an explicit locale because a public baby page can override
+ * the visitor's cookie without changing that visitor's own preference.
+ */
+const enGB = {
+  "Track the progress of labour and birth – know when baby arrives!":
+    "Track the progress of labour and birth – know when baby arrives!",
+  "Is Baby Out Yet? – Share Your Baby's Arrival": "Is Baby Out Yet? – Share Your Baby's Arrival",
+  "Is Baby Out Yet?": "Is Baby Out Yet?",
+  "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
+    "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
+  "Free forever, no ads": "Free forever, no ads",
+  'Stop answering "any news yet?" texts. Share one link and let everyone follow along.':
+    'Stop answering "any news yet?" texts. Share one link and let everyone follow along.',
+  "Go to Dashboard": "Go to Dashboard",
+  "Get Started": "Get Started",
+  "Is {{name}} out yet?": "Is {{name}} out yet?",
+  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} day overdue – Is {{name}} out yet?",
+  "{{count}} days overdue – Is {{name}} out yet?": "{{count}} days overdue – Is {{name}} out yet?",
+  "{{count}} day until due date – Is {{name}} out yet?":
+    "{{count}} day until due date – Is {{name}} out yet?",
+  "{{count}} days until due date – Is {{name}} out yet?":
+    "{{count}} days until due date – Is {{name}} out yet?",
+  "{{title}} – Track Your Baby's Journey": "{{title}} – Track Your Baby's Journey",
+  "Track {{name}}'s journey – know when baby arrives!":
+    "Track {{name}}'s journey – know when baby arrives!",
+  "Not yet": "Not yet",
+  "Baby is still on the way": "Baby is still on the way",
+  "{{count}} day overdue": "{{count}} day overdue",
+  "{{count}} days overdue": "{{count}} days overdue",
+  "{{count}} day until due date": "{{count}} day until due date",
+  "{{count}} days until due date": "{{count}} days until due date",
+  "Due date: {{date}}": "Due date: {{date}}",
+  "Labour started": "Labour started",
+  "Not gone to hospital yet": "Not gone to hospital yet",
+  "Started at {{date}} ({{relative}})": "Started at {{date}} ({{relative}})",
+  "Gone to hospital": "Gone to hospital",
+  "Yes! Baby is out": "Yes! Baby is out",
+  "Born on {{date}} ({{relative}})": "Born on {{date}} ({{relative}})",
+  "Baby born": "Baby born",
+  "Latest from the family": "Latest from the family",
+  "Photo of {{name}}": "Photo of {{name}}",
+  "Updated {{relative}}": "Updated {{relative}}",
+  "Having a baby? Are people messaging you non-stop? Create your own page →":
+    "Having a baby? Are people messaging you non-stop? Create your own page →",
+  "Post update": "Post update",
+  Settings: "Settings",
+  "Close settings": "Close settings",
+  "Copy link to share": "Copy link to share",
+  "Copied!": "Copied!",
+  "Copied to clipboard": "Copied to clipboard",
+  "Owner actions": "Owner actions",
+  "Page actions": "Page actions",
+  "Baby Name": "Baby Name",
+  "Due Date": "Due Date",
+  "Status date and time": "Status date and time",
+  Theme: "Theme",
+  Encouragements: "Encouragements",
+  "Visitors can send messages": "Visitors can send messages",
+  "Form disabled": "Form disabled",
+  Language: "Language",
+  "Use my profile language ({{language}})": "Use my profile language ({{language}})",
+  "All visitors see this page in {{language}}.": "All visitors see this page in {{language}}.",
+  Default: "Default",
+  "Violet Bloom": "Violet Bloom",
+  "Twitter Blue": "Twitter Blue",
+  Bubblegum: "Bubblegum",
+  Catppuccin: "Catppuccin",
+  "Mocha Mousse": "Mocha Mousse",
+  "Quantum Rose": "Quantum Rose",
+  Edit: "Edit",
+  Change: "Change",
+  Save: "Save",
+  Cancel: "Cancel",
+  "Send Encouragement": "Send Encouragement",
+  "Leave a message of support for {{name}}'s family":
+    "Leave a message of support for {{name}}'s family",
+  "Your name": "Your name",
+  Message: "Message",
+  "Write your message of encouragement...": "Write your message of encouragement...",
+  "Sending...": "Sending...",
+  "Sending your encouragement...": "Sending your encouragement...",
+  "Your kind words have been sent! 💕": "Your kind words have been sent! 💕",
+  "Updates & encouragements": "Updates & encouragements",
+  "Loading the timeline...": "Loading the timeline...",
+  "Nothing here yet": "Nothing here yet",
+  "Post your first update to keep everyone in the loop!":
+    "Post your first update to keep everyone in the loop!",
+  "Updates from the family will show up here.": "Updates from the family will show up here.",
+  "{{name}}'s family": "{{name}}'s family",
+  "New photo": "New photo",
+  Update: "Update",
+  "Page photo": "Page photo",
+  "Photo added": "Photo added",
+  "Get Notifications": "Get Notifications",
+  Unsubscribe: "Unsubscribe",
+  "Get notified when the baby's status changes": "Get notified when the baby's status changes",
+  "Stop receiving push notifications for updates": "Stop receiving push notifications for updates",
+  "Your Babies": "Your Babies",
+  "Track and manage all your babies' journeys": "Track and manage all your babies' journeys",
+  "Add Baby": "Add Baby",
+  Logout: "Log out",
+  "No babies added yet": "No babies added yet",
+  "Get started by adding your first baby to track their journey":
+    "Get started by adding your first baby to track their journey",
+  "Add Your First Baby": "Add Your First Baby",
+  "Due today!": "Due today!",
+  "Profile language": "Profile language",
+  "This is initially chosen from your browser. New baby pages inherit it.":
+    "This is initially chosen from your browser. New baby pages inherit it.",
+  "Request another language": "Request another language",
+  "Tell us which language you would like us to add.":
+    "Tell us which language you would like us to add.",
+  "Language name or code": "Language name or code",
+  "Example: French / fr-FR": "Example: French / fr-FR",
+  "Send request": "Send request",
+  "Language request saved": "Language request saved",
+  "Back to Dashboard": "Back to Dashboard",
+  "Add a Baby": "Add a Baby",
+  "Track the progress of labour and birth": "Track the progress of labour and birth",
+  "Baby Information": "Baby Information",
+  "Enter your baby's name and due date to get started":
+    "Enter your baby's name and due date to get started",
+  "Enter baby's name": "Enter baby's name",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Renaming may change the page address, but links you have already shared will keep working.",
+  "Creating...": "Creating...",
+  "Sign In": "Sign In",
+  "Sign in to track your babies": "Sign in to track your babies",
+  Email: "Email",
+  Password: "Password",
+  "Signing in...": "Signing in...",
+  "Don't have an account?": "Don't have an account?",
+  "Sign up": "Sign up",
+  "Sign Up": "Sign Up",
+  "Create an account to start tracking": "Create an account to start tracking",
+  Name: "Name",
+  "Signing up...": "Signing up...",
+  "Already have an account?": "Already have an account?",
+  "Sign in": "Sign in",
+  "Add a message, a photo, or a milestone to post":
+    "Add a message, a photo, or a milestone to post",
+  "Pick a valid time — or leave it as now": "Pick a valid time — or leave it as now",
+  "Please select an image file": "Please select an image file",
+  "Photo must be 10 MB or smaller": "Photo must be 10 MB or smaller",
+  "Failed to upload photo": "Failed to upload photo",
+  "Update posted!": "Update posted!",
+  "Post an update": "Post an update",
+  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
+    "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.",
+  "Write a message (optional)…": "Write a message (optional)…",
+  "Update message (optional)": "Update message (optional)",
+  "Photo to post": "Photo to post",
+  "Remove photo": "Remove photo",
+  "Status change (optional)": "Status change (optional)",
+  "No status change": "No status change",
+  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
+    'This changes the page status to "{{status}}" and notifies everyone subscribed.',
+  "When did it happen?": "When did it happen?",
+  "Defaults to now — set an earlier time if you're sharing the news after the fact.":
+    "Defaults to now — set an earlier time if you're sharing the news after the fact.",
+  "Change photo": "Change photo",
+  "Add photo (optional)": "Add photo (optional)",
+  "Posting...": "Posting...",
+  'Post & mark "{{status}}"': 'Post & mark "{{status}}"',
+  "Add a message, a photo, or a milestone — any one is enough.":
+    "Add a message, a photo, or a milestone — any one is enough.",
+  "Posted {{date}}": "Posted {{date}}",
+  "Set as page photo": "Set as page photo",
+  "Delete update": "Delete update",
+  "Delete update?": "Delete update?",
+  "This also unmarks the milestone on the status card.":
+    "This also unmarks the milestone on the status card.",
+  "This removes the update from the timeline.": "This removes the update from the timeline.",
+  "If this photo is the current page photo, the previous one takes its place.":
+    "If this photo is the current page photo, the previous one takes its place.",
+  "This action cannot be undone.": "This action cannot be undone.",
+  Delete: "Delete",
+  "View photo full size": "View photo full size",
+  "Baby update": "Baby update",
+  "Close photo": "Close photo",
+  "Message cannot be empty": "Message cannot be empty",
+  "Edit your message": "Edit your message",
+  "Saving...": "Saving...",
+  "(you)": "(you)",
+  "Edit encouragement": "Edit encouragement",
+  "Delete encouragement": "Delete encouragement",
+  "Delete Encouragement?": "Delete Encouragement?",
+  "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.":
+    "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
+  "Update removed": "Update removed",
+  "Failed to remove update": "Failed to remove update",
+  "Set as the page photo": "Set as the page photo",
+  "Failed to set page photo": "Failed to set page photo",
+  "Encouragement removed": "Encouragement removed",
+  "Failed to remove encouragement": "Failed to remove encouragement",
+  "Encouragement updated": "Encouragement updated",
+  "Failed to update encouragement": "Failed to update encouragement",
+  "Notification sent!": "Notification sent!",
+  "{{count}} person": "{{count}} person",
+  "{{count}} people": "{{count}} people",
+  "Notification cancelled": "Notification cancelled",
+  "Failed to cancel notification": "Failed to cancel notification",
+  "Sending notification...": "Sending notification...",
+  "Push notifications are not supported in this browser.":
+    "Push notifications are not supported in this browser.",
+  "Notification permission denied": "Notification permission denied",
+  "Notification permission is required": "Notification permission is required",
+  "Failed to get subscription data": "Failed to get subscription data",
+  "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
+    "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.",
+  "Get Notifications on iOS": "Get Notifications on iOS",
+  "Install this app on your Home Screen before enabling push notifications on iOS.":
+    "Install this app on your Home Screen before enabling push notifications on iOS.",
+  "Tap the Share button in Safari": "Tap the Share button in Safari",
+  'Scroll down and tap "Add to Home Screen"': 'Scroll down and tap "Add to Home Screen"',
+  "Open the app from your Home Screen": "Open the app from your Home Screen",
+  'Come back here and tap "Get Notifications"': 'Come back here and tap "Get Notifications"',
+  "No subscription endpoint found": "No subscription endpoint found",
+  "Unsubscribing from notifications...": "Unsubscribing from notifications...",
+  "Unsubscribed from notifications!": "Unsubscribed from notifications!",
+  "Failed to unsubscribe from notifications": "Failed to unsubscribe from notifications",
+  "Subscribing to notifications...": "Subscribing to notifications...",
+  "Subscribed to notifications!": "Subscribed to notifications!",
+  "Failed to subscribe to notifications": "Failed to subscribe to notifications",
+  "For You": "For You",
+  "Everything you need to share the journey": "Everything you need to share the journey",
+  "Update Your Status": "Update Your Status",
+  "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
+    "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.",
+  "Countdown to Due Date": "Countdown to Due Date",
+  "Set the due date so everyone can see how many days are left, including a friendly overdue counter.":
+    "Set the due date so everyone can see how many days are left, including a friendly overdue counter.",
+  "Make It Yours": "Make It Yours",
+  "Choose a theme that matches your style — your page, your way.":
+    "Choose a theme that matches your style — your page, your way.",
+  "For Your Family & Friends": "For Your Family & Friends",
+  "What everyone you share with gets": "What everyone you share with gets",
+  "No Account Needed": "No Account Needed",
+  "Anyone with the link can follow along without downloading an app or creating an account.":
+    "Anyone with the link can follow along without downloading an app or creating an account.",
+  "Visitors can leave messages of love and support in a digital guestbook.":
+    "Visitors can leave messages of love and support in a digital guestbook.",
+  "Get Notified": "Get Notified",
+  "Subscribe to updates and hear the moment baby arrives without constantly refreshing.":
+    "Subscribe to updates and hear the moment baby arrives without constantly refreshing.",
+  "See It In Action": "See It In Action",
+  "Open any stage to preview the baby page": "Open any stage to preview the baby page",
+  Waiting: "Waiting",
+  "Before labour starts": "Before labour starts",
+  "Things are happening!": "Things are happening!",
+  "At Hospital": "At Hospital",
+  "Almost there!": "Almost there!",
+  "Baby Born!": "Baby Born!",
+  "Celebrate the arrival": "Celebrate the arrival",
+  "How It Works": "How It Works",
+  "Up and running in under a minute": "Up and running in under a minute",
+  "Create Your Page": "Create Your Page",
+  "Sign up and add your baby's name and due date. That's it.":
+    "Sign up and add your baby's name and due date. That's it.",
+  "Share the Link": "Share the Link",
+  "Send it to family and friends. They can follow along and subscribe without an account.":
+    "Send it to family and friends. They can follow along and subscribe without an account.",
+  "Update as You Go": "Update as You Go",
+  "Post each milestone once and everyone following gets the news.":
+    "Post each milestone once and everyone following gets the news.",
+  "Ready to share the journey?": "Ready to share the journey?",
+  "Head back to your dashboard to keep everyone updated.":
+    "Head back to your dashboard to keep everyone updated.",
+  "Join families already sharing their special moments. It takes less than a minute.":
+    "Join families already sharing their special moments. It takes less than a minute.",
+  "Get Started Free": "Get Started Free",
+  "Open source on GitHub": "Open source on GitHub",
+  "Preview – {{title}}": "Preview – {{title}}",
+  "Preview how your baby tracking page will look at different stages.":
+    "Preview how your baby tracking page will look at different stages.",
+  "Page Not Found": "Page Not Found",
+  "Looks like this page hasn't arrived yet. Let's get you back home!":
+    "Looks like this page hasn't arrived yet. Let's get you back home!",
+  "Sunny Days": "Sunny Days",
+  "Labour started!": "Labour started!",
+  "Gone to hospital!": "Gone to hospital!",
+  "Almost there now": "Almost there now",
+  "Welcome to the world, little one": "Welcome to the world, little one",
+  Born: "Born",
+  Started: "Started",
+  Since: "Since",
+  "Delete the {{status}} status first": "Delete the {{status}} status first",
+  "Delete {{status}} status?": "Delete {{status}} status?",
+  "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
+    "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
+  "Delete status": "Delete status",
+  "Could not delete the {{status}} status": "Could not delete the {{status}} status",
+  "Pick a valid time — or leave it blank for now": "Pick a valid time — or leave it blank for now",
+  "When did it happen? (optional)": "When did it happen? (optional)",
+  "Optional — leave blank for now. You can change the time later in settings.":
+    "Optional — leave blank for now. You can change the time later in settings.",
+  "Co-parents": "Co-parents",
+  "People who can post updates and change settings":
+    "People who can post updates and change settings",
+  "Others who can manage this page with you": "Others who can manage this page with you",
+  "Delete page": "Delete page",
+  "Hide this baby page from everyone": "Hide this baby page from everyone",
+  "Delete {{name}}'s page?": "Delete {{name}}'s page?",
+  "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.":
+    "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
+  "Loading co-parents…": "Loading co-parents…",
+  "Co-parent added — they can manage this page now":
+    "Co-parent added — they can manage this page now",
+  "Invite sent — they'll get access after signing up with that email":
+    "Invite sent — they'll get access after signing up with that email",
+  "Could not invite": "Could not invite",
+  "Remove {{email}}": "Remove {{email}}",
+  "Co-parent removed": "Co-parent removed",
+  "Could not remove": "Could not remove",
+  "Invite pending": "Invite pending",
+  "Cancel invite to {{email}}": "Cancel invite to {{email}}",
+  "Invite cancelled": "Invite cancelled",
+  "Could not cancel": "Could not cancel",
+  "No co-parents yet. Add a partner so they can post updates too.":
+    "No co-parents yet. Add a partner so they can post updates too.",
+  Add: "Add",
+  "Failed to send encouragement": "Failed to send encouragement",
+  "Shared with you": "Shared with you",
+  "Due {{date}}": "Due {{date}}",
+  Your: "Your",
+  babies: "babies",
+  "Add a": "Add a",
+  baby: "baby",
+  "A name and a due date — that's all it takes!": "A name and a due date — that's all it takes!",
+  "Add Baby 🍼": "Add Baby 🍼",
+  "Welcome back!": "Welcome back!",
+  "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
+  "Join the fun!": "Join the fun!",
+  "Create an account to share your baby's arrival":
+    "Create an account to share your baby's arrival",
+  "Not arrived yet!": "Not arrived yet!",
+  "Send some love": "Send some love",
+  Dashboard: "Dashboard",
+  "Get started": "Get started",
+  Is: "Is",
+  "out yet?": "out yet?",
+  'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
+    'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼',
+  "Create your page 🎈": "Create your page 🎈",
+  "Everything the family needs": "Everything the family needs",
+  "For you, and for everyone waiting by the phone":
+    "For you, and for everyone waiting by the phone",
+  "See it in action": "See it in action",
+  "Click any stage to see how your page will look":
+    "Click any stage to see how your page will look",
+  "How it works": "How it works",
+  "Get Started Free 🎉": "Get Started Free 🎉",
+  "Join families who've already shared their special moments. Takes less than a minute.":
+    "Join families who've already shared their special moments. Takes less than a minute.",
+  "Update your status": "Update your status",
+  "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
+    "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.",
+  "Countdown to due date": "Countdown to due date",
+  'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
+    'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.',
+  "Make it yours": "Make it yours",
+  "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
+    "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.",
+  "No account needed": "No account needed",
+  "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.":
+    "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.",
+  "Send encouragement": "Send encouragement",
+  "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.":
+    "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.",
+  "Get notified": "Get notified",
+  "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
+    "Family can subscribe to push notifications and be the first to know the moment baby arrives.",
+  "Create your page": "Create your page",
+  "Share the link": "Share the link",
+  "Send it to family and friends. They can check in anytime and subscribe for notifications.":
+    "Send it to family and friends. They can check in anytime and subscribe for notifications.",
+  "Update as you go": "Update as you go",
+  "When things start happening, update your status. Everyone gets notified automatically.":
+    "When things start happening, update your status. Everyone gets notified automatically.",
+  "At hospital": "At hospital",
+  "Baby born!": "Baby born!",
+  "Go Home": "Go Home",
+} as const;
+
+export type TranslationKey = keyof typeof enGB;
+
+type PlaceholderNames<TKey extends string> =
+  TKey extends `${string}{{${infer TName}}}${infer TRest}`
+    ? TName | PlaceholderNames<TRest>
+    : never;
+
+type TranslationVariables<TKey extends TranslationKey> = {
+  [TName in PlaceholderNames<TKey>]: number | string;
+};
+
+type TranslationArguments<TKey extends TranslationKey> = [PlaceholderNames<TKey>] extends [never]
+  ? [variables?: never]
+  : [variables: TranslationVariables<TKey>];
+
+export type TranslationFunction = <TKey extends TranslationKey>(
+  key: TKey,
+  ...args: TranslationArguments<TKey>
+) => string;
+
+const sv: Record<TranslationKey, string> = {
+  "Track the progress of labour and birth – know when baby arrives!":
+    "Följ förlossningen och få veta när bebisen har kommit!",
+  "Is Baby Out Yet? – Share Your Baby's Arrival": "Har bebisen kommit? – Dela bebisens ankomst",
+  "Is Baby Out Yet?": "Har bebisen kommit?",
+  "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
+    "Slipp svara på alla meddelanden om nyheter. Skapa en enkel sida som håller alla uppdaterade.",
+  "Free forever, no ads": "Alltid gratis, utan reklam",
+  'Stop answering "any news yet?" texts. Share one link and let everyone follow along.':
+    'Slipp svara på "några nyheter?". Dela en länk så kan alla följa med.',
+  "Go to Dashboard": "Gå till översikten",
+  "Get Started": "Kom igång",
+  "Is {{name}} out yet?": "Har {{name}} kommit?",
+  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} dag över tiden – Har {{name}} kommit?",
+  "{{count}} days overdue – Is {{name}} out yet?":
+    "{{count}} dagar över tiden – Har {{name}} kommit?",
+  "{{count}} day until due date – Is {{name}} out yet?":
+    "{{count}} dag till beräknad födsel – Har {{name}} kommit?",
+  "{{count}} days until due date – Is {{name}} out yet?":
+    "{{count}} dagar till beräknad födsel – Har {{name}} kommit?",
+  "{{title}} – Track Your Baby's Journey": "{{title}} – Följ bebisens resa",
+  "Track {{name}}'s journey – know when baby arrives!":
+    "Följ {{name}}s resa och få veta när bebisen har kommit!",
+  "Not yet": "Inte än",
+  "Baby is still on the way": "Bebisen är fortfarande på väg",
+  "{{count}} day overdue": "{{count}} dag över tiden",
+  "{{count}} days overdue": "{{count}} dagar över tiden",
+  "{{count}} day until due date": "{{count}} dag till beräknad födsel",
+  "{{count}} days until due date": "{{count}} dagar till beräknad födsel",
+  "Due date: {{date}}": "Beräknad födsel: {{date}}",
+  "Labour started": "Förlossningen har börjat",
+  "Not gone to hospital yet": "Inte åkt till sjukhuset än",
+  "Started at {{date}} ({{relative}})": "Började {{date}} ({{relative}})",
+  "Gone to hospital": "Åkt till sjukhuset",
+  "Yes! Baby is out": "Ja! Bebisen har kommit",
+  "Born on {{date}} ({{relative}})": "Född {{date}} ({{relative}})",
+  "Baby born": "Bebisen är född",
+  "Latest from the family": "Senaste nytt från familjen",
+  "Photo of {{name}}": "Foto på {{name}}",
+  "Updated {{relative}}": "Uppdaterat {{relative}}",
+  "Having a baby? Are people messaging you non-stop? Create your own page →":
+    "Väntar du barn? Skapa din egen sida →",
+  "Post update": "Lägg uppdatering",
+  Settings: "Inställningar",
+  "Close settings": "Stäng inställningar",
+  "Copy link to share": "Kopiera delningslänk",
+  "Copied!": "Kopierad!",
+  "Copied to clipboard": "Kopierad till urklipp",
+  "Owner actions": "Ägaråtgärder",
+  "Page actions": "Sidåtgärder",
+  "Baby Name": "Bebisens namn",
+  "Due Date": "Beräknat datum",
+  "Status date and time": "Datum och tid för status",
+  Theme: "Tema",
+  Encouragements: "Hälsningar",
+  "Visitors can send messages": "Besökare kan skicka meddelanden",
+  "Form disabled": "Formuläret är avstängt",
+  Language: "Språk",
+  "Use my profile language ({{language}})": "Använd mitt profilspråk ({{language}})",
+  "All visitors see this page in {{language}}.": "Alla besökare ser sidan på {{language}}.",
+  Default: "Standard",
+  "Violet Bloom": "Violet Bloom",
+  "Twitter Blue": "Twitter Blue",
+  Bubblegum: "Bubblegum",
+  Catppuccin: "Catppuccin",
+  "Mocha Mousse": "Mocha Mousse",
+  "Quantum Rose": "Quantum Rose",
+  Edit: "Redigera",
+  Change: "Ändra",
+  Save: "Spara",
+  Cancel: "Avbryt",
+  "Send Encouragement": "Skicka en hälsning",
+  "Leave a message of support for {{name}}'s family": "Lämna en hälsning till {{name}}s familj",
+  "Your name": "Ditt namn",
+  Message: "Meddelande",
+  "Write your message of encouragement...": "Skriv din hälsning...",
+  "Sending...": "Skickar...",
+  "Sending your encouragement...": "Skickar din hälsning...",
+  "Your kind words have been sent! 💕": "Din fina hälsning har skickats! 💕",
+  "Updates & encouragements": "Uppdateringar och hälsningar",
+  "Loading the timeline...": "Laddar tidslinjen...",
+  "Nothing here yet": "Inget här än",
+  "Post your first update to keep everyone in the loop!":
+    "Lägg upp din första uppdatering så att alla kan följa med!",
+  "Updates from the family will show up here.": "Familjens uppdateringar visas här.",
+  "{{name}}'s family": "{{name}}s familj",
+  "New photo": "Nytt foto",
+  Update: "Uppdatering",
+  "Page photo": "Sidfoto",
+  "Photo added": "Foto tillagt",
+  "Get Notifications": "Få notiser",
+  Unsubscribe: "Avsluta notiser",
+  "Get notified when the baby's status changes": "Få en notis när bebisens status ändras",
+  "Stop receiving push notifications for updates": "Sluta få pushnotiser om uppdateringar",
+  "Your Babies": "Dina bebisar",
+  "Track and manage all your babies' journeys": "Följ och hantera dina bebisars resor",
+  "Add Baby": "Lägg till bebis",
+  Logout: "Logga ut",
+  "No babies added yet": "Inga bebisar har lagts till än",
+  "Get started by adding your first baby to track their journey":
+    "Kom igång genom att lägga till din första bebis",
+  "Add Your First Baby": "Lägg till din första bebis",
+  "Due today!": "Beräknad idag!",
+  "Profile language": "Profilspråk",
+  "This is initially chosen from your browser. New baby pages inherit it.":
+    "Språket väljs först från din webbläsare. Nya bebissidor ärver det.",
+  "Request another language": "Önska ett annat språk",
+  "Tell us which language you would like us to add.":
+    "Berätta vilket språk du vill att vi lägger till.",
+  "Language name or code": "Språknamn eller kod",
+  "Example: French / fr-FR": "Exempel: franska / fr-FR",
+  "Send request": "Skicka önskemål",
+  "Language request saved": "Språkönskemålet har sparats",
+  "Back to Dashboard": "Tillbaka till översikten",
+  "Add a Baby": "Lägg till en bebis",
+  "Track the progress of labour and birth": "Följ förlossningen",
+  "Baby Information": "Information om bebisen",
+  "Enter your baby's name and due date to get started":
+    "Ange bebisens namn och beräknade födelsedatum",
+  "Enter baby's name": "Ange bebisens namn",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
+  "Creating...": "Skapar...",
+  "Sign In": "Logga in",
+  "Sign in to track your babies": "Logga in för att följa dina bebisar",
+  Email: "E-post",
+  Password: "Lösenord",
+  "Signing in...": "Loggar in...",
+  "Don't have an account?": "Har du inget konto?",
+  "Sign up": "Registrera dig",
+  "Sign Up": "Registrera dig",
+  "Create an account to start tracking": "Skapa ett konto för att börja följa",
+  Name: "Namn",
+  "Signing up...": "Registrerar...",
+  "Already have an account?": "Har du redan ett konto?",
+  "Sign in": "Logga in",
+  "Add a message, a photo, or a milestone to post":
+    "Lägg till ett meddelande, ett foto eller en milstolpe",
+  "Pick a valid time — or leave it as now": "Välj en giltig tid eller behåll tiden som nu",
+  "Please select an image file": "Välj en bildfil",
+  "Photo must be 10 MB or smaller": "Fotot får vara högst 10 MB",
+  "Failed to upload photo": "Det gick inte att ladda upp fotot",
+  "Update posted!": "Uppdateringen har publicerats!",
+  "Post an update": "Publicera en uppdatering",
+  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
+    "Alla som följer {{name}}s sida ser den. Meddelande, foto och milstolpe är valfria och kan kombineras.",
+  "Write a message (optional)…": "Skriv ett meddelande (valfritt)…",
+  "Update message (optional)": "Uppdateringsmeddelande (valfritt)",
+  "Photo to post": "Foto som ska publiceras",
+  "Remove photo": "Ta bort foto",
+  "Status change (optional)": "Statusändring (valfritt)",
+  "No status change": "Ingen statusändring",
+  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
+    'Det ändrar sidans status till "{{status}}" och meddelar alla prenumeranter.',
+  "When did it happen?": "När hände det?",
+  "Defaults to now — set an earlier time if you're sharing the news after the fact.":
+    "Standard är nu. Välj en tidigare tid om du berättar i efterhand.",
+  "Change photo": "Byt foto",
+  "Add photo (optional)": "Lägg till foto (valfritt)",
+  "Posting...": "Publicerar...",
+  'Post & mark "{{status}}"': 'Publicera och markera "{{status}}"',
+  "Add a message, a photo, or a milestone — any one is enough.":
+    "Lägg till ett meddelande, ett foto eller en milstolpe.",
+  "Posted {{date}}": "Publicerat {{date}}",
+  "Set as page photo": "Använd som sidfoto",
+  "Delete update": "Ta bort uppdatering",
+  "Delete update?": "Ta bort uppdateringen?",
+  "This also unmarks the milestone on the status card.":
+    "Det tar också bort milstolpen från statuskortet.",
+  "This removes the update from the timeline.": "Det tar bort uppdateringen från tidslinjen.",
+  "If this photo is the current page photo, the previous one takes its place.":
+    "Om detta är sidfotot återställs det föregående fotot.",
+  "This action cannot be undone.": "Åtgärden kan inte ångras.",
+  Delete: "Ta bort",
+  "View photo full size": "Visa fotot i full storlek",
+  "Baby update": "Bebisuppdatering",
+  "Close photo": "Stäng foto",
+  "Message cannot be empty": "Meddelandet får inte vara tomt",
+  "Edit your message": "Redigera ditt meddelande",
+  "Saving...": "Sparar...",
+  "(you)": "(du)",
+  "Edit encouragement": "Redigera hälsning",
+  "Delete encouragement": "Ta bort hälsning",
+  "Delete Encouragement?": "Ta bort hälsningen?",
+  "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.":
+    "Vill du ta bort hälsningen från {{name}}? Åtgärden kan inte ångras.",
+  "Update removed": "Uppdateringen har tagits bort",
+  "Failed to remove update": "Det gick inte att ta bort uppdateringen",
+  "Set as the page photo": "Används nu som sidfoto",
+  "Failed to set page photo": "Det gick inte att byta sidfoto",
+  "Encouragement removed": "Hälsningen har tagits bort",
+  "Failed to remove encouragement": "Det gick inte att ta bort hälsningen",
+  "Encouragement updated": "Hälsningen har uppdaterats",
+  "Failed to update encouragement": "Det gick inte att uppdatera hälsningen",
+  "Notification sent!": "Notisen har skickats!",
+  "{{count}} person": "{{count}} person",
+  "{{count}} people": "{{count}} personer",
+  "Notification cancelled": "Notisen har avbrutits",
+  "Failed to cancel notification": "Det gick inte att avbryta notisen",
+  "Sending notification...": "Skickar notis...",
+  "Push notifications are not supported in this browser.":
+    "Pushnotiser stöds inte i den här webbläsaren.",
+  "Notification permission denied": "Tillåtelse för notiser nekades",
+  "Notification permission is required": "Tillåtelse för notiser krävs",
+  "Failed to get subscription data": "Det gick inte att hämta prenumerationsuppgifter",
+  "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
+    "Lägg först till sidan på hemskärmen för att få notiser på iOS. Tryck för instruktioner.",
+  "Get Notifications on iOS": "Få notiser på iOS",
+  "Install this app on your Home Screen before enabling push notifications on iOS.":
+    "Installera appen på hemskärmen innan du aktiverar pushnotiser på iOS.",
+  "Tap the Share button in Safari": "Tryck på Dela i Safari",
+  'Scroll down and tap "Add to Home Screen"': 'Rulla ned och tryck på "Lägg till på hemskärmen"',
+  "Open the app from your Home Screen": "Öppna appen från hemskärmen",
+  'Come back here and tap "Get Notifications"': 'Gå tillbaka hit och tryck på "Få notiser"',
+  "No subscription endpoint found": "Ingen prenumeration hittades",
+  "Unsubscribing from notifications...": "Avslutar notiser...",
+  "Unsubscribed from notifications!": "Notiser har avslutats!",
+  "Failed to unsubscribe from notifications": "Det gick inte att avsluta notiser",
+  "Subscribing to notifications...": "Aktiverar notiser...",
+  "Subscribed to notifications!": "Notiser har aktiverats!",
+  "Failed to subscribe to notifications": "Det gick inte att aktivera notiser",
+  "For You": "För dig",
+  "Everything you need to share the journey": "Allt du behöver för att dela resan",
+  "Update Your Status": "Uppdatera statusen",
+  "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
+    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset eller bebisen är här. Inga gruppmeddelanden eller upprepade samtal.",
+  "Countdown to Due Date": "Nedräkning till beräknad födsel",
+  "Set the due date so everyone can see how many days are left, including a friendly overdue counter.":
+    "Ange beräknat datum så att alla ser hur många dagar som återstår, även efter datumet.",
+  "Make It Yours": "Gör sidan personlig",
+  "Choose a theme that matches your style — your page, your way.":
+    "Välj ett tema som passar din stil — din sida på ditt sätt.",
+  "For Your Family & Friends": "För familj och vänner",
+  "What everyone you share with gets": "Det här får alla du delar sidan med",
+  "No Account Needed": "Inget konto behövs",
+  "Anyone with the link can follow along without downloading an app or creating an account.":
+    "Alla med länken kan följa med utan att ladda ned en app eller skapa ett konto.",
+  "Visitors can leave messages of love and support in a digital guestbook.":
+    "Besökare kan lämna kärleksfulla hälsningar i en digital gästbok.",
+  "Get Notified": "Få notiser",
+  "Subscribe to updates and hear the moment baby arrives without constantly refreshing.":
+    "Prenumerera på uppdateringar och få veta direkt när bebisen kommer.",
+  "See It In Action": "Se hur det fungerar",
+  "Open any stage to preview the baby page": "Öppna ett steg för att förhandsvisa bebissidan",
+  Waiting: "Väntar",
+  "Before labour starts": "Innan förlossningen börjar",
+  "Things are happening!": "Nu händer det!",
+  "At Hospital": "På sjukhuset",
+  "Almost there!": "Snart är det dags!",
+  "Baby Born!": "Bebisen är född!",
+  "Celebrate the arrival": "Fira ankomsten",
+  "How It Works": "Så fungerar det",
+  "Up and running in under a minute": "Kom igång på mindre än en minut",
+  "Create Your Page": "Skapa din sida",
+  "Sign up and add your baby's name and due date. That's it.":
+    "Registrera dig och lägg till bebisens namn och beräknade datum. Klart!",
+  "Share the Link": "Dela länken",
+  "Send it to family and friends. They can follow along and subscribe without an account.":
+    "Skicka den till familj och vänner. De kan följa med och prenumerera utan konto.",
+  "Update as You Go": "Uppdatera längs vägen",
+  "Post each milestone once and everyone following gets the news.":
+    "Publicera varje milstolpe en gång så får alla följare nyheten.",
+  "Ready to share the journey?": "Redo att dela resan?",
+  "Head back to your dashboard to keep everyone updated.":
+    "Gå tillbaka till översikten och håll alla uppdaterade.",
+  "Join families already sharing their special moments. It takes less than a minute.":
+    "Gör som andra familjer och dela era speciella stunder. Det tar mindre än en minut.",
+  "Get Started Free": "Kom igång gratis",
+  "Open source on GitHub": "Öppen källkod på GitHub",
+  "Preview – {{title}}": "Förhandsvisning – {{title}}",
+  "Preview how your baby tracking page will look at different stages.":
+    "Förhandsvisa hur bebissidan ser ut i olika steg.",
+  "Page Not Found": "Sidan hittades inte",
+  "Looks like this page hasn't arrived yet. Let's get you back home!":
+    "Den här sidan verkar inte ha kommit än. Vi tar dig tillbaka hem!",
+  "Sunny Days": "Sunny Days",
+  "Labour started!": "Förlossningen har börjat!",
+  "Gone to hospital!": "Åkt till sjukhuset!",
+  "Almost there now": "Snart är det dags",
+  "Welcome to the world, little one": "Välkommen till världen, lilla vän",
+  Born: "Född",
+  Started: "Började",
+  Since: "Sedan",
+  "Delete the {{status}} status first": "Ta bort statusen {{status}} först",
+  "Delete {{status}} status?": "Ta bort statusen {{status}}?",
+  "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
+    "Det tar bort statusen och raderar tidslinjeuppdateringen, inklusive meddelande eller foto. Åtgärden kan inte ångras.",
+  "Delete status": "Ta bort status",
+  "Could not delete the {{status}} status": "Kunde inte ta bort statusen {{status}}",
+  "Pick a valid time — or leave it blank for now": "Välj en giltig tid — eller lämna tomt för nu",
+  "When did it happen? (optional)": "När hände det? (valfritt)",
+  "Optional — leave blank for now. You can change the time later in settings.":
+    "Valfritt — lämna tomt för nu. Du kan ändra tiden senare i inställningarna.",
+  "Co-parents": "Medföräldrar",
+  "People who can post updates and change settings":
+    "Personer som kan lägga upp uppdateringar och ändra inställningar",
+  "Others who can manage this page with you": "Andra som kan hantera sidan tillsammans med dig",
+  "Delete page": "Ta bort sidan",
+  "Hide this baby page from everyone": "Dölj bebissidan för alla",
+  "Delete {{name}}'s page?": "Ta bort {{name}}s sida?",
+  "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.":
+    "Sidan försvinner från översikten och den publika länken slutar fungera. Bara du (ägaren) kan göra det.",
+  "Loading co-parents…": "Laddar medföräldrar…",
+  "Co-parent added — they can manage this page now":
+    "Medförälder tillagd — de kan hantera sidan nu",
+  "Invite sent — they'll get access after signing up with that email":
+    "Inbjudan skickad — de får åtkomst efter att ha registrerat sig med den e-postadressen",
+  "Could not invite": "Kunde inte bjuda in",
+  "Remove {{email}}": "Ta bort {{email}}",
+  "Co-parent removed": "Medförälder borttagen",
+  "Could not remove": "Kunde inte ta bort",
+  "Invite pending": "Inbjudan väntar",
+  "Cancel invite to {{email}}": "Avbryt inbjudan till {{email}}",
+  "Invite cancelled": "Inbjudan avbruten",
+  "Could not cancel": "Kunde inte avbryta",
+  "No co-parents yet. Add a partner so they can post updates too.":
+    "Inga medföräldrar än. Lägg till en partner så att de också kan lägga upp uppdateringar.",
+  Add: "Lägg till",
+  "Failed to send encouragement": "Kunde inte skicka hälsningen",
+  "Shared with you": "Delad med dig",
+  "Due {{date}}": "Beräknad {{date}}",
+  Your: "Dina",
+  babies: "bebisar",
+  "Add a": "Lägg till en",
+  baby: "bebis",
+  "A name and a due date — that's all it takes!":
+    "Ett namn och ett beräknat datum — det är allt som behövs!",
+  "Add Baby 🍼": "Lägg till bebis 🍼",
+  "Welcome back!": "Välkommen tillbaka!",
+  "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
+  "Join the fun!": "Häng med!",
+  "Create an account to share your baby's arrival": "Skapa ett konto för att dela bebisens ankomst",
+  "Not arrived yet!": "Har inte kommit än!",
+  "Send some love": "Skicka lite kärlek",
+  Dashboard: "Översikt",
+  "Get started": "Kom igång",
+  Is: "Har",
+  "out yet?": "kommit?",
+  'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
+    'Slipp svara på "några nyheter?". Dela en länk, låt alla följa med och berätta för alla på en gång när bebisen kommer. 🍼',
+  "Create your page 🎈": "Skapa din sida 🎈",
+  "Everything the family needs": "Allt familjen behöver",
+  "For you, and for everyone waiting by the phone":
+    "För dig, och för alla som väntar vid telefonen",
+  "See it in action": "Se hur det fungerar",
+  "Click any stage to see how your page will look":
+    "Klicka på ett steg för att se hur din sida kommer att se ut",
+  "How it works": "Så fungerar det",
+  "Get Started Free 🎉": "Kom igång gratis 🎉",
+  "Join families who've already shared their special moments. Takes less than a minute.":
+    "Gör som andra familjer och dela era speciella stunder. Det tar mindre än en minut.",
+  "Update your status": "Uppdatera statusen",
+  "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
+    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset, bebisen är här! Inga gruppmeddelanden, inga upprepade samtal.",
+  "Countdown to due date": "Nedräkning till beräknad födsel",
+  'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
+    'Alla kan se hur många dagar som är kvar — plus en vänlig "över tiden"-räknare om bebisen tar sin tid.',
+  "Make it yours": "Gör den till din",
+  "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
+    "Välj ett tema som passar din stil. Från mjuka pasteller till starka färger — din sida, din känsla.",
+  "No account needed": "Inget konto behövs",
+  "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.":
+    "Alla med länken kan kolla in när som helst. Mormor behöver inte ladda ner en app eller skapa ett konto.",
+  "Send encouragement": "Skicka en hälsning",
+  "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.":
+    "Besökare kan lämna kärleksfulla hälsningar. Som en digital gästbok fylld med önskningar du kommer att värdesätta.",
+  "Get notified": "Få notiser",
+  "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
+    "Familjen kan prenumerera på pushnotiser och få veta först när bebisen kommer.",
+  "Create your page": "Skapa din sida",
+  "Share the link": "Dela länken",
+  "Send it to family and friends. They can check in anytime and subscribe for notifications.":
+    "Skicka den till familj och vänner. De kan kolla in när som helst och prenumerera på notiser.",
+  "Update as you go": "Uppdatera längs vägen",
+  "When things start happening, update your status. Everyone gets notified automatically.":
+    "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
+  "At hospital": "På sjukhuset",
+  "Baby born!": "Bebisen är född!",
+  "Go Home": "Gå hem",
+};
+
+const es: Record<TranslationKey, string> = {
+  "Track the progress of labour and birth – know when baby arrives!":
+    "Sigue el progreso del parto y entérate cuando nazca el bebé.",
+  "Is Baby Out Yet? – Share Your Baby's Arrival": "¿Ya nació el bebé? – Comparte su llegada",
+  "Is Baby Out Yet?": "¿Ya nació el bebé?",
+  "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
+    "Deja de responder mensajes preguntando si hay novedades. Crea una página sencilla para mantener a todos informados.",
+  "Free forever, no ads": "Gratis para siempre, sin anuncios",
+  'Stop answering "any news yet?" texts. Share one link and let everyone follow along.':
+    'Deja de responder "¿hay novedades?". Comparte un enlace para que todos puedan seguirlo.',
+  "Go to Dashboard": "Ir al panel",
+  "Get Started": "Empezar",
+  "Is {{name}} out yet?": "¿Ya nació {{name}}?",
+  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} día de retraso – ¿Ya nació {{name}}?",
+  "{{count}} days overdue – Is {{name}} out yet?":
+    "{{count}} días de retraso – ¿Ya nació {{name}}?",
+  "{{count}} day until due date – Is {{name}} out yet?":
+    "{{count}} día para la fecha prevista – ¿Ya nació {{name}}?",
+  "{{count}} days until due date – Is {{name}} out yet?":
+    "{{count}} días para la fecha prevista – ¿Ya nació {{name}}?",
+  "{{title}} – Track Your Baby's Journey": "{{title}} – Sigue el camino de tu bebé",
+  "Track {{name}}'s journey – know when baby arrives!":
+    "Sigue el camino de {{name}} y entérate cuando nazca.",
+  "Not yet": "Todavía no",
+  "Baby is still on the way": "El bebé sigue en camino",
+  "{{count}} day overdue": "{{count}} día de retraso",
+  "{{count}} days overdue": "{{count}} días de retraso",
+  "{{count}} day until due date": "{{count}} día para la fecha prevista",
+  "{{count}} days until due date": "{{count}} días para la fecha prevista",
+  "Due date: {{date}}": "Fecha prevista: {{date}}",
+  "Labour started": "Comenzó el parto",
+  "Not gone to hospital yet": "Aún no han ido al hospital",
+  "Started at {{date}} ({{relative}})": "Comenzó el {{date}} ({{relative}})",
+  "Gone to hospital": "Camino al hospital",
+  "Yes! Baby is out": "¡Sí! El bebé ya nació",
+  "Born on {{date}} ({{relative}})": "Nació el {{date}} ({{relative}})",
+  "Baby born": "Bebé nacido",
+  "Latest from the family": "Últimas noticias de la familia",
+  "Photo of {{name}}": "Foto de {{name}}",
+  "Updated {{relative}}": "Actualizado {{relative}}",
+  "Having a baby? Are people messaging you non-stop? Create your own page →":
+    "¿Esperas un bebé? Crea tu propia página →",
+  "Post update": "Publicar novedad",
+  Settings: "Configuración",
+  "Close settings": "Cerrar configuración",
+  "Copy link to share": "Copiar enlace para compartir",
+  "Copied!": "¡Copiado!",
+  "Copied to clipboard": "Copiado al portapapeles",
+  "Owner actions": "Acciones del propietario",
+  "Page actions": "Acciones de la página",
+  "Baby Name": "Nombre del bebé",
+  "Due Date": "Fecha prevista",
+  "Status date and time": "Fecha y hora del estado",
+  Theme: "Tema",
+  Encouragements: "Mensajes de ánimo",
+  "Visitors can send messages": "Los visitantes pueden enviar mensajes",
+  "Form disabled": "Formulario desactivado",
+  Language: "Idioma",
+  "Use my profile language ({{language}})": "Usar el idioma de mi perfil ({{language}})",
+  "All visitors see this page in {{language}}.":
+    "Todos los visitantes ven esta página en {{language}}.",
+  Default: "Predeterminado",
+  "Violet Bloom": "Violet Bloom",
+  "Twitter Blue": "Twitter Blue",
+  Bubblegum: "Bubblegum",
+  Catppuccin: "Catppuccin",
+  "Mocha Mousse": "Mocha Mousse",
+  "Quantum Rose": "Quantum Rose",
+  Edit: "Editar",
+  Change: "Cambiar",
+  Save: "Guardar",
+  Cancel: "Cancelar",
+  "Send Encouragement": "Enviar ánimo",
+  "Leave a message of support for {{name}}'s family":
+    "Deja un mensaje de apoyo para la familia de {{name}}",
+  "Your name": "Tu nombre",
+  Message: "Mensaje",
+  "Write your message of encouragement...": "Escribe tu mensaje de ánimo...",
+  "Sending...": "Enviando...",
+  "Sending your encouragement...": "Enviando tu mensaje...",
+  "Your kind words have been sent! 💕": "¡Tus palabras se han enviado! 💕",
+  "Updates & encouragements": "Novedades y mensajes de ánimo",
+  "Loading the timeline...": "Cargando la cronología...",
+  "Nothing here yet": "Aún no hay nada",
+  "Post your first update to keep everyone in the loop!":
+    "¡Publica tu primera novedad para mantener a todos informados!",
+  "Updates from the family will show up here.": "Las novedades de la familia aparecerán aquí.",
+  "{{name}}'s family": "Familia de {{name}}",
+  "New photo": "Foto nueva",
+  Update: "Novedad",
+  "Page photo": "Foto de la página",
+  "Photo added": "Foto añadida",
+  "Get Notifications": "Recibir notificaciones",
+  Unsubscribe: "Cancelar suscripción",
+  "Get notified when the baby's status changes": "Recibe una notificación cuando cambie el estado",
+  "Stop receiving push notifications for updates": "Dejar de recibir notificaciones",
+  "Your Babies": "Tus bebés",
+  "Track and manage all your babies' journeys": "Sigue y gestiona el camino de tus bebés",
+  "Add Baby": "Añadir bebé",
+  Logout: "Cerrar sesión",
+  "No babies added yet": "Aún no has añadido bebés",
+  "Get started by adding your first baby to track their journey":
+    "Empieza añadiendo tu primer bebé",
+  "Add Your First Baby": "Añade tu primer bebé",
+  "Due today!": "¡Fecha prevista hoy!",
+  "Profile language": "Idioma del perfil",
+  "This is initially chosen from your browser. New baby pages inherit it.":
+    "Se elige inicialmente según tu navegador. Las páginas nuevas lo heredan.",
+  "Request another language": "Solicitar otro idioma",
+  "Tell us which language you would like us to add.": "Dinos qué idioma quieres que añadamos.",
+  "Language name or code": "Nombre o código del idioma",
+  "Example: French / fr-FR": "Ejemplo: francés / fr-FR",
+  "Send request": "Enviar solicitud",
+  "Language request saved": "Solicitud de idioma guardada",
+  "Back to Dashboard": "Volver al panel",
+  "Add a Baby": "Añadir un bebé",
+  "Track the progress of labour and birth": "Sigue el progreso del parto",
+  "Baby Information": "Información del bebé",
+  "Enter your baby's name and due date to get started":
+    "Introduce el nombre y la fecha prevista del bebé",
+  "Enter baby's name": "Introduce el nombre del bebé",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Cambiar el nombre puede modificar la dirección, pero los enlaces ya compartidos seguirán funcionando.",
+  "Creating...": "Creando...",
+  "Sign In": "Iniciar sesión",
+  "Sign in to track your babies": "Inicia sesión para seguir a tus bebés",
+  Email: "Correo electrónico",
+  Password: "Contraseña",
+  "Signing in...": "Iniciando sesión...",
+  "Don't have an account?": "¿No tienes una cuenta?",
+  "Sign up": "Regístrate",
+  "Sign Up": "Registrarse",
+  "Create an account to start tracking": "Crea una cuenta para empezar",
+  Name: "Nombre",
+  "Signing up...": "Registrando...",
+  "Already have an account?": "¿Ya tienes una cuenta?",
+  "Sign in": "Inicia sesión",
+  "Add a message, a photo, or a milestone to post":
+    "Añade un mensaje, una foto o un hito para publicar",
+  "Pick a valid time — or leave it as now": "Elige una hora válida o déjala como ahora",
+  "Please select an image file": "Selecciona un archivo de imagen",
+  "Photo must be 10 MB or smaller": "La foto debe pesar 10 MB o menos",
+  "Failed to upload photo": "No se pudo subir la foto",
+  "Update posted!": "¡Novedad publicada!",
+  "Post an update": "Publicar una novedad",
+  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
+    "Todos los que siguen la página de {{name}} la verán. El mensaje, la foto y el hito son opcionales y se pueden combinar.",
+  "Write a message (optional)…": "Escribe un mensaje (opcional)…",
+  "Update message (optional)": "Mensaje de la novedad (opcional)",
+  "Photo to post": "Foto para publicar",
+  "Remove photo": "Quitar foto",
+  "Status change (optional)": "Cambio de estado (opcional)",
+  "No status change": "Sin cambio de estado",
+  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
+    'Esto cambia el estado de la página a "{{status}}" y avisa a todos los suscriptores.',
+  "When did it happen?": "¿Cuándo ocurrió?",
+  "Defaults to now — set an earlier time if you're sharing the news after the fact.":
+    "La hora predeterminada es ahora. Elige una anterior si lo cuentas después.",
+  "Change photo": "Cambiar foto",
+  "Add photo (optional)": "Añadir foto (opcional)",
+  "Posting...": "Publicando...",
+  'Post & mark "{{status}}"': 'Publicar y marcar "{{status}}"',
+  "Add a message, a photo, or a milestone — any one is enough.":
+    "Añade un mensaje, una foto o un hito.",
+  "Posted {{date}}": "Publicado {{date}}",
+  "Set as page photo": "Usar como foto de la página",
+  "Delete update": "Eliminar novedad",
+  "Delete update?": "¿Eliminar la novedad?",
+  "This also unmarks the milestone on the status card.":
+    "También desmarca el hito en la tarjeta de estado.",
+  "This removes the update from the timeline.": "Esto elimina la novedad de la cronología.",
+  "If this photo is the current page photo, the previous one takes its place.":
+    "Si esta es la foto actual, la anterior ocupará su lugar.",
+  "This action cannot be undone.": "Esta acción no se puede deshacer.",
+  Delete: "Eliminar",
+  "View photo full size": "Ver foto a tamaño completo",
+  "Baby update": "Novedad del bebé",
+  "Close photo": "Cerrar foto",
+  "Message cannot be empty": "El mensaje no puede estar vacío",
+  "Edit your message": "Editar tu mensaje",
+  "Saving...": "Guardando...",
+  "(you)": "(tú)",
+  "Edit encouragement": "Editar mensaje de ánimo",
+  "Delete encouragement": "Eliminar mensaje de ánimo",
+  "Delete Encouragement?": "¿Eliminar el mensaje de ánimo?",
+  "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.":
+    "¿Quieres eliminar el mensaje de ánimo de {{name}}? Esta acción no se puede deshacer.",
+  "Update removed": "Novedad eliminada",
+  "Failed to remove update": "No se pudo eliminar la novedad",
+  "Set as the page photo": "Establecida como foto de la página",
+  "Failed to set page photo": "No se pudo cambiar la foto de la página",
+  "Encouragement removed": "Mensaje de ánimo eliminado",
+  "Failed to remove encouragement": "No se pudo eliminar el mensaje de ánimo",
+  "Encouragement updated": "Mensaje de ánimo actualizado",
+  "Failed to update encouragement": "No se pudo actualizar el mensaje de ánimo",
+  "Notification sent!": "¡Notificación enviada!",
+  "{{count}} person": "{{count}} persona",
+  "{{count}} people": "{{count}} personas",
+  "Notification cancelled": "Notificación cancelada",
+  "Failed to cancel notification": "No se pudo cancelar la notificación",
+  "Sending notification...": "Enviando notificación...",
+  "Push notifications are not supported in this browser.":
+    "Este navegador no admite notificaciones push.",
+  "Notification permission denied": "Permiso de notificaciones denegado",
+  "Notification permission is required": "Se requiere permiso para las notificaciones",
+  "Failed to get subscription data": "No se pudieron obtener los datos de suscripción",
+  "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
+    "Para recibir notificaciones en iOS, añade primero esta página a la pantalla de inicio. Toca para ver las instrucciones.",
+  "Get Notifications on iOS": "Recibir notificaciones en iOS",
+  "Install this app on your Home Screen before enabling push notifications on iOS.":
+    "Instala esta aplicación en la pantalla de inicio antes de activar las notificaciones push en iOS.",
+  "Tap the Share button in Safari": "Toca el botón Compartir en Safari",
+  'Scroll down and tap "Add to Home Screen"':
+    'Desplázate hacia abajo y toca "Añadir a pantalla de inicio"',
+  "Open the app from your Home Screen": "Abre la aplicación desde la pantalla de inicio",
+  'Come back here and tap "Get Notifications"': 'Vuelve aquí y toca "Recibir notificaciones"',
+  "No subscription endpoint found": "No se encontró la suscripción",
+  "Unsubscribing from notifications...": "Cancelando las notificaciones...",
+  "Unsubscribed from notifications!": "¡Notificaciones canceladas!",
+  "Failed to unsubscribe from notifications": "No se pudieron cancelar las notificaciones",
+  "Subscribing to notifications...": "Activando las notificaciones...",
+  "Subscribed to notifications!": "¡Notificaciones activadas!",
+  "Failed to subscribe to notifications": "No se pudieron activar las notificaciones",
+  "For You": "Para ti",
+  "Everything you need to share the journey": "Todo lo que necesitas para compartir el camino",
+  "Update Your Status": "Actualiza el estado",
+  "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
+    "Un toque informa a todos: comenzó el parto, estáis en el hospital o el bebé ya llegó. Sin grupos ni llamadas repetidas.",
+  "Countdown to Due Date": "Cuenta atrás para la fecha prevista",
+  "Set the due date so everyone can see how many days are left, including a friendly overdue counter.":
+    "Indica la fecha prevista para que todos vean cuántos días faltan, incluso si se retrasa.",
+  "Make It Yours": "Hazla tuya",
+  "Choose a theme that matches your style — your page, your way.":
+    "Elige un tema que vaya con tu estilo: tu página, a tu manera.",
+  "For Your Family & Friends": "Para familiares y amigos",
+  "What everyone you share with gets": "Lo que reciben las personas con quienes compartes",
+  "No Account Needed": "Sin necesidad de cuenta",
+  "Anyone with the link can follow along without downloading an app or creating an account.":
+    "Cualquiera con el enlace puede seguirlo sin descargar una aplicación ni crear una cuenta.",
+  "Visitors can leave messages of love and support in a digital guestbook.":
+    "Los visitantes pueden dejar mensajes de cariño y apoyo en un libro digital.",
+  "Get Notified": "Recibe notificaciones",
+  "Subscribe to updates and hear the moment baby arrives without constantly refreshing.":
+    "Suscríbete y entérate cuando llegue el bebé sin actualizar la página constantemente.",
+  "See It In Action": "Mira cómo funciona",
+  "Open any stage to preview the baby page": "Abre cualquier etapa para ver la página del bebé",
+  Waiting: "En espera",
+  "Before labour starts": "Antes de que comience el parto",
+  "Things are happening!": "¡Ya está pasando!",
+  "At Hospital": "En el hospital",
+  "Almost there!": "¡Ya falta poco!",
+  "Baby Born!": "¡El bebé ha nacido!",
+  "Celebrate the arrival": "Celebra la llegada",
+  "How It Works": "Cómo funciona",
+  "Up and running in under a minute": "Todo listo en menos de un minuto",
+  "Create Your Page": "Crea tu página",
+  "Sign up and add your baby's name and due date. That's it.":
+    "Regístrate y añade el nombre y la fecha prevista del bebé. Eso es todo.",
+  "Share the Link": "Comparte el enlace",
+  "Send it to family and friends. They can follow along and subscribe without an account.":
+    "Envíalo a familiares y amigos. Pueden seguirlo y suscribirse sin tener una cuenta.",
+  "Update as You Go": "Actualiza sobre la marcha",
+  "Post each milestone once and everyone following gets the news.":
+    "Publica cada hito una vez y todos los seguidores recibirán la noticia.",
+  "Ready to share the journey?": "¿Listo para compartir el camino?",
+  "Head back to your dashboard to keep everyone updated.":
+    "Vuelve al panel para mantener a todos informados.",
+  "Join families already sharing their special moments. It takes less than a minute.":
+    "Únete a las familias que ya comparten sus momentos especiales. Tardarás menos de un minuto.",
+  "Get Started Free": "Empieza gratis",
+  "Open source on GitHub": "Código abierto en GitHub",
+  "Preview – {{title}}": "Vista previa – {{title}}",
+  "Preview how your baby tracking page will look at different stages.":
+    "Comprueba cómo se verá la página del bebé en las distintas etapas.",
+  "Page Not Found": "Página no encontrada",
+  "Looks like this page hasn't arrived yet. Let's get you back home!":
+    "Parece que esta página aún no ha llegado. Volvamos al inicio.",
+  "Sunny Days": "Sunny Days",
+  "Labour started!": "¡Comenzó el parto!",
+  "Gone to hospital!": "¡Camino al hospital!",
+  "Almost there now": "Ya falta poco",
+  "Welcome to the world, little one": "Bienvenido al mundo, pequeño",
+  Born: "Nació",
+  Started: "Comenzó",
+  Since: "Desde",
+  "Delete the {{status}} status first": "Elimina primero el estado {{status}}",
+  "Delete {{status}} status?": "¿Eliminar el estado {{status}}?",
+  "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
+    "Esto quita el estado y elimina su novedad de la cronología, incluido cualquier mensaje o foto. No se puede deshacer.",
+  "Delete status": "Eliminar estado",
+  "Could not delete the {{status}} status": "No se pudo eliminar el estado {{status}}",
+  "Pick a valid time — or leave it blank for now":
+    "Elige una hora válida — o déjala en blanco por ahora",
+  "When did it happen? (optional)": "¿Cuándo ocurrió? (opcional)",
+  "Optional — leave blank for now. You can change the time later in settings.":
+    "Opcional — déjalo en blanco por ahora. Puedes cambiar la hora más tarde en la configuración.",
+  "Co-parents": "Copadres",
+  "People who can post updates and change settings":
+    "Personas que pueden publicar novedades y cambiar la configuración",
+  "Others who can manage this page with you":
+    "Otras personas que pueden gestionar esta página contigo",
+  "Delete page": "Eliminar página",
+  "Hide this baby page from everyone": "Ocultar esta página del bebé para todos",
+  "Delete {{name}}'s page?": "¿Eliminar la página de {{name}}?",
+  "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.":
+    "La página desaparecerá del panel y el enlace público dejará de funcionar. Solo tú (el propietario) puedes hacerlo.",
+  "Loading co-parents…": "Cargando copadres…",
+  "Co-parent added — they can manage this page now":
+    "Copadre añadido — ya puede gestionar esta página",
+  "Invite sent — they'll get access after signing up with that email":
+    "Invitación enviada — tendrán acceso al registrarse con ese correo",
+  "Could not invite": "No se pudo invitar",
+  "Remove {{email}}": "Quitar {{email}}",
+  "Co-parent removed": "Copadre eliminado",
+  "Could not remove": "No se pudo quitar",
+  "Invite pending": "Invitación pendiente",
+  "Cancel invite to {{email}}": "Cancelar invitación a {{email}}",
+  "Invite cancelled": "Invitación cancelada",
+  "Could not cancel": "No se pudo cancelar",
+  "No co-parents yet. Add a partner so they can post updates too.":
+    "Aún no hay copadres. Añade a tu pareja para que también pueda publicar novedades.",
+  Add: "Añadir",
+  "Failed to send encouragement": "No se pudo enviar el mensaje de ánimo",
+  "Shared with you": "Compartida contigo",
+  "Due {{date}}": "Previsto {{date}}",
+  Your: "Tus",
+  babies: "bebés",
+  "Add a": "Añadir un",
+  baby: "bebé",
+  "A name and a due date — that's all it takes!": "Un nombre y una fecha prevista — ¡eso es todo!",
+  "Add Baby 🍼": "Añadir bebé 🍼",
+  "Welcome back!": "¡Qué bueno verte!",
+  "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos informados",
+  "Join the fun!": "¡Únete a la fiesta!",
+  "Create an account to share your baby's arrival":
+    "Crea una cuenta para compartir la llegada de tu bebé",
+  "Not arrived yet!": "¡Aún no ha llegado!",
+  "Send some love": "Envía cariño",
+  Dashboard: "Panel",
+  "Get started": "Empezar",
+  Is: "¿Ya nació",
+  "out yet?": "?",
+  'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
+    'Deja de responder "¿hay novedades?". Comparte un enlace, deja que todos sigan y avísales a todos a la vez cuando nazca el bebé. 🍼',
+  "Create your page 🎈": "Crea tu página 🎈",
+  "Everything the family needs": "Todo lo que la familia necesita",
+  "For you, and for everyone waiting by the phone":
+    "Para ti, y para todos los que esperan junto al teléfono",
+  "See it in action": "Míralo en acción",
+  "Click any stage to see how your page will look":
+    "Haz clic en cualquier etapa para ver cómo se verá tu página",
+  "How it works": "Cómo funciona",
+  "Get Started Free 🎉": "Empieza gratis 🎉",
+  "Join families who've already shared their special moments. Takes less than a minute.":
+    "Únete a las familias que ya comparten sus momentos especiales. Tardarás menos de un minuto.",
+  "Update your status": "Actualiza el estado",
+  "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
+    "Un toque informa a todos: comenzó el parto, estáis en el hospital, ¡el bebé llegó! Sin grupos ni llamadas repetidas.",
+  "Countdown to due date": "Cuenta atrás para la fecha prevista",
+  'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
+    'Todos pueden ver cuántos días faltan — y un contador amable de "retraso" si el bebé se toma su tiempo.',
+  "Make it yours": "Hazla tuya",
+  "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
+    "Elige un tema que vaya con tu estilo. De pasteles suaves a colores vivos: tu página, tu rollo.",
+  "No account needed": "Sin necesidad de cuenta",
+  "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.":
+    "Cualquiera con el enlace puede entrar cuando quiera. La abuela no necesita descargar una app ni crear una cuenta.",
+  "Send encouragement": "Enviar ánimo",
+  "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.":
+    "Los visitantes pueden dejar mensajes de cariño y apoyo. Como un libro de visitas digital lleno de buenos deseos.",
+  "Get notified": "Recibe notificaciones",
+  "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
+    "La familia puede suscribirse a notificaciones y enterarse en el momento en que llegue el bebé.",
+  "Create your page": "Crea tu página",
+  "Share the link": "Comparte el enlace",
+  "Send it to family and friends. They can check in anytime and subscribe for notifications.":
+    "Envíalo a familiares y amigos. Pueden entrar cuando quieran y suscribirse a las notificaciones.",
+  "Update as you go": "Actualiza sobre la marcha",
+  "When things start happening, update your status. Everyone gets notified automatically.":
+    "Cuando empiece a pasar, actualiza el estado. Todo el mundo recibe un aviso automáticamente.",
+  "At hospital": "En el hospital",
+  "Baby born!": "¡El bebé ha nacido!",
+  "Go Home": "Ir al inicio",
+};
+
+const ptBR: Record<TranslationKey, string> = {
+  "Track the progress of labour and birth – know when baby arrives!":
+    "Acompanhe o trabalho de parto e saiba quando o bebê nascer!",
+  "Is Baby Out Yet? – Share Your Baby's Arrival":
+    "O bebê já nasceu? – Compartilhe a chegada do seu bebê",
+  "Is Baby Out Yet?": "O bebê já nasceu?",
+  "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
+    "Pare de responder mensagens perguntando se há novidades. Crie uma página simples para manter todos informados, receber carinho e avisar quando o bebê nascer.",
+  "Free forever, no ads": "Grátis para sempre, sem anúncios",
+  'Stop answering "any news yet?" texts. Share one link and let everyone follow along.':
+    'Pare de responder "alguma novidade?". Compartilhe um link para todos acompanharem.',
+  "Go to Dashboard": "Ir para o painel",
+  "Get Started": "Começar",
+  "Is {{name}} out yet?": "{{name}} já nasceu?",
+  "{{count}} day overdue – Is {{name}} out yet?":
+    "{{count}} dia após a data prevista – {{name}} já nasceu?",
+  "{{count}} days overdue – Is {{name}} out yet?":
+    "{{count}} dias após a data prevista – {{name}} já nasceu?",
+  "{{count}} day until due date – Is {{name}} out yet?":
+    "{{count}} dia para a data prevista – {{name}} já nasceu?",
+  "{{count}} days until due date – Is {{name}} out yet?":
+    "{{count}} dias para a data prevista – {{name}} já nasceu?",
+  "{{title}} – Track Your Baby's Journey": "{{title}} – Acompanhe a jornada do bebê",
+  "Track {{name}}'s journey – know when baby arrives!":
+    "Acompanhe a jornada de {{name}} e saiba quando o bebê nascer!",
+  "Not yet": "Ainda não",
+  "Baby is still on the way": "O bebê ainda está a caminho",
+  "{{count}} day overdue": "{{count}} dia após a data prevista",
+  "{{count}} days overdue": "{{count}} dias após a data prevista",
+  "{{count}} day until due date": "{{count}} dia para a data prevista",
+  "{{count}} days until due date": "{{count}} dias para a data prevista",
+  "Due date: {{date}}": "Data prevista: {{date}}",
+  "Labour started": "O trabalho de parto começou",
+  "Not gone to hospital yet": "Ainda não foi para o hospital",
+  "Started at {{date}} ({{relative}})": "Começou em {{date}} ({{relative}})",
+  "Gone to hospital": "Foi para o hospital",
+  "Yes! Baby is out": "Sim! O bebê nasceu",
+  "Born on {{date}} ({{relative}})": "Nasceu em {{date}} ({{relative}})",
+  "Baby born": "Bebê nasceu",
+  "Latest from the family": "Últimas notícias da família",
+  "Photo of {{name}}": "Foto de {{name}}",
+  "Updated {{relative}}": "Atualizado {{relative}}",
+  "Having a baby? Are people messaging you non-stop? Create your own page →":
+    "Está esperando um bebê e não para de receber mensagens? Crie sua página →",
+  "Post update": "Publicar novidade",
+  Settings: "Configurações",
+  "Close settings": "Fechar configurações",
+  "Copy link to share": "Copiar link para compartilhar",
+  "Copied!": "Copiado!",
+  "Copied to clipboard": "Copiado para a área de transferência",
+  "Owner actions": "Ações do responsável",
+  "Page actions": "Ações da página",
+  "Baby Name": "Nome do bebê",
+  "Due Date": "Data prevista",
+  "Status date and time": "Data e hora do status",
+  Theme: "Tema",
+  Encouragements: "Mensagens de carinho",
+  "Visitors can send messages": "Visitantes podem enviar mensagens",
+  "Form disabled": "Formulário desativado",
+  Language: "Idioma",
+  "Use my profile language ({{language}})": "Usar o idioma do meu perfil ({{language}})",
+  "All visitors see this page in {{language}}.":
+    "Todos os visitantes veem esta página em {{language}}.",
+  Default: "Padrão",
+  "Violet Bloom": "Violet Bloom",
+  "Twitter Blue": "Twitter Blue",
+  Bubblegum: "Bubblegum",
+  Catppuccin: "Catppuccin",
+  "Mocha Mousse": "Mocha Mousse",
+  "Quantum Rose": "Quantum Rose",
+  Edit: "Editar",
+  Change: "Alterar",
+  Save: "Salvar",
+  Cancel: "Cancelar",
+  "Send Encouragement": "Enviar carinho",
+  "Leave a message of support for {{name}}'s family":
+    "Deixe uma mensagem de apoio para a família de {{name}}",
+  "Your name": "Seu nome",
+  Message: "Mensagem",
+  "Write your message of encouragement...": "Escreva sua mensagem de carinho...",
+  "Sending...": "Enviando...",
+  "Sending your encouragement...": "Enviando sua mensagem...",
+  "Your kind words have been sent! 💕": "Sua mensagem foi enviada! 💕",
+  "Updates & encouragements": "Novidades e mensagens de carinho",
+  "Loading the timeline...": "Carregando a linha do tempo...",
+  "Nothing here yet": "Ainda não há nada aqui",
+  "Post your first update to keep everyone in the loop!":
+    "Publique a primeira novidade para manter todos informados!",
+  "Updates from the family will show up here.": "As novidades da família aparecerão aqui.",
+  "{{name}}'s family": "Família de {{name}}",
+  "New photo": "Foto nova",
+  Update: "Novidade",
+  "Page photo": "Foto da página",
+  "Photo added": "Foto adicionada",
+  "Get Notifications": "Receber notificações",
+  Unsubscribe: "Cancelar notificações",
+  "Get notified when the baby's status changes":
+    "Receba uma notificação quando o status do bebê mudar",
+  "Stop receiving push notifications for updates": "Parar de receber notificações de novidades",
+  "Your Babies": "Seus bebês",
+  "Track and manage all your babies' journeys": "Acompanhe e gerencie a jornada dos seus bebês",
+  "Add Baby": "Adicionar bebê",
+  Logout: "Sair",
+  "No babies added yet": "Nenhum bebê adicionado",
+  "Get started by adding your first baby to track their journey":
+    "Comece adicionando seu primeiro bebê",
+  "Add Your First Baby": "Adicionar seu primeiro bebê",
+  "Due today!": "Data prevista para hoje!",
+  "Profile language": "Idioma do perfil",
+  "This is initially chosen from your browser. New baby pages inherit it.":
+    "O idioma inicial vem do navegador. Novas páginas de bebê herdam essa escolha.",
+  "Request another language": "Solicitar outro idioma",
+  "Tell us which language you would like us to add.": "Conte qual idioma você gostaria de ver.",
+  "Language name or code": "Nome ou código do idioma",
+  "Example: French / fr-FR": "Exemplo: francês / fr-FR",
+  "Send request": "Enviar solicitação",
+  "Language request saved": "Solicitação de idioma salva",
+  "Back to Dashboard": "Voltar ao painel",
+  "Add a Baby": "Adicionar um bebê",
+  "Track the progress of labour and birth": "Acompanhe o trabalho de parto e o nascimento",
+  "Baby Information": "Informações do bebê",
+  "Enter your baby's name and due date to get started":
+    "Informe o nome do bebê e a data prevista para começar",
+  "Enter baby's name": "Digite o nome do bebê",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Alterar o nome pode mudar o endereço, mas os links já compartilhados continuarão funcionando.",
+  "Creating...": "Criando...",
+  "Sign In": "Entrar",
+  "Sign in to track your babies": "Entre para acompanhar seus bebês",
+  Email: "E-mail",
+  Password: "Senha",
+  "Signing in...": "Entrando...",
+  "Don't have an account?": "Ainda não tem uma conta?",
+  "Sign up": "Cadastre-se",
+  "Sign Up": "Cadastrar",
+  "Create an account to start tracking": "Crie uma conta para começar a acompanhar",
+  Name: "Nome",
+  "Signing up...": "Cadastrando...",
+  "Already have an account?": "Já tem uma conta?",
+  "Sign in": "Entre",
+  "Add a message, a photo, or a milestone to post":
+    "Adicione uma mensagem, foto ou marco para publicar",
+  "Pick a valid time — or leave it as now": "Escolha um horário válido ou deixe como agora",
+  "Please select an image file": "Selecione um arquivo de imagem",
+  "Photo must be 10 MB or smaller": "A foto deve ter no máximo 10 MB",
+  "Failed to upload photo": "Não foi possível enviar a foto",
+  "Update posted!": "Novidade publicada!",
+  "Post an update": "Publicar uma novidade",
+  "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.":
+    "Todos que acompanham a página de {{name}} verão a novidade. Mensagem, foto e marco são opcionais e podem ser combinados.",
+  "Write a message (optional)…": "Escreva uma mensagem (opcional)…",
+  "Update message (optional)": "Mensagem da novidade (opcional)",
+  "Photo to post": "Foto para publicar",
+  "Remove photo": "Remover foto",
+  "Status change (optional)": "Alteração de status (opcional)",
+  "No status change": "Sem alteração de status",
+  'This changes the page status to "{{status}}" and notifies everyone subscribed.':
+    'Isso altera o status da página para "{{status}}" e avisa todos os inscritos.',
+  "When did it happen?": "Quando aconteceu?",
+  "Defaults to now — set an earlier time if you're sharing the news after the fact.":
+    "O padrão é agora. Escolha um horário anterior se estiver compartilhando depois.",
+  "Change photo": "Alterar foto",
+  "Add photo (optional)": "Adicionar foto (opcional)",
+  "Posting...": "Publicando...",
+  'Post & mark "{{status}}"': 'Publicar e marcar "{{status}}"',
+  "Add a message, a photo, or a milestone — any one is enough.":
+    "Adicione uma mensagem, foto ou marco.",
+  "Posted {{date}}": "Publicado em {{date}}",
+  "Set as page photo": "Usar como foto da página",
+  "Delete update": "Excluir novidade",
+  "Delete update?": "Excluir a novidade?",
+  "This also unmarks the milestone on the status card.":
+    "Isso também desmarca o marco no cartão de status.",
+  "This removes the update from the timeline.": "Isso remove a novidade da linha do tempo.",
+  "If this photo is the current page photo, the previous one takes its place.":
+    "Se esta for a foto atual da página, a anterior voltará para o lugar.",
+  "This action cannot be undone.": "Esta ação não pode ser desfeita.",
+  Delete: "Excluir",
+  "View photo full size": "Ver foto em tamanho completo",
+  "Baby update": "Novidade do bebê",
+  "Close photo": "Fechar foto",
+  "Message cannot be empty": "A mensagem não pode ficar vazia",
+  "Edit your message": "Editar sua mensagem",
+  "Saving...": "Salvando...",
+  "(you)": "(você)",
+  "Edit encouragement": "Editar mensagem de carinho",
+  "Delete encouragement": "Excluir mensagem de carinho",
+  "Delete Encouragement?": "Excluir a mensagem de carinho?",
+  "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.":
+    "Deseja excluir a mensagem de carinho de {{name}}? Esta ação não pode ser desfeita.",
+  "Update removed": "Novidade removida",
+  "Failed to remove update": "Não foi possível remover a novidade",
+  "Set as the page photo": "Definida como foto da página",
+  "Failed to set page photo": "Não foi possível definir a foto da página",
+  "Encouragement removed": "Mensagem de carinho removida",
+  "Failed to remove encouragement": "Não foi possível remover a mensagem de carinho",
+  "Encouragement updated": "Mensagem de carinho atualizada",
+  "Failed to update encouragement": "Não foi possível atualizar a mensagem de carinho",
+  "Notification sent!": "Notificação enviada!",
+  "{{count}} person": "{{count}} pessoa",
+  "{{count}} people": "{{count}} pessoas",
+  "Notification cancelled": "Notificação cancelada",
+  "Failed to cancel notification": "Não foi possível cancelar a notificação",
+  "Sending notification...": "Enviando notificação...",
+  "Push notifications are not supported in this browser.":
+    "Este navegador não oferece suporte a notificações push.",
+  "Notification permission denied": "Permissão de notificações negada",
+  "Notification permission is required": "É necessário permitir notificações",
+  "Failed to get subscription data": "Não foi possível obter os dados da inscrição",
+  "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.":
+    "Para receber notificações no iOS, adicione esta página à Tela de Início. Toque para ver as instruções.",
+  "Get Notifications on iOS": "Receber notificações no iOS",
+  "Install this app on your Home Screen before enabling push notifications on iOS.":
+    "Instale este aplicativo na Tela de Início antes de ativar as notificações push no iOS.",
+  "Tap the Share button in Safari": "Toque no botão Compartilhar do Safari",
+  'Scroll down and tap "Add to Home Screen"':
+    'Role para baixo e toque em "Adicionar à Tela de Início"',
+  "Open the app from your Home Screen": "Abra o aplicativo pela Tela de Início",
+  'Come back here and tap "Get Notifications"': 'Volte aqui e toque em "Receber notificações"',
+  "No subscription endpoint found": "Nenhuma inscrição encontrada",
+  "Unsubscribing from notifications...": "Cancelando notificações...",
+  "Unsubscribed from notifications!": "Notificações canceladas!",
+  "Failed to unsubscribe from notifications": "Não foi possível cancelar as notificações",
+  "Subscribing to notifications...": "Ativando notificações...",
+  "Subscribed to notifications!": "Notificações ativadas!",
+  "Failed to subscribe to notifications": "Não foi possível ativar as notificações",
+  "For You": "Para você",
+  "Everything you need to share the journey": "Tudo o que você precisa para compartilhar a jornada",
+  "Update Your Status": "Atualize o status",
+  "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
+    "Um toque informa a todos — o trabalho de parto começou, a família está no hospital ou o bebê chegou. Sem grupos ou ligações repetidas.",
+  "Countdown to Due Date": "Contagem regressiva para a data prevista",
+  "Set the due date so everyone can see how many days are left, including a friendly overdue counter.":
+    "Defina a data prevista para todos saberem quantos dias faltam, inclusive depois da data.",
+  "Make It Yours": "Deixe com a sua cara",
+  "Choose a theme that matches your style — your page, your way.":
+    "Escolha um tema que combine com seu estilo — sua página, do seu jeito.",
+  "For Your Family & Friends": "Para familiares e amigos",
+  "What everyone you share with gets": "O que todos recebem quando você compartilha",
+  "No Account Needed": "Não precisa de conta",
+  "Anyone with the link can follow along without downloading an app or creating an account.":
+    "Qualquer pessoa com o link pode acompanhar sem baixar um aplicativo ou criar uma conta.",
+  "Visitors can leave messages of love and support in a digital guestbook.":
+    "Visitantes podem deixar mensagens de carinho e apoio em um livro digital.",
+  "Get Notified": "Receba notificações",
+  "Subscribe to updates and hear the moment baby arrives without constantly refreshing.":
+    "Acompanhe as novidades e saiba quando o bebê chegar sem atualizar a página o tempo todo.",
+  "See It In Action": "Veja como funciona",
+  "Open any stage to preview the baby page": "Abra uma etapa para visualizar a página do bebê",
+  Waiting: "Aguardando",
+  "Before labour starts": "Antes do trabalho de parto começar",
+  "Things are happening!": "Está acontecendo!",
+  "At Hospital": "No hospital",
+  "Almost there!": "Está quase na hora!",
+  "Baby Born!": "O bebê nasceu!",
+  "Celebrate the arrival": "Comemore a chegada",
+  "How It Works": "Como funciona",
+  "Up and running in under a minute": "Tudo pronto em menos de um minuto",
+  "Create Your Page": "Crie sua página",
+  "Sign up and add your baby's name and due date. That's it.":
+    "Cadastre-se e informe o nome e a data prevista do bebê. Só isso.",
+  "Share the Link": "Compartilhe o link",
+  "Send it to family and friends. They can follow along and subscribe without an account.":
+    "Envie para familiares e amigos. Eles podem acompanhar e receber notificações sem criar uma conta.",
+  "Update as You Go": "Atualize ao longo da jornada",
+  "Post each milestone once and everyone following gets the news.":
+    "Publique cada marco uma vez e todos que acompanham receberão a novidade.",
+  "Ready to share the journey?": "Pronto para compartilhar a jornada?",
+  "Head back to your dashboard to keep everyone updated.":
+    "Volte ao painel para manter todos informados.",
+  "Join families already sharing their special moments. It takes less than a minute.":
+    "Junte-se às famílias que já compartilham seus momentos especiais. Leva menos de um minuto.",
+  "Get Started Free": "Comece grátis",
+  "Open source on GitHub": "Código aberto no GitHub",
+  "Preview – {{title}}": "Prévia – {{title}}",
+  "Preview how your baby tracking page will look at different stages.":
+    "Veja como a página do bebê ficará em cada etapa.",
+  "Page Not Found": "Página não encontrada",
+  "Looks like this page hasn't arrived yet. Let's get you back home!":
+    "Parece que esta página ainda não chegou. Vamos voltar ao início!",
+  "Sunny Days": "Sunny Days",
+  "Labour started!": "O trabalho de parto começou!",
+  "Gone to hospital!": "Foi para o hospital!",
+  "Almost there now": "Está quase na hora",
+  "Welcome to the world, little one": "Bem-vindo ao mundo, pequenino",
+  Born: "Nasceu",
+  Started: "Começou",
+  Since: "Desde",
+  "Delete the {{status}} status first": "Exclua primeiro o status {{status}}",
+  "Delete {{status}} status?": "Excluir o status {{status}}?",
+  "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.":
+    "Isso remove o status e exclui a novidade da linha do tempo, incluindo mensagem ou foto. Não pode ser desfeito.",
+  "Delete status": "Excluir status",
+  "Could not delete the {{status}} status": "Não foi possível excluir o status {{status}}",
+  "Pick a valid time — or leave it blank for now":
+    "Escolha um horário válido — ou deixe em branco por enquanto",
+  "When did it happen? (optional)": "Quando aconteceu? (opcional)",
+  "Optional — leave blank for now. You can change the time later in settings.":
+    "Opcional — deixe em branco por enquanto. Você pode alterar o horário depois nas configurações.",
+  "Co-parents": "Copais",
+  "People who can post updates and change settings":
+    "Pessoas que podem publicar novidades e alterar as configurações",
+  "Others who can manage this page with you":
+    "Outras pessoas que podem gerenciar esta página com você",
+  "Delete page": "Excluir página",
+  "Hide this baby page from everyone": "Ocultar esta página do bebê de todos",
+  "Delete {{name}}'s page?": "Excluir a página de {{name}}?",
+  "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.":
+    "A página sumirá do painel e o link público deixará de funcionar. Só você (o responsável) pode fazer isso.",
+  "Loading co-parents…": "Carregando copais…",
+  "Co-parent added — they can manage this page now":
+    "Copai adicionado — já pode gerenciar esta página",
+  "Invite sent — they'll get access after signing up with that email":
+    "Convite enviado — terão acesso depois de se cadastrar com esse e-mail",
+  "Could not invite": "Não foi possível convidar",
+  "Remove {{email}}": "Remover {{email}}",
+  "Co-parent removed": "Copai removido",
+  "Could not remove": "Não foi possível remover",
+  "Invite pending": "Convite pendente",
+  "Cancel invite to {{email}}": "Cancelar convite para {{email}}",
+  "Invite cancelled": "Convite cancelado",
+  "Could not cancel": "Não foi possível cancelar",
+  "No co-parents yet. Add a partner so they can post updates too.":
+    "Ainda não há copais. Adicione um parceiro para que também possa publicar novidades.",
+  Add: "Adicionar",
+  "Failed to send encouragement": "Não foi possível enviar a mensagem de carinho",
+  "Shared with you": "Compartilhada com você",
+  "Due {{date}}": "Previsto {{date}}",
+  Your: "Seus",
+  babies: "bebês",
+  "Add a": "Adicionar um",
+  baby: "bebê",
+  "A name and a due date — that's all it takes!": "Um nome e uma data prevista — é só isso!",
+  "Add Baby 🍼": "Adicionar bebê 🍼",
+  "Welcome back!": "Que bom te ver de novo!",
+  "Sign in to keep everyone in the loop": "Entre para manter todos informados",
+  "Join the fun!": "Entre na brincadeira!",
+  "Create an account to share your baby's arrival":
+    "Crie uma conta para compartilhar a chegada do bebê",
+  "Not arrived yet!": "Ainda não chegou!",
+  "Send some love": "Envie um pouco de carinho",
+  Dashboard: "Painel",
+  "Get started": "Começar",
+  Is: "O",
+  "out yet?": "já nasceu?",
+  'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
+    'Pare de responder "alguma novidade?". Compartilhe um link, deixe todos acompanharem e avise todo mundo de uma vez quando o bebê nascer. 🍼',
+  "Create your page 🎈": "Crie sua página 🎈",
+  "Everything the family needs": "Tudo o que a família precisa",
+  "For you, and for everyone waiting by the phone":
+    "Para você, e para todos que esperam ao telefone",
+  "See it in action": "Veja na prática",
+  "Click any stage to see how your page will look":
+    "Clique em qualquer etapa para ver como sua página vai ficar",
+  "How it works": "Como funciona",
+  "Get Started Free 🎉": "Comece grátis 🎉",
+  "Join families who've already shared their special moments. Takes less than a minute.":
+    "Junte-se às famílias que já compartilham seus momentos especiais. Leva menos de um minuto.",
+  "Update your status": "Atualize o status",
+  "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
+    "Um toque informa a todos — o trabalho de parto começou, a família está no hospital, o bebê chegou! Sem grupos ou ligações repetidas.",
+  "Countdown to due date": "Contagem regressiva para a data prevista",
+  'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
+    'Todos podem ver quantos dias faltam — e um contador amigável de "atraso" se o bebê resolver demorar.',
+  "Make it yours": "Deixe com a sua cara",
+  "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
+    "Escolha um tema que combine com seu estilo. De pastéis suaves a cores fortes — sua página, sua vibe.",
+  "No account needed": "Não precisa de conta",
+  "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.":
+    "Qualquer pessoa com o link pode olhar a qualquer hora. A vovó não precisa baixar um aplicativo nem criar uma conta.",
+  "Send encouragement": "Enviar carinho",
+  "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.":
+    "Visitantes podem deixar mensagens de carinho e apoio. Como um livro de visitas digital cheio de desejos que você vai guardar.",
+  "Get notified": "Receba notificações",
+  "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
+    "A família pode se inscrever para notificações e saber na hora em que o bebê nascer.",
+  "Create your page": "Crie sua página",
+  "Share the link": "Compartilhe o link",
+  "Send it to family and friends. They can check in anytime and subscribe for notifications.":
+    "Envie para familiares e amigos. Eles podem olhar a qualquer hora e se inscrever para notificações.",
+  "Update as you go": "Atualize ao longo da jornada",
+  "When things start happening, update your status. Everyone gets notified automatically.":
+    "Quando as coisas começarem a acontecer, atualize o status. Todo mundo é avisado automaticamente.",
+  "At hospital": "No hospital",
+  "Baby born!": "O bebê nasceu!",
+  "Go Home": "Ir para o início",
+};
+
+const enUS: Partial<Record<TranslationKey, string>> = {
+  "Track the progress of labour and birth – know when baby arrives!":
+    "Track the progress of labor and birth – know when baby arrives!",
+  "Labour started": "Labor started",
+  "Labour started!": "Labor started!",
+  "Track the progress of labour and birth": "Track the progress of labor and birth",
+  "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
+    "One tap to update everyone — labor started, at the hospital, baby's here! No group texts, no repeated calls.",
+  "Before labour starts": "Before labor starts",
+};
+
+const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {
+  "en-GB": enGB,
+  "en-US": enUS,
+  sv,
+  es,
+  "pt-BR": ptBR,
+};
+
+const LocaleContext = createContext<SupportedLocale>(DEFAULT_LOCALE);
+
+export function LocaleProvider(props: { locale: SupportedLocale; children: ReactNode }) {
+  return <LocaleContext value={props.locale}>{props.children}</LocaleContext>;
+}
+
+export function getDetectedLocale() {
+  return resolveSupportedLocale(getLocale());
+}
+
+export function translate<TKey extends TranslationKey>(
+  locale: SupportedLocale,
+  key: TKey,
+  ...args: TranslationArguments<TKey>
+) {
+  const variables = args[0] ?? {};
+  let message: string = translations[locale][key] ?? enGB[key];
+  for (const [name, value] of Object.entries(variables)) {
+    message = message.replaceAll(`{{${name}}}`, () => String(value));
+  }
+  return message;
+}
+
+export function useI18n() {
+  const locale = useContext(LocaleContext);
+  return useMemo(
+    () => ({
+      locale,
+      t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
+        translate(locale, key, ...args)) satisfies TranslationFunction,
+    }),
+    [locale],
+  );
+}
+
+export function getLanguageName(locale: SupportedLocale, displayLocale: SupportedLocale = locale) {
+  return new Intl.DisplayNames([displayLocale], { type: "language" }).of(locale) ?? locale;
+}
