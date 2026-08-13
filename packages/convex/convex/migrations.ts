@@ -375,12 +375,29 @@ export const skipTourForExistingUsers = internalMutation({
   },
 });
 
+/**
+ * Prefills `postedByUserId` on existing updates from the baby owner so a later
+ * PR can tighten the field to required.
+ */
+export async function backfillUpdatePostedByUserIdDoc(ctx: MutationCtx, update: Doc<"updates">) {
+  if (update.postedByUserId != null) return;
+  const baby = await ctx.db.get(update.babyId);
+  if (!baby) return;
+  await ctx.db.patch(update._id, { postedByUserId: baby.userId });
+}
+
+export const backfillUpdatePostedByUserId = migrations.define({
+  table: "updates",
+  migrateOne: backfillUpdatePostedByUserIdDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
+  internal.migrations.backfillUpdatePostedByUserId,
 ]);
 
 // Run all pending migrations - called automatically during deployment.

@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { format } from "date-fns";
 import {
   ArrowRight,
   Baby as BabyIcon,
@@ -16,6 +16,8 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { toast } from "sonner";
+import { LanguageSettings } from "@/components/language-settings";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
@@ -27,11 +29,17 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 });
 
 function DashboardPage() {
+  const { locale, t } = useI18n();
   const loaderData = Route.useLoaderData();
   let babies = useQuery(api.baby.listByUser, {});
   if (!babies || babies.length === 0) {
     babies = loaderData.babies;
   }
+
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
+  useEffect(() => {
+    void claimInvites({});
+  }, [claimInvites]);
 
   const router = useRouter();
   const restartTour = useMutation(api.onboarding.restart);
@@ -60,21 +68,22 @@ function DashboardPage() {
               nativeButton={false}
             >
               <Plus className="w-4 h-4" />
-              Add Baby
+              {t("Add Baby")}
             </Button>
             <Button
               variant="ghost"
               size="icon"
               className="rounded-full text-muted-foreground"
-              aria-label="Restart getting started tour"
-              title="Restart tour"
+              aria-label={t("Restart getting started tour")}
+              title={t("Restart tour")}
               onClick={async () => {
                 await restartTour({});
-                toast.success("Tour restarted");
+                toast.success(t("Tour restarted"));
               }}
             >
               <Sparkle className="w-4 h-4" />
             </Button>
+            <LanguageSettings />
             <ModeToggle className="rounded-full" />
             <Button
               size="sm"
@@ -94,7 +103,7 @@ function DashboardPage() {
               }}
             >
               <SignOut className="w-4 h-4" />
-              Logout
+              {t("Logout")}
             </Button>
           </div>
         </div>
@@ -103,14 +112,14 @@ function DashboardPage() {
       <main className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
-            Your{" "}
+            {t("Your")}{" "}
             <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
-              babies
+              {t("babies")}
             </span>{" "}
             👶
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            Track and manage all your babies' journeys
+            {t("Track and manage all your babies' journeys")}
           </p>
         </div>
 
@@ -119,9 +128,9 @@ function DashboardPage() {
             <p className="text-5xl" aria-hidden="true">
               🍼
             </p>
-            <h3 className="mt-4 text-2xl font-black text-foreground">No babies added yet</h3>
+            <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
             <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
-              Get started by adding your first baby to track their journey
+              {t("Get started by adding your first baby to track their journey")}
             </p>
             <Button
               size="lg"
@@ -131,7 +140,7 @@ function DashboardPage() {
               data-tour-id="add_baby"
             >
               <Plus className="w-4 h-4" />
-              Add Your First Baby
+              {t("Add Your First Baby")}
             </Button>
           </div>
         ) : (
@@ -171,22 +180,43 @@ function DashboardPage() {
                     </h2>
                     <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
                       <CalendarHeart className="h-3.5 w-3.5" />
-                      Due {format(dueDate, "MMMM d, yyyy")}
+                      {t("Due {{date}}", {
+                        date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
+                          dueDate,
+                        ),
+                      })}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {"role" in baby && baby.role === "coParent" ? (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+                        >
+                          {t("Shared with you")}
+                        </Badge>
+                      ) : null}
                       {isOverdue ? (
                         <Badge className="rounded-full font-bold">
-                          {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
-                          overdue
+                          {t(
+                            Math.abs(daysUntilDue) === 1
+                              ? "{{count}} day overdue"
+                              : "{{count}} days overdue",
+                            { count: Math.abs(daysUntilDue) },
+                          )}
                         </Badge>
                       ) : daysUntilDue === 0 ? (
-                        <Badge className="rounded-full font-bold">Due today!</Badge>
+                        <Badge className="rounded-full font-bold">{t("Due today!")}</Badge>
                       ) : (
                         <Badge
                           variant="outline"
                           className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
                         >
-                          {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
+                          {t(
+                            daysUntilDue === 1
+                              ? "{{count}} day until due date"
+                              : "{{count}} days until due date",
+                            { count: daysUntilDue },
+                          )}
                         </Badge>
                       )}
                     </div>

@@ -10,6 +10,7 @@ import { markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
   const userId = await ensureDemoUser(ctx);
+  await ensureDemoProfile(ctx, userId);
 
   // Demo login is for exploring the product — skip the first-run tour.
   await markUserOnboardingComplete(ctx, userId);
@@ -38,6 +39,16 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     email: DEMO_USER.email,
     babies,
   };
+}
+
+async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
+  const existing = await ctx.db
+    .query("userProfiles")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (!existing) {
+    await ctx.db.insert("userProfiles", { userId, locale: "en-GB" });
+  }
 }
 
 /**

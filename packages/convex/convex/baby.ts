@@ -3,14 +3,26 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { getCurrentStatus, isStatusForward, MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import {
+  getBlockingLaterMilestone,
+  getCurrentStatus,
+  isStatusForward,
+  MILESTONE_FIELDS,
+  MILESTONE_LABELS,
+  MILESTONES,
+} from "../src/types";
 import type { BabyStatus, Milestone } from "../src/types";
+import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
 import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
 } from "./timeline";
+import { isActive, softDeletePatch } from "./softDelete";
+import { requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { listBabiesForUser } from "./coParents";
 
 export const listByUser = query({
   args: {},
@@ -20,13 +32,7 @@ export const listByUser = query({
       return [];
     }
 
-    const babies = await ctx.db
-      .query("baby")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .order("desc")
-      .collect();
-
-    return babies;
+    return await listBabiesForUser(ctx, identity.subject);
   },
 });
 
@@ -61,17 +67,19 @@ export const getByPublicId = query({
       baby = await ctx.db.get(latestHistoryEntry.babyId);
     }
 
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       return null;
     }
 
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+    const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
       ...baby,
       photoUrl,
       thumbnailUrl,
+      resolvedLocale,
     };
   },
 });
@@ -82,20 +90,7 @@ export type Baby = Doc<"baby">;
 export const generateUploadUrl = mutation({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
-
+    await requireBabyManager(ctx, args.babyId);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -145,6 +140,7 @@ export async function applyPhotoSideEffects(
         publicId: baby.publicId,
         status: "photo_added",
         customMessage: null,
+        locale: await resolveBabyLocale(ctx.db, baby),
       },
     );
 
@@ -159,19 +155,7 @@ export const updatePhoto = mutationWithTriggers({
     photoId: v.union(v.id("_storage"), v.null()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
 
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
@@ -184,6 +168,7 @@ export const updatePhoto = mutationWithTriggers({
       babyId: args.babyId,
       postedAt: Date.now(),
       photoId: args.photoId,
+      postedByUserId: identity.subject,
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
@@ -249,6 +234,17 @@ async function generateUniquePublicId(opts: {
   return publicId;
 }
 
+async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
+  if (baby.locale) {
+    return resolveSupportedLocale(baby.locale);
+  }
+  const profile = await db
+    .query("userProfiles")
+    .withIndex("by_userId", (q) => q.eq("userId", baby.userId))
+    .unique();
+  return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
+}
+
 export const create = mutationWithTriggers({
   args: {
     name: v.string(),
@@ -283,22 +279,40 @@ export const create = mutationWithTriggers({
   },
 });
 
+/**
+ * Soft-deletes a baby page. Only the owner (creator) can do this.
+ * Pending push notifications are cancelled; feed rows stay recoverable.
+ */
+export const remove = mutationWithTriggers({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    await requireBabyOwner(ctx, args.babyId);
+
+    const pendingNotifications = await ctx.db
+      .query("scheduledNotifications")
+      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const notification of pendingNotifications) {
+      if (notification.scheduledId) {
+        try {
+          await ctx.scheduler.cancel(notification.scheduledId);
+        } catch (_error) {
+          // Already sent or missing — still mark cancelled below
+        }
+      }
+      await ctx.db.patch(notification._id, { status: "cancelled" });
+    }
+
+    await ctx.db.patch(args.babyId, softDeletePatch());
+  },
+});
+
 export const getScheduledNotifications = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    await requireBabyManager(ctx, args.babyId);
 
     const notifications = await ctx.db
       .query("scheduledNotifications")
@@ -313,24 +327,12 @@ export const getScheduledNotifications = query({
 export const cancelScheduledNotification = mutation({
   args: { notificationId: v.id("scheduledNotifications") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
     const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
 
-    const baby = await ctx.db.get(notification.babyId);
-    if (!baby) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    await requireBabyManager(ctx, notification.babyId);
 
     if (notification.status !== "pending") {
       throw new Error("Notification is not pending");
@@ -453,6 +455,7 @@ export async function syncStatusNotifications(
       publicId: updatedBaby.publicId,
       status: statusAfter.type,
       customMessage,
+      locale: await resolveBabyLocale(ctx.db, updatedBaby),
     },
   );
 
@@ -477,6 +480,7 @@ async function syncMilestoneUpdates(
       babyBorn?: string | null;
     };
     legacyMessages: Partial<Record<Milestone, string | null>>;
+    postedByUserId: string;
   },
 ) {
   const baby = opts.baby;
@@ -512,6 +516,7 @@ async function syncMilestoneUpdates(
           occurredAt,
           milestone,
           message: messageArg ?? null,
+          postedByUserId: opts.postedByUserId,
         });
       }
       continue;
@@ -533,6 +538,7 @@ export const update = mutationWithTriggers({
     dueDate: v.optional(v.string()),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
+    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never
@@ -543,19 +549,13 @@ export const update = mutationWithTriggers({
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
     const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const { identity, baby } = await requireBabyManager(ctx, babyId);
     const legacyMessages = {
       labor_started: laborStartedMessage,
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
-
-    const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Baby not found");
-    if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings
@@ -569,6 +569,14 @@ export const update = mutationWithTriggers({
       }
       if (parsed > Date.now() + 60_000) {
         throw new Error("The event time cannot be in the future");
+      }
+    }
+
+    for (const milestone of MILESTONES) {
+      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
+      const blocker = getBlockingLaterMilestone(baby, milestone);
+      if (blocker) {
+        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
       }
     }
 
@@ -592,7 +600,12 @@ export const update = mutationWithTriggers({
 
     await ctx.db.patch(babyId, patch);
 
-    await syncMilestoneUpdates(ctx, { baby, patch: rest, legacyMessages });
+    await syncMilestoneUpdates(ctx, {
+      baby,
+      patch: rest,
+      legacyMessages,
+      postedByUserId: identity.subject,
+    });
 
     const updatedBaby = await ctx.db.get(babyId);
     if (!updatedBaby) throw new Error("Baby not found after update");

@@ -2,6 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/lib/i18n";
 
 type CoachmarkProps = {
   /** Matches `data-tour-id` on the highlighted element */
@@ -26,6 +27,7 @@ type Rect = {
  * Skippable; does not block the whole page (pointer-events only on the tip).
  */
 export function Coachmark(props: CoachmarkProps) {
+  const { t } = useI18n();
   const [rect, setRect] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
 
@@ -105,7 +107,7 @@ export function Coachmark(props: CoachmarkProps) {
               props.onDismiss();
             }}
           >
-            {props.completeOnDismiss ? "Got it" : "Hide tip"}
+            {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
           </Button>
         </div>
       </div>

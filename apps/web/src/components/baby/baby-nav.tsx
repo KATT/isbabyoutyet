@@ -2,18 +2,19 @@ import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
-import { Link, LinkProps } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@workspace/ui/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
-  /** Owner-only "Post update" link; open state is mirrored in the URL search */
-  postUpdateButton?: null | LinkProps;
-  postUpdateOpen?: boolean;
+  /** Owner-only "Post update" action */
+  onPostUpdate?: (() => void) | null;
   /** Fired after the share URL is copied (used by the first-run tour) */
   onShareCopied?: () => void;
   /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
@@ -21,18 +22,10 @@ type BabyNavProps = {
   className?: string;
 };
 
-export function BabyNav({
-  shareLink,
-  settingsButton,
-  settingsOpen,
-  postUpdateButton,
-  postUpdateOpen,
-  onShareCopied,
-  onSettingsOpened,
-  className,
-}: BabyNavProps) {
+export function BabyNav(props: BabyNavProps) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const hasOwnerActions = !!(postUpdateButton || settingsButton);
+  const hasOwnerActions = !!(props.onPostUpdate || props.settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -41,34 +34,33 @@ export function BabyNav({
   }, [copied]);
 
   const ownerActions = hasOwnerActions ? (
-    <div role="group" aria-label="Owner actions" className="flex items-center gap-1">
-      {postUpdateButton && (
+    <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
+      {props.onPostUpdate && (
         <Button
-          variant={postUpdateOpen ? "default" : "ghost"}
+          variant="ghost"
           className="rounded-full font-bold"
-          render={<Link {...(postUpdateButton as any)} />}
-          nativeButton={false}
+          onClick={props.onPostUpdate}
           data-tour-id="post_update"
         >
           <ChatCircleText data-icon="inline-start" />
-          Post update
+          {t("Post update")}
         </Button>
       )}
-      {settingsButton && (
+      {props.settingsButton && (
         <Tooltip>
           <TooltipTrigger
             render={
               <Button
-                variant={settingsOpen ? "default" : "ghost"}
+                variant={props.settingsOpen ? "default" : "ghost"}
                 size="icon"
                 className="rounded-full"
-                render={<Link {...(settingsButton as any)} />}
+                render={<Link {...(props.settingsButton as any)} />}
                 nativeButton={false}
-                aria-label={settingsOpen ? "Close settings" : "Settings"}
+                aria-label={props.settingsOpen ? t("Close settings") : t("Settings")}
                 data-tour-id="explore_settings"
                 onClick={() => {
-                  if (!settingsOpen) {
-                    onSettingsOpened?.();
+                  if (!props.settingsOpen) {
+                    props.onSettingsOpened?.();
                   }
                 }}
               >
@@ -76,29 +68,31 @@ export function BabyNav({
               </Button>
             }
           />
-          <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
+          <TooltipContent>
+            {props.settingsOpen ? t("Close settings") : t("Settings")}
+          </TooltipContent>
         </Tooltip>
       )}
     </div>
   ) : null;
 
   const pageActions = (
-    <div role="group" aria-label="Page actions" className="flex items-center gap-1">
+    <div role="group" aria-label={t("Page actions")} className="flex items-center gap-1">
       <Tooltip>
         <TooltipTrigger
           render={
             <Button
               onClick={async () => {
-                if (!shareLink) return;
+                if (!props.shareLink) return;
                 try {
-                  await navigator.clipboard.writeText(shareLink);
+                  await navigator.clipboard.writeText(props.shareLink);
                   setCopied(true);
-                  toast.success("Copied to clipboard");
-                  onShareCopied?.();
+                  toast.success(t("Copied to clipboard"));
+                  props.onShareCopied?.();
                 } catch {
                   // Fallback for older browsers
                   const textArea = document.createElement("textarea");
-                  textArea.value = shareLink;
+                  textArea.value = props.shareLink;
                   textArea.style.position = "fixed";
                   textArea.style.opacity = "0";
                   document.body.appendChild(textArea);
@@ -106,8 +100,8 @@ export function BabyNav({
                   try {
                     document.execCommand("copy");
                     setCopied(true);
-                    toast.success("Copied to clipboard");
-                    onShareCopied?.();
+                    toast.success(t("Copied to clipboard"));
+                    props.onShareCopied?.();
                   } catch (cause) {
                     toast.error(
                       "Failed to copy to clipboard: " +
@@ -120,15 +114,15 @@ export function BabyNav({
               variant="ghost"
               size="icon"
               className="rounded-full"
-              disabled={!shareLink}
-              aria-label={copied ? "Copied!" : "Copy link to share"}
+              disabled={!props.shareLink}
+              aria-label={copied ? t("Copied!") : t("Copy link to share")}
               data-tour-id="share_link"
             >
               {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
           }
         />
-        <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
+        <TooltipContent>{copied ? t("Copied!") : t("Copy link to share")}</TooltipContent>
       </Tooltip>
 
       <ModeToggle className="rounded-full" />
@@ -140,7 +134,7 @@ export function BabyNav({
     <div
       className={cn(
         "flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm",
-        className,
+        props.className,
       )}
     >
       {ownerActions}

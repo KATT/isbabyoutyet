@@ -1,21 +1,38 @@
 import { Form, useZodForm } from "@/components/Form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { format, parseISO } from "date-fns";
-import { Clock } from "@phosphor-icons/react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+import { Clock, Trash } from "@phosphor-icons/react";
+import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
-import { parseDate, THEME_OPTIONS } from "./utils";
+import type { api } from "@workspace/convex/convex/_generated/api";
+import {
+  getBlockingLaterMilestone,
+  MILESTONE_FIELDS,
+  MILESTONE_LABELS,
+} from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
+import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
+import type { TranslationFunction } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
+import { THEME_OPTIONS } from "./utils";
 
-/** Format a date for a `datetime-local` input in the viewer's timezone. */
-function toDatetimeLocalValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
+type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
 // The popover editors follow one pattern: the outer component owns the
 // open state, the inner *Form component owns the form and is mounted fresh
@@ -28,6 +45,7 @@ type EditorFormProps = {
 };
 
 function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex gap-2 justify-end">
       <Button
@@ -37,10 +55,10 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
         size="sm"
         disabled={props.isSubmitting}
       >
-        Cancel
+        {t("Cancel")}
       </Button>
       <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
-        Save
+        {t("Save")}
       </Button>
     </div>
   );
@@ -51,11 +69,16 @@ type DueDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const dueDateSchema = z.object({
-  date: z.string().min(1, "Pick a date"),
-});
+function dueDateSchema(t: TranslationFunction) {
+  return z
+    .object({
+      date: htmlDate(t),
+    })
+    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+}
 
-export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
+export function DueDateEditor(props: DueDateEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -84,28 +107,34 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <DueDateForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
+        <DueDateForm
+          baby={props.baby}
+          onUpdate={props.onUpdate}
+          onClose={() => setIsEditing(false)}
+        />
       </PopoverContent>
     </Popover>
   );
 }
 
 function DueDateForm(props: EditorFormProps) {
+  const { t } = useI18n();
+  const dateCodec = htmlDate(t);
   const form = useZodForm({
-    schema: dueDateSchema,
-    defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
+    schema: dueDateSchema(t),
+    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
   });
 
   return (
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ dueDate: parseISO(values.date).toISOString() });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -117,7 +146,7 @@ function DueDateForm(props: EditorFormProps) {
             <FormControl>
               <Input
                 type="date"
-                aria-label="Due date"
+                aria-label={t("Due Date")}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 {...field}
@@ -143,11 +172,21 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const statusDateSchema = z.object({
-  dateTime: z.string().min(1, "Pick a date and time"),
-});
+function statusDateSchema(t: TranslationFunction, status: Milestone) {
+  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
+    switch (status) {
+      case "labor_started":
+        return { laborStarted: values.dateTime };
+      case "gone_to_hospital":
+        return { wentToHospital: values.dateTime };
+      case "born":
+        return { babyBorn: values.dateTime };
+    }
+  });
+}
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -156,12 +195,13 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         render={
           <Button variant="outline" size="sm">
             <Clock className="w-4 h-4 mr-2" />
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
         <StatusDateForm
+          baby={props.baby}
           status={props.status}
           currentDate={props.currentDate}
           onUpdate={props.onUpdate}
@@ -173,28 +213,34 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
 }
 
 function StatusDateForm(props: {
+  baby: BabyData;
   status: StatusDateEditorProps["status"];
   currentDate: string;
   onUpdate: BabyUpdateHandler;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema,
-    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
+    schema: statusDateSchema(t, props.status),
+    defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
+  const blocker = getBlockingLaterMilestone(props.baby, props.status);
+  const statusLabel = MILESTONE_LABELS[props.status];
+
+  const deleteButton = (
+    <Button type="button" variant="destructive" size="sm" disabled={Boolean(blocker)}>
+      <Trash data-icon="inline-start" />
+      {t("Delete")}
+    </Button>
+  );
 
   return (
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const dateString = parseISO(values.dateTime).toISOString();
-        if (props.status === "labor_started") {
-          await props.onUpdate({ laborStarted: dateString });
-        } else if (props.status === "gone_to_hospital") {
-          await props.onUpdate({ wentToHospital: dateString });
-        } else {
-          await props.onUpdate({ babyBorn: dateString });
-        }
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -206,8 +252,8 @@ function StatusDateForm(props: {
             <FormControl>
               <Input
                 type="datetime-local"
-                aria-label="Status date and time"
-                max={toDatetimeLocalValue(new Date())}
+                aria-label={t("Status date and time")}
+                max={htmlDateTimeNow()}
                 {...field}
               />
             </FormControl>
@@ -215,11 +261,70 @@ function StatusDateForm(props: {
           </FormItem>
         )}
       />
-      <EditorActions
-        onClose={props.onClose}
-        isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
-      />
+      <div className="flex items-center justify-between gap-2">
+        {blocker ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span
+                  className="inline-flex"
+                  aria-label={t("Delete the {{status}} status first", {
+                    status: MILESTONE_LABELS[blocker],
+                  })}
+                />
+              }
+            >
+              {deleteButton}
+            </TooltipTrigger>
+            <TooltipContent>
+              {t("Delete the {{status}} status first", { status: MILESTONE_LABELS[blocker] })}
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <AlertDialog>
+            <AlertDialogTrigger render={deleteButton} />
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("Delete {{status}} status?", { status: statusLabel })}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t(
+                    "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={isDeleting}
+                  onClick={async () => {
+                    setIsDeleting(true);
+                    try {
+                      await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
+                      props.onClose();
+                    } catch {
+                      toast.error(
+                        t("Could not delete the {{status}} status", { status: statusLabel }),
+                      );
+                    } finally {
+                      setIsDeleting(false);
+                    }
+                  }}
+                >
+                  {t("Delete status")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+        <EditorActions
+          onClose={props.onClose}
+          isSubmitting={form.formState.isSubmitting || isDeleting}
+          isDirty={form.formState.isDirty}
+        />
+      </div>
     </Form>
   );
 }
@@ -229,11 +334,16 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const nameSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-});
+function nameSchema(t: TranslationFunction) {
+  return z
+    .object({
+      name: z.string().trim().min(1, t("Name is required")),
+    })
+    .transform((values): Pick<BabyPatch, "name"> => values);
+}
 
-export function NameEditor({ baby, onUpdate }: NameEditorProps) {
+export function NameEditor(props: NameEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -241,20 +351,21 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <NameForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
+        <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
   );
 }
 
 function NameForm(props: EditorFormProps) {
+  const { t } = useI18n();
   const form = useZodForm({
-    schema: nameSchema,
+    schema: nameSchema(t),
     defaultValues: { name: props.baby.name },
   });
 
@@ -262,7 +373,7 @@ function NameForm(props: EditorFormProps) {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ name: values.name.trim() });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -272,15 +383,16 @@ function NameForm(props: EditorFormProps) {
         render={({ field }) => (
           <FormItem className="mb-3">
             <FormControl>
-              <Input placeholder="Baby name" aria-label="Baby name" {...field} />
+              <Input placeholder={t("Baby Name")} aria-label={t("Baby Name")} {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
       <p className="text-xs text-muted-foreground mb-3">
-        Renaming may change the page address, but don't worry — any link you've already shared keeps
-        working.
+        {t(
+          "Renaming may change the page address, but links you have already shared will keep working.",
+        )}
       </p>
       <EditorActions
         onClose={props.onClose}
@@ -296,7 +408,8 @@ type ThemeSelectorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
+export function ThemeSelector(props: ThemeSelectorProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -305,7 +418,7 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Change
+            {t("Change")}
           </Button>
         }
       />
@@ -314,17 +427,17 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
-              variant={baby.theme === option.value ? "default" : "ghost"}
+              variant={props.baby.theme === option.value ? "default" : "ghost"}
               size="sm"
               className="justify-start gap-2"
               disabled={isLoading}
               onClick={async () => {
                 setIsLoading(true);
                 try {
-                  await onUpdate({ theme: option.value });
+                  await props.onUpdate({ theme: option.value });
                   setIsOpen(false);
                 } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update theme");
+                  toast.error(err instanceof Error ? err.message : t("Failed to update theme"));
                 } finally {
                   setIsLoading(false);
                 }
@@ -339,7 +452,7 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
                   />
                 ))}
               </div>
-              {option.label}
+              {t(option.labelKey)}
             </Button>
           ))}
         </div>

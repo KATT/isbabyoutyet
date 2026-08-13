@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
 import { WelcomeTourDialog } from "./welcome-tour";
 import { Coachmark } from "./coachmark";
@@ -32,6 +33,7 @@ function scrollToTourTarget(targetId: string) {
  * Mount on the dashboard index (not /dashboard/add) and the first baby's owner page.
  */
 export function OnboardingHost(props: OnboardingHostProps) {
+  const { t } = useI18n();
   const enabled = props.enabled !== false;
   const spotlight = props.spotlight !== false;
   const session = authClient.useSession();
@@ -94,12 +96,17 @@ export function OnboardingHost(props: OnboardingHostProps) {
     !progress.minimized &&
     !coachmarkHidden &&
     nextStep &&
-    (nextStep.surface === "any" || nextStep.surface === props.surface || highlightBabyCard);
+    (nextStep.surface === props.surface || highlightBabyCard);
 
   const coachmarkTargetId = highlightBabyCard ? "tour_baby" : nextStep?.targetId;
+  const coachmarkTitle = nextStep ? t(nextStep.title) : "";
   const coachmarkDescription = highlightBabyCard
-    ? `Open ${progress.tourBaby?.name ?? "your baby"}'s page to do this — or tap the step in the checklist.`
-    : nextStep?.description;
+    ? t("Open {{name}}'s page to do this — or tap the step in the checklist.", {
+        name: progress.tourBaby?.name ?? "baby",
+      })
+    : nextStep
+      ? t(nextStep.description)
+      : "";
 
   function handleGoToStep(stepId: string) {
     if (stepId === "post_update") {
@@ -149,7 +156,7 @@ export function OnboardingHost(props: OnboardingHostProps) {
       {showCoachmark && nextStep && coachmarkTargetId && coachmarkDescription ? (
         <Coachmark
           targetId={coachmarkTargetId}
-          title={nextStep.title}
+          title={coachmarkTitle}
           description={coachmarkDescription}
           completeOnDismiss={nextStep.id === "learn_encouragements"}
           onComplete={() => {

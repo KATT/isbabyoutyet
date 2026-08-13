@@ -1,20 +1,21 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { Icon } from "@phosphor-icons/react";
 import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
+import type { TranslationKey } from "@/lib/i18n";
 
 export type OnboardingStepCopy = {
   id: OnboardingStepId;
-  title: string;
-  description: string;
+  title: TranslationKey;
+  description: TranslationKey;
   /** Where the tip makes the most sense */
   surface: "dashboard" | "baby" | "any";
   /** Matches `data-tour-id` on the UI target */
   targetId: string;
   icon: Icon;
-  ctaLabel?: string;
+  ctaLabel?: TranslationKey;
 };
 
-export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
+export const ONBOARDING_STEPS = [
   {
     id: "add_baby",
     title: "Add your first baby",
@@ -59,15 +60,15 @@ export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
     targetId: "learn_encouragements",
     icon: Heart,
   },
-];
+] as const satisfies ReadonlyArray<OnboardingStepCopy>;
 
 export type WelcomeSlide = {
-  title: string;
-  body: string;
+  title: TranslationKey;
+  body: TranslationKey;
   icon: Icon;
 };
 
-export const WELCOME_SLIDES: WelcomeSlide[] = [
+export const WELCOME_SLIDES = [
   {
     title: "Welcome — here's the idea",
     body: "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.",
@@ -88,4 +89,4 @@ export const WELCOME_SLIDES: WelcomeSlide[] = [
     body: "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
     icon: Heart,
   },
-];
+] as const satisfies ReadonlyArray<WelcomeSlide>;

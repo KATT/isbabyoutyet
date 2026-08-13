@@ -20,11 +20,15 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import type { TranslationFunction } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+function loginSchema(t: TranslationFunction) {
+  return z.object({
+    email: z.string().email(t("Invalid email address")),
+    password: z.string().min(6, t("Password must be at least 6 characters")),
+  });
+}
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -34,10 +38,11 @@ export const Route = createFileRoute("/auth/login")({
 const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function LoginPage() {
+  const { t } = useI18n();
   const router = useRouter();
 
   const form = useZodForm({
-    schema: loginSchema,
+    schema: loginSchema(t),
     defaultValues: hasDemoLogin
       ? {
           email: DEMO_USER.email,
@@ -66,9 +71,9 @@ function LoginPage() {
             <p className="text-4xl" aria-hidden="true">
               👋
             </p>
-            <CardTitle className="text-2xl font-black">Welcome back!</CardTitle>
+            <CardTitle className="text-2xl font-black">{t("Welcome back!")}</CardTitle>
             <CardDescription className="font-medium">
-              Sign in to keep everyone in the loop
+              {t("Sign in to keep everyone in the loop")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -82,7 +87,7 @@ function LoginPage() {
                 });
 
                 if (result.error) {
-                  throw new Error(result.error.message || "Failed to sign in");
+                  throw new Error(result.error.message || t("Failed to sign in"));
                 }
 
                 await router.navigate({ to: "/dashboard" });
@@ -94,7 +99,7 @@ function LoginPage() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("Email")}</FormLabel>
                       <FormControl>
                         <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
@@ -108,7 +113,7 @@ function LoginPage() {
                   name="password"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>{t("Password")}</FormLabel>
                       <FormControl>
                         <Input type="password" {...field} />
                       </FormControl>
@@ -123,19 +128,19 @@ function LoginPage() {
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? "Signing in..." : "Sign In"}
+                  {form.formState.isSubmitting ? t("Signing in...") : t("Sign In")}
                 </Button>
               </div>
             </Form>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
-              Don't have an account?{" "}
+              {t("Don't have an account?")}{" "}
               <Link
                 to="/auth/signup"
                 preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
-                Sign up
+                {t("Sign up")}
               </Link>
             </div>
           </CardContent>

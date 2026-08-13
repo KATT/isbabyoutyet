@@ -3,6 +3,7 @@ import { ConvexProvider } from "convex/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
 import { getConvexClient } from "./get-convex-client";
+import { getDetectedLocale } from "./lib/i18n";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -19,7 +20,7 @@ export function getRouter() {
   const router = createRouter({
     routeTree,
     defaultPreload: "intent",
-    context: { convexClient },
+    context: { convexClient, locale: getDetectedLocale() },
     scrollRestoration: true,
     Wrap: (props) => (
       <QueryClientProvider client={queryClient}>

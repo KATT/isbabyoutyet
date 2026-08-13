@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { isOnboardingStepId, ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import { isActive } from "./softDelete";
 
 const emptyState = {
   welcomeDismissed: false,
@@ -54,11 +55,13 @@ type AutoProgress = {
 };
 
 async function computeAutoProgress(ctx: QueryCtx | MutationCtx, userId: string) {
-  const babies = await ctx.db
-    .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .order("asc")
-    .take(20);
+  const babies = (
+    await ctx.db
+      .query("baby")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .order("asc")
+      .take(40)
+  ).filter(isActive);
 
   const first = babies[0];
   const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
@@ -73,7 +76,7 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, userId: string) 
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
       .first();
-    if (update) {
+    if (update && isActive(update)) {
       return { hasBaby: true, hasUpdate: true, tourBaby, encouragementsDisabled };
     }
   }
