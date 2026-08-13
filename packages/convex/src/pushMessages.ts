@@ -99,11 +99,11 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
   },
 };
 
-export function getPushMessage(
-  locale: SupportedLocale,
-  status: NotifiableStatus,
-  babyName: string,
-) {
-  const message = copy[locale][status];
-  return { title: message.title(babyName), body: message.body };
+export function getPushMessage(opts: {
+  locale: SupportedLocale;
+  status: NotifiableStatus;
+  babyName: string;
+}) {
+  const message = copy[opts.locale][opts.status];
+  return { title: message.title(opts.babyName), body: message.body };
 }

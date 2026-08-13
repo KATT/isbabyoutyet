@@ -39,21 +39,19 @@ test("keeps British and American English copy distinct", () => {
 
 test("reads Accept-Language from the current request", () => {
   expect(
-    detectLocaleFromRequestHeaders(
-      undefined,
-      () => "es-ES,es;q=0.9",
-      () => undefined,
-    ),
+    detectLocaleFromRequestHeaders(undefined, {
+      readHeader: () => "es-ES,es;q=0.9",
+      readCookie: () => undefined,
+    }),
   ).toBe("es");
 });
 
 test("a saved locale takes precedence over Accept-Language", () => {
   expect(
-    detectLocaleFromRequestHeaders(
-      undefined,
-      () => "en-GB,en;q=0.9",
-      () => "sv",
-    ),
+    detectLocaleFromRequestHeaders(undefined, {
+      readHeader: () => "en-GB,en;q=0.9",
+      readCookie: () => "sv",
+    }),
   ).toBe("sv");
 });
 

@@ -30,25 +30,29 @@ async function findEncouragementByTimelineItem(ctx: QueryCtx, timelineItemId: Id
 
 async function hydrateUpdate(
   ctx: QueryCtx,
-  item: Doc<"timelineItems">,
-  update: Doc<"updates">,
-  currentPhotoId: Id<"_storage"> | null,
+  opts: {
+    item: Doc<"timelineItems">;
+    update: Doc<"updates">;
+    currentPhotoId: Id<"_storage"> | null;
+  },
 ) {
-  const photoUrl = update.photoId ? await ctx.storage.getUrl(update.photoId) : null;
-  const thumbnailUrl = update.thumbnailId ? await ctx.storage.getUrl(update.thumbnailId) : null;
+  const photoUrl = opts.update.photoId ? await ctx.storage.getUrl(opts.update.photoId) : null;
+  const thumbnailUrl = opts.update.thumbnailId
+    ? await ctx.storage.getUrl(opts.update.thumbnailId)
+    : null;
   return {
-    _id: item._id,
+    _id: opts.item._id,
     kind: "update" as const,
-    postedAt: item.postedAt,
+    postedAt: opts.item.postedAt,
     update: {
-      _id: update._id,
-      message: update.message ?? null,
-      milestone: update.milestone ?? null,
-      occurredAt: update.occurredAt ?? null,
+      _id: opts.update._id,
+      message: opts.update.message ?? null,
+      milestone: opts.update.milestone ?? null,
+      occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
       // Whether this update's photo is the baby's current page photo
-      isCurrentPagePhoto: !!update.photoId && update.photoId === currentPhotoId,
+      isCurrentPagePhoto: !!opts.update.photoId && opts.update.photoId === opts.currentPhotoId,
     },
   };
 }
@@ -71,24 +75,31 @@ function toPublicEncouragement(encouragement: Doc<"encouragements">, visitorId?:
 
 async function hydrateTimelineItem(
   ctx: QueryCtx,
-  item: Doc<"timelineItems">,
-  opts: { visitorId?: string; currentPhotoId: Id<"_storage"> | null },
+  opts: {
+    item: Doc<"timelineItems">;
+    visitorId?: string;
+    currentPhotoId: Id<"_storage"> | null;
+  },
 ) {
-  if (!isActive(item)) return null;
+  if (!isActive(opts.item)) return null;
 
-  switch (item.kind) {
+  switch (opts.item.kind) {
     case "update": {
-      const update = await findUpdateByTimelineItem(ctx, item._id);
+      const update = await findUpdateByTimelineItem(ctx, opts.item._id);
       if (!update || !isActive(update)) return null;
-      return await hydrateUpdate(ctx, item, update, opts.currentPhotoId);
+      return await hydrateUpdate(ctx, {
+        item: opts.item,
+        update,
+        currentPhotoId: opts.currentPhotoId,
+      });
     }
     case "encouragement": {
-      const encouragement = await findEncouragementByTimelineItem(ctx, item._id);
+      const encouragement = await findEncouragementByTimelineItem(ctx, opts.item._id);
       if (!encouragement || !isActive(encouragement)) return null;
       return {
-        _id: item._id,
+        _id: opts.item._id,
         kind: "encouragement" as const,
-        postedAt: item.postedAt,
+        postedAt: opts.item.postedAt,
         encouragement: toPublicEncouragement(encouragement, opts.visitorId),
       };
     }
@@ -119,7 +130,8 @@ export const listByBaby = query({
 
     const page: TimelineItem[] = [];
     for (const item of result.page) {
-      const hydrated = await hydrateTimelineItem(ctx, item, {
+      const hydrated = await hydrateTimelineItem(ctx, {
+        item,
         visitorId: args.visitorId,
         currentPhotoId,
       });
@@ -160,7 +172,11 @@ export const latestUpdate = query({
 
     if (!latest) return null;
     const baby = await ctx.db.get(args.babyId);
-    return await hydrateUpdate(ctx, latest.item, latest.update, baby?.photoId ?? null);
+    return await hydrateUpdate(ctx, {
+      item: latest.item,
+      update: latest.update,
+      currentPhotoId: baby?.photoId ?? null,
+    });
   },
 });
 
@@ -230,10 +246,15 @@ export async function deleteEncouragementWithTimelineItem(
  * Soft-deleted rows are ignored so a milestone can be re-marked after unmark.
  * There is at most one active row per milestone (enforced by the write paths).
  */
-export async function findMilestoneUpdate(ctx: QueryCtx, babyId: Id<"baby">, milestone: Milestone) {
+export async function findMilestoneUpdate(
+  ctx: QueryCtx,
+  opts: { babyId: Id<"baby">; milestone: Milestone },
+) {
   const updates = await ctx.db
     .query("updates")
-    .withIndex("by_babyId_milestone", (q) => q.eq("babyId", babyId).eq("milestone", milestone))
+    .withIndex("by_babyId_milestone", (q) =>
+      q.eq("babyId", opts.babyId).eq("milestone", opts.milestone),
+    )
     .collect();
   return updates.find(isActive) ?? null;
 }
