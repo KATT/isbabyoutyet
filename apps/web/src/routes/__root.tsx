@@ -38,71 +38,71 @@ export const Route = createRootRouteWithContext<{
     );
     return {
       meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        name: "description",
-        content: description,
-      },
-      {
-        property: "og:locale",
-        content: locale.replace("-", "_"),
-      },
-      {
-        property: "og:site_name",
-        content: "Is Baby Out Yet?",
-      },
-      {
-        property: "og:type",
-        content: "website",
-      },
-      {
-        name: "twitter:card",
-        content: "summary",
-      },
-      {
-        name: "theme-color",
-        content: "#ea580c",
-      },
-      {
-        name: "mobile-web-app-capable",
-        content: "yes",
-      },
-      {
-        name: "apple-mobile-web-app-capable",
-        content: "yes",
-      },
-      {
-        name: "apple-mobile-web-app-status-bar-style",
-        content: "black-translucent",
-      },
+        {
+          charSet: "utf-8",
+        },
+        {
+          name: "viewport",
+          content: "width=device-width, initial-scale=1",
+        },
+        {
+          name: "description",
+          content: description,
+        },
+        {
+          property: "og:locale",
+          content: locale.replace("-", "_"),
+        },
+        {
+          property: "og:site_name",
+          content: "Is Baby Out Yet?",
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary",
+        },
+        {
+          name: "theme-color",
+          content: "#ea580c",
+        },
+        {
+          name: "mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "black-translucent",
+        },
       ],
       links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "apple-touch-icon",
-        href: "/apple-touch-icon.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "32x32",
-        href: "/favicon-32x32.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "16x16",
-        href: "/favicon-16x16.png",
-      },
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+        {
+          rel: "apple-touch-icon",
+          href: "/apple-touch-icon.png",
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "32x32",
+          href: "/favicon-32x32.png",
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "16x16",
+          href: "/favicon-16x16.png",
+        },
       ],
     };
   },

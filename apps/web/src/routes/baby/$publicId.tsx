@@ -242,7 +242,7 @@ function BabyPage() {
             }}
           >
             <DialogContent className="sm:max-w-lg">
-            <DialogTitle className="sr-only">{t("Post update")}</DialogTitle>
+              <DialogTitle className="sr-only">{t("Post update")}</DialogTitle>
               <UpdateComposer
                 babyId={babyDoc._id}
                 baby={baby}

@@ -22,10 +22,7 @@ async function requireIdentity(ctx: Pick<QueryCtx, "auth">) {
   return identity;
 }
 
-async function getProfileHandler(
-  ctx: Pick<QueryCtx, "db">,
-  userId: string,
-) {
+async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
   return await ctx.db
     .query("userProfiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))

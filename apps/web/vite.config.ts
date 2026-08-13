@@ -112,7 +112,11 @@ const config = defineConfig({
       projects: ["./tsconfig.json"],
     }),
     tailwindcss(),
-    tanstackStart(),
+    tanstackStart({
+      server: {
+        entry: "./src/server.ts",
+      },
+    }),
     viteReact(),
   ],
   ssr: {

@@ -3,10 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Languages } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
-import {
-  SUPPORTED_LOCALES,
-  isSupportedLocale,
-} from "@workspace/convex/src/i18n";
+import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -95,9 +92,7 @@ export function LanguageSettings() {
           >
             <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="requested-language">
-                  {t("Language name or code")}
-                </FieldLabel>
+                <FieldLabel htmlFor="requested-language">{t("Language name or code")}</FieldLabel>
                 <Input
                   id="requested-language"
                   value={requestedLocale}

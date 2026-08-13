@@ -256,9 +256,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemActions>
               <Switch
                 checked={!props.baby.encouragementsDisabled}
-                onCheckedChange={(checked) =>
-                  props.onUpdate({ encouragementsDisabled: !checked })
-                }
+                onCheckedChange={(checked) => props.onUpdate({ encouragementsDisabled: !checked })}
               />
             </ItemActions>
           </Item>

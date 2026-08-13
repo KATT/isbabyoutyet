@@ -237,7 +237,8 @@ const sv: Partial<Record<TranslationKey, string>> = {
   "This is initially chosen from your browser. New baby pages inherit it.":
     "Språket väljs först från din webbläsare. Nya bebissidor ärver det.",
   "Request another language": "Önska ett annat språk",
-  "Tell us which language you would like us to add.": "Berätta vilket språk du vill att vi lägger till.",
+  "Tell us which language you would like us to add.":
+    "Berätta vilket språk du vill att vi lägger till.",
   "Language name or code": "Språknamn eller kod",
   "Send request": "Skicka önskemål",
   "Language request saved": "Språkönskemålet har sparats",
@@ -280,8 +281,7 @@ const es: Partial<Record<TranslationKey, string>> = {
   "Go to Dashboard": "Ir al panel",
   "Get Started": "Empezar",
   "Is {{name}} out yet?": "¿Ya nació {{name}}?",
-  "{{count}} day overdue – Is {{name}} out yet?":
-    "{{count}} día de retraso – ¿Ya nació {{name}}?",
+  "{{count}} day overdue – Is {{name}} out yet?": "{{count}} día de retraso – ¿Ya nació {{name}}?",
   "{{count}} days overdue – Is {{name}} out yet?":
     "{{count}} días de retraso – ¿Ya nació {{name}}?",
   "{{count}} day until due date – Is {{name}} out yet?":
@@ -325,7 +325,8 @@ const es: Partial<Record<TranslationKey, string>> = {
   "Form disabled": "Formulario desactivado",
   Language: "Idioma",
   "Use my profile language ({{language}})": "Usar el idioma de mi perfil ({{language}})",
-  "All visitors see this page in {{language}}.": "Todos los visitantes ven esta página en {{language}}.",
+  "All visitors see this page in {{language}}.":
+    "Todos los visitantes ven esta página en {{language}}.",
   Default: "Predeterminado",
   Edit: "Editar",
   Change: "Cambiar",
@@ -422,11 +423,7 @@ export function getDetectedLocale() {
   return resolveSupportedLocale(getLocale());
 }
 
-export function translate(
-  locale: SupportedLocale,
-  key: TranslationKey,
-  variables: Variables = {},
-) {
+export function translate(locale: SupportedLocale, key: TranslationKey, variables: Variables = {}) {
   let message: string = translations[locale][key] ?? enGB[key];
   for (const [name, value] of Object.entries(variables)) {
     message = message.replaceAll(`{{${name}}}`, String(value));

@@ -40,29 +40,29 @@ export const Route = createFileRoute("/")({
     );
     return {
       meta: [
-      {
-        title,
-      },
-      {
-        name: "description",
-        content: description,
-      },
-      {
-        property: "og:title",
-        content: title,
-      },
-      {
-        property: "og:description",
-        content: description,
-      },
-      {
-        name: "twitter:title",
-        content: title,
-      },
-      {
-        name: "twitter:description",
-        content: description,
-      },
+        {
+          title,
+        },
+        {
+          name: "description",
+          content: description,
+        },
+        {
+          property: "og:title",
+          content: title,
+        },
+        {
+          property: "og:description",
+          content: description,
+        },
+        {
+          name: "twitter:title",
+          content: title,
+        },
+        {
+          name: "twitter:description",
+          content: description,
+        },
       ],
       links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
     };
@@ -124,7 +124,9 @@ function HomePage() {
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-            {t('Stop answering "any news yet?" texts. Share one link and let everyone follow along.')}
+            {t(
+              'Stop answering "any news yet?" texts. Share one link and let everyone follow along.',
+            )}
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (

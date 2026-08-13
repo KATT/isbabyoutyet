@@ -550,13 +550,7 @@ export const update = mutationWithTriggers({
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(
-      v.union(
-        v.literal("en-GB"),
-        v.literal("en-US"),
-        v.literal("sv"),
-        v.literal("es"),
-        v.null(),
-      ),
+      v.union(v.literal("en-GB"), v.literal("en-US"), v.literal("sv"), v.literal("es"), v.null()),
     ),
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these

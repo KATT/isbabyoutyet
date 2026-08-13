@@ -68,12 +68,7 @@ export const sendNotification = internalAction({
       v.literal("photo_added"),
     ),
     customMessage: v.optional(v.union(v.string(), v.null())),
-    locale: v.union(
-      v.literal("en-GB"),
-      v.literal("en-US"),
-      v.literal("sv"),
-      v.literal("es"),
-    ),
+    locale: v.union(v.literal("en-GB"), v.literal("en-US"), v.literal("sv"), v.literal("es")),
   },
   handler: async (ctx, args) => {
     // Get all subscriptions for this babyId

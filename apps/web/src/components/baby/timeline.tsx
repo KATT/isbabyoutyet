@@ -462,9 +462,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               <Badge
                 className="shrink-0"
                 title={
-                  update.occurredAt
-                    ? formatOccurredAtLocal(update.occurredAt, locale)
-                    : undefined
+                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
@@ -896,9 +894,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">
-            {t("Updates & encouragements")}
-          </h3>
+          <h3 className="text-lg font-semibold text-foreground">{t("Updates & encouragements")}</h3>
         </div>
         <div className="py-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
@@ -919,9 +915,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">
-          {t("Updates & encouragements")}
-        </h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("Updates & encouragements")}</h3>
       </div>
 
       <div className="space-y-3">
