@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dia
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -57,18 +57,21 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   loader: async (opts) => {
     const baby = opts.context.baby;
-    const vapidPublicKey = await opts.context.convexClient.query(
-      api.pushSubscriptions.getPublicKey,
-      {},
-    );
-    // Prefetch so the status card doesn't flash without its message
-    const latestUpdate = await opts.context.convexClient.query(api.timeline.latestUpdate, {
-      babyId: baby._id,
-    });
+    const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
+      opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
+      opts.context.convexClient.query(api.timeline.latestUpdate, {
+        babyId: baby._id,
+      }),
+      opts.context.convexClient.query(api.timeline.listByBaby, {
+        babyId: baby._id,
+        paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+      }),
+    ]);
     return {
       baby,
       vapidPublicKey,
       latestUpdate,
+      firstPage,
     };
   },
   head: (opts) => {
@@ -354,6 +357,7 @@ function BabyPage() {
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
+                initialPage={loaderData.firstPage}
               />
             </section>
           </div>
