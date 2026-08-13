@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
-import { Languages } from "lucide-react";
+import { Translate } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
@@ -52,7 +52,7 @@ export function LanguageSettings() {
         disabled={!profile}
       >
         <SelectTrigger aria-label={t("Profile language")}>
-          <Languages data-icon="inline-start" />
+          <Translate data-icon="inline-start" />
           <SelectValue />
         </SelectTrigger>
         <SelectContent alignItemWithTrigger={false}>

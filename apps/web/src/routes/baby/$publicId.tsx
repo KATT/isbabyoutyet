@@ -1,7 +1,6 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
-import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
@@ -29,6 +28,7 @@ import {
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
+import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { translate, useI18n } from "@/lib/i18n";
 
@@ -36,7 +36,6 @@ export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
   validateSearch: z.object({
     settings: z.boolean().optional(),
-    postUpdate: z.boolean().optional(),
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
@@ -200,33 +199,34 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const removeBaby = useMutation(api.baby.remove);
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
+  const [composerOpen, setComposerOpen] = useState(false);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   const profile = useQuery(api.profile.get, {});
+  const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
     latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
-  const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
+  // Prefer server access (includes co-parents); fall back to session owner check
+  // while the query loads so owners don't flash without controls.
+  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
+  const canManage = myAccess?.canManage ?? isOwner;
+
+  // Claim pending email invites when a signed-in user lands on a baby page
+  useEffect(() => {
+    if (!sessionResult.data?.user) return;
+    void claimInvites({});
+  }, [sessionResult.data?.user, claimInvites]);
 
   const currentStatus = getCurrentStatus(baby);
 
-  function setSearchOpen(opts: { settings?: boolean; postUpdate?: boolean }) {
-    void navigate({
-      search: {
-        ...search,
-        settings: opts.settings || undefined,
-        postUpdate: opts.postUpdate || undefined,
-      },
-      replace: true,
-    });
-  }
-
   return (
-    <div>
+    <div className="min-h-screen bg-background bg-dots">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
-      {isOwner && (
+      {canManage && (
         <>
           <SettingsPanel
             baby={baby}
@@ -238,73 +238,81 @@ function BabyPage() {
               });
               await router.invalidate();
             }}
+            onDelete={
+              isOwner
+                ? async () => {
+                    await removeBaby({ babyId: babyDoc._id });
+                    void navigate({ to: "/dashboard" });
+                  }
+                : undefined
+            }
+            coParents={{ babyId: babyDoc._id, isOwner }}
             open={!!search.settings}
             onOpenChange={(open) => {
-              setSearchOpen({ settings: open, postUpdate: false });
+              void navigate({
+                search: {
+                  ...search,
+                  settings: open || undefined,
+                },
+                replace: true,
+              });
             }}
           />
           <ScheduledNotificationToast babyId={babyDoc._id} />
-          <Dialog
-            open={!!search.postUpdate}
-            onOpenChange={(open) => {
-              setSearchOpen({ postUpdate: open, settings: false });
-            }}
-          >
+          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
             <DialogContent className="sm:max-w-lg">
-              <DialogTitle className="sr-only">{t("Post update")}</DialogTitle>
+              <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
               <UpdateComposer
                 babyId={babyDoc._id}
                 baby={baby}
                 babyName={baby.name}
-                onPosted={() => setSearchOpen({ postUpdate: false, settings: false })}
+                onPosted={() => setComposerOpen(false)}
               />
             </DialogContent>
           </Dialog>
         </>
       )}
 
-      <div className="border-b border-border/50">
+      {/* Floating chrome: brand pill left, action dock right */}
+      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+              <Baby className="h-4 w-4 text-primary" />
+            </span>
+            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          </Link>
         <BabyNav
           shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
-          postUpdateButton={
-            isOwner
-              ? {
-                  to: "/baby/$publicId",
-                  params: { publicId: params.publicId },
-                  search: {
-                    ...search,
-                    postUpdate: search.postUpdate ? undefined : true,
-                    settings: undefined,
-                  },
-                }
-              : null
-          }
-          postUpdateOpen={!!search.postUpdate}
+            onPostUpdate={canManage ? () => setComposerOpen(true) : null}
           settingsButton={
-            isOwner
+              canManage
               ? {
                   to: "/baby/$publicId",
                   params: { publicId: params.publicId },
                   search: {
                     ...search,
                     settings: search.settings ? undefined : true,
-                    postUpdate: undefined,
                   },
                 }
               : null
           }
           settingsOpen={!!search.settings}
         />
-        <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
-          <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-            {t("Is {{name}} out yet?", { name: baby.name })}
-          </span>
-        </h1>
       </div>
-      <section className="relative px-6 py-12 text-center overflow-hidden">
-        <div className="relative max-w-5xl mx-auto">
-          <Card>
-            <CardContent>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl px-4 pb-16">
+        <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
+          {t("Is {{name}} out yet?", { name: baby.name })}
+        </h1>
+
+        {/* Split layout: sticky status card on the left, feed on the right */}
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
               <StatusDisplay
                 baby={baby}
                 currentStatus={currentStatus}
@@ -316,49 +324,46 @@ function BabyPage() {
                     : null
                 }
               />
+            <div className="flex justify-center">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
-              <Separator className="my-4" />
-            </CardContent>
-            <CardFooter>
-              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-            </CardFooter>
-          </Card>
         </div>
+            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
       </section>
 
-      {/* Timeline Section: owner updates interleaved with encouragements.
-          The news (feed) comes before the visitor's encouragement form; the
-          owner posts via the "Post update" button in the fixed nav bar. */}
-      <section className="relative px-6 pb-12">
-        <div className="relative max-w-2xl mx-auto space-y-8">
-          <Card>
-            <CardContent className="pt-6">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-            </CardContent>
-          </Card>
+          {/* Timeline: owner updates interleaved with encouragements. The
+              feed comes before the visitor's encouragement form; the owner
+              posts via the "Post update" button in the dock. */}
+          <div className="space-y-8">
+            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
+              <TimelineFeed
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                isOwner={canManage}
+              />
+            </section>
 
           {!baby.encouragementsDisabled && (
-            <Card>
-              <CardContent className="pt-6">
+              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </CardContent>
-            </Card>
+              </section>
           )}
         </div>
-      </section>
+        </div>
+      </main>
 
-      {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-      <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

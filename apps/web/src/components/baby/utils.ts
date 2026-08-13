@@ -5,6 +5,7 @@ import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
 import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
+import sunnyDaysCss from "@/styles/themes/sunny-days.css?url";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -49,6 +50,12 @@ export const THEME_OPTIONS = [
     labelKey: "Quantum Rose",
     css: quantumRoseCss,
     colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
+  },
+  {
+    value: "sunny-days",
+    labelKey: "Sunny Days",
+    css: sunnyDaysCss,
+    colors: ["#f2a614", "#fff9e8", "#8ed1c5"],
   },
 ] as const satisfies ReadonlyArray<{
   value: string | null;

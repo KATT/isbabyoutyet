@@ -1,9 +1,9 @@
 import { Button } from "@workspace/ui/components/button";
-import { ButtonGroup } from "@workspace/ui/components/button-group";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { CheckCircle, MessageCircleHeart, Settings, Share2 } from "lucide-react";
-import { Link, LinkProps } from "@tanstack/react-router";
+import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@workspace/ui/lib/utils";
@@ -13,21 +13,15 @@ type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
-  /** Owner-only "Post update" link; open state is mirrored in the URL search */
-  postUpdateButton?: null | LinkProps;
-  postUpdateOpen?: boolean;
+  /** Owner-only "Post update" action */
+  onPostUpdate?: (() => void) | null;
+  className?: string;
 };
 
-export function BabyNav({
-  shareLink,
-  settingsButton,
-  settingsOpen,
-  postUpdateButton,
-  postUpdateOpen,
-}: BabyNavProps) {
+export function BabyNav(props: BabyNavProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const hasOwnerActions = !!(postUpdateButton || settingsButton);
+  const hasOwnerActions = !!(props.onPostUpdate || props.settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -36,54 +30,53 @@ export function BabyNav({
   }, [copied]);
 
   const ownerActions = hasOwnerActions ? (
-    <ButtonGroup aria-label={t("Owner actions")}>
-      {postUpdateButton && (
-        <Button
-          variant={postUpdateOpen ? "default" : "outline"}
-          render={<Link {...(postUpdateButton as any)} />}
-          nativeButton={false}
-        >
-          <MessageCircleHeart data-icon="inline-start" />
+    <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
+      {props.onPostUpdate && (
+        <Button variant="ghost" className="rounded-full font-bold" onClick={props.onPostUpdate}>
+          <ChatCircleText data-icon="inline-start" />
           {t("Post update")}
         </Button>
       )}
-      {settingsButton && (
+      {props.settingsButton && (
         <Tooltip>
           <TooltipTrigger
             render={
               <Button
-                variant={settingsOpen ? "default" : "outline"}
+                variant={props.settingsOpen ? "default" : "ghost"}
                 size="icon"
-                render={<Link {...(settingsButton as any)} />}
+                className="rounded-full"
+                render={<Link {...(props.settingsButton as any)} />}
                 nativeButton={false}
-                aria-label={settingsOpen ? t("Close settings") : t("Settings")}
+                aria-label={props.settingsOpen ? t("Close settings") : t("Settings")}
               >
-                <Settings />
+                <GearSix />
               </Button>
             }
           />
-          <TooltipContent>{settingsOpen ? t("Close settings") : t("Settings")}</TooltipContent>
+          <TooltipContent>
+            {props.settingsOpen ? t("Close settings") : t("Settings")}
+          </TooltipContent>
         </Tooltip>
       )}
-    </ButtonGroup>
+    </div>
   ) : null;
 
   const pageActions = (
-    <ButtonGroup aria-label={t("Page actions")}>
+    <div role="group" aria-label={t("Page actions")} className="flex items-center gap-1">
       <Tooltip>
         <TooltipTrigger
           render={
             <Button
               onClick={async () => {
-                if (!shareLink) return;
+                if (!props.shareLink) return;
                 try {
-                  await navigator.clipboard.writeText(shareLink);
+                  await navigator.clipboard.writeText(props.shareLink);
                   setCopied(true);
                   toast.success(t("Copied to clipboard"));
                 } catch {
                   // Fallback for older browsers
                   const textArea = document.createElement("textarea");
-                  textArea.value = shareLink;
+                  textArea.value = props.shareLink;
                   textArea.style.position = "fixed";
                   textArea.style.opacity = "0";
                   document.body.appendChild(textArea);
@@ -101,37 +94,34 @@ export function BabyNav({
                   document.body.removeChild(textArea);
                 }
               }}
-              variant="outline"
+              variant="ghost"
               size="icon"
-              disabled={!shareLink}
+              className="rounded-full"
+              disabled={!props.shareLink}
               aria-label={copied ? t("Copied!") : t("Copy link to share")}
             >
-              {copied ? <CheckCircle /> : <Share2 />}
+              {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
           }
         />
         <TooltipContent>{copied ? t("Copied!") : t("Copy link to share")}</TooltipContent>
       </Tooltip>
 
-      <ModeToggle className="rounded-lg" />
-    </ButtonGroup>
+      <ModeToggle className="rounded-full" />
+    </div>
   );
 
+  // A floating pill dock; the page decides where it sits
   return (
     <div
       className={cn(
-        // general
-        "p-4 z-10",
-        // mobile
-        "fixed bottom-0 left-0",
-        // desktop
-        "md:sticky md:top-0 md:left-0",
+        "flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm",
+        props.className,
       )}
     >
-      <ButtonGroup>
-        {ownerActions}
-        {pageActions}
-      </ButtonGroup>
+      {ownerActions}
+      {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
+      {pageActions}
     </div>
   );
 }

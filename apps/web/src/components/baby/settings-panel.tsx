@@ -8,6 +8,18 @@ import {
   ItemSeparator,
   ItemTitle,
 } from "@workspace/ui/components/item";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@workspace/ui/components/alert-dialog";
+import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Switch } from "@workspace/ui/components/switch";
 import {
@@ -19,17 +31,21 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import {
-  Activity,
   Baby,
-  Calendar,
-  CheckCircle,
+  CalendarHeart,
+  ChatCircle,
+  Confetti,
+  Heartbeat,
   Hospital,
-  MessageSquare,
   Palette,
-  Languages,
-} from "lucide-react";
+  Translate,
+  Trash,
+  Users,
+} from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
+import { CoParentsSettings } from "./co-parents-settings";
 import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
 import {
   SUPPORTED_LOCALES,
@@ -44,6 +60,13 @@ type SettingsPanelProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profileLocale?: SupportedLocale;
+  /** Owner-only soft delete. Omitted on the preview page. */
+  onDelete?: () => void | Promise<void>;
+  /** When set, shows the co-parents section (real baby pages only). */
+  coParents?: {
+    babyId: Id<"baby">;
+    isOwner: boolean;
+  };
 };
 
 /**
@@ -81,7 +104,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           {/* Due Date */}
           <Item>
             <ItemMedia variant="icon">
-              <Calendar className="w-4 h-4" />
+              <CalendarHeart className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{t("Due Date")}</ItemTitle>
@@ -100,7 +123,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <Activity className="w-4 h-4" />
+                  <Heartbeat className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Labour started")}</ItemTitle>
@@ -152,7 +175,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <CheckCircle className="w-4 h-4" />
+                  <Confetti className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Baby born")}</ItemTitle>
@@ -198,7 +221,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
           <Item>
             <ItemMedia variant="icon">
-              <Languages />
+              <Translate />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{t("Language")}</ItemTitle>
@@ -245,7 +268,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           {/* Encouragements */}
           <Item>
             <ItemMedia variant="icon">
-              <MessageSquare className="w-4 h-4" />
+              <ChatCircle className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{t("Encouragements")}</ItemTitle>
@@ -262,6 +285,80 @@ export function SettingsPanel(props: SettingsPanelProps) {
               />
             </ItemActions>
           </Item>
+
+          {props.coParents && (
+            <>
+              <ItemSeparator />
+              <Item variant="default" className="items-start">
+                <ItemMedia variant="icon">
+                  <Users className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent className="gap-3">
+                  <div>
+                    <ItemTitle>{t("Co-parents")}</ItemTitle>
+                    <ItemDescription>
+                      {props.coParents.isOwner
+                        ? t("People who can post updates and change settings")
+                        : t("Others who can manage this page with you")}
+                    </ItemDescription>
+                  </div>
+                  <CoParentsSettings
+                    babyId={props.coParents.babyId}
+                    isOwner={props.coParents.isOwner}
+                  />
+                </ItemContent>
+              </Item>
+            </>
+          )}
+
+          {props.onDelete && (
+            <>
+              <ItemSeparator />
+              <Item>
+                <ItemMedia variant="icon">
+                  <Trash className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Delete page")}</ItemTitle>
+                  <ItemDescription>{t("Hide this baby page from everyone")}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <AlertDialog>
+                    <AlertDialogTrigger
+                      render={
+                        <Button variant="destructive" size="sm">
+                          {t("Delete")}
+                        </Button>
+                      }
+                    />
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          {t("Delete {{name}}'s page?", { name: props.baby.name })}
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t(
+                            "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
+                          )}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          onClick={() => {
+                            void props.onDelete?.();
+                          }}
+                        >
+                          {t("Delete page")}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </ItemActions>
+              </Item>
+            </>
+          )}
         </ItemGroup>
       </DialogContent>
     </Dialog>

@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { Check, X } from "lucide-react";
+import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";

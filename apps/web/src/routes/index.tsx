@@ -1,57 +1,14 @@
-import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import {
-  Activity,
-  Baby,
-  Bell,
-  Calendar,
-  CheckCircle,
-  Heart,
-  Hospital,
-  Link2,
-  MessageCircleHeart,
-  Palette,
-  Sparkles,
-} from "lucide-react";
+import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
-import type { TranslationKey } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
 const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
-
-const HOW_IT_WORKS_STEPS = [
-  {
-    step: "1",
-    titleKey: "Create Your Page",
-    descriptionKey: "Sign up and add your baby's name and due date. That's it.",
-  },
-  {
-    step: "2",
-    titleKey: "Share the Link",
-    descriptionKey:
-      "Send it to family and friends. They can follow along and subscribe without an account.",
-  },
-  {
-    step: "3",
-    titleKey: "Update as You Go",
-    descriptionKey: "Post each milestone once and everyone following gets the news.",
-  },
-] as const satisfies ReadonlyArray<{
-  step: string;
-  titleKey: TranslationKey;
-  descriptionKey: TranslationKey;
-}>;
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -111,6 +68,73 @@ function useCurrentDate() {
   );
 }
 
+const FEATURES = [
+  {
+    emoji: "📣",
+    title: "Update your status",
+    description:
+      "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.",
+  },
+  {
+    emoji: "📅",
+    title: "Countdown to due date",
+    description:
+      'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.',
+  },
+  {
+    emoji: "🎨",
+    title: "Make it yours",
+    description:
+      "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.",
+  },
+  {
+    emoji: "🔗",
+    title: "No account needed",
+    description:
+      "Anyone with the link can check in anytime. Grandma doesn't need to download an app or create an account.",
+  },
+  {
+    emoji: "💌",
+    title: "Send encouragement",
+    description:
+      "Visitors can leave messages of love and support. Like a digital guestbook filled with well-wishes you'll treasure.",
+  },
+  {
+    emoji: "🔔",
+    title: "Get notified",
+    description:
+      "Family can subscribe to push notifications and be the first to know the moment baby arrives.",
+  },
+] as const satisfies ReadonlyArray<{
+  emoji: string;
+  title: TranslationKey;
+  description: TranslationKey;
+}>;
+
+const HOW_IT_WORKS = [
+  {
+    step: "1",
+    title: "Create your page",
+    description: "Sign up and add your baby's name and due date. That's it.",
+  },
+  {
+    step: "2",
+    title: "Share the link",
+    description:
+      "Send it to family and friends. They can check in anytime and subscribe for notifications.",
+  },
+  {
+    step: "3",
+    title: "Update as you go",
+    description:
+      "When things start happening, update your status. Everyone gets notified automatically.",
+  },
+] as const satisfies ReadonlyArray<{
+  step: string;
+  title: TranslationKey;
+  description: TranslationKey;
+}>;
+
 function HomePage() {
   const { t } = useI18n();
   const sessionData = authClient.useSession();
@@ -124,39 +148,119 @@ function HomePage() {
     return date.toISOString();
   };
 
-  return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
-      </div>
+  const previewStages = [
+    {
+      emoji: "👶",
+      title: "Waiting",
+      description: "Before labour starts",
+      rotate: "group-hover:-rotate-1",
+      search: { name: "Emma" },
+    },
+    {
+      emoji: "💫",
+      title: "Labour started",
+      description: "Things are happening!",
+      rotate: "group-hover:rotate-1",
+      search: { name: "Oliver", dueDate: hoursAgo(0), laborStarted: hoursAgo(2) },
+    },
+    {
+      emoji: "🏥",
+      title: "At hospital",
+      description: "Almost there!",
+      rotate: "group-hover:-rotate-1",
+      search: {
+        name: "Sophia",
+        laborStarted: hoursAgo(4),
+        wentToHospital: hoursAgo(1),
+        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        theme: "bubblegum",
+      },
+    },
+    {
+      emoji: "🎉",
+      title: "Baby born!",
+      description: "Celebrate the arrival",
+      rotate: "group-hover:rotate-1",
+      search: {
+        name: "Liam",
+        laborStarted: hoursAgo(6),
+        wentToHospital: hoursAgo(3),
+        babyBorn: hoursAgo(0.5),
+        babyBornMessage: "Welcome to the world, little one! 🎉",
+        theme: "sunny-days",
+      },
+    },
+  ] as const;
 
-      <div className="max-w-7xl mx-auto px-6 py-20 md:py-32 space-y-16">
-        {/* Hero Section */}
-        <div className="text-center">
-          <Badge
-            variant="outline"
-            className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
-          >
-            <Sparkles className="w-3 h-3 mr-1.5" />
-            {t("Free forever, no ads")}
-          </Badge>
-          <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              {t("Is Baby Out Yet?")}
+  return (
+    <div className="min-h-screen bg-background bg-dots">
+      {/* Floating header */}
+      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+          <span className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+              <Baby className="h-4 w-4 text-primary" />
             </span>
+            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          </span>
+          <div className="flex items-center gap-2">
+            {sessionData.data ? (
+              <Button
+                size="sm"
+                className="rounded-full font-bold"
+                render={<Link to="/dashboard" preload="viewport" />}
+                nativeButton={false}
+              >
+                {t("Dashboard")}
+              </Button>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full font-bold border-2"
+                  render={<Link to="/auth/login" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  {t("Sign in")}
+                </Button>
+                <Button
+                  size="sm"
+                  className="rounded-full font-bold"
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  {t("Get started")}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6">
+        {/* Hero */}
+        <section className="py-16 text-center md:py-24">
+          <span className="inline-block -rotate-2 rounded-full border-2 border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-extrabold text-primary pop-shadow">
+            ✨ {t("Free forever, no ads")}
+          </span>
+          <h1 className="mx-auto mt-8 max-w-3xl text-5xl font-black tracking-tight text-foreground text-balance md:text-7xl">
+            {t("Is")}{" "}
+            <span className="inline-block -rotate-1 rounded-3xl bg-primary/15 px-4 text-primary">
+              {t("baby")}
+            </span>{" "}
+            {t("out yet?")}
           </h1>
-          <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
+          <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground md:text-xl">
             {t(
-              'Stop answering "any news yet?" texts. Share one link and let everyone follow along.',
+              'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼',
             )}
           </p>
-          <div className="flex gap-4 justify-center flex-wrap">
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
             {sessionData.data ? (
               <Button
                 size="lg"
-                className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
                 render={<Link to="/dashboard" preload="viewport" />}
                 nativeButton={false}
               >
@@ -166,280 +270,163 @@ function HomePage() {
               <>
                 <Button
                   size="lg"
-                  className="text-lg px-8 py-7 h-auto shadow-lg shadow-primary/20"
+                  className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  {t("Get Started")}
+                  {t("Create your page 🎈")}
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="text-lg px-8 py-7 h-auto border-2 backdrop-blur-sm bg-background/50"
+                  className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
                   render={<Link to="/auth/login" preload="viewport" />}
                   nativeButton={false}
                 >
-                  {t("Sign In")}
+                  {t("Sign in")}
                 </Button>
               </>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* For You Section */}
-        <div className="space-y-6">
+        {/* Features */}
+        <section className="py-12">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">{t("For You")}</h2>
-            <p className="text-muted-foreground">{t("Everything you need to share the journey")}</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Baby className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>{t("Update Your Status")}</CardTitle>
-                <CardDescription>
-                  {t(
-                    "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.",
-                  )}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Calendar className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>{t("Countdown to Due Date")}</CardTitle>
-                <CardDescription>
-                  {t(
-                    "Set the due date so everyone can see how many days are left, including a friendly overdue counter.",
-                  )}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Palette className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>{t("Make It Yours")}</CardTitle>
-                <CardDescription>
-                  {t("Choose a theme that matches your style — your page, your way.")}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* For Your Visitors Section */}
-        <div className="space-y-6">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">
-              {t("For Your Family & Friends")}
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              {t("Everything the family needs")}
             </h2>
-            <p className="text-muted-foreground">{t("What everyone you share with gets")}</p>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              {t("For you, and for everyone waiting by the phone")}
+            </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-6">
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Link2 className="w-7 h-7 text-primary" />
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((feature, index) => (
+              <div
+                key={feature.title}
+                className={`rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform hover:-translate-y-1 ${
+                  index % 2 === 0 ? "hover:-rotate-1" : "hover:rotate-1"
+                }`}
+              >
+                <span className="text-3xl" aria-hidden="true">
+                  {feature.emoji}
+                </span>
+                <h3 className="mt-3 text-lg font-extrabold text-foreground">{t(feature.title)}</h3>
+                <p className="mt-1.5 text-sm font-medium leading-relaxed text-muted-foreground">
+                  {t(feature.description)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* See it in action */}
+        <section className="py-12">
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              {t("See it in action")}
+            </h2>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              {t("Click any stage to see how your page will look")}
+            </p>
+          </div>
+          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {previewStages.map((stage) => (
+              <Link key={stage.title} to="/preview" search={stage.search} className="group">
+                <div
+                  className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
+                >
+                  <span className="text-4xl" aria-hidden="true">
+                    {stage.emoji}
+                  </span>
+                  <h3 className="mt-3 font-extrabold text-foreground">{t(stage.title)}</h3>
+                  <p className="mt-0.5 text-sm font-medium text-muted-foreground">
+                    {t(stage.description)}
+                  </p>
                 </div>
-                <CardTitle>{t("No Account Needed")}</CardTitle>
-                <CardDescription>
-                  {t(
-                    "Anyone with the link can follow along without downloading an app or creating an account.",
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* How it works */}
+        <section className="py-12">
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              {t("How it works")}
+            </h2>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              {t("Up and running in under a minute")}
+            </p>
+          </div>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {HOW_IT_WORKS.map((item) => (
+              <div key={item.step} className="flex flex-col items-center text-center">
+                <div className="flex h-14 w-14 -rotate-3 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary/15 text-2xl font-black text-primary pop-shadow">
+                  {item.step}
+                </div>
+                <h3 className="mt-4 text-lg font-extrabold text-foreground">{t(item.title)}</h3>
+                <p className="mt-1.5 font-medium leading-relaxed text-muted-foreground">
+                  {t(item.description)}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-16 text-center">
+          <div className="mx-auto max-w-2xl rounded-[2rem] border-2 border-primary/25 bg-primary/10 px-8 py-12 pop-shadow-strong">
+            <p className="text-4xl" aria-hidden="true">
+              💖
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">
+              {t("Ready to share the journey?")}
+            </h2>
+            <p className="mx-auto mt-3 max-w-xl text-lg font-semibold text-muted-foreground">
+              {sessionData.data
+                ? t("Head back to your dashboard to keep everyone updated.")
+                : t(
+                    "Join families who've already shared their special moments. Takes less than a minute.",
                   )}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <MessageCircleHeart className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>{t("Send Encouragement")}</CardTitle>
-                <CardDescription>
-                  {t("Visitors can leave messages of love and support in a digital guestbook.")}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
-                  <Bell className="w-7 h-7 text-primary" />
-                </div>
-                <CardTitle>{t("Get Notified")}</CardTitle>
-                <CardDescription>
-                  {t(
-                    "Subscribe to updates and hear the moment baby arrives without constantly refreshing.",
-                  )}
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </div>
-        </div>
-
-        {/* See It In Action */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("See It In Action")}</CardTitle>
-            <CardDescription>{t("Open any stage to preview the baby page")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link
-                to="/preview"
-                search={{
-                  name: "Emma",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
-                    <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">{t("Waiting")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("Before labour starts")}</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Oliver",
-                  dueDate: hoursAgo(0),
-                  laborStarted: hoursAgo(2),
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Activity className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">{t("Labour started")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("Things are happening!")}</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Sophia",
-                  laborStarted: hoursAgo(4),
-                  wentToHospital: hoursAgo(1),
-                  hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
-                  theme: "bubblegum",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                    <Hospital className="w-6 h-6 text-primary" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">{t("At Hospital")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("Almost there!")}</p>
-                </div>
-              </Link>
-
-              <Link
-                to="/preview"
-                search={{
-                  name: "Liam",
-                  laborStarted: hoursAgo(6),
-                  wentToHospital: hoursAgo(3),
-                  babyBorn: hoursAgo(0.5),
-                  babyBornMessage: "Welcome to the world, little one! 🎉",
-                  theme: "violet-bloom",
-                }}
-                className="group"
-              >
-                <div className="p-6 rounded-xl border border-border bg-card hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5 transition-all">
-                  <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <CheckCircle className="w-6 h-6 text-primary-foreground" />
-                  </div>
-                  <h3 className="font-semibold text-foreground mb-1">{t("Baby Born!")}</h3>
-                  <p className="text-sm text-muted-foreground">{t("Celebrate the arrival")}</p>
-                </div>
-              </Link>
+            </p>
+            <div className="mt-7">
+              {sessionData.data ? (
+                <Button
+                  size="lg"
+                  className="rounded-full font-extrabold"
+                  render={<Link to="/dashboard" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  {t("Go to Dashboard")}
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  className="rounded-full font-extrabold"
+                  render={<Link to="/auth/signup" preload="viewport" />}
+                  nativeButton={false}
+                >
+                  {t("Get Started Free 🎉")}
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
-
-        {/* How It Works */}
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("How It Works")}</CardTitle>
-            <CardDescription>{t("Up and running in under a minute")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-8">
-              {HOW_IT_WORKS_STEPS.map((item) => (
-                <div key={item.step} className="flex flex-col items-center text-center group">
-                  <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
-                    {item.step}
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{t(item.titleKey)}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{t(item.descriptionKey)}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* CTA Section */}
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
-            <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">
-            {t("Ready to share the journey?")}
-          </h2>
-          <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
-            {sessionData.data
-              ? t("Head back to your dashboard to keep everyone updated.")
-              : t(
-                  "Join families already sharing their special moments. It takes less than a minute.",
-                )}
-          </p>
-          {sessionData.data ? (
-            <Button
-              size="lg"
-              render={<Link to="/dashboard" preload="viewport" />}
-              nativeButton={false}
-            >
-              {t("Go to Dashboard")}
-            </Button>
-          ) : (
-            <Button
-              size="lg"
-              render={<Link to="/auth/signup" preload="viewport" />}
-              nativeButton={false}
-            >
-              {t("Get Started Free")}
-            </Button>
-          )}
-        </div>
+        </section>
+      </main>
 
-        {/* Footer */}
-        <div className="text-center pt-8 border-t border-border/50">
-          <a
-            href="https://github.com/KATT/isbabyoutyet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <GithubIcon className="w-5 h-5" />
-            <span>{t("Open source on GitHub")}</span>
-          </a>
-        </div>
-      </div>
+      {/* Footer */}
+      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
+        <a
+          href="https://github.com/KATT/isbabyoutyet"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <GithubIcon className="h-5 w-5" />
+          <span>{t("Open source on GitHub")}</span>
+        </a>
+      </footer>
     </div>
   );
 }

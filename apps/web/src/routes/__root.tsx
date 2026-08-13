@@ -17,12 +17,14 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
+import typeCss from "@/styles/app.css?url";
+import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
-import { Baby } from "lucide-react";
+import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
@@ -90,9 +92,17 @@ export const Route = createRootRouteWithContext<{
       links: [
         {
           rel: "stylesheet",
+        href: nunitoCss,
+      },
+      {
+        rel: "stylesheet",
           href: appCss,
         },
         {
+        rel: "stylesheet",
+        href: typeCss,
+      },
+      {
           rel: "apple-touch-icon",
           href: "/apple-touch-icon.png",
         },
@@ -151,6 +161,8 @@ function RootComponent() {
         client={context.convexClient}
         authClient={authClient as unknown as AuthClient}
       >
+        {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
+        <IconContext.Provider value={{ weight: "duotone" }}>
         <TooltipProvider>
           <LocaleProvider locale={locale}>
             <RootDocument locale={locale}>
@@ -158,6 +170,7 @@ function RootComponent() {
             </RootDocument>
           </LocaleProvider>
         </TooltipProvider>
+        </IconContext.Provider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );
@@ -166,17 +179,17 @@ function RootComponent() {
 function NotFoundComponent() {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-6">
-      <div className="text-center space-y-6 max-w-md">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20 mb-4">
+    <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
+      <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
           <Baby className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-bold text-foreground">{t("Page Not Found")}</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-2xl font-black text-foreground">{t("Not arrived yet!")}</h2>
+        <p className="text-muted-foreground font-medium">
           {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
-        <Button size="lg" render={<Link to="/" />} nativeButton={false}>
+        <Button size="lg" className="rounded-full" render={<Link to="/" />} nativeButton={false}>
           {t("Go Home")}
         </Button>
       </div>

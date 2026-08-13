@@ -35,7 +35,6 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
     laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
-    thumbnailId: doc.thumbnailId ?? null,
   };
 }
 

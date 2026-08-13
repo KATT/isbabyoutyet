@@ -14,7 +14,7 @@
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
     "knip": "knip --production",
-    "checks": "turbo run format lint-fix typecheck && pnpm test:coverage && pnpm knip"
+    "checks": "turbo run format lint-fix typecheck test:coverage knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
