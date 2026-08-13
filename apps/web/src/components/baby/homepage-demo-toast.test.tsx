@@ -1,21 +1,9 @@
 import { render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
-
-const mocks = vi.hoisted(() => ({
-  custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id: string | number | undefined) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: {
-    custom: mocks.custom,
-    dismiss: mocks.dismiss,
-  },
-}));
-
-const { HomepageDemoToast } = await import("./homepage-demo-toast");
+import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 
 function renderToastResource(publicId: string) {
   const view = render(<HomepageDemoToast publicId={publicId} />);
@@ -24,14 +12,21 @@ function renderToastResource(publicId: string) {
   });
 }
 
-test("shows a persistent demo toast on the homepage demo baby", async () => {
-  mocks.custom.mockClear();
-  mocks.dismiss.mockClear();
+function spyOnToastResource() {
+  const custom = vi.spyOn(toast, "custom").mockReturnValue("toast-id");
+  const dismiss = vi.spyOn(toast, "dismiss").mockReturnValue("toast-id");
+  return makeResource({ custom, dismiss }, () => {
+    custom.mockRestore();
+    dismiss.mockRestore();
+  });
+}
 
+test("shows a persistent demo toast on the homepage demo baby", async () => {
+  await using spies = spyOnToastResource();
   await using _view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
 
-  expect(mocks.custom).toHaveBeenCalledTimes(1);
-  const [renderToast, options] = mocks.custom.mock.calls[0] ?? [];
+  expect(spies.custom).toHaveBeenCalledTimes(1);
+  const [renderToast, options] = spies.custom.mock.calls[0] ?? [];
   expect(options).toMatchObject({
     duration: Infinity,
     closeButton: true,
@@ -40,27 +35,26 @@ test("shows a persistent demo toast on the homepage demo baby", async () => {
 });
 
 test("does not toast on a real baby page, and dismisses when leaving the demo", async () => {
-  mocks.custom.mockClear();
-  mocks.dismiss.mockClear();
+  await using spies = spyOnToastResource();
 
   {
     await using _demo = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
-    expect(mocks.custom).toHaveBeenCalledTimes(1);
+    expect(spies.custom).toHaveBeenCalledTimes(1);
   }
 
-  const options = mocks.custom.mock.calls[0]?.[1];
+  const options = spies.custom.mock.calls[0]?.[1];
   if (!options || typeof options !== "object" || !("id" in options)) {
     throw new Error("expected toast options with an id");
   }
-  expect(mocks.dismiss).toHaveBeenCalledWith(options.id);
+  expect(spies.dismiss).toHaveBeenCalledWith(options.id);
 
-  mocks.custom.mockClear();
+  spies.custom.mockClear();
   await using _other = renderToastResource("baby-waiting");
-  expect(mocks.custom).not.toHaveBeenCalled();
+  expect(spies.custom).not.toHaveBeenCalled();
 });
 
 test("shows the demo toast on every locale homepage baby", async () => {
-  mocks.custom.mockClear();
+  await using spies = spyOnToastResource();
   await using _view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
-  expect(mocks.custom).toHaveBeenCalledTimes(1);
+  expect(spies.custom).toHaveBeenCalledTimes(1);
 });

@@ -1,35 +1,17 @@
-import { render } from "@testing-library/react";
-import type { ReactElement } from "react";
-import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { expect, test } from "vitest";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
-  createFileRoute: () => (opts: { component: unknown }) => opts,
-}));
-
-vi.mock("@/components/language-settings", () => ({
-  LanguageSettings: () => null,
-}));
-
-vi.mock("@/lib/auth-server", () => ({
-  authServer: { fetchAuthQuery: vi.fn<() => Promise<unknown>>() },
-}));
+// `@/routes/_auth/dashboard/index` evaluates `authServer` at module load
+// (via `@/lib/auth-server`), which reads these Vite env vars. Set them
+// before importing since no `.env.local` exists in the test environment.
+process.env.VITE_CONVEX_URL = "http://127.0.0.1:3210";
+process.env.VITE_CONVEX_SITE_URL = "http://127.0.0.1:3211";
 
 const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
 
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
-
 test("shows a spinner instead of the empty state while the baby list is pending", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyList babies={[]} isPending tourBabyPublicId={undefined} />,
   );
 
@@ -38,7 +20,7 @@ test("shows a spinner instead of the empty state while the baby list is pending"
 });
 
 test("shows the empty state once the list has loaded with no babies", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyList babies={[]} isPending={false} tourBabyPublicId={undefined} />,
   );
 
@@ -47,7 +29,7 @@ test("shows the empty state once the list has loaded with no babies", async () =
 });
 
 test("shows prefetched babies without a spinner", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyList
       isPending={false}
       tourBabyPublicId="baby-smith"
@@ -67,7 +49,7 @@ test("shows prefetched babies without a spinner", async () => {
   );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
-  expect(view.queryByText("No babies added yet")).toBeNull();
+  expect(view.queryByText("No baby pages yet")).toBeNull();
   expect(view.getByText("Baby Smith")).toBeTruthy();
   expect(view.container.querySelector('[data-tour-id="tour_baby"]')).toBeTruthy();
 });

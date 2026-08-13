@@ -172,10 +172,30 @@ type UpdateComposerProps = {
   onPosted: () => void;
 };
 
+type PostUpdateFn = (
+  args: FunctionArgs<typeof api.updates.post>,
+) => Promise<FunctionReturnType<typeof api.updates.post>>;
+
+type GenerateUploadUrlFn = (
+  args: FunctionArgs<typeof api.baby.generateUploadUrl>,
+) => Promise<FunctionReturnType<typeof api.baby.generateUploadUrl>>;
+
+type UpdateComposerFormProps = UpdateComposerProps & {
+  postUpdate: PostUpdateFn;
+  generateUploadUrl: GenerateUploadUrlFn;
+};
+
+/** Hooks into Convex, then delegates to the pure `UpdateComposerForm`. */
 export function UpdateComposer(props: UpdateComposerProps) {
-  const { t } = useI18n();
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
+  return (
+    <UpdateComposerForm {...props} postUpdate={postUpdate} generateUploadUrl={generateUploadUrl} />
+  );
+}
+
+export function UpdateComposerForm(props: UpdateComposerFormProps) {
+  const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The status only moves forward: offer only stages AFTER the current one,
@@ -257,7 +277,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
           const { photo, ...args } = values;
           let photoId: PostUpdateArgs["photoId"];
           if (photo) {
-            const uploadUrl = await generateUploadUrl({ babyId: args.babyId });
+            const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
               method: "POST",
               headers: { "Content-Type": photo.type },
@@ -270,7 +290,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
             photoId = uploaded.storageId;
           }
 
-          await postUpdate({ ...args, photoId });
+          await props.postUpdate({ ...args, photoId });
 
           toast.success(t("Update posted!"));
           // No reset needed: the composer lives in a dialog that unmounts on close
@@ -892,6 +912,20 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 // --- Feed ---
 
 type TimelineFirstPage = FunctionReturnType<typeof api.timeline.listByBaby>;
+export type TimelineFeedStatus = "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted";
+
+type RemoveUpdateFn = (
+  args: FunctionArgs<typeof api.updates.remove>,
+) => Promise<FunctionReturnType<typeof api.updates.remove>>;
+type SetAsCurrentPhotoFn = (
+  args: FunctionArgs<typeof api.updates.setAsCurrentPhoto>,
+) => Promise<FunctionReturnType<typeof api.updates.setAsCurrentPhoto>>;
+type RemoveEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.remove>,
+) => Promise<FunctionReturnType<typeof api.encouragements.remove>>;
+type UpdateEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.update>,
+) => Promise<FunctionReturnType<typeof api.encouragements.update>>;
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
@@ -902,8 +936,8 @@ type TimelineFeedProps = {
   initialPage: TimelineFirstPage;
 };
 
+/** Hooks into Convex, then delegates to the pure `TimelineFeedView`. */
 export function TimelineFeed(props: TimelineFeedProps) {
-  const { t } = useI18n();
   const [currentVisitorId, setCurrentVisitorId] = useState("");
   const { results, status, loadMore } = usePaginatedQuery(
     api.timeline.listByBaby,
@@ -916,14 +950,53 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  const items = status === "LoadingFirstPage" ? props.initialPage.page : results;
 
   // Get visitor ID on client side
   useEffect(() => {
     setCurrentVisitorId(getVisitorId());
   }, []);
+
+  return (
+    <TimelineFeedView
+      baby={props.baby}
+      babyName={props.babyName}
+      isOwner={props.isOwner}
+      initialPage={props.initialPage}
+      results={results}
+      status={status}
+      loadMore={loadMore}
+      currentVisitorId={currentVisitorId}
+      removeUpdate={removeUpdate}
+      setAsCurrentPhoto={setAsCurrentPhoto}
+      removeEncouragement={removeEncouragement}
+      updateEncouragement={updateEncouragement}
+    />
+  );
+}
+
+type TimelineFeedViewProps = {
+  baby: BabyData;
+  babyName: string;
+  isOwner: boolean;
+  /** Prefetched first page from the route loader so the feed can SSR without a spinner. */
+  initialPage: TimelineFirstPage;
+  results: TimelineItemData[];
+  status: TimelineFeedStatus;
+  loadMore: (numItems: number) => void;
+  currentVisitorId: string;
+  removeUpdate: RemoveUpdateFn;
+  setAsCurrentPhoto: SetAsCurrentPhotoFn;
+  removeEncouragement: RemoveEncouragementFn;
+  updateEncouragement: UpdateEncouragementFn;
+};
+
+export function TimelineFeedView(props: TimelineFeedViewProps) {
+  const { t } = useI18n();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const status = props.status;
+  const loadMore = props.loadMore;
+
+  const items = status === "LoadingFirstPage" ? props.initialPage.page : props.results;
 
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
@@ -952,7 +1025,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
-      await removeUpdate({ updateId });
+      await props.removeUpdate({ updateId });
       toast.success(t("Update removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove update"));
@@ -961,7 +1034,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
     try {
-      await setAsCurrentPhoto({ updateId });
+      await props.setAsCurrentPhoto({ updateId });
       toast.success(t("Set as the page photo"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to set page photo"));
@@ -973,7 +1046,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     visitorId: string | undefined,
   ) => {
     try {
-      await removeEncouragement({ encouragementId, visitorId });
+      await props.removeEncouragement({ encouragementId, visitorId });
       toast.success(t("Encouragement removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove encouragement"));
@@ -984,7 +1057,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     args: FunctionArgs<typeof api.encouragements.update>,
   ) => {
     try {
-      await updateEncouragement(args);
+      await props.updateEncouragement(args);
       toast.success(t("Encouragement updated"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to update encouragement"));
@@ -1040,7 +1113,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               key={item._id}
               item={item}
               isOwner={props.isOwner}
-              currentVisitorId={currentVisitorId}
+              currentVisitorId={props.currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}
             />

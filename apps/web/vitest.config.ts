@@ -78,6 +78,7 @@ export const webUnitProject = defineProject({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
+    setupFiles: ["./src/test/setup.ts"],
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component

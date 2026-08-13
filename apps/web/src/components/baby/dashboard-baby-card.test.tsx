@@ -1,22 +1,8 @@
-import { render } from "@testing-library/react";
-import type { ComponentProps, ReactElement } from "react";
+import type { ComponentProps } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: ComponentProps<"a"> & {
-      to: string | undefined;
-      "data-tour-id": string | undefined;
-    },
-  ) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} data-tour-id={props["data-tour-id"]}>
-      {props.children}
-    </a>
-  ),
-}));
-
-const { DashboardBabyCard } = await import("./dashboard-baby-card");
+import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type DashboardBabyCardBaby = ComponentProps<typeof DashboardBabyCard>["baby"];
 
@@ -24,13 +10,6 @@ function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
   return makeResource({}, () => {
     vi.useRealTimers();
-  });
-}
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
   });
 }
 
@@ -46,7 +25,7 @@ const alma: DashboardBabyCardBaby = {
 
 test("a born baby with a past due date shows born, not overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={alma} index={0} dataTourId={undefined} />,
   );
 
@@ -68,7 +47,7 @@ test("an unborn baby past the due date still shows overdue", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
   );
 
@@ -88,7 +67,7 @@ test("labour in progress beats a past due date", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={inLabor} index={0} dataTourId={undefined} />,
   );
 
@@ -98,7 +77,7 @@ test("labour in progress beats a past due date", async () => {
 
 test("marks the tour baby card for coachmarks", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={alma} index={1} dataTourId="tour_baby" />,
   );
 
@@ -113,7 +92,7 @@ test("an unborn baby before the due date shows days remaining", async () => {
     dueDate: "2026-09-01",
     role: "coParent",
   };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
   );
 

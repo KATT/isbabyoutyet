@@ -1,66 +1,49 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { WelcomeTourDialog } from "@/components/onboarding/welcome-tour";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import * as React from "react";
 
-vi.mock("@workspace/ui/components/carousel", () => {
-  type Api = {
-    selectedScrollSnap: () => number;
-    scrollTo: (index: number) => void;
-    scrollNext: () => void;
-    on: (event: string, cb: () => void) => void;
-    off: (event: string, cb: () => void) => void;
-  };
+/**
+ * jsdom never lays anything out, so every element's `offsetWidth`/`offsetLeft`
+ * is 0 and embla-carousel (which reads those, not `getBoundingClientRect`, to
+ * compute scroll snaps) sees a single zero-sized slide and never advances.
+ * Stub a simple horizontal flex layout — each element is `width` wide, and
+ * `offsetLeft` is the sum of previous siblings' widths — so the real carousel
+ * can compute distinct snap points and `scrollNext`/`scrollTo` actually move.
+ */
+function stubHorizontalLayoutResource(width: number) {
+  const offsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetWidth");
+  const offsetLeft = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "offsetLeft");
 
-  function Carousel(props: {
-    setApi: ((api: Api) => void) | undefined;
-    children: React.ReactNode | undefined;
-  }) {
-    const indexRef = React.useRef(0);
-    const listeners = React.useRef(new Set<() => void>());
+  Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+    configurable: true,
+    get() {
+      return width;
+    },
+  });
+  Object.defineProperty(HTMLElement.prototype, "offsetLeft", {
+    configurable: true,
+    get() {
+      let left = 0;
+      for (
+        let sibling = this.previousElementSibling;
+        sibling;
+        sibling = sibling.previousElementSibling
+      ) {
+        left += (sibling as HTMLElement).offsetWidth;
+      }
+      return left;
+    },
+  });
 
-    React.useEffect(() => {
-      const notify = () => {
-        for (const listener of listeners.current) listener();
-      };
-      const api: Api = {
-        selectedScrollSnap: () => indexRef.current,
-        scrollTo: (next) => {
-          indexRef.current = next;
-          notify();
-        },
-        scrollNext: () => {
-          indexRef.current += 1;
-          notify();
-        },
-        on: (_event, cb) => {
-          listeners.current.add(cb);
-        },
-        off: (_event, cb) => {
-          listeners.current.delete(cb);
-        },
-      };
-      props.setApi?.(api);
-    }, [props.setApi]);
-
-    return <div>{props.children}</div>;
-  }
-
-  return {
-    Carousel,
-    CarouselContent: (props: { children: React.ReactNode | undefined }) => (
-      <div>{props.children}</div>
-    ),
-    CarouselItem: (props: { children: React.ReactNode | undefined }) => <div>{props.children}</div>,
-  };
-});
-
-const { WelcomeTourDialog } = await import("./welcome-tour");
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+  return makeResource({}, () => {
+    if (offsetWidth) {
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", offsetWidth);
+    }
+    if (offsetLeft) {
+      Object.defineProperty(HTMLElement.prototype, "offsetLeft", offsetLeft);
+    }
   });
 }
 
@@ -68,7 +51,7 @@ test("welcome tour renders overview slides and can be skipped", async () => {
   const onFinished = vi.fn<() => void>();
   const onOpenChange = vi.fn<(open: boolean) => void>();
 
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
   );
 
@@ -85,11 +68,18 @@ test("welcome tour finishes with Let's go on the last slide", async () => {
   const onFinished = vi.fn<() => void>();
   const onOpenChange = vi.fn<(open: boolean) => void>();
 
-  await using _view = renderResource(
+  // jsdom doesn't lay out elements, so give embla-carousel real widths/offsets
+  // to compute against; otherwise scrollNext() never moves the selected slide.
+  await using _layout = stubHorizontalLayoutResource(400);
+  await using _view = await renderWithTestRouter(
     <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: /go to slide 4/i }));
+  // Drive slides via the visible "Next" button (real carousel, no mock).
+  // Bounded by slide count so a regression fails fast instead of hanging.
+  for (let clicks = 0; clicks < 10 && screen.queryByRole("button", { name: /^next$/i }); clicks++) {
+    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
+  }
 
   await vi.waitFor(() => {
     expect(screen.getByRole("button", { name: /let's go/i })).toBeTruthy();

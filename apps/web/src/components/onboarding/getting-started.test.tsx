@@ -1,38 +1,11 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-import { GettingStartedCard } from "./getting-started";
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      params: { publicId: string | undefined } | undefined;
-      search: { settings: boolean | undefined; postUpdate: boolean | undefined } | undefined;
-    },
-  ) => {
-    const href =
-      typeof props.to === "string"
-        ? props.to.replace("$publicId", props.params?.publicId ?? "")
-        : "#";
-    return (
-      <a href={href} aria-label={props["aria-label"]} onClick={props.onClick}>
-        {props.children}
-      </a>
-    );
-  },
-}));
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { GettingStartedCard } from "@/components/onboarding/getting-started";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 test("shows the next incomplete step and an add-baby CTA on the dashboard", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
@@ -51,7 +24,7 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
 });
 
 test("dashboard share step links to the first baby's page", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
       minimized={false}
@@ -71,7 +44,7 @@ test("dashboard share step links to the first baby's page", async () => {
 });
 
 test("minimized chip shows progress count", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized
@@ -90,7 +63,7 @@ test("minimized chip shows progress count", async () => {
 
 test("learn_encouragements shows a Got it button that acknowledges the step", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
@@ -110,7 +83,7 @@ test("learn_encouragements shows a Got it button that acknowledges the step", as
 
 test("dashboard settings CTA marks the step done while opening the page", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
@@ -130,7 +103,7 @@ test("dashboard settings CTA marks the step done while opening the page", async 
 
 test("baby-page checklist can open post update and settings", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
@@ -153,7 +126,7 @@ test("baby-page checklist can open post update and settings", async () => {
 
 test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[
         "add_baby",

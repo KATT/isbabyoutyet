@@ -2,29 +2,19 @@ import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import type { ComponentProps, ReactElement } from "react";
 import { expect, test, vi } from "vitest";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import {
+  TimelineFeed,
+  TimelineFeedView,
+  UpdateComposer,
+  UpdateComposerForm,
+  type TimelineFeedStatus,
+} from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
-
-// Observe what the composer submits: every useMutation hook in the component
-// returns this mock (only updates.post is actually invoked in these tests)
-const mocks = vi.hoisted(() => ({
-  mutate: vi.fn<(args: unknown) => Promise<unknown>>(),
-  paginated: {
-    results: [] as unknown[],
-    status: "Exhausted" as "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted",
-    loadMore: vi.fn<(count: number) => void>(),
-  },
-}));
-vi.mock("convex/react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("convex/react")>()),
-  useMutation: () => mocks.mutate,
-  usePaginatedQuery: () => mocks.paginated,
-}));
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
@@ -39,35 +29,35 @@ const laborStartedBaby: BabyData = {
   laborStarted: "2026-08-20T08:00:00.000Z",
 };
 
-// The mutations are never invoked in these tests; the client only needs to
-// exist for the `useMutation` hooks to mount.
 const babyId = "fake-baby-id" as Id<"baby">;
 
+type UpdateComposerFormProps = ComponentProps<typeof UpdateComposerForm>;
+
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
+  const postUpdate = vi.fn<UpdateComposerFormProps["postUpdate"]>();
+  const generateUploadUrl = vi.fn<UpdateComposerFormProps["generateUploadUrl"]>();
   const withProvider = (currentBaby: BabyData): ReactElement => (
     <LocaleProvider locale={locale}>
-      <ConvexProvider client={client}>
-        <UpdateComposer
-          babyId={babyId}
-          baby={currentBaby}
-          babyName={currentBaby.name}
-          onPosted={() => {}}
-        />
-      </ConvexProvider>
+      <UpdateComposerForm
+        babyId={babyId}
+        baby={currentBaby}
+        babyName={currentBaby.name}
+        onPosted={() => {}}
+        postUpdate={postUpdate}
+        generateUploadUrl={generateUploadUrl}
+      />
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
   return makeResource(
     {
       view,
+      postUpdate,
+      generateUploadUrl,
       setBaby: (currentBaby: BabyData) => view.rerender(withProvider(currentBaby)),
     },
-    async () => {
+    () => {
       view.unmount();
-      await client.close();
     },
   );
 }
@@ -129,8 +119,8 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
 });
 
 test("an empty event-time picker does not post occurredAt", async () => {
-  mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
+  composer.postUpdate.mockResolvedValue("update-id" as Id<"updates">);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
@@ -139,8 +129,8 @@ test("an empty event-time picker does not post occurredAt", async () => {
   expect(picker.value).toBe("");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
-  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
-  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+  await vi.waitFor(() => expect(composer.postUpdate).toHaveBeenCalledTimes(1));
+  expect(composer.postUpdate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
     occurredAt: undefined,
@@ -148,8 +138,8 @@ test("an empty event-time picker does not post occurredAt", async () => {
 });
 
 test("a filled event-time picker posts the backdated occurredAt", async () => {
-  mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
+  composer.postUpdate.mockResolvedValue("update-id" as Id<"updates">);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
@@ -159,8 +149,8 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
-  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
-  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+  await vi.waitFor(() => expect(composer.postUpdate).toHaveBeenCalledTimes(1));
+  expect(composer.postUpdate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
@@ -189,51 +179,66 @@ test("the composer previews a selected photo and can remove it", async () => {
   expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
+type TimelineFeedViewProps = ComponentProps<typeof TimelineFeedView>;
+
+function renderFeedView(overrides: Partial<TimelineFeedViewProps>) {
+  const defaults: TimelineFeedViewProps = {
+    baby: notYetBaby,
+    babyName: notYetBaby.name,
+    isOwner: false,
+    initialPage: { page: [], isDone: true, continueCursor: "" },
+    results: [],
+    status: "Exhausted",
+    loadMore: vi.fn<(numItems: number) => void>(),
+    currentVisitorId: "visitor-1",
+    removeUpdate: vi.fn<TimelineFeedViewProps["removeUpdate"]>(),
+    setAsCurrentPhoto: vi.fn<TimelineFeedViewProps["setAsCurrentPhoto"]>(),
+    removeEncouragement: vi.fn<TimelineFeedViewProps["removeEncouragement"]>(),
+    updateEncouragement: vi.fn<TimelineFeedViewProps["updateEncouragement"]>(),
+  };
+  const props = { ...defaults, ...overrides };
+  const rendered = render(
+    <LocaleProvider locale="en-GB">
+      <TooltipProvider>
+        <TimelineFeedView {...props} />
+      </TooltipProvider>
+    </LocaleProvider>,
+  );
+  return makeResource({ view: rendered, props }, () => {
+    rendered.unmount();
+  });
+}
+
 test("timeline milestone deletion is disabled while a later status exists", async () => {
   const bornBaby: BabyData = {
     ...laborStartedBaby,
     wentToHospital: "2026-08-20T12:00:00.000Z",
     babyBorn: "2026-08-21T03:00:00.000Z",
   };
-  mocks.paginated.status = "Exhausted";
-  mocks.paginated.results = [
-    {
-      _id: "timeline-item-id",
-      kind: "update",
-      postedAt: Date.now(),
-      update: {
-        _id: "update-id",
-        message: null,
-        milestone: "gone_to_hospital",
-        occurredAt: Date.now(),
-        photoUrl: null,
-        thumbnailUrl: null,
-        isCurrentPagePhoto: false,
+
+  await using feed = renderFeedView({
+    baby: bornBaby,
+    babyName: bornBaby.name,
+    isOwner: true,
+    status: "Exhausted" as TimelineFeedStatus,
+    results: [
+      {
+        _id: "timeline-item-id" as Id<"timelineItems">,
+        kind: "update",
+        postedAt: Date.now(),
+        update: {
+          _id: "update-id" as Id<"updates">,
+          message: null,
+          milestone: "gone_to_hospital",
+          occurredAt: Date.now(),
+          photoUrl: null,
+          thumbnailUrl: null,
+          isCurrentPagePhoto: false,
+        },
       },
-    },
-  ];
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
+    ] as unknown as TimelineFeedViewProps["results"],
   });
-  const rendered = render(
-    <LocaleProvider locale="en-GB">
-      <ConvexProvider client={client}>
-        <TooltipProvider>
-          <TimelineFeed
-            babyId={babyId}
-            baby={bornBaby}
-            babyName={bornBaby.name}
-            isOwner
-            initialPage={{ page: [], isDone: true, continueCursor: "" }}
-          />
-        </TooltipProvider>
-      </ConvexProvider>
-    </LocaleProvider>,
-  );
-  await using view = makeResource(rendered, async () => {
-    rendered.unmount();
-    await client.close();
-  });
+  const view = feed.view;
 
   const deleteButton = view.getByRole("button", { name: "Delete update" }) as HTMLButtonElement;
   expect(deleteButton.disabled).toBe(true);
@@ -243,40 +248,10 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   expect(view.queryByRole("alertdialog")).toBeNull();
 });
 
-function renderFeed(opts: {
-  baby: BabyData;
-  isOwner: boolean;
-  initialPage: ComponentProps<typeof TimelineFeed>["initialPage"];
-}) {
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
-  const rendered = render(
-    <ConvexProvider client={client}>
-      <TooltipProvider>
-        <TimelineFeed
-          babyId={babyId}
-          baby={opts.baby}
-          babyName={opts.baby.name}
-          isOwner={opts.isOwner}
-          initialPage={opts.initialPage}
-        />
-      </TooltipProvider>
-    </ConvexProvider>,
-  );
-  return makeResource(rendered, async () => {
-    rendered.unmount();
-    await client.close();
-  });
-}
-
 test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
-  mocks.paginated.results = [];
-  mocks.paginated.status = "LoadingFirstPage";
-
-  await using view = renderFeed({
-    baby: notYetBaby,
-    isOwner: false,
+  await using feed = renderFeedView({
+    status: "LoadingFirstPage" as TimelineFeedStatus,
+    results: [],
     initialPage: {
       page: [
         {
@@ -294,8 +269,9 @@ test("shows the prefetched first page instead of a spinner while the live query 
       ],
       isDone: false,
       continueCursor: "cursor",
-    },
+    } as unknown as TimelineFeedViewProps["initialPage"],
   });
+  const view = feed.view;
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Grandma")).toBeTruthy();
@@ -303,15 +279,54 @@ test("shows the prefetched first page instead of a spinner while the live query 
 });
 
 test("shows the empty feed, not a spinner, when the prefetched first page is empty", async () => {
-  mocks.paginated.results = [];
-  mocks.paginated.status = "LoadingFirstPage";
-
-  await using view = renderFeed({
-    baby: notYetBaby,
-    isOwner: false,
+  await using feed = renderFeedView({
+    status: "LoadingFirstPage" as TimelineFeedStatus,
+    results: [],
     initialPage: { page: [], isDone: true, continueCursor: "" },
   });
+  const view = feed.view;
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Nothing here yet")).toBeTruthy();
+});
+
+test("UpdateComposer wires useMutation into the form", async () => {
+  const client = new ConvexReactClient("http://127.0.0.1:3210");
+  const view = render(
+    <ConvexProvider client={client}>
+      <LocaleProvider locale="en-GB">
+        <UpdateComposer
+          babyId={babyId}
+          baby={notYetBaby}
+          babyName={notYetBaby.name}
+          onPosted={() => {}}
+        />
+      </LocaleProvider>
+    </ConvexProvider>,
+  );
+  expect(view.getByText("Post an update")).toBeTruthy();
+  view.unmount();
+  await client.close();
+});
+
+test("TimelineFeed wires usePaginatedQuery/useMutation into the view", async () => {
+  const client = new ConvexReactClient("http://127.0.0.1:3210");
+  const view = render(
+    <ConvexProvider client={client}>
+      <LocaleProvider locale="en-GB">
+        <TooltipProvider>
+          <TimelineFeed
+            babyId={babyId}
+            baby={notYetBaby}
+            babyName={notYetBaby.name}
+            isOwner={false}
+            initialPage={{ page: [], isDone: true, continueCursor: "" }}
+          />
+        </TooltipProvider>
+      </LocaleProvider>
+    </ConvexProvider>,
+  );
+  expect(view.getByText("Nothing here yet")).toBeTruthy();
+  view.unmount();
+  await client.close();
 });

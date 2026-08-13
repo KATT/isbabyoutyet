@@ -20,6 +20,10 @@
     {
       "name": "no-optional",
       "specifier": "./oxlint-plugins/no-optional.mjs"
+    },
+    {
+      "name": "no-mock",
+      "specifier": "./oxlint-plugins/no-mock.mjs"
     }
   ],
   "settings": {
@@ -37,7 +41,9 @@
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
-    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime"] }]
+    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime"] }],
+    // Prefer convex-test / real providers over replacing modules.
+    "no-mock/no-mock": "error"
   },
   "overrides": [
     {

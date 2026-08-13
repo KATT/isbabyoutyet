@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import type { FunctionArgs } from "convex/server";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
@@ -12,32 +12,20 @@ import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-type CoParentsSettingsProps = {
-  babyId: Id<"baby">;
-  /** Only the owner can invite/remove; co-parents see a read-only list. */
-  isOwner: boolean;
-};
+export type CoParentsListing = FunctionReturnType<typeof api.coParents.listForBaby>;
 
-function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
-  return z
-    .object({
-      email: z.string().trim().email(t("Invalid email address")),
-    })
-    .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
-      babyId,
-      email: values.email,
-    }));
+function inviteCoParentSchema(t: TranslationFunction) {
+  return z.object({
+    email: z.string().trim().email(t("Invalid email address")),
+  });
 }
 
 function InviteCoParentForm(props: {
-  babyId: Id<"baby">;
-  invite: (
-    args: FunctionArgs<typeof api.coParents.invite>,
-  ) => Promise<{ status: "added" | "invited" }>;
+  onInvite: (email: string) => Promise<{ status: "added" | "invited" }>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: inviteCoParentSchema(t, props.babyId),
+    schema: inviteCoParentSchema(t),
     defaultValues: { email: "" },
   });
   const email = form.watch("email");
@@ -46,7 +34,7 @@ function InviteCoParentForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const result = await props.invite(values);
+        const result = await props.onInvite(values.email);
         form.reset({ email: "" });
         toast.success(
           result.status === "added"
@@ -80,15 +68,24 @@ function InviteCoParentForm(props: {
   );
 }
 
+type CoParentsSettingsViewProps = {
+  /** Only the owner can invite/remove; co-parents see a read-only list. */
+  isOwner: boolean;
+  /** `undefined` while the listing query is loading. */
+  listing: CoParentsListing | undefined;
+  onInvite: (email: string) => Promise<{ status: "added" | "invited" }>;
+  onRemoveCoParent: (coParentId: Id<"babyCoParents">) => Promise<unknown>;
+  onCancelInvite: (inviteId: Id<"babyCoParentInvites">) => Promise<unknown>;
+};
+
 /**
- * Settings section for inviting co-parents by email and managing membership.
+ * Presentational settings section for inviting co-parents by email and
+ * managing membership. Takes all data + actions as props so it can be
+ * rendered in tests without a Convex provider.
  */
-export function CoParentsSettings(props: CoParentsSettingsProps) {
+export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
   const { t } = useI18n();
-  const listing = useQuery(api.coParents.listForBaby, { babyId: props.babyId });
-  const invite = useMutation(api.coParents.invite);
-  const removeCoParent = useMutation(api.coParents.removeCoParent);
-  const cancelInvite = useMutation(api.coParents.cancelInvite);
+  const listing = props.listing;
 
   return (
     <div className="space-y-3 w-full">
@@ -111,7 +108,8 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
                   size="icon-sm"
                   aria-label={t("Remove {{email}}", { email: row.email })}
                   onClick={() => {
-                    void removeCoParent({ coParentId: row._id })
+                    void props
+                      .onRemoveCoParent(row._id)
                       .then(() => toast.success(t("Co-parent removed")))
                       .catch((error: unknown) => {
                         toast.error(error instanceof Error ? error.message : t("Could not remove"));
@@ -136,7 +134,8 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
                   size="icon-sm"
                   aria-label={t("Cancel invite to {{email}}", { email: row.email })}
                   onClick={() => {
-                    void cancelInvite({ inviteId: row._id })
+                    void props
+                      .onCancelInvite(row._id)
                       .then(() => toast.success(t("Invite cancelled")))
                       .catch((error: unknown) => {
                         toast.error(error instanceof Error ? error.message : t("Could not cancel"));
@@ -156,7 +155,33 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
         </ul>
       )}
 
-      {props.isOwner ? <InviteCoParentForm babyId={props.babyId} invite={invite} /> : null}
+      {props.isOwner ? <InviteCoParentForm onInvite={props.onInvite} /> : null}
     </div>
+  );
+}
+
+type CoParentsSettingsProps = {
+  babyId: Id<"baby">;
+  /** Only the owner can invite/remove; co-parents see a read-only list. */
+  isOwner: boolean;
+};
+
+/**
+ * Settings section for inviting co-parents by email and managing membership.
+ */
+export function CoParentsSettings(props: CoParentsSettingsProps) {
+  const listing = useQuery(api.coParents.listForBaby, { babyId: props.babyId });
+  const invite = useMutation(api.coParents.invite);
+  const removeCoParent = useMutation(api.coParents.removeCoParent);
+  const cancelInvite = useMutation(api.coParents.cancelInvite);
+
+  return (
+    <CoParentsSettingsView
+      isOwner={props.isOwner}
+      listing={listing}
+      onInvite={(email) => invite({ babyId: props.babyId, email })}
+      onRemoveCoParent={(coParentId) => removeCoParent({ coParentId })}
+      onCancelInvite={(inviteId) => cancelInvite({ inviteId })}
+    />
   );
 }
