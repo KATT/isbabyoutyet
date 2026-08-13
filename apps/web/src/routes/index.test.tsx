@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { LocaleProvider } from "@/lib/i18n";
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
@@ -55,4 +56,20 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
   const livePage = screen.getByRole("link", { name: /see a live page/i });
   const createPage = screen.getByRole("link", { name: /create your page/i });
   expect(livePage.parentElement).not.toBe(createPage.parentElement);
+});
+
+test("Swedish homepage links visitors to Ella Holm", async () => {
+  await using _view = renderResource(
+    <LocaleProvider locale="sv">
+      <HomePage />
+    </LocaleProvider>,
+  );
+
+  const demoLinks = screen
+    .getAllByRole("link")
+    .filter((link) =>
+      link.getAttribute("href")?.includes(`/baby/${HOMEPAGE_DEMO_BABIES.sv.publicId}`),
+    );
+  expect(demoLinks.length).toBeGreaterThan(0);
+  expect(screen.getByText("Följ Ella Holms ankomst")).toBeTruthy();
 });

@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 
 const mocks = vi.hoisted(() => ({
   custom: vi.fn<(...args: unknown[]) => string | number>(),
@@ -57,4 +57,10 @@ test("does not toast on a real baby page, and dismisses when leaving the demo", 
   mocks.custom.mockClear();
   await using _other = renderToastResource("baby-waiting");
   expect(mocks.custom).not.toHaveBeenCalled();
+});
+
+test("shows the demo toast on every locale homepage baby", async () => {
+  mocks.custom.mockClear();
+  await using _view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
+  expect(mocks.custom).toHaveBeenCalledTimes(1);
 });

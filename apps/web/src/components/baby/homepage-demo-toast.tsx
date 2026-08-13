@@ -1,6 +1,6 @@
 import { useI18n } from "@/lib/i18n";
 import { Info } from "@phosphor-icons/react";
-import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
 import {
   Item,
   ItemContent,
@@ -24,7 +24,7 @@ type HomepageDemoToastProps = {
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
   const { t } = useI18n();
   useEffect(() => {
-    if (props.publicId !== HOMEPAGE_DEMO_BABY.publicId) return;
+    if (!isHomepageDemoPublicId(props.publicId)) return;
 
     toast.custom(
       () => (
