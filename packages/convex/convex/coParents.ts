@@ -113,7 +113,6 @@ export const listForBaby = query({
         _id: row._id,
         email: row.email,
         name: row.name ?? null,
-        userId: row.userId,
         addedAt: row.addedAt,
       })),
       invites: invites.map((row) => ({
@@ -149,10 +148,10 @@ export const invite = mutation({
     const existingUser = await findUserByEmail(ctx, email);
     if (existingUser) {
       const userId = String(existingUser._id);
-      if (userId === baby.userId) {
+      const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
+      if (tokenIdentifier === baby.ownerTokenIdentifier) {
         throw new Error("That person already owns this page");
       }
-      const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
       const existing = await findActiveCoParent(ctx, args.babyId, {
         authUserId: userId,
         tokenIdentifier,

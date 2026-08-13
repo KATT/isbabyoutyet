@@ -89,6 +89,7 @@ export default defineSchema({
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_babyId", ["babyId"])
+    .index("by_babyId_and_createdAt", ["babyId", "createdAt"])
     .index("by_timelineItemId", ["timelineItemId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
@@ -159,8 +160,7 @@ export default defineSchema({
     .index("by_babyId", ["babyId"])
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"])
-    .index("by_babyId_and_tokenIdentifier", ["babyId", "tokenIdentifier"])
-    .index("by_babyId_and_userId", ["babyId", "userId"]),
+    .index("by_babyId_and_tokenIdentifier", ["babyId", "tokenIdentifier"]),
   // Pending co-parent invites for emails that do not yet have an account.
   babyCoParentInvites: defineTable({
     babyId: v.id("baby"),

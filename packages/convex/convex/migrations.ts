@@ -2,7 +2,7 @@ import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
@@ -479,6 +479,37 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillCoParentTokenIdentifier,
   internal.migrations.sanitizeOnboardingSteps,
 ]);
+
+const TABLE_MIGRATION_NAMES = [
+  "generateThumbnailsForExistingPhotos",
+  "backfillBabyTimeline",
+  "backfillEncouragementTimeline",
+  "separateMilestoneOccurredAt",
+  "clearLegacyStageMessages",
+  "backfillUpdatePostedByUserId",
+  "backfillBabyOwnerTokenIdentifier",
+  "backfillProfileTokenIdentifier",
+  "backfillOnboardingTokenIdentifier",
+  "backfillCoParentTokenIdentifier",
+  "sanitizeOnboardingSteps",
+] as const;
+
+export const deploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
+    const statuses = await migrations.getStatus(ctx, {
+      migrations: [...TABLE_MIGRATION_NAMES],
+    });
+    return {
+      isDone:
+        statuses.length === TABLE_MIGRATION_NAMES.length &&
+        statuses.every((status) => status.isDone),
+      failed: statuses
+        .filter((status) => status.error !== undefined)
+        .map((status) => `${status.name}: ${status.error}`),
+    };
+  },
+});
 
 // Run all pending migrations - called automatically during deployment.
 // skipTourForExistingUsers is not a table walker (users live in the Better

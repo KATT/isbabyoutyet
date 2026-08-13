@@ -48,4 +48,28 @@ test("subscription secrets stay internal while managers can detect subscribers",
       auth: "private-auth-secret",
     },
   ]);
+
+  await t.mutation(api.pushSubscriptions.unsubscribe, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/subscription",
+    p256dh: "wrong-key",
+    auth: "wrong-secret",
+  });
+  expect(
+    await asAlice.query(api.pushSubscriptions.hasSubscriptions, {
+      babyId: created.babyId,
+    }),
+  ).toBe(true);
+
+  await t.mutation(api.pushSubscriptions.unsubscribe, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/subscription",
+    p256dh: "public-key",
+    auth: "private-auth-secret",
+  });
+  expect(
+    await asAlice.query(api.pushSubscriptions.hasSubscriptions, {
+      babyId: created.babyId,
+    }),
+  ).toBe(false);
 });
