@@ -1,6 +1,17 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
+  // Closely matches `oxlint --init`, plus the stricter `suspicious` category.
+  // Pedantic/style/restriction stay off — too noisy for a blanket enable.
   "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  // Generated code is not ours to lint
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -21,9 +32,12 @@
     }
   },
   "rules": {
+    // Project-specific (keep):
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
-    "eslint/max-params": ["error", 2]
+    "eslint/max-params": ["error", 2],
+    // Convex system fields use leading underscores (`_id`, `_creationTime`).
+    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime"] }]
   },
   "overrides": [
     {
@@ -44,10 +58,20 @@
       }
     },
     {
+      // Unused `await using _foo = …` bindings follow the project unused-var
+      // convention and trip no-underscore-dangle outside function params.
+      "files": ["**/*.{test,spec}.{ts,tsx}"],
+      "rules": {
+        "eslint/no-underscore-dangle": "off"
+      }
+    },
+    {
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/components/**"],
       "rules": {
-        "eslint/max-params": "off"
+        "eslint/max-params": "off",
+        "eslint/no-shadow": "off",
+        "eslint/no-underscore-dangle": "off"
       }
     }
   ]

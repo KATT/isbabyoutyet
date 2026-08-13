@@ -202,11 +202,11 @@ export const removeCoParent = mutation({
 export const cancelInvite = mutation({
   args: { inviteId: v.id("babyCoParentInvites") },
   handler: async (ctx, args) => {
-    const invite = await ctx.db.get(args.inviteId);
-    if (!invite || !isActive(invite)) {
+    const inviteRow = await ctx.db.get(args.inviteId);
+    if (!inviteRow || !isActive(inviteRow)) {
       throw new Error("Invite not found");
     }
-    await requireBabyOwner(ctx, invite.babyId);
+    await requireBabyOwner(ctx, inviteRow.babyId);
     await ctx.db.patch(args.inviteId, softDeletePatch());
   },
 });
@@ -259,37 +259,37 @@ export const claimPendingInvites = mutation({
       .collect();
 
     let claimed = 0;
-    for (const invite of invites) {
-      if (!isActive(invite)) continue;
+    for (const inviteRow of invites) {
+      if (!isActive(inviteRow)) continue;
 
-      const baby = await ctx.db.get(invite.babyId);
+      const baby = await ctx.db.get(inviteRow.babyId);
       if (!baby || !isActive(baby)) {
-        await ctx.db.patch(invite._id, softDeletePatch());
+        await ctx.db.patch(inviteRow._id, softDeletePatch());
         continue;
       }
 
       // Never make the owner a co-parent of their own page
       if (baby.userId === identity.subject) {
-        await ctx.db.patch(invite._id, softDeletePatch());
+        await ctx.db.patch(inviteRow._id, softDeletePatch());
         continue;
       }
 
       const existing = await findActiveCoParent(ctx, {
-        babyId: invite.babyId,
+        babyId: inviteRow.babyId,
         userId: identity.subject,
       });
       if (!existing) {
         await ctx.db.insert("babyCoParents", {
-          babyId: invite.babyId,
+          babyId: inviteRow.babyId,
           userId: identity.subject,
           email,
           name,
-          addedByUserId: invite.invitedByUserId,
+          addedByUserId: inviteRow.invitedByUserId,
           addedAt: Date.now(),
         });
         claimed += 1;
       }
-      await ctx.db.patch(invite._id, softDeletePatch());
+      await ctx.db.patch(inviteRow._id, softDeletePatch());
     }
 
     return { claimed };

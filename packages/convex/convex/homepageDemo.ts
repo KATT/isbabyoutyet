@@ -225,7 +225,7 @@ async function insertFeedDocs(
   let pageThumbnailId: Id<"_storage"> | null = null;
 
   // Oldest first so the last photo we see is the newest (page photo).
-  const chronological = [...homepageDemoFeedFor(locale)].sort(
+  const chronological = [...homepageDemoFeedFor(locale)].toSorted(
     (a, b) => b.minutesAgo - a.minutesAgo,
   );
 

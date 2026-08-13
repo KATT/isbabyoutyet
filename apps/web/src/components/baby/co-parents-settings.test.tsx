@@ -5,10 +5,10 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { CoParentsSettings } from "@/components/baby/co-parents-settings";
 
 const mocks = vi.hoisted(() => ({
-  useQuery: vi.fn(),
-  invite: vi.fn(),
-  removeCoParent: vi.fn(),
-  cancelInvite: vi.fn(),
+  useQuery: vi.fn<(...args: unknown[]) => unknown>(),
+  invite: vi.fn<() => unknown>(),
+  removeCoParent: vi.fn<() => unknown>(),
+  cancelInvite: vi.fn<() => unknown>(),
 }));
 
 vi.mock("convex/react", () => ({
@@ -27,7 +27,10 @@ vi.mock("convex/react", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
+  toast: {
+    success: vi.fn<() => void>(),
+    error: vi.fn<() => void>(),
+  },
 }));
 
 function renderResource(ui: React.ReactElement) {

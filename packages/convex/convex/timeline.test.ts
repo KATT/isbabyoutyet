@@ -665,7 +665,7 @@ test("separateMilestoneOccurredAt moves backdated milestones to announce time", 
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
     // Legacy shape: postedAt was the event clock
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
+    const { updateId: insertedUpdateId } = await insertUpdateWithTimelineItem(ctx, {
       babyId,
       postedAt: eventAt,
       milestone: "born",
@@ -679,7 +679,7 @@ test("separateMilestoneOccurredAt moves backdated milestones to announce time", 
       customMessage: null,
       createdAt: announcedAt,
     });
-    return updateId;
+    return insertedUpdateId;
   });
 
   await t.run(async (ctx) => {
@@ -710,7 +710,7 @@ test("separateMilestoneOccurredAt prefers the notification closest to the update
 
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
+    const { updateId: insertedUpdateId } = await insertUpdateWithTimelineItem(ctx, {
       babyId,
       postedAt: eventAt,
       milestone: "born",
@@ -732,7 +732,7 @@ test("separateMilestoneOccurredAt prefers the notification closest to the update
       customMessage: null,
       createdAt: freshAnnounceAt,
     });
-    return updateId;
+    return insertedUpdateId;
   });
 
   await t.run(async (ctx) => {
@@ -753,12 +753,15 @@ test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurr
 
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(babyId, { babyBorn: new Date(redatedEventAt).toISOString() });
-    const { updateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: originalEventAt,
-      occurredAt: redatedEventAt, // redate during deploy set this already
-      milestone: "born",
-    });
+    const { updateId: insertedUpdateId, timelineItemId } = await insertUpdateWithTimelineItem(
+      ctx,
+      {
+        babyId,
+        postedAt: originalEventAt,
+        occurredAt: redatedEventAt, // redate during deploy set this already
+        milestone: "born",
+      },
+    );
     await ctx.db.insert("scheduledNotifications", {
       babyId,
       status: "sent",
@@ -770,7 +773,7 @@ test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurr
     // Sanity: postedAt still on the old event clock
     const item = await ctx.db.get(timelineItemId);
     expect(item?.postedAt).toBe(originalEventAt);
-    return updateId;
+    return insertedUpdateId;
   });
 
   await t.run(async (ctx) => {
