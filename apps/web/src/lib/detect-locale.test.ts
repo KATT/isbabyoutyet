@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { resolveAcceptLanguage } from "./detect-locale";
+import { getLanguageName } from "./i18n";
 
 test.each([
   ["sv-SE,sv;q=0.9,en;q=0.7", "sv"],
@@ -12,4 +13,8 @@ test.each([
   [null, "en-GB"],
 ] as const)("resolves Accept-Language %s to %s", (header, expected) => {
   expect(resolveAcceptLanguage(header)).toBe(expected);
+});
+
+test("displays supported language names in the active language", () => {
+  expect(getLanguageName("sv", "es").toLocaleLowerCase("es")).toContain("sueco");
 });
