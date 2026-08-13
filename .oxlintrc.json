@@ -13,7 +13,7 @@
       "translationFunctionNames": ["translate"],
       "ignoredAttributes": ["to", "params", "search"],
       "ignoredComponents": ["TanStackDevtools"],
-      "ignorePatterns": ["^LoadingMore$", "^Tanstack Router$"]
+      "ignorePatterns": ["^LoadingMore$", "^Tanstack Router$", "^/[A-Za-z0-9_$/.-]+$"]
     }
   },
   "rules": {
