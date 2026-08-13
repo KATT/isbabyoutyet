@@ -9,7 +9,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCssUrl } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
-import { getDetectedLocale, translate, useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
 
 function getDefaultBabyData(): BabyData {
   const now = new Date();
@@ -47,10 +47,10 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
   validateSearch: searchSchema,
-  head: () => ({
+  head: (opts) => ({
     meta: [
       {
-        title: `Preview – ${translate(getDetectedLocale(), "Is Baby Out Yet? – Share Your Baby's Arrival")}`,
+        title: `Preview – ${translate(opts.match.context.locale, "Is Baby Out Yet? – Share Your Baby's Arrival")}`,
       },
       {
         name: "description",

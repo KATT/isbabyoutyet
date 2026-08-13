@@ -23,7 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
-import { getDetectedLocale, translate, useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -31,8 +31,8 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
-  head: () => {
-    const locale = getDetectedLocale();
+  head: (opts) => {
+    const locale = opts.match.context.locale;
     const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");
     const description = translate(
       locale,

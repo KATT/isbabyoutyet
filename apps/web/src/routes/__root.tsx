@@ -25,13 +25,17 @@ import { Button } from "@workspace/ui/components/button";
 import { Baby } from "lucide-react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
+import { detectRequestLocale } from "@/lib/detect-locale";
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
   locale: SupportedLocale;
 }>()({
-  head: () => {
-    const locale = getDetectedLocale();
+  beforeLoad: async () => {
+    return { locale: await detectRequestLocale() };
+  },
+  head: (opts) => {
+    const locale = opts.match.context.locale ?? getDetectedLocale();
     const description = translate(
       locale,
       "Track the progress of labour and birth – know when baby arrives!",
