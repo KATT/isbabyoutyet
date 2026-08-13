@@ -56,8 +56,7 @@ test("codec error messages come from t", () => {
   const swedish = ((key: string) =>
     key === "Pick a date" ? "Välj ett datum" : key) as TranslationFunction;
   const result = htmlDate(swedish).safeDecode("nope");
+  const message = result.success === false ? result.error.issues[0]?.message : undefined;
   expect(result.success).toBe(false);
-  if (!result.success) {
-    expect(result.error.issues[0]?.message).toBe("Välj ett datum");
-  }
+  expect(message).toBe("Välj ett datum");
 });

@@ -48,7 +48,10 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
         .string()
         .trim()
         .min(1, t("Name is required"))
-        .max(MAX_NAME_LENGTH, t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH })),
+        .max(
+          MAX_NAME_LENGTH,
+          t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
+        ),
       message: z.string().trim().min(1, t("Message is required")),
     })
     .transform((values): FunctionArgs<typeof api.encouragements.create> => ({

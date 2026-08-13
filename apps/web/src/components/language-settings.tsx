@@ -73,11 +73,7 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
           <FormItem>
             <FormLabel>{t("Language name or code")}</FormLabel>
             <FormControl>
-              <Input
-                maxLength={100}
-                placeholder={t("Example: French / fr-FR")}
-                {...field}
-              />
+              <Input maxLength={100} placeholder={t("Example: French / fr-FR")} {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>

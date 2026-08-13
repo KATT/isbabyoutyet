@@ -49,9 +49,9 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
   });
   const withProvider = (currentBaby: BabyData): ReactElement => (
     <LocaleProvider locale={locale}>
-    <ConvexProvider client={client}>
-      <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
-    </ConvexProvider>
+      <ConvexProvider client={client}>
+        <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
+      </ConvexProvider>
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
@@ -211,10 +211,10 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   });
   const rendered = render(
     <LocaleProvider locale="en-GB">
-    <ConvexProvider client={client}>
-      <TooltipProvider>
-        <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
-      </TooltipProvider>
+      <ConvexProvider client={client}>
+        <TooltipProvider>
+          <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
+        </TooltipProvider>
       </ConvexProvider>
     </LocaleProvider>,
   );
