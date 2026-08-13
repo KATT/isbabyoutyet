@@ -5,6 +5,8 @@ import schema from "./schema";
 import { DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { modules, registerComponents } from "./test.setup";
 
+const FIRST_PAGE = { numItems: 20, cursor: null };
+
 async function setup() {
   const t = convexTest(schema, modules);
   await registerComponents(t);
@@ -16,11 +18,15 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
   await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
 
-  await expect(asAlice.query(api.admin.listLanguageRequests, {})).rejects.toThrow("Not authorized");
-  await expect(asAlice.query(api.admin.listBabies, { sortBy: "created" })).rejects.toThrow(
-    "Not authorized",
-  );
-  await expect(t.query(api.admin.listLanguageRequests, {})).rejects.toThrow("Not authenticated");
+  await expect(
+    asAlice.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
+  ).rejects.toThrow("Not authorized");
+  await expect(
+    asAlice.query(api.admin.listBabies, { sortBy: "created", paginationOpts: FIRST_PAGE }),
+  ).rejects.toThrow("Not authorized");
+  await expect(
+    t.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
+  ).rejects.toThrow("Not authenticated");
 });
 
 test("seedDemoData marks the demo user as admin", async () => {
@@ -33,7 +39,6 @@ test("seedDemoData marks the demo user as admin", async () => {
     isAdmin: true,
   });
 
-  // Idempotent re-seed still leaves the admin flag set.
   await t.mutation(internal.seed.seedDemoData, {});
   expect(await asDemo.query(api.profile.get, {})).toMatchObject({ isAdmin: true });
 });
@@ -47,14 +52,17 @@ test("admins can list language requests with requester emails", async () => {
   await asBob.mutation(api.profile.ensure, { browserLocale: "en-GB" });
   await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "French" });
 
-  const requests = await asDemo.query(api.admin.listLanguageRequests, {});
-  expect(requests).toEqual([
+  const requests = await asDemo.query(api.admin.listLanguageRequests, {
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(requests.page).toEqual([
     expect.objectContaining({
       requestedLocale: "French",
       userId: "bob",
       userEmail: null,
     }),
   ]);
+  expect(requests.isDone).toBe(true);
 });
 
 test("admins can list babies sorted by created or updated with manager emails", async () => {
@@ -62,7 +70,6 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const seeded = await t.mutation(internal.seed.seedDemoData, {});
   const asDemo = t.withIdentity({ subject: seeded.userId });
 
-  // Add a co-parent so manager emails include more than the owner.
   const waiting = await t.run(async (ctx) => {
     return await ctx.db
       .query("baby")
@@ -80,7 +87,6 @@ test("admins can list babies sorted by created or updated with manager emails", 
       addedByUserId: seeded.userId,
       addedAt: Date.now(),
     });
-    // Soft-deleted co-parent and duplicate owner email must not appear twice.
     await ctx.db.insert("babyCoParents", {
       babyId: waiting._id,
       userId: "gone-user",
@@ -98,7 +104,6 @@ test("admins can list babies sorted by created or updated with manager emails", 
       addedByUserId: seeded.userId,
       addedAt: Date.now(),
     });
-    // Soft-deleted baby is omitted from the admin list.
     await ctx.db.insert("baby", {
       userId: "unknown-owner",
       name: "Deleted",
@@ -106,15 +111,12 @@ test("admins can list babies sorted by created or updated with manager emails", 
       publicId: "baby-deleted",
       deletedAt: Date.now(),
     });
-    // Baby with no timeline activity falls back to createdAt for updatedAt.
     await ctx.db.insert("baby", {
       userId: "unknown-owner",
       name: "Quiet",
       dueDate: "2026-12-01",
       publicId: "baby-quiet",
     });
-    // Homepage live demos use a sentinel owner that is not a Better Auth document
-    // id — looking it up must not crash the admin list.
     await ctx.db.insert("baby", {
       userId: HOMEPAGE_DEMO_OWNER_USER_ID,
       name: "Juniper Hale",
@@ -124,34 +126,68 @@ test("admins can list babies sorted by created or updated with manager emails", 
     });
   });
 
-  const byCreated = await asDemo.query(api.admin.listBabies, { sortBy: "created" });
-  expect(byCreated.some((row) => row.publicId === "baby-deleted")).toBe(false);
-  expect(byCreated.some((row) => row.publicId === "baby-quiet")).toBe(true);
-  const juniper = byCreated.find((row) => row.publicId === "juniper-hale");
+  const byCreated = await asDemo.query(api.admin.listBabies, {
+    sortBy: "created",
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(byCreated.page.some((row) => row.publicId === "baby-deleted")).toBe(false);
+  expect(byCreated.page.some((row) => row.publicId === "baby-quiet")).toBe(true);
+  const juniper = byCreated.page.find((row) => row.publicId === "juniper-hale");
   expect(juniper).toMatchObject({ demo: true, managerEmails: [] });
-  for (let i = 1; i < byCreated.length; i++) {
-    expect(byCreated[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated[i]!.createdAt);
+  for (let i = 1; i < byCreated.page.length; i++) {
+    expect(byCreated.page[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated.page[i]!.createdAt);
   }
 
-  const waitingRow = byCreated.find((row) => row.publicId === "baby-waiting");
+  const waitingRow = byCreated.page.find((row) => row.publicId === "baby-waiting");
   expect(waitingRow?.managerEmails).toEqual([DEMO_USER.email, "coparent@example.com"]);
 
-  const quiet = byCreated.find((row) => row.publicId === "baby-quiet");
+  const quiet = byCreated.page.find((row) => row.publicId === "baby-quiet");
   expect(quiet?.updatedAt).toBe(quiet?.createdAt);
   expect(quiet?.managerEmails).toEqual([]);
 
-  const byUpdated = await asDemo.query(api.admin.listBabies, { sortBy: "updated" });
-  expect(byUpdated.length).toBe(byCreated.length);
-  for (let i = 1; i < byUpdated.length; i++) {
-    expect(byUpdated[i - 1]!.updatedAt).toBeGreaterThanOrEqual(byUpdated[i]!.updatedAt);
+  const byUpdated = await asDemo.query(api.admin.listBabies, {
+    sortBy: "updated",
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(byUpdated.page.length).toBe(byCreated.page.length);
+  for (let i = 1; i < byUpdated.page.length; i++) {
+    expect(byUpdated.page[i - 1]!.updatedAt).toBeGreaterThanOrEqual(byUpdated.page[i]!.updatedAt);
   }
 
-  // Language request email cache: two requests from the same known user.
+  // Tiny pages prove continueCursor pagination works.
+  const page1 = await asDemo.query(api.admin.listBabies, {
+    sortBy: "created",
+    paginationOpts: { numItems: 2, cursor: null },
+  });
+  expect(page1.page).toHaveLength(2);
+  expect(page1.isDone).toBe(false);
+  const page2 = await asDemo.query(api.admin.listBabies, {
+    sortBy: "created",
+    paginationOpts: { numItems: 2, cursor: page1.continueCursor },
+  });
+  expect(page2.page).toHaveLength(2);
+  expect(page2.page[0]!._id).not.toBe(page1.page[0]!._id);
+
+  await expect(
+    asDemo.query(api.admin.listBabies, {
+      sortBy: "created",
+      paginationOpts: { numItems: 2, cursor: "nope" },
+    }),
+  ).rejects.toThrow("Invalid pagination cursor");
+
   const asDemoRequester = t.withIdentity({ subject: seeded.userId });
   await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Welsh" });
   await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Irish" });
-  const requests = await asDemo.query(api.admin.listLanguageRequests, {});
-  expect(requests.filter((row) => row.userEmail === DEMO_USER.email).length).toBe(2);
+  const requests = await asDemo.query(api.admin.listLanguageRequests, {
+    paginationOpts: { numItems: 1, cursor: null },
+  });
+  expect(requests.page).toHaveLength(1);
+  expect(requests.isDone).toBe(false);
+  const requestsPage2 = await asDemo.query(api.admin.listLanguageRequests, {
+    paginationOpts: { numItems: 1, cursor: requests.continueCursor },
+  });
+  expect(requestsPage2.page).toHaveLength(1);
+  expect(requestsPage2.page[0]!._id).not.toBe(requests.page[0]!._id);
 
   const authUser = await t.query(components.betterAuth.adapter.findOne, {
     model: "user",

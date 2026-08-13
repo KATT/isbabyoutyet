@@ -1,3 +1,4 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { query } from "./_generated/server";
@@ -9,6 +10,31 @@ import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
+
+const languageRequestRowValidator = v.object({
+  _id: v.id("languageRequests"),
+  requestedLocale: v.string(),
+  createdAt: v.number(),
+  userId: v.string(),
+  userEmail: v.union(v.string(), v.null()),
+});
+
+const babyRowValidator = v.object({
+  _id: v.id("baby"),
+  name: v.string(),
+  publicId: v.string(),
+  dueDate: v.string(),
+  status: v.union(
+    v.literal("not_yet"),
+    v.literal("labor_started"),
+    v.literal("gone_to_hospital"),
+    v.literal("born"),
+  ),
+  demo: v.boolean(),
+  createdAt: v.number(),
+  updatedAt: v.number(),
+  managerEmails: v.array(v.string()),
+});
 
 /**
  * Resolve a Better Auth user's email. Sentinel / non-document owners
@@ -65,31 +91,46 @@ async function lastActivityAt(ctx: QueryCtx, opts: { babyId: Id<"baby">; created
   return Math.max(opts.createdAt, latest.postedAt);
 }
 
+/** Offset-cursor pagination over an already-sorted in-memory list (admin scale). */
+function paginateSorted<T>(
+  items: T[],
+  paginationOpts: { numItems: number; cursor: string | null },
+) {
+  const startIndex = paginationOpts.cursor ? Number.parseInt(paginationOpts.cursor, 10) : 0;
+  if (!Number.isFinite(startIndex) || startIndex < 0) {
+    throw new Error("Invalid pagination cursor");
+  }
+  const endIndex = startIndex + paginationOpts.numItems;
+  return {
+    page: items.slice(startIndex, endIndex),
+    isDone: endIndex >= items.length,
+    continueCursor: String(endIndex),
+  };
+}
+
 export const listLanguageRequests = query({
-  args: {},
-  returns: v.array(
-    v.object({
-      _id: v.id("languageRequests"),
-      requestedLocale: v.string(),
-      createdAt: v.number(),
-      userId: v.string(),
-      userEmail: v.union(v.string(), v.null()),
-    }),
-  ),
-  handler: async (ctx) => {
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: v.object({
+    page: v.array(languageRequestRowValidator),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const rows = await ctx.db.query("languageRequests").collect();
     rows.sort((a, b) => b.createdAt - a.createdAt);
 
     const emailByUserId = new Map<string, string | null>();
-    const result = [];
+    const mapped = [];
     for (const row of rows) {
       let userEmail = emailByUserId.get(row.userId);
       if (userEmail === undefined) {
         userEmail = await findUserEmail(ctx, row.userId);
         emailByUserId.set(row.userId, userEmail);
       }
-      result.push({
+      mapped.push({
         _id: row._id,
         requestedLocale: row.requestedLocale,
         createdAt: row.createdAt,
@@ -97,32 +138,20 @@ export const listLanguageRequests = query({
         userEmail,
       });
     }
-    return result;
+    return paginateSorted(mapped, args.paginationOpts);
   },
 });
 
 export const listBabies = query({
   args: {
     sortBy: sortByValidator,
+    paginationOpts: paginationOptsValidator,
   },
-  returns: v.array(
-    v.object({
-      _id: v.id("baby"),
-      name: v.string(),
-      publicId: v.string(),
-      dueDate: v.string(),
-      status: v.union(
-        v.literal("not_yet"),
-        v.literal("labor_started"),
-        v.literal("gone_to_hospital"),
-        v.literal("born"),
-      ),
-      demo: v.boolean(),
-      createdAt: v.number(),
-      updatedAt: v.number(),
-      managerEmails: v.array(v.string()),
-    }),
-  ),
+  returns: v.object({
+    page: v.array(babyRowValidator),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const babies = await ctx.db.query("baby").collect();
@@ -147,6 +176,6 @@ export const listBabies = query({
 
     const key = args.sortBy === "created" ? "createdAt" : "updatedAt";
     rows.sort((a, b) => b[key] - a[key]);
-    return rows;
+    return paginateSorted(rows, args.paginationOpts);
   },
 });

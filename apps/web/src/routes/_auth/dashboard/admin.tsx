@@ -1,10 +1,11 @@
-import { useState } from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import { useConvexAuth, useQuery } from "convex/react";
-import { ArrowLeft, Baby as BabyIcon, Shield } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { useConvexAuth, usePaginatedQuery } from "convex/react";
+import { ArrowLeft, CaretDown, Shield, Translate } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { NativeSelect, NativeSelectOption } from "@workspace/ui/components/native-select";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@workspace/ui/components/empty";
 import { Spinner } from "@workspace/ui/components/spinner";
 import {
   Table,
@@ -14,11 +15,22 @@ import {
   TableHeader,
   TableRow,
 } from "@workspace/ui/components/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { cn } from "@workspace/ui/lib/utils";
+import { z } from "zod";
 import { authServer } from "@/lib/auth-server";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-type SortBy = "created" | "updated";
+export const ADMIN_PAGE_SIZE = 20;
+
+const adminSearchSchema = z.object({
+  tab: z.enum(["babies", "languages"]).default("babies"),
+  sort: z.enum(["created", "updated"]).default("updated"),
+});
+
+type AdminTab = z.infer<typeof adminSearchSchema>["tab"];
+type SortBy = z.infer<typeof adminSearchSchema>["sort"];
 
 type LanguageRequestRow = {
   _id: string;
@@ -41,6 +53,7 @@ type BabyRow = {
 
 export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
+  validateSearch: adminSearchSchema,
   beforeLoad: async (opts) => {
     const profile =
       typeof window === "undefined"
@@ -76,167 +89,330 @@ export function formatWhen(ms: number, locale: string) {
   }).format(new Date(ms));
 }
 
-export function LanguageRequestsSection(props: { requests: LanguageRequestRow[] | undefined }) {
+function useStablePaginatedRows<T>(opts: { results: T[]; status: string }) {
+  const [rows, setRows] = useState(opts.results);
+  const isFirstLoad = opts.status === "LoadingFirstPage" && rows.length === 0;
+  const isRefreshing = opts.status === "LoadingFirstPage" && rows.length > 0;
+
+  useEffect(() => {
+    if (opts.status !== "LoadingFirstPage") {
+      setRows(opts.results);
+    }
+  }, [opts.results, opts.status]);
+
+  return { rows, isFirstLoad, isRefreshing };
+}
+
+function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!props.canLoadMore) return;
+    const node = loadMoreRef.current;
+    if (!node) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          props.onLoadMore();
+        }
+      },
+      { threshold: 0.1 },
+    );
+    observer.observe(node);
+    return () => {
+      observer.unobserve(node);
+    };
+  }, [props.canLoadMore, props.onLoadMore]);
+
+  return <div ref={loadMoreRef} className="h-8 w-full" aria-hidden="true" />;
+}
+
+function SortableTableHead(props: {
+  label: string;
+  active: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <TableHead>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className={cn(
+          "-ml-2 h-7 gap-1 px-2 font-medium",
+          props.active ? "text-foreground" : "text-muted-foreground",
+        )}
+        disabled={props.disabled}
+        aria-pressed={props.active}
+        onClick={props.onClick}
+      >
+        {props.label}
+        <CaretDown
+          data-icon="inline-end"
+          className={cn("opacity-0", props.active && "opacity-100")}
+        />
+      </Button>
+    </TableHead>
+  );
+}
+
+export function LanguageRequestsSection(props: {
+  requests: LanguageRequestRow[];
+  status: string;
+  onLoadMore: () => void;
+}) {
   const { t, locale } = useI18n();
-  if (props.requests === undefined) {
+  const { rows, isFirstLoad, isRefreshing } = useStablePaginatedRows({
+    results: props.requests,
+    status: props.status,
+  });
+
+  if (isFirstLoad) {
     return <Spinner className="size-6 text-primary" />;
   }
-  if (props.requests.length === 0) {
-    return <p className="font-medium text-muted-foreground">{t("No language requests yet")}</p>;
+
+  if (rows.length === 0) {
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Translate />
+          </EmptyMedia>
+          <EmptyTitle>{t("No language requests yet")}</EmptyTitle>
+        </EmptyHeader>
+      </Empty>
+    );
   }
+
+  const canLoadMore = props.status === "CanLoadMore";
+  const isLoadingMore = props.status === "LoadingMore";
+
   return (
-    <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
-      <Table>
+    <div className="relative overflow-hidden rounded-xl border bg-card">
+      {isRefreshing ? (
+        <div className="absolute inset-x-0 top-0 z-10 flex justify-center py-2">
+          <Badge variant="secondary" className="gap-1.5">
+            <Spinner />
+            {t("Loading")}
+          </Badge>
+        </div>
+      ) : null}
+      <Table className={cn(isRefreshing && "opacity-70")}>
         <TableHeader>
           <TableRow>
             <TableHead>{t("Language")}</TableHead>
             <TableHead>{t("Requester")}</TableHead>
-            <TableHead>{t("Created")}</TableHead>
+            <TableHead>
+              <span className="inline-flex items-center gap-1 font-medium">
+                {t("Created")}
+                <CaretDown data-icon="inline-end" />
+              </span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {props.requests.map((request) => (
+          {rows.map((request) => (
             <TableRow key={request._id}>
-              <TableCell className="font-semibold">{request.requestedLocale}</TableCell>
+              <TableCell className="font-medium">{request.requestedLocale}</TableCell>
               <TableCell>{request.userEmail ?? request.userId}</TableCell>
               <TableCell>{formatWhen(request.createdAt, locale)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
+      <InfiniteScrollSentinel canLoadMore={canLoadMore} onLoadMore={props.onLoadMore} />
+      {isLoadingMore ? (
+        <div className="flex justify-center py-3">
+          <Spinner className="size-5 text-primary" />
+        </div>
+      ) : null}
     </div>
   );
 }
 
 export function BabiesSection(props: {
-  babies: BabyRow[] | undefined;
+  babies: BabyRow[];
+  status: string;
   sortBy: SortBy;
   onSortByChange: (sortBy: SortBy) => void;
+  onLoadMore: () => void;
 }) {
   const { t, locale } = useI18n();
-  return (
-    <section>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-2xl font-black tracking-tight">{t("All babies")}</h2>
-        <NativeSelect
-          value={props.sortBy}
-          aria-label={t("Sort by updated")}
-          onChange={(event) => {
-            const value = event.target.value;
-            if (value === "created" || value === "updated") {
-              props.onSortByChange(value);
-            }
-          }}
-        >
-          <NativeSelectOption value="updated">{t("Sort by updated")}</NativeSelectOption>
-          <NativeSelectOption value="created">{t("Sort by created")}</NativeSelectOption>
-        </NativeSelect>
-      </div>
+  const { rows, isFirstLoad, isRefreshing } = useStablePaginatedRows({
+    results: props.babies,
+    status: props.status,
+  });
 
-      {props.babies === undefined ? (
-        <Spinner className="size-6 text-primary" />
-      ) : (
-        <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("Name")}</TableHead>
-                <TableHead>{t("Status")}</TableHead>
-                <TableHead>{t("Managers")}</TableHead>
-                <TableHead>{props.sortBy === "created" ? t("Created") : t("Updated")}</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {props.babies.map((baby) => (
-                <TableRow key={baby._id}>
-                  <TableCell className="font-semibold">
-                    <span className="inline-flex items-center gap-2">
-                      <BabyIcon className="h-4 w-4 text-primary" />
-                      {baby.name}
-                      {baby.demo ? (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                          {t("Demo")}
-                        </span>
-                      ) : null}
-                    </span>
-                  </TableCell>
-                  <TableCell>{statusLabel(baby.status, t)}</TableCell>
-                  <TableCell className="max-w-xs whitespace-normal">
-                    {baby.managerEmails.join(", ")}
-                  </TableCell>
-                  <TableCell>
-                    {formatWhen(
-                      props.sortBy === "created" ? baby.createdAt : baby.updatedAt,
-                      locale,
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full font-bold"
-                      render={
-                        <Link
-                          to="/baby/$publicId"
-                          params={{ publicId: baby.publicId }}
-                          preload="viewport"
-                        />
-                      }
-                      nativeButton={false}
-                    >
-                      {t("Open")}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+  if (isFirstLoad) {
+    return <Spinner className="size-6 text-primary" />;
+  }
+
+  const canLoadMore = props.status === "CanLoadMore";
+  const isLoadingMore = props.status === "LoadingMore";
+
+  return (
+    <div className="relative overflow-hidden rounded-xl border bg-card">
+      {isRefreshing ? (
+        <div className="absolute inset-x-0 top-0 z-10 flex justify-center py-2">
+          <Badge variant="secondary" className="gap-1.5">
+            <Spinner />
+            {t("Loading")}
+          </Badge>
         </div>
-      )}
-    </section>
+      ) : null}
+      <Table className={cn(isRefreshing && "opacity-70")}>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("Name")}</TableHead>
+            <TableHead>{t("Status")}</TableHead>
+            <TableHead>{t("Managers")}</TableHead>
+            <SortableTableHead
+              label={t("Created")}
+              active={props.sortBy === "created"}
+              disabled={isRefreshing}
+              onClick={() => props.onSortByChange("created")}
+            />
+            <SortableTableHead
+              label={t("Updated")}
+              active={props.sortBy === "updated"}
+              disabled={isRefreshing}
+              onClick={() => props.onSortByChange("updated")}
+            />
+            <TableHead />
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((baby) => (
+            <TableRow key={baby._id}>
+              <TableCell className="font-medium">
+                <span className="inline-flex items-center gap-2">
+                  {baby.name}
+                  {baby.demo ? <Badge variant="outline">{t("Demo")}</Badge> : null}
+                </span>
+              </TableCell>
+              <TableCell>{statusLabel(baby.status, t)}</TableCell>
+              <TableCell className="max-w-xs whitespace-normal">
+                {baby.managerEmails.join(", ")}
+              </TableCell>
+              <TableCell>{formatWhen(baby.createdAt, locale)}</TableCell>
+              <TableCell>{formatWhen(baby.updatedAt, locale)}</TableCell>
+              <TableCell>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  render={
+                    <Link
+                      to="/baby/$publicId"
+                      params={{ publicId: baby.publicId }}
+                      preload="viewport"
+                    />
+                  }
+                  nativeButton={false}
+                >
+                  {t("Open")}
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      <InfiniteScrollSentinel canLoadMore={canLoadMore} onLoadMore={props.onLoadMore} />
+      {isLoadingMore ? (
+        <div className="flex justify-center py-3">
+          <Spinner className="size-5 text-primary" />
+        </div>
+      ) : null}
+    </div>
   );
 }
 
-function AdminDashboardPage() {
+export function AdminDashboardPage() {
   const { t } = useI18n();
   const auth = useConvexAuth();
-  const [sortBy, setSortBy] = useState<SortBy>("updated");
-  const languageRequests = useQuery(
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/dashboard/admin" });
+
+  const languageQuery = usePaginatedQuery(
     api.admin.listLanguageRequests,
-    auth.isAuthenticated ? {} : "skip",
+    auth.isAuthenticated && search.tab === "languages" ? {} : "skip",
+    { initialNumItems: ADMIN_PAGE_SIZE },
   );
-  const babies = useQuery(api.admin.listBabies, auth.isAuthenticated ? { sortBy } : "skip");
+  const babiesQuery = usePaginatedQuery(
+    api.admin.listBabies,
+    auth.isAuthenticated && search.tab === "babies" ? { sortBy: search.sort } : "skip",
+    { initialNumItems: ADMIN_PAGE_SIZE },
+  );
+
+  function setTab(tab: AdminTab) {
+    void navigate({
+      search: (prev) => ({ ...prev, tab }),
+      replace: true,
+    });
+  }
+
+  function setSort(sort: SortBy) {
+    void navigate({
+      search: (prev) => ({ ...prev, sort }),
+      replace: true,
+    });
+  }
 
   return (
     <div className="min-h-screen bg-background bg-dots">
-      <div className="mx-auto max-w-5xl px-6 py-10">
+      <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-10">
         <Button
           variant="outline"
           size="sm"
-          className="mb-8 rounded-full border-2 font-bold"
+          className="w-fit rounded-full border-2 font-bold"
           render={<Link to="/dashboard" preload="viewport" />}
           nativeButton={false}
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft data-icon="inline-start" />
           {t("Back to Dashboard")}
         </Button>
 
-        <div className="mb-10 text-center">
-          <p className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
-            <Shield className="h-6 w-6 text-primary" />
+        <div className="text-center">
+          <p className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-primary/15">
+            <Shield className="size-6 text-primary" />
           </p>
           <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
             {t("Admin dashboard")}
           </h1>
         </div>
 
-        <section className="mb-12">
-          <h2 className="mb-4 text-2xl font-black tracking-tight">{t("Requested languages")}</h2>
-          <LanguageRequestsSection requests={languageRequests} />
-        </section>
+        <Tabs
+          value={search.tab}
+          onValueChange={(value) => {
+            if (value === "babies" || value === "languages") {
+              setTab(value);
+            }
+          }}
+        >
+          <TabsList variant="default" className="mx-auto">
+            <TabsTrigger value="babies">{t("All babies")}</TabsTrigger>
+            <TabsTrigger value="languages">{t("Requested languages")}</TabsTrigger>
+          </TabsList>
 
-        <BabiesSection babies={babies} sortBy={sortBy} onSortByChange={setSortBy} />
+          <TabsContent value="babies" className="mt-6">
+            <BabiesSection
+              babies={babiesQuery.results}
+              status={babiesQuery.status}
+              sortBy={search.sort}
+              onSortByChange={setSort}
+              onLoadMore={() => babiesQuery.loadMore(ADMIN_PAGE_SIZE)}
+            />
+          </TabsContent>
+
+          <TabsContent value="languages" className="mt-6">
+            <LanguageRequestsSection
+              requests={languageQuery.results}
+              status={languageQuery.status}
+              onLoadMore={() => languageQuery.loadMore(ADMIN_PAGE_SIZE)}
+            />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
