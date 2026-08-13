@@ -4,9 +4,10 @@ import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Baby as BabyIcon, Plus, SignOut } from "@phosphor-icons/react";
+import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
+import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { authServer } from "@/lib/auth-server";
@@ -40,9 +41,18 @@ function DashboardPage() {
   }, [claimInvites]);
 
   const router = useRouter();
+  const restartTour = useMutation(api.onboarding.restart);
+  const progress = useQuery(api.onboarding.getMine, {});
 
   return (
     <div className="flex min-h-screen flex-col bg-background bg-dots">
+      <OnboardingHost
+        surface="dashboard"
+        enabled={undefined}
+        spotlight={undefined}
+        babyPublicId={undefined}
+        onGoToStep={undefined}
+      />
       {/* Floating header */}
       <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
@@ -64,6 +74,19 @@ function DashboardPage() {
             >
               <Plus className="w-4 h-4" />
               {t("Add Baby")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full text-muted-foreground"
+              aria-label={t("Restart getting started tour")}
+              title={t("Restart tour")}
+              onClick={async () => {
+                await restartTour({});
+                toast.success(t("Tour restarted"));
+              }}
+            >
+              <Sparkle className="w-4 h-4" />
             </Button>
             <ModeToggle className="rounded-full" />
             <Button
@@ -107,6 +130,7 @@ function DashboardPage() {
         <DashboardBabyList
           babies={babies}
           isPending={liveBabies === undefined && babies.length === 0}
+          tourBabyPublicId={progress?.tourBaby?.publicId}
         />
       </main>
 
@@ -131,7 +155,11 @@ type DashboardBaby = {
   babyBorn: string | null;
 }>;
 
-export function DashboardBabyList(props: { babies: DashboardBaby[]; isPending: boolean }) {
+export function DashboardBabyList(props: {
+  babies: DashboardBaby[];
+  isPending: boolean;
+  tourBabyPublicId: string | undefined;
+}) {
   const { t } = useI18n();
 
   if (props.isPending) {
@@ -157,6 +185,7 @@ export function DashboardBabyList(props: { babies: DashboardBaby[]; isPending: b
           className="mt-6 rounded-full font-extrabold pop-shadow"
           render={<Link to="/dashboard/add" preload="viewport" />}
           nativeButton={false}
+          data-tour-id="add_baby"
         >
           <Plus className="w-4 h-4" />
           {t("Add Your First Baby")}
@@ -168,7 +197,12 @@ export function DashboardBabyList(props: { babies: DashboardBaby[]; isPending: b
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
       {props.babies.map((baby, index) => (
-        <DashboardBabyCard key={baby._id} baby={baby} index={index} />
+        <DashboardBabyCard
+          key={baby._id}
+          baby={baby}
+          index={index}
+          dataTourId={props.tourBabyPublicId === baby.publicId ? "tour_baby" : undefined}
+        />
       ))}
     </div>
   );

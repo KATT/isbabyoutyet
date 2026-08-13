@@ -19,6 +19,8 @@ type DashboardBabyCardBaby = {
 type DashboardBabyCardProps = {
   baby: DashboardBabyCardBaby;
   index: number;
+  /** Coachmark target for the first-run tour */
+  dataTourId: string | undefined;
 };
 
 const STATUS_EMOJI = {
@@ -86,6 +88,7 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
       params={{ publicId: baby.publicId }}
       preload="viewport"
       className="group"
+      data-tour-id={props.dataTourId}
     >
       <div
         className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${

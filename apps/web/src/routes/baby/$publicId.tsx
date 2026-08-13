@@ -9,6 +9,7 @@ import { ScheduledNotificationToast } from "@/components/baby/scheduled-notifica
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
+import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import {
@@ -213,6 +214,7 @@ function BabyPage() {
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
+  const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   const profile = useQuery(api.profile.get, {});
@@ -237,6 +239,30 @@ function BabyPage() {
   return (
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
+
+      {canManage && (
+        <OnboardingHost
+          surface="baby"
+          enabled={undefined}
+          babyPublicId={babyDoc.publicId}
+          spotlight={!search.settings && !composerOpen}
+          onGoToStep={(stepId) => {
+            if (stepId === "post_update") {
+              setComposerOpen(true);
+              return;
+            }
+            if (stepId === "explore_settings") {
+              void navigate({
+                search: {
+                  ...search,
+                  settings: true,
+                },
+                replace: true,
+              });
+            }
+          }}
+        />
+      )}
 
       {canManage && (
         <>
@@ -278,7 +304,10 @@ function BabyPage() {
                 babyId={babyDoc._id}
                 baby={baby}
                 babyName={baby.name}
-                onPosted={() => setComposerOpen(false)}
+                onPosted={() => {
+                  setComposerOpen(false);
+                  void completeOnboardingStep({ stepId: "post_update" });
+                }}
               />
             </DialogContent>
           </Dialog>
@@ -300,6 +329,13 @@ function BabyPage() {
           </Link>
           <BabyNav
             shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+            onShareCopied={
+              canManage
+                ? () => {
+                    void completeOnboardingStep({ stepId: "share_link" });
+                  }
+                : null
+            }
             onPostUpdate={canManage ? () => setComposerOpen(true) : null}
             settingsButton={
               canManage
@@ -314,6 +350,13 @@ function BabyPage() {
                 : null
             }
             settingsOpen={!!search.settings}
+            onSettingsOpened={
+              canManage
+                ? () => {
+                    void completeOnboardingStep({ stepId: "explore_settings" });
+                  }
+                : null
+            }
           />
         </div>
       </header>
@@ -358,7 +401,10 @@ function BabyPage() {
               "Post update" button in the dock. */}
           <div className="space-y-8">
             {!baby.encouragementsDisabled && (
-              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+              <section
+                className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
+                data-tour-id="learn_encouragements"
+              >
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </section>
             )}

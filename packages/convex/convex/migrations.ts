@@ -2,6 +2,8 @@ import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
+import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
@@ -10,6 +12,7 @@ import {
   insertEncouragementTimelineItem,
   insertUpdateWithTimelineItem,
 } from "./timeline";
+import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -296,6 +299,82 @@ export const clearLegacyStageMessages = migrations.define({
   migrateOne: clearLegacyStageMessagesDoc,
 });
 
+const SKIP_TOUR_BATCH_SIZE = 50;
+
+function authUserId(user: unknown) {
+  if (user && typeof user === "object" && "_id" in user) {
+    return String(user._id);
+  }
+  throw new Error("Better Auth user is missing _id");
+}
+
+/**
+ * Grandfathers every Better Auth user that existed when the guided tour
+ * shipped: they skip the welcome carousel and checklist. New signups after
+ * this migration completes still get the tour.
+ *
+ * Idempotent: a sentinel `userOnboarding` row is written on the last page,
+ * so later `runAll` deploys are a no-op.
+ */
+export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
+  const sentinel = await ctx.db
+    .query("userOnboarding")
+    .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+    .unique();
+  if (sentinel) {
+    return {
+      isDone: true,
+      continueCursor: "",
+      alreadyRan: true,
+      processed: 0,
+    };
+  }
+
+  const page = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+    model: "user",
+    paginationOpts: {
+      numItems: SKIP_TOUR_BATCH_SIZE,
+      cursor,
+    },
+  });
+
+  for (const user of page.page) {
+    await markUserOnboardingComplete(ctx, authUserId(user));
+  }
+
+  if (page.isDone) {
+    await markUserOnboardingComplete(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
+    return {
+      isDone: true,
+      continueCursor: page.continueCursor,
+      alreadyRan: false,
+      processed: page.page.length,
+    };
+  }
+
+  return {
+    isDone: false,
+    continueCursor: page.continueCursor,
+    alreadyRan: false,
+    processed: page.page.length,
+  };
+}
+
+export const skipTourForExistingUsers = internalMutation({
+  args: {
+    cursor: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    const result = await skipTourForExistingUsersPage(ctx, args.cursor);
+    if (!result.isDone && !result.alreadyRan) {
+      await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
+        cursor: result.continueCursor,
+      });
+    }
+    return result;
+  },
+});
+
 /**
  * Prefills `postedByUserId` on existing updates from the baby owner so a later
  * PR can tighten the field to required.
@@ -312,8 +391,7 @@ export const backfillUpdatePostedByUserId = migrations.define({
   migrateOne: backfillUpdatePostedByUserIdDoc,
 });
 
-// Run all pending migrations - called automatically during deployment
-export const runAll = migrations.runner([
+export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
@@ -321,3 +399,24 @@ export const runAll = migrations.runner([
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
 ]);
+
+// Run all pending migrations - called automatically during deployment.
+// skipTourForExistingUsers is not a table walker (users live in the Better
+// Auth component), so it is kicked off alongside the serial table series.
+export const runAll = internalMutation({
+  args: {
+    fn: v.optional(v.string()),
+    cursor: v.optional(v.union(v.string(), v.null())),
+    batchSize: v.optional(v.number()),
+    dryRun: v.optional(v.boolean()),
+    next: v.optional(v.array(v.string())),
+    reset: v.optional(v.boolean()),
+    oneBatchOnly: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<unknown> => {
+    await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
+      cursor: null,
+    });
+    return await ctx.runMutation(internal.migrations.runTableMigrations, args);
+  },
+});

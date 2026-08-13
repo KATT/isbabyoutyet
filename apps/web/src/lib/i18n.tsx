@@ -419,6 +419,61 @@ const enGB = {
     "When things start happening, update your status. Everyone gets notified automatically.",
   "At hospital": "At hospital",
   "Baby born!": "Baby born!",
+  "Restart getting started tour": "Restart getting started tour",
+  "Restart tour": "Restart tour",
+  "Tour restarted": "Tour restarted",
+  "Getting started": "Getting started",
+  "Getting started checklist": "Getting started checklist",
+  "Getting started: {{completed}} of {{total}} done. Expand.":
+    "Getting started: {{completed}} of {{total}} done. Expand.",
+  "You're all set": "You're all set",
+  "Tap a step to jump there": "Tap a step to jump there",
+  Minimize: "Minimize",
+  "Dismiss tour": "Dismiss tour",
+  "Tour progress": "Tour progress",
+  "Nice work — share your page and enjoy the quiet inbox.":
+    "Nice work — share your page and enjoy the quiet inbox.",
+  "Close checklist": "Close checklist",
+  "Open {{name}}'s page": "Open {{name}}'s page",
+  "See {{name}}'s page": "See {{name}}'s page",
+  "Open settings": "Open settings",
+  "Show Share": "Show Share",
+  "Got it": "Got it",
+  "Hide tip": "Hide tip",
+  "Open {{name}}'s page to do this — or tap the step in the checklist.":
+    "Open {{name}}'s page to do this — or tap the step in the checklist.",
+  "Add your first baby": "Add your first baby",
+  "Give them a name and due date — that creates a public page friends can open.":
+    "Give them a name and due date — that creates a public page friends can open.",
+  "Add a baby": "Add a baby",
+  "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
+    "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).",
+  "Peek at settings": "Peek at settings",
+  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
+    "Themes, names, and whether visitors can leave encouragements — all in Settings.",
+  "Encouragements from visitors": "Encouragements from visitors",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.",
+  "Welcome — here's the idea": "Welcome — here's the idea",
+  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
+    "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.",
+  "Create a baby page": "Create a baby page",
+  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
+    "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.",
+  "Share once, update as you go": "Share once, update as you go",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
+  "Skip anytime": "Skip anytime",
+  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
+    "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
+  "Welcome tour": "Welcome tour",
+  "A short overview of how the app works": "A short overview of how the app works",
+  "Go to slide {{number}}": "Go to slide {{number}}",
+  Skip: "Skip",
+  "Let's go": "Let's go",
+  Next: "Next",
   "Go Home": "Go Home",
 } as const;
 
@@ -846,6 +901,61 @@ const sv: Record<TranslationKey, string> = {
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
   "At hospital": "På sjukhuset",
   "Baby born!": "Bebisen är född!",
+  "Restart getting started tour": "Starta om kom igång-guiden",
+  "Restart tour": "Starta om guiden",
+  "Tour restarted": "Guiden startades om",
+  "Getting started": "Kom igång",
+  "Getting started checklist": "Checklista för att komma igång",
+  "Getting started: {{completed}} of {{total}} done. Expand.":
+    "Kom igång: {{completed}} av {{total}} klara. Expandera.",
+  "You're all set": "Du är klar",
+  "Tap a step to jump there": "Tryck på ett steg för att hoppa dit",
+  Minimize: "Minimera",
+  "Dismiss tour": "Stäng guiden",
+  "Tour progress": "Guidens förlopp",
+  "Nice work — share your page and enjoy the quiet inbox.":
+    "Bra jobbat — dela din sida och njut av den lugna inkorgen.",
+  "Close checklist": "Stäng checklistan",
+  "Open {{name}}'s page": "Öppna {{name}}s sida",
+  "See {{name}}'s page": "Se {{name}}s sida",
+  "Open settings": "Öppna inställningar",
+  "Show Share": "Visa Dela",
+  "Got it": "Jag förstår",
+  "Hide tip": "Dölj tipset",
+  "Open {{name}}'s page to do this — or tap the step in the checklist.":
+    "Öppna {{name}}s sida för att göra detta — eller tryck på steget i checklistan.",
+  "Add your first baby": "Lägg till din första bebis",
+  "Give them a name and due date — that creates a public page friends can open.":
+    "Ge dem ett namn och ett beräknat datum — då skapas en publik sida som vänner kan öppna.",
+  "Add a baby": "Lägg till bebis",
+  "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
+    "En länk för alla. Tryck på Dela på bebisens sida för att kopiera den — ingen gruppchattspam.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Lägg upp milstolpar och vardagsanteckningar från menyn. Pushnotiser går bara till dem som prenumererar — och bara när du markerar en statusuppdatering (förlossning, sjukhus eller född).",
+  "Peek at settings": "Titta i inställningarna",
+  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
+    "Teman, namn och om besökare kan lämna uppmuntran — allt under Inställningar.",
+  "Encouragements from visitors": "Uppmuntran från besökare",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Alla med länken kan lämna en kort uppmuntrande hälsning — inget konto behövs. De syns i tidslinjen.",
+  "Welcome — here's the idea": "Välkommen — så här funkar det",
+  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
+    "Har bebisen kommit? ger dig en lugn sida för förlossningsuppdateringar, så att vänner och familj slutar skriva och fråga.",
+  "Create a baby page": "Skapa en bebissida",
+  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
+    "Lägg till namn och beräknat datum. Du får en delbar länk som isbabyoutyet.com/baby/… som visar aktuell status.",
+  "Share once, update as you go": "Dela en gång, uppdatera längs vägen",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Lägg upp milstolpar och meddelanden från menyn. Statusuppdateringar notifierar prenumeranter; vardagsanteckningar och uppmuntran hålls tysta.",
+  "Skip anytime": "Hoppa över när som helst",
+  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
+    "En liten checklista följer dig. Tryck på ett steg för att hoppa dit eller markera knappen. Stäng när du vill — starta om via gnistan på översikten.",
+  "Welcome tour": "Välkomstguide",
+  "A short overview of how the app works": "En kort översikt av hur appen fungerar",
+  "Go to slide {{number}}": "Gå till bild {{number}}",
+  Skip: "Hoppa över",
+  "Let's go": "Nu kör vi",
+  Next: "Nästa",
   "Go Home": "Gå hem",
 };
 
@@ -1257,6 +1367,61 @@ const es: Record<TranslationKey, string> = {
     "Cuando empiece a pasar, actualiza el estado. Todo el mundo recibe un aviso automáticamente.",
   "At hospital": "En el hospital",
   "Baby born!": "¡El bebé ha nacido!",
+  "Restart getting started tour": "Reiniciar el recorrido de primeros pasos",
+  "Restart tour": "Reiniciar recorrido",
+  "Tour restarted": "Recorrido reiniciado",
+  "Getting started": "Primeros pasos",
+  "Getting started checklist": "Lista de primeros pasos",
+  "Getting started: {{completed}} of {{total}} done. Expand.":
+    "Primeros pasos: {{completed}} de {{total}} hechos. Expandir.",
+  "You're all set": "Ya está todo listo",
+  "Tap a step to jump there": "Toca un paso para ir allí",
+  Minimize: "Minimizar",
+  "Dismiss tour": "Cerrar el recorrido",
+  "Tour progress": "Progreso del recorrido",
+  "Nice work — share your page and enjoy the quiet inbox.":
+    "Bien hecho — comparte tu página y disfruta de la bandeja tranquila.",
+  "Close checklist": "Cerrar la lista",
+  "Open {{name}}'s page": "Abrir la página de {{name}}",
+  "See {{name}}'s page": "Ver la página de {{name}}",
+  "Open settings": "Abrir ajustes",
+  "Show Share": "Mostrar Compartir",
+  "Got it": "Entendido",
+  "Hide tip": "Ocultar consejo",
+  "Open {{name}}'s page to do this — or tap the step in the checklist.":
+    "Abre la página de {{name}} para hacer esto — o toca el paso en la lista.",
+  "Add your first baby": "Añade tu primer bebé",
+  "Give them a name and due date — that creates a public page friends can open.":
+    "Ponles un nombre y una fecha prevista — eso crea una página pública que pueden abrir tus amigos.",
+  "Add a baby": "Añadir un bebé",
+  "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
+    "Un enlace para todos. Toca Compartir en la página del bebé para copiarlo — sin spam en el chat del grupo.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Publica hitos y notas cotidianas desde el menú. Las notificaciones push solo van a quien se suscribió — y solo cuando marcas un cambio de estado (parto, hospital o nacido).",
+  "Peek at settings": "Echa un vistazo a los ajustes",
+  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
+    "Temas, nombres y si los visitantes pueden dejar ánimos — todo en Ajustes.",
+  "Encouragements from visitors": "Ánimos de los visitantes",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Cualquiera con el enlace puede dejar una nota breve de apoyo — sin cuenta. Aparecen en tu línea de tiempo.",
+  "Welcome — here's the idea": "Bienvenida — esta es la idea",
+  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
+    "¿Ya nació el bebé? te da una página tranquila para las novedades del parto, para que familia y amigos dejen de escribirte.",
+  "Create a baby page": "Crea una página del bebé",
+  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
+    "Añade un nombre y una fecha prevista. Obtienes un enlace compartible como isbabyoutyet.com/baby/… que muestra el estado actual.",
+  "Share once, update as you go": "Comparte una vez, actualiza sobre la marcha",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Publica hitos y mensajes desde el menú. Los cambios de estado avisan a los suscriptores; las notas cotidianas y los ánimos se quedan en silencio.",
+  "Skip anytime": "Sáltalo cuando quieras",
+  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
+    "Una pequeña lista te acompaña. Toca un paso para ir allí o resaltar el control. Ciérrala cuando quieras — reinicia desde la chispa del panel.",
+  "Welcome tour": "Recorrido de bienvenida",
+  "A short overview of how the app works": "Una breve visión de cómo funciona la app",
+  "Go to slide {{number}}": "Ir a la diapositiva {{number}}",
+  Skip: "Saltar",
+  "Let's go": "Vamos",
+  Next: "Siguiente",
   "Go Home": "Ir al inicio",
 };
 
@@ -1671,6 +1836,61 @@ const ptBR: Record<TranslationKey, string> = {
     "Quando as coisas começarem a acontecer, atualize o status. Todo mundo é avisado automaticamente.",
   "At hospital": "No hospital",
   "Baby born!": "O bebê nasceu!",
+  "Restart getting started tour": "Reiniciar o tour de primeiros passos",
+  "Restart tour": "Reiniciar o tour",
+  "Tour restarted": "Tour reiniciado",
+  "Getting started": "Primeiros passos",
+  "Getting started checklist": "Lista de primeiros passos",
+  "Getting started: {{completed}} of {{total}} done. Expand.":
+    "Primeiros passos: {{completed}} de {{total}} concluídos. Expandir.",
+  "You're all set": "Tudo certo",
+  "Tap a step to jump there": "Toque em um passo para ir até lá",
+  Minimize: "Minimizar",
+  "Dismiss tour": "Dispensar o tour",
+  "Tour progress": "Progresso do tour",
+  "Nice work — share your page and enjoy the quiet inbox.":
+    "Bom trabalho — compartilhe sua página e aproveite a caixa de entrada tranquila.",
+  "Close checklist": "Fechar a lista",
+  "Open {{name}}'s page": "Abrir a página de {{name}}",
+  "See {{name}}'s page": "Ver a página de {{name}}",
+  "Open settings": "Abrir configurações",
+  "Show Share": "Mostrar Compartilhar",
+  "Got it": "Entendi",
+  "Hide tip": "Ocultar dica",
+  "Open {{name}}'s page to do this — or tap the step in the checklist.":
+    "Abra a página de {{name}} para fazer isso — ou toque no passo na lista.",
+  "Add your first baby": "Adicione seu primeiro bebê",
+  "Give them a name and due date — that creates a public page friends can open.":
+    "Dê um nome e uma data prevista — isso cria uma página pública que amigos podem abrir.",
+  "Add a baby": "Adicionar um bebê",
+  "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
+    "Um link para todos. Toque em Compartilhar na página do bebê para copiá-lo — sem spam no grupo.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Publique marcos e notas do dia a dia pelo menu. Notificações push só vão para quem se inscreveu — e só quando você marca uma atualização de status (trabalho de parto, hospital ou nascido).",
+  "Peek at settings": "Dê uma olhada nas configurações",
+  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
+    "Temas, nomes e se visitantes podem deixar mensagens de incentivo — tudo em Configurações.",
+  "Encouragements from visitors": "Incentivos dos visitantes",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Qualquer pessoa com o link pode deixar uma nota curta de apoio — sem conta. Elas aparecem na sua linha do tempo.",
+  "Welcome — here's the idea": "Bem-vindo — esta é a ideia",
+  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
+    "O bebê já nasceu? te dá uma página calma para as novidades do parto, para que amigos e família parem de mandar mensagens.",
+  "Create a baby page": "Crie uma página do bebê",
+  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
+    "Adicione um nome e uma data prevista. Você recebe um link compartilhável como isbabyoutyet.com/baby/… que mostra o status atual.",
+  "Share once, update as you go": "Compartilhe uma vez, atualize no caminho",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Publique marcos e mensagens pelo menu. Atualizações de status avisam assinantes; notas do dia a dia e incentivos ficam quietos.",
+  "Skip anytime": "Pule quando quiser",
+  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
+    "Uma listinha te acompanha. Toque em um passo para ir até lá ou destacar o controle. Dispense quando quiser — reinicie pelo brilho do painel.",
+  "Welcome tour": "Tour de boas-vindas",
+  "A short overview of how the app works": "Uma visão rápida de como o app funciona",
+  "Go to slide {{number}}": "Ir para o slide {{number}}",
+  Skip: "Pular",
+  "Let's go": "Vamos lá",
+  Next: "Próximo",
   "Go Home": "Ir para o início",
 };
 

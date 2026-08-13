@@ -137,6 +137,8 @@ function PreviewPage() {
             <BabyNav
               shareLink=""
               onPostUpdate={null}
+              onShareCopied={null}
+              onSettingsOpened={null}
               settingsButton={{
                 to: "/preview",
                 search: {

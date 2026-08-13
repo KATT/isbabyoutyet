@@ -14,6 +14,10 @@ type BabyNavProps = {
   settingsOpen: boolean;
   /** Owner-only "Post update" action */
   onPostUpdate: (() => void) | null;
+  /** Fired after the share URL is copied (used by the first-run tour) */
+  onShareCopied: (() => void) | null;
+  /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
+  onSettingsOpened: (() => void) | null;
 };
 
 export function BabyNav(props: BabyNavProps) {
@@ -30,7 +34,12 @@ export function BabyNav(props: BabyNavProps) {
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
       {props.onPostUpdate && (
-        <Button variant="ghost" className="rounded-full font-bold" onClick={props.onPostUpdate}>
+        <Button
+          variant="ghost"
+          className="rounded-full font-bold"
+          onClick={props.onPostUpdate}
+          data-tour-id="post_update"
+        >
           <ChatCircleText data-icon="inline-start" />
           {t("Post update")}
         </Button>
@@ -46,6 +55,12 @@ export function BabyNav(props: BabyNavProps) {
                 render={<Link {...(props.settingsButton as any)} />}
                 nativeButton={false}
                 aria-label={props.settingsOpen ? t("Close settings") : t("Settings")}
+                data-tour-id="explore_settings"
+                onClick={() => {
+                  if (!props.settingsOpen) {
+                    props.onSettingsOpened?.();
+                  }
+                }}
               >
                 <GearSix />
               </Button>
@@ -71,6 +86,7 @@ export function BabyNav(props: BabyNavProps) {
                   await navigator.clipboard.writeText(props.shareLink);
                   setCopied(true);
                   toast.success(t("Copied to clipboard"));
+                  props.onShareCopied?.();
                 } catch {
                   // Fallback for older browsers
                   const textArea = document.createElement("textarea");
@@ -83,6 +99,7 @@ export function BabyNav(props: BabyNavProps) {
                     document.execCommand("copy");
                     setCopied(true);
                     toast.success(t("Copied to clipboard"));
+                    props.onShareCopied?.();
                   } catch (cause) {
                     toast.error(
                       "Failed to copy to clipboard: " +
@@ -97,6 +114,7 @@ export function BabyNav(props: BabyNavProps) {
               className="rounded-full"
               disabled={!props.shareLink}
               aria-label={copied ? t("Copied!") : t("Copy link to share")}
+              data-tour-id="share_link"
             >
               {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
