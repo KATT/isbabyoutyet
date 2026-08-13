@@ -32,7 +32,16 @@ function DashboardPage() {
   const loaderData = Route.useLoaderData();
   const auth = useConvexAuth();
   const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
-  const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
+  const babies = (liveBabies === undefined ? loaderData.babies : liveBabies).map((baby) => ({
+    _id: baby._id,
+    name: baby.name,
+    publicId: baby.publicId,
+    dueDate: baby.dueDate,
+    laborStarted: baby.laborStarted ?? null,
+    wentToHospital: baby.wentToHospital ?? null,
+    babyBorn: baby.babyBorn ?? null,
+    role: baby.role,
+  }));
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
@@ -119,9 +128,9 @@ type DashboardBaby = {
   name: string;
   publicId: string;
   dueDate: string;
-  laborStarted?: string | null;
-  wentToHospital?: string | null;
-  babyBorn?: string | null;
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
   role: "owner" | "coParent";
 };
 

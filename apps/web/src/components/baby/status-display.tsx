@@ -13,8 +13,8 @@ import { useI18n } from "@/lib/i18n";
 
 type PhotoAvatarProps = {
   babyName: string;
-  photoUrl: string | null | undefined;
-  thumbnailUrl: string | null | undefined;
+  photoUrl: string | null;
+  thumbnailUrl: string | null;
   fallbackEmoji: string;
   variant: "default" | "born";
 };
@@ -105,19 +105,19 @@ function PhotoAvatar(props: PhotoAvatarProps) {
  * stage — a text-only post refreshes it without a status change.
  */
 type LatestUpdateMessage = {
-  message: string | null | undefined;
+  message: string | null;
   postedAt: number;
 };
 
 type StatusDisplayProps = {
   baby: BabyData;
   currentStatus: BabyStatus;
-  photoUrl: string | null | undefined;
-  thumbnailUrl: string | null | undefined;
-  latestUpdate: LatestUpdateMessage | null | undefined;
+  photoUrl: string | null;
+  thumbnailUrl: string | null;
+  latestUpdate: LatestUpdateMessage | null;
 };
 
-function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null | undefined }) {
+function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null }) {
   const { locale, t } = useI18n();
   const latestUpdate = props.latestUpdate;
   if (!latestUpdate?.message) {

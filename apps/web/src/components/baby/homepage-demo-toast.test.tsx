@@ -5,7 +5,7 @@ import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 
 const mocks = vi.hoisted(() => ({
   custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id?: string | number) => void>(),
+  dismiss: vi.fn<(id: string | number | undefined) => void>(),
 }));
 
 vi.mock("sonner", () => ({

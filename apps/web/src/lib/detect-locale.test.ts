@@ -26,7 +26,6 @@ test("displays supported language names in the active language", () => {
 test("reads Accept-Language from the current request", () => {
   expect(
     detectLocaleFromRequestHeaders(
-      undefined,
       () => "es-ES,es;q=0.9",
       () => undefined,
     ),
@@ -36,7 +35,6 @@ test("reads Accept-Language from the current request", () => {
 test("a saved locale takes precedence over Accept-Language", () => {
   expect(
     detectLocaleFromRequestHeaders(
-      undefined,
       () => "en-GB,en;q=0.9",
       () => "sv",
     ),

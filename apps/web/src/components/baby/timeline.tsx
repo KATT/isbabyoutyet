@@ -168,7 +168,7 @@ type UpdateComposerProps = {
   baby: BabyData;
   babyName: string;
   /** Called after a successful post (e.g. to close the containing dialog) */
-  onPosted: (() => void) | undefined;
+  onPosted: () => void;
 };
 
 export function UpdateComposer(props: UpdateComposerProps) {
@@ -268,7 +268,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
           toast.success(t("Update posted!"));
           // No reset needed: the composer lives in a dialog that unmounts on close
-          props.onPosted?.();
+          props.onPosted();
         }}
       >
         <div className="space-y-3">

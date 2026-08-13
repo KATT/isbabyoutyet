@@ -52,9 +52,9 @@ function BabyDetailPage(props: { baby: Doc<"baby"> }) {
       <StatusDisplay
         baby={baby}
         currentStatus={currentStatus}
-        photoUrl={undefined}
-        thumbnailUrl={undefined}
-        latestUpdate={undefined}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
       />
     </div>
   );
@@ -114,9 +114,9 @@ test("renders the public baby status in the baby's Swedish override", async () =
       <StatusDisplay
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
-        photoUrl={undefined}
-        thumbnailUrl={undefined}
-        latestUpdate={undefined}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
       />
     </LocaleProvider>,
   );
@@ -141,9 +141,9 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
       <StatusDisplay
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
-        photoUrl={undefined}
-        thumbnailUrl={undefined}
-        latestUpdate={undefined}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
       />
     </LocaleProvider>,
   );

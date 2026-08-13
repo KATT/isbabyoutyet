@@ -54,7 +54,7 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
           babyId={babyId}
           baby={currentBaby}
           babyName={currentBaby.name}
-          onPosted={undefined}
+          onPosted={() => {}}
         />
       </ConvexProvider>
     </LocaleProvider>

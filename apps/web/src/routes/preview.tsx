@@ -68,7 +68,7 @@ export const Route = createFileRoute("/preview")({
 });
 
 function PreviewPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -117,9 +117,9 @@ function PreviewPage() {
             replace: true,
           });
         }}
-        profileLocale={undefined}
-        onDelete={undefined}
-        coParents={undefined}
+        profileLocale={locale}
+        onDelete={null}
+        coParents={null}
       />
 
       <div className="min-h-screen bg-background bg-dots">
@@ -135,7 +135,7 @@ function PreviewPage() {
               <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
             </Link>
             <BabyNav
-              shareLink={null}
+              shareLink=""
               onPostUpdate={null}
               settingsButton={{
                 to: "/preview",
@@ -159,8 +159,8 @@ function PreviewPage() {
               baby={baby}
               currentStatus={currentStatus}
               latestUpdate={latestUpdate}
-              photoUrl={undefined}
-              thumbnailUrl={undefined}
+              photoUrl={null}
+              thumbnailUrl={null}
             />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />

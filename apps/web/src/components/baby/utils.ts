@@ -14,7 +14,7 @@ export const THEME_OPTIONS = [
     value: null,
     labelKey: "Default",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
-    css: undefined,
+    css: null,
   }, // orange primary
   {
     value: "violet-bloom",
@@ -62,7 +62,7 @@ export const THEME_OPTIONS = [
   value: string | null;
   labelKey: TranslationKey;
   colors: readonly string[];
-  css: string | undefined;
+  css: string | null;
 }>;
 
 const TIMEZONE = "Europe/Stockholm";

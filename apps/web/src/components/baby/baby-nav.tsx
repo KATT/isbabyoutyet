@@ -9,8 +9,8 @@ import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
-  shareLink: null | string;
-  settingsButton: null | LinkProps;
+  shareLink: string;
+  settingsButton: LinkProps | null;
   settingsOpen: boolean;
   /** Owner-only "Post update" action */
   onPostUpdate: (() => void) | null;

@@ -20,10 +20,10 @@ const baby: BabyData = {
 };
 
 const absentSettingsProps = {
-  profileLocale: undefined,
-  onDelete: undefined,
-  coParents: undefined,
-} as const;
+  profileLocale: "en-GB" as const,
+  onDelete: null,
+  coParents: null,
+};
 
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
@@ -86,8 +86,8 @@ test("delete page control appears when onDelete is provided", async () => {
       onDelete={onDelete}
       open={true}
       onOpenChange={onOpenChange}
-      profileLocale={undefined}
-      coParents={undefined}
+      profileLocale="en-GB"
+      coParents={null}
     />,
   );
 
@@ -127,8 +127,8 @@ test("theme constants render through the active translation catalog", async () =
         open
         onOpenChange={onOpenChange}
         profileLocale="sv"
-        onDelete={undefined}
-        coParents={undefined}
+        onDelete={null}
+        coParents={null}
       />
     </LocaleProvider>,
   );
