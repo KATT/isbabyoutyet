@@ -46,7 +46,13 @@ function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background bg-dots">
-      <OnboardingHost surface="dashboard" />
+      <OnboardingHost
+        surface="dashboard"
+        enabled={undefined}
+        spotlight={undefined}
+        babyPublicId={undefined}
+        onGoToStep={undefined}
+      />
       {/* Floating header */}
       <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
@@ -137,16 +143,17 @@ type DashboardBaby = {
   name: string;
   publicId: string;
   dueDate: string;
-  laborStarted?: string | null;
-  wentToHospital?: string | null;
-  babyBorn?: string | null;
   role: "owner" | "coParent";
-};
+} & Partial<{
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+}>;
 
 export function DashboardBabyList(props: {
   babies: DashboardBaby[];
   isPending: boolean;
-  tourBabyPublicId?: string;
+  tourBabyPublicId: string | undefined;
 }) {
   const { t } = useI18n();
 

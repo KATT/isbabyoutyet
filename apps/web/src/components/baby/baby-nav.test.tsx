@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to?: string }) => (
+  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
 }));
@@ -26,6 +26,8 @@ test("groups owner actions separately from page actions", async () => {
     <BabyNav
       shareLink="https://example.com/baby/demo"
       onPostUpdate={() => {}}
+      onShareCopied={null}
+      onSettingsOpened={null}
       settingsButton={{ to: "/" }}
       settingsOpen={false}
     />,
@@ -48,6 +50,9 @@ test("hides the owner group when the visitor has no owner actions", async () => 
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
+      onPostUpdate={null}
+      onShareCopied={null}
+      onSettingsOpened={null}
       settingsButton={null}
       settingsOpen={false}
     />,
@@ -55,4 +60,21 @@ test("hides the owner group when the visitor has no owner actions", async () => 
 
   expect(view.queryByRole("group", { name: "Owner actions" })).toBeNull();
   expect(view.getByRole("group", { name: "Page actions" })).toBeTruthy();
+});
+
+test("disables sharing when the share link is empty", async () => {
+  await using view = renderResource(
+    <BabyNav
+      shareLink=""
+      onPostUpdate={null}
+      onShareCopied={null}
+      onSettingsOpened={null}
+      settingsButton={{ to: "/" }}
+      settingsOpen={true}
+    />,
+  );
+
+  const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
+  expect(share.disabled).toBe(true);
+  expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
 });

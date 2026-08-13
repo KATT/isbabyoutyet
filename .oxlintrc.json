@@ -5,6 +5,10 @@
     {
       "name": "i18n-literal",
       "specifier": "@rrazvan.dev/oxlint-plugin-i18n-literal"
+    },
+    {
+      "name": "no-optional",
+      "specifier": "./oxlint-plugins/no-optional.mjs"
     }
   ],
   "settings": {
@@ -25,7 +29,8 @@
       "rules": {
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
-        "i18n-literal/no-literal-template": "error"
+        "i18n-literal/no-literal-template": "error",
+        "no-optional/no-optional": "error"
       }
     },
     {

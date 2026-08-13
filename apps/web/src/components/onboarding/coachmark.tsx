@@ -11,8 +11,8 @@ type CoachmarkProps = {
   description: string;
   onDismiss: () => void;
   /** When true, dismissing also completes the step */
-  completeOnDismiss?: boolean;
-  onComplete?: () => void;
+  completeOnDismiss: boolean | undefined;
+  onComplete: (() => void) | undefined;
 };
 
 type Rect = {

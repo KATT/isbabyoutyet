@@ -19,6 +19,8 @@ export default defineSchema({
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
+    // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
+    demo: v.optional(v.boolean()),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })

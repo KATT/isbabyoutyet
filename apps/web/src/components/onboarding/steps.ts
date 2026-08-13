@@ -12,7 +12,7 @@ export type OnboardingStepCopy = {
   /** Matches `data-tour-id` on the UI target */
   targetId: string;
   icon: Icon;
-  ctaLabel?: TranslationKey;
+  ctaLabel: TranslationKey | undefined;
 };
 
 export const ONBOARDING_STEPS = [
@@ -33,6 +33,7 @@ export const ONBOARDING_STEPS = [
     surface: "baby",
     targetId: "share_link",
     icon: ShareNetwork,
+    ctaLabel: undefined,
   },
   {
     id: "post_update",
@@ -42,6 +43,7 @@ export const ONBOARDING_STEPS = [
     surface: "baby",
     targetId: "post_update",
     icon: ChatCircleText,
+    ctaLabel: undefined,
   },
   {
     id: "explore_settings",
@@ -50,6 +52,7 @@ export const ONBOARDING_STEPS = [
     surface: "baby",
     targetId: "explore_settings",
     icon: GearSix,
+    ctaLabel: undefined,
   },
   {
     id: "learn_encouragements",
@@ -59,6 +62,7 @@ export const ONBOARDING_STEPS = [
     surface: "baby",
     targetId: "learn_encouragements",
     icon: Heart,
+    ctaLabel: undefined,
   },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;
 

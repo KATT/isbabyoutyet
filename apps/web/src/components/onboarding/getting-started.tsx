@@ -26,15 +26,15 @@ type GettingStartedCardProps = {
   /** First created baby — checklist links go here, not to later babies */
   tourBaby: TourBaby | null;
   /** Baby-page actions: open a dialog or scroll to a control */
-  onGoToStep?: (stepId: string) => void;
-  className?: string;
+  onGoToStep: ((stepId: string) => void) | undefined;
+  className: string | undefined;
 };
 
 type StepAction =
-  | { kind: "link"; link: LinkProps; label: string; onClick?: () => void }
+  | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
   | { kind: "button"; onClick: () => void; label: string };
 
-function babyPageLink(opts: { publicId: string; settings?: boolean }): LinkProps {
+function babyPageLink(opts: { publicId: string; settings: boolean | undefined }): LinkProps {
   return {
     to: "/baby/$publicId",
     params: { publicId: opts.publicId },
@@ -47,7 +47,7 @@ function getStepAction(opts: {
   step: OnboardingStep;
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
-  onGoToStep?: (stepId: string) => void;
+  onGoToStep: ((stepId: string) => void) | undefined;
   onAcknowledge: (stepId: string) => void;
   t: TranslationFunction;
 }): StepAction | null {
@@ -57,10 +57,15 @@ function getStepAction(opts: {
     if (opts.surface !== "dashboard") {
       return null;
     }
+    const ctaLabel = step.ctaLabel;
+    if (!ctaLabel) {
+      return null;
+    }
     return {
       kind: "link",
       link: { to: "/dashboard/add", preload: "viewport" },
-      label: t(step.ctaLabel),
+      label: t(ctaLabel),
+      onClick: undefined,
     };
   }
 
@@ -73,15 +78,17 @@ function getStepAction(opts: {
     if (step.id === "share_link") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId }),
+        link: babyPageLink({ publicId, settings: undefined }),
         label: t("Open {{name}}'s page", { name }),
+        onClick: undefined,
       };
     }
     if (step.id === "post_update") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId }),
+        link: babyPageLink({ publicId, settings: undefined }),
         label: t("Post an update"),
+        onClick: undefined,
       };
     }
     if (step.id === "explore_settings") {
@@ -95,8 +102,9 @@ function getStepAction(opts: {
     if (step.id === "learn_encouragements") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId }),
+        link: babyPageLink({ publicId, settings: undefined }),
         label: t("See {{name}}'s page", { name }),
+        onClick: undefined,
       };
     }
     return null;
@@ -322,7 +330,7 @@ function NextStepHint(props: {
   step: OnboardingStep;
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
-  onGoToStep?: (stepId: string) => void;
+  onGoToStep: ((stepId: string) => void) | undefined;
   onAcknowledge: () => void;
   t: TranslationFunction;
 }) {

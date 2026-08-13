@@ -9,17 +9,18 @@ type DashboardBabyCardBaby = {
   name: string;
   publicId: string;
   dueDate: string;
-  laborStarted?: string | null;
-  wentToHospital?: string | null;
-  babyBorn?: string | null;
-  role?: "owner" | "coParent";
-};
+  role: "owner" | "coParent";
+} & Partial<{
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+}>;
 
 type DashboardBabyCardProps = {
   baby: DashboardBabyCardBaby;
   index: number;
-  /** Optional coachmark target for the first-run tour */
-  dataTourId?: string;
+  /** Coachmark target for the first-run tour */
+  dataTourId: string | undefined;
 };
 
 const STATUS_EMOJI = {

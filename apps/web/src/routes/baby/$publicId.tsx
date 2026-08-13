@@ -199,7 +199,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
 }
 
 function BabyPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const params = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -243,6 +243,7 @@ function BabyPage() {
       {canManage && (
         <OnboardingHost
           surface="baby"
+          enabled={undefined}
           babyPublicId={babyDoc.publicId}
           spotlight={!search.settings && !composerOpen}
           onGoToStep={(stepId) => {
@@ -267,7 +268,7 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
-            profileLocale={profile?.locale}
+            profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -281,7 +282,7 @@ function BabyPage() {
                     await removeBaby({ babyId: babyDoc._id });
                     void navigate({ to: "/dashboard" });
                   }
-                : undefined
+                : null
             }
             coParents={{ babyId: babyDoc._id, isOwner }}
             open={!!search.settings}
@@ -333,7 +334,7 @@ function BabyPage() {
                 ? () => {
                     void completeOnboardingStep({ stepId: "share_link" });
                   }
-                : undefined
+                : null
             }
             onPostUpdate={canManage ? () => setComposerOpen(true) : null}
             settingsButton={
@@ -354,7 +355,7 @@ function BabyPage() {
                 ? () => {
                     void completeOnboardingStep({ stepId: "explore_settings" });
                   }
-                : undefined
+                : null
             }
           />
         </div>
@@ -377,7 +378,10 @@ function BabyPage() {
               thumbnailUrl={babyDoc.thumbnailUrl}
               latestUpdate={
                 latestUpdate
-                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  ? {
+                      message: latestUpdate.update.message ?? null,
+                      postedAt: latestUpdate.postedAt,
+                    }
                   : null
               }
             />

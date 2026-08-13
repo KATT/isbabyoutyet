@@ -28,10 +28,10 @@ function getIOSStatus() {
 
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as unknown as { MSStream?: unknown }).MSStream;
+    !(window as unknown as { MSStream: unknown | undefined }).MSStream;
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone?: boolean }).standalone === true;
+    (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
 
   return { isIOS, isStandalone };
 }

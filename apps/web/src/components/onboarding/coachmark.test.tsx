@@ -28,6 +28,8 @@ test("scrolls the target into view and can hide the tip", async () => {
       title="Share the link"
       description="Copy the page URL for family."
       onDismiss={onDismiss}
+      completeOnDismiss={undefined}
+      onComplete={undefined}
     />,
   );
 

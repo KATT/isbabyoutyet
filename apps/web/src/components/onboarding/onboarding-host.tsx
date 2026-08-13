@@ -11,13 +11,13 @@ import { ONBOARDING_STEPS } from "./steps";
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
   /** Baby-page owners only — visitors never see the tour */
-  enabled?: boolean;
+  enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */
-  spotlight?: boolean;
+  spotlight: boolean | undefined;
   /** When set, the baby-page tour only runs on the first created baby */
-  babyPublicId?: string;
+  babyPublicId: string | undefined;
   /** Baby-page: open post-update / settings from the checklist */
-  onGoToStep?: (stepId: string) => void;
+  onGoToStep: ((stepId: string) => void) | undefined;
 };
 
 function scrollToTourTarget(targetId: string) {
@@ -150,6 +150,7 @@ export function OnboardingHost(props: OnboardingHostProps) {
           onGoToStep={handleGoToStep}
           surface={props.surface}
           tourBaby={progress.tourBaby}
+          className={undefined}
         />
       ) : null}
 

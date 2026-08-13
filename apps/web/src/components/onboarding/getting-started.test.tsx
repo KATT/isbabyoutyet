@@ -6,9 +6,9 @@ import { GettingStartedCard } from "./getting-started";
 vi.mock("@tanstack/react-router", () => ({
   Link: (
     props: React.ComponentProps<"a"> & {
-      to?: string;
-      params?: { publicId?: string };
-      search?: { settings?: boolean; postUpdate?: boolean };
+      to: string | undefined;
+      params: { publicId: string | undefined } | undefined;
+      search: { settings: boolean | undefined; postUpdate: boolean | undefined } | undefined;
     },
   ) => {
     const href =
@@ -40,6 +40,8 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={null}
     />,
   );
@@ -57,6 +59,8 @@ test("dashboard share step links to the first baby's page", async () => {
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -75,6 +79,8 @@ test("minimized chip shows progress count", async () => {
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -92,6 +98,8 @@ test("learn_encouragements shows a Got it button that acknowledges the step", as
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="baby"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -110,6 +118,8 @@ test("dashboard settings CTA marks the step done while opening the page", async 
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -127,6 +137,7 @@ test("baby-page checklist can open post update and settings", async () => {
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      className={undefined}
       onGoToStep={onGoToStep}
       surface="baby"
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
@@ -156,6 +167,8 @@ test("all-done state offers close checklist", async () => {
       onDismiss={onDismiss}
       onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
+      onGoToStep={undefined}
+      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );

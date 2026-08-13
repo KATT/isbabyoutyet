@@ -3,7 +3,11 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import { HOMEPAGE_DEMO_PHOTO_FILES, HOMEPAGE_DEMO_PHOTO_KEYS } from "../src/homepageDemoFeed";
+import {
+  HOMEPAGE_DEMO_PHOTO_FILES,
+  HOMEPAGE_DEMO_PHOTO_KEYS,
+  homepageDemoLocales,
+} from "../src/homepageDemoFeed";
 import type { HomepageDemoPhotoKey } from "../src/homepageDemoFeed";
 
 const LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1";
@@ -144,9 +148,13 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 
-  const result = convexRun("homepageDemo:refresh", { photos }, extraConvexArgs);
-  console.log("Homepage demo seeded:", result);
-  return result;
+  const results = [];
+  for (const locale of homepageDemoLocales()) {
+    const result = convexRun("homepageDemo:refresh", { photos, locale }, extraConvexArgs);
+    console.log(`Homepage demo seeded (${locale}):`, result);
+    results.push(result);
+  }
+  return results;
 }
 
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
