@@ -16,7 +16,7 @@ vi.mock("@/components/language-settings", () => ({
 }));
 
 vi.mock("@/lib/auth-server", () => ({
-  authServer: { fetchAuthQuery: vi.fn() },
+  authServer: { fetchAuthQuery: vi.fn<() => Promise<unknown>>() },
 }));
 
 const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
