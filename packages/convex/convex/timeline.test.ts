@@ -753,15 +753,12 @@ test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurr
 
   const updateId = await t.run(async (ctx) => {
     await ctx.db.patch(babyId, { babyBorn: new Date(redatedEventAt).toISOString() });
-    const { updateId: insertedUpdateId, timelineItemId } = await insertUpdateWithTimelineItem(
-      ctx,
-      {
-        babyId,
-        postedAt: originalEventAt,
-        occurredAt: redatedEventAt, // redate during deploy set this already
-        milestone: "born",
-      },
-    );
+    const { updateId: insertedUpdateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: originalEventAt,
+      occurredAt: redatedEventAt, // redate during deploy set this already
+      milestone: "born",
+    });
     await ctx.db.insert("scheduledNotifications", {
       babyId,
       status: "sent",
