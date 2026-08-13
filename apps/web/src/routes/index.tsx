@@ -507,7 +507,13 @@ export function HomePage() {
           </p>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {previewStages.map((stage) => (
-              <Link key={stage.title} to="/preview" search={stage.search} className="group">
+              <Link
+                key={stage.title}
+                to="/preview"
+                search={stage.search}
+                preload="viewport"
+                className="group"
+              >
                 <div
                   className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
                 >

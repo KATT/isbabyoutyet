@@ -19,7 +19,7 @@ export function getRouter() {
 
   const router = createRouter({
     routeTree,
-    defaultPreload: "intent",
+    defaultPreload: "viewport",
     context: { convexClient, locale: getDetectedLocale() },
     scrollRestoration: true,
     Wrap: (props) => (
