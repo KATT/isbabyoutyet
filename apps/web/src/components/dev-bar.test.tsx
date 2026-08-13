@@ -19,7 +19,6 @@ vi.mock("@tanstack/react-router", () => ({
     props: React.ComponentProps<"a"> & {
       to: string | undefined;
       params: { publicId: string } | undefined;
-      preload: string | undefined;
     },
   ) => {
     const href =
@@ -29,7 +28,7 @@ vi.mock("@tanstack/react-router", () => ({
           ? props.to
           : "#";
     return (
-      <a href={href} data-preload={props.preload} {...props}>
+      <a href={href} {...props}>
         {props.children}
       </a>
     );
@@ -54,7 +53,7 @@ async function openDevBar() {
   });
 }
 
-test("opens a menu of seeded baby shortcuts with viewport preload", async () => {
+test("opens a menu of seeded baby shortcuts", async () => {
   mocks.pathname = "/dashboard";
   mocks.hasDemoLogin = true;
 
@@ -66,14 +65,12 @@ test("opens a menu of seeded baby shortcuts with viewport preload", async () => 
   for (const baby of DEMO_BABIES) {
     const link = screen.getByRole("menuitem", { name: new RegExp(baby.label, "i") });
     expect(link.getAttribute("href")).toBe(`/baby/${baby.publicId}`);
-    expect(link.getAttribute("data-preload")).toBe("viewport");
   }
 
   const juniper = screen.getByRole("menuitem", {
     name: new RegExp(HOMEPAGE_DEMO_BABIES["en-GB"].name, "i"),
   });
   expect(juniper.getAttribute("href")).toBe(`/baby/${HOMEPAGE_DEMO_BABIES["en-GB"].publicId}`);
-  expect(juniper.getAttribute("data-preload")).toBe("viewport");
 });
 
 test("hides entirely when demo login is disabled", async () => {
@@ -100,18 +97,18 @@ test("closes when the route changes", async () => {
   });
 });
 
-test("page shortcut links also preload", async () => {
+test("page shortcut links point at dashboard, login, and preview", async () => {
   mocks.pathname = "/";
   mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
   await openDevBar();
 
-  for (const name of ["Dashboard", "Login", "Preview"]) {
-    expect(
-      screen.getByRole("menuitem", { name: new RegExp(name, "i") }).getAttribute("data-preload"),
-    ).toBe("viewport");
-  }
+  expect(screen.getByRole("menuitem", { name: /dashboard/i }).getAttribute("href")).toBe(
+    "/dashboard",
+  );
+  expect(screen.getByRole("menuitem", { name: /login/i }).getAttribute("href")).toBe("/auth/login");
+  expect(screen.getByRole("menuitem", { name: /preview/i }).getAttribute("href")).toBe("/preview");
 });
 
 test("marks the current baby when opened on a baby page", async () => {

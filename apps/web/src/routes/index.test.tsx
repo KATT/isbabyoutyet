@@ -20,7 +20,6 @@ vi.mock("@tanstack/react-router", () => ({
     search: unknown;
     children: React.ReactNode;
     className: string | undefined;
-    preload: string | undefined;
   }) => {
     const href = props.params?.publicId
       ? `/baby/${props.params.publicId}`

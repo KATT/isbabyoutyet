@@ -338,7 +338,7 @@ export function HomePage() {
               <Button
                 size="sm"
                 className="rounded-full font-bold"
-                render={<Link to="/dashboard" preload="viewport" />}
+                render={<Link to="/dashboard" />}
                 nativeButton={false}
               >
                 {t("Dashboard")}
@@ -349,7 +349,7 @@ export function HomePage() {
                   size="sm"
                   variant="outline"
                   className="rounded-full font-bold border-2"
-                  render={<Link to="/auth/login" preload="viewport" />}
+                  render={<Link to="/auth/login" />}
                   nativeButton={false}
                 >
                   {t("Sign in")}
@@ -357,7 +357,7 @@ export function HomePage() {
                 <Button
                   size="sm"
                   className="rounded-full font-bold"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
                 >
                   {t("Get started")}
@@ -393,7 +393,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/dashboard" preload="viewport" />}
+                  render={<Link to="/dashboard" />}
                   nativeButton={false}
                 >
                   {t("Go to Dashboard")}
@@ -403,7 +403,7 @@ export function HomePage() {
                   <Button
                     size="lg"
                     className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                    render={<Link to="/auth/signup" preload="viewport" />}
+                    render={<Link to="/auth/signup" />}
                     nativeButton={false}
                   >
                     {t("Create your page 🎈")}
@@ -412,7 +412,7 @@ export function HomePage() {
                     size="lg"
                     variant="outline"
                     className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                    render={<Link to="/auth/login" preload="viewport" />}
+                    render={<Link to="/auth/login" />}
                     nativeButton={false}
                   >
                     {t("Sign in")}
@@ -424,13 +424,7 @@ export function HomePage() {
               size="lg"
               variant="secondary"
               className="h-auto rounded-full border-2 border-primary/30 bg-primary/10 px-6 py-3 text-sm font-extrabold text-primary pop-shadow hover:bg-primary/20 hover:text-primary"
-              render={
-                <Link
-                  to="/baby/$publicId"
-                  params={{ publicId: demoBaby.publicId }}
-                  preload="viewport"
-                />
-              }
+              render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
               nativeButton={false}
             >
               {t("See a live page")} 👀
@@ -507,13 +501,7 @@ export function HomePage() {
           </p>
           <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {previewStages.map((stage) => (
-              <Link
-                key={stage.title}
-                to="/preview"
-                search={stage.search}
-                preload="viewport"
-                className="group"
-              >
+              <Link key={stage.title} to="/preview" search={stage.search} className="group">
                 <div
                   className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
                 >
@@ -576,7 +564,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/dashboard" preload="viewport" />}
+                  render={<Link to="/dashboard" />}
                   nativeButton={false}
                 >
                   {t("Go to Dashboard")}
@@ -585,7 +573,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
                 >
                   {t("Get Started Free 🎉")}
