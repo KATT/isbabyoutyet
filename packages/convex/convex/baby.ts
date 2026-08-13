@@ -23,6 +23,7 @@ import {
 import { isActive, softDeletePatch } from "./softDelete";
 import { requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
+import { isHomepageDemoPublicId } from "../src/seedCredentials";
 
 export const listByUser = query({
   args: {},
@@ -189,6 +190,11 @@ async function isPublicIdTaken(opts: {
   publicId: string;
   excludeUserId: string;
 }): Promise<boolean> {
+  // Reserved for the seeded homepage live demos — never let a real user claim them.
+  if (isHomepageDemoPublicId(opts.publicId)) {
+    return true;
+  }
+
   // Check current baby publicIds
   const existingBaby = await opts.db
     .query("baby")
