@@ -410,6 +410,7 @@ test("text updates never displace the current page photo; pinning brings back an
 });
 
 test("backfill migrations preserve announce-time order and are idempotent", async () => {
+  await using _timers = useFakeTimersResource();
   const { t, babyId, asAlice } = await setup();
   const thumbnail = await storeBlob(t);
   const photo = await storeBlob(t);
@@ -473,6 +474,7 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
   // Simulate the deploy window where dual-writes go live BEFORE the backfill
   // runs: one milestone row already exists; the backfill must still fill in
   // the other milestone and the photo (per-item idempotency, not per-baby)
+  vi.advanceTimersByTime(1_000);
   await asAlice.mutation(api.baby.update, {
     babyId,
     wentToHospital: wentToHospitalAt.toISOString(),
