@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**"],
+  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**", "**/paraglide/**"],
   "workspaces": {
     ".": {},
     "apps/web": {

@@ -92,17 +92,17 @@ export const Route = createRootRouteWithContext<{
       links: [
         {
           rel: "stylesheet",
-        href: nunitoCss,
-      },
-      {
-        rel: "stylesheet",
+          href: nunitoCss,
+        },
+        {
+          rel: "stylesheet",
           href: appCss,
         },
         {
-        rel: "stylesheet",
-        href: typeCss,
-      },
-      {
+          rel: "stylesheet",
+          href: typeCss,
+        },
+        {
           rel: "apple-touch-icon",
           href: "/apple-touch-icon.png",
         },
@@ -163,13 +163,13 @@ function RootComponent() {
       >
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
-        <TooltipProvider>
-          <LocaleProvider locale={locale}>
-            <RootDocument locale={locale}>
-              <Outlet />
-            </RootDocument>
-          </LocaleProvider>
-        </TooltipProvider>
+          <TooltipProvider>
+            <LocaleProvider locale={locale}>
+              <RootDocument locale={locale}>
+                <Outlet />
+              </RootDocument>
+            </LocaleProvider>
+          </TooltipProvider>
         </IconContext.Provider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>

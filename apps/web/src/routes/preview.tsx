@@ -131,17 +131,17 @@ function PreviewPage() {
               </span>
               <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
             </Link>
-          <BabyNav
-            shareLink={null}
-            settingsButton={{
-              to: "/preview",
-              search: {
-                ...search,
-                settings: search.settings ? undefined : true,
-              },
-            }}
-            settingsOpen={!!search.settings}
-          />
+            <BabyNav
+              shareLink={null}
+              settingsButton={{
+                to: "/preview",
+                search: {
+                  ...search,
+                  settings: search.settings ? undefined : true,
+                },
+              }}
+              settingsOpen={!!search.settings}
+            />
           </div>
         </header>
 
@@ -153,8 +153,8 @@ function PreviewPage() {
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
             <StatusDisplay baby={baby} currentStatus={currentStatus} latestUpdate={latestUpdate} />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
-                <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-        </section>
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
         </main>
 
         <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">

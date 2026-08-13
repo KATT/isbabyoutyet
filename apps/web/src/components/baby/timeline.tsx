@@ -72,33 +72,35 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
 function createComposerSchema(t: TranslationFunction) {
-  return z
-    .object({
-      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-      milestone: z.union([
-        z.literal("none"),
-        z.literal("labor_started"),
-        z.literal("gone_to_hospital"),
-        z.literal("born"),
-      ]),
-      occurredAt: z.string(),
-      photo: z.custom<File>().nullable(),
-    })
-    .refine(
-      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-      { error: t("Add a message, a photo, or a milestone to post") },
-    )
-    // Empty = "now". A partially typed/garbled value must block posting.
-    .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        draft.occurredAt === "" ||
-        !Number.isNaN(Date.parse(draft.occurredAt)),
-      {
-        error: t("Pick a valid time — or leave it blank for now"),
-        path: ["occurredAt"],
-      },
-    );
+  return (
+    z
+      .object({
+        message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+        milestone: z.union([
+          z.literal("none"),
+          z.literal("labor_started"),
+          z.literal("gone_to_hospital"),
+          z.literal("born"),
+        ]),
+        occurredAt: z.string(),
+        photo: z.custom<File>().nullable(),
+      })
+      .refine(
+        (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+        { error: t("Add a message, a photo, or a milestone to post") },
+      )
+      // Empty = "now". A partially typed/garbled value must block posting.
+      .refine(
+        (draft) =>
+          draft.milestone === "none" ||
+          draft.occurredAt === "" ||
+          !Number.isNaN(Date.parse(draft.occurredAt)),
+        {
+          error: t("Pick a valid time — or leave it blank for now"),
+          path: ["occurredAt"],
+        },
+      )
+  );
 }
 
 const MILESTONE_META = {
@@ -406,7 +408,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {t("Optional — leave blank for now. You can change the time later in settings.")}
+                    {t(
+                      "Optional — leave blank for now. You can change the time later in settings.",
+                    )}
                   </p>
                 </div>
               )}
@@ -508,132 +512,132 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         {bubbleEmoji}
       </span>
       <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-primary/20 bg-primary/5 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-foreground truncate">
-              {t("{{name}}'s family", { name: props.babyName })}
-            </span>
-            {milestoneMeta ? (
-              <Badge
-                className="shrink-0"
-                title={
-                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
-                }
-              >
-                <MilestoneIcon className="w-3 h-3" />
-                {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
-                {update.occurredAt != null && (
-                  <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt, locale)}
-                  </span>
-                )}
-              </Badge>
-            ) : update.photoUrl ? (
-              <Badge variant="secondary" className="shrink-0">
-                <Camera className="w-3 h-3" />
-                {t("New photo")}
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="shrink-0">
-                {t("Update")}
-              </Badge>
-            )}
-            {update.isCurrentPagePhoto && (
-              <Badge variant="outline" className="shrink-0">
-                <PushPin className="w-3 h-3" />
-                {t("Page photo")}
-              </Badge>
-            )}
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={t("Posted {{date}}", {
-                date: new Date(props.item.postedAt).toLocaleString(locale),
-              })}
-            >
-              {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
-            </span>
-          </div>
-
-          {update.message && (
-            <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-              <Streamdown>{update.message}</Streamdown>
-            </div>
-          )}
-
-          {update.photoUrl && (
-            <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
-          )}
-        </div>
-
-        {props.isOwner && (
-          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
-            {canPinPhoto && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label={t("Set as page photo")}
-                title={t("Set as page photo")}
-                onClick={() => props.onSetAsCurrentPhoto(update._id)}
-              >
-                <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </Button>
-            )}
-            {deleteBlocker ? (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <span
-                      className="inline-flex"
-                      aria-label={t("Delete the {{status}} status first", {
-                        status: MILESTONE_LABELS[deleteBlocker],
-                      })}
-                    />
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="font-medium text-foreground truncate">
+                {t("{{name}}'s family", { name: props.babyName })}
+              </span>
+              {milestoneMeta ? (
+                <Badge
+                  className="shrink-0"
+                  title={
+                    update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
                   }
                 >
-                  {deleteButton}
-                </TooltipTrigger>
-                <TooltipContent>
-                  {t("Delete the {{status}} status first", {
-                    status: MILESTONE_LABELS[deleteBlocker],
-                  })}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <AlertDialog>
-                <AlertDialogTrigger render={deleteButton} />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t("Delete update?")}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {update.milestone
-                        ? t("This also unmarks the milestone on the status card.")
-                        : t("This removes the update from the timeline.")}{" "}
-                      {update.photoUrl
-                        ? t(
-                            "If this photo is the current page photo, the previous one takes its place.",
-                          )
-                        : ""}{" "}
-                      {t("This action cannot be undone.")}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => props.onDelete(update._id)}
-                    >
-                      {t("Delete")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  <MilestoneIcon className="w-3 h-3" />
+                  {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
+                  {update.occurredAt != null && (
+                    <span className="font-normal opacity-90">
+                      · {formatOccurredAtLocal(update.occurredAt, locale)}
+                    </span>
+                  )}
+                </Badge>
+              ) : update.photoUrl ? (
+                <Badge variant="secondary" className="shrink-0">
+                  <Camera className="w-3 h-3" />
+                  {t("New photo")}
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="shrink-0">
+                  {t("Update")}
+                </Badge>
+              )}
+              {update.isCurrentPagePhoto && (
+                <Badge variant="outline" className="shrink-0">
+                  <PushPin className="w-3 h-3" />
+                  {t("Page photo")}
+                </Badge>
+              )}
+              <span
+                className="text-xs text-muted-foreground shrink-0"
+                title={t("Posted {{date}}", {
+                  date: new Date(props.item.postedAt).toLocaleString(locale),
+                })}
+              >
+                {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
+              </span>
+            </div>
+
+            {update.message && (
+              <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
+                <Streamdown>{update.message}</Streamdown>
+              </div>
+            )}
+
+            {update.photoUrl && (
+              <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
             )}
           </div>
-        )}
+
+          {props.isOwner && (
+            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+              {canPinPhoto && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label={t("Set as page photo")}
+                  title={t("Set as page photo")}
+                  onClick={() => props.onSetAsCurrentPhoto(update._id)}
+                >
+                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              )}
+              {deleteBlocker ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span
+                        className="inline-flex"
+                        aria-label={t("Delete the {{status}} status first", {
+                          status: MILESTONE_LABELS[deleteBlocker],
+                        })}
+                      />
+                    }
+                  >
+                    {deleteButton}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {t("Delete the {{status}} status first", {
+                      status: MILESTONE_LABELS[deleteBlocker],
+                    })}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger render={deleteButton} />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t("Delete update?")}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {update.milestone
+                          ? t("This also unmarks the milestone on the status card.")
+                          : t("This removes the update from the timeline.")}{" "}
+                        {update.photoUrl
+                          ? t(
+                              "If this photo is the current page photo, the previous one takes its place.",
+                            )
+                          : ""}{" "}
+                        {t("This action cannot be undone.")}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => props.onDelete(update._id)}
+                      >
+                        {t("Delete")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
@@ -779,94 +783,94 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         {initial}
       </span>
       <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-border/70 bg-muted/30 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
               <span className="font-medium text-foreground truncate">
                 {encouragement.authorName}
               </span>
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={new Date(encouragement.createdAt).toLocaleString(locale)}
-            >
-              {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
-            </span>
-            {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
+              <span
+                className="text-xs text-muted-foreground shrink-0"
+                title={new Date(encouragement.createdAt).toLocaleString(locale)}
+              >
+                {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
+              </span>
+              {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
+            </div>
+
+            {isEditing ? (
+              <EncouragementEditForm
+                initialMessage={encouragement.message}
+                onSave={async (message) => {
+                  await props.onUpdate(encouragement._id, props.currentVisitorId, message);
+                  setIsEditing(false);
+                }}
+                onCancel={() => setIsEditing(false)}
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
+                <Streamdown>{encouragement.message}</Streamdown>
+              </div>
+            )}
           </div>
 
-          {isEditing ? (
-            <EncouragementEditForm
-              initialMessage={encouragement.message}
-              onSave={async (message) => {
-                await props.onUpdate(encouragement._id, props.currentVisitorId, message);
-                setIsEditing(false);
-              }}
-              onCancel={() => setIsEditing(false)}
-            />
-          ) : (
-            <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-              <Streamdown>{encouragement.message}</Streamdown>
+          {!isEditing && (canEdit || canDelete) && (
+            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label={t("Edit encouragement")}
+                  onClick={() => setIsEditing(true)}
+                >
+                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              )}
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={t("Delete encouragement")}
+                      >
+                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    }
+                  />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t(
+                          "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
+                          { name: encouragement.authorName },
+                        )}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() =>
+                          props.onDelete(
+                            encouragement._id,
+                            canEdit ? props.currentVisitorId : undefined,
+                          )
+                        }
+                      >
+                        {t("Delete")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           )}
         </div>
-
-        {!isEditing && (canEdit || canDelete) && (
-          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label={t("Edit encouragement")}
-                onClick={() => setIsEditing(true)}
-              >
-                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </Button>
-            )}
-            {canDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      aria-label={t("Delete encouragement")}
-                    >
-                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  }
-                />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {t(
-                        "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
-                        { name: encouragement.authorName },
-                      )}
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() =>
-                        props.onDelete(
-                          encouragement._id,
-                          canEdit ? props.currentVisitorId : undefined,
-                        )
-                      }
-                    >
-                      {t("Delete")}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-        )}
       </div>
-    </div>
     </div>
   );
 }
@@ -984,7 +988,9 @@ export function TimelineFeed(props: TimelineFeedProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
+          <h3 className="text-lg font-extrabold text-foreground">
+            {t("Updates & encouragements")}
+          </h3>
         </div>
         <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
           <p className="text-3xl" aria-hidden="true">
