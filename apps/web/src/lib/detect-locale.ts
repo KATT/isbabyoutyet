@@ -21,6 +21,7 @@ export function resolveAcceptLanguage(acceptLanguage: string | null): SupportedL
 }
 
 export function detectLocaleFromRequestHeaders(
+  _serverContext?: unknown,
   readHeader: (name: string) => string | undefined = getRequestHeader,
 ) {
   return resolveAcceptLanguage(readHeader("accept-language") ?? null);
