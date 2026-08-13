@@ -3,7 +3,7 @@ import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { resolveAcceptLanguage } from "./accept-language";
 
 export function detectLocaleFromRequestHeaders(
-  _serverContext?: unknown,
+  _serverContext: unknown = undefined,
   readHeader: (name: string) => string | undefined = getRequestHeader,
   readCookie: (name: string) => string | undefined = getCookie,
 ) {

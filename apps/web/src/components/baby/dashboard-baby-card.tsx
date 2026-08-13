@@ -9,11 +9,12 @@ type DashboardBabyCardBaby = {
   name: string;
   publicId: string;
   dueDate: string;
-  laborStarted?: string | null;
-  wentToHospital?: string | null;
-  babyBorn?: string | null;
-  role?: "owner" | "coParent";
-};
+  role: "owner" | "coParent";
+} & Partial<{
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+}>;
 
 type DashboardBabyCardProps = {
   baby: DashboardBabyCardBaby;

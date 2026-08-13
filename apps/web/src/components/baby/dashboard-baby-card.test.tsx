@@ -4,7 +4,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: ComponentProps<"a"> & { to?: string }) => (
+  Link: (props: ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
   ),
 }));
@@ -34,6 +34,7 @@ const alma: DashboardBabyCardBaby = {
   laborStarted: "2026-01-10T12:00:00.000Z",
   wentToHospital: "2026-01-10T18:00:00.000Z",
   babyBorn: "2026-01-11T04:14:00.000Z",
+  role: "owner",
 };
 
 test("a born baby with a past due date shows born, not overdue", async () => {
@@ -56,6 +57,7 @@ test("an unborn baby past the due date still shows overdue", async () => {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
+    role: "owner",
   };
   await using view = renderResource(<DashboardBabyCard baby={waiting} index={0} />);
 
@@ -73,6 +75,7 @@ test("labour in progress beats a past due date", async () => {
     laborStarted: "2026-08-13T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: null,
+    role: "owner",
   };
   await using view = renderResource(<DashboardBabyCard baby={inLabor} index={0} />);
 

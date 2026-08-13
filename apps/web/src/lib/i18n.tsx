@@ -434,7 +434,7 @@ type TranslationVariables<TKey extends TranslationKey> = {
 };
 
 type TranslationArguments<TKey extends TranslationKey> = [PlaceholderNames<TKey>] extends [never]
-  ? [variables?: never]
+  ? []
   : [variables: TranslationVariables<TKey>];
 
 export type TranslationFunction = <TKey extends TranslationKey>(

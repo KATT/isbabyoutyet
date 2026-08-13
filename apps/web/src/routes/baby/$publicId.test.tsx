@@ -49,7 +49,13 @@ function BabyDetailPage(props: { baby: Doc<"baby"> }) {
   return (
     <div>
       <h1>Is {baby.name} out yet?</h1>
-      <StatusDisplay baby={baby} currentStatus={currentStatus} />
+      <StatusDisplay
+        baby={baby}
+        currentStatus={currentStatus}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
+      />
     </div>
   );
 }
@@ -105,7 +111,13 @@ test("renders the public baby status in the baby's Swedish override", async () =
 
   await using view = renderResource(
     <LocaleProvider locale="sv">
-      <StatusDisplay baby={baby} currentStatus={getCurrentStatus(baby)} />
+      <StatusDisplay
+        baby={baby}
+        currentStatus={getCurrentStatus(baby)}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
+      />
     </LocaleProvider>,
   );
 
@@ -126,7 +138,13 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
 
   await using view = renderResource(
     <LocaleProvider locale="pt-BR">
-      <StatusDisplay baby={baby} currentStatus={getCurrentStatus(baby)} />
+      <StatusDisplay
+        baby={baby}
+        currentStatus={getCurrentStatus(baby)}
+        photoUrl={null}
+        thumbnailUrl={null}
+        latestUpdate={null}
+      />
     </LocaleProvider>,
   );
 

@@ -1,6 +1,12 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**", "**/paraglide/**"],
+  "ignore": [
+    "**/_generated/**",
+    "**/routeTree.gen.ts",
+    "coverage/**",
+    "**/paraglide/**",
+    "oxlint-plugins/**"
+  ],
   "workspaces": {
     ".": {},
     "apps/web": {

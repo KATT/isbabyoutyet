@@ -14,12 +14,12 @@ vi.mock("@/lib/auth-client", () => ({
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (opts: { component: () => ReactElement }) => opts,
   Link: (props: {
-    to?: string;
-    params?: { publicId?: string };
-    search?: unknown;
-    children?: React.ReactNode;
-    className?: string;
-    preload?: string;
+    to: string | undefined;
+    params: { publicId: string | undefined } | undefined;
+    search: unknown;
+    children: React.ReactNode;
+    className: string | undefined;
+    preload: string | undefined;
   }) => {
     const href = props.params?.publicId
       ? `/baby/${props.params.publicId}`
