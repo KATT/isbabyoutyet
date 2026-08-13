@@ -26,7 +26,7 @@ import type { DataModel } from "./dataModel.js";
  */
 type Env = {
   readonly BETTER_AUTH_SECRET: string | undefined;
-  readonly CONVEX_SITE_URL: string;
+  readonly CONVEX_SITE_URL: string | undefined;
   readonly NODE_ENV: string | undefined;
   readonly SITE_URL: string | undefined;
   readonly VAPID_PRIVATE_KEY: string | undefined;
