@@ -15,19 +15,20 @@ import {
 } from "@workspace/ui/components/dialog";
 import { useEffect, useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { WELCOME_SLIDES } from "./steps";
+import type { WelcomeSlide } from "./steps";
 
 type WelcomeTourDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onFinished: () => void;
+  slides: ReadonlyArray<WelcomeSlide>;
 };
 
 export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
   const { t } = useI18n();
   const [api, setApi] = useState<CarouselApi>();
   const [index, setIndex] = useState(0);
-  const isLast = index >= WELCOME_SLIDES.length - 1;
+  const isLast = index >= props.slides.length - 1;
 
   useEffect(() => {
     if (!api) return;
@@ -64,7 +65,7 @@ export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
 
         <Carousel setApi={setApi} className="w-full" opts={{ loop: false }}>
           <CarouselContent>
-            {WELCOME_SLIDES.map((slide) => {
+            {props.slides.map((slide) => {
               const Icon = slide.icon;
               return (
                 <CarouselItem key={slide.title}>
@@ -88,7 +89,7 @@ export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
         </Carousel>
 
         <div className="flex items-center justify-center gap-1.5 px-6 py-3">
-          {WELCOME_SLIDES.map((slide, i) => (
+          {props.slides.map((slide, i) => (
             <button
               key={slide.title}
               type="button"

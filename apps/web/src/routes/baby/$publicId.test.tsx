@@ -4,7 +4,7 @@ import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
@@ -22,7 +22,9 @@ function useFakeTimersResource(now: Date) {
 /**
  * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+type PublicBabyDocument = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
+
+function docToBabyData(doc: PublicBabyDocument): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -42,7 +44,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
  * Happy-path stand-in for the baby detail page: heading + status from
  * data loaded via convex-test (in-memory local Convex).
  */
-function BabyDetailPage(props: { baby: Doc<"baby"> }) {
+function BabyDetailPage(props: { baby: PublicBabyDocument }) {
   const baby = docToBabyData(props.baby);
   const currentStatus = getCurrentStatus(baby);
 

@@ -38,7 +38,7 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
   const statuses = docs.map((baby) => getCurrentStatus(baby).type).sort();
   expect(statuses).toEqual(["born", "gone_to_hospital", "labor_started", "not_yet"]);
 
-  const born = docs.find((baby) => baby.publicId === "baby-born");
+  const born = docs.find((baby) => baby.publicId === "demo-baby-born");
   expect(born?.laborStarted).toBeTruthy();
   expect(born?.wentToHospital).toBeTruthy();
   expect(born?.babyBorn).toBeTruthy();

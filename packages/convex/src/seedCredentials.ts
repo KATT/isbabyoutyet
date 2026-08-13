@@ -19,25 +19,29 @@ export const DEMO_USER = {
 export const DEMO_BABIES = [
   {
     name: "Baby Waiting",
-    publicId: "baby-waiting",
+    publicId: "demo-baby-waiting",
+    sourceKey: "preview:baby-waiting",
     state: "not_yet",
     label: "Not yet",
   },
   {
     name: "Baby In Labor",
-    publicId: "baby-in-labor",
+    publicId: "demo-baby-in-labor",
+    sourceKey: "preview:baby-in-labor",
     state: "labor_started",
     label: "Labour started",
   },
   {
     name: "Baby At Hospital",
-    publicId: "baby-at-hospital",
+    publicId: "demo-baby-at-hospital",
+    sourceKey: "preview:baby-at-hospital",
     state: "gone_to_hospital",
     label: "Gone to hospital",
   },
   {
     name: "Baby Born",
-    publicId: "baby-born",
+    publicId: "demo-baby-born",
+    sourceKey: "preview:baby-born",
     state: "born",
     label: "Born",
   },
@@ -51,14 +55,39 @@ export const HOMEPAGE_DEMO_THEME = "sunny-days";
  * appear on a real dashboard. Re-seeded on every deploy.
  */
 export const HOMEPAGE_DEMO_BABIES = {
-  "en-GB": { locale: "en-GB", name: "Juniper Hale", publicId: "juniper-hale" },
-  "en-US": { locale: "en-US", name: "Willow Brooks", publicId: "willow-brooks" },
-  sv: { locale: "sv", name: "Ella Holm", publicId: "ella-holm" },
-  es: { locale: "es", name: "Lucía Navarro", publicId: "lucia-navarro" },
-  "pt-BR": { locale: "pt-BR", name: "Helena Costa", publicId: "helena-costa" },
+  "en-GB": {
+    locale: "en-GB",
+    name: "Juniper Hale",
+    publicId: "demo-juniper-hale",
+    sourceKey: "homepage:en-GB",
+  },
+  "en-US": {
+    locale: "en-US",
+    name: "Willow Brooks",
+    publicId: "demo-willow-brooks",
+    sourceKey: "homepage:en-US",
+  },
+  sv: {
+    locale: "sv",
+    name: "Ella Holm",
+    publicId: "demo-ella-holm",
+    sourceKey: "homepage:sv",
+  },
+  es: {
+    locale: "es",
+    name: "Lucía Navarro",
+    publicId: "demo-lucia-navarro",
+    sourceKey: "homepage:es",
+  },
+  "pt-BR": {
+    locale: "pt-BR",
+    name: "Helena Costa",
+    publicId: "demo-helena-costa",
+    sourceKey: "homepage:pt-BR",
+  },
 } as const satisfies Record<
   SupportedLocale,
-  { locale: SupportedLocale; name: string; publicId: string }
+  { locale: SupportedLocale; name: string; publicId: string; sourceKey: string }
 >;
 
 /** Default / English homepage demo (British English). */

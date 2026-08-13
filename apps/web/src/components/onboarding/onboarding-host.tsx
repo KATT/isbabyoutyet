@@ -6,7 +6,7 @@ import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
 import { WelcomeTourDialog } from "./welcome-tour";
 import { Coachmark } from "./coachmark";
-import { ONBOARDING_STEPS } from "./steps";
+import { ONBOARDING_STEPS, WELCOME_SLIDES } from "./steps";
 
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
@@ -129,6 +129,7 @@ export function OnboardingHost(props: OnboardingHostProps) {
       <WelcomeTourDialog
         open={welcomeOpen}
         onOpenChange={setWelcomeOpen}
+        slides={WELCOME_SLIDES}
         onFinished={() => {
           void dismissWelcome({});
         }}

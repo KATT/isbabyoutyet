@@ -2,6 +2,21 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
 
+const demoBabyValidator = v.union(
+  // Kept during the boolean-to-union migration deploy.
+  v.literal(true),
+  v.object({
+    kind: v.literal("source"),
+    sourceKey: v.string(),
+  }),
+  v.object({
+    kind: v.literal("playground"),
+    sourceBabyId: v.id("baby"),
+    visitorId: v.string(),
+    expiresAt: v.number(),
+  }),
+);
+
 export default defineSchema({
   baby: defineTable({
     userId: v.string(), // Better-auth user ID
@@ -19,13 +34,16 @@ export default defineSchema({
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
-    // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
-    demo: v.optional(v.boolean()),
+    // Seeded read-only sources and their per-visitor, four-day playground copies.
+    demo: v.optional(demoBabyValidator),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_user", ["userId"])
-    .index("by_publicId", ["publicId"]),
+    .index("by_publicId", ["publicId"])
+    .index("by_demo_sourceKey", ["demo.sourceKey"])
+    .index("by_demo_visitorId_and_sourceBabyId", ["demo.visitorId", "demo.sourceBabyId"])
+    .index("by_demo_expiresAt", ["demo.expiresAt"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
     locale: supportedLocaleValidator,

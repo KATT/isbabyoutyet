@@ -94,3 +94,26 @@ export const WELCOME_SLIDES = [
     icon: Heart,
   },
 ] as const satisfies ReadonlyArray<WelcomeSlide>;
+
+export const DEMO_WELCOME_SLIDES = [
+  {
+    title: "Welcome to the demo playground",
+    body: "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.",
+    icon: Baby,
+  },
+  {
+    title: "Your own safe copy",
+    body: "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.",
+    icon: GearSix,
+  },
+  {
+    title: "It disappears automatically",
+    body: "Your playground and its copied messages are removed four days after your last change.",
+    icon: Heart,
+  },
+  {
+    title: "Make it real when you're ready",
+    body: "Create a free account to make a permanent baby page you can share with family and friends.",
+    icon: ShareNetwork,
+  },
+] as const satisfies ReadonlyArray<WelcomeSlide>;

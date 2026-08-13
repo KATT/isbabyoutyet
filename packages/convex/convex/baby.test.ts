@@ -123,7 +123,7 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   expect(byOldPublicId).toMatchObject({ _id: created.babyId, name: "Final Name" });
 });
 
-test("homepage demo publicIds are reserved and never assigned to real babies", async () => {
+test("demo sources do not reserve normal baby-name publicIds", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
@@ -131,7 +131,7 @@ test("homepage demo publicIds are reserved and never assigned to real babies", a
     name: "Juniper Hale",
     dueDate: "2026-09-01",
   });
-  expect(created.publicId).toBe("juniper-hale-1");
+  expect(created.publicId).toBe("juniper-hale");
 });
 
 test("moving the status forward schedules a push notification", async () => {

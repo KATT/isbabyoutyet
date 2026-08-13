@@ -46,17 +46,24 @@ function storageIdsToKeep(photos: DemoPhotos) {
 }
 
 /**
- * Only wipe/patch babies that are explicitly marked demo, or the pre-flag
- * Juniper-hale row owned by the sentinel homepage-demo userId.
+ * Only wipe/patch explicit demo sources, or the pre-marker Juniper row owned
+ * by the sentinel homepage-demo userId.
  */
 function isManagedHomepageDemo(baby: Doc<"baby">) {
-  if (baby.demo === true) return true;
+  if (
+    baby.demo === true ||
+    (typeof baby.demo === "object" &&
+      baby.demo.kind === "source" &&
+      baby.demo.sourceKey.startsWith("homepage:"))
+  ) {
+    return true;
+  }
   return baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID && isHomepageDemoPublicId(baby.publicId);
 }
 
 function refuseNonDemo(publicId: string) {
   return new Error(
-    `Refusing to overwrite non-demo baby "${publicId}". Homepage seed only touches babies with demo: true.`,
+    `Refusing to overwrite non-demo baby "${publicId}". Homepage seed only touches demo sources.`,
   );
 }
 
@@ -67,25 +74,46 @@ async function findBabyByPublicId(ctx: MutationCtx, publicId: string) {
     .unique();
 }
 
+async function findBabyBySourceKey(ctx: MutationCtx, sourceKey: string) {
+  return await ctx.db
+    .query("baby")
+    .withIndex("by_demo_sourceKey", (q) => q.eq("demo.sourceKey", sourceKey))
+    .unique();
+}
+
 async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
   const baby = await ctx.db.get(babyId);
   if (!baby || !isManagedHomepageDemo(baby)) {
-    throw new Error(
-      `Refusing to modify baby ${babyId}: not a managed homepage demo (demo: true required).`,
-    );
+    throw new Error(`Refusing to modify baby ${babyId}: not a managed homepage demo source.`);
   }
   return baby;
 }
 
 async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLocale) {
   const demo = HOMEPAGE_DEMO_BABIES[locale];
-  const existing = await findBabyByPublicId(ctx, demo.publicId);
+  const bySourceKey = await findBabyBySourceKey(ctx, demo.sourceKey);
+  const byPublicId = bySourceKey ? null : await findBabyByPublicId(ctx, demo.publicId);
+  const legacyCandidates =
+    bySourceKey || byPublicId
+      ? []
+      : await ctx.db
+          .query("baby")
+          .withIndex("by_user", (q) => q.eq("userId", HOMEPAGE_DEMO_OWNER_USER_ID))
+          .take(20);
+  const existing =
+    bySourceKey ??
+    byPublicId ??
+    legacyCandidates.find(
+      (baby) =>
+        (baby.demo === true || baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID) &&
+        (baby.locale === locale || baby.name === demo.name),
+    );
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale,
-    demo: true as const,
+    demo: { kind: "source" as const, sourceKey: demo.sourceKey },
     encouragementsDisabled: false,
     dueDate: dueDateIso(now),
   };
@@ -318,8 +346,8 @@ export const insertFeed = internalMutation({
  * notifications. Call once per locale from the seed script so each baby stays
  * under mutation limits.
  *
- * Never touches a baby that is not marked `demo: true` (except grandfathering
- * the existing sentinel-owned homepage demo publicIds).
+ * Never touches a baby that is not marked as a demo source (except
+ * grandfathering the existing sentinel-owned homepage demo pages).
  */
 export const refresh = internalMutation({
   args: {

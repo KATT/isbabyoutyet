@@ -13,6 +13,8 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { HOMEPAGE_DEMO_BABIES } from "../src/seedCredentials";
+import { SUPPORTED_LOCALES } from "../src/i18n";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -391,6 +393,28 @@ export const backfillUpdatePostedByUserId = migrations.define({
   migrateOne: backfillUpdatePostedByUserIdDoc,
 });
 
+/**
+ * Replaces the old `demo: true` marker with the discriminated demo-source
+ * value and moves those disposable pages into the demo route namespace.
+ */
+export async function migrateDemoSourceKindDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.demo !== true) return;
+  const locale = SUPPORTED_LOCALES.find(
+    (candidate) => baby.locale === candidate || baby.name === HOMEPAGE_DEMO_BABIES[candidate].name,
+  );
+  if (!locale) return;
+  const source = HOMEPAGE_DEMO_BABIES[locale];
+  await ctx.db.patch(baby._id, {
+    publicId: source.publicId,
+    demo: { kind: "source", sourceKey: source.sourceKey },
+  });
+}
+
+export const migrateDemoSourceKind = migrations.define({
+  table: "baby",
+  migrateOne: migrateDemoSourceKindDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -398,6 +422,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
+  internal.migrations.migrateDemoSourceKind,
 ]);
 
 // Run all pending migrations - called automatically during deployment.

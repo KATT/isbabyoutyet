@@ -21,6 +21,18 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     .collect();
 
   if (existingBabies.length > 0) {
+    for (const baby of existingBabies) {
+      const spec = DEMO_BABIES.find(
+        (candidate) =>
+          candidate.publicId === baby.publicId ||
+          candidate.sourceKey === `preview:${baby.publicId}`,
+      );
+      if (!spec) continue;
+      await ctx.db.patch(baby._id, {
+        publicId: spec.publicId,
+        demo: { kind: "source", sourceKey: spec.sourceKey },
+      });
+    }
     return {
       success: true,
       message: "Seed data already exists",
@@ -111,7 +123,7 @@ type SeedBabySpec = (typeof DEMO_BABIES)[number] & SeedBabyExtras;
 
 /** Fixture details keyed by publicId — identity fields come from DEMO_BABIES. */
 const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBabyExtras> = {
-  "baby-waiting": {
+  "demo-baby-waiting": {
     dueDateOffsetDays: 14,
     encouragements: [
       {
@@ -126,7 +138,7 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
     ],
   },
-  "baby-in-labor": {
+  "demo-baby-in-labor": {
     dueDateOffsetDays: 3,
     laborStartedMessage: "It's happening! Bags are packed and we're timing contractions.",
     hoursAgo: { laborStarted: 2 },
@@ -143,7 +155,7 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
     ],
   },
-  "baby-at-hospital": {
+  "demo-baby-at-hospital": {
     dueDateOffsetDays: 1,
     laborStartedMessage: "Contractions got serious — heading in!",
     hospitalMessage: "Checked in and settling into the delivery room.",
@@ -156,7 +168,7 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
     ],
   },
-  "baby-born": {
+  "demo-baby-born": {
     dueDateOffsetDays: -2,
     laborStartedMessage: "Here we go!",
     hospitalMessage: "At the hospital and ready.",
@@ -216,6 +228,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBorn,
       theme: null,
       encouragementsDisabled: false,
+      demo: { kind: "source", sourceKey: spec.sourceKey },
     });
 
     await seedMilestoneUpdates(ctx, {

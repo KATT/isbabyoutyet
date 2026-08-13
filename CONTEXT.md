@@ -30,6 +30,16 @@ _Avoid_: Post (except as a verb), status update
 A message a visitor leaves on a baby page.
 _Avoid_: Comment, well-wish
 
+**Demo source**:
+A seeded, read-only baby page that visitors can explore and use as the starting
+point for a playground baby.
+_Avoid_: Demo baby (ambiguous), template
+
+**Playground baby**:
+An editable, temporary copy of a demo source, owned by one browser visitor and
+automatically removed after its trial period.
+_Avoid_: Demo baby (ambiguous), clone
+
 **Soft delete**:
 Marking a record deleted while keeping it recoverable, instead of removing it
 from the database.

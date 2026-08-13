@@ -23,7 +23,6 @@ import {
 import { isActive, softDeletePatch } from "./softDelete";
 import { requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
-import { isHomepageDemoPublicId } from "../src/seedCredentials";
 
 export const listByUser = query({
   args: {},
@@ -75,9 +74,18 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
+    const demo =
+      typeof baby.demo === "object" && baby.demo.kind === "playground"
+        ? {
+            kind: "playground" as const,
+            sourceBabyId: baby.demo.sourceBabyId,
+            expiresAt: baby.demo.expiresAt,
+          }
+        : baby.demo;
 
     return {
       ...baby,
+      demo,
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
@@ -190,11 +198,6 @@ async function isPublicIdTaken(opts: {
   publicId: string;
   excludeUserId: string;
 }): Promise<boolean> {
-  // Reserved for the seeded homepage live demos — never let a real user claim them.
-  if (isHomepageDemoPublicId(opts.publicId)) {
-    return true;
-  }
-
   // Check current baby publicIds
   const existingBaby = await opts.db
     .query("baby")

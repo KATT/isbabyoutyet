@@ -1,12 +1,12 @@
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
-import { EncouragementForm } from "@/components/baby/encouragements";
+import { EncouragementForm, getVisitorId } from "@/components/baby/encouragements";
 import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
-import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
+import { DemoExperience } from "@/components/baby/demo-experience";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
@@ -28,7 +28,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { z } from "zod";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -181,7 +181,9 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+type PublicBabyDocument = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
+
+function docToBabyData(doc: PublicBabyDocument): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -212,13 +214,26 @@ function BabyPage() {
   const baby = docToBabyData(babyDoc);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const updateDemoSettings = useMutation(api.demoBabies.updateSettings);
   const removeBaby = useMutation(api.baby.remove);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
+  const [visitorId, setVisitorId] = useState<string | null>(null);
+  const [demoAccessNow] = useState(() => Date.now());
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
   const profile = useQuery(api.profile.get, {});
   const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
+  const demoAccess = useQuery(
+    api.demoBabies.access,
+    visitorId
+      ? {
+          babyId: babyDoc._id,
+          visitorId,
+          now: demoAccessNow,
+        }
+      : "skip",
+  );
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
     latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
@@ -227,6 +242,12 @@ function BabyPage() {
   // while the query loads so owners don't flash without controls.
   const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
   const canManage = myAccess?.canManage ?? isOwner;
+  const canEditDemo = !sessionResult.data?.user && demoAccess?.canEdit === true;
+  const canOpenSettings = canManage || canEditDemo;
+  const demoSourceBabyId =
+    typeof babyDoc.demo === "object" && babyDoc.demo.kind === "playground"
+      ? babyDoc.demo.sourceBabyId
+      : babyDoc._id;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -234,12 +255,14 @@ function BabyPage() {
     void claimInvites({});
   }, [sessionResult.data?.user, claimInvites]);
 
+  useEffect(() => {
+    setVisitorId(getVisitorId());
+  }, []);
+
   const currentStatus = getCurrentStatus(baby);
 
   return (
     <div className="min-h-screen bg-background bg-dots">
-      <HomepageDemoToast publicId={babyDoc.publicId} />
-
       {canManage && (
         <OnboardingHost
           surface="baby"
@@ -264,16 +287,32 @@ function BabyPage() {
         />
       )}
 
-      {canManage && (
+      {canOpenSettings && (
         <>
           <SettingsPanel
             baby={baby}
             profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
-              await updateBaby({
-                babyId: babyDoc._id,
-                ...update,
-              });
+              if (canManage) {
+                await updateBaby({
+                  babyId: babyDoc._id,
+                  ...update,
+                });
+              } else if (visitorId) {
+                const result = await updateDemoSettings({
+                  babyId: babyDoc._id,
+                  visitorId,
+                  update,
+                });
+                if (result.publicId !== babyDoc.publicId) {
+                  await navigate({
+                    to: "/baby/$publicId",
+                    params: { publicId: result.publicId },
+                    search,
+                    replace: true,
+                  });
+                }
+              }
               await router.invalidate();
             }}
             onDelete={
@@ -284,7 +323,7 @@ function BabyPage() {
                   }
                 : null
             }
-            coParents={{ babyId: babyDoc._id, isOwner }}
+            coParents={canManage ? { babyId: babyDoc._id, isOwner } : null}
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -296,21 +335,25 @@ function BabyPage() {
               });
             }}
           />
-          <ScheduledNotificationToast babyId={babyDoc._id} />
-          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-              <UpdateComposer
-                babyId={babyDoc._id}
-                baby={baby}
-                babyName={baby.name}
-                onPosted={() => {
-                  setComposerOpen(false);
-                  void completeOnboardingStep({ stepId: "post_update" });
-                }}
-              />
-            </DialogContent>
-          </Dialog>
+          {canManage && (
+            <>
+              <ScheduledNotificationToast babyId={babyDoc._id} />
+              <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+                <DialogContent className="sm:max-w-lg">
+                  <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
+                  <UpdateComposer
+                    babyId={babyDoc._id}
+                    baby={baby}
+                    babyName={baby.name}
+                    onPosted={() => {
+                      setComposerOpen(false);
+                      void completeOnboardingStep({ stepId: "post_update" });
+                    }}
+                  />
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
         </>
       )}
 
@@ -338,7 +381,7 @@ function BabyPage() {
             }
             onPostUpdate={canManage ? () => setComposerOpen(true) : null}
             settingsButton={
-              canManage
+              canOpenSettings
                 ? {
                     to: "/baby/$publicId",
                     params: { publicId: params.publicId },
@@ -362,6 +405,21 @@ function BabyPage() {
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-16">
+        {canEditDemo && demoAccess?.kind !== "none" && (
+          <DemoExperience
+            kind={demoAccess.kind}
+            sourceBabyId={demoSourceBabyId}
+            onOpenSettings={() => {
+              void navigate({
+                search: {
+                  ...search,
+                  settings: true,
+                },
+                replace: true,
+              });
+            }}
+          />
+        )}
         <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
           {t("Is {{name}} out yet?", { name: baby.name })}
         </h1>

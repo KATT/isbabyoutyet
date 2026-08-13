@@ -28,15 +28,15 @@ Login: `test@example.com` / `password`
 
 | Status | Preview |
 | --- | --- |
-| Live demo (en-GB, Juniper Hale) | [{preview}/baby/juniper-hale]({preview}/baby/juniper-hale) |
-| Live demo (en-US, Willow Brooks) | [{preview}/baby/willow-brooks]({preview}/baby/willow-brooks) |
-| Live demo (sv, Ella Holm) | [{preview}/baby/ella-holm]({preview}/baby/ella-holm) |
-| Live demo (es, Lucía Navarro) | [{preview}/baby/lucia-navarro]({preview}/baby/lucia-navarro) |
-| Live demo (pt-BR, Helena Costa) | [{preview}/baby/helena-costa]({preview}/baby/helena-costa) |
-| Not yet | [{preview}/baby/baby-waiting]({preview}/baby/baby-waiting) |
-| Labour started | [{preview}/baby/baby-in-labor]({preview}/baby/baby-in-labor) |
-| Gone to hospital | [{preview}/baby/baby-at-hospital]({preview}/baby/baby-at-hospital) |
-| Born | [{preview}/baby/baby-born]({preview}/baby/baby-born) |
+| Live demo (en-GB, Juniper Hale) | [{preview}/baby/demo-juniper-hale]({preview}/baby/demo-juniper-hale) |
+| Live demo (en-US, Willow Brooks) | [{preview}/baby/demo-willow-brooks]({preview}/baby/demo-willow-brooks) |
+| Live demo (sv, Ella Holm) | [{preview}/baby/demo-ella-holm]({preview}/baby/demo-ella-holm) |
+| Live demo (es, Lucía Navarro) | [{preview}/baby/demo-lucia-navarro]({preview}/baby/demo-lucia-navarro) |
+| Live demo (pt-BR, Helena Costa) | [{preview}/baby/demo-helena-costa]({preview}/baby/demo-helena-costa) |
+| Not yet | [{preview}/baby/demo-baby-waiting]({preview}/baby/demo-baby-waiting) |
+| Labour started | [{preview}/baby/demo-baby-in-labor]({preview}/baby/demo-baby-in-labor) |
+| Gone to hospital | [{preview}/baby/demo-baby-at-hospital]({preview}/baby/demo-baby-at-hospital) |
+| Born | [{preview}/baby/demo-baby-born]({preview}/baby/demo-baby-born) |
 ```
 
 If the preview is not up yet, still include the section and note that links
@@ -48,8 +48,8 @@ Locally the same seed is at `http://localhost:3000` after
 signup forms autofill the demo credentials in local DEV and on Vercel preview
 builds (`VITE_HAS_DEMO_LOGIN`).
 
-The homepage live demos (`/baby/juniper-hale`, `/baby/willow-brooks`,
-`/baby/ella-holm`, `/baby/lucia-navarro`, `/baby/helena-costa`) are also seeded
+The homepage live demos (`/baby/demo-juniper-hale`, `/baby/demo-willow-brooks`,
+`/baby/demo-ella-holm`, `/baby/demo-lucia-navarro`, `/baby/demo-helena-costa`) are also seeded
 in production. Each production deploy refreshes their dates and wipes visitor
 comments. The homepage “See a live page” link follows the visitor’s locale.
 

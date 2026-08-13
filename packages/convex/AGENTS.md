@@ -16,8 +16,8 @@ Convex agent skills for common tasks can be installed by running
 
 Preview and local backends share `seed:seedDemoData` (login + babies in every
 status) plus `homepageDemo:refresh` once per locale (the public live-demo pages
-linked from the homepage). Those babies are stored with `demo: true`; the
-refresh mutation refuses to wipe any baby missing that flag (except grandfathering
+linked from the homepage). Those babies are stored as `demo.kind: "source"`; the
+refresh mutation refuses to wipe any baby missing that marker (except grandfathering
 the existing sentinel-owned Juniper Hale row). Production deploys refresh every
 locale demo on each build: dates shift to now and visitor comments are wiped.
 When opening PRs, follow the root

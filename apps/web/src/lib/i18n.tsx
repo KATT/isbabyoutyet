@@ -475,6 +475,26 @@ const enGB = {
   "Let's go": "Let's go",
   Next: "Next",
   "Go Home": "Go Home",
+  "Welcome to the demo playground": "Welcome to the demo playground",
+  "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.":
+    "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.",
+  "Your own safe copy": "Your own safe copy",
+  "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.":
+    "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.",
+  "It disappears automatically": "It disappears automatically",
+  "Your playground and its copied messages are removed four days after your last change.":
+    "Your playground and its copied messages are removed four days after your last change.",
+  "Make it real when you're ready": "Make it real when you're ready",
+  "Create a free account to make a permanent baby page you can share with family and friends.":
+    "Create a free account to make a permanent baby page you can share with family and friends.",
+  "This is a demo source": "This is a demo source",
+  "This is your demo playground": "This is your demo playground",
+  "Change any setting to make a four-day playground copy for this browser.":
+    "Change any setting to make a four-day playground copy for this browser.",
+  "Only this browser can edit it, and it is removed four days after your last change.":
+    "Only this browser can edit it, and it is removed four days after your last change.",
+  "Try settings": "Try settings",
+  "Create your own": "Create your own",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -957,6 +977,26 @@ const sv: Record<TranslationKey, string> = {
   "Let's go": "Nu kör vi",
   Next: "Nästa",
   "Go Home": "Gå hem",
+  "Welcome to the demo playground": "Välkommen till demolekplatsen",
+  "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.":
+    "Utforska samma sidkontroller som en förälder använder, inklusive teman, datum, namn och inställningar för uppmuntran.",
+  "Your own safe copy": "Din egen säkra kopia",
+  "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.":
+    "Den första inställningen du ändrar skapar en privat lekkopia för den här webbläsaren. Den ursprungliga demon förblir oförändrad.",
+  "It disappears automatically": "Den försvinner automatiskt",
+  "Your playground and its copied messages are removed four days after your last change.":
+    "Din lekplats och dess kopierade meddelanden tas bort fyra dagar efter din senaste ändring.",
+  "Make it real when you're ready": "Gör det på riktigt när du är redo",
+  "Create a free account to make a permanent baby page you can share with family and friends.":
+    "Skapa ett gratis konto för att göra en permanent bebissida som du kan dela med familj och vänner.",
+  "This is a demo source": "Det här är en demokälla",
+  "This is your demo playground": "Det här är din demolekplats",
+  "Change any setting to make a four-day playground copy for this browser.":
+    "Ändra en inställning för att skapa en lekkopia i fyra dagar för den här webbläsaren.",
+  "Only this browser can edit it, and it is removed four days after your last change.":
+    "Bara den här webbläsaren kan redigera den, och den tas bort fyra dagar efter din senaste ändring.",
+  "Try settings": "Prova inställningar",
+  "Create your own": "Skapa din egen",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -1423,6 +1463,26 @@ const es: Record<TranslationKey, string> = {
   "Let's go": "Vamos",
   Next: "Siguiente",
   "Go Home": "Ir al inicio",
+  "Welcome to the demo playground": "Te damos la bienvenida al espacio de prueba",
+  "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.":
+    "Explora los mismos controles que usa una familia, incluidos temas, fechas, nombres y ajustes de mensajes.",
+  "Your own safe copy": "Tu propia copia segura",
+  "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.":
+    "El primer ajuste que cambies crea una copia privada de prueba para este navegador. La demo original no cambia.",
+  "It disappears automatically": "Desaparece automáticamente",
+  "Your playground and its copied messages are removed four days after your last change.":
+    "Tu espacio de prueba y sus mensajes copiados se eliminan cuatro días después del último cambio.",
+  "Make it real when you're ready": "Hazlo real cuando quieras",
+  "Create a free account to make a permanent baby page you can share with family and friends.":
+    "Crea una cuenta gratuita para tener una página permanente que puedas compartir con familia y amigos.",
+  "This is a demo source": "Esta es una demo original",
+  "This is your demo playground": "Este es tu espacio de prueba",
+  "Change any setting to make a four-day playground copy for this browser.":
+    "Cambia cualquier ajuste para crear una copia de prueba durante cuatro días en este navegador.",
+  "Only this browser can edit it, and it is removed four days after your last change.":
+    "Solo este navegador puede editarla y se elimina cuatro días después del último cambio.",
+  "Try settings": "Probar ajustes",
+  "Create your own": "Crear la tuya",
 };
 
 const ptBR: Record<TranslationKey, string> = {
@@ -1892,6 +1952,26 @@ const ptBR: Record<TranslationKey, string> = {
   "Let's go": "Vamos lá",
   Next: "Próximo",
   "Go Home": "Ir para o início",
+  "Welcome to the demo playground": "Boas-vindas ao espaço de demonstração",
+  "Explore the same page controls a parent uses, including themes, dates, names, and encouragement settings.":
+    "Explore os mesmos controles que uma família usa, incluindo temas, datas, nomes e configurações de incentivos.",
+  "Your own safe copy": "Sua própria cópia segura",
+  "The first setting you change creates a private playground copy for this browser. The seeded demo stays unchanged.":
+    "A primeira configuração alterada cria uma cópia privada para este navegador. A demonstração original não muda.",
+  "It disappears automatically": "Ela desaparece automaticamente",
+  "Your playground and its copied messages are removed four days after your last change.":
+    "Seu espaço e as mensagens copiadas são removidos quatro dias após a última alteração.",
+  "Make it real when you're ready": "Torne real quando quiser",
+  "Create a free account to make a permanent baby page you can share with family and friends.":
+    "Crie uma conta gratuita para ter uma página permanente que você pode compartilhar com família e amigos.",
+  "This is a demo source": "Esta é uma demonstração original",
+  "This is your demo playground": "Este é seu espaço de demonstração",
+  "Change any setting to make a four-day playground copy for this browser.":
+    "Altere qualquer configuração para criar uma cópia por quatro dias neste navegador.",
+  "Only this browser can edit it, and it is removed four days after your last change.":
+    "Somente este navegador pode editar, e a página é removida quatro dias após a última alteração.",
+  "Try settings": "Testar configurações",
+  "Create your own": "Criar a sua",
 };
 
 const enUS: Partial<Record<TranslationKey, string>> = {

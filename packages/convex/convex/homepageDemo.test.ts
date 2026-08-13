@@ -67,7 +67,7 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
     userId: HOMEPAGE_DEMO_BABY.ownerUserId,
     theme: HOMEPAGE_DEMO_BABY.theme,
     locale: "en-GB",
-    demo: true,
+    demo: { kind: "source", sourceKey: HOMEPAGE_DEMO_BABY.sourceKey },
   });
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 
@@ -205,10 +205,10 @@ test("refresh({ locale: 'sv' }) creates Ella Holm with Swedish copy", async () =
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABIES.sv.publicId });
   expect(baby).toMatchObject({
     name: HOMEPAGE_DEMO_BABIES.sv.name,
-    publicId: "ella-holm",
+    publicId: HOMEPAGE_DEMO_BABIES.sv.publicId,
     locale: "sv",
     resolvedLocale: "sv",
-    demo: true,
+    demo: { kind: "source", sourceKey: HOMEPAGE_DEMO_BABIES.sv.sourceKey },
   });
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 
@@ -262,11 +262,15 @@ test("each locale gets its own baby with the same feed shape and shared photos",
     expect(feed.page).toHaveLength(HOMEPAGE_DEMO_FEED_SLOTS.length);
   }
 
-  const juniper = await t.query(api.baby.getByPublicId, { id: "juniper-hale" });
-  const ella = await t.query(api.baby.getByPublicId, { id: "ella-holm" });
+  const juniper = await t.query(api.baby.getByPublicId, {
+    id: HOMEPAGE_DEMO_BABIES["en-GB"].publicId,
+  });
+  const ella = await t.query(api.baby.getByPublicId, {
+    id: HOMEPAGE_DEMO_BABIES.sv.publicId,
+  });
   expect(juniper?._id).not.toBe(ella?._id);
-  expect(juniper?.demo).toBe(true);
-  expect(ella?.demo).toBe(true);
+  expect(juniper?.demo).toMatchObject({ kind: "source" });
+  expect(ella?.demo).toMatchObject({ kind: "source" });
 });
 
 test("refresh refuses to hijack a real baby that shares a demo publicId", async () => {
@@ -292,7 +296,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   expect(realBaby).toMatchObject({
     userId: "alice",
     name: "Real Willow",
-    publicId: "willow-brooks",
+    publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
   });
   expect(realBaby?.demo).not.toBe(true);
 
@@ -307,7 +311,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   expect(timelineCount).toBe(0);
 });
 
-test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: true", async () => {
+test("refresh moves a legacy sentinel-owned Juniper row into the demo namespace", async () => {
   const t = await setup();
 
   const legacyId = await t.run(async (ctx) => {
@@ -315,7 +319,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       userId: HOMEPAGE_DEMO_BABY.ownerUserId,
       name: "Juniper Hale",
       dueDate: "2026-01-01",
-      publicId: HOMEPAGE_DEMO_BABY.publicId,
+      publicId: "juniper-hale",
       theme: HOMEPAGE_DEMO_BABY.theme,
       laborStarted: null,
       wentToHospital: null,
@@ -327,7 +331,10 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
   expect(result.babyId).toBe(legacyId);
 
   const baby = await t.query(api.baby.getByPublicId, { id: HOMEPAGE_DEMO_BABY.publicId });
-  expect(baby?.demo).toBe(true);
+  expect(baby?.demo).toMatchObject({
+    kind: "source",
+    sourceKey: HOMEPAGE_DEMO_BABY.sourceKey,
+  });
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 });
 

@@ -13,6 +13,8 @@ import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as coParents from "../coParents.js";
+import type * as crons from "../crons.js";
+import type * as demoBabies from "../demoBabies.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
@@ -28,11 +30,7 @@ import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
@@ -40,6 +38,8 @@ declare const fullApi: ApiFromModules<{
   babyAccess: typeof babyAccess;
   babyThumbnails: typeof babyThumbnails;
   coParents: typeof coParents;
+  crons: typeof crons;
+  demoBabies: typeof demoBabies;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;
@@ -64,10 +64,7 @@ declare const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
->;
+export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.
@@ -77,10 +74,7 @@ export declare const api: FilterApi<
  * const myFunctionReference = internal.myModule.myFunction;
  * ```
  */
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
->;
+export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;
