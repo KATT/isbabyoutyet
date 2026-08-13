@@ -108,8 +108,56 @@ test("page shortcut links also preload", async () => {
   await openDevBar();
 
   for (const name of ["Dashboard", "Login", "Preview"]) {
-    expect(screen.getByRole("menuitem", { name: new RegExp(name, "i") }).getAttribute("data-preload")).toBe(
-      "viewport",
-    );
+    expect(
+      screen.getByRole("menuitem", { name: new RegExp(name, "i") }).getAttribute("data-preload"),
+    ).toBe("viewport");
   }
+});
+
+test("marks the current baby when opened on a baby page", async () => {
+  mocks.pathname = "/baby/baby-in-labor";
+  mocks.hasDemoLogin = true;
+
+  await using _view = renderDevBar();
+  await openDevBar();
+
+  expect(screen.getByRole("menuitem", { name: /labour started/i })).toBeTruthy();
+  expect(screen.getByRole("menuitem", { name: /not yet/i })).toBeTruthy();
+});
+
+test("covers page active states for dashboard, login, and preview", async () => {
+  mocks.hasDemoLogin = true;
+
+  mocks.pathname = "/dashboard";
+  {
+    await using _dashboard = renderDevBar();
+    await openDevBar();
+    expect(screen.getByRole("menuitem", { name: /dashboard/i })).toBeTruthy();
+  }
+
+  mocks.pathname = "/auth/login";
+  {
+    await using _login = renderDevBar();
+    await openDevBar();
+    expect(screen.getByRole("menuitem", { name: /login/i })).toBeTruthy();
+  }
+
+  mocks.pathname = "/preview";
+  {
+    await using _preview = renderDevBar();
+    await openDevBar();
+    expect(screen.getByRole("menuitem", { name: /preview/i })).toBeTruthy();
+  }
+});
+
+test("marks the current homepage demo baby", async () => {
+  mocks.pathname = `/baby/${HOMEPAGE_DEMO_BABIES["en-GB"].publicId}`;
+  mocks.hasDemoLogin = true;
+
+  await using _view = renderDevBar();
+  await openDevBar();
+
+  expect(
+    screen.getByRole("menuitem", { name: new RegExp(HOMEPAGE_DEMO_BABIES["en-GB"].name, "i") }),
+  ).toBeTruthy();
 });

@@ -190,7 +190,12 @@ function NotFoundComponent() {
         <p className="text-muted-foreground font-medium">
           {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
-        <Button size="lg" className="rounded-full" render={<Link to="/" preload="viewport" />} nativeButton={false}>
+        <Button
+          size="lg"
+          className="rounded-full"
+          render={<Link to="/" preload="viewport" />}
+          nativeButton={false}
+        >
           {t("Go Home")}
         </Button>
       </div>
