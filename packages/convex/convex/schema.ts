@@ -88,6 +88,10 @@ export default defineSchema({
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_babyId", ["babyId"])
+    .index("by_babyId_and_createdAt", {
+      fields: ["babyId", "createdAt"],
+      staged: true,
+    })
     .index("by_timelineItemId", ["timelineItemId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
