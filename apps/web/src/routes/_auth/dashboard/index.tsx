@@ -44,7 +44,7 @@ function DashboardPage() {
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
               <BabyIcon className="h-4 w-4 text-primary" />
-              </span>
+            </span>
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
@@ -103,17 +103,17 @@ function DashboardPage() {
             </p>
             <h3 className="mt-4 text-2xl font-black text-foreground">No babies added yet</h3>
             <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
-                Get started by adding your first baby to track their journey
-              </p>
-              <Button
-                size="lg"
+              Get started by adding your first baby to track their journey
+            </p>
+            <Button
+              size="lg"
               className="mt-6 rounded-full font-extrabold pop-shadow"
-                render={<Link to="/dashboard/add" preload="viewport" />}
-                nativeButton={false}
-              >
+              render={<Link to="/dashboard/add" preload="viewport" />}
+              nativeButton={false}
+            >
               <Plus className="w-4 h-4" />
-                Add Your First Baby
-              </Button>
+              Add Your First Baby
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
