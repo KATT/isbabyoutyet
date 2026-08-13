@@ -46,7 +46,7 @@ export const DEMO_BABIES = [
  */
 export const HOMEPAGE_DEMO_BABY = {
   name: "Juniper Hale",
-  publicId: "juniper",
+  publicId: "juniper-hale",
   ownerUserId: "homepage-demo",
   theme: "sunny-days",
 } as const;

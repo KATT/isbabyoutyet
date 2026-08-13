@@ -28,7 +28,7 @@ Login: `test@example.com` / `password`
 
 | Status | Preview |
 | --- | --- |
-| Live demo (Juniper Hale) | [{preview}/baby/juniper]({preview}/baby/juniper) |
+| Live demo (Juniper Hale) | [{preview}/baby/juniper-hale]({preview}/baby/juniper-hale) |
 | Not yet | [{preview}/baby/baby-waiting]({preview}/baby/baby-waiting) |
 | Labour started | [{preview}/baby/baby-in-labor]({preview}/baby/baby-in-labor) |
 | Gone to hospital | [{preview}/baby/baby-at-hospital]({preview}/baby/baby-at-hospital) |
@@ -44,7 +44,7 @@ Locally the same seed is at `http://localhost:3000` after
 signup forms autofill the demo credentials in local DEV and on Vercel preview
 builds (`VITE_HAS_DEMO_LOGIN`).
 
-The homepage live demo (`/baby/juniper`) is also seeded in production. Each
+The homepage live demo (`/baby/juniper-hale`) is also seeded in production. Each
 production deploy refreshes its dates and wipes visitor comments.
 
 ## Convex
