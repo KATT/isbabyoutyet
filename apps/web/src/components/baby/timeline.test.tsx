@@ -11,7 +11,9 @@ import { LocaleProvider } from "@/lib/i18n";
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
-const mocks = vi.hoisted(() => ({ mutate: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  mutate: vi.fn<(args: unknown) => Promise<string>>(),
+}));
 vi.mock("convex/react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("convex/react")>()),
   useMutation: () => mocks.mutate,

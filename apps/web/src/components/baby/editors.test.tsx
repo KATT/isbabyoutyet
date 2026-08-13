@@ -1,8 +1,9 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { NameEditor } from "@/components/baby/editors";
+import { DueDateEditor, NameEditor } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { BabyData } from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { LocaleProvider } from "@/lib/i18n";
 
 const baby: BabyData = {
   name: "Nova",
@@ -20,7 +21,7 @@ function renderResource(ui: React.ReactElement) {
 }
 
 test("name editor mounts fresh on open: current name, reassurance note, trimmed save", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
@@ -44,7 +45,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 });
 
 test("reopening the editor picks up the latest name without any reset", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   // Open, type a draft, then cancel — the draft must not survive
@@ -60,4 +61,16 @@ test("reopening the editor picks up the latest name without any reset", async ()
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
+});
+
+test("due date editor localizes its accessible label", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <LocaleProvider locale="pt-BR">
+      <DueDateEditor baby={baby} onUpdate={onUpdate} />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Editar" }));
+  expect(view.getByLabelText("Data prevista")).toBeTruthy();
 });
