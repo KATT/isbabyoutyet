@@ -79,6 +79,24 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
       body: "Se ha añadido una foto nueva. ¡Échale un vistazo!",
     },
   },
+  "pt-BR": {
+    labor_started: {
+      title: (name) => `${name} – O trabalho de parto começou!`,
+      body: "O trabalho de parto começou. Confira as novidades!",
+    },
+    gone_to_hospital: {
+      title: (name) => `${name} está a caminho do hospital!`,
+      body: "A família está indo para o hospital. Confira as novidades!",
+    },
+    born: {
+      title: (name) => `${name} chegou! 🎉`,
+      body: "O bebê nasceu! Confira as novidades!",
+    },
+    photo_added: {
+      title: (name) => `${name} – Foto nova! 📸`,
+      body: "Uma foto nova foi adicionada. Venha conferir!",
+    },
+  },
 };
 
 export function getPushMessage(

@@ -7,6 +7,8 @@ import { detectLocaleFromRequestHeaders } from "./locale-request-handler";
 test.each([
   ["sv-SE,sv;q=0.9,en;q=0.7", "sv"],
   ["es-MX,es;q=0.9", "es"],
+  ["pt-BR,pt;q=0.9", "pt-BR"],
+  ["pt-PT,pt;q=0.9", "pt-BR"],
   ["en-US,en;q=0.9", "en-US"],
   ["en-AU,en;q=0.9", "en-GB"],
   ["fr-FR,es;q=0.8", "es"],

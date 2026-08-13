@@ -1,4 +1,4 @@
-export const SUPPORTED_LOCALES = ["en-GB", "en-US", "sv", "es"] as const;
+export const SUPPORTED_LOCALES = ["en-GB", "en-US", "sv", "es", "pt-BR"] as const;
 
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
@@ -29,6 +29,9 @@ export function resolveSupportedLocale(locale: string | null | undefined): Suppo
   }
   if (normalized === "es" || normalized.startsWith("es-")) {
     return "es";
+  }
+  if (normalized === "pt" || normalized.startsWith("pt-")) {
+    return "pt-BR";
   }
   return DEFAULT_LOCALE;
 }

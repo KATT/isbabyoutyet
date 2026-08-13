@@ -29,6 +29,9 @@ test("a profile defaults from the browser and persists an explicit locale", asyn
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
   expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "es" });
+
+  await asAlice.mutation(api.profile.updateLocale, { locale: "pt-BR" });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "pt-BR" });
 });
 
 test("unsupported browser locales fall back while language requests are stored", async () => {
