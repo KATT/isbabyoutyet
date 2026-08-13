@@ -20,6 +20,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -34,9 +35,6 @@ function signupSchema(t: TranslationFunction) {
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
 });
-
-// Build-time flag: preview deploys set VITE_HAS_DEMO_LOGIN via deploy-convex.
-const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function SignupPage() {
   const { t } = useI18n();
@@ -62,6 +60,7 @@ function SignupPage() {
       <div className="w-full max-w-md">
         <Link
           to="/"
+          preload="viewport"
           className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">

@@ -28,6 +28,7 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
+import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 
 export const Route = createRootRouteWithContext<{
@@ -189,7 +190,12 @@ function NotFoundComponent() {
         <p className="text-muted-foreground font-medium">
           {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
-        <Button size="lg" className="rounded-full" render={<Link to="/" />} nativeButton={false}>
+        <Button
+          size="lg"
+          className="rounded-full"
+          render={<Link to="/" preload="viewport" />}
+          nativeButton={false}
+        >
           {t("Go Home")}
         </Button>
       </div>
@@ -205,6 +211,7 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       </head>
       <body>
         {props.children}
+        <DevBar />
         <Toaster />
         <Analytics />
         <TanStackDevtools

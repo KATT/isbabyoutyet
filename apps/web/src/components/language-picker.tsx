@@ -1,6 +1,6 @@
 import { Translate } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
+import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { getLanguageName } from "@/lib/i18n";
+import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
 
 type LanguagePickerProps = {
   disabled: boolean;
@@ -18,12 +19,18 @@ type LanguagePickerProps = {
   value: SupportedLocale;
 };
 
+const languageOptions = SUPPORTED_LOCALES.map((locale) => ({
+  label: getLanguageName(locale),
+  value: locale,
+}));
+
 export function LanguagePicker(props: LanguagePickerProps) {
   return (
     <Select
+      items={languageOptions}
       value={props.value}
       onValueChange={(value) => {
-        if (!value || !isSupportedLocale(value) || value === props.value) {
+        if (!shouldApplyLocaleChange(value, props.value)) {
           return;
         }
         void props.onValueChange(value);
@@ -36,9 +43,9 @@ export function LanguagePicker(props: LanguagePickerProps) {
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false}>
         <SelectGroup>
-          {SUPPORTED_LOCALES.map((supportedLocale) => (
-            <SelectItem key={supportedLocale} value={supportedLocale}>
-              {getLanguageName(supportedLocale, props.value)}
+          {languageOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectGroup>
