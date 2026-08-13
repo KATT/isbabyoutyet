@@ -350,6 +350,7 @@ const enGB = {
   "Failed to send encouragement": "Failed to send encouragement",
   "Shared with you": "Shared with you",
   "Due {{date}}": "Due {{date}}",
+  "Born {{date}}": "Born {{date}}",
   Your: "Your",
   babies: "babies",
   "Add a": "Add a",
@@ -376,6 +377,17 @@ const enGB = {
   "See it in action": "See it in action",
   "Click any stage to see how your page will look":
     "Click any stage to see how your page will look",
+  "See a live page": "See a live page",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}'s page is a live demo — leave a note, look around, try it out",
+  "Follow {{name}}'s arrival": "Follow {{name}}'s arrival",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
+  "Open the live page →": "Open the live page →",
+  "Or preview how each stage looks": "Or preview how each stage looks",
+  "This is a demo baby": "This is a demo baby",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Feel free to post test messages — they get cleared on each deploy.",
   "How it works": "How it works",
   "Get Started Free 🎉": "Get Started Free 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -765,6 +777,7 @@ const sv: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Kunde inte skicka hälsningen",
   "Shared with you": "Delad med dig",
   "Due {{date}}": "Beräknad {{date}}",
+  "Born {{date}}": "Född {{date}}",
   Your: "Dina",
   babies: "bebisar",
   "Add a": "Lägg till en",
@@ -791,6 +804,17 @@ const sv: Record<TranslationKey, string> = {
   "See it in action": "Se hur det fungerar",
   "Click any stage to see how your page will look":
     "Klicka på ett steg för att se hur din sida kommer att se ut",
+  "See a live page": "Se en livesida",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}s sida är en livedemo — lämna en hälsning, titta runt, testa",
+  "Follow {{name}}'s arrival": "Följ {{name}}s ankomst",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "En livedemo med en tvådagars förlossning, foton och meddelanden. Skicka en testhälsning — det här är hela upplevelsen.",
+  "Open the live page →": "Öppna livesidan →",
+  "Or preview how each stage looks": "Eller förhandsgranska hur varje steg ser ut",
+  "This is a demo baby": "Detta är en demobebis",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Skriv gärna testmeddelanden — de rensas vid varje deploy.",
   "How it works": "Så fungerar det",
   "Get Started Free 🎉": "Kom igång gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1164,6 +1188,7 @@ const es: Record<TranslationKey, string> = {
   "Failed to send encouragement": "No se pudo enviar el mensaje de ánimo",
   "Shared with you": "Compartida contigo",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nació el {{date}}",
   Your: "Tus",
   babies: "bebés",
   "Add a": "Añadir un",
@@ -1190,6 +1215,17 @@ const es: Record<TranslationKey, string> = {
   "See it in action": "Míralo en acción",
   "Click any stage to see how your page will look":
     "Haz clic en cualquier etapa para ver cómo se verá tu página",
+  "See a live page": "Ver una página en vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "La página de {{name}} es una demo en vivo — deja una nota, explora, pruébala",
+  "Follow {{name}}'s arrival": "Sigue la llegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Una demo en vivo con un parto de dos días, fotos y mensajes. Envía un mensaje de prueba — esta es la experiencia completa.",
+  "Open the live page →": "Abrir la página en vivo →",
+  "Or preview how each stage looks": "O previsualiza cómo se ve cada etapa",
+  "This is a demo baby": "Este es un bebé de demostración",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Puedes dejar mensajes de prueba — se borran en cada deploy.",
   "How it works": "Cómo funciona",
   "Get Started Free 🎉": "Empieza gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1566,6 +1602,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Não foi possível enviar a mensagem de carinho",
   "Shared with you": "Compartilhada com você",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nasceu em {{date}}",
   Your: "Seus",
   babies: "bebês",
   "Add a": "Adicionar um",
@@ -1592,6 +1629,17 @@ const ptBR: Record<TranslationKey, string> = {
   "See it in action": "Veja na prática",
   "Click any stage to see how your page will look":
     "Clique em qualquer etapa para ver como sua página vai ficar",
+  "See a live page": "Ver uma página ao vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "A página de {{name}} é uma demo ao vivo — deixe um recado, explore, experimente",
+  "Follow {{name}}'s arrival": "Acompanhe a chegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Uma demo ao vivo com uma história de parto de dois dias, fotos e mensagens. Envie um carinho de teste — esta é a experiência completa.",
+  "Open the live page →": "Abrir a página ao vivo →",
+  "Or preview how each stage looks": "Ou veja como cada etapa fica",
+  "This is a demo baby": "Este é um bebê de demonstração",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Fique à vontade para enviar mensagens de teste — elas são apagadas a cada deploy.",
   "How it works": "Como funciona",
   "Get Started Free 🎉": "Comece grátis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1635,6 +1683,8 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
     "One tap to update everyone — labor started, at the hospital, baby's here! No group texts, no repeated calls.",
   "Before labour starts": "Before labor starts",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labor story, photos, and messages. Send a test encouragement — this is the full experience.",
 };
 
 const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {

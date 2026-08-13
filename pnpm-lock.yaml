@@ -277,6 +277,9 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.78.0
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
