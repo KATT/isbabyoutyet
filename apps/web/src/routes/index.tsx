@@ -3,6 +3,7 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
+import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -135,7 +136,7 @@ const HOW_IT_WORKS = [
   description: TranslationKey;
 }>;
 
-function HomePage() {
+export function HomePage() {
   const { t } = useI18n();
   const sessionData = authClient.useSession();
 
@@ -256,37 +257,54 @@ function HomePage() {
               'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼',
             )}
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {sessionData.data ? (
-              <Button
-                size="lg"
-                className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                render={<Link to="/dashboard" preload="viewport" />}
-                nativeButton={false}
-              >
-                {t("Go to Dashboard")}
-              </Button>
-            ) : (
-              <>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
+              {sessionData.data ? (
                 <Button
                   size="lg"
                   className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/dashboard" preload="viewport" />}
                   nativeButton={false}
                 >
-                  {t("Create your page 🎈")}
+                  {t("Go to Dashboard")}
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                  render={<Link to="/auth/login" preload="viewport" />}
-                  nativeButton={false}
-                >
-                  {t("Sign in")}
-                </Button>
-              </>
-            )}
+              ) : (
+                <>
+                  <Button
+                    size="lg"
+                    className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
+                    render={<Link to="/auth/signup" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    {t("Create your page 🎈")}
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
+                    render={<Link to="/auth/login" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    {t("Sign in")}
+                  </Button>
+                </>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="rounded-full font-bold text-muted-foreground"
+              render={
+                <Link
+                  to="/baby/$publicId"
+                  params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+                  preload="viewport"
+                />
+              }
+              nativeButton={false}
+            >
+              {t("See a live page")}
+            </Button>
           </div>
         </section>
 
@@ -327,10 +345,37 @@ function HomePage() {
               {t("See it in action")}
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              {t("Click any stage to see how your page will look")}
+              {t("{{name}}'s page is a live demo — leave a note, look around, try it out", {
+                name: HOMEPAGE_DEMO_BABY.name,
+              })}
             </p>
           </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            to="/baby/$publicId"
+            params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+            className="group mt-10 block"
+          >
+            <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/10 p-8 text-center pop-shadow-strong transition-transform group-hover:-translate-y-1 md:p-10">
+              <span className="text-5xl" aria-hidden="true">
+                🍼
+              </span>
+              <h3 className="mt-4 text-2xl font-black text-foreground">
+                {t("Follow {{name}}'s arrival", { name: HOMEPAGE_DEMO_BABY.name })}
+              </h3>
+              <p className="mx-auto mt-2 max-w-lg font-medium text-muted-foreground">
+                {t(
+                  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
+                )}
+              </p>
+              <p className="mt-4 text-sm font-extrabold text-primary">
+                {t("Open the live page →")}
+              </p>
+            </div>
+          </Link>
+          <p className="mt-10 text-center font-semibold text-muted-foreground">
+            {t("Or preview how each stage looks")}
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {previewStages.map((stage) => (
               <Link key={stage.title} to="/preview" search={stage.search} className="group">
                 <div
