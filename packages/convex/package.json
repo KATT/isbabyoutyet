@@ -17,13 +17,15 @@
     "setup-dev:provision": "convex dev --once",
     "setup-dev:env": "convex env set BETTER_AUTH_SECRET localhost && convex env set SITE_URL http://localhost:3000",
     "setup-dev:vapid": "web-push generate-vapid-keys --json | jq -r '\"npx convex env set VAPID_PUBLIC_KEY \" + .publicKey + \"\\nnpx convex env set VAPID_PRIVATE_KEY \" + .privateKey' | sh",
-    "seed": "CONVEX_AGENT_MODE=anonymous convex run seed:seedDemoData",
+    "seed": "CONVEX_AGENT_MODE=anonymous run-s seed:demo-login seed:homepage",
+    "seed:demo-login": "CONVEX_AGENT_MODE=anonymous convex run seed:seedDemoData",
+    "seed:homepage": "CONVEX_AGENT_MODE=anonymous tsx scripts/seedHomepageDemo.ts",
     "test": "vitest run",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
     "format:check": "oxfmt --check",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex && tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@convex-dev/better-auth": "catalog:",
@@ -43,6 +45,7 @@
     "npm-run-all": "^4.1.5",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "tsx": "^4.23.12",
     "typescript": "catalog:",
     "vite": "^8.2.1",
     "vitest": "^4.1.10",

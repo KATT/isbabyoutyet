@@ -10,12 +10,14 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
 type EncouragementFormProps = {
@@ -39,21 +41,37 @@ export function getVisitorId(): string {
 }
 
 // Trim before validating, so whitespace-only input doesn't pass "required"
-const encouragementSchema = z.object({
-  authorName: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(MAX_NAME_LENGTH, `Name must be ${MAX_NAME_LENGTH} characters or less`),
-  message: z.string().trim().min(1, "Message is required"),
-});
+function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
+  return z
+    .object({
+      authorName: z
+        .string()
+        .trim()
+        .min(1, t("Name is required"))
+        .max(
+          MAX_NAME_LENGTH,
+          t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
+        ),
+      message: z.string().trim().min(1, t("Message is required")),
+    })
+    .transform((values): FunctionArgs<typeof api.encouragements.create> => ({
+      babyId,
+      authorName: values.authorName,
+      message: values.message,
+      visitorId: getVisitorId(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }));
+}
 
 export function EncouragementForm(props: EncouragementFormProps) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
+  const schema = useMemo(() => encouragementSchema(t, props.babyId), [t, props.babyId]);
 
   const form = useZodForm({
-    schema: encouragementSchema,
+    schema,
     defaultValues: {
       authorName: "",
       message: "",
@@ -84,19 +102,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
       <Form
         form={form}
         handleSubmit={async (values) => {
-          const authorName = values.authorName.trim();
           // Save name to localStorage for next time
-          localStorage.setItem(STORAGE_KEY_NAME, authorName);
+          localStorage.setItem(STORAGE_KEY_NAME, values.authorName);
 
-          const promise = createEncouragement({
-            babyId: props.babyId,
-            authorName,
-            message: values.message.trim(),
-            visitorId: getVisitorId(),
-            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-            locale: typeof navigator !== "undefined" ? navigator.language : undefined,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          }).then(async (it) => {
+          const promise = createEncouragement(values).then(async (it) => {
             if (import.meta.env.DEV) {
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
@@ -109,7 +118,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
             error: (err) =>
               err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
-          form.reset({ authorName, message: "" });
+          form.reset({ authorName: values.authorName, message: "" });
           await promise;
         }}
       >

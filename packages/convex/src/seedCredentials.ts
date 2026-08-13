@@ -1,6 +1,8 @@
 /**
  * Shared demo login + seeded babies used by the Convex seeder and the web auth forms.
- * Available in local development and Vercel preview deployments — never production.
+ *
+ * DEMO_USER / DEMO_BABIES: local development and Vercel preview only — never production.
+ * HOMEPAGE_DEMO_BABY: seeded in every environment, including production.
  *
  * Keep AGENTS.md in sync when changing publicIds.
  */
@@ -36,3 +38,15 @@ export const DEMO_BABIES = [
     label: "Born",
   },
 ] as const;
+
+/**
+ * Public live-demo baby linked from the homepage. Owned by a sentinel userId
+ * so it never appears on a real dashboard. Re-seeded on every deploy (dates
+ * shifted to "now", visitor comments wiped, fixture feed restored).
+ */
+export const HOMEPAGE_DEMO_BABY = {
+  name: "Juniper Hale",
+  publicId: "juniper-hale",
+  ownerUserId: "homepage-demo",
+  theme: "sunny-days",
+} as const;
