@@ -34,6 +34,12 @@ export const betterAuthModules = import.meta.glob([
   "!../node_modules/@convex-dev/better-auth/dist/component/testProfiles/**",
 ]);
 
+export const migrationsModules = import.meta.glob([
+  "../node_modules/@convex-dev/migrations/dist/component/**/*.{js,ts}",
+  "!../node_modules/@convex-dev/migrations/dist/component/**/*.test.ts",
+  "!../node_modules/@convex-dev/migrations/dist/component/**/*.d.ts",
+]);
+
 type TestConvex = ReturnType<typeof convexTest>;
 
 export async function registerComponents(t: TestConvex) {
@@ -48,4 +54,12 @@ export async function registerComponents(t: TestConvex) {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
   t.registerComponent("betterAuth", betterAuthSchema.default, betterAuthModules);
+}
+
+export async function registerMigrationsComponent(t: TestConvex) {
+  const migrationsSchema =
+    (await import("../node_modules/@convex-dev/migrations/dist/component/schema.js")) as {
+      default: Parameters<TestConvex["registerComponent"]>[1];
+    };
+  t.registerComponent("migrations", migrationsSchema.default, migrationsModules);
 }
