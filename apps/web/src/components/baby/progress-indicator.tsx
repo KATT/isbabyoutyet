@@ -1,4 +1,3 @@
-import { Progress } from "@workspace/ui/components/progress";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import { getRelativeTime } from "./utils";
 import { useI18n } from "@/lib/i18n";
@@ -53,9 +52,24 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   })();
 
   return (
-    <div className="w-full overflow-x-clip">
-      {/* Compact journey: three badges on a short dashed path */}
-      <ol className="relative mb-3 grid grid-cols-3 gap-1 before:absolute before:left-[18%] before:right-[18%] before:top-5 before:border-t-2 before:border-dashed before:border-border">
+    <div
+      className="w-full overflow-x-clip"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(progressValue)}
+    >
+      {/* Compact journey: dashed path, solid fill for how far we've come */}
+      <ol className="relative grid grid-cols-3 gap-1">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-5 right-[18%] left-[18%] border-t-2 border-dashed border-border"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute top-5 left-[18%] border-t-2 border-solid border-primary transition-[width] duration-300"
+          style={{ width: `calc((100% - 36%) * ${progressValue / 100})` }}
+        />
         {steps.map((step) => {
           const isCurrent = currentStatus.type === step.key;
           return (
@@ -91,7 +105,6 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
           );
         })}
       </ol>
-      <Progress value={progressValue} className="h-2 rounded-full" />
     </div>
   );
 }
