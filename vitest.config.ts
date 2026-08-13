@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { webUnitProject } from "./apps/web/vitest.config.ts";
 
 /**
  * Monorepo Vitest projects (formerly "workspaces").
@@ -6,7 +7,7 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    projects: ["packages/convex", "apps/web"],
+    projects: ["packages/convex", webUnitProject],
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
