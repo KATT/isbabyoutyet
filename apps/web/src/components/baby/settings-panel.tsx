@@ -19,11 +19,7 @@ import {
   Heartbeat,
   Hospital,
   Palette,
-<<<<<<< HEAD
-} from "lucide-react";
-=======
 } from "@phosphor-icons/react";
->>>>>>> origin/main
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";

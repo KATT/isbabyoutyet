@@ -34,10 +34,6 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "date-fns": "^4.4.0",
-<<<<<<< HEAD
-    "lucide-react": "catalog:",
-=======
->>>>>>> origin/main
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
