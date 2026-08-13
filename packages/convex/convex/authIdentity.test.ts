@@ -5,6 +5,7 @@ import {
   backfillCoParentTokenIdentifierDoc,
   backfillOnboardingTokenIdentifierDoc,
   backfillProfileTokenIdentifierDoc,
+  sanitizeOnboardingStepsDoc,
 } from "./migrations";
 import schema from "./schema";
 import { modules } from "./test.setup";
@@ -25,7 +26,7 @@ test("auth identity backfills are complete and idempotent", async () => {
     });
     const onboardingId = await ctx.db.insert("userOnboarding", {
       userId: "alice",
-      completedSteps: [],
+      completedSteps: ["share_link", "legacy_unknown_step"],
       welcomeDismissed: false,
       checklistDismissed: false,
       minimized: false,
@@ -53,11 +54,13 @@ test("auth identity backfills are complete and idempotent", async () => {
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
+    await sanitizeOnboardingStepsDoc(ctx, onboarding);
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
+    await sanitizeOnboardingStepsDoc(ctx, onboarding);
   });
 
   const migrated = await t.run(async (ctx) => {
@@ -72,5 +75,6 @@ test("auth identity backfills are complete and idempotent", async () => {
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.onboarding?.completedSteps).toEqual(["share_link"]);
   expect(migrated.coParent?.tokenIdentifier).toBe("https://convex.test|bob");
 });

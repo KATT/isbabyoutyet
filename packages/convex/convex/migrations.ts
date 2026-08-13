@@ -7,6 +7,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { isOnboardingStepId } from "../src/onboardingSteps";
 import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
@@ -449,6 +450,20 @@ export const backfillCoParentTokenIdentifier = migrations.define({
   migrateOne: backfillCoParentTokenIdentifierDoc,
 });
 
+export async function sanitizeOnboardingStepsDoc(
+  ctx: MutationCtx,
+  onboarding: Doc<"userOnboarding">,
+) {
+  const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
+  if (completedSteps.length === onboarding.completedSteps.length) return;
+  await ctx.db.patch(onboarding._id, { completedSteps });
+}
+
+export const sanitizeOnboardingSteps = migrations.define({
+  table: "userOnboarding",
+  migrateOne: sanitizeOnboardingStepsDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -460,6 +475,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillProfileTokenIdentifier,
   internal.migrations.backfillOnboardingTokenIdentifier,
   internal.migrations.backfillCoParentTokenIdentifier,
+  internal.migrations.sanitizeOnboardingSteps,
 ]);
 
 const TABLE_MIGRATION_NAMES = [
@@ -473,6 +489,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillProfileTokenIdentifier",
   "migrations:backfillOnboardingTokenIdentifier",
   "migrations:backfillCoParentTokenIdentifier",
+  "migrations:sanitizeOnboardingSteps",
 ] as const;
 
 export const deploymentStatus = internalQuery({
