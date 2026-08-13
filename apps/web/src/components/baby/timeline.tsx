@@ -91,7 +91,7 @@ const composerSchema = z
       !Number.isNaN(Date.parse(draft.occurredAt)),
     {
       error: "Pick a valid time — or leave it blank for now",
-    path: ["occurredAt"],
+      path: ["occurredAt"],
     },
   );
 
@@ -491,126 +491,126 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         {bubbleEmoji}
       </span>
       <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-primary/20 bg-primary/5 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <span className="font-medium text-foreground truncate">
                 {props.babyName}'s family
               </span>
-            {milestoneMeta ? (
-              <Badge
-                className="shrink-0"
-                title={
-                  update.occurredAt
-                    ? `Happened ${formatOccurredAtLocal(update.occurredAt)}`
-                    : undefined
-                }
-              >
-                <MilestoneIcon className="w-3 h-3" />
-                {milestoneMeta.label}
-                {update.occurredAt != null && (
-                  <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt)}
-                  </span>
-                )}
-              </Badge>
-            ) : update.photoUrl ? (
-              <Badge variant="secondary" className="shrink-0">
-                <Camera className="w-3 h-3" />
-                New photo
-              </Badge>
-            ) : (
-              <Badge variant="secondary" className="shrink-0">
-                Update
-              </Badge>
-            )}
-            {update.isCurrentPagePhoto && (
-              <Badge variant="outline" className="shrink-0">
-                  <PushPin className="w-3 h-3" />
-                Page photo
-              </Badge>
-            )}
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={`Posted ${new Date(props.item.postedAt).toLocaleString()}`}
-            >
-              {getRelativeTimeFromTimestamp(props.item.postedAt)}
-            </span>
-          </div>
-
-          {update.message && (
-            <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-              <Streamdown>{update.message}</Streamdown>
-            </div>
-          )}
-
-          {update.photoUrl && (
-            <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
-          )}
-        </div>
-
-        {props.isOwner && (
-          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
-            {canPinPhoto && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Set as page photo"
-                title="Set as page photo"
-                onClick={() => props.onSetAsCurrentPhoto(update._id)}
-              >
-                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </Button>
-            )}
-            {deleteBlocker ? (
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <span
-                      className="inline-flex"
-                      aria-label={`Delete the ${MILESTONE_LABELS[deleteBlocker]} status first`}
-                    />
+              {milestoneMeta ? (
+                <Badge
+                  className="shrink-0"
+                  title={
+                    update.occurredAt
+                      ? `Happened ${formatOccurredAtLocal(update.occurredAt)}`
+                      : undefined
                   }
                 >
-                  {deleteButton}
-                </TooltipTrigger>
-                <TooltipContent>
-                  Delete the {MILESTONE_LABELS[deleteBlocker]} status first
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <AlertDialog>
-                <AlertDialogTrigger render={deleteButton} />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete update?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {update.milestone
-                        ? "This also unmarks the milestone on the status card."
-                        : "This removes the update from the timeline."}{" "}
-                      {update.photoUrl
-                        ? "If this photo is the current page photo, the previous one takes its place. "
-                        : ""}
-                      This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={() => props.onDelete(update._id)}
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                  <MilestoneIcon className="w-3 h-3" />
+                  {milestoneMeta.label}
+                  {update.occurredAt != null && (
+                    <span className="font-normal opacity-90">
+                      · {formatOccurredAtLocal(update.occurredAt)}
+                    </span>
+                  )}
+                </Badge>
+              ) : update.photoUrl ? (
+                <Badge variant="secondary" className="shrink-0">
+                  <Camera className="w-3 h-3" />
+                  New photo
+                </Badge>
+              ) : (
+                <Badge variant="secondary" className="shrink-0">
+                  Update
+                </Badge>
+              )}
+              {update.isCurrentPagePhoto && (
+                <Badge variant="outline" className="shrink-0">
+                  <PushPin className="w-3 h-3" />
+                  Page photo
+                </Badge>
+              )}
+              <span
+                className="text-xs text-muted-foreground shrink-0"
+                title={`Posted ${new Date(props.item.postedAt).toLocaleString()}`}
+              >
+                {getRelativeTimeFromTimestamp(props.item.postedAt)}
+              </span>
+            </div>
+
+            {update.message && (
+              <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
+                <Streamdown>{update.message}</Streamdown>
+              </div>
+            )}
+
+            {update.photoUrl && (
+              <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
             )}
           </div>
-        )}
+
+          {props.isOwner && (
+            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+              {canPinPhoto && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Set as page photo"
+                  title="Set as page photo"
+                  onClick={() => props.onSetAsCurrentPhoto(update._id)}
+                >
+                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              )}
+              {deleteBlocker ? (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span
+                        className="inline-flex"
+                        aria-label={`Delete the ${MILESTONE_LABELS[deleteBlocker]} status first`}
+                      />
+                    }
+                  >
+                    {deleteButton}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Delete the {MILESTONE_LABELS[deleteBlocker]} status first
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger render={deleteButton} />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {update.milestone
+                          ? "This also unmarks the milestone on the status card."
+                          : "This removes the update from the timeline."}{" "}
+                        {update.photoUrl
+                          ? "If this photo is the current page photo, the previous one takes its place. "
+                          : ""}
+                        This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => props.onDelete(update._id)}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }
@@ -750,92 +750,92 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         {initial}
       </span>
       <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-border/70 bg-muted/30 p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
               <span className="font-medium text-foreground truncate">
                 {encouragement.authorName}
               </span>
-            <span
-              className="text-xs text-muted-foreground shrink-0"
-              title={new Date(encouragement.createdAt).toLocaleString()}
-            >
-              {getRelativeTimeFromTimestamp(encouragement.createdAt)}
-            </span>
-            {isOwnPost && <span className="text-xs text-primary/70 shrink-0">(you)</span>}
+              <span
+                className="text-xs text-muted-foreground shrink-0"
+                title={new Date(encouragement.createdAt).toLocaleString()}
+              >
+                {getRelativeTimeFromTimestamp(encouragement.createdAt)}
+              </span>
+              {isOwnPost && <span className="text-xs text-primary/70 shrink-0">(you)</span>}
+            </div>
+
+            {isEditing ? (
+              <EncouragementEditForm
+                initialMessage={encouragement.message}
+                onSave={async (message) => {
+                  await props.onUpdate(encouragement._id, props.currentVisitorId, message);
+                  setIsEditing(false);
+                }}
+                onCancel={() => setIsEditing(false)}
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
+                <Streamdown>{encouragement.message}</Streamdown>
+              </div>
+            )}
           </div>
 
-          {isEditing ? (
-            <EncouragementEditForm
-              initialMessage={encouragement.message}
-              onSave={async (message) => {
-                await props.onUpdate(encouragement._id, props.currentVisitorId, message);
-                setIsEditing(false);
-              }}
-              onCancel={() => setIsEditing(false)}
-            />
-          ) : (
-            <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-              <Streamdown>{encouragement.message}</Streamdown>
+          {!isEditing && (canEdit || canDelete) && (
+            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label="Edit encouragement"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                </Button>
+              )}
+              {canDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label="Delete encouragement"
+                      >
+                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      </Button>
+                    }
+                  />
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Delete Encouragement?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to delete this encouragement from{" "}
+                        {encouragement.authorName}? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction
+                        onClick={() =>
+                          props.onDelete(
+                            encouragement._id,
+                            canEdit ? props.currentVisitorId : undefined,
+                          )
+                        }
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           )}
         </div>
-
-        {!isEditing && (canEdit || canDelete) && (
-          <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
-            {canEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                aria-label="Edit encouragement"
-                onClick={() => setIsEditing(true)}
-              >
-                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-              </Button>
-            )}
-            {canDelete && (
-              <AlertDialog>
-                <AlertDialogTrigger
-                  render={
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      aria-label="Delete encouragement"
-                    >
-                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  }
-                />
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Encouragement?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to delete this encouragement from{" "}
-                      {encouragement.authorName}? This action cannot be undone.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() =>
-                        props.onDelete(
-                          encouragement._id,
-                          canEdit ? props.currentVisitorId : undefined,
-                        )
-                      }
-                    >
-                      Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-        )}
       </div>
-    </div>
     </div>
   );
 }
