@@ -50,11 +50,19 @@ export const Route = createFileRoute("/preview")({
   head: (opts) => ({
     meta: [
       {
-        title: `Preview – ${translate(opts.match.context.locale, "Is Baby Out Yet? – Share Your Baby's Arrival")}`,
+        title: translate(opts.match.context.locale, "Preview – {{title}}", {
+          title: translate(
+            opts.match.context.locale,
+            "Is Baby Out Yet? – Share Your Baby's Arrival",
+          ),
+        }),
       },
       {
         name: "description",
-        content: "Preview how your baby tracking page will look at different stages.",
+        content: translate(
+          opts.match.context.locale,
+          "Preview how your baby tracking page will look at different stages.",
+        ),
       },
     ],
   }),

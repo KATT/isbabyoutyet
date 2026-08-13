@@ -345,7 +345,7 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
                   />
                 ))}
               </div>
-              {option.label}
+              {t(option.labelKey)}
             </Button>
           ))}
         </div>

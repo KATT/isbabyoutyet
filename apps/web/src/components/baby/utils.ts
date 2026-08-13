@@ -6,51 +6,56 @@ import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
 import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import { getDetectedLocale } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 
 export const THEME_OPTIONS = [
   {
     value: null,
-    label: "Default",
+    labelKey: "Default",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
   }, // orange primary
   {
     value: "violet-bloom",
-    label: "Violet Bloom",
+    labelKey: "Violet Bloom",
     css: violetBloomCss,
     colors: ["#7033ff", "#fdfdfd", "#e2ebff"],
   },
   {
     value: "twitter",
-    label: "Twitter Blue",
+    labelKey: "Twitter Blue",
     css: twitterCss,
     colors: ["#1e9df1", "#ffffff", "#e3ecf6"],
   },
   {
     value: "bubblegum",
-    label: "Bubblegum",
+    labelKey: "Bubblegum",
     css: bubblegumCss,
     colors: ["#d04f99", "#f6e6ee", "#fbe2a7"],
   },
   {
     value: "catppuccin",
-    label: "Catppuccin",
+    labelKey: "Catppuccin",
     css: catppuccinCss,
     colors: ["#8839ef", "#eff1f5", "#04a5e5"],
   },
   {
     value: "mocha-mousse",
-    label: "Mocha Mousse",
+    labelKey: "Mocha Mousse",
     css: mochaMousseCss,
     colors: ["#a37764", "#f1f0e5", "#e4c7b8"],
   },
   {
     value: "quantum-rose",
-    label: "Quantum Rose",
+    labelKey: "Quantum Rose",
     css: quantumRoseCss,
     colors: ["#e6067a", "#fff0f8", "#ffc1e3"],
   },
-] as const;
+] as const satisfies ReadonlyArray<{
+  value: string | null;
+  labelKey: TranslationKey;
+  colors: readonly string[];
+  css?: string;
+}>;
 
 const TIMEZONE = "Europe/Stockholm";
 
@@ -71,10 +76,7 @@ export function parseDate(dateString: string): Date {
   return parseISO(dateString);
 }
 
-export function formatDate(
-  dateString: string,
-  locale: SupportedLocale = getDetectedLocale(),
-): string {
+export function formatDate(dateString: string, locale: SupportedLocale): string {
   const date = parseDate(dateString);
   const formatter = new Intl.DateTimeFormat(locale, {
     timeZone: TIMEZONE,
@@ -84,10 +86,7 @@ export function formatDate(
   return formatter.format(date);
 }
 
-export function getRelativeTime(
-  dateString: string,
-  locale: SupportedLocale = getDetectedLocale(),
-): string {
+export function getRelativeTime(dateString: string, locale: SupportedLocale): string {
   const date = parseDate(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((date.getTime() - now.getTime()) / 1000);
@@ -113,10 +112,7 @@ export function getRelativeTime(
   return rtf.format(0, "second");
 }
 
-export function formatDueDate(
-  dateString: string,
-  locale: SupportedLocale = getDetectedLocale(),
-): string {
+export function formatDueDate(dateString: string, locale: SupportedLocale): string {
   return new Intl.DateTimeFormat(locale, {
     timeZone: TIMEZONE,
     dateStyle: "long",

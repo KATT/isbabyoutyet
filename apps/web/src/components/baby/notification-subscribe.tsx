@@ -98,7 +98,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const subscribeMutation = useMutation({
     mutationFn: async () => {
       if (!isSupported) {
-        throw new Error("Push notifications are not supported in this browser.");
+        throw new Error(t("Push notifications are not supported in this browser."));
       }
 
       // Request permission
@@ -106,10 +106,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         const permissionResult = await Notification.requestPermission();
 
         if (permissionResult !== "granted") {
-          throw new Error("Notification permission denied");
+          throw new Error(t("Notification permission denied"));
         }
       } else if (Notification.permission !== "granted") {
-        throw new Error("Notification permission is required");
+        throw new Error(t("Notification permission is required"));
       }
 
       // Get service worker registration
@@ -137,7 +137,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         });
       }
 
-      throw new Error("Failed to get subscription data");
+      throw new Error(t("Failed to get subscription data"));
     },
     onSuccess: () => {
       pushSubscriptionQuery.refetch();
@@ -175,37 +175,40 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           />
           <TooltipContent className="max-w-xs">
             <p>
-              To receive notifications on iOS, you need to add this page to your home screen first.
-              Tap for instructions.
+              {t(
+                "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.",
+              )}
             </p>
           </TooltipContent>
         </Tooltip>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Get Notifications on iOS</DialogTitle>
+            <DialogTitle>{t("Get Notifications on iOS")}</DialogTitle>
             <DialogDescription>
-              To receive push notifications on iOS, you need to install this app to your home screen
-              first.
+              {t(
+                "Install this app on your Home Screen before enabling push notifications on iOS.",
+              )}
             </DialogDescription>
           </DialogHeader>
           <ol className="list-decimal list-inside space-y-3 text-sm">
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">1.</span>
               <span>
-                Tap the <Share className="inline w-4 h-4 mx-1" /> Share button in Safari
+                {t("Tap the Share button in Safari")}{" "}
+                <Share className="inline w-4 h-4 mx-1" />
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">2.</span>
-              <span>Scroll down and tap "Add to Home Screen"</span>
+              <span>{t('Scroll down and tap "Add to Home Screen"')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">3.</span>
-              <span>Open the app from your home screen</span>
+              <span>{t("Open the app from your Home Screen")}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">4.</span>
-              <span>Come back here and tap "Get Notifications"</span>
+              <span>{t('Come back here and tap "Get Notifications"')}</span>
             </li>
           </ol>
         </DialogContent>
@@ -221,27 +224,27 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
             onClick={() => {
               if (isSubscribed) {
                 if (!pushSubscriptionQuery.data) {
-                  toast.error("No subscription endpoint found");
+                  toast.error(t("No subscription endpoint found"));
                   return;
                 }
                 toast.promise(
                   unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint),
                   {
-                    loading: "Unsubscribing from notifications...",
-                    success: "Unsubscribed from notifications!",
+                    loading: t("Unsubscribing from notifications..."),
+                    success: t("Unsubscribed from notifications!"),
                     error: (error) =>
                       error instanceof Error
                         ? error.message
-                        : "Failed to unsubscribe from notifications",
+                        : t("Failed to unsubscribe from notifications"),
                   },
                 );
                 pushSubscriptionQuery.refetch();
               } else {
                 toast.promise(subscribeMutation.mutateAsync(), {
-                  loading: "Subscribing to notifications...",
-                  success: "Subscribed to notifications!",
+                  loading: t("Subscribing to notifications..."),
+                  success: t("Subscribed to notifications!"),
                   error: (error) =>
-                    error instanceof Error ? error.message : "Failed to subscribe to notifications",
+                    error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
                 });
               }
             }}

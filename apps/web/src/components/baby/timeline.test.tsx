@@ -6,6 +6,8 @@ import { UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { LocaleProvider } from "@/lib/i18n";
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
@@ -32,14 +34,16 @@ const laborStartedBaby: BabyData = {
 // exist for the `useMutation` hooks to mount.
 const babyId = "fake-baby-id" as Id<"baby">;
 
-function renderComposerResource(baby: BabyData) {
+function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,
   });
   const withProvider = (currentBaby: BabyData): ReactElement => (
-    <ConvexProvider client={client}>
-      <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
-    </ConvexProvider>
+    <LocaleProvider locale={locale}>
+      <ConvexProvider client={client}>
+        <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
+      </ConvexProvider>
+    </LocaleProvider>
   );
   const view = render(withProvider(baby));
   return makeResource(
@@ -66,12 +70,23 @@ test("the status radio group is labelled and offers only future stages", async (
   );
   expect(view.getByRole("radio", { name: "Labour started" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Born" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
 
   // Once labour has started, that stage is no longer offered
   composer.setBaby(laborStartedBaby);
   expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
+});
+
+test("the milestone metadata resolves through the Swedish catalog", async () => {
+  await using composer = renderComposerResource(notYetBaby, "sv");
+  const view = composer.view;
+
+  expect(view.getByRole("radiogroup", { name: "Statusändring (valfritt)" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Förlossningen har börjat" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Åkt till sjukhuset" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Bebisen är född" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {

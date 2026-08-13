@@ -23,11 +23,35 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
+import type { TranslationKey } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
 const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
+
+const HOW_IT_WORKS_STEPS = [
+  {
+    step: "1",
+    titleKey: "Create Your Page",
+    descriptionKey: "Sign up and add your baby's name and due date. That's it.",
+  },
+  {
+    step: "2",
+    titleKey: "Share the Link",
+    descriptionKey:
+      "Send it to family and friends. They can follow along and subscribe without an account.",
+  },
+  {
+    step: "3",
+    titleKey: "Update as You Go",
+    descriptionKey: "Post each milestone once and everyone following gets the news.",
+  },
+] as const satisfies ReadonlyArray<{
+  step: string;
+  titleKey: TranslationKey;
+  descriptionKey: TranslationKey;
+}>;
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -165,8 +189,10 @@ function HomePage() {
         {/* For You Section */}
         <div className="space-y-6">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For You</h2>
-            <p className="text-muted-foreground">Everything you need to share the journey</p>
+            <h2 className="text-3xl font-bold text-foreground mb-2">{t("For You")}</h2>
+            <p className="text-muted-foreground">
+              {t("Everything you need to share the journey")}
+            </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
@@ -174,10 +200,11 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <Baby className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>Update Your Status</CardTitle>
+                <CardTitle>{t("Update Your Status")}</CardTitle>
                 <CardDescription>
-                  One tap to update everyone - labour started, at the hospital, baby's here! No
-                  group texts, no repeated calls.
+                  {t(
+                    "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.",
+                  )}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -187,10 +214,11 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <Calendar className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>Countdown to Due Date</CardTitle>
+                <CardTitle>{t("Countdown to Due Date")}</CardTitle>
                 <CardDescription>
-                  Set your due date and everyone can see how many days are left. Plus a friendly
-                  "overdue" counter when baby takes their time.
+                  {t(
+                    "Set the due date so everyone can see how many days are left, including a friendly overdue counter.",
+                  )}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -200,10 +228,9 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <Palette className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>Make It Yours</CardTitle>
+                <CardTitle>{t("Make It Yours")}</CardTitle>
                 <CardDescription>
-                  Pick a theme that matches your style. From soft pastels to bold colours - your
-                  page, your vibe.
+                  {t("Choose a theme that matches your style — your page, your way.")}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -213,8 +240,10 @@ function HomePage() {
         {/* For Your Visitors Section */}
         <div className="space-y-6">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-foreground mb-2">For Your Family & Friends</h2>
-            <p className="text-muted-foreground">What everyone you share with gets</p>
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              {t("For Your Family & Friends")}
+            </h2>
+            <p className="text-muted-foreground">{t("What everyone you share with gets")}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
@@ -222,10 +251,11 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <Link2 className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>No Account Needed</CardTitle>
+                <CardTitle>{t("No Account Needed")}</CardTitle>
                 <CardDescription>
-                  Anyone with the link can check in anytime. Grandma doesn't need to download an app
-                  or create an account.
+                  {t(
+                    "Anyone with the link can follow along without downloading an app or creating an account.",
+                  )}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -235,10 +265,9 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <MessageCircleHeart className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>Send Encouragement</CardTitle>
+                <CardTitle>{t("Send Encouragement")}</CardTitle>
                 <CardDescription>
-                  Visitors can leave messages of love and support. Like a digital guestbook filled
-                  with well-wishes you'll treasure.
+                  {t("Visitors can leave messages of love and support in a digital guestbook.")}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -248,10 +277,11 @@ function HomePage() {
                 <div className="w-14 h-14 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl flex items-center justify-center mb-4 border border-primary/20">
                   <Bell className="w-7 h-7 text-primary" />
                 </div>
-                <CardTitle>Get Notified</CardTitle>
+                <CardTitle>{t("Get Notified")}</CardTitle>
                 <CardDescription>
-                  They can subscribe to push notifications and be the first to know the moment baby
-                  arrives. No constant page refreshing.
+                  {t(
+                    "Subscribe to updates and hear the moment baby arrives without constantly refreshing.",
+                  )}
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -261,8 +291,8 @@ function HomePage() {
         {/* See It In Action */}
         <Card>
           <CardHeader>
-            <CardTitle>See It In Action</CardTitle>
-            <CardDescription>Click any stage to see how your page will look</CardDescription>
+            <CardTitle>{t("See It In Action")}</CardTitle>
+            <CardDescription>{t("Open any stage to preview the baby page")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -277,8 +307,8 @@ function HomePage() {
                   <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mb-4 group-hover:bg-primary/10 transition-colors">
                     <Baby className="w-6 h-6 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">Waiting</h3>
-                  <p className="text-sm text-muted-foreground">Before labour starts</p>
+                  <h3 className="font-semibold text-foreground mb-1">{t("Waiting")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("Before labour starts")}</p>
                 </div>
               </Link>
 
@@ -295,8 +325,8 @@ function HomePage() {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                     <Activity className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">Labour Started</h3>
-                  <p className="text-sm text-muted-foreground">Things are happening!</p>
+                  <h3 className="font-semibold text-foreground mb-1">{t("Labour started")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("Things are happening!")}</p>
                 </div>
               </Link>
 
@@ -315,8 +345,8 @@ function HomePage() {
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                     <Hospital className="w-6 h-6 text-primary" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">At Hospital</h3>
-                  <p className="text-sm text-muted-foreground">Almost there!</p>
+                  <h3 className="font-semibold text-foreground mb-1">{t("At Hospital")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("Almost there!")}</p>
                 </div>
               </Link>
 
@@ -336,8 +366,8 @@ function HomePage() {
                   <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <CheckCircle className="w-6 h-6 text-primary-foreground" />
                   </div>
-                  <h3 className="font-semibold text-foreground mb-1">Baby Born!</h3>
-                  <p className="text-sm text-muted-foreground">Celebrate the arrival</p>
+                  <h3 className="font-semibold text-foreground mb-1">{t("Baby Born!")}</h3>
+                  <p className="text-sm text-muted-foreground">{t("Celebrate the arrival")}</p>
                 </div>
               </Link>
             </div>
@@ -347,36 +377,22 @@ function HomePage() {
         {/* How It Works */}
         <Card>
           <CardHeader>
-            <CardTitle>How It Works</CardTitle>
-            <CardDescription>Up and running in under a minute</CardDescription>
+            <CardTitle>{t("How It Works")}</CardTitle>
+            <CardDescription>{t("Up and running in under a minute")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-8">
-              {[
-                {
-                  step: "1",
-                  title: "Create Your Page",
-                  description: "Sign up and add your baby's name and due date. That's it.",
-                },
-                {
-                  step: "2",
-                  title: "Share the Link",
-                  description:
-                    "Send it to family and friends. They can check in anytime and subscribe for notifications.",
-                },
-                {
-                  step: "3",
-                  title: "Update as You Go",
-                  description:
-                    "When things start happening, update your status. Everyone gets notified automatically.",
-                },
-              ].map((item) => (
+              {HOW_IT_WORKS_STEPS.map((item) => (
                 <div key={item.step} className="flex flex-col items-center text-center group">
                   <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
                     {item.step}
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">{item.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.description}</p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">
+                    {t(item.titleKey)}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {t(item.descriptionKey)}
+                  </p>
                 </div>
               ))}
             </div>
@@ -388,11 +404,15 @@ function HomePage() {
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
             <Heart className="w-10 h-10 text-primary" />
           </div>
-          <h2 className="text-4xl font-bold text-foreground mb-4">Ready to share the journey?</h2>
+          <h2 className="text-4xl font-bold text-foreground mb-4">
+            {t("Ready to share the journey?")}
+          </h2>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             {sessionData.data
-              ? "Head back to your dashboard to keep everyone updated."
-              : "Join families who've already shared their special moments. Takes less than a minute."}
+              ? t("Head back to your dashboard to keep everyone updated.")
+              : t(
+                  "Join families already sharing their special moments. It takes less than a minute.",
+                )}
           </p>
           {sessionData.data ? (
             <Button
@@ -400,7 +420,7 @@ function HomePage() {
               render={<Link to="/dashboard" preload="viewport" />}
               nativeButton={false}
             >
-              Go to Dashboard
+              {t("Go to Dashboard")}
             </Button>
           ) : (
             <Button
@@ -408,7 +428,7 @@ function HomePage() {
               render={<Link to="/auth/signup" preload="viewport" />}
               nativeButton={false}
             >
-              Get Started Free
+              {t("Get Started Free")}
             </Button>
           )}
         </div>
@@ -422,7 +442,7 @@ function HomePage() {
             className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <GithubIcon className="w-5 h-5" />
-            <span>Open source on GitHub</span>
+            <span>{t("Open source on GitHub")}</span>
           </a>
         </div>
       </div>

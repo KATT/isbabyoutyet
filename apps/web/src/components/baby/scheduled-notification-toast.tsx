@@ -15,12 +15,16 @@ import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "lucide-react";
+import type { NotifiableStatus } from "@workspace/convex/src/types";
+import { useI18n } from "@/lib/i18n";
+import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationToastProps = {
   babyId: Id<"baby">;
 };
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
+  const { t } = useI18n();
   const notifications = useQuery(api.baby.getScheduledNotifications, { babyId: props.babyId });
   const pendingNotifications = useMemo(
     () => notifications?.filter((n) => n.status === "pending") ?? [],
@@ -65,10 +69,12 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
                   <Check className="size-5 text-green-500" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>Notification sent!</ItemTitle>
+                  <ItemTitle>{t("Notification sent!")}</ItemTitle>
                   <ItemDescription>
-                    {getNotificationTypeLabel(notification.notificationType)} · {subscriptionCount}{" "}
-                    {subscriptionCount === 1 ? "person" : "people"}
+                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])} ·{" "}
+                    {t(subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+                      count: subscriptionCount,
+                    })}
                   </ItemDescription>
                 </ItemContent>
               </Item>
@@ -106,7 +112,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
         );
       }
     }
-  }, [notifications, pendingNotifications, subscriptionCount]);
+  }, [notifications, pendingNotifications, subscriptionCount, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -123,12 +129,13 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
 
 type NotificationToastContentProps = {
   notificationId: Id<"scheduledNotifications">;
-  notificationType: "labor_started" | "gone_to_hospital" | "born" | "photo_added";
+  notificationType: NotifiableStatus;
   scheduledFor: number;
   subscriptionCount: number;
 };
 
 function NotificationToastContent(props: NotificationToastContentProps) {
+  const { t } = useI18n();
   const convex = useConvex();
   const [seconds, setSeconds] = useState(() =>
     Math.max(0, Math.ceil((props.scheduledFor - Date.now()) / 1000)),
@@ -143,10 +150,10 @@ function NotificationToastContent(props: NotificationToastContentProps) {
     },
     onSuccess: () => {
       toast.dismiss(props.notificationId);
-      toast.success("Notification cancelled");
+      toast.success(t("Notification cancelled"));
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to cancel notification");
+      toast.error(error instanceof Error ? error.message : t("Failed to cancel notification"));
     },
   });
 
@@ -169,10 +176,12 @@ function NotificationToastContent(props: NotificationToastContentProps) {
         {seconds}
       </ItemMedia>
       <ItemContent>
-        <ItemTitle>Sending notification...</ItemTitle>
+        <ItemTitle>{t("Sending notification...")}</ItemTitle>
         <ItemDescription>
-          {getNotificationTypeLabel(props.notificationType)} · {props.subscriptionCount}{" "}
-          {props.subscriptionCount === 1 ? "person" : "people"}
+          {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
+          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+            count: props.subscriptionCount,
+          })}
         </ItemDescription>
       </ItemContent>
       <ItemActions>
@@ -183,24 +192,9 @@ function NotificationToastContent(props: NotificationToastContentProps) {
           onClick={() => cancelMutation.mutate()}
         >
           {cancelMutation.isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
-          Cancel
+          {t("Cancel")}
         </Button>
       </ItemActions>
     </Item>
   );
-}
-
-function getNotificationTypeLabel(
-  type: "labor_started" | "gone_to_hospital" | "born" | "photo_added",
-): string {
-  switch (type) {
-    case "labor_started":
-      return "Labor started";
-    case "gone_to_hospital":
-      return "Gone to hospital";
-    case "born":
-      return "Baby born";
-    case "photo_added":
-      return "Photo added";
-  }
 }

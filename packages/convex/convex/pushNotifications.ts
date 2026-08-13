@@ -7,6 +7,7 @@ import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
+import { supportedLocaleValidator } from "./i18n";
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
@@ -68,7 +69,7 @@ export const sendNotification = internalAction({
       v.literal("photo_added"),
     ),
     customMessage: v.optional(v.union(v.string(), v.null())),
-    locale: v.union(v.literal("en-GB"), v.literal("en-US"), v.literal("sv"), v.literal("es")),
+    locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
     // Get all subscriptions for this babyId

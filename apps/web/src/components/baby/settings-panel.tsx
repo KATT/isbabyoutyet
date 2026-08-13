@@ -183,8 +183,10 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemContent>
               <ItemTitle>{t("Theme")}</ItemTitle>
               <ItemDescription>
-                {THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.label ||
-                  t("Default")}
+                {t(
+                  THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.labelKey ??
+                    "Default",
+                )}
               </ItemDescription>
             </ItemContent>
             <ItemActions>

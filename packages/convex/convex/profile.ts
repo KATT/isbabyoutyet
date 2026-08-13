@@ -2,13 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
-
-const supportedLocaleValidator = v.union(
-  v.literal("en-GB"),
-  v.literal("en-US"),
-  v.literal("sv"),
-  v.literal("es"),
-);
+import { supportedLocaleValidator } from "./i18n";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,

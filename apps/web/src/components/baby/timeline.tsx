@@ -45,7 +45,9 @@ import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const PAGE_SIZE = 20;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -63,33 +65,33 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * so a whitespace-only message counts as no message (matching the backend).
  * `occurredAt` is prefilled with "now" and only posted when explicitly edited.
  */
-const composerSchema = z
-  .object({
-    message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-    milestone: z.union([
-      z.literal("none"),
-      z.literal("labor_started"),
-      z.literal("gone_to_hospital"),
-      z.literal("born"),
-    ]),
-    occurredAt: z.string(),
-    photo: z.custom<File>().nullable(),
-  })
-  .refine(
-    (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-    { error: "Add a message, a photo, or a milestone to post" },
-  )
-  // A cleared/garbled event-time must block posting rather than silently
-  // meaning "now" (the untouched prefill always parses)
-  .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
-    error: "Pick a valid time — or leave it as now",
-    path: ["occurredAt"],
-  });
+function createComposerSchema(t: TranslationFunction) {
+  return z
+    .object({
+      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+      milestone: z.union([
+        z.literal("none"),
+        z.literal("labor_started"),
+        z.literal("gone_to_hospital"),
+        z.literal("born"),
+      ]),
+      occurredAt: z.string(),
+      photo: z.custom<File>().nullable(),
+    })
+    .refine(
+      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+      { error: t("Add a message, a photo, or a milestone to post") },
+    )
+    .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
+      error: t("Pick a valid time — or leave it as now"),
+      path: ["occurredAt"],
+    });
+}
 
-const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
-  labor_started: { label: "Labour started", icon: Activity },
-  gone_to_hospital: { label: "Gone to hospital", icon: Hospital },
-  born: { label: "Born", icon: CheckCircle },
+const MILESTONE_META: Record<Milestone, { labelKey: TranslationKey; icon: typeof Activity }> = {
+  labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, icon: Activity },
+  gone_to_hospital: { labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital, icon: Hospital },
+  born: { labelKey: MILESTONE_LABEL_KEYS.born, icon: CheckCircle },
 };
 
 function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {
@@ -149,6 +151,7 @@ type UpdateComposerProps = {
 };
 
 export function UpdateComposer(props: UpdateComposerProps) {
+  const { t } = useI18n();
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -159,6 +162,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
+  const composerSchema = useMemo(() => createComposerSchema(t), [t]);
 
   const form = useZodForm({
     schema: composerSchema,
@@ -212,11 +216,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
+      toast.error(t("Please select an image file"));
       return;
     }
     if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      toast.error("Photo must be 10 MB or smaller");
+      toast.error(t("Photo must be 10 MB or smaller"));
       return;
     }
     form.setValue("photo", file, { shouldDirty: true });
@@ -235,7 +239,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
         body: values.photo,
       });
       if (!response.ok) {
-        throw new Error("Failed to upload photo");
+        throw new Error(t("Failed to upload photo"));
       }
       const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
       photoId = uploaded.storageId;
@@ -256,7 +260,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
       photoId,
     });
 
-    toast.success("Update posted!");
+    toast.success(t("Update posted!"));
     // No reset needed: the composer lives in a dialog that unmounts on close
     props.onPosted?.();
   };
@@ -265,11 +269,13 @@ export function UpdateComposer(props: UpdateComposerProps) {
     <div className="space-y-3">
       <div className="flex items-center gap-2">
         <MessageCircleHeart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Post an update</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("Post an update")}</h3>
       </div>
       <p className="text-sm text-muted-foreground">
-        Everyone following {props.babyName}'s page will see it. A message, a photo, a milestone —
-        each is optional, any mix works.
+        {t(
+          "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.",
+          { name: props.babyName },
+        )}
       </p>
 
       <Form form={form} handleSubmit={handlePost}>
@@ -281,8 +287,8 @@ export function UpdateComposer(props: UpdateComposerProps) {
               <FormItem>
                 <FormControl>
                   <Textarea
-                    placeholder="Write a message (optional)…"
-                    aria-label="Update message (optional)"
+                    placeholder={t("Write a message (optional)…")}
+                    aria-label={t("Update message (optional)")}
                     className="min-h-20"
                     maxLength={MAX_UPDATE_MESSAGE_LENGTH}
                     disabled={isPosting}
@@ -298,7 +304,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
             <div className="relative w-fit">
               <img
                 src={photoPreviewUrl}
-                alt="Photo to post"
+                alt={t("Photo to post")}
                 className="max-h-40 rounded-lg border border-border object-cover"
               />
               <Button
@@ -308,7 +314,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
                 onClick={clearPhoto}
                 disabled={isPosting}
-                aria-label="Remove photo"
+                aria-label={t("Remove photo")}
               >
                 <X className="w-3 h-3" />
               </Button>
@@ -318,7 +324,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
           {futureMilestones.length > 0 && (
             <div className="space-y-2">
               <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
-                Status change (optional)
+                {t("Status change (optional)")}
               </p>
               <FormField
                 control={form.control}
@@ -337,7 +343,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                   >
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
                       <RadioGroupItem value="none" />
-                      No status change
+                      {t("No status change")}
                     </label>
                     {futureMilestones.map((candidate) => {
                       const meta = MILESTONE_META[candidate];
@@ -349,7 +355,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                         >
                           <RadioGroupItem value={candidate} />
                           <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                          {meta.label}
+                          {t(meta.labelKey)}
                         </label>
                       );
                     })}
@@ -359,8 +365,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
               {selectedMilestone && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    This changes the page status to "{MILESTONE_META[selectedMilestone].label}" and
-                    notifies everyone subscribed.
+                    {t('This changes the page status to "{{status}}" and notifies everyone subscribed.', {
+                      status: t(MILESTONE_META[selectedMilestone].labelKey),
+                    })}
                   </p>
                   <FormField
                     control={form.control}
@@ -369,7 +376,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                       <FormItem>
                         <label className="block space-y-1">
                           <span className="text-xs font-medium text-muted-foreground">
-                            When did it happen?
+                            {t("When did it happen?")}
                           </span>
                           <FormControl>
                             <Input
@@ -386,7 +393,9 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Defaults to now — set an earlier time if you're sharing the news after the fact.
+                    {t(
+                      "Defaults to now — set an earlier time if you're sharing the news after the fact.",
+                    )}
                   </p>
                 </div>
               )}
@@ -410,21 +419,23 @@ export function UpdateComposer(props: UpdateComposerProps) {
               disabled={isPosting}
             >
               <ImagePlus className="w-4 h-4" />
-              {draft.photo ? "Change photo" : "Add photo (optional)"}
+              {draft.photo ? t("Change photo") : t("Add photo (optional)")}
             </Button>
             <Button type="submit" disabled={!canPost}>
               <Send className="w-4 h-4" />
               {isPosting
-                ? "Posting..."
+                ? t("Posting...")
                 : selectedMilestone
-                  ? `Post & mark "${MILESTONE_META[selectedMilestone].label}"`
-                  : "Post update"}
+                  ? t('Post & mark "{{status}}"', {
+                      status: t(MILESTONE_META[selectedMilestone].labelKey),
+                    })
+                  : t("Post update")}
             </Button>
           </div>
 
           {!canPost && !isPosting && (
             <p className="text-xs text-muted-foreground text-right">
-              Add a message, a photo, or a milestone — any one is enough.
+              {t("Add a message, a photo, or a milestone — any one is enough.")}
             </p>
           )}
         </div>
@@ -466,11 +477,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
-                {update.milestone === "labor_started"
-                  ? t("Labour started")
-                  : update.milestone === "gone_to_hospital"
-                    ? t("Gone to hospital")
-                    : t("Baby born")}
+                {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
                     · {formatOccurredAtLocal(update.occurredAt, locale)}
@@ -495,7 +502,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             )}
             <span
               className="text-xs text-muted-foreground shrink-0"
-              title={`Posted ${new Date(props.item.postedAt).toLocaleString()}`}
+              title={t("Posted {{date}}", {
+                date: new Date(props.item.postedAt).toLocaleString(locale),
+              })}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
             </span>
@@ -519,8 +528,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                aria-label="Set as page photo"
-                title="Set as page photo"
+                aria-label={t("Set as page photo")}
+                title={t("Set as page photo")}
                 onClick={() => props.onSetAsCurrentPhoto(update._id)}
               >
                 <Pin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
@@ -533,7 +542,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8"
-                    aria-label="Delete update"
+                    aria-label={t("Delete update")}
                   >
                     <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                   </Button>
@@ -541,21 +550,22 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               />
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Delete update?</AlertDialogTitle>
+                  <AlertDialogTitle>{t("Delete update?")}</AlertDialogTitle>
                   <AlertDialogDescription>
                     {update.milestone
-                      ? "This also unmarks the milestone on the status card."
-                      : "This removes the update from the timeline."}{" "}
+                      ? t("This also unmarks the milestone on the status card.")
+                      : t("This removes the update from the timeline.")}{" "}
                     {update.photoUrl
-                      ? "If this photo is the current page photo, the previous one takes its place. "
+                      ? t("If this photo is the current page photo, the previous one takes its place.")
                       : ""}
-                    This action cannot be undone.
+                    {" "}
+                    {t("This action cannot be undone.")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                   <AlertDialogAction onClick={() => props.onDelete(update._id)}>
-                    Delete
+                    {t("Delete")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -573,6 +583,7 @@ type TimelinePhotoProps = {
 };
 
 function TimelinePhoto(props: TimelinePhotoProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
 
@@ -581,12 +592,12 @@ function TimelinePhoto(props: TimelinePhotoProps) {
       <DialogTrigger
         render={
           <button
-            aria-label="View photo full size"
+            aria-label={t("View photo full size")}
             className="mt-2 block cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <img
               src={inlineUrl}
-              alt="Baby update"
+              alt={t("Baby update")}
               className="max-h-64 w-auto object-cover"
               loading="lazy"
             />
@@ -596,14 +607,14 @@ function TimelinePhoto(props: TimelinePhotoProps) {
       <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
         <button
           onClick={() => setIsOpen(false)}
-          aria-label="Close photo"
+          aria-label={t("Close photo")}
           className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
         >
           <X className="w-6 h-6" />
         </button>
         <img
           src={props.photoUrl}
-          alt="Baby update"
+          alt={t("Baby update")}
           className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
         />
       </DialogContent>
@@ -619,10 +630,6 @@ type EncouragementTimelineItemProps = {
   onUpdate: (id: Id<"encouragements">, visitorId: string, message: string) => Promise<void>;
 };
 
-const encouragementEditSchema = z.object({
-  message: z.string().trim().min(1, "Message cannot be empty"),
-});
-
 /**
  * Mounted only while editing, so the form initializes from the current
  * message on every reveal — no reset bookkeeping.
@@ -632,6 +639,14 @@ function EncouragementEditForm(props: {
   onSave: (message: string) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
+  const encouragementEditSchema = useMemo(
+    () =>
+      z.object({
+        message: z.string().trim().min(1, t("Message cannot be empty")),
+      }),
+    [t],
+  );
   const form = useZodForm({
     schema: encouragementEditSchema,
     defaultValues: { message: props.initialMessage },
@@ -653,7 +668,7 @@ function EncouragementEditForm(props: {
             <FormItem>
               <FormControl>
                 <Textarea
-                  aria-label="Edit your message"
+                  aria-label={t("Edit your message")}
                   className="min-h-20"
                   disabled={isSaving}
                   {...field}
@@ -666,7 +681,7 @@ function EncouragementEditForm(props: {
         <div className="flex gap-2">
           <Button size="sm" type="submit" disabled={isSaving}>
             <Check className="w-3 h-3" />
-            {isSaving ? "Saving..." : "Save"}
+            {isSaving ? t("Saving...") : t("Save")}
           </Button>
           <Button
             size="sm"
@@ -676,7 +691,7 @@ function EncouragementEditForm(props: {
             disabled={isSaving}
           >
             <X className="w-3 h-3" />
-            Cancel
+            {t("Cancel")}
           </Button>
         </div>
       </div>
@@ -685,7 +700,7 @@ function EncouragementEditForm(props: {
 }
 
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
   const [isEditing, setIsEditing] = useState(false);
 
@@ -701,11 +716,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
             <span className="font-medium text-foreground truncate">{encouragement.authorName}</span>
             <span
               className="text-xs text-muted-foreground shrink-0"
-              title={new Date(encouragement.createdAt).toLocaleString()}
+              title={new Date(encouragement.createdAt).toLocaleString(locale)}
             >
               {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
             </span>
-            {isOwnPost && <span className="text-xs text-primary/70 shrink-0">(you)</span>}
+            {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
           </div>
 
           {isEditing ? (
@@ -731,7 +746,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                aria-label="Edit encouragement"
+                aria-label={t("Edit encouragement")}
                 onClick={() => setIsEditing(true)}
               >
                 <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
@@ -745,7 +760,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8"
-                      aria-label="Delete encouragement"
+                      aria-label={t("Delete encouragement")}
                     >
                       <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                     </Button>
@@ -753,14 +768,16 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 />
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Delete Encouragement?</AlertDialogTitle>
+                    <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
                     <AlertDialogDescription>
-                      Are you sure you want to delete this encouragement from{" "}
-                      {encouragement.authorName}? This action cannot be undone.
+                      {t(
+                        "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
+                        { name: encouragement.authorName },
+                      )}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() =>
                         props.onDelete(
@@ -769,7 +786,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                         )
                       }
                     >
-                      Delete
+                      {t("Delete")}
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -839,18 +856,18 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
       await removeUpdate({ updateId });
-      toast.success("Update removed");
+      toast.success(t("Update removed"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove update");
+      toast.error(error instanceof Error ? error.message : t("Failed to remove update"));
     }
   };
 
   const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
     try {
       await setAsCurrentPhoto({ updateId });
-      toast.success("Set as the page photo");
+      toast.success(t("Set as the page photo"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to set page photo");
+      toast.error(error instanceof Error ? error.message : t("Failed to set page photo"));
     }
   };
 
@@ -860,9 +877,9 @@ export function TimelineFeed(props: TimelineFeedProps) {
   ) => {
     try {
       await removeEncouragement({ encouragementId, visitorId });
-      toast.success("Encouragement removed");
+      toast.success(t("Encouragement removed"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove encouragement");
+      toast.error(error instanceof Error ? error.message : t("Failed to remove encouragement"));
     }
   };
 
@@ -873,9 +890,9 @@ export function TimelineFeed(props: TimelineFeedProps) {
   ) => {
     try {
       await updateEncouragement({ encouragementId, visitorId, message });
-      toast.success("Encouragement updated");
+      toast.success(t("Encouragement updated"));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update encouragement");
+      toast.error(error instanceof Error ? error.message : t("Failed to update encouragement"));
       throw error;
     }
   };

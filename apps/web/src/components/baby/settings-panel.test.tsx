@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { LocaleProvider } from "@/lib/i18n";
 
 const baby: BabyData = {
   name: "Nova",
@@ -64,4 +65,24 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
 
   fireEvent.click(view.getByRole("switch"));
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
+});
+
+test("theme constants render through the active translation catalog", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <LocaleProvider locale="sv">
+      <SettingsPanel
+        baby={baby}
+        onUpdate={onUpdate}
+        open
+        onOpenChange={onOpenChange}
+        profileLocale="sv"
+      />
+    </LocaleProvider>,
+  );
+
+  expect(view.getByText("Tema")).toBeTruthy();
+  expect(view.getByText("Standard")).toBeTruthy();
 });

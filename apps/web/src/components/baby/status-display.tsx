@@ -12,6 +12,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 
 type PhotoAvatarProps = {
+  babyName: string;
   photoUrl: string | null | undefined;
   thumbnailUrl: string | null | undefined;
   fallbackIcon: React.ReactNode;
@@ -19,6 +20,7 @@ type PhotoAvatarProps = {
 };
 
 function PhotoAvatar({
+  babyName,
   photoUrl,
   thumbnailUrl,
   fallbackIcon,
@@ -69,7 +71,7 @@ function PhotoAvatar({
             {avatarImageUrl && (
               <img
                 src={avatarImageUrl}
-                alt={t("Baby Name")}
+                alt={t("Photo of {{name}}", { name: babyName })}
                 width={160}
                 height={160}
                 className="w-full h-full object-cover"
@@ -82,13 +84,14 @@ function PhotoAvatar({
         <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
           <button
             onClick={() => setIsOpen(false)}
+            aria-label={t("Close photo")}
             className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
           <img
             src={photoUrl}
-            alt={t("Baby Name")}
+            alt={t("Photo of {{name}}", { name: babyName })}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
           />
         </DialogContent>
@@ -150,6 +153,7 @@ export function StatusDisplay({
     return (
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
+          babyName={baby.name}
           photoUrl={photoUrl}
           thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Baby className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
@@ -203,6 +207,7 @@ export function StatusDisplay({
     return (
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
+          babyName={baby.name}
           photoUrl={photoUrl}
           thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Activity className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
@@ -228,6 +233,7 @@ export function StatusDisplay({
     return (
       <div className="flex flex-col items-center py-8">
         <PhotoAvatar
+          babyName={baby.name}
           photoUrl={photoUrl}
           thumbnailUrl={thumbnailUrl}
           fallbackIcon={<Hospital className="w-16 h-16 md:w-20 md:h-20 text-primary" />}
@@ -249,6 +255,7 @@ export function StatusDisplay({
   return (
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
+        babyName={baby.name}
         photoUrl={photoUrl}
         thumbnailUrl={thumbnailUrl}
         fallbackIcon={<CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-primary-foreground" />}

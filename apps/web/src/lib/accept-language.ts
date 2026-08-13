@@ -1,8 +1,13 @@
 import {
   DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
   resolveSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
+
+const SUPPORTED_BASE_LANGUAGES = new Set(
+  SUPPORTED_LOCALES.map((locale) => locale.split("-")[0]?.toLowerCase()),
+);
 
 export function resolveAcceptLanguage(acceptLanguage: string | null): SupportedLocale {
   for (const preference of acceptLanguage?.split(",") ?? []) {
@@ -11,7 +16,7 @@ export function resolveAcceptLanguage(acceptLanguage: string | null): SupportedL
       continue;
     }
     const baseLanguage = languageTag.split("-")[0]?.toLowerCase();
-    if (baseLanguage === "en" || baseLanguage === "sv" || baseLanguage === "es") {
+    if (baseLanguage && SUPPORTED_BASE_LANGUAGES.has(baseLanguage)) {
       return resolveSupportedLocale(languageTag);
     }
   }

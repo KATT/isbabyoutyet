@@ -6,6 +6,7 @@ import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward, MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import type { BabyStatus, Milestone } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
 import {
   deleteUpdateWithTimelineItem,
@@ -549,9 +550,7 @@ export const update = mutationWithTriggers({
     dueDate: v.optional(v.string()),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
-    locale: v.optional(
-      v.union(v.literal("en-GB"), v.literal("en-US"), v.literal("sv"), v.literal("es"), v.null()),
-    ),
+    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never

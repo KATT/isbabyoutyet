@@ -26,6 +26,7 @@ import { Baby } from "lucide-react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
+import { m } from "@/paraglide/messages";
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
@@ -59,7 +60,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           property: "og:site_name",
-          content: "Is Baby Out Yet?",
+        content: m.app_name({}, { locale }),
         },
         {
           property: "og:type",
