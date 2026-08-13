@@ -14,6 +14,7 @@ import {
 } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
+import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
@@ -34,9 +35,11 @@ function DashboardPage() {
 
   const router = useRouter();
   const restartTour = useMutation(api.onboarding.restart);
+  const progress = useQuery(api.onboarding.getMine, {});
 
   return (
     <div className="min-h-screen bg-background bg-dots">
+      <OnboardingHost surface="dashboard" />
       {/* Floating header */}
       <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
@@ -55,7 +58,6 @@ function DashboardPage() {
               className="rounded-full font-bold"
               render={<Link to="/dashboard/add" preload="viewport" />}
               nativeButton={false}
-              data-tour-id="add_baby"
             >
               <Plus className="w-4 h-4" />
               Add Baby
@@ -149,6 +151,9 @@ function DashboardPage() {
                   params={{ publicId: baby.publicId }}
                   preload="viewport"
                   className="group"
+                  data-tour-id={
+                    progress?.tourBaby?.publicId === baby.publicId ? "tour_baby" : undefined
+                  }
                 >
                   <div
                     className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${

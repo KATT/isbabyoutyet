@@ -13,6 +13,7 @@ const emptyState = {
   hasUpdate: false,
   effectiveSteps: [] as string[],
   allDone: false,
+  tourBaby: null as null | { publicId: string; name: string },
 };
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
@@ -45,17 +46,26 @@ async function getOrCreateOnboarding(ctx: MutationCtx, userId: string) {
   return doc;
 }
 
-async function computeAutoProgress(
-  ctx: QueryCtx | MutationCtx,
-  userId: string,
-): Promise<{ hasBaby: boolean; hasUpdate: boolean }> {
+type AutoProgress = {
+  hasBaby: boolean;
+  hasUpdate: boolean;
+  tourBaby: null | { publicId: string; name: string };
+  encouragementsDisabled: boolean;
+};
+
+async function computeAutoProgress(ctx: QueryCtx | MutationCtx, userId: string) {
   const babies = await ctx.db
     .query("baby")
     .withIndex("by_user", (q) => q.eq("userId", userId))
+    .order("asc")
     .take(20);
 
+  const first = babies[0];
+  const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
+  const encouragementsDisabled = first?.encouragementsDisabled === true;
+
   if (babies.length === 0) {
-    return { hasBaby: false, hasUpdate: false };
+    return { hasBaby: false, hasUpdate: false, tourBaby, encouragementsDisabled };
   }
 
   for (const baby of babies) {
@@ -64,17 +74,18 @@ async function computeAutoProgress(
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
       .first();
     if (update) {
-      return { hasBaby: true, hasUpdate: true };
+      return { hasBaby: true, hasUpdate: true, tourBaby, encouragementsDisabled };
     }
   }
 
-  return { hasBaby: true, hasUpdate: false };
+  return { hasBaby: true, hasUpdate: false, tourBaby, encouragementsDisabled };
 }
 
 function mergeEffectiveSteps(opts: {
   completedSteps: string[];
   hasBaby: boolean;
   hasUpdate: boolean;
+  encouragementsDisabled: boolean;
 }) {
   const set = new Set(opts.completedSteps);
   if (opts.hasBaby) {
@@ -83,18 +94,19 @@ function mergeEffectiveSteps(opts: {
   if (opts.hasUpdate) {
     set.add("post_update");
   }
+  if (opts.encouragementsDisabled) {
+    set.add("learn_encouragements");
+  }
   return ONBOARDING_STEP_IDS.filter((id) => set.has(id));
 }
 
-function toClientState(
-  doc: Doc<"userOnboarding"> | null,
-  auto: { hasBaby: boolean; hasUpdate: boolean },
-) {
+function toClientState(doc: Doc<"userOnboarding"> | null, auto: AutoProgress) {
   const completedSteps = doc?.completedSteps ?? [];
   const effectiveSteps = mergeEffectiveSteps({
     completedSteps,
     hasBaby: auto.hasBaby,
     hasUpdate: auto.hasUpdate,
+    encouragementsDisabled: auto.encouragementsDisabled,
   });
   return {
     welcomeDismissed: doc?.welcomeDismissed ?? false,
@@ -105,6 +117,7 @@ function toClientState(
     hasUpdate: auto.hasUpdate,
     effectiveSteps,
     allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
+    tourBaby: auto.tourBaby,
   };
 }
 
@@ -201,11 +214,12 @@ export const restart = mutation({
       throw new Error("Not authenticated");
     }
     const doc = await getOrCreateOnboarding(ctx, userId);
+    const auto = await computeAutoProgress(ctx, userId);
     await ctx.db.patch(doc._id, {
-      welcomeDismissed: false,
+      // Replay the welcome carousel only if they still have no baby
+      welcomeDismissed: auto.hasBaby,
       checklistDismissed: false,
       minimized: false,
-      // Keep completedSteps so progress isn't wiped — only re-show unfinished tips
     });
     return null;
   },

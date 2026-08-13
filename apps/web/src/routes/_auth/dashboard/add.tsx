@@ -65,7 +65,7 @@ function AddBabyPage() {
           </p>
         </div>
 
-        <Card className="rounded-[2rem] border-2 pop-shadow-strong" data-tour-id="add_baby">
+        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
           <CardContent className="pt-6">
             <Form
               form={form}
@@ -78,7 +78,6 @@ function AddBabyPage() {
                 await router.navigate({
                   to: "/baby/$publicId",
                   params: { publicId: result.publicId },
-                  search: { settings: true },
                 });
               }}
             >

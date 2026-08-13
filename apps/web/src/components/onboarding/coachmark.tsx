@@ -30,6 +30,14 @@ export function Coachmark(props: CoachmarkProps) {
   const [placement, setPlacement] = useState<"above" | "below">("below");
 
   useEffect(() => {
+    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
+    if (!(el instanceof HTMLElement)) {
+      return;
+    }
+    el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+  }, [props.targetId]);
+
+  useEffect(() => {
     function measure() {
       const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
       if (!(el instanceof HTMLElement)) {

@@ -16,6 +16,8 @@ type BabyNavProps = {
   postUpdateOpen?: boolean;
   /** Fired after the share URL is copied (used by the first-run tour) */
   onShareCopied?: () => void;
+  /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
+  onSettingsOpened?: () => void;
   className?: string;
 };
 
@@ -26,6 +28,7 @@ export function BabyNav({
   postUpdateButton,
   postUpdateOpen,
   onShareCopied,
+  onSettingsOpened,
   className,
 }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
@@ -63,6 +66,11 @@ export function BabyNav({
                 nativeButton={false}
                 aria-label={settingsOpen ? "Close settings" : "Settings"}
                 data-tour-id="explore_settings"
+                onClick={() => {
+                  if (!settingsOpen) {
+                    onSettingsOpened?.();
+                  }
+                }}
               >
                 <GearSix />
               </Button>

@@ -3,8 +3,14 @@ import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components
 import { cn } from "@workspace/ui/lib/utils";
 import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
+import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepCopy } from "./steps";
 import { ONBOARDING_STEPS } from "./steps";
+
+export type TourBaby = {
+  publicId: string;
+  name: string;
+};
 
 type GettingStartedCardProps = {
   effectiveSteps: string[];
@@ -14,8 +20,123 @@ type GettingStartedCardProps = {
   onAcknowledgeStep: (stepId: string) => void;
   /** Current route context for CTAs */
   surface: "dashboard" | "baby";
+  /** First created baby — checklist links go here, not to later babies */
+  tourBaby: TourBaby | null;
+  /** Baby-page actions: open a dialog or scroll to a control */
+  onGoToStep?: (stepId: string) => void;
   className?: string;
 };
+
+type StepAction =
+  | { kind: "link"; link: LinkProps; label: string; onClick?: () => void }
+  | { kind: "button"; onClick: () => void; label: string };
+
+function babyPageLink(opts: {
+  publicId: string;
+  settings?: boolean;
+  postUpdate?: boolean;
+}): LinkProps {
+  return {
+    to: "/baby/$publicId",
+    params: { publicId: opts.publicId },
+    search:
+      opts.settings || opts.postUpdate
+        ? {
+            settings: opts.settings || undefined,
+            postUpdate: opts.postUpdate || undefined,
+          }
+        : undefined,
+    preload: "viewport",
+  };
+}
+
+export function getStepAction(opts: {
+  step: OnboardingStepCopy;
+  surface: "dashboard" | "baby";
+  tourBaby: TourBaby | null;
+  onGoToStep?: (stepId: string) => void;
+  onAcknowledge: (stepId: string) => void;
+}): StepAction | null {
+  const step = opts.step;
+  if (step.id === "add_baby") {
+    if (opts.surface !== "dashboard") {
+      return null;
+    }
+    return {
+      kind: "link",
+      link: { to: "/dashboard/add", preload: "viewport" },
+      label: step.ctaLabel ?? "Add a baby",
+    };
+  }
+
+  if (opts.surface === "dashboard") {
+    if (!opts.tourBaby) {
+      return null;
+    }
+    const publicId = opts.tourBaby.publicId;
+    const name = opts.tourBaby.name;
+    if (step.id === "share_link") {
+      return {
+        kind: "link",
+        link: babyPageLink({ publicId }),
+        label: `Open ${name}'s page`,
+      };
+    }
+    if (step.id === "post_update") {
+      return {
+        kind: "link",
+        link: babyPageLink({ publicId, postUpdate: true }),
+        label: "Post an update",
+      };
+    }
+    if (step.id === "explore_settings") {
+      return {
+        kind: "link",
+        link: babyPageLink({ publicId, settings: true }),
+        label: "Open settings",
+        onClick: () => opts.onAcknowledge(step.id),
+      };
+    }
+    if (step.id === "learn_encouragements") {
+      return {
+        kind: "link",
+        link: babyPageLink({ publicId }),
+        label: `See ${name}'s page`,
+      };
+    }
+    return null;
+  }
+
+  if (step.id === "post_update") {
+    return {
+      kind: "button",
+      onClick: () => opts.onGoToStep?.(step.id),
+      label: "Post an update",
+    };
+  }
+  if (step.id === "explore_settings") {
+    return {
+      kind: "button",
+      onClick: () => opts.onGoToStep?.(step.id),
+      label: "Open settings",
+    };
+  }
+  if (step.id === "share_link") {
+    return {
+      kind: "button",
+      onClick: () => opts.onGoToStep?.(step.id),
+      label: "Show Share",
+    };
+  }
+  if (step.id === "learn_encouragements") {
+    return {
+      kind: "button",
+      onClick: () => opts.onAcknowledge(step.id),
+      label: "Got it",
+    };
+  }
+  return null;
+}
 
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const done = new Set(props.effectiveSteps);
@@ -66,7 +187,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           <div>
             <p className="text-sm font-semibold text-foreground">Getting started</p>
             <p className="text-xs text-muted-foreground">
-              {allDone ? "You're all set" : "A quick tour of the basics"}
+              {allDone ? "You're all set" : "Tap a step to jump there"}
             </p>
           </div>
         </div>
@@ -99,27 +220,24 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         {ONBOARDING_STEPS.map((step) => {
           const isDone = done.has(step.id);
           const isNext = nextStep?.id === step.id;
+          const action = isDone
+            ? null
+            : getStepAction({
+                step,
+                surface: props.surface,
+                tourBaby: props.tourBaby,
+                onGoToStep: props.onGoToStep,
+                onAcknowledge: props.onAcknowledgeStep,
+              });
           return (
             <li
               key={step.id}
               className={cn(
-                "flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm",
+                "rounded-lg text-sm",
                 isNext && "bg-primary/8 ring-1 ring-primary/15",
               )}
             >
-              <span
-                className={cn(
-                  "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-                  isDone
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-muted-foreground/30",
-                )}
-              >
-                {isDone ? <Check className="size-2.5" /> : null}
-              </span>
-              <span className={cn("leading-snug", isDone && "text-muted-foreground line-through")}>
-                {step.title}
-              </span>
+              <StepRow step={step} isDone={isDone} action={action} />
             </li>
           );
         })}
@@ -129,6 +247,8 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         <NextStepHint
           step={nextStep}
           surface={props.surface}
+          tourBaby={props.tourBaby}
+          onGoToStep={props.onGoToStep}
           onAcknowledge={() => props.onAcknowledgeStep(nextStep.id)}
         />
       ) : (
@@ -145,14 +265,79 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
   );
 }
 
+function StepRow(props: {
+  step: OnboardingStepCopy;
+  isDone: boolean;
+  action: StepAction | null;
+}) {
+  const inner = (
+    <>
+      <span
+        className={cn(
+          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+          props.isDone
+            ? "border-primary bg-primary text-primary-foreground"
+            : "border-muted-foreground/30",
+        )}
+      >
+        {props.isDone ? <Check className="size-2.5" /> : null}
+      </span>
+      <span className={cn("leading-snug", props.isDone && "text-muted-foreground line-through")}>
+        {props.step.title}
+      </span>
+    </>
+  );
+
+  const rowClass = "flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left";
+
+  if (props.action?.kind === "link") {
+    return (
+      <Link
+        {...props.action.link}
+        className={cn(rowClass, "transition hover:bg-primary/6")}
+        aria-label={props.action.label}
+        onClick={props.action.onClick}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  if (props.action?.kind === "button") {
+    return (
+      <button
+        type="button"
+        className={cn(rowClass, "transition hover:bg-primary/6")}
+        onClick={props.action.onClick}
+        aria-label={props.action.label}
+      >
+        {inner}
+      </button>
+    );
+  }
+
+  return <div className={rowClass}>{inner}</div>;
+}
+
 function NextStepHint(props: {
   step: OnboardingStepCopy;
   surface: "dashboard" | "baby";
+  tourBaby: TourBaby | null;
+  onGoToStep?: (stepId: string) => void;
   onAcknowledge: () => void;
 }) {
   const Icon = props.step.icon;
-  const showDashboardCta = props.step.id === "add_baby" && props.surface === "dashboard";
-  const needsBabyPage = props.step.surface === "baby" && props.surface === "dashboard";
+  const action = getStepAction({
+    step: props.step,
+    surface: props.surface,
+    tourBaby: props.tourBaby,
+    onGoToStep: props.onGoToStep,
+    onAcknowledge: (stepId: string) => {
+      if (stepId === props.step.id) {
+        props.onAcknowledge();
+      }
+    },
+  });
 
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-primary/15 bg-primary/5 p-3">
@@ -161,28 +346,25 @@ function NextStepHint(props: {
         <div className="flex flex-col gap-1">
           <p className="text-sm font-medium text-foreground">{props.step.title}</p>
           <p className="text-xs text-muted-foreground leading-relaxed">{props.step.description}</p>
-          {needsBabyPage ? (
-            <p className="text-xs text-muted-foreground">Open a baby page to do this step.</p>
-          ) : null}
         </div>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {showDashboardCta ? (
-          <Button
-            size="sm"
-            render={<Link to="/dashboard/add" preload="viewport" />}
-            nativeButton={false}
-          >
-            {props.step.ctaLabel ?? "Continue"}
-          </Button>
-        ) : null}
-        {/* Educational steps can be acknowledged without a specific click target */}
-        {props.step.id === "learn_encouragements" ? (
-          <Button size="sm" variant="secondary" onClick={props.onAcknowledge}>
-            Got it
-          </Button>
-        ) : null}
-      </div>
+      {action ? (
+        <div className="flex flex-wrap gap-2">
+          {action.kind === "link" ? (
+            <Button
+              size="sm"
+              render={<Link {...action.link} onClick={action.onClick} />}
+              nativeButton={false}
+            >
+              {action.label}
+            </Button>
+          ) : (
+            <Button size="sm" onClick={action.onClick}>
+              {action.label}
+            </Button>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }

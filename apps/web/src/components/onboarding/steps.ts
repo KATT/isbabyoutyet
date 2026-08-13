@@ -85,7 +85,7 @@ export const WELCOME_SLIDES: WelcomeSlide[] = [
   },
   {
     title: "Skip anytime",
-    body: "We'll nudge you through the first few steps with a tiny checklist. Dismiss it whenever — you can restart from the dashboard.",
+    body: "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
     icon: Heart,
   },
 ];

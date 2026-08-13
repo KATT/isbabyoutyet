@@ -4,9 +4,23 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { GettingStartedCard } from "./getting-started";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to?: string }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
+  Link: (
+    props: React.ComponentProps<"a"> & {
+      to?: string;
+      params?: { publicId?: string };
+      search?: { settings?: boolean; postUpdate?: boolean };
+    },
+  ) => {
+    const href =
+      typeof props.to === "string"
+        ? props.to.replace("$publicId", props.params?.publicId ?? "")
+        : "#";
+    return (
+      <a href={href} aria-label={props["aria-label"]} onClick={props.onClick}>
+        {props.children}
+      </a>
+    );
+  },
 }));
 
 function renderResource(ui: React.ReactElement) {
@@ -26,11 +40,30 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
+      tourBaby={null}
     />,
   );
 
   expect(screen.getAllByText("Add your first baby").length).toBeGreaterThan(0);
   expect(screen.getByRole("button", { name: /add a baby/i })).toBeTruthy();
+});
+
+test("dashboard share step links to the first baby's page", async () => {
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const links = screen.getAllByRole("link", { name: /open ada's page/i });
+  expect(links.length).toBeGreaterThan(0);
+  expect(links[0]?.getAttribute("href")).toContain("baby-waiting");
 });
 
 test("minimized chip shows progress count", async () => {
@@ -42,6 +75,7 @@ test("minimized chip shows progress count", async () => {
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
 
@@ -58,11 +92,52 @@ test("learn_encouragements shows a Got it button that acknowledges the step", as
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="baby"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
 
   fireEvent.click(screen.getByRole("button", { name: /got it/i }));
   expect(onAcknowledge).toHaveBeenCalledWith("learn_encouragements");
+});
+
+test("dashboard settings CTA marks the step done while opening the page", async () => {
+  const onAcknowledge = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link", "post_update"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={onAcknowledge}
+      surface="dashboard"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  fireEvent.click(screen.getAllByRole("link", { name: /open settings/i })[0]!);
+  expect(onAcknowledge).toHaveBeenCalledWith("explore_settings");
+});
+
+test("baby-page checklist can open post update and settings", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      onGoToStep={onGoToStep}
+      surface="baby"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: /post an update/i }));
+  expect(onGoToStep).toHaveBeenCalledWith("post_update");
+
+  fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
 });
 
 test("all-done state offers close checklist", async () => {
@@ -81,6 +156,7 @@ test("all-done state offers close checklist", async () => {
       onDismiss={onDismiss}
       onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
 

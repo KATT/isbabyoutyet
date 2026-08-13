@@ -23,7 +23,6 @@ import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { useEffect } from "react";
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -165,19 +164,25 @@ function BabyPage() {
     });
   }
 
-  // Opening settings counts toward the tour
-  useEffect(() => {
-    if (isOwner && search.settings) {
-      void completeOnboardingStep({ stepId: "explore_settings" });
-    }
-  }, [isOwner, search.settings, completeOnboardingStep]);
-
   return (
     <div className="min-h-screen bg-background bg-dots">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
       {isOwner && (
-        <OnboardingHost surface="baby" spotlight={!search.settings && !search.postUpdate} />
+        <OnboardingHost
+          surface="baby"
+          babyPublicId={babyDoc.publicId}
+          spotlight={!search.settings && !search.postUpdate}
+          onGoToStep={(stepId) => {
+            if (stepId === "post_update") {
+              setSearchOpen({ postUpdate: true, settings: false });
+              return;
+            }
+            if (stepId === "explore_settings") {
+              setSearchOpen({ settings: true, postUpdate: false });
+            }
+          }}
+        />
       )}
 
       {isOwner && (
@@ -267,6 +272,13 @@ function BabyPage() {
                 : null
             }
             settingsOpen={!!search.settings}
+            onSettingsOpened={
+              isOwner
+                ? () => {
+                    void completeOnboardingStep({ stepId: "explore_settings" });
+                  }
+                : undefined
+            }
           />
         </div>
       </header>

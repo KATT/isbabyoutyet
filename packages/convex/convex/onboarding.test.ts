@@ -24,6 +24,7 @@ test("getMine returns empty defaults for anonymous callers", async () => {
     hasUpdate: false,
     effectiveSteps: [],
     allDone: false,
+    tourBaby: null,
   });
 });
 
@@ -92,6 +93,60 @@ test("dismissChecklist hides the tour; restart brings it back without wiping ste
     minimized: false,
     completedSteps: ["share_link"],
   });
+});
+
+test("getMine points the tour at the first created baby", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  await asAlice.mutation(api.baby.create, {
+    name: "First",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.baby.create, {
+    name: "Second",
+    dueDate: "2026-10-01",
+  });
+
+  const progress = await asAlice.query(api.onboarding.getMine, {});
+  expect(progress.tourBaby?.name).toBe("First");
+  expect(progress.tourBaby?.publicId).toBeTruthy();
+});
+
+test("restart with a baby skips the welcome carousel", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  await asAlice.mutation(api.baby.create, {
+    name: "Ada",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.onboarding.dismissChecklist, {});
+  await asAlice.mutation(api.onboarding.restart, {});
+
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    checklistDismissed: false,
+    welcomeDismissed: true,
+    minimized: false,
+    hasBaby: true,
+  });
+});
+
+test("disabling encouragements on the first baby auto-completes that tip", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Quiet",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    encouragementsDisabled: true,
+  });
+
+  const progress = await asAlice.query(api.onboarding.getMine, {});
+  expect(progress.effectiveSteps).toContain("learn_encouragements");
 });
 
 test("completeStep rejects unknown step ids", async () => {
