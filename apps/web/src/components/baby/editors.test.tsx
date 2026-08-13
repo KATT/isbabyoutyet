@@ -28,7 +28,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   // The form mounted with the current name and the link reassurance
   const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova");
-  expect(view.getByText(/any link you've already shared keeps working/i)).toBeTruthy();
+  expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
   // Save is dirty-gated
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
