@@ -3,6 +3,7 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
+import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -251,6 +252,21 @@ function HomePage() {
                 </Button>
               </>
             )}
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
+              render={
+                <Link
+                  to="/baby/$publicId"
+                  params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+                  preload="viewport"
+                />
+              }
+              nativeButton={false}
+            >
+              See a live page
+            </Button>
           </div>
         </section>
 
@@ -291,10 +307,33 @@ function HomePage() {
               See it in action
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              Click any stage to see how your page will look
+              {HOMEPAGE_DEMO_BABY.name}'s page is a live example — leave a note, look around, try it
+              out
             </p>
           </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <Link
+            to="/baby/$publicId"
+            params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+            className="group mt-10 block"
+          >
+            <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/10 p-8 text-center pop-shadow-strong transition-transform group-hover:-translate-y-1 md:p-10">
+              <span className="text-5xl" aria-hidden="true">
+                🍼
+              </span>
+              <h3 className="mt-4 text-2xl font-black text-foreground">
+                Follow {HOMEPAGE_DEMO_BABY.name}'s arrival
+              </h3>
+              <p className="mx-auto mt-2 max-w-lg font-medium text-muted-foreground">
+                A real page with a two-day labour story, photos, and messages from family. Send
+                encouragement — this is the full experience.
+              </p>
+              <p className="mt-4 text-sm font-extrabold text-primary">Open the live page →</p>
+            </div>
+          </Link>
+          <p className="mt-10 text-center font-semibold text-muted-foreground">
+            Or preview how each stage looks
+          </p>
+          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {previewStages.map((stage) => (
               <Link key={stage.title} to="/preview" search={stage.search} className="group">
                 <div

@@ -15,5 +15,7 @@ Convex agent skills for common tasks can be installed by running
 ## Demo seed
 
 Preview and local backends share `seed:seedDemoData` (login + babies in every
-status). When opening PRs, follow the root [`AGENTS.md`](../../AGENTS.md) and
-link each seeded baby on the Vercel preview.
+status) plus `homepageDemo:refresh` (the public Juniper page linked from the
+homepage). Production deploys refresh Juniper on every build: dates shift to
+now and visitor comments are wiped. When opening PRs, follow the root
+[`AGENTS.md`](../../AGENTS.md) and link each seeded baby on the Vercel preview.
