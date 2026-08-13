@@ -31,8 +31,8 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         statements: 44.58,
-        branches: 40.93,
-        functions: 36.14,
+        branches: 41.08,
+        functions: 36.25,
         lines: 45.48,
       },
     },

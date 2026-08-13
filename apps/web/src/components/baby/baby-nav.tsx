@@ -11,9 +11,8 @@ type BabyNavProps = {
   shareLink: null | string;
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
-  /** Owner-only "Post update" link; open state is mirrored in the URL search */
-  postUpdateButton?: null | LinkProps;
-  postUpdateOpen?: boolean;
+  /** Owner-only "Post update" action */
+  onPostUpdate?: (() => void) | null;
   className?: string;
 };
 
@@ -21,12 +20,11 @@ export function BabyNav({
   shareLink,
   settingsButton,
   settingsOpen,
-  postUpdateButton,
-  postUpdateOpen,
+  onPostUpdate,
   className,
 }: BabyNavProps) {
   const [copied, setCopied] = useState(false);
-  const hasOwnerActions = !!(postUpdateButton || settingsButton);
+  const hasOwnerActions = !!(onPostUpdate || settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -36,13 +34,8 @@ export function BabyNav({
 
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label="Owner actions" className="flex items-center gap-1">
-      {postUpdateButton && (
-        <Button
-          variant={postUpdateOpen ? "default" : "ghost"}
-          className="rounded-full font-bold"
-          render={<Link {...(postUpdateButton as any)} />}
-          nativeButton={false}
-        >
+      {onPostUpdate && (
+        <Button variant="ghost" className="rounded-full font-bold" onClick={onPostUpdate}>
           <ChatCircleText data-icon="inline-start" />
           Post update
         </Button>
