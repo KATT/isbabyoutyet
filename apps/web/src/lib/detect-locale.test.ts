@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
-import { detectLocaleFromRequestHeaders, resolveAcceptLanguage } from "./detect-locale";
+import { resolveAcceptLanguage } from "./accept-language";
 import { getLanguageName } from "./i18n";
+import { detectLocaleFromRequestHeaders } from "./locale-request-handler";
 
 test.each([
   ["sv-SE,sv;q=0.9,en;q=0.7", "sv"],
