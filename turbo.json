@@ -29,6 +29,12 @@
     "lint-fix": {
     },
     "format": {
+    },
+    "//#test:coverage": {
+      "cache": false
+    },
+    "//#knip": {
+      "cache": false
     }
   }
 }
