@@ -183,7 +183,7 @@ export function HomePage() {
         name: "Sophia",
         laborStarted: hoursAgo(4),
         wentToHospital: hoursAgo(1),
-        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        hospitalMessage: "We've made it in! More news when we have it 💕",
         theme: "bubblegum",
       },
     },

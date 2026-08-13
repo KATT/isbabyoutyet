@@ -59,18 +59,18 @@ test("a text-only update tops the feed without changing the status", async () =>
 
   await asAlice.mutation(api.updates.post, {
     babyId,
-    message: "Long walk today — still comfy in there",
+    message: "Long walk today. Still comfy in there",
   });
 
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
-    { kind: "update", update: { message: "Long walk today — still comfy in there" } },
+    { kind: "update", update: { message: "Long walk today. Still comfy in there" } },
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
   ]);
 
   const latest = await t.query(api.timeline.latestUpdate, { babyId });
   expect(latest).toMatchObject({
-    update: { message: "Long walk today — still comfy in there" },
+    update: { message: "Long walk today. Still comfy in there" },
   });
 
   // Status untouched: no milestone was marked and no notification scheduled

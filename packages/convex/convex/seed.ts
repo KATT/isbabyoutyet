@@ -138,15 +138,15 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
       {
         authorName: "Grandpa Jim",
-        message: "Thinking of you all — keep us posted!",
+        message: "Thinking of you all. Keep us posted!",
         minutesAgo: 45,
       },
     ],
   },
   "baby-at-hospital": {
     dueDateOffsetDays: 1,
-    laborStartedMessage: "Contractions got serious — heading in!",
-    hospitalMessage: "Checked in and settling into the delivery room.",
+    laborStartedMessage: "Contractions got serious. Heading in!",
+    hospitalMessage: "Checked in and getting comfy.",
     hoursAgo: { laborStarted: 8, wentToHospital: 3 },
     encouragements: [
       {
@@ -159,8 +159,8 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
   "baby-born": {
     dueDateOffsetDays: -2,
     laborStartedMessage: "Here we go!",
-    hospitalMessage: "At the hospital and ready.",
-    babyBornMessage: "Welcome to the world — everyone is healthy and happy!",
+    hospitalMessage: "At hospital. Let's do this.",
+    babyBornMessage: "Baby's here! Everyone's healthy and doing brilliantly.",
     hoursAgo: { laborStarted: 30, wentToHospital: 24, babyBorn: 12 },
     encouragements: [
       {
@@ -169,8 +169,8 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
         minutesAgo: 60 * 6,
       },
       {
-        authorName: "Neighbor Jo",
-        message: "What wonderful news. Rest up!",
+        authorName: "Neighbour Jo",
+        message: "Best news ever. Rest up!",
         minutesAgo: 60 * 2,
       },
     ],
