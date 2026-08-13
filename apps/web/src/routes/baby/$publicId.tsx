@@ -1,7 +1,6 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
-import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
@@ -164,7 +163,7 @@ function BabyPage() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-background bg-dots">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
       {isOwner && (
@@ -202,102 +201,110 @@ function BabyPage() {
         </>
       )}
 
-      <div className="border-b border-border/50">
-        <BabyNav
-          shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
-          postUpdateButton={
-            isOwner
-              ? {
-                  to: "/baby/$publicId",
-                  params: { publicId: params.publicId },
-                  search: {
-                    ...search,
-                    postUpdate: search.postUpdate ? undefined : true,
-                    settings: undefined,
-                  },
-                }
-              : null
-          }
-          postUpdateOpen={!!search.postUpdate}
-          settingsButton={
-            isOwner
-              ? {
-                  to: "/baby/$publicId",
-                  params: { publicId: params.publicId },
-                  search: {
-                    ...search,
-                    settings: search.settings ? undefined : true,
-                    postUpdate: undefined,
-                  },
-                }
-              : null
-          }
-          settingsOpen={!!search.settings}
-        />
-        <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight py-6 md:py-10 px-6 text-center">
-          <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-            Is {baby.name} out yet?
-          </span>
+      {/* Floating chrome: brand pill left, action dock right */}
+      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+              <Baby className="h-4 w-4 text-primary" />
+            </span>
+            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          </Link>
+          <BabyNav
+            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+            postUpdateButton={
+              isOwner
+                ? {
+                    to: "/baby/$publicId",
+                    params: { publicId: params.publicId },
+                    search: {
+                      ...search,
+                      postUpdate: search.postUpdate ? undefined : true,
+                      settings: undefined,
+                    },
+                  }
+                : null
+            }
+            postUpdateOpen={!!search.postUpdate}
+            settingsButton={
+              isOwner
+                ? {
+                    to: "/baby/$publicId",
+                    params: { publicId: params.publicId },
+                    search: {
+                      ...search,
+                      settings: search.settings ? undefined : true,
+                      postUpdate: undefined,
+                    },
+                  }
+                : null
+            }
+            settingsOpen={!!search.settings}
+          />
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl px-4 pb-16">
+        <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
+          Is{" "}
+          <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
+            {baby.name}
+          </span>{" "}
+          out yet?
         </h1>
-      </div>
-      <section className="relative px-6 py-12 text-center overflow-hidden">
-        <div className="relative max-w-5xl mx-auto">
-          <Card>
-            <CardContent>
-              <StatusDisplay
-                baby={baby}
-                currentStatus={currentStatus}
-                photoUrl={babyDoc.photoUrl}
-                thumbnailUrl={babyDoc.thumbnailUrl}
-                latestUpdate={
-                  latestUpdate
-                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
-                    : null
-                }
-              />
+
+        {/* Split layout: sticky status card on the left, feed on the right */}
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
+            <StatusDisplay
+              baby={baby}
+              currentStatus={currentStatus}
+              photoUrl={babyDoc.photoUrl}
+              thumbnailUrl={babyDoc.thumbnailUrl}
+              latestUpdate={
+                latestUpdate
+                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  : null
+              }
+            />
+            <div className="flex justify-center">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
-              <Separator className="my-4" />
-            </CardContent>
-            <CardFooter>
-              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-            </CardFooter>
-          </Card>
-        </div>
-      </section>
+            </div>
+            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
 
-      {/* Timeline Section: owner updates interleaved with encouragements.
-          The news (feed) comes before the visitor's encouragement form; the
-          owner posts via the "Post update" button in the fixed nav bar. */}
-      <section className="relative px-6 pb-12">
-        <div className="relative max-w-2xl mx-auto space-y-8">
-          <Card>
-            <CardContent className="pt-6">
+          {/* Timeline: owner updates interleaved with encouragements. The
+              feed comes before the visitor's encouragement form; the owner
+              posts via the "Post update" button in the dock. */}
+          <div className="space-y-8">
+            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-            </CardContent>
-          </Card>
+            </section>
 
-          {!baby.encouragementsDisabled && (
-            <Card>
-              <CardContent className="pt-6">
+            {!baby.encouragementsDisabled && (
+              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </CardContent>
-            </Card>
-          )}
+              </section>
+            )}
+          </div>
         </div>
-      </section>
+      </main>
 
-      {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-      <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
         <Link
           to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           Having a baby? Are people messaging you non-stop? Create your own page →
         </Link>
-      </div>
+      </footer>
     </div>
   );
 }

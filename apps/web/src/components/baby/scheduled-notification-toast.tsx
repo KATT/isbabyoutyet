@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { Check, X } from "lucide-react";
+import { Check, X } from "@phosphor-icons/react";
 
 type ScheduledNotificationToastProps = {
   babyId: Id<"baby">;
