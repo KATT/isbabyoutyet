@@ -212,6 +212,13 @@ export const restart = mutation({
 });
 
 /**
+ * Sentinel `userOnboarding.userId` written when skipTourForExistingUsers
+ * finishes. Re-runs of the migration (every deploy's `runAll`) no-op once
+ * this row exists, so users who sign up later still get the first-run tour.
+ */
+export const SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL = "migration:skipTourForExistingUsers";
+
+/**
  * Marks the demo user as fully onboarded so preview/local demos aren't
  * interrupted by the first-run tour.
  */

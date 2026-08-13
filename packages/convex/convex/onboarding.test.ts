@@ -1,9 +1,11 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
 import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import { createAuth } from "./auth";
+import { SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -139,4 +141,64 @@ test("mutations require authentication", async () => {
   await expect(t.mutation(api.onboarding.completeStep, { stepId: "share_link" })).rejects.toThrow(
     /Not authenticated/,
   );
+});
+
+async function signUpUser(
+  t: Awaited<ReturnType<typeof setup>>,
+  opts: { email: string; name: string },
+) {
+  return await t.run(async (ctx) => {
+    const auth = createAuth(ctx);
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: opts.email,
+        password: "password123",
+        name: opts.name,
+      },
+    });
+    return result.user.id;
+  });
+}
+
+test("skipTourForExistingUsers grandfathers registered users and leaves later signups alone", async () => {
+  const t = await setup();
+
+  const aliceId = await signUpUser(t, { email: "alice@example.com", name: "Alice" });
+  const bobId = await signUpUser(t, { email: "bob@example.com", name: "Bob" });
+
+  const first = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+  expect(first).toMatchObject({ isDone: true, alreadyRan: false });
+  expect(first.processed).toBeGreaterThanOrEqual(2);
+
+  const asAlice = t.withIdentity({ subject: aliceId });
+  const asBob = t.withIdentity({ subject: bobId });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: true,
+    checklistDismissed: true,
+    allDone: true,
+    effectiveSteps: [...ONBOARDING_STEP_IDS],
+  });
+  expect(await asBob.query(api.onboarding.getMine, {})).toMatchObject({
+    checklistDismissed: true,
+  });
+
+  const sentinel = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userOnboarding")
+      .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+      .unique();
+  });
+  expect(sentinel).toBeTruthy();
+
+  const carolId = await signUpUser(t, { email: "carol@example.com", name: "Carol" });
+  const second = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+  expect(second).toMatchObject({ isDone: true, alreadyRan: true, processed: 0 });
+
+  const asCarol = t.withIdentity({ subject: carolId });
+  expect(await asCarol.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: false,
+    checklistDismissed: false,
+    allDone: false,
+    completedSteps: [],
+  });
 });
