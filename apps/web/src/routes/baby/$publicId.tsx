@@ -391,8 +391,9 @@ function BabyPage() {
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
             </div>
-            <div className="my-5 border-t-2 border-dashed border-border" aria-hidden="true" />
-            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            <div className="mt-4">
+              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            </div>
           </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
