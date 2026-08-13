@@ -1,0 +1,73 @@
+/* Sunny Days theme - Sunflower yellow, mint, and warm cream */
+/* An original theme for the playful look */
+
+:root {
+  --background: #fff9e8;
+  --foreground: #443c2a;
+  --card: #fffdf5;
+  --card-foreground: #443c2a;
+  --popover: #fffdf5;
+  --popover-foreground: #443c2a;
+  --primary: #f2a614;
+  --primary-foreground: #3c2b05;
+  --secondary: #8ed1c5;
+  --secondary-foreground: #1d3f38;
+  --muted: #f6eed3;
+  --muted-foreground: #857a5e;
+  --accent: #ffe58a;
+  --accent-foreground: #443c2a;
+  --destructive: #ef6351;
+  --destructive-foreground: #ffffff;
+  --border: #ecdfb8;
+  --input: #ecdfb8;
+  --ring: #f2a614;
+  --chart-1: #f2a614;
+  --chart-2: #8ed1c5;
+  --chart-3: #ef6351;
+  --chart-4: #ffd166;
+  --chart-5: #06a77d;
+  --sidebar: #fdf3d7;
+  --sidebar-foreground: #443c2a;
+  --sidebar-primary: #f2a614;
+  --sidebar-primary-foreground: #3c2b05;
+  --sidebar-accent: #ffe58a;
+  --sidebar-accent-foreground: #443c2a;
+  --sidebar-border: #ecdfb8;
+  --sidebar-ring: #f2a614;
+  --radius: 1.25rem;
+}
+
+.dark {
+  --background: #211d2e;
+  --foreground: #f4eeda;
+  --card: #2a2539;
+  --card-foreground: #f4eeda;
+  --popover: #2a2539;
+  --popover-foreground: #f4eeda;
+  --primary: #ffca3a;
+  --primary-foreground: #33270a;
+  --secondary: #52a695;
+  --secondary-foreground: #0f2621;
+  --muted: #322c44;
+  --muted-foreground: #aca389;
+  --accent: #46405c;
+  --accent-foreground: #f4eeda;
+  --destructive: #ff8a75;
+  --destructive-foreground: #33130c;
+  --border: #3d3654;
+  --input: #3d3654;
+  --ring: #ffca3a;
+  --chart-1: #ffca3a;
+  --chart-2: #52a695;
+  --chart-3: #ff8a75;
+  --chart-4: #ffd166;
+  --chart-5: #06a77d;
+  --sidebar: #1a1726;
+  --sidebar-foreground: #f4eeda;
+  --sidebar-primary: #ffca3a;
+  --sidebar-primary-foreground: #33270a;
+  --sidebar-accent: #46405c;
+  --sidebar-accent-foreground: #f4eeda;
+  --sidebar-border: #3d3654;
+  --sidebar-ring: #ffca3a;
+}

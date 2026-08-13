@@ -1,18 +1,11 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
+import { ArrowRight, Baby as BabyIcon, CalendarHeart, Plus, SignOut } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -41,38 +34,34 @@ function DashboardPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-12">
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h1 className="text-5xl font-black text-foreground mb-2 tracking-tight">
-              <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Your Babies
+    <div className="min-h-screen bg-background bg-dots">
+      {/* Floating header */}
+      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+          >
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+              <BabyIcon className="h-4 w-4 text-primary" />
               </span>
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Track and manage all your babies' journeys
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
+            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          </Link>
+          <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
             <Button
-              className="shadow-lg shadow-primary/20"
+              size="sm"
+              className="rounded-full font-bold"
               render={<Link to="/dashboard/add" preload="viewport" />}
               nativeButton={false}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4" />
               Add Baby
             </Button>
-            <ModeToggle />
+            <ModeToggle className="rounded-full" />
             <Button
-              variant="outline"
-              className="shadow-lg shadow-primary/20"
+              size="sm"
+              variant="ghost"
+              className="rounded-full font-bold"
               onClick={async () => {
                 await authClient.signOut({
                   fetchOptions: {
@@ -86,36 +75,49 @@ function DashboardPage() {
                 });
               }}
             >
-              <LogOut className="w-4 h-4 mr-2" />
+              <SignOut className="w-4 h-4" />
               Logout
             </Button>
           </div>
         </div>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6 py-10">
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
+            Your{" "}
+            <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
+              babies
+            </span>{" "}
+            👶
+          </h1>
+          <p className="mt-2 font-semibold text-muted-foreground">
+            Track and manage all your babies' journeys
+          </p>
+        </div>
 
         {babies.length === 0 ? (
-          <Card>
-            <CardContent>
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
-                <BabyIcon className="w-10 h-10 text-primary" />
-              </div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">No babies added yet</h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+          <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
+            <p className="text-5xl" aria-hidden="true">
+              🍼
+            </p>
+            <h3 className="mt-4 text-2xl font-black text-foreground">No babies added yet</h3>
+            <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
                 Get started by adding your first baby to track their journey
               </p>
               <Button
                 size="lg"
-                className="shadow-lg shadow-primary/20"
+              className="mt-6 rounded-full font-extrabold pop-shadow"
                 render={<Link to="/dashboard/add" preload="viewport" />}
                 nativeButton={false}
               >
-                <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4" />
                 Add Your First Baby
               </Button>
-            </CardContent>
-          </Card>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {babies.map((baby) => {
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {babies.map((baby, index) => {
               const dueDate = new Date(baby.dueDate);
               const now = new Date();
               const daysUntilDue = Math.ceil(
@@ -131,57 +133,56 @@ function DashboardPage() {
                   preload="viewport"
                   className="group"
                 >
-                  <Card>
-                    <CardHeader>
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-linear-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/20 group-hover:scale-110 transition-transform">
-                          <BabyIcon className="w-6 h-6 text-primary" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle>{baby.name}</CardTitle>
-                          <CardDescription>
-                            <Calendar className="w-3.5 h-3.5" />
-                            {format(dueDate, "MMMM d, yyyy")}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex flex-wrap gap-2">
-                        {"role" in baby && baby.role === "coParent" ? (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/5">
-                            Shared with you
-                          </Badge>
-                        ) : null}
-                        {isOverdue ? (
-                          <Badge
-                            variant="default"
-                            className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                          >
-                            {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
-                            overdue
-                          </Badge>
-                        ) : daysUntilDue === 0 ? (
-                          <Badge
-                            variant="default"
-                            className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
-                          >
-                            Due today!
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="border-primary/20 bg-primary/5">
-                            {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div
+                    className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${
+                      index % 2 === 0 ? "group-hover:-rotate-1" : "group-hover:rotate-1"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-xl">
+                        👶
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    </div>
+                    <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">
+                      {baby.name}
+                    </h2>
+                    <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                      <CalendarHeart className="h-3.5 w-3.5" />
+                      Due {format(dueDate, "MMMM d, yyyy")}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {"role" in baby && baby.role === "coParent" ? (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+                        >
+                          Shared with you
+                        </Badge>
+                      ) : null}
+                      {isOverdue ? (
+                        <Badge className="rounded-full font-bold">
+                          {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
+                          overdue
+                        </Badge>
+                      ) : daysUntilDue === 0 ? (
+                        <Badge className="rounded-full font-bold">Due today!</Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+                        >
+                          {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
                 </Link>
               );
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

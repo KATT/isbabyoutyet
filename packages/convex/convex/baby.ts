@@ -3,7 +3,14 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import { getCurrentStatus, isStatusForward, MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import {
+  getBlockingLaterMilestone,
+  getCurrentStatus,
+  isStatusForward,
+  MILESTONE_FIELDS,
+  MILESTONE_LABELS,
+  MILESTONES,
+} from "../src/types";
 import type { BabyStatus, Milestone } from "../src/types";
 import { mutationWithTriggers } from "./triggers";
 import {
@@ -544,6 +551,14 @@ export const update = mutationWithTriggers({
       }
       if (parsed > Date.now() + 60_000) {
         throw new Error("The event time cannot be in the future");
+      }
+    }
+
+    for (const milestone of MILESTONES) {
+      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
+      const blocker = getBlockingLaterMilestone(baby, milestone);
+      if (blocker) {
+        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
       }
     }
 

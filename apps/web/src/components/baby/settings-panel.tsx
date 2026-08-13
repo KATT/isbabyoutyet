@@ -24,16 +24,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/
 import { Switch } from "@workspace/ui/components/switch";
 import { format } from "date-fns";
 import {
-  Activity,
   Baby,
-  Calendar,
-  CheckCircle,
+  CalendarHeart,
+  ChatCircle,
+  Confetti,
+  Heartbeat,
   Hospital,
-  MessageSquare,
   Palette,
-  Trash2,
+  Trash,
   Users,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
@@ -94,7 +94,7 @@ export function SettingsPanel({
           {/* Due Date */}
           <Item>
             <ItemMedia variant="icon">
-              <Calendar className="w-4 h-4" />
+              <CalendarHeart className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>Due Date</ItemTitle>
@@ -113,7 +113,7 @@ export function SettingsPanel({
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <Activity className="w-4 h-4" />
+                  <Heartbeat className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>Labour started</ItemTitle>
@@ -163,7 +163,7 @@ export function SettingsPanel({
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <CheckCircle className="w-4 h-4" />
+                  <Confetti className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>Baby born</ItemTitle>
@@ -206,7 +206,7 @@ export function SettingsPanel({
           {/* Encouragements */}
           <Item>
             <ItemMedia variant="icon">
-              <MessageSquare className="w-4 h-4" />
+              <ChatCircle className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>Encouragements</ItemTitle>
@@ -249,7 +249,7 @@ export function SettingsPanel({
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <Trash2 className="w-4 h-4" />
+                  <Trash className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>Delete page</ItemTitle>

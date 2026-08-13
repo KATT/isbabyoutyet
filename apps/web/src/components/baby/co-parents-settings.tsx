@@ -5,7 +5,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
-import { Loader2, UserMinus, X } from "lucide-react";
+import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
 
 type CoParentsSettingsProps = {
   babyId: Id<"baby">;
@@ -120,7 +120,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
             className="flex-1"
           />
           <Button type="submit" size="sm" disabled={busy || !email.trim()}>
-            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add"}
+            {busy ? <CircleNotch className="w-4 h-4 animate-spin" /> : "Add"}
           </Button>
         </form>
       ) : null}

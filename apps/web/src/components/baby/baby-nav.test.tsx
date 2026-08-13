@@ -25,8 +25,7 @@ test("groups owner actions separately from page actions", async () => {
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
-      postUpdateButton={{ to: "/" }}
-      postUpdateOpen={false}
+      onPostUpdate={() => {}}
       settingsButton={{ to: "/" }}
       settingsOpen={false}
     />,
