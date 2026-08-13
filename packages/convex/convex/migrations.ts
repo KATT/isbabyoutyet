@@ -2,7 +2,7 @@ import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation, internalQuery } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
@@ -12,7 +12,6 @@ import {
   insertEncouragementTimelineItem,
   insertUpdateWithTimelineItem,
 } from "./timeline";
-import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
@@ -392,63 +391,6 @@ export const backfillUpdatePostedByUserId = migrations.define({
   migrateOne: backfillUpdatePostedByUserIdDoc,
 });
 
-export async function backfillBabyOwnerTokenIdentifierDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (baby.ownerTokenIdentifier !== undefined) return;
-  await ctx.db.patch(baby._id, {
-    ownerTokenIdentifier: tokenIdentifierForAuthUserId(baby.userId),
-  });
-}
-
-export const backfillBabyOwnerTokenIdentifier = migrations.define({
-  table: "baby",
-  migrateOne: backfillBabyOwnerTokenIdentifierDoc,
-});
-
-export async function backfillProfileTokenIdentifierDoc(
-  ctx: MutationCtx,
-  profile: Doc<"userProfiles">,
-) {
-  if (profile.tokenIdentifier !== undefined) return;
-  await ctx.db.patch(profile._id, {
-    tokenIdentifier: tokenIdentifierForAuthUserId(profile.userId),
-  });
-}
-
-export const backfillProfileTokenIdentifier = migrations.define({
-  table: "userProfiles",
-  migrateOne: backfillProfileTokenIdentifierDoc,
-});
-
-export async function backfillOnboardingTokenIdentifierDoc(
-  ctx: MutationCtx,
-  onboarding: Doc<"userOnboarding">,
-) {
-  if (onboarding.tokenIdentifier !== undefined) return;
-  await ctx.db.patch(onboarding._id, {
-    tokenIdentifier: tokenIdentifierForAuthUserId(onboarding.userId),
-  });
-}
-
-export const backfillOnboardingTokenIdentifier = migrations.define({
-  table: "userOnboarding",
-  migrateOne: backfillOnboardingTokenIdentifierDoc,
-});
-
-export async function backfillCoParentTokenIdentifierDoc(
-  ctx: MutationCtx,
-  coParent: Doc<"babyCoParents">,
-) {
-  if (coParent.tokenIdentifier !== undefined) return;
-  await ctx.db.patch(coParent._id, {
-    tokenIdentifier: tokenIdentifierForAuthUserId(coParent.userId),
-  });
-}
-
-export const backfillCoParentTokenIdentifier = migrations.define({
-  table: "babyCoParents",
-  migrateOne: backfillCoParentTokenIdentifierDoc,
-});
-
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -456,41 +398,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
-  internal.migrations.backfillBabyOwnerTokenIdentifier,
-  internal.migrations.backfillProfileTokenIdentifier,
-  internal.migrations.backfillOnboardingTokenIdentifier,
-  internal.migrations.backfillCoParentTokenIdentifier,
 ]);
-
-const TABLE_MIGRATION_NAMES = [
-  "migrations:generateThumbnailsForExistingPhotos",
-  "migrations:backfillBabyTimeline",
-  "migrations:backfillEncouragementTimeline",
-  "migrations:separateMilestoneOccurredAt",
-  "migrations:clearLegacyStageMessages",
-  "migrations:backfillUpdatePostedByUserId",
-  "migrations:backfillBabyOwnerTokenIdentifier",
-  "migrations:backfillProfileTokenIdentifier",
-  "migrations:backfillOnboardingTokenIdentifier",
-  "migrations:backfillCoParentTokenIdentifier",
-] as const;
-
-export const deploymentStatus = internalQuery({
-  args: {},
-  handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
-    const statuses = await migrations.getStatus(ctx, {
-      migrations: [...TABLE_MIGRATION_NAMES],
-    });
-    return {
-      isDone:
-        statuses.length === TABLE_MIGRATION_NAMES.length &&
-        statuses.every((status) => status.isDone),
-      failed: statuses
-        .filter((status) => status.error !== undefined)
-        .map((status) => `${status.name}: ${status.error}`),
-    };
-  },
-});
 
 // Run all pending migrations - called automatically during deployment.
 // skipTourForExistingUsers is not a table walker (users live in the Better
