@@ -35,7 +35,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
-import { setLocale } from "@/paraglide/runtime";
+import { setLocale } from "@/lib/paraglide-setup";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
