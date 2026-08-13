@@ -7,7 +7,7 @@
   "aiFiles": {
     "enabled": true,
     "skills": {
-      "agents": ["cursor", "claude-code"]
+      "agents": ["cursor", "claude-code", "codex"]
     }
   }
 }
