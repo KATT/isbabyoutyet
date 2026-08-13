@@ -296,10 +296,9 @@ type TranslationVariables<TKey extends TranslationKey> = {
   [TName in PlaceholderNames<TKey>]: number | string;
 };
 
-type TranslationArguments<TKey extends TranslationKey> =
-  [PlaceholderNames<TKey>] extends [never]
-    ? [variables?: never]
-    : [variables: TranslationVariables<TKey>];
+type TranslationArguments<TKey extends TranslationKey> = [PlaceholderNames<TKey>] extends [never]
+  ? [variables?: never]
+  : [variables: TranslationVariables<TKey>];
 
 export type TranslationFunction = <TKey extends TranslationKey>(
   key: TKey,
@@ -789,8 +788,7 @@ const es: Record<TranslationKey, string> = {
   'Scroll down and tap "Add to Home Screen"':
     'Desplázate hacia abajo y toca "Añadir a pantalla de inicio"',
   "Open the app from your Home Screen": "Abre la aplicación desde la pantalla de inicio",
-  'Come back here and tap "Get Notifications"':
-    'Vuelve aquí y toca "Recibir notificaciones"',
+  'Come back here and tap "Get Notifications"': 'Vuelve aquí y toca "Recibir notificaciones"',
   "No subscription endpoint found": "No se encontró la suscripción",
   "Unsubscribing from notifications...": "Cancelando las notificaciones...",
   "Unsubscribed from notifications!": "¡Notificaciones canceladas!",
@@ -897,10 +895,8 @@ export function useI18n() {
   return useMemo(
     () => ({
       locale,
-      t: (<TKey extends TranslationKey>(
-        key: TKey,
-        ...args: TranslationArguments<TKey>
-      ) => translate(locale, key, ...args)) satisfies TranslationFunction,
+      t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
+        translate(locale, key, ...args)) satisfies TranslationFunction,
     }),
     [locale],
   );

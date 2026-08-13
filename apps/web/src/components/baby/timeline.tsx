@@ -365,9 +365,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
               {selectedMilestone && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground">
-                    {t('This changes the page status to "{{status}}" and notifies everyone subscribed.', {
-                      status: t(MILESTONE_META[selectedMilestone].labelKey),
-                    })}
+                    {t(
+                      'This changes the page status to "{{status}}" and notifies everyone subscribed.',
+                      {
+                        status: t(MILESTONE_META[selectedMilestone].labelKey),
+                      },
+                    )}
                   </p>
                   <FormField
                     control={form.control}
@@ -556,9 +559,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                       ? t("This also unmarks the milestone on the status card.")
                       : t("This removes the update from the timeline.")}{" "}
                     {update.photoUrl
-                      ? t("If this photo is the current page photo, the previous one takes its place.")
-                      : ""}
-                    {" "}
+                      ? t(
+                          "If this photo is the current page photo, the previous one takes its place.",
+                        )
+                      : ""}{" "}
                     {t("This action cannot be undone.")}
                   </AlertDialogDescription>
                 </AlertDialogHeader>

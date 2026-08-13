@@ -185,17 +185,14 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           <DialogHeader>
             <DialogTitle>{t("Get Notifications on iOS")}</DialogTitle>
             <DialogDescription>
-              {t(
-                "Install this app on your Home Screen before enabling push notifications on iOS.",
-              )}
+              {t("Install this app on your Home Screen before enabling push notifications on iOS.")}
             </DialogDescription>
           </DialogHeader>
           <ol className="list-decimal list-inside space-y-3 text-sm">
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">1.</span>
               <span>
-                {t("Tap the Share button in Safari")}{" "}
-                <Share className="inline w-4 h-4 mx-1" />
+                {t("Tap the Share button in Safari")} <Share className="inline w-4 h-4 mx-1" />
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -244,7 +241,9 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
                   loading: t("Subscribing to notifications..."),
                   success: t("Subscribed to notifications!"),
                   error: (error) =>
-                    error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
+                    error instanceof Error
+                      ? error.message
+                      : t("Failed to subscribe to notifications"),
                 });
               }
             }}

@@ -60,7 +60,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           property: "og:site_name",
-        content: m.app_name({}, { locale }),
+          content: m.app_name({}, { locale }),
         },
         {
           property: "og:type",

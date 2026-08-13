@@ -190,9 +190,7 @@ function HomePage() {
         <div className="space-y-6">
           <div className="text-center">
             <h2 className="text-3xl font-bold text-foreground mb-2">{t("For You")}</h2>
-            <p className="text-muted-foreground">
-              {t("Everything you need to share the journey")}
-            </p>
+            <p className="text-muted-foreground">{t("Everything you need to share the journey")}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
@@ -387,12 +385,8 @@ function HomePage() {
                   <div className="shrink-0 w-14 h-14 bg-linear-to-br from-primary to-primary/80 rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl shadow-lg shadow-primary/20 group-hover:scale-110 transition-transform mb-4">
                     {item.step}
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">
-                    {t(item.titleKey)}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {t(item.descriptionKey)}
-                  </p>
+                  <h3 className="text-lg font-semibold text-foreground mb-2">{t(item.titleKey)}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{t(item.descriptionKey)}</p>
                 </div>
               ))}
             </div>
