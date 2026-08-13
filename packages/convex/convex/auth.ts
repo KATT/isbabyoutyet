@@ -6,6 +6,7 @@ import { components } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
+import { requiredEnv } from "./requiredEnv";
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -16,7 +17,7 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
     // Fresh preview deployments run the demo seed before deploy-convex.ts can
     // set their branch URL. The Convex site URL is a safe bootstrap origin;
     // subsequent requests use the synced web preview URL.
-    baseURL: env.SITE_URL ?? env.CONVEX_SITE_URL,
+    baseURL: env.SITE_URL ?? requiredEnv("CONVEX_SITE_URL", env.CONVEX_SITE_URL),
     database: authComponent.adapter(ctx),
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {
