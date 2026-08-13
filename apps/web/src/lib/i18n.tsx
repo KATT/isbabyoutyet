@@ -363,8 +363,6 @@ const enGB = {
   "Send some love": "Send some love",
   Dashboard: "Dashboard",
   "Get started": "Get started",
-  Is: "Is",
-  "out yet?": "out yet?",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
     'Stop answering "any news yet?" texts. Share one link so everyone can follow along and get the big news together. 🍼',
   "Create your page 🎈": "Create your page 🎈",
@@ -844,8 +842,6 @@ const sv: Record<TranslationKey, string> = {
   "Send some love": "Skicka lite kärlek",
   Dashboard: "Översikt",
   "Get started": "Kom igång",
-  Is: "Har",
-  "out yet?": "kommit?",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
     "Slipp alla som frågar om det hänt något. Dela en länk så kan alla följa med och få veta direkt när bäbisen är här. 🍼",
   "Create your page 🎈": "Skapa din sida 🎈",
@@ -1309,8 +1305,6 @@ const es: Record<TranslationKey, string> = {
   "Send some love": "Manda un poco de cariño",
   Dashboard: "Panel",
   "Get started": "Empezar",
-  Is: "¿Ya nació",
-  "out yet?": "o todavía no?",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
     "Deja de contestar «¿alguna novedad?». Comparte un solo enlace para que todos estén al tanto y avísales a la vez cuando nazca el bebé. 🍼",
   "Create your page 🎈": "Crea tu página 🎈",
@@ -1778,8 +1772,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Send some love": "Envie um pouco de carinho",
   Dashboard: "Painel",
   "Get started": "Começar",
-  Is: "O",
-  "out yet?": "já nasceu?",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
     'Chega de responder "E aí, alguma novidade?". Compartilhe um link, deixe todo mundo acompanhar e avise todo mundo de uma vez quando o bebê nascer. 🍼',
   "Create your page 🎈": "Crie sua página 🎈",
