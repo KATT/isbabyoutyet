@@ -20,6 +20,12 @@ export function resolveAcceptLanguage(acceptLanguage: string | null): SupportedL
   return DEFAULT_LOCALE;
 }
 
-export const detectRequestLocale = createServerFn({ method: "GET" }).handler(() => {
-  return resolveAcceptLanguage(getRequestHeader("accept-language") ?? null);
-});
+export function detectLocaleFromRequestHeaders(
+  readHeader: (name: string) => string | undefined = getRequestHeader,
+) {
+  return resolveAcceptLanguage(readHeader("accept-language") ?? null);
+}
+
+export const detectRequestLocale = createServerFn({ method: "GET" }).handler(
+  detectLocaleFromRequestHeaders,
+);
