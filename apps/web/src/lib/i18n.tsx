@@ -429,7 +429,7 @@ const enGB = {
   "Dismiss tour": "Dismiss tour",
   "Tour progress": "Tour progress",
   "Nice work — share your page and enjoy the quiet inbox.":
-    "Nice work. Share your page and enjoy the quiet inbox.",
+    "Nice work. Share your page and enjoy fewer 'any news?' texts.",
   "Close checklist": "Close checklist",
   "Open {{name}}'s page": "Open {{name}}'s page",
   "See {{name}}'s page": "See {{name}}'s page",
