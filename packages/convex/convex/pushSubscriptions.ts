@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { requireBabyManager } from "./babyAccess";
+import { requiredEnv } from "./requiredEnv";
 import { isActive } from "./softDelete";
 
 async function deleteByEndpoint(ctx: MutationCtx, endpoint: string) {
@@ -108,7 +109,7 @@ export const getPublicKey = query({
   args: {},
   handler: async () => {
     // VAPID public key is safe to expose to clients
-    return env.VAPID_PUBLIC_KEY;
+    return requiredEnv("VAPID_PUBLIC_KEY", env.VAPID_PUBLIC_KEY);
   },
 });
 

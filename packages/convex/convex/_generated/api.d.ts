@@ -23,6 +23,7 @@ import type * as onboarding from "../onboarding.js";
 import type * as profile from "../profile.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
+import type * as requiredEnv from "../requiredEnv.js";
 import type * as seed from "../seed.js";
 import type * as softDelete from "../softDelete.js";
 import type * as timeline from "../timeline.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   profile: typeof profile;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
+  requiredEnv: typeof requiredEnv;
   seed: typeof seed;
   softDelete: typeof softDelete;
   timeline: typeof timeline;

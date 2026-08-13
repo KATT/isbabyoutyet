@@ -6,12 +6,12 @@ import tableHistory from "convex-table-history/convex.config";
 
 const app = defineApp({
   env: {
-    BETTER_AUTH_SECRET: v.string(),
+    BETTER_AUTH_SECRET: v.optional(v.string()),
     CONVEX_SITE_URL: v.string(),
     NODE_ENV: v.optional(v.string()),
-    SITE_URL: v.string(),
-    VAPID_PRIVATE_KEY: v.string(),
-    VAPID_PUBLIC_KEY: v.string(),
+    SITE_URL: v.optional(v.string()),
+    VAPID_PRIVATE_KEY: v.optional(v.string()),
+    VAPID_PUBLIC_KEY: v.optional(v.string()),
     VAPID_SUBJECT: v.optional(v.string()),
   },
 });
