@@ -88,11 +88,11 @@ function createComposerSchema(t: TranslationFunction) {
     });
 }
 
-const MILESTONE_META: Record<Milestone, { labelKey: TranslationKey; icon: typeof Activity }> = {
+const MILESTONE_META = {
   labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, icon: Activity },
   gone_to_hospital: { labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital, icon: Hospital },
   born: { labelKey: MILESTONE_LABEL_KEYS.born, icon: CheckCircle },
-};
+} as const satisfies Record<Milestone, { labelKey: TranslationKey; icon: typeof Activity }>;
 
 function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {
   const now = Date.now();
