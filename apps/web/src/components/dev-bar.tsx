@@ -6,30 +6,27 @@ import {
 } from "@workspace/convex/src/seedCredentials";
 import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
-import { CaretDown, CaretUp, Code, House, SignIn } from "@phosphor-icons/react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
+import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 function activeBabyPublicId(pathname: string) {
   const match = pathname.match(/^\/baby\/([^/]+)/);
   return match?.[1] ?? null;
 }
 
-function isOutsideTarget(root: HTMLElement | null, target: EventTarget | null) {
-  if (!(target instanceof Node)) return false;
-  if (!root) return true;
-  return !root.contains(target);
-}
-
-function isEscapeKey(event: KeyboardEvent) {
-  return event.key === "Escape";
-}
-
 /**
- * Floating collapsible shortcuts to seeded demo babies. Only mounts in local
- * DEV and Vercel preview (same gate as demo login autofill).
+ * Floating shortcuts to seeded demo babies. Only mounts in local DEV and
+ * Vercel preview (same gate as demo login autofill).
  */
 export function DevBar() {
   if (!hasDemoLogin) return null;
@@ -39,231 +36,113 @@ export function DevBar() {
 function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const currentPublicId = activeBabyPublicId(pathname);
-  const [expanded, setExpanded] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setExpanded(false);
+    setOpen(false);
   }, [pathname]);
 
-  useEffect(() => {
-    if (!expanded) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      if (!isOutsideTarget(rootRef.current, event.target)) return;
-      setExpanded(false);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!isEscapeKey(event)) return;
-      setExpanded(false);
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [expanded]);
-
-  if (!expanded) {
-    return (
-      <div
-        ref={rootRef}
-        className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4"
-      >
-        <button
-          type="button"
-          onClick={() => setExpanded(true)}
-          className={cn(
-            "pointer-events-auto flex items-center gap-2 rounded-full border-2 border-border",
-            "bg-background/90 px-3 py-1.5 text-xs font-extrabold tracking-tight shadow-sm",
-            "backdrop-blur-md transition hover:-translate-y-0.5",
-          )}
-          aria-expanded={false}
-          aria-controls="dev-bar-panel"
-          aria-label="Expand developer shortcuts"
-        >
-          <span className="flex size-6 items-center justify-center rounded-full bg-primary/15 text-primary">
-            <Code className="size-3.5" />
-          </span>
-          Dev
-          <CaretDown className="size-3.5 text-muted-foreground" />
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div
-      ref={rootRef}
-      className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4"
-    >
-      <aside
-        id="dev-bar-panel"
-        className={cn(
-          "pointer-events-auto w-[min(100%,28rem)] rounded-2xl border-2 border-border",
-          "bg-background/95 p-3 shadow-sm backdrop-blur-md",
-          "animate-in fade-in-0 slide-in-from-top-2 duration-200",
-        )}
-        aria-label="Developer shortcuts"
-      >
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-              <Code className="size-3.5" />
-            </span>
-            <div>
-              <p className="text-sm font-extrabold tracking-tight text-foreground">Dev</p>
-              <p className="text-[0.7rem] font-medium text-muted-foreground">
-                Seeded babies · {DEMO_USER.email}
-              </p>
-            </div>
-          </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="rounded-full"
-            aria-label="Collapse developer shortcuts"
-            aria-expanded={true}
-            aria-controls="dev-bar-panel"
-            onClick={() => setExpanded(false)}
-          >
-            <CaretUp />
-          </Button>
-        </div>
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="pointer-events-auto rounded-full border-2 bg-background/90 font-extrabold shadow-sm backdrop-blur-md"
+              aria-label="Developer shortcuts"
+            />
+          }
+        >
+          <Code data-icon="inline-start" />
+          Dev
+        </DropdownMenuTrigger>
 
-        <div className="space-y-3">
-          <ShortcutSection title="Status stages">
+        <DropdownMenuContent align="center" side="bottom" sideOffset={8} className="w-72">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Seeded babies · {DEMO_USER.email}</DropdownMenuLabel>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Status stages</DropdownMenuLabel>
             {DEMO_BABIES.map((baby) => (
-              <ShortcutLink
+              <DropdownMenuItem
                 key={baby.publicId}
-                to="/baby/$publicId"
-                params={{ publicId: baby.publicId }}
-                label={baby.label}
-                hint={baby.name}
-                active={currentPublicId === baby.publicId}
-                icon={undefined}
-              />
+                render={
+                  <Link
+                    to="/baby/$publicId"
+                    params={{ publicId: baby.publicId }}
+                    preload="viewport"
+                  />
+                }
+              >
+                {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
+                <span className="min-w-0 flex-1 truncate">{baby.label}</span>
+                <span className="text-muted-foreground">{baby.name}</span>
+              </DropdownMenuItem>
             ))}
-          </ShortcutSection>
+          </DropdownMenuGroup>
 
-          <ShortcutSection title="Homepage demos">
+          <DropdownMenuSeparator />
+
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Homepage demos</DropdownMenuLabel>
             {SUPPORTED_LOCALES.map((locale) => {
               const baby = HOMEPAGE_DEMO_BABIES[locale];
               return (
-                <ShortcutLink
+                <DropdownMenuItem
                   key={baby.publicId}
-                  to="/baby/$publicId"
-                  params={{ publicId: baby.publicId }}
-                  label={baby.name}
-                  hint={locale}
-                  active={currentPublicId === baby.publicId}
-                  icon={undefined}
-                />
+                  render={
+                    <Link
+                      to="/baby/$publicId"
+                      params={{ publicId: baby.publicId }}
+                      preload="viewport"
+                    />
+                  }
+                >
+                  {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
+                  <span className="min-w-0 flex-1 truncate">{baby.name}</span>
+                  <span className="text-muted-foreground">{locale}</span>
+                </DropdownMenuItem>
               );
             })}
-          </ShortcutSection>
+          </DropdownMenuGroup>
 
-          <ShortcutSection title="Pages">
-            <ShortcutLink
-              to="/dashboard"
-              params={undefined}
-              label="Dashboard"
-              hint={null}
-              active={pathname.startsWith("/dashboard")}
-              icon={<House className="size-3.5" />}
-            />
-            <ShortcutLink
-              to="/auth/login"
-              params={undefined}
-              label="Login"
-              hint={null}
-              active={pathname.startsWith("/auth/login")}
-              icon={<SignIn className="size-3.5" />}
-            />
-            <ShortcutLink
-              to="/preview"
-              params={undefined}
-              label="Preview"
-              hint={null}
-              active={pathname.startsWith("/preview")}
-              icon={<Code className="size-3.5" />}
-            />
-          </ShortcutSection>
-        </div>
-      </aside>
+          <DropdownMenuSeparator />
+
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Pages</DropdownMenuLabel>
+            <DropdownMenuItem render={<Link to="/dashboard" preload="viewport" />}>
+              {pathname.startsWith("/dashboard") ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <House data-icon="inline-start" />
+              )}
+              Dashboard
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link to="/auth/login" preload="viewport" />}>
+              {pathname.startsWith("/auth/login") ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <SignIn data-icon="inline-start" />
+              )}
+              Login
+            </DropdownMenuItem>
+            <DropdownMenuItem render={<Link to="/preview" preload="viewport" />}>
+              {pathname.startsWith("/preview") ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <Code data-icon="inline-start" />
+              )}
+              Preview
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
-  );
-}
-
-function ShortcutSection(props: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="mb-1 px-1 text-[0.65rem] font-bold tracking-wide text-muted-foreground uppercase">
-        {props.title}
-      </h2>
-      <ul className="flex flex-col gap-0.5">{props.children}</ul>
-    </section>
-  );
-}
-
-type ShortcutLinkProps = {
-  to: "/baby/$publicId" | "/dashboard" | "/auth/login" | "/preview";
-  params: { publicId: string } | undefined;
-  label: string;
-  hint: string | null;
-  active: boolean;
-  icon: React.ReactNode | undefined;
-};
-
-function ShortcutLink(props: ShortcutLinkProps) {
-  const content = (
-    <>
-      {props.icon}
-      <span className="min-w-0 flex-1 truncate">{props.label}</span>
-      {props.hint ? (
-        <span className="shrink-0 text-[0.65rem] font-medium text-muted-foreground">
-          {props.hint}
-        </span>
-      ) : null}
-    </>
-  );
-
-  const className = cn(
-    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs font-semibold",
-    "transition hover:bg-muted/80",
-    props.active && "bg-primary/10 text-primary ring-1 ring-primary/20",
-  );
-
-  if (props.to === "/baby/$publicId" && props.params) {
-    return (
-      <li>
-        <Link
-          to="/baby/$publicId"
-          params={props.params}
-          preload="viewport"
-          className={className}
-          aria-current={props.active ? "page" : undefined}
-        >
-          {content}
-        </Link>
-      </li>
-    );
-  }
-
-  return (
-    <li>
-      <Link
-        to={props.to}
-        preload="viewport"
-        className={className}
-        aria-current={props.active ? "page" : undefined}
-      >
-        {content}
-      </Link>
-    </li>
   );
 }

@@ -18,9 +18,15 @@ type LanguagePickerProps = {
   value: SupportedLocale;
 };
 
+const languageOptions = SUPPORTED_LOCALES.map((locale) => ({
+  label: getLanguageName(locale),
+  value: locale,
+}));
+
 export function LanguagePicker(props: LanguagePickerProps) {
   return (
     <Select
+      items={languageOptions}
       value={props.value}
       onValueChange={(value) => {
         if (!value || !isSupportedLocale(value) || value === props.value) {
@@ -36,9 +42,9 @@ export function LanguagePicker(props: LanguagePickerProps) {
       </SelectTrigger>
       <SelectContent alignItemWithTrigger={false}>
         <SelectGroup>
-          {SUPPORTED_LOCALES.map((supportedLocale) => (
-            <SelectItem key={supportedLocale} value={supportedLocale}>
-              {getLanguageName(supportedLocale, props.value)}
+          {languageOptions.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
             </SelectItem>
           ))}
         </SelectGroup>
