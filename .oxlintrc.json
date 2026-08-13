@@ -36,7 +36,11 @@
       }
     },
     {
-      "files": ["apps/web/src/routes/demo/**/*.{ts,tsx}", "apps/web/src/**/*.test.{ts,tsx}"],
+      "files": [
+        "apps/web/src/routes/demo/**/*.{ts,tsx}",
+        "apps/web/src/**/*.test.{ts,tsx}",
+        "apps/web/src/components/dev-bar.tsx"
+      ],
       "rules": {
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
