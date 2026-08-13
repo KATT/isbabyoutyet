@@ -1,15 +1,19 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
 
+const setLocale = vi.hoisted(() => vi.fn());
+
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     useSession: () => ({ data: null }),
   },
 }));
+
+vi.mock("@/lib/paraglide-setup", () => ({ setLocale }));
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (opts: { component: () => ReactElement }) => opts,
@@ -72,4 +76,15 @@ test("Swedish homepage links visitors to Ella Holm", async () => {
     );
   expect(demoLinks.length).toBeGreaterThan(0);
   expect(screen.getByText("Följ Ella Holms ankomst")).toBeTruthy();
+});
+
+test("homepage language picker saves an explicit language choice", async () => {
+  await using _view = renderResource(<HomePage />);
+
+  fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
+  fireEvent.click(await screen.findByRole("option", { name: "Swedish" }));
+
+  await vi.waitFor(() => {
+    expect(setLocale).toHaveBeenCalledWith("sv");
+  });
 });
