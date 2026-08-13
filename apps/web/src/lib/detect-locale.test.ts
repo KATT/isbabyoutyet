@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
 import { resolveAcceptLanguage } from "./accept-language";
+import { detectRequestLocale } from "./detect-locale";
 import { getLanguageName } from "./i18n";
 import { detectLocaleFromRequestHeaders } from "./locale-request-handler";
 
@@ -22,4 +23,8 @@ test("displays supported language names in the active language", () => {
 
 test("reads Accept-Language from the current request", () => {
   expect(detectLocaleFromRequestHeaders(undefined, () => "es-ES,es;q=0.9")).toBe("es");
+});
+
+test("registers the request locale server function", () => {
+  expect(typeof detectRequestLocale).toBe("function");
 });
