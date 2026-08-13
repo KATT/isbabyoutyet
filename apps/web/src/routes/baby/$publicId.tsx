@@ -110,6 +110,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     });
 
     const themeColor = getThemePrimaryColor(baby.theme);
+    const themeCssUrl = getThemeCssUrl(baby.theme);
     const manifestUrl = `/baby/manifest/${baby._id}`;
 
     return {
@@ -151,6 +152,14 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
       ],
       links: [
+        ...(themeCssUrl
+          ? [
+              {
+                rel: "stylesheet",
+                href: themeCssUrl,
+              },
+            ]
+          : []),
         {
           rel: "manifest",
           href: manifestUrl,
@@ -196,7 +205,6 @@ function BabyPage() {
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const babyDoc = queryBaby ?? loaderData.baby;
   const baby = docToBabyData(babyDoc);
-  const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
@@ -224,8 +232,6 @@ function BabyPage() {
 
   return (
     <div className="min-h-screen bg-background bg-dots">
-      {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
-
       {canManage && (
         <>
           <SettingsPanel
