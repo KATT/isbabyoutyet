@@ -39,7 +39,6 @@ function babyPageLink(opts: { publicId: string; settings: boolean | undefined })
     to: "/baby/$publicId",
     params: { publicId: opts.publicId },
     search: opts.settings ? { settings: true } : undefined,
-    preload: "viewport",
   };
 }
 
@@ -63,7 +62,7 @@ function getStepAction(opts: {
     }
     return {
       kind: "link",
-      link: { to: "/dashboard/add", preload: "viewport" },
+      link: { to: "/dashboard/add" },
       label: t(ctaLabel),
       onClick: undefined,
     };

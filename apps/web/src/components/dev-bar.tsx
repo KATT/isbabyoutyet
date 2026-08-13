@@ -72,13 +72,7 @@ function DevBarPanel() {
             {DEMO_BABIES.map((baby) => (
               <DropdownMenuItem
                 key={baby.publicId}
-                render={
-                  <Link
-                    to="/baby/$publicId"
-                    params={{ publicId: baby.publicId }}
-                    preload="viewport"
-                  />
-                }
+                render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
               >
                 {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
                 <span className="min-w-0 flex-1 truncate">{baby.label}</span>
@@ -96,13 +90,7 @@ function DevBarPanel() {
               return (
                 <DropdownMenuItem
                   key={baby.publicId}
-                  render={
-                    <Link
-                      to="/baby/$publicId"
-                      params={{ publicId: baby.publicId }}
-                      preload="viewport"
-                    />
-                  }
+                  render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
                 >
                   {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
                   <span className="min-w-0 flex-1 truncate">{baby.name}</span>
@@ -116,7 +104,7 @@ function DevBarPanel() {
 
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
-            <DropdownMenuItem render={<Link to="/dashboard" preload="viewport" />}>
+            <DropdownMenuItem render={<Link to="/dashboard" />}>
               {pathname.startsWith("/dashboard") ? (
                 <Check data-icon="inline-start" />
               ) : (
@@ -124,7 +112,7 @@ function DevBarPanel() {
               )}
               Dashboard
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/auth/login" preload="viewport" />}>
+            <DropdownMenuItem render={<Link to="/auth/login" />}>
               {pathname.startsWith("/auth/login") ? (
                 <Check data-icon="inline-start" />
               ) : (
@@ -132,7 +120,7 @@ function DevBarPanel() {
               )}
               Login
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/preview" preload="viewport" />}>
+            <DropdownMenuItem render={<Link to="/preview" />}>
               {pathname.startsWith("/preview") ? (
                 <Check data-icon="inline-start" />
               ) : (

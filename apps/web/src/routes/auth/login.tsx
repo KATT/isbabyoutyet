@@ -57,7 +57,6 @@ function LoginPage() {
       <div className="w-full max-w-md">
         <Link
           to="/"
-          preload="viewport"
           className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
         >
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
@@ -136,7 +135,6 @@ function LoginPage() {
               {t("Don't have an account?")}{" "}
               <Link
                 to="/auth/signup"
-                preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
                 {t("Sign up")}
