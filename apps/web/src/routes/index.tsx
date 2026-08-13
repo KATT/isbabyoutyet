@@ -93,7 +93,16 @@ const HERO_HEADLINES = {
   "pt-BR": {
     before: "",
     after: "já nasceu?",
-    words: ["O bebê", "A Helena", "O Miguel", "A Alice", "O Arthur", "A Laura", "O Theo", "A Cecília"],
+    words: [
+      "O bebê",
+      "A Helena",
+      "O Miguel",
+      "A Alice",
+      "O Arthur",
+      "A Laura",
+      "O Theo",
+      "A Cecília",
+    ],
   },
 } as const satisfies Record<
   SupportedLocale,
