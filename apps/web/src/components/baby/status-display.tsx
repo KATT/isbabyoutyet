@@ -45,7 +45,7 @@ function PhotoAvatar({
   }, [photoUrl]);
 
   const baseClasses =
-    "inline-flex items-center justify-center w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 mb-6";
+    "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
   const variantClasses =
     variant === "born"
       ? "bg-primary/15 border-primary pop-shadow-strong"
@@ -167,10 +167,10 @@ export function StatusDisplay({
         variant={isBorn ? "born" : "default"}
       />
 
-      <h2 className="text-4xl md:text-6xl font-black tracking-tight text-primary text-balance">
+      <h2 className="text-4xl md:text-5xl font-black tracking-tight text-primary text-balance">
         {meta.answer}
       </h2>
-      <p className="mt-3 text-lg md:text-xl font-bold text-muted-foreground">{meta.subline}</p>
+      <p className="mt-3 text-lg font-bold text-muted-foreground">{meta.subline}</p>
 
       {currentStatus.type !== "not_yet" && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">

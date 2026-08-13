@@ -203,7 +203,7 @@ function BabyPage() {
 
       {/* Floating chrome: brand pill left, action dock right */}
       <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
             to="/"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
@@ -247,7 +247,7 @@ function BabyPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-2xl px-4 pb-16">
+      <main className="mx-auto w-full max-w-6xl px-4 pb-16">
         <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
           Is{" "}
           <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
@@ -256,41 +256,45 @@ function BabyPage() {
           out yet?
         </h1>
 
-        {/* Status card */}
-        <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
-          <StatusDisplay
-            baby={baby}
-            currentStatus={currentStatus}
-            photoUrl={babyDoc.photoUrl}
-            thumbnailUrl={babyDoc.thumbnailUrl}
-            latestUpdate={
-              latestUpdate
-                ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
-                : null
-            }
-          />
-          <div className="flex justify-center">
-            <NotificationSubscribe
-              babyId={babyDoc._id}
-              vapidPublicKey={loaderData.vapidPublicKey}
+        {/* Split layout: sticky status card on the left, feed on the right */}
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
+            <StatusDisplay
+              baby={baby}
+              currentStatus={currentStatus}
+              photoUrl={babyDoc.photoUrl}
+              thumbnailUrl={babyDoc.thumbnailUrl}
+              latestUpdate={
+                latestUpdate
+                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  : null
+              }
             />
-          </div>
-          <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
-          <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-        </section>
-
-        {/* Timeline: owner updates interleaved with encouragements. The feed
-            comes before the visitor's encouragement form; the owner posts
-            via the "Post update" button in the dock. */}
-        <section className="mt-8 rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
-          <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
-        </section>
-
-        {!baby.encouragementsDisabled && (
-          <section className="mt-8 rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
-            <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+            <div className="flex justify-center">
+              <NotificationSubscribe
+                babyId={babyDoc._id}
+                vapidPublicKey={loaderData.vapidPublicKey}
+              />
+            </div>
+            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
           </section>
-        )}
+
+          {/* Timeline: owner updates interleaved with encouragements. The
+              feed comes before the visitor's encouragement form; the owner
+              posts via the "Post update" button in the dock. */}
+          <div className="space-y-8">
+            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
+              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+            </section>
+
+            {!baby.encouragementsDisabled && (
+              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+              </section>
+            )}
+          </div>
+        </div>
       </main>
 
       <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
