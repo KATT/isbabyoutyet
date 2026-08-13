@@ -54,7 +54,7 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
     },
     born: {
       title: (name) => `${name} är här! 🎉`,
-      body: "Bebisen har kommit! Se de senaste uppdateringarna!",
+      body: "Bäbisen har kommit! Se de senaste uppdateringarna!",
     },
     photo_added: {
       title: (name) => `${name} – Nytt foto! 📸`,

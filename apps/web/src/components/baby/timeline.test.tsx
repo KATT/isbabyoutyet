@@ -100,7 +100,7 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Förlossningen har börjat" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Åkt till sjukhuset" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Bebisen är född" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {

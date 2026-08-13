@@ -499,9 +499,9 @@ export type TranslationFunction = <TKey extends TranslationKey>(
 
 const sv: Record<TranslationKey, string> = {
   "Track the progress of labour and birth – know when baby arrives!":
-    "Följ förlossningen och få veta när bebisen har kommit!",
-  "Is Baby Out Yet? – Share Your Baby's Arrival": "Har bebisen kommit? – Dela bebisens ankomst",
-  "Is Baby Out Yet?": "Har bebisen kommit?",
+    "Följ förlossningen och få veta när bäbisen har kommit!",
+  "Is Baby Out Yet? – Share Your Baby's Arrival": "Har bäbisen kommit? – Dela bäbisens ankomst",
+  "Is Baby Out Yet?": "Har bäbisen kommit?",
   "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
     "Slipp svara på alla meddelanden om nyheter. Skapa en enkel sida som håller alla uppdaterade.",
   "Free forever, no ads": "Alltid gratis, utan reklam",
@@ -517,11 +517,11 @@ const sv: Record<TranslationKey, string> = {
     "{{count}} dag till beräknad födsel – Har {{name}} kommit?",
   "{{count}} days until due date – Is {{name}} out yet?":
     "{{count}} dagar till beräknad födsel – Har {{name}} kommit?",
-  "{{title}} – Track Your Baby's Journey": "{{title}} – Följ bebisens resa",
+  "{{title}} – Track Your Baby's Journey": "{{title}} – Följ bäbisens resa",
   "Track {{name}}'s journey – know when baby arrives!":
-    "Följ {{name}}s resa och få veta när bebisen har kommit!",
+    "Följ {{name}}s resa och få veta när bäbisen har kommit!",
   "Not yet": "Inte än",
-  "Baby is still on the way": "Bebisen är fortfarande på väg",
+  "Baby is still on the way": "Bäbisen är fortfarande på väg",
   "{{count}} day overdue": "{{count}} dag över tiden",
   "{{count}} days overdue": "{{count}} dagar över tiden",
   "{{count}} day until due date": "{{count}} dag till beräknad födsel",
@@ -531,9 +531,9 @@ const sv: Record<TranslationKey, string> = {
   "Not gone to hospital yet": "Inte åkt till sjukhuset än",
   "Started at {{date}} ({{relative}})": "Började {{date}} ({{relative}})",
   "Gone to hospital": "Åkt till sjukhuset",
-  "Yes! Baby is out": "Ja! Bebisen har kommit",
+  "Yes! Baby is out": "Ja! Bäbisen har kommit",
   "Born on {{date}} ({{relative}})": "Född {{date}} ({{relative}})",
-  "Baby born": "Bebisen är född",
+  "Baby born": "Bäbisen är född",
   "Latest from the family": "Senaste nytt från familjen",
   "Photo of {{name}}": "Foto på {{name}}",
   "Updated {{relative}}": "Uppdaterat {{relative}}",
@@ -547,7 +547,7 @@ const sv: Record<TranslationKey, string> = {
   "Copied to clipboard": "Kopierad till urklipp",
   "Owner actions": "Ägaråtgärder",
   "Page actions": "Sidåtgärder",
-  "Baby Name": "Bebisens namn",
+  "Baby Name": "Bäbisens namn",
   "Due Date": "Beräknat datum",
   "Status date and time": "Datum och tid för status",
   Theme: "Tema",
@@ -589,20 +589,20 @@ const sv: Record<TranslationKey, string> = {
   "Photo added": "Foto tillagt",
   "Get Notifications": "Få notiser",
   Unsubscribe: "Avsluta notiser",
-  "Get notified when the baby's status changes": "Få en notis när bebisens status ändras",
+  "Get notified when the baby's status changes": "Få en notis när bäbisens status ändras",
   "Stop receiving push notifications for updates": "Sluta få pushnotiser om uppdateringar",
-  "Your Babies": "Dina bebisar",
-  "Track and manage all your babies' journeys": "Följ och hantera dina bebisars resor",
-  "Add Baby": "Lägg till bebis",
+  "Your Babies": "Dina bäbisar",
+  "Track and manage all your babies' journeys": "Följ och hantera dina bäbisars resor",
+  "Add Baby": "Lägg till bäbis",
   Logout: "Logga ut",
-  "No babies added yet": "Inga bebisar har lagts till än",
+  "No babies added yet": "Inga bäbisar har lagts till än",
   "Get started by adding your first baby to track their journey":
-    "Kom igång genom att lägga till din första bebis",
-  "Add Your First Baby": "Lägg till din första bebis",
+    "Kom igång genom att lägga till din första bäbis",
+  "Add Your First Baby": "Lägg till din första bäbis",
   "Due today!": "Beräknad idag!",
   "Profile language": "Profilspråk",
   "This is initially chosen from your browser. New baby pages inherit it.":
-    "Språket väljs först från din webbläsare. Nya bebissidor ärver det.",
+    "Språket väljs först från din webbläsare. Nya bäbissidor ärver det.",
   "Request another language": "Önska ett annat språk",
   "Tell us which language you would like us to add.":
     "Berätta vilket språk du vill att vi lägger till.",
@@ -611,17 +611,17 @@ const sv: Record<TranslationKey, string> = {
   "Send request": "Skicka önskemål",
   "Language request saved": "Språkönskemålet har sparats",
   "Back to Dashboard": "Tillbaka till översikten",
-  "Add a Baby": "Lägg till en bebis",
+  "Add a Baby": "Lägg till en bäbis",
   "Track the progress of labour and birth": "Följ förlossningen",
-  "Baby Information": "Information om bebisen",
+  "Baby Information": "Information om bäbisen",
   "Enter your baby's name and due date to get started":
-    "Ange bebisens namn och beräknade födelsedatum",
-  "Enter baby's name": "Ange bebisens namn",
+    "Ange bäbisens namn och beräknade födelsedatum",
+  "Enter baby's name": "Ange bäbisens namn",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
   "Creating...": "Skapar...",
   "Sign In": "Logga in",
-  "Sign in to track your babies": "Logga in för att följa dina bebisar",
+  "Sign in to track your babies": "Logga in för att följa dina bäbisar",
   Email: "E-post",
   Password: "Lösenord",
   "Signing in...": "Loggar in...",
@@ -686,7 +686,7 @@ const sv: Record<TranslationKey, string> = {
   "This action cannot be undone.": "Åtgärden kan inte ångras.",
   Delete: "Ta bort",
   "View photo full size": "Visa fotot i full storlek",
-  "Baby update": "Bebisuppdatering",
+  "Baby update": "Bäbisuppdatering",
   "Close photo": "Stäng foto",
   "Message cannot be empty": "Meddelandet får inte vara tomt",
   "Edit your message": "Redigera ditt meddelande",
@@ -736,7 +736,7 @@ const sv: Record<TranslationKey, string> = {
   "Everything you need to share the journey": "Allt du behöver för att dela resan",
   "Update Your Status": "Uppdatera statusen",
   "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
-    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset eller bebisen är här. Inga gruppmeddelanden eller upprepade samtal.",
+    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset eller bäbisen är här. Inga gruppmeddelanden eller upprepade samtal.",
   "Countdown to Due Date": "Nedräkning till beräknad födsel",
   "Set the due date so everyone can see how many days are left, including a friendly overdue counter.":
     "Ange beräknat datum så att alla ser hur många dagar som återstår, även efter datumet.",
@@ -752,21 +752,21 @@ const sv: Record<TranslationKey, string> = {
     "Besökare kan lämna kärleksfulla hälsningar i en digital gästbok.",
   "Get Notified": "Få notiser",
   "Subscribe to updates and hear the moment baby arrives without constantly refreshing.":
-    "Prenumerera på uppdateringar och få veta direkt när bebisen kommer.",
+    "Prenumerera på uppdateringar och få veta direkt när bäbisen kommer.",
   "See It In Action": "Se hur det fungerar",
-  "Open any stage to preview the baby page": "Öppna ett steg för att förhandsvisa bebissidan",
+  "Open any stage to preview the baby page": "Öppna ett steg för att förhandsvisa bäbissidan",
   Waiting: "Väntar",
   "Before labour starts": "Innan förlossningen börjar",
   "Things are happening!": "Nu händer det!",
   "At Hospital": "På sjukhuset",
   "Almost there!": "Snart är det dags!",
-  "Baby Born!": "Bebisen är född!",
+  "Baby Born!": "Bäbisen är född!",
   "Celebrate the arrival": "Fira ankomsten",
   "How It Works": "Så fungerar det",
   "Up and running in under a minute": "Kom igång på mindre än en minut",
   "Create Your Page": "Skapa din sida",
   "Sign up and add your baby's name and due date. That's it.":
-    "Registrera dig och lägg till bebisens namn och beräknade datum. Klart!",
+    "Registrera dig och lägg till bäbisens namn och beräknade datum. Klart!",
   "Share the Link": "Dela länken",
   "Send it to family and friends. They can follow along and subscribe without an account.":
     "Skicka den till familj och vänner. De kan följa med och prenumerera utan konto.",
@@ -782,7 +782,7 @@ const sv: Record<TranslationKey, string> = {
   "Open source on GitHub": "Öppen källkod på GitHub",
   "Preview – {{title}}": "Förhandsvisning – {{title}}",
   "Preview how your baby tracking page will look at different stages.":
-    "Förhandsvisa hur bebissidan ser ut i olika steg.",
+    "Förhandsvisa hur bäbissidan ser ut i olika steg.",
   "Page Not Found": "Sidan hittades inte",
   "Looks like this page hasn't arrived yet. Let's get you back home!":
     "Den här sidan verkar inte ha kommit än. Vi tar dig tillbaka hem!",
@@ -809,7 +809,7 @@ const sv: Record<TranslationKey, string> = {
     "Personer som kan lägga upp uppdateringar och ändra inställningar",
   "Others who can manage this page with you": "Andra som kan hantera sidan tillsammans med dig",
   "Delete page": "Ta bort sidan",
-  "Hide this baby page from everyone": "Dölj bebissidan för alla",
+  "Hide this baby page from everyone": "Dölj bäbissidan för alla",
   "Delete {{name}}'s page?": "Ta bort {{name}}s sida?",
   "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.":
     "Sidan försvinner från översikten och den publika länken slutar fungera. Bara du (ägaren) kan göra det.",
@@ -834,16 +834,16 @@ const sv: Record<TranslationKey, string> = {
   "Due {{date}}": "Beräknad {{date}}",
   "Born {{date}}": "Född {{date}}",
   Your: "Dina",
-  babies: "bebisar",
+  babies: "bäbisar",
   "Add a": "Lägg till en",
-  baby: "bebis",
+  baby: "bäbis",
   "A name and a due date — that's all it takes!":
     "Ett namn och ett beräknat datum — det är allt som behövs!",
-  "Add Baby 🍼": "Lägg till bebis 🍼",
+  "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
   "Join the fun!": "Häng med!",
-  "Create an account to share your baby's arrival": "Skapa ett konto för att dela bebisens ankomst",
+  "Create an account to share your baby's arrival": "Skapa ett konto för att dela bäbisens ankomst",
   "Not arrived yet!": "Har inte kommit än!",
   "Send some love": "Skicka lite kärlek",
   Dashboard: "Översikt",
@@ -851,7 +851,7 @@ const sv: Record<TranslationKey, string> = {
   Is: "Har",
   "out yet?": "kommit?",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
-    'Slipp svara på "några nyheter?". Dela en länk, låt alla följa med och berätta för alla på en gång när bebisen kommer. 🍼',
+    'Slipp svara på "några nyheter?". Dela en länk, låt alla följa med och berätta för alla på en gång när bäbisen kommer. 🍼',
   "Create your page 🎈": "Skapa din sida 🎈",
   "Everything the family needs": "Allt familjen behöver",
   "For you, and for everyone waiting by the phone":
@@ -867,7 +867,7 @@ const sv: Record<TranslationKey, string> = {
     "En livedemo med en tvådagars förlossning, foton och meddelanden. Skicka en testhälsning — det här är hela upplevelsen.",
   "Open the live page →": "Öppna livesidan →",
   "Or preview how each stage looks": "Eller förhandsgranska hur varje steg ser ut",
-  "This is a demo baby": "Detta är en demobebis",
+  "This is a demo baby": "Detta är en demobäbis",
   "Feel free to post test messages — they get cleared on each deploy.":
     "Skriv gärna testmeddelanden — de rensas vid varje deploy.",
   "How it works": "Så fungerar det",
@@ -876,10 +876,10 @@ const sv: Record<TranslationKey, string> = {
     "Gör som andra familjer och dela era speciella stunder. Det tar mindre än en minut.",
   "Update your status": "Uppdatera statusen",
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
-    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset, bebisen är här! Inga gruppmeddelanden, inga upprepade samtal.",
+    "Ett tryck uppdaterar alla — förlossningen har börjat, ni är på sjukhuset, bäbisen är här! Inga gruppmeddelanden, inga upprepade samtal.",
   "Countdown to due date": "Nedräkning till beräknad födsel",
   'Everyone can see how many days are left — plus a friendly "overdue" counter when baby takes their time.':
-    'Alla kan se hur många dagar som är kvar — plus en vänlig "över tiden"-räknare om bebisen tar sin tid.',
+    'Alla kan se hur många dagar som är kvar — plus en vänlig "över tiden"-räknare om bäbisen tar sin tid.',
   "Make it yours": "Gör den till din",
   "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
     "Välj ett tema som passar din stil. Från mjuka pasteller till starka färger — din sida, din känsla.",
@@ -891,7 +891,7 @@ const sv: Record<TranslationKey, string> = {
     "Besökare kan lämna kärleksfulla hälsningar. Som en digital gästbok fylld med önskningar du kommer att värdesätta.",
   "Get notified": "Få notiser",
   "Family can subscribe to push notifications and be the first to know the moment baby arrives.":
-    "Familjen kan prenumerera på pushnotiser och få veta först när bebisen kommer.",
+    "Familjen kan prenumerera på pushnotiser och få veta först när bäbisen kommer.",
   "Create your page": "Skapa din sida",
   "Share the link": "Dela länken",
   "Send it to family and friends. They can check in anytime and subscribe for notifications.":
@@ -900,7 +900,7 @@ const sv: Record<TranslationKey, string> = {
   "When things start happening, update your status. Everyone gets notified automatically.":
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
   "At hospital": "På sjukhuset",
-  "Baby born!": "Bebisen är född!",
+  "Baby born!": "Bäbisen är född!",
   "Restart getting started tour": "Starta om kom igång-guiden",
   "Restart tour": "Starta om guiden",
   "Tour restarted": "Guiden startades om",
@@ -924,12 +924,12 @@ const sv: Record<TranslationKey, string> = {
   "Hide tip": "Dölj tipset",
   "Open {{name}}'s page to do this — or tap the step in the checklist.":
     "Öppna {{name}}s sida för att göra detta — eller tryck på steget i checklistan.",
-  "Add your first baby": "Lägg till din första bebis",
+  "Add your first baby": "Lägg till din första bäbis",
   "Give them a name and due date — that creates a public page friends can open.":
     "Ge dem ett namn och ett beräknat datum — då skapas en publik sida som vänner kan öppna.",
-  "Add a baby": "Lägg till bebis",
+  "Add a baby": "Lägg till bäbis",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
-    "En länk för alla. Tryck på Dela på bebisens sida för att kopiera den — ingen gruppchattspam.",
+    "En länk för alla. Tryck på Dela på bäbisens sida för att kopiera den — ingen gruppchattspam.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Lägg upp milstolpar och vardagsanteckningar från menyn. Pushnotiser går bara till dem som prenumererar — och bara när du markerar en statusuppdatering (förlossning, sjukhus eller född).",
   "Peek at settings": "Titta i inställningarna",
@@ -940,8 +940,8 @@ const sv: Record<TranslationKey, string> = {
     "Alla med länken kan lämna en kort uppmuntrande hälsning — inget konto behövs. De syns i tidslinjen.",
   "Welcome — here's the idea": "Välkommen — så här funkar det",
   "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "Har bebisen kommit? ger dig en lugn sida för förlossningsuppdateringar, så att vänner och familj slutar skriva och fråga.",
-  "Create a baby page": "Skapa en bebissida",
+    "Har bäbisen kommit? ger dig en lugn sida för förlossningsuppdateringar, så att vänner och familj slutar skriva och fråga.",
+  "Create a baby page": "Skapa en bäbissida",
   "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
     "Lägg till namn och beräknat datum. Du får en delbar länk som isbabyoutyet.com/baby/… som visar aktuell status.",
   "Share once, update as you go": "Dela en gång, uppdatera längs vägen",
