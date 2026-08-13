@@ -14,6 +14,7 @@ import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as encouragements from "../encouragements.js";
 import type * as http from "../http.js";
 import type * as migrations from "../migrations.js";
+import type * as profile from "../profile.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   encouragements: typeof encouragements;
   http: typeof http;
   migrations: typeof migrations;
+  profile: typeof profile;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;

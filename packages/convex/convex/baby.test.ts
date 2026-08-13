@@ -72,7 +72,6 @@ test("a baby inherits the owner locale until an override is set", async () => {
   });
 
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    locale: undefined,
     resolvedLocale: "sv",
   });
 

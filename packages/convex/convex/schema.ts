@@ -14,7 +14,15 @@ export default defineSchema({
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
-    locale: v.optional(v.union(v.string(), v.null())), // Optional language override; null/absent inherits the owner's profile
+    locale: v.optional(
+      v.union(
+        v.literal("en-GB"),
+        v.literal("en-US"),
+        v.literal("sv"),
+        v.literal("es"),
+        v.null(),
+      ),
+    ), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
