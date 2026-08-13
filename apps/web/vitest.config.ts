@@ -79,6 +79,13 @@ export const webUnitProject = defineProject({
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
     setupFiles: ["./src/test/setup.ts"],
+    // Keep auth/Convex clients off localhost so unit tests never dial the
+    // developer's running `pnpm dev` / Convex backend (ports 3000 / 3210).
+    env: {
+      VITE_SITE_URL: "https://example.test",
+      VITE_CONVEX_URL: "https://example.convex.cloud",
+      VITE_CONVEX_SITE_URL: "https://example.convex.site",
+    },
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component

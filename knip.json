@@ -21,7 +21,7 @@
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
       ],
-      "ignoreExportsUsedInFile": true
+      "tags": ["-internal"]
     },
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!"]

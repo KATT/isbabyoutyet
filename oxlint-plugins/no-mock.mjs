@@ -30,22 +30,37 @@ function reportMockCall(context, node, methodName) {
   });
 }
 
+function memberName(property, computed) {
+  if (!computed && property.type === "Identifier") {
+    return property.name;
+  }
+  if (
+    computed &&
+    property.type === "Literal" &&
+    typeof property.value === "string"
+  ) {
+    return property.value;
+  }
+  return null;
+}
+
 function checkMemberCall(context, node) {
-  if (node.callee.type !== "MemberExpression" || node.callee.computed) {
+  if (node.callee.type !== "MemberExpression") {
     return;
   }
   const object = node.callee.object;
   const property = node.callee.property;
-  if (object.type !== "Identifier" || property.type !== "Identifier") {
+  if (object.type !== "Identifier") {
     return;
   }
   if (!isVitestOrJestIdentifier(object.name)) {
     return;
   }
-  if (!BANNED.has(property.name)) {
+  const name = memberName(property, node.callee.computed);
+  if (name == null || !BANNED.has(name)) {
     return;
   }
-  reportMockCall(context, node, `${object.name}.${property.name}`);
+  reportMockCall(context, node, `${object.name}.${name}`);
 }
 
 const noMock = {

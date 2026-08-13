@@ -40,9 +40,13 @@ function stubHorizontalLayoutResource(width: number) {
   return makeResource({}, () => {
     if (offsetWidth) {
       Object.defineProperty(HTMLElement.prototype, "offsetWidth", offsetWidth);
+    } else {
+      Reflect.deleteProperty(HTMLElement.prototype, "offsetWidth");
     }
     if (offsetLeft) {
       Object.defineProperty(HTMLElement.prototype, "offsetLeft", offsetLeft);
+    } else {
+      Reflect.deleteProperty(HTMLElement.prototype, "offsetLeft");
     }
   });
 }
@@ -75,11 +79,8 @@ test("welcome tour finishes with Let's go on the last slide", async () => {
     <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
   );
 
-  // Drive slides via the visible "Next" button (real carousel, no mock).
-  // Bounded by slide count so a regression fails fast instead of hanging.
-  for (let clicks = 0; clicks < 10 && screen.queryByRole("button", { name: /^next$/i }); clicks++) {
-    fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
-  }
+  // Jump via a slide dot (real carousel scrollTo), then finish from the last slide.
+  fireEvent.click(screen.getByRole("button", { name: /go to slide 4/i }));
 
   await vi.waitFor(() => {
     expect(screen.getByRole("button", { name: /let's go/i })).toBeTruthy();

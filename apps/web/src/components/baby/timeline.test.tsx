@@ -7,14 +7,20 @@ import {
   TimelineFeedView,
   UpdateComposer,
   UpdateComposerForm,
-  type TimelineFeedStatus,
 } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
+
+/** Unreachable deployment URL so smoke tests never dial the local Convex dev port. */
+function unreachableConvexClient() {
+  return new ConvexReactClient("https://example.convex.cloud", {
+    unsavedChangesWarning: false,
+  });
+}
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
@@ -220,7 +226,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
     baby: bornBaby,
     babyName: bornBaby.name,
     isOwner: true,
-    status: "Exhausted" as TimelineFeedStatus,
+    status: "Exhausted",
     results: [
       {
         _id: "timeline-item-id" as Id<"timelineItems">,
@@ -236,7 +242,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
           isCurrentPagePhoto: false,
         },
       },
-    ] as unknown as TimelineFeedViewProps["results"],
+    ],
   });
   const view = feed.view;
 
@@ -250,7 +256,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 
 test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
   await using feed = renderFeedView({
-    status: "LoadingFirstPage" as TimelineFeedStatus,
+    status: "LoadingFirstPage",
     results: [],
     initialPage: {
       page: [
@@ -269,7 +275,7 @@ test("shows the prefetched first page instead of a spinner while the live query 
       ],
       isDone: false,
       continueCursor: "cursor",
-    } as unknown as TimelineFeedViewProps["initialPage"],
+    },
   });
   const view = feed.view;
 
@@ -280,7 +286,7 @@ test("shows the prefetched first page instead of a spinner while the live query 
 
 test("shows the empty feed, not a spinner, when the prefetched first page is empty", async () => {
   await using feed = renderFeedView({
-    status: "LoadingFirstPage" as TimelineFeedStatus,
+    status: "LoadingFirstPage",
     results: [],
     initialPage: { page: [], isDone: true, continueCursor: "" },
   });
@@ -291,8 +297,11 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
 });
 
 test("UpdateComposer wires useMutation into the form", async () => {
-  const client = new ConvexReactClient("http://127.0.0.1:3210");
-  const view = render(
+  const client = unreachableConvexClient();
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const rendered = render(
     <ConvexProvider client={client}>
       <LocaleProvider locale="en-GB">
         <UpdateComposer
@@ -304,14 +313,18 @@ test("UpdateComposer wires useMutation into the form", async () => {
       </LocaleProvider>
     </ConvexProvider>,
   );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
   expect(view.getByText("Post an update")).toBeTruthy();
-  view.unmount();
-  await client.close();
 });
 
 test("TimelineFeed wires usePaginatedQuery/useMutation into the view", async () => {
-  const client = new ConvexReactClient("http://127.0.0.1:3210");
-  const view = render(
+  const client = unreachableConvexClient();
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const rendered = render(
     <ConvexProvider client={client}>
       <LocaleProvider locale="en-GB">
         <TooltipProvider>
@@ -326,7 +339,8 @@ test("TimelineFeed wires usePaginatedQuery/useMutation into the view", async () 
       </LocaleProvider>
     </ConvexProvider>,
   );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
   expect(view.getByText("Nothing here yet")).toBeTruthy();
-  view.unmount();
-  await client.close();
 });

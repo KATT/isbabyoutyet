@@ -1,7 +1,6 @@
 import {
   createMemoryHistory,
   createRootRoute,
-  createRoute,
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
@@ -17,6 +16,9 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
  *
  * Returns a promise: the router resolves its initial match asynchronously,
  * so callers must `await` this before asserting on the rendered output.
+ *
+ * A single root route is enough — `Link` still builds the correct `href`
+ * from `to` / `params` without registering every destination path.
  */
 export async function renderWithTestRouter(ui: ReactElement) {
   const rootRoute = createRootRoute({
@@ -29,19 +31,8 @@ export async function renderWithTestRouter(ui: ReactElement) {
     },
   });
 
-  // Register the paths tests link to so typed `Link` resolves at runtime.
-  const routeTree = rootRoute.addChildren([
-    createRoute({ getParentRoute: () => rootRoute, path: "/" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/auth/login" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/auth/signup" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/dashboard" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/dashboard/add" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/baby/$publicId" }),
-    createRoute({ getParentRoute: () => rootRoute, path: "/preview" }),
-  ]);
-
   const router = createRouter({
-    routeTree,
+    routeTree: rootRoute,
     history: createMemoryHistory({ initialEntries: ["/"] }),
     defaultPendingMinMs: 0,
   });

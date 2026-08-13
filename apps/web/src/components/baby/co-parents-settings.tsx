@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import type { FunctionReturnType } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
@@ -12,20 +12,29 @@ import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
+/** @internal Presentational listing type — exported for tests. */
 export type CoParentsListing = FunctionReturnType<typeof api.coParents.listForBaby>;
 
-function inviteCoParentSchema(t: TranslationFunction) {
-  return z.object({
-    email: z.string().trim().email(t("Invalid email address")),
-  });
+type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
+
+function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
+  return z
+    .object({
+      email: z.string().trim().email(t("Invalid email address")),
+    })
+    .transform((values): InviteArgs => ({
+      babyId,
+      email: values.email,
+    }));
 }
 
 function InviteCoParentForm(props: {
-  onInvite: (email: string) => Promise<{ status: "added" | "invited" }>;
+  babyId: Id<"baby">;
+  onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: inviteCoParentSchema(t),
+    schema: inviteCoParentSchema(t, props.babyId),
     defaultValues: { email: "" },
   });
   const email = form.watch("email");
@@ -34,7 +43,7 @@ function InviteCoParentForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const result = await props.onInvite(values.email);
+        const result = await props.onInvite(values);
         form.reset({ email: "" });
         toast.success(
           result.status === "added"
@@ -69,11 +78,12 @@ function InviteCoParentForm(props: {
 }
 
 type CoParentsSettingsViewProps = {
+  babyId: Id<"baby">;
   /** Only the owner can invite/remove; co-parents see a read-only list. */
   isOwner: boolean;
   /** `undefined` while the listing query is loading. */
   listing: CoParentsListing | undefined;
-  onInvite: (email: string) => Promise<{ status: "added" | "invited" }>;
+  onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
   onRemoveCoParent: (coParentId: Id<"babyCoParents">) => Promise<unknown>;
   onCancelInvite: (inviteId: Id<"babyCoParentInvites">) => Promise<unknown>;
 };
@@ -82,6 +92,8 @@ type CoParentsSettingsViewProps = {
  * Presentational settings section for inviting co-parents by email and
  * managing membership. Takes all data + actions as props so it can be
  * rendered in tests without a Convex provider.
+ *
+ * @internal Exported for tests; production uses `CoParentsSettings`.
  */
 export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
   const { t } = useI18n();
@@ -155,7 +167,9 @@ export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
         </ul>
       )}
 
-      {props.isOwner ? <InviteCoParentForm onInvite={props.onInvite} /> : null}
+      {props.isOwner ? (
+        <InviteCoParentForm babyId={props.babyId} onInvite={props.onInvite} />
+      ) : null}
     </div>
   );
 }
@@ -177,9 +191,10 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
 
   return (
     <CoParentsSettingsView
+      babyId={props.babyId}
       isOwner={props.isOwner}
       listing={listing}
-      onInvite={(email) => invite({ babyId: props.babyId, email })}
+      onInvite={invite}
       onRemoveCoParent={(coParentId) => removeCoParent({ coParentId })}
       onCancelInvite={(inviteId) => cancelInvite({ inviteId })}
     />

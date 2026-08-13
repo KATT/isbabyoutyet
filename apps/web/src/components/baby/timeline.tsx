@@ -194,6 +194,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   );
 }
 
+/** @internal Exported for tests; production uses `UpdateComposer`. */
 export function UpdateComposerForm(props: UpdateComposerFormProps) {
   const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -912,7 +913,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 // --- Feed ---
 
 type TimelineFirstPage = FunctionReturnType<typeof api.timeline.listByBaby>;
-export type TimelineFeedStatus = "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted";
+type TimelineFeedStatus = "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted";
 
 type RemoveUpdateFn = (
   args: FunctionArgs<typeof api.updates.remove>,
@@ -990,6 +991,7 @@ type TimelineFeedViewProps = {
   updateEncouragement: UpdateEncouragementFn;
 };
 
+/** @internal Exported for tests; production uses `TimelineFeed`. */
 export function TimelineFeedView(props: TimelineFeedViewProps) {
   const { t } = useI18n();
   const loadMoreRef = useRef<HTMLDivElement>(null);

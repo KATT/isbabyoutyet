@@ -2,12 +2,6 @@ import { expect, test } from "vitest";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-// `@/routes/_auth/dashboard/index` evaluates `authServer` at module load
-// (via `@/lib/auth-server`), which reads these Vite env vars. Set them
-// before importing since no `.env.local` exists in the test environment.
-process.env.VITE_CONVEX_URL = "http://127.0.0.1:3210";
-process.env.VITE_CONVEX_SITE_URL = "http://127.0.0.1:3211";
-
 const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
 
 test("shows a spinner instead of the empty state while the baby list is pending", async () => {
