@@ -9,6 +9,7 @@ import type { ActionCtx } from "./_generated/server";
 import { env, internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
 import { supportedLocaleValidator } from "./i18n";
+import { requiredEnv } from "./requiredEnv";
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
@@ -27,8 +28,8 @@ async function sendNotificationToSubscription(
 ): Promise<boolean> {
   webPush.setVapidDetails(
     env.VAPID_SUBJECT ?? "mailto:admin@isbabyoutyet.com",
-    env.VAPID_PUBLIC_KEY,
-    env.VAPID_PRIVATE_KEY,
+    requiredEnv("VAPID_PUBLIC_KEY", env.VAPID_PUBLIC_KEY),
+    requiredEnv("VAPID_PRIVATE_KEY", env.VAPID_PRIVATE_KEY),
   );
   try {
     const pushSubscription = {
