@@ -45,7 +45,7 @@ export function DevBar() {
   return <DevBarPanel />;
 }
 
-export function DevBarPanel() {
+function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const currentPublicId = activeBabyPublicId(pathname);
   const [expanded, setExpanded] = useState(false);

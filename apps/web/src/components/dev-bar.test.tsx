@@ -5,6 +5,13 @@ import { DEMO_BABIES, HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCre
 
 const mocks = vi.hoisted(() => ({
   pathname: "/dashboard",
+  hasDemoLogin: true,
+}));
+
+vi.mock("@/lib/has-demo-login", () => ({
+  get hasDemoLogin() {
+    return mocks.hasDemoLogin;
+  },
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -30,10 +37,10 @@ vi.mock("@tanstack/react-router", () => ({
     opts.select({ location: { pathname: mocks.pathname } }),
 }));
 
-const { DevBarPanel } = await import("./dev-bar");
+const { DevBar } = await import("./dev-bar");
 
 function renderDevBar() {
-  const view = render(<DevBarPanel />);
+  const view = render(<DevBar />);
   return makeResource(view, () => {
     view.unmount();
   });
@@ -42,6 +49,7 @@ function renderDevBar() {
 test("starts collapsed and expands to show seeded baby shortcuts", async () => {
   window.localStorage.removeItem("isbabyoutyet:dev-bar-expanded");
   mocks.pathname = "/dashboard";
+  mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
 
@@ -59,9 +67,20 @@ test("starts collapsed and expands to show seeded baby shortcuts", async () => {
   expect(juniper.getAttribute("href")).toBe(`/baby/${HOMEPAGE_DEMO_BABIES["en-GB"].publicId}`);
 });
 
+test("hides entirely when demo login is disabled", async () => {
+  mocks.hasDemoLogin = false;
+  mocks.pathname = "/";
+
+  await using _view = renderDevBar();
+
+  expect(screen.queryByRole("button", { name: /expand developer shortcuts/i })).toBeNull();
+  expect(screen.queryByRole("complementary", { name: /developer shortcuts/i })).toBeNull();
+});
+
 test("marks the current baby link as the active page", async () => {
   window.localStorage.setItem("isbabyoutyet:dev-bar-expanded", "1");
   mocks.pathname = "/baby/baby-in-labor";
+  mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
 
@@ -76,6 +95,7 @@ test("marks the current baby link as the active page", async () => {
 test("collapsing persists the preference", async () => {
   window.localStorage.setItem("isbabyoutyet:dev-bar-expanded", "1");
   mocks.pathname = "/";
+  mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
 
