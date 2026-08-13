@@ -63,7 +63,7 @@ function createClient({ url, transformer }: ClientOptions) {
 
 ### Function Parameters
 
-- **MAXIMUM 2 parameters** per function (`eslint/max-params: 2`)
+- **MAXIMUM 2 parameters** per function (oxlint `max-params: 2`)
 - Use options objects for functions with many parameters
 
 ```typescript
