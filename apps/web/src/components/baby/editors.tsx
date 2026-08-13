@@ -99,6 +99,7 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
 }
 
 function DueDateForm(props: EditorFormProps) {
+  const { t } = useI18n();
   const form = useZodForm({
     schema: dueDateSchema,
     defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
@@ -120,7 +121,7 @@ function DueDateForm(props: EditorFormProps) {
             <FormControl>
               <Input
                 type="date"
-                aria-label="Due date"
+                aria-label={t("Due Date")}
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 {...field}
@@ -182,6 +183,7 @@ function StatusDateForm(props: {
   onUpdate: BabyUpdateHandler;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const form = useZodForm({
     schema: statusDateSchema,
     defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
@@ -210,7 +212,7 @@ function StatusDateForm(props: {
             <FormControl>
               <Input
                 type="datetime-local"
-                aria-label="Status date and time"
+                aria-label={t("Status date and time")}
                 max={toDatetimeLocalValue(new Date())}
                 {...field}
               />
@@ -258,6 +260,7 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
 }
 
 function NameForm(props: EditorFormProps) {
+  const { t } = useI18n();
   const form = useZodForm({
     schema: nameSchema,
     defaultValues: { name: props.baby.name },
@@ -277,15 +280,16 @@ function NameForm(props: EditorFormProps) {
         render={({ field }) => (
           <FormItem className="mb-3">
             <FormControl>
-              <Input placeholder="Baby name" aria-label="Baby name" {...field} />
+              <Input placeholder={t("Baby Name")} aria-label={t("Baby Name")} {...field} />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
       <p className="text-xs text-muted-foreground mb-3">
-        Renaming may change the page address, but don't worry — any link you've already shared keeps
-        working.
+        {t(
+          "Renaming may change the page address, but links you have already shared will keep working.",
+        )}
       </p>
       <EditorActions
         onClose={props.onClose}

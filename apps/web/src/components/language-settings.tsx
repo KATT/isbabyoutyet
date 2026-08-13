@@ -100,7 +100,7 @@ export function LanguageSettings() {
                   minLength={2}
                   maxLength={100}
                   required
-                  placeholder="Français / fr-FR"
+                  placeholder={t("Example: French / fr-FR")}
                 />
               </Field>
               <DialogFooter>

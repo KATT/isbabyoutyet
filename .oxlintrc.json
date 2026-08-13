@@ -10,7 +10,10 @@
   "settings": {
     "i18n-literal": {
       "presets": ["react"],
-      "translationFunctionNames": ["translate"]
+      "translationFunctionNames": ["translate"],
+      "ignoredAttributes": ["to", "params", "search"],
+      "ignoredComponents": ["TanStackDevtools"],
+      "ignorePatterns": ["^LoadingMore$", "^Tanstack Router$"]
     }
   },
   "rules": {
@@ -23,6 +26,14 @@
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error"
+      }
+    },
+    {
+      "files": ["apps/web/src/routes/demo/**/*.{ts,tsx}", "apps/web/src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "i18n-literal/no-literal-string": "off",
+        "i18n-literal/no-literal-jsx-attribute": "off",
+        "i18n-literal/no-literal-template": "off"
       }
     }
   ]

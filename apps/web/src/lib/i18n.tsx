@@ -16,6 +16,7 @@ const enGB = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Track the progress of labour and birth – know when baby arrives!",
   "Is Baby Out Yet? – Share Your Baby's Arrival": "Is Baby Out Yet? – Share Your Baby's Arrival",
+  "Is Baby Out Yet?": "Is Baby Out Yet?",
   "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
     "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
   "Free forever, no ads": "Free forever, no ads",
@@ -62,6 +63,7 @@ const enGB = {
   "Page actions": "Page actions",
   "Baby Name": "Baby Name",
   "Due Date": "Due Date",
+  "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Encouragements",
   "Visitors can send messages": "Visitors can send messages",
@@ -120,6 +122,7 @@ const enGB = {
   "Tell us which language you would like us to add.":
     "Tell us which language you would like us to add.",
   "Language name or code": "Language name or code",
+  "Example: French / fr-FR": "Example: French / fr-FR",
   "Send request": "Send request",
   "Language request saved": "Language request saved",
   "Back to Dashboard": "Back to Dashboard",
@@ -129,6 +132,8 @@ const enGB = {
   "Enter your baby's name and due date to get started":
     "Enter your baby's name and due date to get started",
   "Enter baby's name": "Enter baby's name",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Renaming may change the page address, but links you have already shared will keep working.",
   "Creating...": "Creating...",
   "Sign In": "Sign In",
   "Sign in to track your babies": "Sign in to track your babies",
@@ -309,6 +314,7 @@ const sv: Record<TranslationKey, string> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Följ förlossningen och få veta när bebisen har kommit!",
   "Is Baby Out Yet? – Share Your Baby's Arrival": "Har bebisen kommit? – Dela bebisens ankomst",
+  "Is Baby Out Yet?": "Har bebisen kommit?",
   "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
     "Slipp svara på alla meddelanden om nyheter. Skapa en enkel sida som håller alla uppdaterade.",
   "Free forever, no ads": "Alltid gratis, utan reklam",
@@ -356,6 +362,7 @@ const sv: Record<TranslationKey, string> = {
   "Page actions": "Sidåtgärder",
   "Baby Name": "Bebisens namn",
   "Due Date": "Beräknat datum",
+  "Status date and time": "Datum och tid för status",
   Theme: "Tema",
   Encouragements: "Hälsningar",
   "Visitors can send messages": "Besökare kan skicka meddelanden",
@@ -413,6 +420,7 @@ const sv: Record<TranslationKey, string> = {
   "Tell us which language you would like us to add.":
     "Berätta vilket språk du vill att vi lägger till.",
   "Language name or code": "Språknamn eller kod",
+  "Example: French / fr-FR": "Exempel: franska / fr-FR",
   "Send request": "Skicka önskemål",
   "Language request saved": "Språkönskemålet har sparats",
   "Back to Dashboard": "Tillbaka till översikten",
@@ -422,6 +430,8 @@ const sv: Record<TranslationKey, string> = {
   "Enter your baby's name and due date to get started":
     "Ange bebisens namn och beräknade födelsedatum",
   "Enter baby's name": "Ange bebisens namn",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
   "Creating...": "Skapar...",
   "Sign In": "Logga in",
   "Sign in to track your babies": "Logga in för att följa dina bebisar",
@@ -582,6 +592,7 @@ const es: Record<TranslationKey, string> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Sigue el progreso del parto y entérate cuando nazca el bebé.",
   "Is Baby Out Yet? – Share Your Baby's Arrival": "¿Ya nació el bebé? – Comparte su llegada",
+  "Is Baby Out Yet?": "¿Ya nació el bebé?",
   "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
     "Deja de responder mensajes preguntando si hay novedades. Crea una página sencilla para mantener a todos informados.",
   "Free forever, no ads": "Gratis para siempre, sin anuncios",
@@ -629,6 +640,7 @@ const es: Record<TranslationKey, string> = {
   "Page actions": "Acciones de la página",
   "Baby Name": "Nombre del bebé",
   "Due Date": "Fecha prevista",
+  "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
   "Visitors can send messages": "Los visitantes pueden enviar mensajes",
@@ -687,6 +699,7 @@ const es: Record<TranslationKey, string> = {
   "Request another language": "Solicitar otro idioma",
   "Tell us which language you would like us to add.": "Dinos qué idioma quieres que añadamos.",
   "Language name or code": "Nombre o código del idioma",
+  "Example: French / fr-FR": "Ejemplo: francés / fr-FR",
   "Send request": "Enviar solicitud",
   "Language request saved": "Solicitud de idioma guardada",
   "Back to Dashboard": "Volver al panel",
@@ -696,6 +709,8 @@ const es: Record<TranslationKey, string> = {
   "Enter your baby's name and due date to get started":
     "Introduce el nombre y la fecha prevista del bebé",
   "Enter baby's name": "Introduce el nombre del bebé",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Cambiar el nombre puede modificar la dirección, pero los enlaces ya compartidos seguirán funcionando.",
   "Creating...": "Creando...",
   "Sign In": "Iniciar sesión",
   "Sign in to track your babies": "Inicia sesión para seguir a tus bebés",
@@ -858,6 +873,7 @@ const ptBR: Record<TranslationKey, string> = {
     "Acompanhe o trabalho de parto e saiba quando o bebê nascer!",
   "Is Baby Out Yet? – Share Your Baby's Arrival":
     "O bebê já nasceu? – Compartilhe a chegada do seu bebê",
+  "Is Baby Out Yet?": "O bebê já nasceu?",
   "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.":
     "Pare de responder mensagens perguntando se há novidades. Crie uma página simples para manter todos informados, receber carinho e avisar quando o bebê nascer.",
   "Free forever, no ads": "Grátis para sempre, sem anúncios",
@@ -906,6 +922,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Page actions": "Ações da página",
   "Baby Name": "Nome do bebê",
   "Due Date": "Data prevista",
+  "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
   "Visitors can send messages": "Visitantes podem enviar mensagens",
@@ -965,6 +982,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Request another language": "Solicitar outro idioma",
   "Tell us which language you would like us to add.": "Conte qual idioma você gostaria de ver.",
   "Language name or code": "Nome ou código do idioma",
+  "Example: French / fr-FR": "Exemplo: francês / fr-FR",
   "Send request": "Enviar solicitação",
   "Language request saved": "Solicitação de idioma salva",
   "Back to Dashboard": "Voltar ao painel",
@@ -974,6 +992,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Enter your baby's name and due date to get started":
     "Informe o nome do bebê e a data prevista para começar",
   "Enter baby's name": "Digite o nome do bebê",
+  "Renaming may change the page address, but links you have already shared will keep working.":
+    "Alterar o nome pode mudar o endereço, mas os links já compartilhados continuarão funcionando.",
   "Creating...": "Criando...",
   "Sign In": "Entrar",
   "Sign in to track your babies": "Entre para acompanhar seus bebês",

@@ -144,7 +144,7 @@ function HomePage() {
           </Badge>
           <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is Baby Out Yet?
+              {t("Is Baby Out Yet?")}
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
