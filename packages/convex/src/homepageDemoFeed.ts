@@ -82,7 +82,7 @@ export const HOMEPAGE_DEMO_FEED_SLOTS = [
   { kind: "encouragement", minutesAgo: 90 },
   { kind: "encouragement", minutesAgo: 45 },
   { kind: "encouragement", minutesAgo: 20 },
-] as const satisfies ReadonlyArray<HomepageDemoFeedSlot>;
+] satisfies ReadonlyArray<HomepageDemoFeedSlot>;
 
 export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocaleCopy> = {
   "en-GB": {
