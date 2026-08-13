@@ -15,9 +15,29 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { authServer } from "@/lib/auth-server";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
 type SortBy = "created" | "updated";
+
+type LanguageRequestRow = {
+  _id: string;
+  requestedLocale: string;
+  createdAt: number;
+  userId: string;
+  userEmail: string | null;
+};
+
+type BabyRow = {
+  _id: string;
+  name: string;
+  publicId: string;
+  status: "not_yet" | "labor_started" | "gone_to_hospital" | "born";
+  demo: boolean;
+  createdAt: number;
+  updatedAt: number;
+  managerEmails: string[];
+};
 
 export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
@@ -32,10 +52,7 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   },
 });
 
-function statusLabel(
-  status: "not_yet" | "labor_started" | "gone_to_hospital" | "born",
-  t: ReturnType<typeof useI18n>["t"],
-) {
+export function statusLabel(status: BabyRow["status"], t: TranslationFunction) {
   switch (status) {
     case "not_yet":
       return t("Not yet");
@@ -52,15 +69,137 @@ function statusLabel(
   }
 }
 
-function formatWhen(ms: number, locale: string) {
+export function formatWhen(ms: number, locale: string) {
   return new Intl.DateTimeFormat(locale, {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(ms));
 }
 
-function AdminDashboardPage() {
+export function LanguageRequestsSection(props: { requests: LanguageRequestRow[] | undefined }) {
   const { t, locale } = useI18n();
+  if (props.requests === undefined) {
+    return <Spinner className="size-6 text-primary" />;
+  }
+  if (props.requests.length === 0) {
+    return <p className="font-medium text-muted-foreground">{t("No language requests yet")}</p>;
+  }
+  return (
+    <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("Language")}</TableHead>
+            <TableHead>{t("Requester")}</TableHead>
+            <TableHead>{t("Created")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {props.requests.map((request) => (
+            <TableRow key={request._id}>
+              <TableCell className="font-semibold">{request.requestedLocale}</TableCell>
+              <TableCell>{request.userEmail ?? request.userId}</TableCell>
+              <TableCell>{formatWhen(request.createdAt, locale)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+export function BabiesSection(props: {
+  babies: BabyRow[] | undefined;
+  sortBy: SortBy;
+  onSortByChange: (sortBy: SortBy) => void;
+}) {
+  const { t, locale } = useI18n();
+  return (
+    <section>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-2xl font-black tracking-tight">{t("All babies")}</h2>
+        <NativeSelect
+          value={props.sortBy}
+          aria-label={t("Sort by updated")}
+          onChange={(event) => {
+            const value = event.target.value;
+            if (value === "created" || value === "updated") {
+              props.onSortByChange(value);
+            }
+          }}
+        >
+          <NativeSelectOption value="updated">{t("Sort by updated")}</NativeSelectOption>
+          <NativeSelectOption value="created">{t("Sort by created")}</NativeSelectOption>
+        </NativeSelect>
+      </div>
+
+      {props.babies === undefined ? (
+        <Spinner className="size-6 text-primary" />
+      ) : (
+        <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t("Name")}</TableHead>
+                <TableHead>{t("Status")}</TableHead>
+                <TableHead>{t("Managers")}</TableHead>
+                <TableHead>{props.sortBy === "created" ? t("Created") : t("Updated")}</TableHead>
+                <TableHead />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {props.babies.map((baby) => (
+                <TableRow key={baby._id}>
+                  <TableCell className="font-semibold">
+                    <span className="inline-flex items-center gap-2">
+                      <BabyIcon className="h-4 w-4 text-primary" />
+                      {baby.name}
+                      {baby.demo ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
+                          {t("Demo")}
+                        </span>
+                      ) : null}
+                    </span>
+                  </TableCell>
+                  <TableCell>{statusLabel(baby.status, t)}</TableCell>
+                  <TableCell className="max-w-xs whitespace-normal">
+                    {baby.managerEmails.join(", ")}
+                  </TableCell>
+                  <TableCell>
+                    {formatWhen(
+                      props.sortBy === "created" ? baby.createdAt : baby.updatedAt,
+                      locale,
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full font-bold"
+                      render={
+                        <Link
+                          to="/baby/$publicId"
+                          params={{ publicId: baby.publicId }}
+                          preload="viewport"
+                        />
+                      }
+                      nativeButton={false}
+                    >
+                      {t("Open")}
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function AdminDashboardPage() {
+  const { t } = useI18n();
   const auth = useConvexAuth();
   const [sortBy, setSortBy] = useState<SortBy>("updated");
   const languageRequests = useQuery(
@@ -94,114 +233,10 @@ function AdminDashboardPage() {
 
         <section className="mb-12">
           <h2 className="mb-4 text-2xl font-black tracking-tight">{t("Requested languages")}</h2>
-          {languageRequests === undefined ? (
-            <Spinner className="size-6 text-primary" />
-          ) : languageRequests.length === 0 ? (
-            <p className="font-medium text-muted-foreground">{t("No language requests yet")}</p>
-          ) : (
-            <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Language")}</TableHead>
-                    <TableHead>{t("Requester")}</TableHead>
-                    <TableHead>{t("Created")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {languageRequests.map((request) => (
-                    <TableRow key={request._id}>
-                      <TableCell className="font-semibold">{request.requestedLocale}</TableCell>
-                      <TableCell>{request.userEmail ?? request.userId}</TableCell>
-                      <TableCell>{formatWhen(request.createdAt, locale)}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+          <LanguageRequestsSection requests={languageRequests} />
         </section>
 
-        <section>
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-black tracking-tight">{t("All babies")}</h2>
-            <NativeSelect
-              value={sortBy}
-              aria-label={t("Sort by updated")}
-              onChange={(event) => {
-                const value = event.target.value;
-                if (value === "created" || value === "updated") {
-                  setSortBy(value);
-                }
-              }}
-            >
-              <NativeSelectOption value="updated">{t("Sort by updated")}</NativeSelectOption>
-              <NativeSelectOption value="created">{t("Sort by created")}</NativeSelectOption>
-            </NativeSelect>
-          </div>
-
-          {babies === undefined ? (
-            <Spinner className="size-6 text-primary" />
-          ) : (
-            <div className="overflow-hidden rounded-[1.5rem] border-2 border-border bg-card/70">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("Name")}</TableHead>
-                    <TableHead>{t("Status")}</TableHead>
-                    <TableHead>{t("Managers")}</TableHead>
-                    <TableHead>{sortBy === "created" ? t("Created") : t("Updated")}</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {babies.map((baby) => (
-                    <TableRow key={baby._id}>
-                      <TableCell className="font-semibold">
-                        <span className="inline-flex items-center gap-2">
-                          <BabyIcon className="h-4 w-4 text-primary" />
-                          {baby.name}
-                          {baby.demo ? (
-                            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">
-                              {t("Demo")}
-                            </span>
-                          ) : null}
-                        </span>
-                      </TableCell>
-                      <TableCell>{statusLabel(baby.status, t)}</TableCell>
-                      <TableCell className="max-w-xs whitespace-normal">
-                        {baby.managerEmails.join(", ")}
-                      </TableCell>
-                      <TableCell>
-                        {formatWhen(
-                          sortBy === "created" ? baby.createdAt : baby.updatedAt,
-                          locale,
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="rounded-full font-bold"
-                          render={
-                            <Link
-                              to="/baby/$publicId"
-                              params={{ publicId: baby.publicId }}
-                              preload="viewport"
-                            />
-                          }
-                          nativeButton={false}
-                        >
-                          {t("Open")}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </section>
+        <BabiesSection babies={babies} sortBy={sortBy} onSortByChange={setSortBy} />
       </div>
     </div>
   );

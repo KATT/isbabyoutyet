@@ -38,17 +38,17 @@ async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
   return emails;
 }
 
-async function lastActivityAt(ctx: QueryCtx, babyId: Id<"baby">, createdAt: number) {
+async function lastActivityAt(ctx: QueryCtx, opts: { babyId: Id<"baby">; createdAt: number }) {
   const items = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", babyId))
+    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", opts.babyId))
     .order("desc")
     .take(20);
   const latest = items.find(isActive);
   if (!latest) {
-    return createdAt;
+    return opts.createdAt;
   }
-  return Math.max(createdAt, latest.postedAt);
+  return Math.max(opts.createdAt, latest.postedAt);
 }
 
 export const listLanguageRequests = query({
@@ -117,7 +117,7 @@ export const listBabies = query({
     const rows = [];
     for (const baby of active) {
       const createdAt = baby._creationTime;
-      const updatedAt = await lastActivityAt(ctx, baby._id, createdAt);
+      const updatedAt = await lastActivityAt(ctx, { babyId: baby._id, createdAt });
       rows.push({
         _id: baby._id,
         name: baby.name,

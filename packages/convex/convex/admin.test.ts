@@ -16,9 +16,7 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
   await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
 
-  await expect(asAlice.query(api.admin.listLanguageRequests, {})).rejects.toThrow(
-    "Not authorized",
-  );
+  await expect(asAlice.query(api.admin.listLanguageRequests, {})).rejects.toThrow("Not authorized");
   await expect(asAlice.query(api.admin.listBabies, { sortBy: "created" })).rejects.toThrow(
     "Not authorized",
   );
@@ -82,18 +80,54 @@ test("admins can list babies sorted by created or updated with manager emails", 
       addedByUserId: seeded.userId,
       addedAt: Date.now(),
     });
+    // Soft-deleted co-parent and duplicate owner email must not appear twice.
+    await ctx.db.insert("babyCoParents", {
+      babyId: waiting._id,
+      userId: "gone-user",
+      email: "gone@example.com",
+      name: "Gone",
+      addedByUserId: seeded.userId,
+      addedAt: Date.now(),
+      deletedAt: Date.now(),
+    });
+    await ctx.db.insert("babyCoParents", {
+      babyId: waiting._id,
+      userId: "dup-owner",
+      email: DEMO_USER.email,
+      name: "Dup",
+      addedByUserId: seeded.userId,
+      addedAt: Date.now(),
+    });
+    // Soft-deleted baby is omitted from the admin list.
+    await ctx.db.insert("baby", {
+      userId: "unknown-owner",
+      name: "Deleted",
+      dueDate: "2026-12-01",
+      publicId: "baby-deleted",
+      deletedAt: Date.now(),
+    });
+    // Baby with no timeline activity falls back to createdAt for updatedAt.
+    await ctx.db.insert("baby", {
+      userId: "unknown-owner",
+      name: "Quiet",
+      dueDate: "2026-12-01",
+      publicId: "baby-quiet",
+    });
   });
 
   const byCreated = await asDemo.query(api.admin.listBabies, { sortBy: "created" });
-  expect(byCreated.length).toBeGreaterThanOrEqual(4);
+  expect(byCreated.some((row) => row.publicId === "baby-deleted")).toBe(false);
+  expect(byCreated.some((row) => row.publicId === "baby-quiet")).toBe(true);
   for (let i = 1; i < byCreated.length; i++) {
     expect(byCreated[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated[i]!.createdAt);
   }
 
   const waitingRow = byCreated.find((row) => row.publicId === "baby-waiting");
-  expect(waitingRow?.managerEmails).toEqual(
-    expect.arrayContaining([DEMO_USER.email, "coparent@example.com"]),
-  );
+  expect(waitingRow?.managerEmails).toEqual([DEMO_USER.email, "coparent@example.com"]);
+
+  const quiet = byCreated.find((row) => row.publicId === "baby-quiet");
+  expect(quiet?.updatedAt).toBe(quiet?.createdAt);
+  expect(quiet?.managerEmails).toEqual([]);
 
   const byUpdated = await asDemo.query(api.admin.listBabies, { sortBy: "updated" });
   expect(byUpdated.length).toBe(byCreated.length);
@@ -101,7 +135,13 @@ test("admins can list babies sorted by created or updated with manager emails", 
     expect(byUpdated[i - 1]!.updatedAt).toBeGreaterThanOrEqual(byUpdated[i]!.updatedAt);
   }
 
-  // Sanity: Better Auth user email resolved for the demo owner.
+  // Language request email cache: two requests from the same known user.
+  const asDemoRequester = t.withIdentity({ subject: seeded.userId });
+  await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Welsh" });
+  await asDemoRequester.mutation(api.profile.requestLanguage, { requestedLocale: "Irish" });
+  const requests = await asDemo.query(api.admin.listLanguageRequests, {});
+  expect(requests.filter((row) => row.userEmail === DEMO_USER.email).length).toBe(2);
+
   const authUser = await t.query(components.betterAuth.adapter.findOne, {
     model: "user",
     where: [{ field: "email", value: DEMO_USER.email }],
