@@ -60,12 +60,7 @@ test("hides the owner group when the visitor has no owner actions", async () => 
 
 test("disables sharing when the share link is empty", async () => {
   await using view = renderResource(
-    <BabyNav
-      shareLink=""
-      onPostUpdate={null}
-      settingsButton={{ to: "/" }}
-      settingsOpen={true}
-    />,
+    <BabyNav shareLink="" onPostUpdate={null} settingsButton={{ to: "/" }} settingsOpen={true} />,
   );
 
   const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
