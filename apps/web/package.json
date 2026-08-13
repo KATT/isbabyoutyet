@@ -14,7 +14,7 @@
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "setup-dev": "cp .env.local.example .env.local",
+    "setup-dev": "cp .env.example .env.local",
     "format:check": "oxfmt --check",
     "deploy-convex": "tsx scripts/deploy-convex.ts"
   },
