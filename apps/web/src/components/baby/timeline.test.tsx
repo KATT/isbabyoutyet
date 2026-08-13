@@ -136,6 +136,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: undefined,
   });
@@ -155,9 +156,32 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
   });
+});
+
+test("the composer previews a selected photo and can remove it", async () => {
+  const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
+  const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  await using _objectUrls = makeResource({}, () => {
+    createObjectURL.mockRestore();
+    revokeObjectURL.mockRestore();
+  });
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  const fileInput = view.container.querySelector('input[type="file"]');
+  if (!fileInput) throw new Error("hidden file input missing");
+
+  fireEvent.change(fileInput, {
+    target: { files: [new File(["png"], "baby.png", { type: "image/png" })] },
+  });
+  expect(view.getByAltText("Photo to post")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Remove photo" }));
+  expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
 test("timeline milestone deletion is disabled while a later status exists", async () => {

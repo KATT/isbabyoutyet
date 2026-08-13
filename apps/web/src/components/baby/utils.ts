@@ -79,7 +79,7 @@ export function getThemePrimaryColor(theme: string | null | undefined): string {
   return option?.colors[0] ?? defaultColor;
 }
 
-export function parseDate(dateString: string): Date {
+function parseDate(dateString: string): Date {
   return parseISO(dateString);
 }
 

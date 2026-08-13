@@ -37,10 +37,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
-import type { FunctionReturnType } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { BabyData, Milestone } from "@workspace/convex/src/types";
+import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
@@ -49,6 +49,7 @@ import {
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
@@ -71,36 +72,47 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * so a whitespace-only message counts as no message (matching the backend).
  * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
-function createComposerSchema(t: TranslationFunction) {
-  return (
-    z
-      .object({
-        message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-        milestone: z.union([
-          z.literal("none"),
-          z.literal("labor_started"),
-          z.literal("gone_to_hospital"),
-          z.literal("born"),
-        ]),
-        occurredAt: z.string(),
-        photo: z.custom<File>().nullable(),
-      })
-      .refine(
-        (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-        { error: t("Add a message, a photo, or a milestone to post") },
-      )
-      // Empty = "now". A partially typed/garbled value must block posting.
-      .refine(
-        (draft) =>
-          draft.milestone === "none" ||
-          draft.occurredAt === "" ||
-          !Number.isNaN(Date.parse(draft.occurredAt)),
-        {
-          error: t("Pick a valid time — or leave it blank for now"),
-          path: ["occurredAt"],
-        },
-      )
-  );
+type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
+
+function composerSchema(
+  t: TranslationFunction,
+  currentStatus: BabyStatus["type"],
+  babyId: Id<"baby">,
+) {
+  return z
+    .object({
+      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+      milestone: z.union([
+        z.literal("none"),
+        z.literal("labor_started"),
+        z.literal("gone_to_hospital"),
+        z.literal("born"),
+      ]),
+      occurredAt: optionalHtmlDateTime(t),
+      photo: z.custom<File>().nullable(),
+    })
+    .refine(
+      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+      { error: t("Add a message, a photo, or a milestone to post") },
+    )
+    .refine(
+      (draft) =>
+        draft.milestone === "none" || STATUS_ORDER[draft.milestone] > STATUS_ORDER[currentStatus],
+      {
+        error: t("That status has already been marked"),
+        path: ["milestone"],
+      },
+    )
+    .transform((draft): PostUpdateArgs & { photo: File | null } => {
+      const milestone = draft.milestone === "none" ? undefined : draft.milestone;
+      return {
+        babyId,
+        message: draft.message || undefined,
+        milestone,
+        occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
+        photo: draft.photo,
+      };
+    });
 }
 
 const MILESTONE_META = {
@@ -149,12 +161,6 @@ function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
 
-/** Format a date for a `datetime-local` input in the viewer's timezone. */
-function toDatetimeLocalValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
 // --- Owner composer ---
 
 type UpdateComposerProps = {
@@ -177,10 +183,15 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
-  const composerSchema = useMemo(() => createComposerSchema(t), [t]);
+  const schema = useMemo(
+    () => composerSchema(t, currentStatus.type, props.babyId),
+    [t, currentStatus.type, props.babyId],
+  );
 
   const form = useZodForm({
-    schema: composerSchema,
+    schema,
+    // RHF re-runs the resolver when this changes (status advanced in another tab)
+    context: currentStatus.type,
     defaultValues: {
       message: "",
       milestone: "none",
@@ -219,63 +230,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     };
   }, [photoPreviewUrl]);
 
-  const canPost = !isPosting && composerSchema.safeParse(draft).success;
-
-  const clearPhoto = () => {
-    form.setValue("photo", null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error(t("Please select an image file"));
-      return;
-    }
-    if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      toast.error(t("Photo must be 10 MB or smaller"));
-      return;
-    }
-    form.setValue("photo", file, { shouldDirty: true });
-  };
-
-  const handlePost = async (values: z.input<typeof composerSchema>) => {
-    const message = values.message.trim();
-    const milestone = values.milestone === "none" ? null : values.milestone;
-
-    let photoId: Id<"_storage"> | undefined;
-    if (values.photo) {
-      const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": values.photo.type },
-        body: values.photo,
-      });
-      if (!response.ok) {
-        throw new Error(t("Failed to upload photo"));
-      }
-      const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
-      photoId = uploaded.storageId;
-    }
-
-    // A filled event-time means the milestone is backdated; empty means
-    // "it's happening now" (the backend default)
-    const occurredAtMs =
-      milestone && values.occurredAt !== "" ? new Date(values.occurredAt).getTime() : null;
-
-    await postUpdate({
-      babyId: props.babyId,
-      message: message || undefined,
-      milestone: milestone ?? undefined,
-      occurredAt: occurredAtMs != null && !Number.isNaN(occurredAtMs) ? occurredAtMs : undefined,
-      photoId,
-    });
-
-    toast.success(t("Update posted!"));
-    // No reset needed: the composer lives in a dialog that unmounts on close
-    props.onPosted?.();
-  };
+  const canPost = !isPosting && schema.safeParse(draft).success;
 
   return (
     <div className="space-y-3">
@@ -290,7 +245,32 @@ export function UpdateComposer(props: UpdateComposerProps) {
         )}
       </p>
 
-      <Form form={form} handleSubmit={handlePost}>
+      <Form
+        form={form}
+        handleSubmit={async (values) => {
+          const { photo, ...args } = values;
+          let photoId: PostUpdateArgs["photoId"];
+          if (photo) {
+            const uploadUrl = await generateUploadUrl({ babyId: args.babyId });
+            const response = await fetch(uploadUrl, {
+              method: "POST",
+              headers: { "Content-Type": photo.type },
+              body: photo,
+            });
+            if (!response.ok) {
+              throw new Error(t("Failed to upload photo"));
+            }
+            const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
+            photoId = uploaded.storageId;
+          }
+
+          await postUpdate({ ...args, photoId });
+
+          toast.success(t("Update posted!"));
+          // No reset needed: the composer lives in a dialog that unmounts on close
+          props.onPosted?.();
+        }}
+      >
         <div className="space-y-3">
           <FormField
             control={form.control}
@@ -324,7 +304,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 variant="secondary"
                 size="icon"
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
-                onClick={clearPhoto}
+                onClick={() => {
+                  form.setValue("photo", null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 disabled={isPosting}
                 aria-label={t("Remove photo")}
               >
@@ -396,7 +379,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={toDatetimeLocalValue(new Date())}
+                              max={htmlDateTimeNow()}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -421,7 +404,19 @@ export function UpdateComposer(props: UpdateComposerProps) {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={handleFileSelect}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              if (!file.type.startsWith("image/")) {
+                toast.error(t("Please select an image file"));
+                return;
+              }
+              if (file.size > MAX_PHOTO_SIZE_BYTES) {
+                toast.error(t("Photo must be 10 MB or smaller"));
+                return;
+              }
+              form.setValue("photo", file, { shouldDirty: true });
+            }}
             className="hidden"
           />
 
@@ -692,28 +687,39 @@ type EncouragementTimelineItemProps = {
   isOwner: boolean;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId?: string) => Promise<void>;
-  onUpdate: (id: Id<"encouragements">, visitorId: string, message: string) => Promise<void>;
+  onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
 };
 
+function encouragementEditSchema(
+  t: TranslationFunction,
+  args: Pick<FunctionArgs<typeof api.encouragements.update>, "encouragementId" | "visitorId">,
+) {
+  return z
+    .object({
+      message: z.string().trim().min(1, t("Message cannot be empty")),
+    })
+    .transform((values): FunctionArgs<typeof api.encouragements.update> => ({
+      ...args,
+      message: values.message,
+    }));
+}
 /**
  * Mounted only while editing, so the form initializes from the current
  * message on every reveal — no reset bookkeeping.
  */
 function EncouragementEditForm(props: {
   initialMessage: string;
-  onSave: (message: string) => Promise<void>;
+  encouragementId: Id<"encouragements">;
+  visitorId: string;
+  onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
   onCancel: () => void;
 }) {
   const { t } = useI18n();
-  const encouragementEditSchema = useMemo(
-    () =>
-      z.object({
-        message: z.string().trim().min(1, t("Message cannot be empty")),
-      }),
-    [t],
-  );
   const form = useZodForm({
-    schema: encouragementEditSchema,
+    schema: encouragementEditSchema(t, {
+      encouragementId: props.encouragementId,
+      visitorId: props.visitorId,
+    }),
     defaultValues: { message: props.initialMessage },
   });
   const isSaving = form.formState.isSubmitting;
@@ -722,7 +728,7 @@ function EncouragementEditForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onSave(values.message.trim());
+        await props.onSave(values);
       }}
     >
       <div className="space-y-2">
@@ -801,8 +807,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
             {isEditing ? (
               <EncouragementEditForm
                 initialMessage={encouragement.message}
-                onSave={async (message) => {
-                  await props.onUpdate(encouragement._id, props.currentVisitorId, message);
+                encouragementId={encouragement._id}
+                visitorId={props.currentVisitorId}
+                onSave={async (args) => {
+                  await props.onUpdate(args);
                   setIsEditing(false);
                 }}
                 onCancel={() => setIsEditing(false)}
@@ -961,12 +969,10 @@ export function TimelineFeed(props: TimelineFeedProps) {
   };
 
   const handleUpdateEncouragement = async (
-    encouragementId: Id<"encouragements">,
-    visitorId: string,
-    message: string,
+    args: FunctionArgs<typeof api.encouragements.update>,
   ) => {
     try {
-      await updateEncouragement({ encouragementId, visitorId, message });
+      await updateEncouragement(args);
       toast.success(t("Encouragement updated"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to update encouragement"));

@@ -1,11 +1,15 @@
-import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
+import * as z from "zod";
+import { Form, useZodForm } from "@/components/Form";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
 type CoParentsSettingsProps = {
@@ -13,6 +17,68 @@ type CoParentsSettingsProps = {
   /** Only the owner can invite/remove; co-parents see a read-only list. */
   isOwner: boolean;
 };
+
+function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
+  return z
+    .object({
+      email: z.string().trim().email(t("Invalid email address")),
+    })
+    .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
+      babyId,
+      email: values.email,
+    }));
+}
+
+function InviteCoParentForm(props: {
+  babyId: Id<"baby">;
+  invite: (
+    args: FunctionArgs<typeof api.coParents.invite>,
+  ) => Promise<{ status: "added" | "invited" }>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: inviteCoParentSchema(t, props.babyId),
+    defaultValues: { email: "" },
+  });
+  const email = form.watch("email");
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        const result = await props.invite(values);
+        form.reset({ email: "" });
+        toast.success(
+          result.status === "added"
+            ? t("Co-parent added — they can manage this page now")
+            : t("Invite sent — they'll get access after signing up with that email"),
+        );
+      }}
+    >
+      <div className="flex gap-2">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem className="flex-1">
+              <FormControl>
+                <Input type="email" placeholder="partner@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" size="sm" disabled={form.formState.isSubmitting || !email.trim()}>
+          {form.formState.isSubmitting ? (
+            <CircleNotch className="w-4 h-4 animate-spin" />
+          ) : (
+            t("Add")
+          )}
+        </Button>
+      </div>
+    </Form>
+  );
+}
 
 /**
  * Settings section for inviting co-parents by email and managing membership.
@@ -23,27 +89,6 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
   const invite = useMutation(api.coParents.invite);
   const removeCoParent = useMutation(api.coParents.removeCoParent);
   const cancelInvite = useMutation(api.coParents.cancelInvite);
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function onInvite(event: React.FormEvent) {
-    event.preventDefault();
-    if (!props.isOwner || busy) return;
-    setBusy(true);
-    try {
-      const result = await invite({ babyId: props.babyId, email });
-      setEmail("");
-      toast.success(
-        result.status === "added"
-          ? t("Co-parent added — they can manage this page now")
-          : t("Invite sent — they'll get access after signing up with that email"),
-      );
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("Could not invite"));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   return (
     <div className="space-y-3 w-full">
@@ -111,21 +156,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
         </ul>
       )}
 
-      {props.isOwner ? (
-        <form onSubmit={onInvite} className="flex gap-2">
-          <Input
-            type="email"
-            placeholder="partner@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-            className="flex-1"
-          />
-          <Button type="submit" size="sm" disabled={busy || !email.trim()}>
-            {busy ? <CircleNotch className="w-4 h-4 animate-spin" /> : t("Add")}
-          </Button>
-        </form>
-      ) : null}
+      {props.isOwner ? <InviteCoParentForm babyId={props.babyId} invite={invite} /> : null}
     </div>
   );
 }
