@@ -181,9 +181,7 @@ function SortableHeaderLink(props: {
   const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
 
   return (
-    <TableHead
-      aria-sort={active ? (props.order === "asc" ? "ascending" : "descending") : "none"}
-    >
+    <TableHead aria-sort={active ? (props.order === "asc" ? "ascending" : "descending") : "none"}>
       <Link
         to="/dashboard/admin"
         search={{ tab: props.tab, sort: next.sort, order: next.order }}
@@ -255,11 +253,14 @@ export function LanguageRequestsSection(props: {
     );
   }
 
+  const canLoadMore = props.status === "CanLoadMore";
+  const isLoadingMore = props.status === "LoadingMore";
+
   return (
     <AdminTableCard
       isRefreshing={isRefreshing}
-      canLoadMore={props.status === "CanLoadMore"}
-      isLoadingMore={props.status === "LoadingMore"}
+      canLoadMore={canLoadMore}
+      isLoadingMore={isLoadingMore}
       onLoadMore={props.onLoadMore}
     >
       <Table>
@@ -302,11 +303,14 @@ export function BabiesSection(props: {
     return <Spinner className="size-6 text-primary" />;
   }
 
+  const canLoadMore = props.status === "CanLoadMore";
+  const isLoadingMore = props.status === "LoadingMore";
+
   return (
     <AdminTableCard
       isRefreshing={isRefreshing}
-      canLoadMore={props.status === "CanLoadMore"}
-      isLoadingMore={props.status === "LoadingMore"}
+      canLoadMore={canLoadMore}
+      isLoadingMore={isLoadingMore}
       onLoadMore={props.onLoadMore}
     >
       <Table>

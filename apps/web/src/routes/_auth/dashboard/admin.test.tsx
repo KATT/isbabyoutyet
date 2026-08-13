@@ -15,9 +15,10 @@ vi.mock("@tanstack/react-router", () => ({
     props: React.ComponentProps<"a"> & {
       to: string | undefined;
       search: Record<string, string> | undefined;
+      replace: boolean | undefined;
     },
   ) => {
-    const { to, search, children, ...rest } = props;
+    const { to, search, children, replace: _replace, ...rest } = props;
     const query = search
       ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
       : "";
