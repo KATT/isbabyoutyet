@@ -123,7 +123,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
 
   expect(view.getByText("Inte än")).toBeTruthy();
   expect(view.getByText("Bäbisen är fortfarande på väg")).toBeTruthy();
-  expect(view.getByText("Beräknad födsel: 1 september 2026")).toBeTruthy();
+  expect(view.getByText("Beräknat datum: 1 september 2026")).toBeTruthy();
 });
 
 test("renders the public baby status in Brazilian Portuguese", async () => {
