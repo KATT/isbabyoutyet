@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
 import { cn } from "@workspace/ui/lib/utils";
-import { Check, ChevronDown, ChevronUp, Sparkles, X } from "lucide-react";
+import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { OnboardingStepCopy } from "./steps";
 import { ONBOARDING_STEPS } from "./steps";
@@ -38,12 +38,12 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         aria-label={`Getting started: ${completedCount} of ${total} done. Expand.`}
       >
         <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <Sparkles className="size-3.5" />
+          <Sparkle className="size-3.5" />
         </span>
         <span className="tabular-nums text-foreground">
           {completedCount}/{total}
         </span>
-        <ChevronUp className="size-4 text-muted-foreground" />
+        <CaretUp className="size-4 text-muted-foreground" />
       </button>
     );
   }
@@ -61,7 +61,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-            <Sparkles className="size-4" />
+            <Sparkle className="size-4" />
           </span>
           <div>
             <p className="text-sm font-semibold text-foreground">Getting started</p>
@@ -77,7 +77,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             aria-label="Minimize"
             onClick={() => props.onMinimize(true)}
           >
-            <ChevronDown />
+            <CaretDown />
           </Button>
           <Button
             variant="ghost"

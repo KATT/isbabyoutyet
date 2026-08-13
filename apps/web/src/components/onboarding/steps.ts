@@ -1,5 +1,6 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { Baby, Heart, MessageCircleHeart, Settings, Share2, type LucideIcon } from "lucide-react";
+import type { Icon } from "@phosphor-icons/react";
+import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
 
 export type OnboardingStepCopy = {
   id: OnboardingStepId;
@@ -9,7 +10,7 @@ export type OnboardingStepCopy = {
   surface: "dashboard" | "baby" | "any";
   /** Matches `data-tour-id` on the UI target */
   targetId: string;
-  icon: LucideIcon;
+  icon: Icon;
   ctaLabel?: string;
 };
 
@@ -30,7 +31,7 @@ export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
       "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.",
     surface: "baby",
     targetId: "share_link",
-    icon: Share2,
+    icon: ShareNetwork,
   },
   {
     id: "post_update",
@@ -39,7 +40,7 @@ export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
       "When something changes, post it. Loved ones see the status and can subscribe for push alerts.",
     surface: "baby",
     targetId: "post_update",
-    icon: MessageCircleHeart,
+    icon: ChatCircleText,
   },
   {
     id: "explore_settings",
@@ -47,7 +48,7 @@ export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
     description: "Themes, names, and whether visitors can leave encouragements — all in Settings.",
     surface: "baby",
     targetId: "explore_settings",
-    icon: Settings,
+    icon: GearSix,
   },
   {
     id: "learn_encouragements",
@@ -63,7 +64,7 @@ export const ONBOARDING_STEPS: OnboardingStepCopy[] = [
 export type WelcomeSlide = {
   title: string;
   body: string;
-  icon: LucideIcon;
+  icon: Icon;
 };
 
 export const WELCOME_SLIDES: WelcomeSlide[] = [
@@ -75,12 +76,12 @@ export const WELCOME_SLIDES: WelcomeSlide[] = [
   {
     title: "Create a baby page",
     body: "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.",
-    icon: Share2,
+    icon: ShareNetwork,
   },
   {
     title: "Share once, update as you go",
     body: "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.",
-    icon: MessageCircleHeart,
+    icon: ChatCircleText,
   },
   {
     title: "Skip anytime",
