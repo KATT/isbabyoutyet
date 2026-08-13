@@ -1,4 +1,5 @@
 import { defineConfig } from "vitest/config";
+import { webUnitProject } from "./apps/web/vitest.config.ts";
 
 /**
  * Monorepo Vitest projects (formerly "workspaces").
@@ -6,7 +7,7 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    projects: ["packages/convex", "apps/web"],
+    projects: ["packages/convex", webUnitProject],
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
@@ -30,10 +31,10 @@ export default defineConfig({
         // test run beats them, so coverage can only go up. Never lower them
         // by hand.
         autoUpdate: true,
-        statements: 62.21,
-        branches: 56.19,
-        functions: 57.4,
-        lines: 63.1,
+        statements: 62.45,
+        branches: 56.24,
+        functions: 57.68,
+        lines: 63.29,
       },
     },
   },
