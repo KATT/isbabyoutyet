@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useId } from "react";
-import type { FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
+import type { DefaultValues, FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -14,8 +14,9 @@ interface UseZodForm<TInput extends FieldValues> extends UseFormReturn<TInput> {
  * Reusable hook for zod + react-hook-form
  */
 export function useZodForm<TInput extends FieldValues>(
-  props: Omit<UseFormProps<TInput>, "resolver"> & {
+  props: Omit<UseFormProps<TInput>, "resolver" | "defaultValues"> & {
     schema: z.ZodType<any, TInput>;
+    defaultValues: DefaultValues<NoInfer<TInput>>;
   },
 ): UseZodForm<TInput> {
   const form = useForm<TInput>({
