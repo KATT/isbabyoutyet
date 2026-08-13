@@ -1066,8 +1066,7 @@ const ptBR: Record<TranslationKey, string> = {
   'Scroll down and tap "Add to Home Screen"':
     'Role para baixo e toque em "Adicionar à Tela de Início"',
   "Open the app from your Home Screen": "Abra o aplicativo pela Tela de Início",
-  'Come back here and tap "Get Notifications"':
-    'Volte aqui e toque em "Receber notificações"',
+  'Come back here and tap "Get Notifications"': 'Volte aqui e toque em "Receber notificações"',
   "No subscription endpoint found": "Nenhuma inscrição encontrada",
   "Unsubscribing from notifications...": "Cancelando notificações...",
   "Unsubscribed from notifications!": "Notificações canceladas!",
