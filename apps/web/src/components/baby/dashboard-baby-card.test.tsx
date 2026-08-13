@@ -46,7 +46,9 @@ const alma: DashboardBabyCardBaby = {
 
 test("a born baby with a past due date shows born, not overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
-  await using view = renderResource(<DashboardBabyCard baby={alma} index={0} dataTourId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={alma} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("Alma Simone Petra Darvill")).toBeTruthy();
   expect(view.getByText("Baby born")).toBeTruthy();
@@ -66,7 +68,9 @@ test("an unborn baby past the due date still shows overdue", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(<DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("225 days overdue")).toBeTruthy();
   expect(view.getByText("Due 31 December 2025")).toBeTruthy();
@@ -84,7 +88,9 @@ test("labour in progress beats a past due date", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(<DashboardBabyCard baby={inLabor} index={0} dataTourId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={inLabor} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("Labour started")).toBeTruthy();
   expect(view.queryByText(/overdue/i)).toBeNull();
@@ -107,7 +113,9 @@ test("an unborn baby before the due date shows days remaining", async () => {
     dueDate: "2026-09-01",
     role: "coParent",
   };
-  await using view = renderResource(<DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("Shared with you")).toBeTruthy();
   expect(view.getByText("19 days until due date")).toBeTruthy();

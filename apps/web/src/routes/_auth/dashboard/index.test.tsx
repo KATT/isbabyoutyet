@@ -29,14 +29,18 @@ function renderResource(ui: ReactElement) {
 }
 
 test("shows a spinner instead of the empty state while the baby list is pending", async () => {
-  await using view = renderResource(<DashboardBabyList babies={[]} isPending tourBabyPublicId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyList babies={[]} isPending tourBabyPublicId={undefined} />,
+  );
 
   expect(view.getByRole("status", { name: "Loading" })).toBeTruthy();
   expect(view.queryByText("No babies added yet")).toBeNull();
 });
 
 test("shows the empty state once the list has loaded with no babies", async () => {
-  await using view = renderResource(<DashboardBabyList babies={[]} isPending={false} tourBabyPublicId={undefined} />);
+  await using view = renderResource(
+    <DashboardBabyList babies={[]} isPending={false} tourBabyPublicId={undefined} />,
+  );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
   expect(view.getByText("No babies added yet")).toBeTruthy();

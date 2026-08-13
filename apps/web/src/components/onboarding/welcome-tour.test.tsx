@@ -12,7 +12,10 @@ vi.mock("@workspace/ui/components/carousel", () => {
     off: (event: string, cb: () => void) => void;
   };
 
-  function Carousel(props: { setApi: ((api: Api) => void) | undefined; children: React.ReactNode | undefined }) {
+  function Carousel(props: {
+    setApi: ((api: Api) => void) | undefined;
+    children: React.ReactNode | undefined;
+  }) {
     const indexRef = React.useRef(0);
     const listeners = React.useRef(new Set<() => void>());
 
@@ -45,7 +48,9 @@ vi.mock("@workspace/ui/components/carousel", () => {
 
   return {
     Carousel,
-    CarouselContent: (props: { children: React.ReactNode | undefined }) => <div>{props.children}</div>,
+    CarouselContent: (props: { children: React.ReactNode | undefined }) => (
+      <div>{props.children}</div>
+    ),
     CarouselItem: (props: { children: React.ReactNode | undefined }) => <div>{props.children}</div>,
   };
 });
