@@ -31,10 +31,10 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         autoUpdate: true,
-        statements: 61.24,
+        statements: 61.32,
         branches: 55.52,
-        functions: 56.31,
-        lines: 62.13,
+        functions: 56.38,
+        lines: 62.21,
       },
     },
   },
