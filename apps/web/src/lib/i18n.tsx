@@ -86,8 +86,7 @@ const enGB = {
   Save: "Save",
   Cancel: "Cancel",
   "Send Encouragement": "Send some love",
-  "Leave a message of support for {{name}}'s family":
-    "Leave a message for {{name}}'s family",
+  "Leave a message of support for {{name}}'s family": "Leave a message for {{name}}'s family",
   "Your name": "Your name",
   Message: "Message",
   "Write your message of encouragement...": "Write your message...",
@@ -122,8 +121,7 @@ const enGB = {
   "This is initially chosen from your browser. New baby pages inherit it.":
     "We start with your browser language. New baby pages use it too.",
   "Request another language": "Request another language",
-  "Tell us which language you would like us to add.":
-    "Which language should we add?",
+  "Tell us which language you would like us to add.": "Which language should we add?",
   "Language name or code": "Language name or code",
   "Example: French / fr-FR": "Example: French / fr-FR",
   "Send request": "Send request",
@@ -132,8 +130,7 @@ const enGB = {
   "Add a Baby": "Add a Baby",
   "Track the progress of labour and birth": "Follow labour and birth",
   "Baby Information": "Baby Information",
-  "Enter your baby's name and due date to get started":
-    "Add your baby's name and due date.",
+  "Enter your baby's name and due date to get started": "Add your baby's name and due date.",
   "Enter baby's name": "Enter baby's name",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Renaming may change the page address, but links you have already shared will keep working.",
@@ -519,8 +516,7 @@ const sv: Record<TranslationKey, string> = {
   "{{count}} days until due date – Is {{name}} out yet?":
     "{{count}} dagar kvar till beräknat datum: Har {{name}} kommit?",
   "{{title}} – Track Your Baby's Journey": "{{title}}: Följ med fram till födseln",
-  "Track {{name}}'s journey – know when baby arrives!":
-    "Följ med tills {{name}} är här!",
+  "Track {{name}}'s journey – know when baby arrives!": "Följ med tills {{name}} är här!",
   "Not yet": "Inte än",
   "Baby is still on the way": "Bäbisen är fortfarande på väg",
   "{{count}} day overdue": "{{count}} dag över tiden",
@@ -570,8 +566,7 @@ const sv: Record<TranslationKey, string> = {
   Save: "Spara",
   Cancel: "Avbryt",
   "Send Encouragement": "Skicka en hälsning",
-  "Leave a message of support for {{name}}'s family":
-    "Skicka en hälsning till {{name}} med familj",
+  "Leave a message of support for {{name}}'s family": "Skicka en hälsning till {{name}} med familj",
   "Your name": "Ditt namn",
   Message: "Meddelande",
   "Write your message of encouragement...": "Skriv din hälsning...",
@@ -616,8 +611,7 @@ const sv: Record<TranslationKey, string> = {
   "Add a Baby": "Lägg till en bäbis",
   "Track the progress of labour and birth": "Följ förlossningen",
   "Baby Information": "Information om bäbisen",
-  "Enter your baby's name and due date to get started":
-    "Ange bäbisens namn och beräknade datum",
+  "Enter your baby's name and due date to get started": "Ange bäbisens namn och beräknade datum",
   "Enter baby's name": "Ange bäbisens namn",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
@@ -802,8 +796,7 @@ const sv: Record<TranslationKey, string> = {
     "Då försvinner statusen och hela uppdateringen från tidslinjen, även meddelanden och foton. Det går inte att ångra.",
   "Delete status": "Ta bort status",
   "Could not delete the {{status}} status": "Det gick inte att ta bort ”{{status}}”",
-  "Pick a valid time — or leave it blank for now":
-    "Välj en giltig tid eller lämna fältet tomt",
+  "Pick a valid time — or leave it blank for now": "Välj en giltig tid eller lämna fältet tomt",
   "When did it happen? (optional)": "När hände det? (valfritt)",
   "Optional — leave blank for now. You can change the time later in settings.":
     "Valfritt. Lämna tomt om du vill och ändra tiden senare i inställningarna.",
@@ -860,8 +853,7 @@ const sv: Record<TranslationKey, string> = {
   "For you, and for everyone waiting by the phone":
     "För dig och alla som sitter klistrade vid mobilen",
   "See it in action": "Se själv",
-  "Click any stage to see how your page will look":
-    "Tryck på ett steg för att se hur sidan ser ut",
+  "Click any stage to see how your page will look": "Tryck på ett steg för att se hur sidan ser ut",
   "See a live page": "Se en livesida",
   "{{name}}'s page is a live demo — leave a note, look around, try it out":
     "Det här är livedemon för {{name}}. Lämna en hälsning, kika runt och testa allt.",
@@ -1268,8 +1260,7 @@ const es: Record<TranslationKey, string> = {
     "Esto quita el estado y elimina su novedad del historial, incluido cualquier mensaje o foto. No se puede deshacer.",
   "Delete status": "Eliminar estado",
   "Could not delete the {{status}} status": "No se pudo eliminar el estado {{status}}",
-  "Pick a valid time — or leave it blank for now":
-    "Elige una hora válida o deja el campo vacío",
+  "Pick a valid time — or leave it blank for now": "Elige una hora válida o deja el campo vacío",
   "When did it happen? (optional)": "¿Cuándo ocurrió? (opcional)",
   "Optional — leave blank for now. You can change the time later in settings.":
     "Es opcional. Puedes dejarlo vacío y cambiar la hora más tarde en Configuración.",
@@ -1307,8 +1298,7 @@ const es: Record<TranslationKey, string> = {
   babies: "bebés",
   "Add a": "Añadir un",
   baby: "bebé",
-  "A name and a due date — that's all it takes!":
-    "Solo necesitas un nombre y una fecha prevista.",
+  "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -1747,8 +1737,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Co-parents": "Outros responsáveis",
   "People who can post updates and change settings":
     "Pessoas que podem publicar novidades e alterar as configurações",
-  "Others who can manage this page with you":
-    "Quem pode cuidar desta página com você",
+  "Others who can manage this page with you": "Quem pode cuidar desta página com você",
   "Delete page": "Excluir página",
   "Hide this baby page from everyone": "Ocultar esta página do bebê de todos",
   "Delete {{name}}'s page?": "Excluir a página de {{name}}?",

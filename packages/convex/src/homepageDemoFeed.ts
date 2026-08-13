@@ -292,7 +292,8 @@ export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocale
       },
       {
         authorName: "Valentina",
-        message: "¡Felicidades a las dos! Vaya aventura. Descansen. La comida corre por nuestra cuenta.",
+        message:
+          "¡Felicidades a las dos! Vaya aventura. Descansen. La comida corre por nuestra cuenta.",
       },
       { authorName: "Laura", message: "Bienvenida al mundo, Lucía. ¡Qué alegría!" },
     ],
@@ -328,7 +329,8 @@ export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocale
       { authorName: "Júlia", message: "Tô pensando em vocês!! Mandem notícia quando der." },
       {
         authorName: "Fernanda",
-        message: "Você está mandando muito bem. A gente fica com o cachorro se precisarem de qualquer coisa!",
+        message:
+          "Você está mandando muito bem. A gente fica com o cachorro se precisarem de qualquer coisa!",
       },
       {
         authorName: "Vovó Ana",
@@ -354,7 +356,8 @@ export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocale
       },
       {
         authorName: "Fernanda",
-        message: "Parabéns, vocês duas! Vocês foram gigantes. Agora descansem que a gente leva comida.",
+        message:
+          "Parabéns, vocês duas! Vocês foram gigantes. Agora descansem que a gente leva comida.",
       },
       { authorName: "Júlia", message: "Bem-vinda ao mundo, Helena! Que notícia linda." },
     ],
