@@ -63,7 +63,7 @@ function createClient({ url, transformer }: ClientOptions) {
 
 ### Function Parameters
 
-- **MAXIMUM 3 parameters** per function (`max-params: 3`)
+- **MAXIMUM 2 parameters** per function (`eslint/max-params: 2`)
 - Use options objects for functions with many parameters
 
 ```typescript
@@ -73,7 +73,7 @@ function createClient(router: AnyRouter, opts: ClientOptions) {
 }
 
 // ❌ INCORRECT - too many parameters
-function createClient(router: AnyRouter, url: string, transformer: any, links: any) {
+function createClient(router: AnyRouter, url: string, transformer: any) {
   // implementation
 }
 ```
