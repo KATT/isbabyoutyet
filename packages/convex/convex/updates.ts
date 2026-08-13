@@ -89,7 +89,7 @@ export const post = mutationWithTriggers({
       // Settings can still redate occurredAt later without moving the feed position
       occurredAt,
       photoId,
-      postedByUserId: identity.subject,
+      postedByUserId: identity.authUserId,
     });
 
     if (photoId) {

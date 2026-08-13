@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { env, mutation, query } from "./_generated/server";
 
 export const subscribe = mutation({
   args: {
@@ -73,11 +73,7 @@ export const getPublicKey = query({
   args: {},
   handler: async () => {
     // VAPID public key is safe to expose to clients
-    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-    if (!vapidPublicKey) {
-      throw new Error("VAPID_PUBLIC_KEY environment variable is not set");
-    }
-    return vapidPublicKey;
+    return env.VAPID_PUBLIC_KEY;
   },
 });
 

@@ -6,6 +6,7 @@ import { createAuth } from "./auth";
 import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
@@ -42,12 +43,15 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
 }
 
 async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
+  const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userProfiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
   if (!existing) {
-    await ctx.db.insert("userProfiles", { userId, locale: "en-GB" });
+    await ctx.db.insert("userProfiles", { userId, tokenIdentifier, locale: "en-GB" });
+  } else if (existing.tokenIdentifier === undefined) {
+    await ctx.db.patch(existing._id, { tokenIdentifier });
   }
 }
 
@@ -187,6 +191,7 @@ const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
  * Exported for tests that supply their own userId without Better Auth.
  */
 export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
+  const ownerTokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const now = new Date();
   const created: Array<{
     id: Id<"baby">;
@@ -208,6 +213,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
     // timeline rows via seedMilestoneUpdates below.
     const babyId = await ctx.db.insert("baby", {
       userId,
+      ownerTokenIdentifier,
       name: spec.name,
       dueDate: dueDate.toISOString(),
       publicId: spec.publicId,

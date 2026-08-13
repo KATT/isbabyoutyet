@@ -37,6 +37,7 @@ test("create a baby and list it for the owner", async () => {
       dueDate: "2026-09-01",
       publicId: "baby-smith",
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       role: "owner",
     },
   ]);
@@ -44,6 +45,17 @@ test("create a baby and list it for the owner", async () => {
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
   expect(await asBob.query(api.baby.listByUser, {})).toEqual([]);
+  const sameSubjectFromAnotherIssuer = t.withIdentity({
+    subject: "alice",
+    issuer: "https://other-issuer.test",
+  });
+  expect(await sameSubjectFromAnotherIssuer.query(api.baby.listByUser, {})).toEqual([]);
+  await expect(
+    sameSubjectFromAnotherIssuer.mutation(api.baby.update, {
+      babyId: created.babyId,
+      name: "Not Alice",
+    }),
+  ).rejects.toThrow("Not authorized");
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
 });
 

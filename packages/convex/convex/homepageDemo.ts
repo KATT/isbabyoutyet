@@ -13,6 +13,7 @@ import type { Milestone } from "../src/types";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 
 const CLEAR_BATCH_SIZE = 32;
@@ -82,6 +83,7 @@ async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLoc
   const existing = await findBabyByPublicId(ctx, demo.publicId);
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
+    ownerTokenIdentifier: tokenIdentifierForAuthUserId(HOMEPAGE_DEMO_OWNER_USER_ID),
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale,

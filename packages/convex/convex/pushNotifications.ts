@@ -2,10 +2,9 @@
 
 import { v } from "convex/values";
 import webPush from "web-push";
-import { convexEnv } from "../src/env";
 import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
-import { internalAction } from "./_generated/server";
+import { env, internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
 import { supportedLocaleValidator } from "./i18n";
 
@@ -25,9 +24,9 @@ async function sendNotificationToSubscription(
   },
 ): Promise<boolean> {
   webPush.setVapidDetails(
-    convexEnv.VAPID_SUBJECT,
-    convexEnv.VAPID_PUBLIC_KEY,
-    convexEnv.VAPID_PRIVATE_KEY,
+    env.VAPID_SUBJECT ?? "mailto:admin@isbabyoutyet.com",
+    env.VAPID_PUBLIC_KEY,
+    env.VAPID_PRIVATE_KEY,
   );
   try {
     const pushSubscription = {

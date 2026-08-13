@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { env, internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -24,6 +24,7 @@ import { isActive, softDeletePatch } from "./softDelete";
 import { requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
+import { appIdentity } from "./authIdentity";
 
 export const listByUser = query({
   args: {},
@@ -33,7 +34,7 @@ export const listByUser = query({
       return [];
     }
 
-    return await listBabiesForUser(ctx, identity.subject);
+    return await listBabiesForUser(ctx, appIdentity(identity));
   },
 });
 
@@ -119,7 +120,7 @@ export async function applyPhotoSideEffects(
 
   // Send notification only if this is the first photo
   if (!hadPhotoBeforeUpdate) {
-    const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+    const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
     const scheduledFor = Date.now() + scheduleDelay;
 
     const notificationId = await ctx.db.insert("scheduledNotifications", {
@@ -169,7 +170,7 @@ export const updatePhoto = mutationWithTriggers({
       babyId: args.babyId,
       postedAt: Date.now(),
       photoId: args.photoId,
-      postedByUserId: identity.subject,
+      postedByUserId: identity.authUserId,
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
@@ -261,15 +262,17 @@ export const create = mutationWithTriggers({
     if (!identity) {
       throw new Error("Not authenticated");
     }
+    const caller = appIdentity(identity);
 
     const publicId = await generateUniquePublicId({
       db: ctx.db,
       baseName: args.name,
-      excludeUserId: identity.subject,
+      excludeUserId: caller.authUserId,
     });
 
     const babyId = await ctx.db.insert("baby", {
-      userId: identity.subject,
+      userId: caller.authUserId,
+      ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
       dueDate: args.dueDate,
       publicId,
@@ -439,7 +442,7 @@ export async function syncStatusNotifications(
 
   const customMessage = opts.customMessageByMilestone[statusAfter.type];
 
-  const scheduleDelay = process.env.NODE_ENV === "production" ? 60_000 : 3_000;
+  const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
   const scheduledFor = Date.now() + scheduleDelay;
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
@@ -598,7 +601,7 @@ export const update = mutationWithTriggers({
         patch.publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
-          excludeUserId: identity.subject,
+          excludeUserId: identity.authUserId,
         });
         await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
       }
@@ -610,7 +613,7 @@ export const update = mutationWithTriggers({
       baby,
       patch: rest,
       legacyMessages,
-      postedByUserId: identity.subject,
+      postedByUserId: identity.authUserId,
     });
 
     const updatedBaby = await ctx.db.get(babyId);
