@@ -1,0 +1,41 @@
+/*
+ * Playful type + texture layer, loaded after globals.css.
+ * Nunito (rounded variable sans) becomes the app-wide face, corners get
+ * rounder, and helper classes provide the dotted paper background and the
+ * sticker "pop" shadow. Everything keys off theme variables so per-baby
+ * themes keep working.
+ */
+:root,
+.dark {
+  --font-sans: "Nunito Variable", ui-rounded, system-ui, sans-serif;
+  --radius: 1rem;
+}
+
+body {
+  font-family:
+    "Nunito Variable",
+    ui-rounded,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    "Roboto",
+    sans-serif;
+}
+
+/* Dotted paper texture that follows the theme's border color */
+.bg-dots {
+  background-image: radial-gradient(
+    color-mix(in oklab, var(--border) 80%, transparent) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 22px 22px;
+}
+
+/* Sticker-style offset shadow tinted by the theme primary */
+.pop-shadow {
+  box-shadow: 4px 4px 0 0 color-mix(in oklab, var(--primary) 18%, transparent);
+}
+
+.pop-shadow-strong {
+  box-shadow: 6px 6px 0 0 color-mix(in oklab, var(--primary) 30%, transparent);
+}

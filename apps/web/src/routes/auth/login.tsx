@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { LogIn } from "lucide-react";
+import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 
 const loginSchema = z.object({
@@ -50,21 +50,26 @@ function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Gradient Background Elements */}
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <Card>
-          <CardHeader>
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2 mx-auto">
-              <LogIn className="w-8 h-8 text-primary" />
-            </div>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Sign in to track your babies</CardDescription>
+        <Link
+          to="/"
+          className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+            <Baby className="h-4 w-4 text-primary" />
+          </span>
+          <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+        </Link>
+        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
+          <CardHeader className="text-center">
+            <p className="text-4xl" aria-hidden="true">
+              👋
+            </p>
+            <CardTitle className="text-2xl font-black">Welcome back!</CardTitle>
+            <CardDescription className="font-medium">
+              Sign in to keep everyone in the loop
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form
@@ -91,12 +96,7 @@ function LoginPage() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="you@example.com"
-                          className="border-2"
-                          {...field}
-                        />
+                        <Input type="email" placeholder="you@example.com" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -110,7 +110,7 @@ function LoginPage() {
                     <FormItem>
                       <FormLabel>Password</FormLabel>
                       <FormControl>
-                        <Input type="password" className="border-2" {...field} />
+                        <Input type="password" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -119,7 +119,7 @@ function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full shadow-lg shadow-primary/20"
+                  className="w-full rounded-full font-extrabold pop-shadow"
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >

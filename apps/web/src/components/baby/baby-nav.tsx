@@ -1,8 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
-import { ButtonGroup } from "@workspace/ui/components/button-group";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { CheckCircle, MessageCircleHeart, Settings, Share2 } from "lucide-react";
+import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link, LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -14,9 +13,16 @@ type BabyNavProps = {
   settingsOpen: boolean;
   /** Owner-only "Post update" action */
   onPostUpdate?: (() => void) | null;
+  className?: string;
 };
 
-export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate }: BabyNavProps) {
+export function BabyNav({
+  shareLink,
+  settingsButton,
+  settingsOpen,
+  onPostUpdate,
+  className,
+}: BabyNavProps) {
   const [copied, setCopied] = useState(false);
   const hasOwnerActions = !!(onPostUpdate || settingsButton);
 
@@ -27,10 +33,10 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate 
   }, [copied]);
 
   const ownerActions = hasOwnerActions ? (
-    <ButtonGroup aria-label="Owner actions">
+    <div role="group" aria-label="Owner actions" className="flex items-center gap-1">
       {onPostUpdate && (
-        <Button variant="outline" onClick={onPostUpdate}>
-          <MessageCircleHeart data-icon="inline-start" />
+        <Button variant="ghost" className="rounded-full font-bold" onClick={onPostUpdate}>
+          <ChatCircleText data-icon="inline-start" />
           Post update
         </Button>
       )}
@@ -39,24 +45,25 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate 
           <TooltipTrigger
             render={
               <Button
-                variant={settingsOpen ? "default" : "outline"}
+                variant={settingsOpen ? "default" : "ghost"}
                 size="icon"
+                className="rounded-full"
                 render={<Link {...(settingsButton as any)} />}
                 nativeButton={false}
                 aria-label={settingsOpen ? "Close settings" : "Settings"}
               >
-                <Settings />
+                <GearSix />
               </Button>
             }
           />
           <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
         </Tooltip>
       )}
-    </ButtonGroup>
+    </div>
   ) : null;
 
   const pageActions = (
-    <ButtonGroup aria-label="Page actions">
+    <div role="group" aria-label="Page actions" className="flex items-center gap-1">
       <Tooltip>
         <TooltipTrigger
           render={
@@ -88,37 +95,34 @@ export function BabyNav({ shareLink, settingsButton, settingsOpen, onPostUpdate 
                   document.body.removeChild(textArea);
                 }
               }}
-              variant="outline"
+              variant="ghost"
               size="icon"
+              className="rounded-full"
               disabled={!shareLink}
               aria-label={copied ? "Copied!" : "Copy link to share"}
             >
-              {copied ? <CheckCircle /> : <Share2 />}
+              {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
           }
         />
         <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
       </Tooltip>
 
-      <ModeToggle className="rounded-lg" />
-    </ButtonGroup>
+      <ModeToggle className="rounded-full" />
+    </div>
   );
 
+  // A floating pill dock; the page decides where it sits
   return (
     <div
       className={cn(
-        // general
-        "p-4 z-10",
-        // mobile
-        "fixed bottom-0 left-0",
-        // desktop
-        "md:sticky md:top-0 md:left-0",
+        "flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm",
+        className,
       )}
     >
-      <ButtonGroup>
-        {ownerActions}
-        {pageActions}
-      </ButtonGroup>
+      {ownerActions}
+      {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
+      {pageActions}
     </div>
   );
 }
