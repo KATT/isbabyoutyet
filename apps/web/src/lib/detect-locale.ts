@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { DEFAULT_LOCALE, resolveSupportedLocale } from "@workspace/convex/src/i18n";
+import {
+  DEFAULT_LOCALE,
+  resolveSupportedLocale,
+  type SupportedLocale,
+} from "@workspace/convex/src/i18n";
 
-export const detectRequestLocale = createServerFn({ method: "GET" }).handler(() => {
-  const acceptLanguage = getRequestHeader("accept-language");
+export function resolveAcceptLanguage(acceptLanguage: string | null): SupportedLocale {
   for (const preference of acceptLanguage?.split(",") ?? []) {
     const languageTag = preference.split(";")[0]?.trim();
     if (!languageTag) {
@@ -15,4 +18,8 @@ export const detectRequestLocale = createServerFn({ method: "GET" }).handler(() 
     }
   }
   return DEFAULT_LOCALE;
+}
+
+export const detectRequestLocale = createServerFn({ method: "GET" }).handler(() => {
+  return resolveAcceptLanguage(getRequestHeader("accept-language") ?? null);
 });
