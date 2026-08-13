@@ -152,14 +152,14 @@ export const HOMEPAGE_DEMO_FEED: HomepageDemoFeedItem[] = [
     minutesAgo: 150,
     milestone: "born",
     message:
-      "She's here!! Juniper Mae, 7lb 2oz, born after a long beautiful labour. We are smitten. Thank you for walking these two days with us.",
+      "She's here!! Juniper Mae Hale, 7lb 2oz, born after a long beautiful labour. We are smitten. Thank you for walking these two days with us.",
     photo: "born",
   },
   {
     kind: "encouragement",
     minutesAgo: 120,
     authorName: "Grandma Helen",
-    message: "WELCOME JUNIPER MAE 💕💕💕 Grandma is crying happy tears.",
+    message: "WELCOME JUNIPER MAE HALE 💕💕💕 Grandma is crying happy tears.",
   },
   {
     kind: "encouragement",

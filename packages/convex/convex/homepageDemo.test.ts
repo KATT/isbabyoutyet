@@ -25,7 +25,7 @@ async function storeBlob(t: Awaited<ReturnType<typeof setup>>, bytes: string) {
   });
 }
 
-test("refresh creates Juniper as born after a two-day labour with fixture encouragements", async () => {
+test("refresh creates Juniper Hale as born after a two-day labour with fixture encouragements", async () => {
   const t = await setup();
 
   const result = await t.mutation(internal.homepageDemo.refresh, {});

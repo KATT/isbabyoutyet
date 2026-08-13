@@ -45,7 +45,7 @@ export const DEMO_BABIES = [
  * shifted to "now", visitor comments wiped, fixture feed restored).
  */
 export const HOMEPAGE_DEMO_BABY = {
-  name: "Juniper",
+  name: "Juniper Hale",
   publicId: "juniper",
   ownerUserId: "homepage-demo",
   theme: "sunny-days",

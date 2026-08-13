@@ -42,7 +42,7 @@ function renderResource(ui: ReactElement) {
   });
 }
 
-test("homepage links visitors to the live Juniper demo page", async () => {
+test("homepage links visitors to the live Juniper Hale demo page", async () => {
   await using _view = renderResource(<HomePage />);
 
   const demoLinks = screen

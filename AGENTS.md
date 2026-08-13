@@ -28,7 +28,7 @@ Login: `test@example.com` / `password`
 
 | Status | Preview |
 | --- | --- |
-| Live demo (Juniper) | [{preview}/baby/juniper]({preview}/baby/juniper) |
+| Live demo (Juniper Hale) | [{preview}/baby/juniper]({preview}/baby/juniper) |
 | Not yet | [{preview}/baby/baby-waiting]({preview}/baby/baby-waiting) |
 | Labour started | [{preview}/baby/baby-in-labor]({preview}/baby/baby-in-labor) |
 | Gone to hospital | [{preview}/baby/baby-at-hospital]({preview}/baby/baby-at-hospital) |
