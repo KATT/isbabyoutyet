@@ -45,7 +45,7 @@ function DashboardPage() {
   const progress = useQuery(api.onboarding.getMine, {});
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
+    <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
         surface="dashboard"
         enabled={undefined}
@@ -88,7 +88,6 @@ function DashboardPage() {
             >
               <Sparkle className="w-4 h-4" />
             </Button>
-            <LanguageSettings />
             <ModeToggle className="rounded-full" />
             <Button
               size="sm"
@@ -114,7 +113,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
         <div className="mb-10 text-center">
           <h1 className="text-4xl font-black tracking-tight text-foreground md:text-5xl">
             {t("Your")}{" "}
@@ -134,6 +133,12 @@ function DashboardPage() {
           tourBabyPublicId={progress?.tourBaby?.publicId}
         />
       </main>
+
+      <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
+        <div className="mx-auto flex max-w-5xl justify-center">
+          <LanguageSettings />
+        </div>
+      </footer>
     </div>
   );
 }
