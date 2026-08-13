@@ -29,14 +29,18 @@ function renderResource(ui: ReactElement) {
 }
 
 test("shows a spinner instead of the empty state while the baby list is pending", async () => {
-  await using view = renderResource(<DashboardBabyList babies={[]} isPending />);
+  await using view = renderResource(
+    <DashboardBabyList babies={[]} isPending tourBabyPublicId={undefined} />,
+  );
 
   expect(view.getByRole("status", { name: "Loading" })).toBeTruthy();
   expect(view.queryByText("No babies added yet")).toBeNull();
 });
 
 test("shows the empty state once the list has loaded with no babies", async () => {
-  await using view = renderResource(<DashboardBabyList babies={[]} isPending={false} />);
+  await using view = renderResource(
+    <DashboardBabyList babies={[]} isPending={false} tourBabyPublicId={undefined} />,
+  );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
   expect(view.getByText("No babies added yet")).toBeTruthy();
@@ -46,6 +50,7 @@ test("shows prefetched babies without a spinner", async () => {
   await using view = renderResource(
     <DashboardBabyList
       isPending={false}
+      tourBabyPublicId="baby-smith"
       babies={[
         {
           _id: "baby-id" as Id<"baby">,
@@ -64,4 +69,5 @@ test("shows prefetched babies without a spinner", async () => {
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
   expect(view.queryByText("No babies added yet")).toBeNull();
   expect(view.getByText("Baby Smith")).toBeTruthy();
+  expect(view.container.querySelector('[data-tour-id="tour_baby"]')).toBeTruthy();
 });

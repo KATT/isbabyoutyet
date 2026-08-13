@@ -4,8 +4,15 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
+  Link: (
+    props: ComponentProps<"a"> & {
+      to: string | undefined;
+      "data-tour-id": string | undefined;
+    },
+  ) => (
+    <a href={typeof props.to === "string" ? props.to : "#"} data-tour-id={props["data-tour-id"]}>
+      {props.children}
+    </a>
   ),
 }));
 
@@ -39,7 +46,9 @@ const alma: DashboardBabyCardBaby = {
 
 test("a born baby with a past due date shows born, not overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
-  await using view = renderResource(<DashboardBabyCard baby={alma} index={0} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={alma} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("Alma Simone Petra Darvill")).toBeTruthy();
   expect(view.getByText("Baby born")).toBeTruthy();
@@ -59,7 +68,9 @@ test("an unborn baby past the due date still shows overdue", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(<DashboardBabyCard baby={waiting} index={0} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("225 days overdue")).toBeTruthy();
   expect(view.getByText("Due 31 December 2025")).toBeTruthy();
@@ -77,8 +88,35 @@ test("labour in progress beats a past due date", async () => {
     babyBorn: null,
     role: "owner",
   };
-  await using view = renderResource(<DashboardBabyCard baby={inLabor} index={0} />);
+  await using view = renderResource(
+    <DashboardBabyCard baby={inLabor} index={0} dataTourId={undefined} />,
+  );
 
   expect(view.getByText("Labour started")).toBeTruthy();
   expect(view.queryByText(/overdue/i)).toBeNull();
+});
+
+test("marks the tour baby card for coachmarks", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
+  await using view = renderResource(
+    <DashboardBabyCard baby={alma} index={1} dataTourId="tour_baby" />,
+  );
+
+  expect(view.container.querySelector('[data-tour-id="tour_baby"]')).toBeTruthy();
+});
+
+test("an unborn baby before the due date shows days remaining", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
+  const waiting: DashboardBabyCardBaby = {
+    name: "Baby Waiting",
+    publicId: "baby-waiting",
+    dueDate: "2026-09-01",
+    role: "coParent",
+  };
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
+
+  expect(view.getByText("Shared with you")).toBeTruthy();
+  expect(view.getByText("19 days until due date")).toBeTruthy();
 });

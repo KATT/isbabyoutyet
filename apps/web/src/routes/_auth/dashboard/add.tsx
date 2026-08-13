@@ -84,7 +84,6 @@ function AddBabyPage() {
                 await router.navigate({
                   to: "/baby/$publicId",
                   params: { publicId: result.publicId },
-                  search: { settings: true },
                 });
               }}
             >
