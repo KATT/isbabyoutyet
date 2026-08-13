@@ -17,6 +17,16 @@ function activeBabyPublicId(pathname: string) {
   return match?.[1] ?? null;
 }
 
+function isOutsideTarget(root: HTMLElement | null, target: EventTarget | null) {
+  if (!(target instanceof Node)) return false;
+  if (!root) return true;
+  return !root.contains(target);
+}
+
+function isEscapeKey(event: KeyboardEvent) {
+  return event.key === "Escape";
+}
+
 /**
  * Floating collapsible shortcuts to seeded demo babies. Only mounts in local
  * DEV and Vercel preview (same gate as demo login autofill).
@@ -40,15 +50,20 @@ function DevBarPanel() {
     if (!expanded) return;
 
     const onPointerDown = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (rootRef.current?.contains(target)) return;
+      if (!isOutsideTarget(rootRef.current, event.target)) return;
+      setExpanded(false);
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isEscapeKey(event)) return;
       setExpanded(false);
     };
 
     document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
     };
   }, [expanded]);
 

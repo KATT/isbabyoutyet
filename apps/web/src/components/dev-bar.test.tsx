@@ -137,3 +137,17 @@ test("stays open when clicking inside the bar", async () => {
 
   expect(screen.getByRole("complementary", { name: /developer shortcuts/i })).toBeTruthy();
 });
+
+test("closes when pressing Escape", async () => {
+  mocks.pathname = "/";
+  mocks.hasDemoLogin = true;
+
+  await using _view = renderDevBar();
+  await expandDevBar();
+
+  fireEvent.keyDown(document, { key: "Escape" });
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("complementary", { name: /developer shortcuts/i })).toBeNull();
+  });
+});
