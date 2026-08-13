@@ -1,0 +1,138 @@
+import { v } from "convex/values";
+import { components } from "./_generated/api";
+import { query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import { getCurrentStatus } from "../src/types";
+import { requireAdmin } from "./adminAccess";
+import { isActive } from "./softDelete";
+
+const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
+
+async function findUserEmail(ctx: QueryCtx, userId: string) {
+  const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "_id", value: userId }],
+  });
+  if (!user?.email) return null;
+  return String(user.email);
+}
+
+async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
+  const emails: string[] = [];
+  const ownerEmail = await findUserEmail(ctx, baby.userId);
+  if (ownerEmail) {
+    emails.push(ownerEmail);
+  }
+
+  const coParents = await ctx.db
+    .query("babyCoParents")
+    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
+    .collect();
+  for (const row of coParents) {
+    if (!isActive(row)) continue;
+    if (!emails.includes(row.email)) {
+      emails.push(row.email);
+    }
+  }
+  return emails;
+}
+
+async function lastActivityAt(ctx: QueryCtx, babyId: Id<"baby">, createdAt: number) {
+  const items = await ctx.db
+    .query("timelineItems")
+    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", babyId))
+    .order("desc")
+    .take(20);
+  const latest = items.find(isActive);
+  if (!latest) {
+    return createdAt;
+  }
+  return Math.max(createdAt, latest.postedAt);
+}
+
+export const listLanguageRequests = query({
+  args: {},
+  returns: v.array(
+    v.object({
+      _id: v.id("languageRequests"),
+      requestedLocale: v.string(),
+      createdAt: v.number(),
+      userId: v.string(),
+      userEmail: v.union(v.string(), v.null()),
+    }),
+  ),
+  handler: async (ctx) => {
+    await requireAdmin(ctx);
+    const rows = await ctx.db.query("languageRequests").collect();
+    rows.sort((a, b) => b.createdAt - a.createdAt);
+
+    const emailByUserId = new Map<string, string | null>();
+    const result = [];
+    for (const row of rows) {
+      let userEmail = emailByUserId.get(row.userId);
+      if (userEmail === undefined) {
+        userEmail = await findUserEmail(ctx, row.userId);
+        emailByUserId.set(row.userId, userEmail);
+      }
+      result.push({
+        _id: row._id,
+        requestedLocale: row.requestedLocale,
+        createdAt: row.createdAt,
+        userId: row.userId,
+        userEmail,
+      });
+    }
+    return result;
+  },
+});
+
+export const listBabies = query({
+  args: {
+    sortBy: sortByValidator,
+  },
+  returns: v.array(
+    v.object({
+      _id: v.id("baby"),
+      name: v.string(),
+      publicId: v.string(),
+      dueDate: v.string(),
+      status: v.union(
+        v.literal("not_yet"),
+        v.literal("labor_started"),
+        v.literal("gone_to_hospital"),
+        v.literal("born"),
+      ),
+      demo: v.boolean(),
+      createdAt: v.number(),
+      updatedAt: v.number(),
+      managerEmails: v.array(v.string()),
+    }),
+  ),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const babies = await ctx.db.query("baby").collect();
+    const active = babies.filter(isActive);
+
+    const rows = [];
+    for (const baby of active) {
+      const createdAt = baby._creationTime;
+      const updatedAt = await lastActivityAt(ctx, baby._id, createdAt);
+      rows.push({
+        _id: baby._id,
+        name: baby.name,
+        publicId: baby.publicId,
+        dueDate: baby.dueDate,
+        status: getCurrentStatus(baby).type,
+        demo: baby.demo === true,
+        createdAt,
+        updatedAt,
+        managerEmails: await managerEmailsForBaby(ctx, baby),
+      });
+    }
+
+    const key = args.sortBy === "created" ? "createdAt" : "updatedAt";
+    rows.sort((a, b) => b[key] - a[key]);
+    return rows;
+  },
+});
