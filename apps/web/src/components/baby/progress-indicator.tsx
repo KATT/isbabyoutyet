@@ -8,6 +8,12 @@ type ProgressIndicatorProps = {
   currentStatus: BabyStatus;
 };
 
+/** Badge size — keep in sync with the connector inset (`1.25rem` = half of `h-10`). */
+const BADGE_CLASS = "h-10 w-10";
+const BADGE_RADIUS = "1.25rem";
+/** Matches `gap-1` on the milestone grid. */
+const COLUMN_GAP = "0.25rem";
+
 export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
@@ -59,31 +65,50 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
       aria-valuemax={100}
       aria-valuenow={Math.round(progressValue)}
     >
-      {/* Compact journey: dashed path, solid fill for how far we've come */}
-      <ol className="relative grid grid-cols-3 gap-1">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-5 right-[18%] left-[18%] border-t-2 border-dashed border-border"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-5 left-[18%] border-t-2 border-solid border-primary transition-[width] duration-300"
-          style={{ width: `calc((100% - 36%) * ${progressValue / 100})` }}
-        />
-        {steps.map((step) => {
+      {/*
+        Connectors live between badge edges (not through centers). Each segment
+        is drawn from this column and spans into the next: width = one column +
+        gap − badge diameter so it stops at the next circle's rim.
+      */}
+      <ol className={`relative grid grid-cols-3 gap-1`}>
+        {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
+          const isLast = index === steps.length - 1;
+          // Fill the path into a milestone once that milestone is reached.
+          const segmentFilled = !isLast && steps[index + 1]?.completed === true;
+
           return (
             <li key={step.key} className="relative flex min-w-0 flex-col items-center text-center">
+              {!isLast && (
+                <div
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute top-5 z-0 border-t-2 ${
+                    segmentFilled ? "border-solid border-primary" : "border-dashed border-border"
+                  }`}
+                  style={{
+                    left: `calc(50% + ${BADGE_RADIUS})`,
+                    width: `calc(100% + ${COLUMN_GAP} - (${BADGE_RADIUS} * 2))`,
+                  }}
+                />
+              )}
               <div
-                className={`mb-1.5 flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg transition-all duration-300 ${
+                className={`relative z-10 mb-1.5 flex ${BADGE_CLASS} items-center justify-center rounded-full border-2 bg-card text-lg transition-all duration-300 ${
                   step.completed
-                    ? "border-primary bg-primary/15 pop-shadow"
+                    ? "border-primary pop-shadow"
                     : isCurrent
-                      ? "border-primary/40 bg-card ring-2 ring-primary/15"
-                      : "border-border bg-card opacity-60 grayscale"
+                      ? "border-primary/40 ring-2 ring-primary/15"
+                      : "border-border opacity-60 grayscale"
                 }`}
               >
-                <span aria-hidden="true">{step.emoji}</span>
+                {step.completed && (
+                  <span
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-0 rounded-full bg-primary/15"
+                  />
+                )}
+                <span aria-hidden="true" className="relative">
+                  {step.emoji}
+                </span>
               </div>
               <p
                 className={`text-[11px] leading-tight font-extrabold text-balance sm:text-xs ${
