@@ -18,7 +18,8 @@
         "src/server.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
-        "scripts/build-web.mjs!"
+        "scripts/build-web.mjs!",
+        "scripts/check-mobile-overflow.ts!"
       ]
     },
     "packages/convex": {

@@ -100,7 +100,7 @@ async function locateChrome() {
     try {
       await access(candidate);
       return candidate;
-    } catch (_error) {
+    } catch {
       // Try the next common Chrome location.
     }
   }
@@ -114,7 +114,7 @@ async function waitForDevtoolsPort(profileDirectory: string) {
       const contents = await readFile(portFile, "utf8");
       const port = Number.parseInt(contents.split("\n")[0] ?? "", 10);
       if (Number.isFinite(port)) return port;
-    } catch (_error) {
+    } catch {
       await delay(50);
     }
   }
