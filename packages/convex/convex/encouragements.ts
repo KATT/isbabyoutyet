@@ -151,7 +151,9 @@ export const remove = mutation({
 
     // Check if user can manage the baby (owner or co-parent)
     const identity = await ctx.auth.getUserIdentity();
-    const isManager = identity ? await canManageBaby(ctx, baby, identity.subject) : false;
+    const isManager = identity
+      ? await canManageBaby(ctx, { baby, userId: identity.subject })
+      : false;
 
     // Check if visitor can delete (matches visitorId and within time window)
     const canVisitorDelete =

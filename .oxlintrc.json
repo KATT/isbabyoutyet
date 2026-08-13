@@ -21,7 +21,9 @@
     }
   },
   "rules": {
-    "vitest/no-hooks": "error"
+    "vitest/no-hooks": "error",
+    // Prefer an options object over long positional argument lists.
+    "eslint/max-params": ["error", 2]
   },
   "overrides": [
     {
@@ -39,6 +41,13 @@
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
         "i18n-literal/no-literal-template": "off"
+      }
+    },
+    {
+      // Vendored shadcn/ui registry components — not first-party code.
+      "files": ["packages/ui/src/components/**"],
+      "rules": {
+        "eslint/max-params": "off"
       }
     }
   ]

@@ -74,11 +74,11 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  */
 type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
-function composerSchema(
-  t: TranslationFunction,
-  currentStatus: BabyStatus["type"],
-  babyId: Id<"baby">,
-) {
+function composerSchema(opts: {
+  t: TranslationFunction;
+  currentStatus: BabyStatus["type"];
+  babyId: Id<"baby">;
+}) {
   return z
     .object({
       message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
@@ -88,25 +88,26 @@ function composerSchema(
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(t),
+      occurredAt: optionalHtmlDateTime(opts.t),
       photo: z.custom<File>().nullable(),
     })
     .refine(
       (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-      { error: t("Add a message, a photo, or a milestone to post") },
+      { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
       (draft) =>
-        draft.milestone === "none" || STATUS_ORDER[draft.milestone] > STATUS_ORDER[currentStatus],
+        draft.milestone === "none" ||
+        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
       {
-        error: t("That status has already been marked"),
+        error: opts.t("That status has already been marked"),
         path: ["milestone"],
       },
     )
     .transform((draft): PostUpdateArgs & { photo: File | null } => {
       const milestone = draft.milestone === "none" ? undefined : draft.milestone;
       return {
-        babyId,
+        babyId: opts.babyId,
         message: draft.message || undefined,
         milestone,
         occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
@@ -184,7 +185,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
   const schema = useMemo(
-    () => composerSchema(t, currentStatus.type, props.babyId),
+    () =>
+      composerSchema({
+        t,
+        currentStatus: currentStatus.type,
+        babyId: props.babyId,
+      }),
     [t, currentStatus.type, props.babyId],
   );
 
