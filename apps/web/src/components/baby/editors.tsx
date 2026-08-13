@@ -16,7 +16,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { format, parseISO } from "date-fns";
-import { Clock, Trash2 } from "lucide-react";
+import { Clock, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -207,7 +207,7 @@ function StatusDateForm(props: {
 
   const deleteButton = (
     <Button type="button" variant="destructive" size="sm" disabled={Boolean(blocker)}>
-      <Trash2 data-icon="inline-start" />
+      <Trash data-icon="inline-start" />
       Delete
     </Button>
   );

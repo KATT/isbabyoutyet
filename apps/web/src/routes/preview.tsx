@@ -1,6 +1,5 @@
-import { Card, CardContent, CardFooter } from "@workspace/ui/components/card";
-import { Separator } from "@workspace/ui/components/separator";
 import { BabyNav } from "@/components/baby/baby-nav";
+import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -110,60 +109,56 @@ function PreviewPage() {
         }}
       />
 
-      <div className="min-h-screen bg-background relative overflow-hidden">
-        {/* Gradient Background Elements */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-
-        <div className="border-b border-border/50">
-          <BabyNav
-            shareLink={null}
-            settingsButton={{
-              to: "/preview",
-              search: {
-                ...search,
-                settings: search.settings ? undefined : true,
-              },
-            }}
-            settingsOpen={!!search.settings}
-          />
-
-          <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
-            <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is {baby.name} out yet?
-            </span>
-          </h1>
-        </div>
-
-        <section className="relative px-6 py-12 text-center overflow-hidden">
-          <div className="relative max-w-5xl mx-auto">
-            <Card>
-              <CardContent>
-                <StatusDisplay
-                  baby={baby}
-                  currentStatus={currentStatus}
-                  latestUpdate={latestUpdate}
-                />
-                <Separator />
-              </CardContent>
-              <CardFooter>
-                <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-              </CardFooter>
-            </Card>
+      <div className="min-h-screen bg-background bg-dots">
+        <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
+            <Link
+              to="/"
+              className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+                <Baby className="h-4 w-4 text-primary" />
+              </span>
+              <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+            </Link>
+            <BabyNav
+              shareLink={null}
+              settingsButton={{
+                to: "/preview",
+                search: {
+                  ...search,
+                  settings: search.settings ? undefined : true,
+                },
+              }}
+              settingsOpen={!!search.settings}
+            />
           </div>
-        </section>
+        </header>
 
-        {/* Footer: extra bottom padding on mobile clears the fixed bottom bar */}
-        <div className="text-center pt-8 pb-28 md:pb-8 border-t border-border/50">
+        <main className="mx-auto w-full max-w-2xl px-4 pb-16">
+          <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
+            Is{" "}
+            <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
+              {baby.name}
+            </span>{" "}
+            out yet?
+          </h1>
+
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
+            <StatusDisplay baby={baby} currentStatus={currentStatus} latestUpdate={latestUpdate} />
+            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+          </section>
+        </main>
+
+        <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
           >
             Having a baby? Are people messaging you non-stop? Create your own page →
           </Link>
-        </div>
+        </footer>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useConvex, useQuery as useConvexQuery } from "convex/react";
-import { Bell, BellOff, Share } from "lucide-react";
+import { Bell, BellSlash, Export } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -190,7 +190,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
             <li className="flex items-start gap-2">
               <span className="font-medium min-w-5">1.</span>
               <span>
-                Tap the <Share className="inline w-4 h-4 mx-1" /> Share button in Safari
+                Tap the <Export className="inline w-4 h-4 mx-1" /> Share button in Safari
               </span>
             </li>
             <li className="flex items-start gap-2">
@@ -249,7 +249,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           >
             {isSubscribed ? (
               <>
-                {isLoading ? <Spinner className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
+                {isLoading ? <Spinner className="w-5 h-5" /> : <BellSlash className="w-5 h-5" />}
                 Unsubscribe
               </>
             ) : (
