@@ -1,3 +1,4 @@
+import { useI18n } from "@/lib/i18n";
 import { Info } from "@phosphor-icons/react";
 import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import {
@@ -21,6 +22,7 @@ type HomepageDemoToastProps = {
  * can try posting without affecting a real family.
  */
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
+  const { t } = useI18n();
   useEffect(() => {
     if (props.publicId !== HOMEPAGE_DEMO_BABY.publicId) return;
 
@@ -34,9 +36,9 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
             <Info className="size-5 text-primary" />
           </ItemMedia>
           <ItemContent>
-            <ItemTitle>This is a demo baby</ItemTitle>
+            <ItemTitle>{t("This is a demo baby")}</ItemTitle>
             <ItemDescription>
-              Feel free to post test messages — they get cleared on each deploy.
+              {t("Feel free to post test messages — they get cleared on each deploy.")}
             </ItemDescription>
           </ItemContent>
         </Item>
@@ -51,7 +53,7 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
     return () => {
       toast.dismiss(HOMEPAGE_DEMO_TOAST_ID);
     };
-  }, [props.publicId]);
+  }, [props.publicId, t]);
 
   return null;
 }

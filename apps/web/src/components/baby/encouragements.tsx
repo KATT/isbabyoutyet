@@ -10,12 +10,15 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { TranslationFunction } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -38,20 +41,37 @@ export function getVisitorId(): string {
 }
 
 // Trim before validating, so whitespace-only input doesn't pass "required"
-const encouragementSchema = z.object({
-  authorName: z
-    .string()
-    .trim()
-    .min(1, "Name is required")
-    .max(MAX_NAME_LENGTH, `Name must be ${MAX_NAME_LENGTH} characters or less`),
-  message: z.string().trim().min(1, "Message is required"),
-});
+function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
+  return z
+    .object({
+      authorName: z
+        .string()
+        .trim()
+        .min(1, t("Name is required"))
+        .max(
+          MAX_NAME_LENGTH,
+          t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
+        ),
+      message: z.string().trim().min(1, t("Message is required")),
+    })
+    .transform((values): FunctionArgs<typeof api.encouragements.create> => ({
+      babyId,
+      authorName: values.authorName,
+      message: values.message,
+      visitorId: getVisitorId(),
+      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+      locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }));
+}
 
 export function EncouragementForm(props: EncouragementFormProps) {
+  const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
+  const schema = useMemo(() => encouragementSchema(t, props.babyId), [t, props.babyId]);
 
   const form = useZodForm({
-    schema: encouragementSchema,
+    schema,
     defaultValues: {
       authorName: "",
       message: "",
@@ -73,28 +93,19 @@ export function EncouragementForm(props: EncouragementFormProps) {
         <p className="text-3xl" aria-hidden="true">
           💛
         </p>
-        <h3 className="mt-2 text-xl font-extrabold text-foreground">Send some love</h3>
+        <h3 className="mt-2 text-xl font-extrabold text-foreground">{t("Send some love")}</h3>
         <p className="mt-1 text-sm font-medium text-muted-foreground">
-          Leave a message of support for {props.babyName}'s family
+          {t("Leave a message of support for {{name}}'s family", { name: props.babyName })}
         </p>
       </div>
 
       <Form
         form={form}
         handleSubmit={async (values) => {
-          const authorName = values.authorName.trim();
           // Save name to localStorage for next time
-          localStorage.setItem(STORAGE_KEY_NAME, authorName);
+          localStorage.setItem(STORAGE_KEY_NAME, values.authorName);
 
-          const promise = createEncouragement({
-            babyId: props.babyId,
-            authorName,
-            message: values.message.trim(),
-            visitorId: getVisitorId(),
-            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-            locale: typeof navigator !== "undefined" ? navigator.language : undefined,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          }).then(async (it) => {
+          const promise = createEncouragement(values).then(async (it) => {
             if (import.meta.env.DEV) {
               await new Promise((resolve) => setTimeout(resolve, 1000));
             }
@@ -102,11 +113,12 @@ export function EncouragementForm(props: EncouragementFormProps) {
           });
 
           toast.promise(promise, {
-            loading: "Sending your encouragement...",
-            success: "Your kind words have been sent! 💕",
-            error: (err) => (err instanceof Error ? err.message : "Failed to send encouragement"),
+            loading: t("Sending your encouragement..."),
+            success: t("Your kind words have been sent! 💕"),
+            error: (err) =>
+              err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
-          form.reset({ authorName, message: "" });
+          form.reset({ authorName: values.authorName, message: "" });
           await promise;
         }}
       >
@@ -116,9 +128,9 @@ export function EncouragementForm(props: EncouragementFormProps) {
             name="authorName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Your name</FormLabel>
+                <FormLabel>{t("Your name")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your name" maxLength={MAX_NAME_LENGTH} {...field} />
+                  <Input placeholder={t("Your name")} maxLength={MAX_NAME_LENGTH} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -130,10 +142,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
             name="message"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Message</FormLabel>
+                <FormLabel>{t("Message")}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Write your message of encouragement..."
+                    placeholder={t("Write your message of encouragement...")}
                     className="min-h-24"
                     {...field}
                   />
@@ -145,7 +157,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
 
           <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
             <PaperPlaneTilt className="w-4 h-4" />
-            {form.formState.isSubmitting ? "Sending..." : "Send Encouragement"}
+            {form.formState.isSubmitting ? t("Sending...") : t("Send Encouragement")}
           </Button>
         </div>
       </Form>

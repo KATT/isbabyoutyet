@@ -1,6 +1,8 @@
 import { Progress } from "@workspace/ui/components/progress";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import { getRelativeTime } from "./utils";
+import { useI18n } from "@/lib/i18n";
+import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 type ProgressIndicatorProps = {
   baby: BabyData;
@@ -8,6 +10,7 @@ type ProgressIndicatorProps = {
 };
 
 export function ProgressIndicator(props: ProgressIndicatorProps) {
+  const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = props.currentStatus;
 
@@ -15,21 +18,21 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const steps = [
     {
       key: "labor_started",
-      label: "Labour started",
+      labelKey: MILESTONE_LABEL_KEYS.labor_started,
       emoji: "💫",
       date: baby.laborStarted,
       completed: !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn,
     },
     {
       key: "gone_to_hospital",
-      label: "Gone to hospital",
+      labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital,
       emoji: "🏥",
       date: baby.wentToHospital,
       completed: !!baby.wentToHospital || !!baby.babyBorn,
     },
     {
       key: "born",
-      label: "Baby born",
+      labelKey: MILESTONE_LABEL_KEYS.born,
       emoji: "🎉",
       date: baby.babyBorn,
       completed: !!baby.babyBorn,
@@ -77,11 +80,11 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
                       : "text-muted-foreground"
                 }`}
               >
-                {step.label}
+                {t(step.labelKey)}
               </p>
               {step.date && (
                 <p className="mt-1 rounded-full bg-muted/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
-                  {getRelativeTime(step.date)}
+                  {getRelativeTime(step.date, locale)}
                 </p>
               )}
             </li>

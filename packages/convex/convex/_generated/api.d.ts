@@ -10,14 +10,19 @@
 
 import type * as auth from "../auth.js";
 import type * as baby from "../baby.js";
+import type * as babyAccess from "../babyAccess.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
+import type * as coParents from "../coParents.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
+import type * as i18n from "../i18n.js";
 import type * as migrations from "../migrations.js";
+import type * as profile from "../profile.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
+import type * as softDelete from "../softDelete.js";
 import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
@@ -27,14 +32,19 @@ import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   baby: typeof baby;
+  babyAccess: typeof babyAccess;
   babyThumbnails: typeof babyThumbnails;
+  coParents: typeof coParents;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;
+  i18n: typeof i18n;
   migrations: typeof migrations;
+  profile: typeof profile;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;
+  softDelete: typeof softDelete;
   timeline: typeof timeline;
   triggers: typeof triggers;
   updates: typeof updates;
