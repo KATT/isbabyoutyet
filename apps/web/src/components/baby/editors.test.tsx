@@ -45,7 +45,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 });
 
 test("due date editor encodes the picker value as a UTC midnight instant", async () => {
-  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
@@ -77,6 +77,31 @@ test("reopening the editor picks up the latest name without any reset", async ()
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Baby name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
+});
+
+test("status editor saves the matching milestone instant", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const laborBaby = { ...baby, laborStarted: "2026-08-10T08:00:00.000Z" };
+  await using view = renderResource(
+    <StatusDateEditor
+      baby={laborBaby}
+      status="labor_started"
+      currentDate={laborBaby.laborStarted}
+      onUpdate={onUpdate}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.change(view.getByLabelText("Status date and time"), {
+    target: { value: "2026-08-10T09:30" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      laborStarted: new Date("2026-08-10T09:30").toISOString(),
+    }),
+  );
 });
 
 test("status editor confirms destructive deletion", async () => {

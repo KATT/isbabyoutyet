@@ -37,7 +37,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
-import type { FunctionReturnType } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
@@ -68,7 +68,9 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * so a whitespace-only message counts as no message (matching the backend).
  * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
-function composerSchema(currentStatus: BabyStatus["type"]) {
+type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
+
+function composerSchema(currentStatus: BabyStatus["type"], babyId: Id<"baby">) {
   return z
     .object({
       message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
@@ -93,12 +95,13 @@ function composerSchema(currentStatus: BabyStatus["type"]) {
         path: ["milestone"],
       },
     )
-    .transform((draft) => {
-      const milestone = draft.milestone === "none" ? null : draft.milestone;
+    .transform((draft): PostUpdateArgs & { photo: File | null } => {
+      const milestone = draft.milestone === "none" ? undefined : draft.milestone;
       return {
-        message: draft.message,
+        babyId,
+        message: draft.message || undefined,
         milestone,
-        occurredAt: milestone ? draft.occurredAt : null,
+        occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
         photo: draft.photo,
       };
     });
@@ -171,7 +174,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
-  const schema = useMemo(() => composerSchema(currentStatus.type), [currentStatus.type]);
+  const schema = useMemo(
+    () => composerSchema(currentStatus.type, props.babyId),
+    [currentStatus.type, props.babyId],
+  );
 
   const form = useZodForm({
     schema,
@@ -231,13 +237,14 @@ export function UpdateComposer(props: UpdateComposerProps) {
       <Form
         form={form}
         handleSubmit={async (values) => {
-          let photoId: Id<"_storage"> | undefined;
-          if (values.photo) {
-            const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
+          const { photo, ...args } = values;
+          let photoId: PostUpdateArgs["photoId"];
+          if (photo) {
+            const uploadUrl = await generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
               method: "POST",
-              headers: { "Content-Type": values.photo.type },
-              body: values.photo,
+              headers: { "Content-Type": photo.type },
+              body: photo,
             });
             if (!response.ok) {
               throw new Error("Failed to upload photo");
@@ -246,13 +253,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
             photoId = uploaded.storageId;
           }
 
-          await postUpdate({
-            babyId: props.babyId,
-            message: values.message || undefined,
-            milestone: values.milestone ?? undefined,
-            occurredAt: values.occurredAt ?? undefined,
-            photoId,
-          });
+          await postUpdate({ ...args, photoId });
 
           toast.success("Update posted!");
           // No reset needed: the composer lives in a dialog that unmounts on close
@@ -659,12 +660,21 @@ type EncouragementTimelineItemProps = {
   isOwner: boolean;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId?: string) => Promise<void>;
-  onUpdate: (id: Id<"encouragements">, visitorId: string, message: string) => Promise<void>;
+  onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
 };
 
-const encouragementEditSchema = z.object({
-  message: z.string().trim().min(1, "Message cannot be empty"),
-});
+function encouragementEditSchema(
+  args: Pick<FunctionArgs<typeof api.encouragements.update>, "encouragementId" | "visitorId">,
+) {
+  return z
+    .object({
+      message: z.string().trim().min(1, "Message cannot be empty"),
+    })
+    .transform((values): FunctionArgs<typeof api.encouragements.update> => ({
+      ...args,
+      message: values.message,
+    }));
+}
 
 /**
  * Mounted only while editing, so the form initializes from the current
@@ -672,11 +682,16 @@ const encouragementEditSchema = z.object({
  */
 function EncouragementEditForm(props: {
   initialMessage: string;
-  onSave: (message: string) => Promise<void>;
+  encouragementId: Id<"encouragements">;
+  visitorId: string;
+  onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
   onCancel: () => void;
 }) {
   const form = useZodForm({
-    schema: encouragementEditSchema,
+    schema: encouragementEditSchema({
+      encouragementId: props.encouragementId,
+      visitorId: props.visitorId,
+    }),
     defaultValues: { message: props.initialMessage },
   });
   const isSaving = form.formState.isSubmitting;
@@ -685,7 +700,7 @@ function EncouragementEditForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onSave(values.message);
+        await props.onSave(values);
       }}
     >
       <div className="space-y-2">
@@ -763,8 +778,10 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
             {isEditing ? (
               <EncouragementEditForm
                 initialMessage={encouragement.message}
-                onSave={async (message) => {
-                  await props.onUpdate(encouragement._id, props.currentVisitorId, message);
+                encouragementId={encouragement._id}
+                visitorId={props.currentVisitorId}
+                onSave={async (args) => {
+                  await props.onUpdate(args);
                   setIsEditing(false);
                 }}
                 onCancel={() => setIsEditing(false)}
@@ -969,9 +986,9 @@ export function TimelineFeed(props: TimelineFeedProps) {
                   );
                 }
               }}
-              onUpdate={async (encouragementId, visitorId, message) => {
+              onUpdate={async (args) => {
                 try {
-                  await updateEncouragement({ encouragementId, visitorId, message });
+                  await updateEncouragement(args);
                   toast.success("Encouragement updated");
                 } catch (error) {
                   toast.error(

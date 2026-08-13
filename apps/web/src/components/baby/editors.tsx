@@ -16,17 +16,21 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
+import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
+import type { api } from "@workspace/convex/convex/_generated/api";
 import {
   getBlockingLaterMilestone,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import { THEME_OPTIONS } from "./utils";
+
+type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
 // The popover editors follow one pattern: the outer component owns the
 // open state, the inner *Form component owns the form and is mounted fresh
@@ -66,7 +70,7 @@ const dueDateSchema = z
   .object({
     date: htmlDate,
   })
-  .transform((values) => ({ dueDate: values.date }));
+  .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
 
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -156,9 +160,18 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const statusDateSchema = z.object({
-  dateTime: htmlDateTime,
-});
+function statusDateSchema(status: Milestone) {
+  return z.object({ dateTime: htmlDateTime }).transform((values): BabyPatch => {
+    switch (status) {
+      case "labor_started":
+        return { laborStarted: values.dateTime };
+      case "gone_to_hospital":
+        return { wentToHospital: values.dateTime };
+      case "born":
+        return { babyBorn: values.dateTime };
+    }
+  });
+}
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -195,7 +208,7 @@ function StatusDateForm(props: {
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const form = useZodForm({
-    schema: statusDateSchema,
+    schema: statusDateSchema(props.status),
     defaultValues: { dateTime: htmlDateTime.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -212,13 +225,7 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        if (props.status === "labor_started") {
-          await props.onUpdate({ laborStarted: values.dateTime });
-        } else if (props.status === "gone_to_hospital") {
-          await props.onUpdate({ wentToHospital: values.dateTime });
-        } else {
-          await props.onUpdate({ babyBorn: values.dateTime });
-        }
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -303,9 +310,11 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const nameSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-});
+const nameSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required"),
+  })
+  .transform((values): Pick<BabyPatch, "name"> => values);
 
 export function NameEditor({ baby, onUpdate }: NameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -336,7 +345,7 @@ function NameForm(props: EditorFormProps) {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ name: values.name });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >

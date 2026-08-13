@@ -121,6 +121,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: undefined,
   });
@@ -140,6 +141,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
   });
