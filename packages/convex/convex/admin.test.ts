@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
-import { DEMO_USER } from "../src/seedCredentials";
+import { DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {
@@ -113,11 +113,22 @@ test("admins can list babies sorted by created or updated with manager emails", 
       dueDate: "2026-12-01",
       publicId: "baby-quiet",
     });
+    // Homepage live demos use a sentinel owner that is not a Better Auth document
+    // id — looking it up must not crash the admin list.
+    await ctx.db.insert("baby", {
+      userId: HOMEPAGE_DEMO_OWNER_USER_ID,
+      name: "Juniper Hale",
+      dueDate: "2026-08-01",
+      publicId: "juniper-hale",
+      demo: true,
+    });
   });
 
   const byCreated = await asDemo.query(api.admin.listBabies, { sortBy: "created" });
   expect(byCreated.some((row) => row.publicId === "baby-deleted")).toBe(false);
   expect(byCreated.some((row) => row.publicId === "baby-quiet")).toBe(true);
+  const juniper = byCreated.find((row) => row.publicId === "juniper-hale");
+  expect(juniper).toMatchObject({ demo: true, managerEmails: [] });
   for (let i = 1; i < byCreated.length; i++) {
     expect(byCreated[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated[i]!.createdAt);
   }

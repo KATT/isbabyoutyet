@@ -4,18 +4,32 @@ import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { getCurrentStatus } from "../src/types";
+import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 
+/**
+ * Resolve a Better Auth user's email. Sentinel / non-document owners
+ * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
+ * them up by `_id` throws "Invalid ID length", so skip those.
+ */
 async function findUserEmail(ctx: QueryCtx, userId: string) {
-  const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
-    model: "user",
-    where: [{ field: "_id", value: userId }],
-  });
-  if (!user?.email) return null;
-  return String(user.email);
+  if (userId === HOMEPAGE_DEMO_OWNER_USER_ID) {
+    return null;
+  }
+  try {
+    const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+      model: "user",
+      where: [{ field: "_id", value: userId }],
+    });
+    if (!user?.email) return null;
+    return String(user.email);
+  } catch {
+    // Orphan / non-document userIds must not fail the whole admin list.
+    return null;
+  }
 }
 
 async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
