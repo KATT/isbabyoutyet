@@ -40,7 +40,7 @@ export const Route = createFileRoute("/baby/$publicId")({
   }),
   beforeLoad: async (opts) => {
     const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
-        id: opts.params.publicId,
+      id: opts.params.publicId,
     });
     if (!baby) {
       throw notFound();
