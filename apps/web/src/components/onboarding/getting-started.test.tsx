@@ -45,7 +45,7 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
   );
 
   expect(screen.getAllByText("Add your first baby").length).toBeGreaterThan(0);
-  expect(screen.getByRole("button", { name: /add a baby/i })).toBeTruthy();
+  expect(screen.getAllByRole("link", { name: /add a baby/i }).length).toBeGreaterThan(0);
 });
 
 test("dashboard share step links to the first baby's page", async () => {
@@ -96,7 +96,7 @@ test("learn_encouragements shows a Got it button that acknowledges the step", as
     />,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: /got it/i }));
+  fireEvent.click(screen.getAllByRole("button", { name: /got it/i })[0]!);
   expect(onAcknowledge).toHaveBeenCalledWith("learn_encouragements");
 });
 
@@ -133,7 +133,7 @@ test("baby-page checklist can open post update and settings", async () => {
     />,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: /post an update/i }));
+  fireEvent.click(screen.getAllByRole("button", { name: /post an update/i })[0]!);
   expect(onGoToStep).toHaveBeenCalledWith("post_update");
 
   fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);

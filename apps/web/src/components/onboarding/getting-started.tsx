@@ -50,7 +50,7 @@ function babyPageLink(opts: {
   };
 }
 
-export function getStepAction(opts: {
+function getStepAction(opts: {
   step: OnboardingStepCopy;
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
@@ -232,10 +232,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           return (
             <li
               key={step.id}
-              className={cn(
-                "rounded-lg text-sm",
-                isNext && "bg-primary/8 ring-1 ring-primary/15",
-              )}
+              className={cn("rounded-lg text-sm", isNext && "bg-primary/8 ring-1 ring-primary/15")}
             >
               <StepRow step={step} isDone={isDone} action={action} />
             </li>
@@ -265,11 +262,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
   );
 }
 
-function StepRow(props: {
-  step: OnboardingStepCopy;
-  isDone: boolean;
-  action: StepAction | null;
-}) {
+function StepRow(props: { step: OnboardingStepCopy; isDone: boolean; action: StepAction | null }) {
   const inner = (
     <>
       <span
