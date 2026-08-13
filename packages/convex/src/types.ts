@@ -54,6 +54,12 @@ export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "
  */
 export type Milestone = "labor_started" | "gone_to_hospital" | "born";
 
+export const MILESTONE_LABELS = {
+  labor_started: "Labour started",
+  gone_to_hospital: "Gone to hospital",
+  born: "Born",
+} as const satisfies Record<Milestone, string>;
+
 /**
  * Maps a milestone to the baby fields that hold its canonical timestamp and
  * its legacy per-stage message.
@@ -65,6 +71,25 @@ export const MILESTONE_FIELDS = {
 } as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
 
 export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
+
+/**
+ * Returns the latest marked milestone that must be removed before `milestone`
+ * can be removed. Milestones are unwound in reverse order so the canonical
+ * status never contains gaps.
+ */
+export function getBlockingLaterMilestone(baby: BabyData, milestone: Milestone) {
+  for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
+    const candidate = MILESTONES[index];
+    if (
+      candidate &&
+      STATUS_ORDER[candidate] > STATUS_ORDER[milestone] &&
+      baby[MILESTONE_FIELDS[candidate].date]
+    ) {
+      return candidate;
+    }
+  }
+  return null;
+}
 
 /**
  * Check if status moved forward (e.g., not_yet → labor_started → gone_to_hospital → born)
