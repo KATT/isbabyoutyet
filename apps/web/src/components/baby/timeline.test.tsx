@@ -2,17 +2,26 @@ import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
-import { UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
-const mocks = vi.hoisted(() => ({ mutate: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  mutate: vi.fn<(args: unknown) => Promise<unknown>>(),
+  paginated: {
+    results: [] as unknown[],
+    status: "Exhausted",
+    loadMore: vi.fn<(count: number) => void>(),
+  },
+}));
 vi.mock("convex/react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("convex/react")>()),
   useMutation: () => mocks.mutate,
+  usePaginatedQuery: () => mocks.paginated,
 }));
 
 const notYetBaby: BabyData = {
@@ -99,14 +108,15 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
   );
 });
 
-test("an untouched event-time picker does not post occurredAt", async () => {
+test("an empty event-time picker does not post occurredAt", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  // The picker appears, prefilled with "now" — leave it untouched
-  expect(view.getByLabelText(/when did it happen/i)).toBeTruthy();
+  // The picker appears empty (= now) — leave it blank
+  const picker = view.getByLabelText(/when did it happen/i) as HTMLInputElement;
+  expect(picker.value).toBe("");
   fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
@@ -116,21 +126,7 @@ test("an untouched event-time picker does not post occurredAt", async () => {
   });
 });
 
-test("a cleared event-time picker blocks posting instead of silently meaning now", async () => {
-  mocks.mutate.mockReset().mockResolvedValue("update-id");
-  await using composer = renderComposerResource(notYetBaby);
-  const view = composer.view;
-
-  fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  fireEvent.change(view.getByLabelText(/when did it happen/i), { target: { value: "" } });
-
-  const postButton = view.getByRole("button", { name: /post & mark/i }) as HTMLButtonElement;
-  expect(postButton.disabled).toBe(true);
-  fireEvent.click(postButton);
-  expect(mocks.mutate).not.toHaveBeenCalled();
-});
-
-test("an explicitly edited event-time picker posts the backdated occurredAt", async () => {
+test("a filled event-time picker posts the backdated occurredAt", async () => {
   mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
@@ -147,4 +143,49 @@ test("an explicitly edited event-time picker posts the backdated occurredAt", as
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
   });
+});
+
+test("timeline milestone deletion is disabled while a later status exists", async () => {
+  const bornBaby: BabyData = {
+    ...laborStartedBaby,
+    wentToHospital: "2026-08-20T12:00:00.000Z",
+    babyBorn: "2026-08-21T03:00:00.000Z",
+  };
+  mocks.paginated.results = [
+    {
+      _id: "timeline-item-id",
+      kind: "update",
+      postedAt: Date.now(),
+      update: {
+        _id: "update-id",
+        message: null,
+        milestone: "gone_to_hospital",
+        occurredAt: Date.now(),
+        photoUrl: null,
+        thumbnailUrl: null,
+        isCurrentPagePhoto: false,
+      },
+    },
+  ];
+  const client = new ConvexReactClient("https://example.convex.cloud", {
+    unsavedChangesWarning: false,
+  });
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <TooltipProvider>
+        <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
+      </TooltipProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, async () => {
+    rendered.unmount();
+    await client.close();
+  });
+
+  const deleteButton = view.getByRole("button", { name: "Delete update" }) as HTMLButtonElement;
+  expect(deleteButton.disabled).toBe(true);
+  const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');
+  if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
+  expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
+  expect(view.queryByRole("alertdialog")).toBeNull();
 });

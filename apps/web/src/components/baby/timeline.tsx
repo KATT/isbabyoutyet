@@ -16,22 +16,23 @@ import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import {
-  Activity,
   Camera,
+  ChatCircleText,
   Check,
-  CheckCircle,
+  Confetti,
   Heart,
+  Heartbeat,
   Hospital,
-  ImagePlus,
-  MessageCircleHeart,
-  Pencil,
-  Pin,
-  Send,
-  Trash2,
+  Images,
+  PaperPlaneTilt,
+  PencilSimple,
+  PushPin,
+  Trash,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -40,7 +41,12 @@ import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { BabyData, Milestone } from "@workspace/convex/src/types";
-import { getCurrentStatus, STATUS_ORDER } from "@workspace/convex/src/types";
+import {
+  getBlockingLaterMilestone,
+  getCurrentStatus,
+  MILESTONE_LABELS,
+  STATUS_ORDER,
+} from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
@@ -59,7 +65,7 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * A post's three fields are mutually inclusive: any combination works, as
  * long as at least one is present. The message is trimmed BEFORE validation,
  * so a whitespace-only message counts as no message (matching the backend).
- * `occurredAt` is prefilled with "now" and only posted when explicitly edited.
+ * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
 const composerSchema = z
   .object({
@@ -77,17 +83,22 @@ const composerSchema = z
     (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
     { error: "Add a message, a photo, or a milestone to post" },
   )
-  // A cleared/garbled event-time must block posting rather than silently
-  // meaning "now" (the untouched prefill always parses)
-  .refine((draft) => draft.milestone === "none" || !Number.isNaN(Date.parse(draft.occurredAt)), {
-    error: "Pick a valid time — or leave it as now",
+  // Empty = "now". A partially typed/garbled value must block posting.
+  .refine(
+    (draft) =>
+      draft.milestone === "none" ||
+      draft.occurredAt === "" ||
+      !Number.isNaN(Date.parse(draft.occurredAt)),
+    {
+      error: "Pick a valid time — or leave it blank for now",
     path: ["occurredAt"],
-  });
+    },
+  );
 
-const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
-  labor_started: { label: "Labour started", icon: Activity },
+const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Heartbeat }> = {
+  labor_started: { label: "Labour started", icon: Heartbeat },
   gone_to_hospital: { label: "Gone to hospital", icon: Hospital },
-  born: { label: "Born", icon: CheckCircle },
+  born: { label: "Born", icon: Confetti },
 };
 
 function getRelativeTimeFromTimestamp(timestamp: number): string {
@@ -163,9 +174,8 @@ export function UpdateComposer(props: UpdateComposerProps) {
     defaultValues: {
       message: "",
       milestone: "none",
-      // Prefilled with "now" so the owner sees what will be recorded; only
-      // posted when explicitly edited (checked via dirtyFields on submit)
-      occurredAt: toDatetimeLocalValue(new Date()),
+      // Empty means "happening now"; fill in to backdate
+      occurredAt: "",
       photo: null,
     },
   });
@@ -239,12 +249,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
       photoId = uploaded.storageId;
     }
 
-    // An explicitly edited event-time picker means the milestone is
-    // backdated; untouched means "it's happening now" (the backend default)
+    // A filled event-time means the milestone is backdated; empty means
+    // "it's happening now" (the backend default)
     const occurredAtMs =
-      milestone && form.formState.dirtyFields.occurredAt
-        ? new Date(values.occurredAt).getTime()
-        : null;
+      milestone && values.occurredAt !== "" ? new Date(values.occurredAt).getTime() : null;
 
     await postUpdate({
       babyId: props.babyId,
@@ -262,7 +270,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <MessageCircleHeart className="w-5 h-5 text-primary" />
+        <ChatCircleText className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Post an update</h3>
       </div>
       <p className="text-sm text-muted-foreground">
@@ -367,7 +375,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                       <FormItem>
                         <label className="block space-y-1">
                           <span className="text-xs font-medium text-muted-foreground">
-                            When did it happen?
+                            When did it happen? (optional)
                           </span>
                           <FormControl>
                             <Input
@@ -384,7 +392,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     )}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Defaults to now — set an earlier time if you're sharing the news after the fact.
+                    Optional — leave blank for now. You can change the time later in settings.
                   </p>
                 </div>
               )}
@@ -407,11 +415,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
               onClick={() => fileInputRef.current?.click()}
               disabled={isPosting}
             >
-              <ImagePlus className="w-4 h-4" />
+              <Images className="w-4 h-4" />
               {draft.photo ? "Change photo" : "Add photo (optional)"}
             </Button>
             <Button type="submit" disabled={!canPost}>
-              <Send className="w-4 h-4" />
+              <PaperPlaneTilt className="w-4 h-4" />
               {isPosting
                 ? "Posting..."
                 : selectedMilestone
@@ -435,24 +443,60 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  baby: BabyData;
   babyName: string;
   isOwner: boolean;
   onDelete: (updateId: Id<"updates">) => Promise<void>;
   onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
 };
 
+const MILESTONE_EMOJI: Record<Milestone, string> = {
+  labor_started: "💫",
+  gone_to_hospital: "🏥",
+  born: "🎉",
+};
+
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const update = props.item.update;
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
+  const bubbleEmoji = update.milestone
+    ? MILESTONE_EMOJI[update.milestone]
+    : update.photoUrl
+      ? "📸"
+      : "💬";
   const canPinPhoto = props.isOwner && !!update.photoUrl && !update.isCurrentPagePhoto;
+  const deleteBlocker = update.milestone
+    ? getBlockingLaterMilestone(props.baby, update.milestone)
+    : null;
+
+  const deleteButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="h-8 w-8"
+      aria-label="Delete update"
+      disabled={Boolean(deleteBlocker)}
+    >
+      <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+    </Button>
+  );
 
   return (
-    <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 border-l-4 border-l-primary relative group">
+    <div className="group flex items-start gap-3">
+      <span
+        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-lg"
+        aria-hidden="true"
+      >
+        {bubbleEmoji}
+      </span>
+      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-primary/20 bg-primary/5 p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-foreground truncate">{props.babyName}'s family</span>
+              <span className="font-medium text-foreground truncate">
+                {props.babyName}'s family
+              </span>
             {milestoneMeta ? (
               <Badge
                 className="shrink-0"
@@ -482,7 +526,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             )}
             {update.isCurrentPagePhoto && (
               <Badge variant="outline" className="shrink-0">
-                <Pin className="w-3 h-3" />
+                  <PushPin className="w-3 h-3" />
                 Page photo
               </Badge>
             )}
@@ -516,22 +560,28 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 title="Set as page photo"
                 onClick={() => props.onSetAsCurrentPhoto(update._id)}
               >
-                <Pin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </Button>
             )}
-            <AlertDialog>
-              <AlertDialogTrigger
+              {deleteBlocker ? (
+                <Tooltip>
+                  <TooltipTrigger
                 render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    aria-label="Delete update"
-                  >
-                    <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                  </Button>
-                }
+                      <span
+                        className="inline-flex"
+                        aria-label={`Delete the ${MILESTONE_LABELS[deleteBlocker]} status first`}
               />
+                    }
+                  >
+                    {deleteButton}
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Delete the {MILESTONE_LABELS[deleteBlocker]} status first
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <AlertDialog>
+                  <AlertDialogTrigger render={deleteButton} />
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Delete update?</AlertDialogTitle>
@@ -547,15 +597,20 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => props.onDelete(update._id)}>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={() => props.onDelete(update._id)}
+                      >
                     Delete
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+              )}
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }
@@ -684,13 +739,23 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
+  const initial = encouragement.authorName.trim().charAt(0).toUpperCase() || "💛";
 
   return (
-    <div className="p-4 rounded-lg bg-muted/30 border border-border/50 relative group">
+    <div className="group flex items-start gap-3">
+      <span
+        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary/40 text-base font-black text-secondary-foreground"
+        aria-hidden="true"
+      >
+        {initial}
+      </span>
+      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-border/70 bg-muted/30 p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-medium text-foreground truncate">{encouragement.authorName}</span>
+              <span className="font-medium text-foreground truncate">
+                {encouragement.authorName}
+              </span>
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={new Date(encouragement.createdAt).toLocaleString()}
@@ -726,7 +791,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 aria-label="Edit encouragement"
                 onClick={() => setIsEditing(true)}
               >
-                <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
               </Button>
             )}
             {canDelete && (
@@ -739,7 +804,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                       className="h-8 w-8"
                       aria-label="Delete encouragement"
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                     </Button>
                   }
                 />
@@ -771,6 +836,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         )}
       </div>
     </div>
+    </div>
   );
 }
 
@@ -778,6 +844,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  baby: BabyData;
   babyName: string;
   isOwner: boolean;
 };
@@ -885,14 +952,14 @@ export function TimelineFeed(props: TimelineFeedProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
+          <h3 className="text-lg font-extrabold text-foreground">Updates & encouragements</h3>
         </div>
-        <div className="py-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
-            <Heart className="w-8 h-8 text-muted-foreground/50" />
-          </div>
-          <p className="text-muted-foreground">Nothing here yet</p>
-          <p className="text-sm text-muted-foreground/70">
+        <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
+          <p className="text-3xl" aria-hidden="true">
+            💌
+          </p>
+          <p className="mt-3 font-bold text-foreground">Nothing here yet</p>
+          <p className="mt-1 text-sm font-medium text-muted-foreground">
             {props.isOwner
               ? "Post your first update to keep everyone in the loop!"
               : "Updates from the family will show up here."}
@@ -906,15 +973,16 @@ export function TimelineFeed(props: TimelineFeedProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
+        <h3 className="text-lg font-extrabold text-foreground">Updates & encouragements</h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {results.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
               onDelete={handleDeleteUpdate}
