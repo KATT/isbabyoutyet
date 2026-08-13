@@ -24,7 +24,7 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
-import { getToken } from "@/lib/auth-server";
+import { authServer } from "@/lib/auth-server";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
@@ -37,7 +37,7 @@ import { m } from "@/paraglide/messages";
 
 // Cookie-authenticated token for SSR (and client navigations via server fn)
 const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await getToken();
+  return await authServer.getToken();
 });
 
 export const Route = createRootRouteWithContext<{

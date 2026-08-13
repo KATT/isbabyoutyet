@@ -2,18 +2,25 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { useConvexSuspenseQuery } from "@/lib/convex-query";
 import { CoParentsSettings } from "@/components/baby/co-parents-settings";
 
 const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn(),
+  useConvexSuspenseQuery:
+    vi.fn<
+      (
+        ...args: Parameters<typeof useConvexSuspenseQuery>
+      ) => ReturnType<typeof useConvexSuspenseQuery>
+    >(),
+  ensureConvexQuery: vi.fn(),
   invite: vi.fn(),
   removeCoParent: vi.fn(),
   cancelInvite: vi.fn(),
 }));
 
 vi.mock("@/lib/convex-query", () => ({
-  useConvexSuspenseQuery: (...args: unknown[]) => mocks.useSuspenseQuery(...args),
-  ensureConvexQuery: vi.fn(),
+  useConvexSuspenseQuery: mocks.useConvexSuspenseQuery,
+  ensureConvexQuery: mocks.ensureConvexQuery,
 }));
 
 vi.mock("convex/react", () => ({
@@ -44,12 +51,12 @@ function renderResource(ui: React.ReactElement) {
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
 test("owner can invite a co-parent by email", async () => {
-  mocks.useSuspenseQuery.mockReturnValue({
+  mocks.useConvexSuspenseQuery.mockReturnValue({
     data: {
       coParents: [],
       invites: [],
     },
-  });
+  } as ReturnType<typeof useConvexSuspenseQuery>);
   mocks.invite.mockResolvedValue({ status: "added" });
 
   await using view = renderResource(<CoParentsSettings babyId={babyId} isOwner={true} />);
@@ -69,7 +76,7 @@ test("owner can invite a co-parent by email", async () => {
 });
 
 test("lists co-parents and pending invites; owner can remove them", async () => {
-  mocks.useSuspenseQuery.mockReturnValue({
+  mocks.useConvexSuspenseQuery.mockReturnValue({
     data: {
       coParents: [
         {
@@ -88,7 +95,7 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
         },
       ],
     },
-  });
+  } as ReturnType<typeof useConvexSuspenseQuery>);
   mocks.removeCoParent.mockResolvedValue(null);
   mocks.cancelInvite.mockResolvedValue(null);
 
@@ -109,7 +116,7 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
 });
 
 test("co-parents see a read-only list without invite form", async () => {
-  mocks.useSuspenseQuery.mockReturnValue({
+  mocks.useConvexSuspenseQuery.mockReturnValue({
     data: {
       coParents: [
         {
@@ -122,7 +129,7 @@ test("co-parents see a read-only list without invite form", async () => {
       ],
       invites: [],
     },
-  });
+  } as ReturnType<typeof useConvexSuspenseQuery>);
 
   await using view = renderResource(<CoParentsSettings babyId={babyId} isOwner={false} />);
 

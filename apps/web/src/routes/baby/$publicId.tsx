@@ -42,8 +42,10 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const baby = await ensureConvexQuery(opts.context.queryClient, api.baby.getByPublicId, {
-      id: opts.params.publicId,
+    const baby = await ensureConvexQuery({
+      queryClient: opts.context.queryClient,
+      queryRef: api.baby.getByPublicId,
+      args: { id: opts.params.publicId },
     });
     if (!baby) {
       throw notFound();
@@ -63,25 +65,59 @@ export const Route = createFileRoute("/baby/$publicId")({
     const queryClient = opts.context.queryClient;
 
     const [myAccess, vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
-      ensureConvexQuery(queryClient, api.coParents.myAccess, { babyId: baby._id }),
-      ensureConvexQuery(queryClient, api.pushSubscriptions.getPublicKey, {}),
-      ensureConvexQuery(queryClient, api.timeline.latestUpdate, { babyId: baby._id }),
-      ensureConvexQuery(queryClient, api.timeline.listByBaby, {
-        babyId: baby._id,
-        paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+      ensureConvexQuery({
+        queryClient,
+        queryRef: api.coParents.myAccess,
+        args: { babyId: baby._id },
+      }),
+      ensureConvexQuery({
+        queryClient,
+        queryRef: api.pushSubscriptions.getPublicKey,
+        args: {},
+      }),
+      ensureConvexQuery({
+        queryClient,
+        queryRef: api.timeline.latestUpdate,
+        args: { babyId: baby._id },
+      }),
+      ensureConvexQuery({
+        queryClient,
+        queryRef: api.timeline.listByBaby,
+        args: {
+          babyId: baby._id,
+          paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+        },
       }),
     ]);
-    await ensureConvexQuery(queryClient, api.profile.get, {});
+    await ensureConvexQuery({
+      queryClient,
+      queryRef: api.profile.get,
+      args: {},
+    });
 
     if (myAccess.canManage) {
       await Promise.all([
-        ensureConvexQuery(queryClient, api.baby.getScheduledNotifications, { babyId: baby._id }),
-        ensureConvexQuery(queryClient, api.pushSubscriptions.getSubscriptions, {
-          babyId: baby._id,
+        ensureConvexQuery({
+          queryClient,
+          queryRef: api.baby.getScheduledNotifications,
+          args: { babyId: baby._id },
         }),
-        ensureConvexQuery(queryClient, api.onboarding.getMine, {}),
+        ensureConvexQuery({
+          queryClient,
+          queryRef: api.pushSubscriptions.getSubscriptions,
+          args: { babyId: baby._id },
+        }),
+        ensureConvexQuery({
+          queryClient,
+          queryRef: api.onboarding.getMine,
+          args: {},
+        }),
         // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        ensureConvexQuery(queryClient, api.coParents.listForBaby, { babyId: baby._id }),
+        ensureConvexQuery({
+          queryClient,
+          queryRef: api.coParents.listForBaby,
+          args: { babyId: baby._id },
+        }),
       ]);
     }
 

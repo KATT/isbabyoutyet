@@ -18,9 +18,21 @@ export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
     await Promise.all([
-      ensureConvexQuery(opts.context.queryClient, api.baby.listByUser, {}),
-      ensureConvexQuery(opts.context.queryClient, api.onboarding.getMine, {}),
-      ensureConvexQuery(opts.context.queryClient, api.profile.get, {}),
+      ensureConvexQuery({
+        queryClient: opts.context.queryClient,
+        queryRef: api.baby.listByUser,
+        args: {},
+      }),
+      ensureConvexQuery({
+        queryClient: opts.context.queryClient,
+        queryRef: api.onboarding.getMine,
+        args: {},
+      }),
+      ensureConvexQuery({
+        queryClient: opts.context.queryClient,
+        queryRef: api.profile.get,
+        args: {},
+      }),
     ]);
   },
 });

@@ -8,6 +8,12 @@ import type { FunctionArgs, FunctionReference, FunctionReturnType } from "convex
 
 type ConvexQueryRef = FunctionReference<"query">;
 
+type EnsureConvexQueryOptions<TQuery extends ConvexQueryRef> = {
+  queryClient: QueryClient;
+  queryRef: TQuery;
+  args: FunctionArgs<TQuery>;
+};
+
 /**
  * Typed wrapper around `convexQuery` + `useSuspenseQuery`.
  * `@convex-dev/react-query`'s options factory currently loses `FunctionReturnType`
@@ -19,18 +25,16 @@ export function useConvexSuspenseQuery<TQuery extends ConvexQueryRef>(
 ): UseSuspenseQueryResult<FunctionReturnType<TQuery>> {
   // Cast through unknown: convexQuery's overload union (skip vs args) doesn't
   // narrow cleanly into UseSuspenseQueryOptions for generic TQuery.
-  return useSuspenseQuery(
-    convexQuery(queryRef, args) as never,
-  ) as UseSuspenseQueryResult<FunctionReturnType<TQuery>>;
+  return useSuspenseQuery(convexQuery(queryRef, args) as never) as UseSuspenseQueryResult<
+    FunctionReturnType<TQuery>
+  >;
 }
 
 /** Prefetch/ensure a Convex query in a route loader with correct return typing. */
 export function ensureConvexQuery<TQuery extends ConvexQueryRef>(
-  queryClient: QueryClient,
-  queryRef: TQuery,
-  args: FunctionArgs<TQuery>,
+  opts: EnsureConvexQueryOptions<TQuery>,
 ): Promise<FunctionReturnType<TQuery>> {
-  return queryClient.ensureQueryData(convexQuery(queryRef, args) as never) as Promise<
-    FunctionReturnType<TQuery>
-  >;
+  return opts.queryClient.ensureQueryData(
+    convexQuery(opts.queryRef, opts.args) as never,
+  ) as Promise<FunctionReturnType<TQuery>>;
 }

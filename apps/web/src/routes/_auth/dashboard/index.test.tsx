@@ -16,8 +16,10 @@ vi.mock("@/components/language-settings", () => ({
 }));
 
 vi.mock("@/lib/auth-server", () => ({
-  authServer: { fetchAuthQuery: vi.fn<() => Promise<unknown>>() },
-  getToken: vi.fn<() => Promise<string | null>>(),
+  authServer: {
+    fetchAuthQuery: vi.fn<() => Promise<unknown>>(),
+    getToken: vi.fn<() => Promise<string | null>>(),
+  },
 }));
 
 const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
@@ -30,9 +32,7 @@ function renderResource(ui: ReactElement) {
 }
 
 test("shows the empty state once the list has loaded with no babies", async () => {
-  await using view = renderResource(
-    <DashboardBabyList babies={[]} tourBabyPublicId={undefined} />,
-  );
+  await using view = renderResource(<DashboardBabyList babies={[]} tourBabyPublicId={undefined} />);
 
   expect(view.getByText("No baby pages yet")).toBeTruthy();
 });

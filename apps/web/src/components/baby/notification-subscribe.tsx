@@ -257,8 +257,6 @@ function NotificationSubscribeButton(props: {
   onSubscribe: () => void;
   onUnsubscribe: (endpoint: string) => void;
 }) {
-  const { t } = useI18n();
-
   // Only suspend on the Convex subscription check when we have an endpoint
   if (props.endpoint) {
     return <NotificationSubscribeButtonWithStatus {...props} endpoint={props.endpoint} />;
@@ -271,7 +269,6 @@ function NotificationSubscribeButton(props: {
       onClick={() => {
         props.onSubscribe();
       }}
-      t={t}
     />
   );
 }
@@ -283,7 +280,6 @@ function NotificationSubscribeButtonWithStatus(props: {
   onSubscribe: () => void;
   onUnsubscribe: (endpoint: string) => void;
 }) {
-  const { t } = useI18n();
   const isSubscribedQuery = useConvexSuspenseQuery(api.pushSubscriptions.isSubscribed, {
     babyId: props.babyId,
     endpoint: props.endpoint,
@@ -301,7 +297,6 @@ function NotificationSubscribeButtonWithStatus(props: {
           props.onSubscribe();
         }
       }}
-      t={t}
     />
   );
 }
@@ -310,8 +305,9 @@ function NotificationSubscribeControls(props: {
   isSubscribed: boolean;
   isLoading: boolean;
   onClick: () => void;
-  t: ReturnType<typeof useI18n>["t"];
 }) {
+  const { t } = useI18n();
+
   return (
     <Tooltip>
       <TooltipTrigger
@@ -329,12 +325,12 @@ function NotificationSubscribeControls(props: {
                 ) : (
                   <BellSlash className="w-5 h-5" />
                 )}
-                {props.t("Unsubscribe")}
+                {t("Unsubscribe")}
               </>
             ) : (
               <>
                 {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                {props.t("Get Notifications")}
+                {t("Get Notifications")}
               </>
             )}
           </Button>
@@ -343,8 +339,8 @@ function NotificationSubscribeControls(props: {
       <TooltipContent>
         <p>
           {props.isSubscribed
-            ? props.t("Stop receiving push notifications for updates")
-            : props.t("Get notified when the baby's status changes")}
+            ? t("Stop receiving push notifications for updates")
+            : t("Get notified when the baby's status changes")}
         </p>
       </TooltipContent>
     </Tooltip>
