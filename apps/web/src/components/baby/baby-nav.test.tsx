@@ -57,3 +57,18 @@ test("hides the owner group when the visitor has no owner actions", async () => 
   expect(view.queryByRole("group", { name: "Owner actions" })).toBeNull();
   expect(view.getByRole("group", { name: "Page actions" })).toBeTruthy();
 });
+
+test("disables sharing when the share link is empty", async () => {
+  await using view = renderResource(
+    <BabyNav
+      shareLink=""
+      onPostUpdate={null}
+      settingsButton={{ to: "/" }}
+      settingsOpen={true}
+    />,
+  );
+
+  const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
+  expect(share.disabled).toBe(true);
+  expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
+});

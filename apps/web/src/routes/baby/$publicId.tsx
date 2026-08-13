@@ -61,7 +61,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
       opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
       opts.context.convexClient.query(api.timeline.latestUpdate, {
-      babyId: baby._id,
+        babyId: baby._id,
       }),
       opts.context.convexClient.query(api.timeline.listByBaby, {
         babyId: baby._id,
