@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import * as React from "react";
+import { WELCOME_SLIDES } from "./steps";
 
 vi.mock("@workspace/ui/components/carousel", () => {
   type Api = {
@@ -69,7 +70,12 @@ test("welcome tour renders overview slides and can be skipped", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
 
   await using _view = renderResource(
-    <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
+    <WelcomeTourDialog
+      open
+      onOpenChange={onOpenChange}
+      onFinished={onFinished}
+      slides={WELCOME_SLIDES}
+    />,
   );
 
   expect(screen.getByText(/welcome — here's the idea/i)).toBeTruthy();
@@ -86,7 +92,12 @@ test("welcome tour finishes with Let's go on the last slide", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
 
   await using _view = renderResource(
-    <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
+    <WelcomeTourDialog
+      open
+      onOpenChange={onOpenChange}
+      onFinished={onFinished}
+      slides={WELCOME_SLIDES}
+    />,
   );
 
   fireEvent.click(screen.getByRole("button", { name: /go to slide 4/i }));

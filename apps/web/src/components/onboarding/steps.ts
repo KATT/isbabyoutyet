@@ -3,6 +3,10 @@ import type { Icon } from "@phosphor-icons/react";
 import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
 import type { TranslationKey } from "@/lib/i18n";
 
+type StaticTranslationKey = {
+  [TKey in TranslationKey]: TKey extends `${string}{{${string}` ? never : TKey;
+}[TranslationKey];
+
 export type OnboardingStepCopy = {
   id: OnboardingStepId;
   title: TranslationKey;
@@ -67,8 +71,8 @@ export const ONBOARDING_STEPS = [
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;
 
 export type WelcomeSlide = {
-  title: TranslationKey;
-  body: TranslationKey;
+  title: StaticTranslationKey;
+  body: StaticTranslationKey;
   icon: Icon;
 };
 

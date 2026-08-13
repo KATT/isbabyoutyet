@@ -58,7 +58,11 @@ function isManagedHomepageDemo(baby: Doc<"baby">) {
   ) {
     return true;
   }
-  return baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID && isHomepageDemoPublicId(baby.publicId);
+  return (
+    baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID &&
+    (isHomepageDemoPublicId(baby.publicId) ||
+      Object.values(HOMEPAGE_DEMO_BABIES).some((demo) => demo.name === baby.name))
+  );
 }
 
 function refuseNonDemo(publicId: string) {
@@ -111,6 +115,7 @@ async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLoc
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
     name: demo.name,
+    publicId: demo.publicId,
     theme: HOMEPAGE_DEMO_THEME,
     locale,
     demo: { kind: "source" as const, sourceKey: demo.sourceKey },
@@ -127,7 +132,6 @@ async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLoc
 
   return await ctx.db.insert("baby", {
     ...fields,
-    publicId: demo.publicId,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,

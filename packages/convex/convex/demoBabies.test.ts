@@ -15,6 +15,13 @@ test("first guest edit copies the source and its feed without changing the sourc
   const sourceResult = await t.mutation(internal.homepageDemo.refresh, {});
   const sourceBefore = await t.query(api.baby.getByPublicId, { id: sourceResult.publicId });
   if (!sourceBefore) throw new Error("expected source");
+  expect(
+    await t.query(api.demoBabies.access, {
+      babyId: sourceBefore._id,
+      visitorId: "visitor-a",
+      now: Date.now(),
+    }),
+  ).toEqual({ kind: "source", canEdit: true, expiresAt: null });
 
   const sourceFeed = await t.query(api.timeline.listByBaby, {
     babyId: sourceBefore._id,

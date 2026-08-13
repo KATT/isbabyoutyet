@@ -9,6 +9,28 @@ vi.mock("@tanstack/react-router", () => ({
   ),
 }));
 
+vi.mock("@/components/onboarding/welcome-tour", () => ({
+  WelcomeTourDialog: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onFinished: () => void;
+  }) =>
+    props.open ? (
+      <div>
+        <p>Welcome to the demo playground</p>
+        <button
+          type="button"
+          onClick={() => {
+            props.onFinished();
+            props.onOpenChange(false);
+          }}
+        >
+          Skip
+        </button>
+      </div>
+    ) : null,
+}));
+
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
   return makeResource(view, () => {
