@@ -21,6 +21,14 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     .collect();
 
   if (existingBabies.length > 0) {
+    const now = new Date();
+    const babiesByPublicId = new Map(existingBabies.map((baby) => [baby.publicId, baby]));
+    for (const spec of SEED_BABIES) {
+      const baby = babiesByPublicId.get(spec.publicId);
+      if (baby) {
+        await seedEncouragements({ ctx, babyId: baby._id, now, spec });
+      }
+    }
     return {
       success: true,
       message: "Seed data already exists",
@@ -173,6 +181,46 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
         message: "Best news ever. Rest up!",
         minutesAgo: 60 * 2,
       },
+      {
+        authorName: "NoSpacesAuthorNameAtMaximumLength123456789012345",
+        message: "W".repeat(240),
+        minutesAgo: 110,
+      },
+      {
+        authorName: "Link Tester",
+        message: `A deliberately long link: https://layout-stress.example/${"deep-path/".repeat(30)}`,
+        minutesAgo: 100,
+      },
+      {
+        authorName: "Emoji Parade",
+        message: `Welcome, baby! ${"👶🏽🎉🍼".repeat(30)}`,
+        minutesAgo: 90,
+      },
+      {
+        authorName: "Excited Cousins",
+        message: `**${"WELCOME".repeat(40)}**`,
+        minutesAgo: 80,
+      },
+      {
+        authorName: "Code Block Friend",
+        message: `\`${"CONGRATULATIONS".repeat(24)}\``,
+        minutesAgo: 70,
+      },
+      {
+        authorName: "Very Online Aunt",
+        message: `#baby #welcome #soexcited ${"#cantwaittomeetyou".repeat(20)}`,
+        minutesAgo: 60,
+      },
+      {
+        authorName: "Multilingual Family",
+        message: "Välkommen—Bienvenida—Bem-vinda—Welcome—".repeat(16),
+        minutesAgo: 50,
+      },
+      {
+        authorName: "Caps Lock Grandpa",
+        message: "THIS IS THE BEST NEWS EVER!!! ".repeat(20),
+        minutesAgo: 40,
+      },
     ],
   },
 };
@@ -228,21 +276,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBornMessage: spec.babyBornMessage ?? null,
     });
 
-    for (const encouragement of spec.encouragements ?? []) {
-      const createdAt = now.getTime() - encouragement.minutesAgo * 60_000;
-      const timelineItemId = await insertEncouragementTimelineItem(ctx, {
-        babyId,
-        postedAt: createdAt,
-      });
-      await ctx.db.insert("encouragements", {
-        babyId,
-        authorName: encouragement.authorName,
-        message: encouragement.message,
-        createdAt,
-        timelineItemId,
-        visitorId: `seed-visitor-${encouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`,
-      });
-    }
+    await seedEncouragements({ ctx, babyId, now, spec });
 
     created.push({
       id: babyId,
@@ -253,6 +287,38 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
   }
 
   return created;
+}
+
+async function seedEncouragements(options: {
+  ctx: MutationCtx;
+  babyId: Id<"baby">;
+  now: Date;
+  spec: SeedBabySpec;
+}) {
+  const existing = await options.ctx.db
+    .query("encouragements")
+    .withIndex("by_babyId", (q) => q.eq("babyId", options.babyId))
+    .take(100);
+  const existingVisitorIds = new Set(existing.map((encouragement) => encouragement.visitorId));
+
+  for (const encouragement of options.spec.encouragements ?? []) {
+    const visitorId = `seed-visitor-${encouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`;
+    if (existingVisitorIds.has(visitorId)) continue;
+
+    const createdAt = options.now.getTime() - encouragement.minutesAgo * 60_000;
+    const timelineItemId = await insertEncouragementTimelineItem(options.ctx, {
+      babyId: options.babyId,
+      postedAt: createdAt,
+    });
+    await options.ctx.db.insert("encouragements", {
+      babyId: options.babyId,
+      authorName: encouragement.authorName,
+      message: encouragement.message,
+      createdAt,
+      timelineItemId,
+      visitorId,
+    });
+  }
 }
 
 function hoursAgoIso(now: Date, hoursAgo: number | undefined) {
