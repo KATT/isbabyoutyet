@@ -1,5 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -137,7 +138,10 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
 test("surfaces errors when remove or cancel invite fails", async () => {
   const onRemoveCoParent = rejectedVoid<{ coParentId: Id<"babyCoParents"> }>("remove failed");
   const onCancelInvite = rejectedVoid<{ inviteId: Id<"babyCoParentInvites"> }>("cancel failed");
-  const toastError = vi.spyOn(await import("sonner").then((m) => m.toast), "error");
+  const toastError = vi.spyOn(toast, "error");
+  await using _toast = makeResource({}, () => {
+    toastError.mockRestore();
+  });
 
   const listing: CoParentsListing = {
     coParents: [
