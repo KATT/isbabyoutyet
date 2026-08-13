@@ -25,19 +25,14 @@ declare module "vitest/browser" {
 
 const fixtures = [
   {
-    path: "/baby/willow-brooks",
-    heading: "Is Willow Brooks out yet?",
+    path: "/baby/mobile-overflow-status-test",
+    heading: "Is Status Layout Probe out yet?",
     expectedText: null,
   },
   {
-    path: "/baby/baby-waiting",
-    heading: "Is Baby Waiting out yet?",
-    expectedText: null,
-  },
-  {
-    path: "/baby/baby-born",
-    heading: "Is Baby Born out yet?",
-    expectedText: "layout-stress.example",
+    path: "/baby/mobile-overflow-content-test",
+    heading: "Is Content Layout Probe out yet?",
+    expectedText: "overflow-fixture.test",
   },
 ] as const;
 

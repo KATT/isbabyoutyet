@@ -40,6 +40,7 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
   if (options.expectedText) {
     await page.getByText(options.expectedText, { exact: false }).first().waitFor();
   }
+  await page.waitForFunction(() => [...document.images].every((image) => image.complete));
 
   const result = await page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;
@@ -95,6 +96,7 @@ export const webBrowserProject = defineProject({
     browser: {
       enabled: true,
       headless: true,
+      screenshotFailures: false,
       provider: playwright(),
       instances: [{ browser: "chromium" }],
       commands: {

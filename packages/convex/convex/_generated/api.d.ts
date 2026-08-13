@@ -18,6 +18,7 @@ import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
 import type * as i18n from "../i18n.js";
 import type * as migrations from "../migrations.js";
+import type * as mobileOverflowTestSeed from "../mobileOverflowTestSeed.js";
 import type * as onboarding from "../onboarding.js";
 import type * as profile from "../profile.js";
 import type * as pushNotifications from "../pushNotifications.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   i18n: typeof i18n;
   migrations: typeof migrations;
+  mobileOverflowTestSeed: typeof mobileOverflowTestSeed;
   onboarding: typeof onboarding;
   profile: typeof profile;
   pushNotifications: typeof pushNotifications;

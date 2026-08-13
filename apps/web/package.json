@@ -12,6 +12,7 @@
     "i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy cookie preferredLanguage baseLocale --output-structure message-modules --emit-ts-declarations --silent",
     "pretypecheck": "pnpm i18n:compile",
     "test": "vitest run --project web",
+    "pretest:overflow": "CONVEX_AGENT_MODE=anonymous pnpm --filter @workspace/convex exec convex run mobileOverflowTestSeed:seed",
     "test:overflow": "vitest run --project web-browser",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",

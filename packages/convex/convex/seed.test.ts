@@ -63,27 +63,6 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
   expect(encouragements.every((row) => row.timelineItemId)).toBe(true);
 });
 
-test("born demo feed includes noisy encouragements that stress mobile layout", async () => {
-  const t = await setup();
-  const babies = await t.run(async (ctx) => {
-    return await seedBabiesForUser(ctx, "layout-stress-user");
-  });
-  const born = babies.find((baby) => baby.publicId === "baby-born");
-  if (!born) throw new Error("missing born baby");
-
-  const encouragements = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", born.id))
-      .collect();
-  });
-
-  expect(encouragements.length).toBeGreaterThanOrEqual(10);
-  expect(encouragements.some((row) => row.message.includes("layout-stress.example"))).toBe(true);
-  expect(encouragements.some((row) => /\S{200}/.test(row.message))).toBe(true);
-  expect(encouragements.some((row) => row.message.includes("👶🏽🎉🍼"))).toBe(true);
-});
-
 test("seedDemoData creates the demo user and is idempotent", async () => {
   const t = await setup();
 
@@ -134,37 +113,4 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
     ).length;
   });
   expect(babyCount).toBe(4);
-});
-
-test("seedDemoData restores missing fixture encouragements", async () => {
-  const t = await setup();
-  await t.mutation(internal.seed.seedDemoData, {});
-  const born = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("baby")
-      .withIndex("by_publicId", (q) => q.eq("publicId", "baby-born"))
-      .unique();
-  });
-  if (!born) throw new Error("missing born baby");
-
-  await t.run(async (ctx) => {
-    const encouragements = await ctx.db
-      .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", born._id))
-      .collect();
-    const missing = encouragements.find((row) => row.message.includes("layout-stress.example"));
-    if (!missing) throw new Error("missing stress encouragement");
-    await ctx.db.delete(missing._id);
-    await ctx.db.delete(missing.timelineItemId);
-  });
-
-  await t.mutation(internal.seed.seedDemoData, {});
-
-  const restored = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", born._id))
-      .collect();
-  });
-  expect(restored.some((row) => row.message.includes("layout-stress.example"))).toBe(true);
 });
