@@ -262,7 +262,12 @@ function BabyPage() {
               posts via the "Post update" button in the dock. */}
           <div className="space-y-8">
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+              <TimelineFeed
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                isOwner={isOwner}
+              />
             </section>
 
             {!baby.encouragementsDisabled && (
