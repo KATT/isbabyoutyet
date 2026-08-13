@@ -50,8 +50,6 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
     .unique();
   if (!existing) {
     await ctx.db.insert("userProfiles", { userId, tokenIdentifier, locale: "en-GB" });
-  } else if (existing.tokenIdentifier === undefined) {
-    await ctx.db.patch(existing._id, { tokenIdentifier });
   }
 }
 

@@ -1,11 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
+import { onboardingStepIdValidator } from "./onboardingValidators";
 
 export default defineSchema({
   baby: defineTable({
     userId: v.string(), // Better-auth user ID
-    ownerTokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
@@ -30,7 +31,7 @@ export default defineSchema({
     .index("by_publicId", ["publicId"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
   })
     .index("by_userId", ["userId"])
@@ -132,9 +133,9 @@ export default defineSchema({
   // Per-user first-run guided tour progress. One row per user.
   userOnboarding: defineTable({
     userId: v.string(), // Better Auth user ID
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     /** Steps the user explicitly completed or acknowledged */
-    completedSteps: v.array(v.string()),
+    completedSteps: v.array(onboardingStepIdValidator),
     /** Welcome carousel seen or skipped */
     welcomeDismissed: v.boolean(),
     /** Floating checklist dismissed forever (until restart) */
@@ -148,7 +149,7 @@ export default defineSchema({
   babyCoParents: defineTable({
     babyId: v.id("baby"),
     userId: v.string(), // Better Auth user id
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     email: v.string(), // Denormalized for settings display
     name: v.optional(v.union(v.string(), v.null())),
     addedByUserId: v.string(),
