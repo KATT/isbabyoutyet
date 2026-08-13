@@ -72,7 +72,7 @@ test("Swedish homepage links visitors to Ella Holm", async () => {
       link.getAttribute("href")?.includes(`/baby/${HOMEPAGE_DEMO_BABIES.sv.publicId}`),
     );
   expect(demoLinks.length).toBeGreaterThan(0);
-  expect(screen.getByText("Följ Ella Holms ankomst")).toBeTruthy();
+  expect(screen.getByText("Följ med tills Ella Holm är här")).toBeTruthy();
 });
 
 test("homepage language picker saves an explicit language choice", async () => {

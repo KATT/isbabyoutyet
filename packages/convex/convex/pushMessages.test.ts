@@ -3,8 +3,8 @@ import { getPushMessage } from "../src/pushMessages";
 
 test("push copy follows the baby's locale and dialect", () => {
   expect(getPushMessage("sv", "labor_started", "Nova")).toEqual({
-    title: "Nova – Förlossningen har börjat!",
-    body: "Förlossningen har börjat. Se de senaste uppdateringarna!",
+    title: "Nova: Förlossningen är igång!",
+    body: "Värkarna har börjat. Kika in för senaste nytt!",
   });
   expect(getPushMessage("en-US", "labor_started", "Nova").title).toContain("Labor");
   expect(getPushMessage("en-GB", "labor_started", "Nova").title).toContain("Labour");

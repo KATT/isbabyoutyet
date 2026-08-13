@@ -45,20 +45,20 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
   },
   sv: {
     labor_started: {
-      title: (name) => `${name} – Förlossningen har börjat!`,
-      body: "Förlossningen har börjat. Se de senaste uppdateringarna!",
+      title: (name) => `${name}: Förlossningen är igång!`,
+      body: "Värkarna har börjat. Kika in för senaste nytt!",
     },
     gone_to_hospital: {
-      title: (name) => `${name} är på väg till sjukhuset!`,
-      body: "De är på väg till sjukhuset. Se de senaste uppdateringarna!",
+      title: (name) => `${name}: Nu åker familjen in!`,
+      body: "På väg till förlossningen. Kika in för senaste nytt!",
     },
     born: {
       title: (name) => `${name} är här! 🎉`,
-      body: "Bäbisen har kommit! Se de senaste uppdateringarna!",
+      body: "Nu är bäbisen här. Kika in för senaste nytt!",
     },
     photo_added: {
-      title: (name) => `${name} – Nytt foto! 📸`,
-      body: "Ett nytt foto har lagts till. Ta en titt!",
+      title: (name) => `Nytt foto på ${name}! 📸`,
+      body: "Kika in och ta en titt!",
     },
   },
   es: {

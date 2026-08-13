@@ -98,8 +98,8 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
 
   expect(view.getByRole("radiogroup", { name: "Statusändring (valfritt)" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Förlossningen har börjat" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Åkt till sjukhuset" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Förlossningen är igång" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Åkt in till förlossningen" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
 });
 
