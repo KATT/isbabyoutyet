@@ -15,9 +15,9 @@ import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
 
-/** Unreachable deployment URL so smoke tests never dial the local Convex dev port. */
+/** Unreachable deployment URL so smoke tests never dial a real Convex backend. */
 function unreachableConvexClient() {
-  return new ConvexReactClient("https://example.convex.cloud", {
+  return new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,
   });
 }

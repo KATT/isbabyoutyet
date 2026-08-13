@@ -7,6 +7,7 @@
     "**/paraglide/**",
     "oxlint-plugins/**"
   ],
+  "tags": ["-@internal"],
   "workspaces": {
     ".": {},
     "apps/web": {
@@ -20,8 +21,7 @@
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
-      ],
-      "tags": ["-internal"]
+      ]
     },
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!"]

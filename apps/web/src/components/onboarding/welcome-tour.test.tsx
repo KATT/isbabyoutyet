@@ -79,7 +79,9 @@ test("welcome tour finishes with Let's go on the last slide", async () => {
     <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
   );
 
-  // Jump via a slide dot (real carousel scrollTo), then finish from the last slide.
+  // Drive one "Next" click (covers that control), then jump via a slide dot
+  // (real carousel scrollTo) to finish from the last slide.
+  fireEvent.click(screen.getByRole("button", { name: /^next$/i }));
   fireEvent.click(screen.getByRole("button", { name: /go to slide 4/i }));
 
   await vi.waitFor(() => {

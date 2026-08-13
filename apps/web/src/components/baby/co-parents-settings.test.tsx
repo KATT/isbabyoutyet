@@ -10,6 +10,8 @@ import {
 } from "@/components/baby/co-parents-settings";
 
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
+const coParentId = "jd7coparent00000000000000" as Id<"babyCoParents">;
+const inviteId = "jd7invite0000000000000000" as Id<"babyCoParentInvites">;
 
 function resolvedInvite() {
   return vi
@@ -21,6 +23,10 @@ function resolvedVoid<TArg>() {
   return vi.fn<(arg: TArg) => Promise<unknown>>().mockResolvedValue(null);
 }
 
+function rejectedVoid<TArg>(message: string) {
+  return vi.fn<(arg: TArg) => Promise<unknown>>().mockRejectedValue(new Error(message));
+}
+
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
   return makeResource(view, () => {
@@ -28,9 +34,9 @@ function renderResource(ui: React.ReactElement) {
   });
 }
 
-/** Unreachable deployment URL so smoke tests never dial the local Convex dev port. */
+/** Unreachable deployment URL so smoke tests never dial a real Convex backend. */
 function unreachableConvexClient() {
-  return new ConvexReactClient("https://example.convex.cloud", {
+  return new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,
   });
 }
@@ -61,8 +67,8 @@ test("owner can invite a co-parent by email", async () => {
       isOwner={true}
       listing={listing}
       onInvite={onInvite}
-      onRemoveCoParent={resolvedVoid<Id<"babyCoParents">>()}
-      onCancelInvite={resolvedVoid<Id<"babyCoParentInvites">>()}
+      onRemoveCoParent={resolvedVoid<{ coParentId: Id<"babyCoParents"> }>()}
+      onCancelInvite={resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>()}
     />,
   );
 
@@ -81,13 +87,13 @@ test("owner can invite a co-parent by email", async () => {
 });
 
 test("lists co-parents and pending invites; owner can remove them", async () => {
-  const onRemoveCoParent = resolvedVoid<Id<"babyCoParents">>();
-  const onCancelInvite = resolvedVoid<Id<"babyCoParentInvites">>();
+  const onRemoveCoParent = resolvedVoid<{ coParentId: Id<"babyCoParents"> }>();
+  const onCancelInvite = resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>();
 
   const listing: CoParentsListing = {
     coParents: [
       {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
+        _id: coParentId,
         email: "bob@example.com",
         name: "Bob",
         userId: "bob",
@@ -96,7 +102,7 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
     ],
     invites: [
       {
-        _id: "jd7invite0000000000000000" as Id<"babyCoParentInvites">,
+        _id: inviteId,
         email: "new@example.com",
         createdAt: Date.now(),
       },
@@ -119,12 +125,58 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
 
   fireEvent.click(view.getByRole("button", { name: "Remove bob@example.com" }));
   await vi.waitFor(() => {
-    expect(onRemoveCoParent).toHaveBeenCalledWith("jd7coparent00000000000000");
+    expect(onRemoveCoParent).toHaveBeenCalledWith({ coParentId });
   });
 
   fireEvent.click(view.getByRole("button", { name: "Cancel invite to new@example.com" }));
   await vi.waitFor(() => {
-    expect(onCancelInvite).toHaveBeenCalledWith("jd7invite0000000000000000");
+    expect(onCancelInvite).toHaveBeenCalledWith({ inviteId });
+  });
+});
+
+test("surfaces errors when remove or cancel invite fails", async () => {
+  const onRemoveCoParent = rejectedVoid<{ coParentId: Id<"babyCoParents"> }>("remove failed");
+  const onCancelInvite = rejectedVoid<{ inviteId: Id<"babyCoParentInvites"> }>("cancel failed");
+  const toastError = vi.spyOn(await import("sonner").then((m) => m.toast), "error");
+
+  const listing: CoParentsListing = {
+    coParents: [
+      {
+        _id: coParentId,
+        email: "bob@example.com",
+        name: "Bob",
+        userId: "bob",
+        addedAt: Date.now(),
+      },
+    ],
+    invites: [
+      {
+        _id: inviteId,
+        email: "new@example.com",
+        createdAt: Date.now(),
+      },
+    ],
+  };
+
+  await using view = renderResource(
+    <CoParentsSettingsView
+      babyId={babyId}
+      isOwner={true}
+      listing={listing}
+      onInvite={resolvedInvite()}
+      onRemoveCoParent={onRemoveCoParent}
+      onCancelInvite={onCancelInvite}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Remove bob@example.com" }));
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("remove failed");
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Cancel invite to new@example.com" }));
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("cancel failed");
   });
 });
 
@@ -132,7 +184,7 @@ test("co-parents see a read-only list without invite form", async () => {
   const listing: CoParentsListing = {
     coParents: [
       {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
+        _id: coParentId,
         email: "bob@example.com",
         name: null,
         userId: "bob",
@@ -148,8 +200,8 @@ test("co-parents see a read-only list without invite form", async () => {
       isOwner={false}
       listing={listing}
       onInvite={resolvedInvite()}
-      onRemoveCoParent={resolvedVoid<Id<"babyCoParents">>()}
-      onCancelInvite={resolvedVoid<Id<"babyCoParentInvites">>()}
+      onRemoveCoParent={resolvedVoid<{ coParentId: Id<"babyCoParents"> }>()}
+      onCancelInvite={resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>()}
     />,
   );
 

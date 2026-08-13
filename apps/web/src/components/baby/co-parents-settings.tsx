@@ -16,6 +16,8 @@ import { useI18n } from "@/lib/i18n";
 export type CoParentsListing = FunctionReturnType<typeof api.coParents.listForBaby>;
 
 type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
+type RemoveCoParentArgs = FunctionArgs<typeof api.coParents.removeCoParent>;
+type CancelInviteArgs = FunctionArgs<typeof api.coParents.cancelInvite>;
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
@@ -84,8 +86,8 @@ type CoParentsSettingsViewProps = {
   /** `undefined` while the listing query is loading. */
   listing: CoParentsListing | undefined;
   onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
-  onRemoveCoParent: (coParentId: Id<"babyCoParents">) => Promise<unknown>;
-  onCancelInvite: (inviteId: Id<"babyCoParentInvites">) => Promise<unknown>;
+  onRemoveCoParent: (args: RemoveCoParentArgs) => Promise<unknown>;
+  onCancelInvite: (args: CancelInviteArgs) => Promise<unknown>;
 };
 
 /**
@@ -121,7 +123,7 @@ export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
                   aria-label={t("Remove {{email}}", { email: row.email })}
                   onClick={() => {
                     void props
-                      .onRemoveCoParent(row._id)
+                      .onRemoveCoParent({ coParentId: row._id })
                       .then(() => toast.success(t("Co-parent removed")))
                       .catch((error: unknown) => {
                         toast.error(error instanceof Error ? error.message : t("Could not remove"));
@@ -147,7 +149,7 @@ export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
                   aria-label={t("Cancel invite to {{email}}", { email: row.email })}
                   onClick={() => {
                     void props
-                      .onCancelInvite(row._id)
+                      .onCancelInvite({ inviteId: row._id })
                       .then(() => toast.success(t("Invite cancelled")))
                       .catch((error: unknown) => {
                         toast.error(error instanceof Error ? error.message : t("Could not cancel"));
@@ -195,8 +197,8 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
       isOwner={props.isOwner}
       listing={listing}
       onInvite={invite}
-      onRemoveCoParent={(coParentId) => removeCoParent({ coParentId })}
-      onCancelInvite={(inviteId) => cancelInvite({ inviteId })}
+      onRemoveCoParent={removeCoParent}
+      onCancelInvite={cancelInvite}
     />
   );
 }
