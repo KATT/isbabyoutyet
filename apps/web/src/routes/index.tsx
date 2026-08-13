@@ -3,6 +3,8 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
+import { translate, useI18n } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/i18n";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -10,18 +12,42 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
-  head: () => ({
-    meta: [
-      {
-        title: "Is Baby Out Yet? - Share Your Baby's Arrival",
-      },
-      {
-        name: "description",
-        content:
-          "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
-      },
-    ],
-  }),
+  head: (opts) => {
+    const locale = opts.match.context.locale;
+    const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");
+    const description = translate(
+      locale,
+      "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
+    );
+    return {
+      meta: [
+        {
+          title,
+        },
+        {
+          name: "description",
+          content: description,
+        },
+        {
+          property: "og:title",
+          content: title,
+        },
+        {
+          property: "og:description",
+          content: description,
+        },
+        {
+          name: "twitter:title",
+          content: title,
+        },
+        {
+          name: "twitter:description",
+          content: description,
+        },
+      ],
+      links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
+    };
+  },
 });
 
 // lucide-react v1 removed brand icons (including Github), so inline the mark
@@ -79,7 +105,11 @@ const FEATURES = [
     description:
       "Family can subscribe to push notifications and be the first to know the moment baby arrives.",
   },
-];
+] as const satisfies ReadonlyArray<{
+  emoji: string;
+  title: TranslationKey;
+  description: TranslationKey;
+}>;
 
 const HOW_IT_WORKS = [
   {
@@ -99,9 +129,14 @@ const HOW_IT_WORKS = [
     description:
       "When things start happening, update your status. Everyone gets notified automatically.",
   },
-];
+] as const satisfies ReadonlyArray<{
+  step: string;
+  title: TranslationKey;
+  description: TranslationKey;
+}>;
 
 function HomePage() {
+  const { t } = useI18n();
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();
@@ -155,7 +190,7 @@ function HomePage() {
         theme: "sunny-days",
       },
     },
-  ];
+  ] as const;
 
   return (
     <div className="min-h-screen bg-background bg-dots">
@@ -176,7 +211,7 @@ function HomePage() {
                 render={<Link to="/dashboard" preload="viewport" />}
                 nativeButton={false}
               >
-                Dashboard
+                {t("Dashboard")}
               </Button>
             ) : (
               <>
@@ -187,7 +222,7 @@ function HomePage() {
                   render={<Link to="/auth/login" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Sign in
+                  {t("Sign in")}
                 </Button>
                 <Button
                   size="sm"
@@ -195,7 +230,7 @@ function HomePage() {
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Get started
+                  {t("Get started")}
                 </Button>
               </>
             )}
@@ -207,18 +242,19 @@ function HomePage() {
         {/* Hero */}
         <section className="py-16 text-center md:py-24">
           <span className="inline-block -rotate-2 rounded-full border-2 border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-extrabold text-primary pop-shadow">
-            ✨ Free forever, no ads
+            ✨ {t("Free forever, no ads")}
           </span>
           <h1 className="mx-auto mt-8 max-w-3xl text-5xl font-black tracking-tight text-foreground text-balance md:text-7xl">
-            Is{" "}
+            {t("Is")}{" "}
             <span className="inline-block -rotate-1 rounded-3xl bg-primary/15 px-4 text-primary">
-              baby
+              {t("baby")}
             </span>{" "}
-            out yet?
+            {t("out yet?")}
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground md:text-xl">
-            Stop answering "any news yet?" texts. Share one link, let everyone follow along, and
-            tell them all at once when baby arrives. 🍼
+            {t(
+              'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼',
+            )}
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             {sessionData.data ? (
@@ -228,7 +264,7 @@ function HomePage() {
                 render={<Link to="/dashboard" preload="viewport" />}
                 nativeButton={false}
               >
-                Go to Dashboard
+                {t("Go to Dashboard")}
               </Button>
             ) : (
               <>
@@ -238,7 +274,7 @@ function HomePage() {
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Create your page 🎈
+                  {t("Create your page 🎈")}
                 </Button>
                 <Button
                   size="lg"
@@ -247,7 +283,7 @@ function HomePage() {
                   render={<Link to="/auth/login" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Sign in
+                  {t("Sign in")}
                 </Button>
               </>
             )}
@@ -258,10 +294,10 @@ function HomePage() {
         <section className="py-12">
           <div className="text-center">
             <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              Everything the family needs
+              {t("Everything the family needs")}
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              For you, and for everyone waiting by the phone
+              {t("For you, and for everyone waiting by the phone")}
             </p>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -275,9 +311,9 @@ function HomePage() {
                 <span className="text-3xl" aria-hidden="true">
                   {feature.emoji}
                 </span>
-                <h3 className="mt-3 text-lg font-extrabold text-foreground">{feature.title}</h3>
+                <h3 className="mt-3 text-lg font-extrabold text-foreground">{t(feature.title)}</h3>
                 <p className="mt-1.5 text-sm font-medium leading-relaxed text-muted-foreground">
-                  {feature.description}
+                  {t(feature.description)}
                 </p>
               </div>
             ))}
@@ -288,10 +324,10 @@ function HomePage() {
         <section className="py-12">
           <div className="text-center">
             <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              See it in action
+              {t("See it in action")}
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              Click any stage to see how your page will look
+              {t("Click any stage to see how your page will look")}
             </p>
           </div>
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -303,9 +339,9 @@ function HomePage() {
                   <span className="text-4xl" aria-hidden="true">
                     {stage.emoji}
                   </span>
-                  <h3 className="mt-3 font-extrabold text-foreground">{stage.title}</h3>
+                  <h3 className="mt-3 font-extrabold text-foreground">{t(stage.title)}</h3>
                   <p className="mt-0.5 text-sm font-medium text-muted-foreground">
-                    {stage.description}
+                    {t(stage.description)}
                   </p>
                 </div>
               </Link>
@@ -317,10 +353,10 @@ function HomePage() {
         <section className="py-12">
           <div className="text-center">
             <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              How it works
+              {t("How it works")}
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              Up and running in under a minute
+              {t("Up and running in under a minute")}
             </p>
           </div>
           <div className="mt-10 grid gap-8 md:grid-cols-3">
@@ -329,9 +365,9 @@ function HomePage() {
                 <div className="flex h-14 w-14 -rotate-3 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary/15 text-2xl font-black text-primary pop-shadow">
                   {item.step}
                 </div>
-                <h3 className="mt-4 text-lg font-extrabold text-foreground">{item.title}</h3>
+                <h3 className="mt-4 text-lg font-extrabold text-foreground">{t(item.title)}</h3>
                 <p className="mt-1.5 font-medium leading-relaxed text-muted-foreground">
-                  {item.description}
+                  {t(item.description)}
                 </p>
               </div>
             ))}
@@ -345,12 +381,14 @@ function HomePage() {
               💖
             </p>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              Ready to share the journey?
+              {t("Ready to share the journey?")}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-lg font-semibold text-muted-foreground">
               {sessionData.data
-                ? "Head back to your dashboard to keep everyone updated."
-                : "Join families who've already shared their special moments. Takes less than a minute."}
+                ? t("Head back to your dashboard to keep everyone updated.")
+                : t(
+                    "Join families who've already shared their special moments. Takes less than a minute.",
+                  )}
             </p>
             <div className="mt-7">
               {sessionData.data ? (
@@ -360,7 +398,7 @@ function HomePage() {
                   render={<Link to="/dashboard" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Go to Dashboard
+                  {t("Go to Dashboard")}
                 </Button>
               ) : (
                 <Button
@@ -369,7 +407,7 @@ function HomePage() {
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Get Started Free 🎉
+                  {t("Get Started Free 🎉")}
                 </Button>
               )}
             </div>
@@ -386,7 +424,7 @@ function HomePage() {
           className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
         >
           <GithubIcon className="h-5 w-5" />
-          <span>Open source on GitHub</span>
+          <span>{t("Open source on GitHub")}</span>
         </a>
       </footer>
     </div>

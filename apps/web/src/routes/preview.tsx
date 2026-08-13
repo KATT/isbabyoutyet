@@ -8,6 +8,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCssUrl } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { translate, useI18n } from "@/lib/i18n";
 
 function getDefaultBabyData(): BabyData {
   const now = new Date();
@@ -45,20 +46,29 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
   validateSearch: searchSchema,
-  head: () => ({
+  head: (opts) => ({
     meta: [
       {
-        title: "Preview - Is Baby Out Yet?",
+        title: translate(opts.match.context.locale, "Preview – {{title}}", {
+          title: translate(
+            opts.match.context.locale,
+            "Is Baby Out Yet? – Share Your Baby's Arrival",
+          ),
+        }),
       },
       {
         name: "description",
-        content: "Preview how your baby tracking page will look at different stages.",
+        content: translate(
+          opts.match.context.locale,
+          "Preview how your baby tracking page will look at different stages.",
+        ),
       },
     ],
   }),
 });
 
 function PreviewPage() {
+  const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -137,11 +147,7 @@ function PreviewPage() {
 
         <main className="mx-auto w-full max-w-2xl px-4 pb-16">
           <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
-            Is{" "}
-            <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
-              {baby.name}
-            </span>{" "}
-            out yet?
+            {t("Is {{name}} out yet?", { name: baby.name })}
           </h1>
 
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
@@ -156,7 +162,7 @@ function PreviewPage() {
             to="/"
             className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
           >
-            Having a baby? Are people messaging you non-stop? Create your own page →
+            {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
           </Link>
         </footer>
       </div>

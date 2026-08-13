@@ -7,6 +7,8 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { LocaleProvider } from "@/lib/i18n";
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
@@ -41,14 +43,16 @@ const laborStartedBaby: BabyData = {
 // exist for the `useMutation` hooks to mount.
 const babyId = "fake-baby-id" as Id<"baby">;
 
-function renderComposerResource(baby: BabyData) {
+function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,
   });
   const withProvider = (currentBaby: BabyData): ReactElement => (
-    <ConvexProvider client={client}>
-      <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
-    </ConvexProvider>
+    <LocaleProvider locale={locale}>
+      <ConvexProvider client={client}>
+        <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
+      </ConvexProvider>
+    </LocaleProvider>
   );
   const view = render(withProvider(baby));
   return makeResource(
@@ -75,12 +79,23 @@ test("the status radio group is labelled and offers only future stages", async (
   );
   expect(view.getByRole("radio", { name: "Labour started" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Born" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
 
   // Once labour has started, that stage is no longer offered
   composer.setBaby(laborStartedBaby);
   expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
+});
+
+test("the milestone metadata resolves through the Swedish catalog", async () => {
+  await using composer = renderComposerResource(notYetBaby, "sv");
+  const view = composer.view;
+
+  expect(view.getByRole("radiogroup", { name: "Statusändring (valfritt)" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Förlossningen har börjat" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Åkt till sjukhuset" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Bebisen är född" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {
@@ -121,6 +136,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: undefined,
   });
@@ -140,9 +156,32 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
   });
+});
+
+test("the composer previews a selected photo and can remove it", async () => {
+  const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
+  const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  await using _objectUrls = makeResource({}, () => {
+    createObjectURL.mockRestore();
+    revokeObjectURL.mockRestore();
+  });
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  const fileInput = view.container.querySelector('input[type="file"]');
+  if (!fileInput) throw new Error("hidden file input missing");
+
+  fireEvent.change(fileInput, {
+    target: { files: [new File(["png"], "baby.png", { type: "image/png" })] },
+  });
+  expect(view.getByAltText("Photo to post")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Remove photo" }));
+  expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
 test("timeline milestone deletion is disabled while a later status exists", async () => {
@@ -171,11 +210,13 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
     unsavedChangesWarning: false,
   });
   const rendered = render(
-    <ConvexProvider client={client}>
-      <TooltipProvider>
-        <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
-      </TooltipProvider>
-    </ConvexProvider>,
+    <LocaleProvider locale="en-GB">
+      <ConvexProvider client={client}>
+        <TooltipProvider>
+          <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
+        </TooltipProvider>
+      </ConvexProvider>
+    </LocaleProvider>,
   );
   await using view = makeResource(rendered, async () => {
     rendered.unmount();
