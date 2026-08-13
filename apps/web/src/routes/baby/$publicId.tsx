@@ -204,24 +204,24 @@ function BabyPage() {
             </span>
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
-        <BabyNav
-          shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+          <BabyNav
+            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
             onPostUpdate={isOwner ? () => setComposerOpen(true) : null}
-          settingsButton={
-            isOwner
-              ? {
-                  to: "/baby/$publicId",
-                  params: { publicId: params.publicId },
-                  search: {
-                    ...search,
-                    settings: search.settings ? undefined : true,
-                  },
-                }
-              : null
-          }
-          settingsOpen={!!search.settings}
-        />
-      </div>
+            settingsButton={
+              isOwner
+                ? {
+                    to: "/baby/$publicId",
+                    params: { publicId: params.publicId },
+                    search: {
+                      ...search,
+                      settings: search.settings ? undefined : true,
+                    },
+                  }
+                : null
+            }
+            settingsOpen={!!search.settings}
+          />
+        </div>
       </header>
 
       <main className="mx-auto w-full max-w-6xl px-4 pb-16">
@@ -236,26 +236,26 @@ function BabyPage() {
         {/* Split layout: sticky status card on the left, feed on the right */}
         <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
-              <StatusDisplay
-                baby={baby}
-                currentStatus={currentStatus}
-                photoUrl={babyDoc.photoUrl}
-                thumbnailUrl={babyDoc.thumbnailUrl}
-                latestUpdate={
-                  latestUpdate
-                    ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
-                    : null
-                }
-              />
+            <StatusDisplay
+              baby={baby}
+              currentStatus={currentStatus}
+              photoUrl={babyDoc.photoUrl}
+              thumbnailUrl={babyDoc.thumbnailUrl}
+              latestUpdate={
+                latestUpdate
+                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  : null
+              }
+            />
             <div className="flex justify-center">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
-        </div>
+            </div>
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />
-      </section>
+          </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
               feed comes before the visitor's encouragement form; the owner
@@ -270,12 +270,12 @@ function BabyPage() {
               />
             </section>
 
-          {!baby.encouragementsDisabled && (
+            {!baby.encouragementsDisabled && (
               <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
                 <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
               </section>
-          )}
-        </div>
+            )}
+          </div>
         </div>
       </main>
 
