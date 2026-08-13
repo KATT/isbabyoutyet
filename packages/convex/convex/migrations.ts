@@ -491,6 +491,7 @@ const TABLE_MIGRATION_NAMES = [
   "backfillProfileTokenIdentifier",
   "backfillOnboardingTokenIdentifier",
   "backfillCoParentTokenIdentifier",
+  "sanitizeOnboardingSteps",
 ] as const;
 
 export const deploymentStatus = internalQuery({

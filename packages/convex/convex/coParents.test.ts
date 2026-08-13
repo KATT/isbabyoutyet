@@ -117,7 +117,8 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
 
   const after = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
   expect(after.invites).toEqual([]);
-  expect(after.coParents).toMatchObject([{ email: "newbie@example.com", userId: newbieId }]);
+  expect(after.coParents).toMatchObject([{ email: "newbie@example.com" }]);
+  expect(after.coParents[0]).not.toHaveProperty("userId");
 
   expect(await asNewbie.query(api.baby.listByUser, {})).toMatchObject([
     { _id: created.babyId, role: "coParent" },
@@ -171,7 +172,7 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   });
   const listed = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
   const bobRow = listed.coParents[0];
-  expect(bobRow?.userId).toBe(bobId);
+  expect(bobRow).not.toHaveProperty("userId");
   await asAlice.mutation(api.coParents.removeCoParent, { coParentId: bobRow!._id });
 
   // Pending invite cancel + duplicate invite refusal

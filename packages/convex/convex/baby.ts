@@ -190,7 +190,7 @@ function slugify(name: string): string {
 async function isPublicIdTaken(opts: {
   db: DatabaseReader;
   publicId: string;
-  excludeUserId: string;
+  excludeTokenIdentifier: string;
 }): Promise<boolean> {
   // Reserved for the seeded homepage live demos — never let a real user claim them.
   if (isHomepageDemoPublicId(opts.publicId)) {
@@ -218,7 +218,7 @@ async function isPublicIdTaken(opts: {
   }
 
   const historicBaby = await opts.db.get(historicEntry.babyId);
-  if (historicBaby && historicBaby.userId !== opts.excludeUserId) {
+  if (historicBaby && historicBaby.ownerTokenIdentifier !== opts.excludeTokenIdentifier) {
     return true;
   }
 
@@ -228,13 +228,19 @@ async function isPublicIdTaken(opts: {
 async function generateUniquePublicId(opts: {
   db: DatabaseReader;
   baseName: string;
-  excludeUserId: string;
+  excludeTokenIdentifier: string;
 }): Promise<string> {
   const slug = slugify(opts.baseName);
   let tries = 0;
   let publicId = slug;
 
-  while (await isPublicIdTaken({ db: opts.db, publicId, excludeUserId: opts.excludeUserId })) {
+  while (
+    await isPublicIdTaken({
+      db: opts.db,
+      publicId,
+      excludeTokenIdentifier: opts.excludeTokenIdentifier,
+    })
+  ) {
     tries++;
     publicId = `${slug}-${tries}`;
   }
@@ -248,7 +254,7 @@ async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
   }
   const profile = await db
     .query("userProfiles")
-    .withIndex("by_userId", (q) => q.eq("userId", baby.userId))
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", baby.ownerTokenIdentifier))
     .unique();
   return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
 }
@@ -268,7 +274,7 @@ export const create = mutationWithTriggers({
     const publicId = await generateUniquePublicId({
       db: ctx.db,
       baseName: args.name,
-      excludeUserId: caller.authUserId,
+      excludeTokenIdentifier: caller.tokenIdentifier,
     });
 
     const babyId = await ctx.db.insert("baby", {
@@ -602,7 +608,7 @@ export const update = mutationWithTriggers({
         patch.publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
-          excludeUserId: identity.authUserId,
+          excludeTokenIdentifier: identity.tokenIdentifier,
         });
         await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
       }

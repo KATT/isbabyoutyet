@@ -146,8 +146,21 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   // Unsubscribe mutation (TanStack mutation wrapping Convex mutation)
   const unsubscribeMutation = useMutation({
-    mutationFn: async (endpoint: string) => {
-      return await convex.mutation(api.pushSubscriptions.unsubscribe, { endpoint });
+    mutationFn: async (subscription: PushSubscription) => {
+      const subscriptionData = subscription.toJSON();
+      if (
+        !subscriptionData.endpoint ||
+        !subscriptionData.keys?.p256dh ||
+        !subscriptionData.keys.auth
+      ) {
+        throw new Error(t("Failed to get subscription data"));
+      }
+      return await convex.mutation(api.pushSubscriptions.unsubscribe, {
+        babyId,
+        endpoint: subscriptionData.endpoint,
+        p256dh: subscriptionData.keys.p256dh,
+        auth: subscriptionData.keys.auth,
+      });
     },
     onSuccess: () => {
       pushSubscriptionQuery.refetch();
@@ -224,17 +237,14 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
                   toast.error(t("No subscription endpoint found"));
                   return;
                 }
-                toast.promise(
-                  unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint),
-                  {
-                    loading: t("Unsubscribing from notifications..."),
-                    success: t("Unsubscribed from notifications!"),
-                    error: (error) =>
-                      error instanceof Error
-                        ? error.message
-                        : t("Failed to unsubscribe from notifications"),
-                  },
-                );
+                toast.promise(unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data), {
+                  loading: t("Unsubscribing from notifications..."),
+                  success: t("Unsubscribed from notifications!"),
+                  error: (error) =>
+                    error instanceof Error
+                      ? error.message
+                      : t("Failed to unsubscribe from notifications"),
+                });
                 pushSubscriptionQuery.refetch();
               } else {
                 toast.promise(subscribeMutation.mutateAsync(), {

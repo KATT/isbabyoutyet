@@ -62,10 +62,21 @@ export const subscribe = mutation({
 
 export const unsubscribe = mutation({
   args: {
+    babyId: v.id("baby"),
     endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
   },
   handler: async (ctx, args) => {
-    await deleteByEndpoint(ctx, args.endpoint);
+    const subscription = await ctx.db
+      .query("pushSubscriptions")
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+      )
+      .first();
+    if (subscription && subscription.p256dh === args.p256dh && subscription.auth === args.auth) {
+      await ctx.db.delete(subscription._id);
+    }
   },
 });
 

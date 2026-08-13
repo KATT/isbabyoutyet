@@ -135,6 +135,16 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   // Historical publicId still resolves to the same baby
   const byOldPublicId = await t.query(api.baby.getByPublicId, { id: "working-title" });
   expect(byOldPublicId).toMatchObject({ _id: created.babyId, name: "Final Name" });
+
+  const sameSubjectFromAnotherIssuer = t.withIdentity({
+    subject: "alice",
+    issuer: "https://other-issuer.test",
+  });
+  const impostorBaby = await sameSubjectFromAnotherIssuer.mutation(api.baby.create, {
+    name: "Working Title",
+    dueDate: "2026-09-01",
+  });
+  expect(impostorBaby.publicId).toBe("working-title-1");
 });
 
 test("homepage demo publicIds are reserved and never assigned to real babies", async () => {
