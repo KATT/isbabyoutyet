@@ -31,10 +31,11 @@ export default defineConfig({
         // test run beats them, so coverage can only go up. Never lower them
         // by hand.
         autoUpdate: true,
-        statements: 64.14,
-        branches: 56.96,
-        functions: 60.93,
-        lines: 64.9,
+        // Merge: take the higher of each side so the ratchet never goes down.
+        statements: 64.54,
+        branches: 57.95,
+        functions: 61.41,
+        lines: 65.28,
       },
     },
   },

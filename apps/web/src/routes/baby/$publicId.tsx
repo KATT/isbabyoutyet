@@ -314,12 +314,12 @@ function BabyPage() {
         </>
       )}
 
-      {/* Page chrome: brand pill left, action dock right. Scrolls with the
-          page so the sticky status card gets the full viewport height. */}
+      {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
       <header className="px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
             to="/"
+            preload="viewport"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
@@ -342,6 +342,7 @@ function BabyPage() {
                 ? {
                     to: "/baby/$publicId",
                     params: { publicId: params.publicId },
+                    preload: "viewport",
                     search: {
                       ...search,
                       settings: search.settings ? undefined : true,
@@ -366,11 +367,10 @@ function BabyPage() {
           {t("Is {{name}} out yet?", { name: baby.name })}
         </h1>
 
-        {/* Split layout: sticky status card on the left, feed on the right */}
+        {/* Split layout: sticky status card on the left, feed on the right.
+            No internal scroll on the card — that steals wheel/trackpad from the page. */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
-          {/* Sticky, but never taller than the viewport: on short screens the
-              card scrolls internally instead of clipping below the fold. */}
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
+          <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
             <StatusDisplay
               baby={baby}
               currentStatus={currentStatus}
@@ -391,8 +391,9 @@ function BabyPage() {
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
             </div>
-            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
-            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            <div className="mt-4">
+              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            </div>
           </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
@@ -425,6 +426,7 @@ function BabyPage() {
       <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
         <Link
           to="/"
+          preload="viewport"
           className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}

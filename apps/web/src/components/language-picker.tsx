@@ -1,6 +1,6 @@
 import { Translate } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
+import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
 import {
   Select,
   SelectContent,
@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { getLanguageName } from "@/lib/i18n";
+import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
 
 type LanguagePickerProps = {
   disabled: boolean;
@@ -29,7 +30,7 @@ export function LanguagePicker(props: LanguagePickerProps) {
       items={languageOptions}
       value={props.value}
       onValueChange={(value) => {
-        if (!value || !isSupportedLocale(value) || value === props.value) {
+        if (!shouldApplyLocaleChange(value, props.value)) {
           return;
         }
         void props.onValueChange(value);
