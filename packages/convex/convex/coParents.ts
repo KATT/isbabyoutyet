@@ -220,7 +220,10 @@ export const leave = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
 
-    const membership = await findActiveCoParent(ctx, { babyId: args.babyId, userId: identity.subject });
+    const membership = await findActiveCoParent(ctx, {
+      babyId: args.babyId,
+      userId: identity.subject,
+    });
     if (!membership) {
       throw new Error("You are not a co-parent on this page");
     }
@@ -271,7 +274,10 @@ export const claimPendingInvites = mutation({
         continue;
       }
 
-      const existing = await findActiveCoParent(ctx, { babyId: invite.babyId, userId: identity.subject });
+      const existing = await findActiveCoParent(ctx, {
+        babyId: invite.babyId,
+        userId: identity.subject,
+      });
       if (!existing) {
         await ctx.db.insert("babyCoParents", {
           babyId: invite.babyId,
