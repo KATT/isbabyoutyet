@@ -167,6 +167,17 @@ import { z } from 'zod';
 - **NEVER** import from `@trpc/*/src` - remove the `/src` part
 - **NEVER** use `waitFor` from Testing Library - use `vi.waitFor` instead
 - **NEVER** use `Symbol.dispose` or `Symbol.asyncDispose` - use `makeResource()` or `makeAsyncResource()`
+- **NEVER** use module mocking (`vi.mock` / `vi.hoisted` / `jest.mock`) — enforced by `no-mock/no-mock` in `.oxlintrc.json`. Prefer `convex-test` seeding, real providers (`renderWithTestRouter`), prop injection into presentational views, or `vi.spyOn` for browser APIs. Local `vi.fn()` callbacks are fine.
+
+```typescript
+// ✅ CORRECT — inject callbacks / seed with convex-test
+await using view = renderWithTestRouter(
+  <CoParentsSettingsView listing={fixture} invite={vi.fn()} ... />,
+);
+
+// ❌ INCORRECT — banned by no-mock/no-mock
+vi.mock("convex/react", () => ({ useQuery: vi.fn() }));
+```
 
 ### Code Patterns
 
