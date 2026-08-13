@@ -592,7 +592,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                         {update.photoUrl
                           ? "If this photo is the current page photo, the previous one takes its place. "
                           : ""}
-                        This action cannot be undone.
+                        It will no longer appear on the public page.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -813,7 +813,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                       <AlertDialogTitle>Delete Encouragement?</AlertDialogTitle>
                       <AlertDialogDescription>
                         Are you sure you want to delete this encouragement from{" "}
-                        {encouragement.authorName}? This action cannot be undone.
+                        {encouragement.authorName}? It will no longer appear on the public page.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

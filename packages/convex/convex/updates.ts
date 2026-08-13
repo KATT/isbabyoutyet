@@ -16,6 +16,7 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { mutationWithTriggers } from "./triggers";
+import { isActive } from "./softDelete";
 
 const milestoneValidator = v.union(
   v.literal("labor_started"),
@@ -45,7 +46,7 @@ export const post = mutationWithTriggers({
     if (!identity) throw new Error("Not authenticated");
 
     const baby = await ctx.db.get(args.babyId);
-    if (!baby) throw new Error("Baby not found");
+    if (!baby || !isActive(baby)) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     const message = args.message?.trim() || null;
@@ -137,11 +138,11 @@ export const setAsCurrentPhoto = mutationWithTriggers({
     if (!identity) throw new Error("Not authenticated");
 
     const update = await ctx.db.get(args.updateId);
-    if (!update) throw new Error("Update not found");
+    if (!update || !isActive(update)) throw new Error("Update not found");
     if (!update.photoId) throw new Error("This update has no photo");
 
     const baby = await ctx.db.get(update.babyId);
-    if (!baby) throw new Error("Baby not found");
+    if (!baby || !isActive(baby)) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     await ctx.db.patch(baby._id, {
@@ -171,10 +172,10 @@ export const remove = mutationWithTriggers({
     if (!identity) throw new Error("Not authenticated");
 
     const update = await ctx.db.get(args.updateId);
-    if (!update) throw new Error("Update not found");
+    if (!update || !isActive(update)) throw new Error("Update not found");
 
     const baby = await ctx.db.get(update.babyId);
-    if (!baby) throw new Error("Baby not found");
+    if (!baby || !isActive(baby)) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     if (update.milestone) {
@@ -223,9 +224,9 @@ async function findLatestRemainingPhotoUpdate(ctx: MutationCtx, removed: Doc<"up
 
   let latest: { update: Doc<"updates">; postedAt: number } | null = null;
   for (const candidate of photoUpdates) {
-    if (candidate._id === removed._id || !candidate.photoId) continue;
+    if (candidate._id === removed._id || !candidate.photoId || !isActive(candidate)) continue;
     const timelineItem = await ctx.db.get(candidate.timelineItemId);
-    if (!timelineItem) continue;
+    if (!timelineItem || !isActive(timelineItem)) continue;
     if (!latest || timelineItem.postedAt > latest.postedAt) {
       latest = { update: candidate, postedAt: timelineItem.postedAt };
     }

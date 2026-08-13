@@ -18,6 +18,7 @@ import {
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
 } from "./timeline";
+import { isActive, softDeletePatch } from "./softDelete";
 
 export const listByUser = query({
   args: {},
@@ -33,7 +34,7 @@ export const listByUser = query({
       .order("desc")
       .collect();
 
-    return babies;
+    return babies.filter(isActive);
   },
 });
 
@@ -68,7 +69,7 @@ export const getByPublicId = query({
       baby = await ctx.db.get(latestHistoryEntry.babyId);
     }
 
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       return null;
     }
 
@@ -95,7 +96,7 @@ export const generateUploadUrl = mutation({
     }
 
     const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
@@ -172,7 +173,7 @@ export const updatePhoto = mutationWithTriggers({
     }
 
     const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
@@ -290,6 +291,48 @@ export const create = mutationWithTriggers({
   },
 });
 
+/**
+ * Soft-deletes a baby page. Only the owner (creator) can do this.
+ * Pending push notifications are cancelled; feed rows stay recoverable.
+ */
+export const remove = mutationWithTriggers({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby || !isActive(baby)) {
+      throw new Error("Baby not found");
+    }
+
+    if (baby.userId !== identity.subject) {
+      throw new Error("Not authorized");
+    }
+
+    const pendingNotifications = await ctx.db
+      .query("scheduledNotifications")
+      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .collect();
+
+    for (const notification of pendingNotifications) {
+      if (notification.scheduledId) {
+        try {
+          await ctx.scheduler.cancel(notification.scheduledId);
+        } catch (_error) {
+          // Already sent or missing — still mark cancelled below
+        }
+      }
+      await ctx.db.patch(notification._id, { status: "cancelled" });
+    }
+
+    await ctx.db.patch(args.babyId, softDeletePatch());
+  },
+});
+
 export const getScheduledNotifications = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
@@ -299,7 +342,7 @@ export const getScheduledNotifications = query({
     }
 
     const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
@@ -331,7 +374,7 @@ export const cancelScheduledNotification = mutation({
     }
 
     const baby = await ctx.db.get(notification.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
@@ -561,7 +604,7 @@ export const update = mutationWithTriggers({
     };
 
     const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Baby not found");
+    if (!baby || !isActive(baby)) throw new Error("Baby not found");
     if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     // Milestone dates are event clocks: they must parse and cannot be in the

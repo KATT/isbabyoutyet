@@ -17,6 +17,7 @@ import type * as migrations from "../migrations.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
 import type * as seed from "../seed.js";
+import type * as softDelete from "../softDelete.js";
 import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
@@ -37,6 +38,7 @@ declare const fullApi: ApiFromModules<{
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
   seed: typeof seed;
+  softDelete: typeof softDelete;
   timeline: typeof timeline;
   triggers: typeof triggers;
   updates: typeof updates;

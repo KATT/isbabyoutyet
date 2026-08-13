@@ -266,10 +266,15 @@ test("encouragements dual-write timeline rows and cascade on delete", async () =
 
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toEqual([]);
-  const orphanedTimelineItems = await t.run(async (ctx) => {
-    return await ctx.db.query("timelineItems").collect();
+  const softDeleted = await t.run(async (ctx) => {
+    const items = await ctx.db.query("timelineItems").collect();
+    const encouragements = await ctx.db.query("encouragements").collect();
+    return { items, encouragements };
   });
-  expect(orphanedTimelineItems).toEqual([]);
+  expect(softDeleted.items).toHaveLength(1);
+  expect(softDeleted.items[0]?.deletedAt).toEqual(expect.any(Number));
+  expect(softDeleted.encouragements).toHaveLength(1);
+  expect(softDeleted.encouragements[0]?.deletedAt).toEqual(expect.any(Number));
 });
 
 test("removing a milestone update unmarks it and cancels the pending push", async () => {

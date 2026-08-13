@@ -135,3 +135,29 @@ test("the baby's owner can remove an encouragement", async () => {
   });
   expect(result.page).toEqual([]);
 });
+
+test("removing an encouragement soft-deletes it so it can be recovered later", async () => {
+  const { t, babyId } = await setupWithBaby();
+
+  const encouragementId = await t.mutation(api.encouragements.create, {
+    babyId,
+    authorName: "Grandma",
+    message: "Oops wrong baby",
+    visitorId: "visitor-1",
+  });
+
+  await t.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: "visitor-1",
+  });
+
+  const listed = await t.query(api.encouragements.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(listed.page).toEqual([]);
+
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored?.deletedAt).toEqual(expect.any(Number));
+  expect(stored?.message).toBe("Oops wrong baby");
+});
