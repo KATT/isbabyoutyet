@@ -36,11 +36,11 @@ test("create a baby and list it for the owner", async () => {
       name: "Baby Smith",
       dueDate: "2026-09-01",
       publicId: "baby-smith",
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
       role: "owner",
     },
   ]);
+  expect(babies[0]).not.toHaveProperty("userId");
+  expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
@@ -70,6 +70,8 @@ test("getByPublicId resolves by publicId and by document id", async () => {
 
   const byPublicId = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(byPublicId).toMatchObject({ _id: created.babyId, name: "Little One" });
+  expect(byPublicId).not.toHaveProperty("userId");
+  expect(byPublicId).not.toHaveProperty("ownerTokenIdentifier");
 
   const byDocumentId = await t.query(api.baby.getByPublicId, { id: created.babyId });
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });

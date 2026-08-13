@@ -30,9 +30,9 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     () => notifications?.filter((n) => n.status === "pending") ?? [],
     [notifications],
   );
-  const subscriptions = useQuery(api.pushSubscriptions.getSubscriptions, { babyId: props.babyId });
-
-  const subscriptionCount = subscriptions?.length ?? 0;
+  const hasSubscriptions = useQuery(api.pushSubscriptions.hasSubscriptions, {
+    babyId: props.babyId,
+  });
 
   // Track active toasts and previous notification states
   const activeToasts = useRef(new Set<Id<"scheduledNotifications">>());
@@ -42,7 +42,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     if (!notifications) return;
 
     // Don't show any toasts if there are no subscribers
-    if (subscriptionCount === 0) {
+    if (hasSubscriptions !== true) {
       // Dismiss any existing toasts
       for (const id of activeToasts.current) {
         toast.dismiss(id);
@@ -71,10 +71,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
                 <ItemContent>
                   <ItemTitle>{t("Notification sent!")}</ItemTitle>
                   <ItemDescription>
-                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])} ·{" "}
-                    {t(subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-                      count: subscriptionCount,
-                    })}
+                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])}
                   </ItemDescription>
                 </ItemContent>
               </Item>
@@ -102,7 +99,6 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
               notificationId={notification._id}
               notificationType={notification.notificationType}
               scheduledFor={notification.scheduledFor}
-              subscriptionCount={subscriptionCount}
             />
           ),
           {
@@ -112,7 +108,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
         );
       }
     }
-  }, [notifications, pendingNotifications, subscriptionCount, t]);
+  }, [hasSubscriptions, notifications, pendingNotifications, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -131,7 +127,6 @@ type NotificationToastContentProps = {
   notificationId: Id<"scheduledNotifications">;
   notificationType: NotifiableStatus;
   scheduledFor: number;
-  subscriptionCount: number;
 };
 
 function NotificationToastContent(props: NotificationToastContentProps) {
@@ -177,12 +172,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{t("Sending notification...")}</ItemTitle>
-        <ItemDescription>
-          {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
-          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-            count: props.subscriptionCount,
-          })}
-        </ItemDescription>
+        <ItemDescription>{t(NOTIFICATION_LABEL_KEYS[props.notificationType])}</ItemDescription>
       </ItemContent>
       <ItemActions>
         <Button

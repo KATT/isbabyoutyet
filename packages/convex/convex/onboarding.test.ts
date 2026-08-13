@@ -154,8 +154,8 @@ test("completeStep rejects unknown step ids", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
 
   await expect(
-    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" }),
-  ).rejects.toThrow(/Unknown onboarding step/);
+    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" as never }),
+  ).rejects.toThrow(/Validator error/);
 });
 
 test("allDone when every step is effective", async () => {
@@ -240,7 +240,7 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
   const sentinel = await t.run(async (ctx) => {
     return await ctx.db
       .query("userOnboarding")
-      .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+      .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
       .unique();
   });
   expect(sentinel).toBeTruthy();

@@ -13,6 +13,7 @@ async function setupWithBaby() {
   const babyId: Id<"baby"> = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Baby Smith",
       dueDate: "2026-09-01",
       publicId: "baby-smith",

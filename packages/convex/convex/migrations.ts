@@ -7,6 +7,7 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { isOnboardingStepId } from "../src/onboardingSteps";
 import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
@@ -54,7 +55,8 @@ export async function resolveMilestoneAnnounceAt(
   const notifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId", (q) => q.eq("babyId", opts.babyId))
-    .collect();
+    .order("desc")
+    .take(256);
 
   let bestCreatedAt: number | null = null;
   let bestDistance = Infinity;
@@ -115,7 +117,8 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const existingUpdates = await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
-      .collect();
+      .order("desc")
+      .take(256);
     const currentPhotoAlreadyInFeed = existingUpdates.some(
       (update) => update.photoId === baby.photoId,
     );
@@ -320,7 +323,7 @@ function authUserId(user: unknown) {
 export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
   const sentinel = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+    .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
     .unique();
   if (sentinel) {
     return {
@@ -449,6 +452,20 @@ export const backfillCoParentTokenIdentifier = migrations.define({
   migrateOne: backfillCoParentTokenIdentifierDoc,
 });
 
+export async function sanitizeOnboardingStepsDoc(
+  ctx: MutationCtx,
+  onboarding: Doc<"userOnboarding">,
+) {
+  const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
+  if (completedSteps.length === onboarding.completedSteps.length) return;
+  await ctx.db.patch(onboarding._id, { completedSteps });
+}
+
+export const sanitizeOnboardingSteps = migrations.define({
+  table: "userOnboarding",
+  migrateOne: sanitizeOnboardingStepsDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -460,6 +477,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillProfileTokenIdentifier,
   internal.migrations.backfillOnboardingTokenIdentifier,
   internal.migrations.backfillCoParentTokenIdentifier,
+  internal.migrations.sanitizeOnboardingSteps,
 ]);
 
 // Run all pending migrations - called automatically during deployment.

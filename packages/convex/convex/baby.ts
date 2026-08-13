@@ -25,6 +25,7 @@ import { requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
+import { toBabyDto } from "./babyDto";
 
 export const listByUser = query({
   args: {},
@@ -78,7 +79,7 @@ export const getByPublicId = query({
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
-      ...baby,
+      ...toBabyDto(baby),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
@@ -299,9 +300,8 @@ export const remove = mutationWithTriggers({
 
     const pendingNotifications = await ctx.db
       .query("scheduledNotifications")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
-      .collect();
+      .withIndex("by_babyId_and_status", (q) => q.eq("babyId", args.babyId).eq("status", "pending"))
+      .take(100);
 
     for (const notification of pendingNotifications) {
       if (notification.scheduledId) {
@@ -327,7 +327,7 @@ export const getScheduledNotifications = query({
       .query("scheduledNotifications")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
       .order("desc")
-      .collect();
+      .take(100);
 
     return notifications;
   },
@@ -422,9 +422,10 @@ export async function syncStatusNotifications(
   // Cancel any existing pending notifications
   const pendingNotifications = await ctx.db
     .query("scheduledNotifications")
-    .withIndex("by_babyId", (q) => q.eq("babyId", updatedBaby._id))
-    .filter((q) => q.eq(q.field("status"), "pending"))
-    .collect();
+    .withIndex("by_babyId_and_status", (q) =>
+      q.eq("babyId", updatedBaby._id).eq("status", "pending"),
+    )
+    .take(100);
 
   for (const notification of pendingNotifications) {
     if (notification.scheduledId) {

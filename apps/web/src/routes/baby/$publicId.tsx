@@ -28,7 +28,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { z } from "zod";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -181,7 +181,9 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+function docToBabyData(
+  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -223,9 +225,8 @@ function BabyPage() {
   const latestUpdate =
     latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Prefer server access (includes co-parents); fall back to session owner check
-  // while the query loads so owners don't flash without controls.
-  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
+  // Server-derived access includes owners and co-parents without exposing auth ids.
+  const isOwner = myAccess?.isOwner ?? false;
   const canManage = myAccess?.canManage ?? isOwner;
 
   // Claim pending email invites when a signed-in user lands on a baby page

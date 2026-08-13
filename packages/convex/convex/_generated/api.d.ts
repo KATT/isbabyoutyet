@@ -9,6 +9,7 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as authIdentity from "../authIdentity.js";
 import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
@@ -32,6 +33,7 @@ import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  authIdentity: typeof authIdentity;
   baby: typeof baby;
   babyAccess: typeof babyAccess;
   babyThumbnails: typeof babyThumbnails;

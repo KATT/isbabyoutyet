@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { isOnboardingStepId, ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
 import type { AppIdentity } from "./authIdentity";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { isActive } from "./softDelete";
@@ -19,6 +19,14 @@ const emptyState = {
   tourBaby: null as null | { publicId: string; name: string },
 };
 
+const onboardingStepIdValidator = v.union(
+  v.literal("add_baby"),
+  v.literal("share_link"),
+  v.literal("post_update"),
+  v.literal("explore_settings"),
+  v.literal("learn_encouragements"),
+);
+
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -30,7 +38,7 @@ async function requireUserId(ctx: QueryCtx | MutationCtx) {
 async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
   const existing = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", identity.authUserId))
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .unique();
   if (existing) {
     if (existing.tokenIdentifier === undefined) {
@@ -64,7 +72,9 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
   const babies = (
     await ctx.db
       .query("baby")
-      .withIndex("by_user", (q) => q.eq("userId", identity.authUserId))
+      .withIndex("by_ownerTokenIdentifier", (q) =>
+        q.eq("ownerTokenIdentifier", identity.tokenIdentifier),
+      )
       .order("asc")
       .take(40)
   ).filter(
@@ -146,7 +156,7 @@ export const getMine = query({
 
     const doc = await ctx.db
       .query("userOnboarding")
-      .withIndex("by_user", (q) => q.eq("userId", identity.authUserId))
+      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
 
     const auto = await computeAutoProgress(ctx, identity);
@@ -198,14 +208,11 @@ export const dismissChecklist = mutation({
 });
 
 export const completeStep = mutation({
-  args: { stepId: v.string() },
+  args: { stepId: onboardingStepIdValidator },
   handler: async (ctx, args) => {
     const identity = await requireUserId(ctx);
     if (!identity) {
       throw new Error("Not authenticated");
-    }
-    if (!isOnboardingStepId(args.stepId)) {
-      throw new Error(`Unknown onboarding step: ${args.stepId}`);
     }
     const doc = await getOrCreateOnboarding(ctx, identity);
     if (doc.completedSteps.includes(args.stepId)) {
@@ -254,7 +261,7 @@ export async function markUserOnboardingComplete(ctx: MutationCtx, userId: strin
   const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
 
   const patch = {

@@ -1,8 +1,10 @@
 "use node";
 
+import type { PaginationResult } from "convex/server";
 import { v } from "convex/values";
 import webPush from "web-push";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
 import { env, internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
@@ -45,7 +47,7 @@ async function sendNotificationToSubscription(
       // 410 means the subscription is expired/invalid
       if ("statusCode" in error && (error.statusCode === 410 || error.statusCode === 404)) {
         // Delete invalid subscription
-        await ctx.runMutation(api.pushSubscriptions.unsubscribe, {
+        await ctx.runMutation(internal.pushSubscriptions.removeByEndpoint, {
           endpoint: subscription.endpoint,
         });
       }
@@ -71,40 +73,50 @@ export const sendNotification = internalAction({
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
-    // Get all subscriptions for this babyId
-    const subscriptions = await ctx.runQuery(api.pushSubscriptions.getSubscriptions, {
-      babyId: args.babyId,
-    });
-
     const message = getPushMessage(args.locale, args.status, args.babyName);
     const body = args.customMessage || message.body;
 
     const url = `/baby/${args.publicId}`;
 
-    // Send notification to all subscribers
-    const results = await Promise.allSettled(
-      subscriptions.map((sub) =>
-        sendNotificationToSubscription(
-          ctx,
-          {
-            endpoint: sub.endpoint,
-            p256dh: sub.p256dh,
-            auth: sub.auth,
-          },
-          {
-            title: message.title,
-            body,
-            url,
-            icon: "/logo192.png",
-            // Unique tag per baby to prevent notifications from different babies replacing each other
-            tag: `baby-update-${args.publicId}-${args.status}`,
-          },
+    let cursor: string | null = null;
+    let successCount = 0;
+    let failureCount = 0;
+    for (;;) {
+      const subscriptions: PaginationResult<Doc<"pushSubscriptions">> = await ctx.runQuery(
+        internal.pushSubscriptions.getSubscriptionsPage,
+        {
+          babyId: args.babyId,
+          paginationOpts: { numItems: 100, cursor },
+        },
+      );
+      const results = await Promise.allSettled(
+        subscriptions.page.map((subscription) =>
+          sendNotificationToSubscription(
+            ctx,
+            {
+              endpoint: subscription.endpoint,
+              p256dh: subscription.p256dh,
+              auth: subscription.auth,
+            },
+            {
+              title: message.title,
+              body,
+              url,
+              icon: "/logo192.png",
+              // Unique tag per baby to prevent notifications from different babies replacing each other
+              tag: `baby-update-${args.publicId}-${args.status}`,
+            },
+          ),
         ),
-      ),
-    );
-
-    const successCount = results.filter((r) => r.status === "fulfilled" && r.value === true).length;
-    const failureCount = results.length - successCount;
+      );
+      const pageSuccessCount = results.filter(
+        (result) => result.status === "fulfilled" && result.value === true,
+      ).length;
+      successCount += pageSuccessCount;
+      failureCount += results.length - pageSuccessCount;
+      if (subscriptions.isDone) break;
+      cursor = subscriptions.continueCursor;
+    }
 
     console.log(`Sent notifications: ${successCount} succeeded, ${failureCount} failed`);
 

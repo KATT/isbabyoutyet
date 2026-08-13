@@ -2,11 +2,12 @@ import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { findActiveCoParent, requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { toBabyDto } from "./babyDto";
 import { isActive, softDeletePatch } from "./softDelete";
 
 function normalizeEmail(email: string) {
@@ -46,8 +47,9 @@ async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string)
 async function findActiveInvite(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">, email: string) {
   const invites = await ctx.db
     .query("babyCoParentInvites")
-    .withIndex("by_babyId_email", (q) => q.eq("babyId", babyId).eq("email", email))
-    .collect();
+    .withIndex("by_babyId_and_email", (q) => q.eq("babyId", babyId).eq("email", email))
+    .order("desc")
+    .take(32);
   return invites.find(isActive) ?? null;
 }
 
@@ -55,7 +57,8 @@ async function listActiveCoParents(ctx: QueryCtx | MutationCtx, babyId: Id<"baby
   const rows = await ctx.db
     .query("babyCoParents")
     .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
-    .collect();
+    .order("desc")
+    .take(100);
   return rows.filter(isActive);
 }
 
@@ -63,7 +66,8 @@ async function listActiveInvites(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">
   const rows = await ctx.db
     .query("babyCoParentInvites")
     .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
-    .collect();
+    .order("desc")
+    .take(100);
   return rows.filter(isActive);
 }
 
@@ -85,9 +89,7 @@ export const myAccess = query({
       return { isOwner: false, isCoParent: false, canManage: false };
     }
 
-    const isOwner =
-      baby.ownerTokenIdentifier === caller.tokenIdentifier ||
-      (baby.ownerTokenIdentifier === undefined && baby.userId === caller.authUserId);
+    const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
     const isCoParent = !isOwner && (await findActiveCoParent(ctx, args.babyId, caller)) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
@@ -260,7 +262,8 @@ export const claimPendingInvites = mutation({
     const invites = await ctx.db
       .query("babyCoParentInvites")
       .withIndex("by_email", (q) => q.eq("email", email))
-      .collect();
+      .order("desc")
+      .take(100);
 
     let claimed = 0;
     for (const invite of invites) {
@@ -273,9 +276,7 @@ export const claimPendingInvites = mutation({
       }
 
       // Never make the owner a co-parent of their own page
-      const isOwner =
-        baby.ownerTokenIdentifier === caller.tokenIdentifier ||
-        (baby.ownerTokenIdentifier === undefined && baby.userId === caller.authUserId);
+      const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
       if (isOwner) {
         await ctx.db.patch(invite._id, softDeletePatch());
         continue;
@@ -307,38 +308,32 @@ export const claimPendingInvites = mutation({
 export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
   const owned = await ctx.db
     .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", identity.authUserId))
+    .withIndex("by_ownerTokenIdentifier", (q) =>
+      q.eq("ownerTokenIdentifier", identity.tokenIdentifier),
+    )
     .order("desc")
-    .collect();
+    .take(100);
 
   const memberships = await ctx.db
     .query("babyCoParents")
-    .withIndex("by_userId", (q) => q.eq("userId", identity.authUserId))
-    .collect();
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+    .order("desc")
+    .take(100);
 
-  const shared: Array<Doc<"baby"> & { role: "owner" | "coParent" }> = [];
+  const shared: Array<ReturnType<typeof toBabyDto> & { role: "owner" | "coParent" }> = [];
   const seen = new Set<string>();
 
-  for (const baby of owned.filter(
-    (row) =>
-      isActive(row) &&
-      (row.ownerTokenIdentifier === undefined ||
-        row.ownerTokenIdentifier === identity.tokenIdentifier),
-  )) {
+  for (const baby of owned.filter(isActive)) {
     seen.add(baby._id);
-    shared.push({ ...baby, role: "owner" });
+    shared.push({ ...toBabyDto(baby), role: "owner" });
   }
 
-  for (const membership of memberships.filter(
-    (row) =>
-      isActive(row) &&
-      (row.tokenIdentifier === undefined || row.tokenIdentifier === identity.tokenIdentifier),
-  )) {
+  for (const membership of memberships.filter(isActive)) {
     if (seen.has(membership.babyId)) continue;
     const baby = await ctx.db.get(membership.babyId);
     if (!baby || !isActive(baby)) continue;
     seen.add(baby._id);
-    shared.push({ ...baby, role: "coParent" });
+    shared.push({ ...toBabyDto(baby), role: "coParent" });
   }
 
   // Newest first across both sources

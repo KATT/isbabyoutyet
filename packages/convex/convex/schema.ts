@@ -25,11 +25,8 @@ export default defineSchema({
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
-    .index("by_user", ["userId"])
-    .index("by_ownerTokenIdentifier", {
-      fields: ["ownerTokenIdentifier"],
-      staged: true,
-    })
+    .index("by_userId", ["userId"])
+    .index("by_ownerTokenIdentifier", ["ownerTokenIdentifier"])
     .index("by_publicId", ["publicId"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
@@ -37,10 +34,7 @@ export default defineSchema({
     locale: supportedLocaleValidator,
   })
     .index("by_userId", ["userId"])
-    .index("by_tokenIdentifier", {
-      fields: ["tokenIdentifier"],
-      staged: true,
-    }),
+    .index("by_tokenIdentifier", ["tokenIdentifier"]),
   languageRequests: defineTable({
     userId: v.string(), // Better Auth user ID
     requestedLocale: v.string(), // Free-form language name or BCP 47 tag
@@ -61,7 +55,7 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
-    .index("by_babyId_endpoint", ["babyId", "endpoint"]),
+    .index("by_babyId_and_endpoint", ["babyId", "endpoint"]),
   scheduledNotifications: defineTable({
     babyId: v.id("baby"), // Reference to the baby
     scheduledId: v.optional(v.id("_scheduled_functions")), // The Convex scheduler job ID (set after scheduling)
@@ -77,10 +71,7 @@ export default defineSchema({
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])
-    .index("by_babyId_and_status", {
-      fields: ["babyId", "status"],
-      staged: true,
-    })
+    .index("by_babyId_and_status", ["babyId", "status"])
     .index("by_scheduledId", ["scheduledId"]),
   encouragements: defineTable({
     babyId: v.id("baby"), // Reference to the baby
@@ -108,7 +99,7 @@ export default defineSchema({
     postedAt: v.number(), // ms epoch; feed sort key (when posted/announced)
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
-  }).index("by_babyId_postedAt", ["babyId", "postedAt"]),
+  }).index("by_babyId_and_postedAt", ["babyId", "postedAt"]),
   // Owner-posted feed content: a message and/or a photo, optionally marking a
   // milestone. Each photo change is its own row, so old photos are never lost.
   updates: defineTable({
@@ -136,7 +127,7 @@ export default defineSchema({
     .index("by_babyId", ["babyId"])
     // Milestone lookups (one row per marked stage) without scanning all of a
     // baby's updates — used on every post/redate/unmark and by migrations
-    .index("by_babyId_milestone", ["babyId", "milestone"])
+    .index("by_babyId_and_milestone", ["babyId", "milestone"])
     .index("by_timelineItemId", ["timelineItemId"]),
   // Per-user first-run guided tour progress. One row per user.
   userOnboarding: defineTable({
@@ -151,11 +142,8 @@ export default defineSchema({
     /** Checklist collapsed to a small chip */
     minimized: v.boolean(),
   })
-    .index("by_tokenIdentifier", {
-      fields: ["tokenIdentifier"],
-      staged: true,
-    })
-    .index("by_user", ["userId"]),
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_userId", ["userId"]),
   // Co-parents authorized to manage a baby page (not including the owner).
   babyCoParents: defineTable({
     babyId: v.id("baby"),
@@ -169,15 +157,9 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_userId", ["userId"])
-    .index("by_tokenIdentifier", {
-      fields: ["tokenIdentifier"],
-      staged: true,
-    })
-    .index("by_babyId_and_tokenIdentifier", {
-      fields: ["babyId", "tokenIdentifier"],
-      staged: true,
-    })
-    .index("by_babyId_userId", ["babyId", "userId"]),
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_babyId_and_tokenIdentifier", ["babyId", "tokenIdentifier"])
+    .index("by_babyId_and_userId", ["babyId", "userId"]),
   // Pending co-parent invites for emails that do not yet have an account.
   babyCoParentInvites: defineTable({
     babyId: v.id("baby"),
@@ -188,5 +170,5 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_email", ["email"])
-    .index("by_babyId_email", ["babyId", "email"]),
+    .index("by_babyId_and_email", ["babyId", "email"]),
 });

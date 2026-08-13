@@ -17,10 +17,10 @@ async function requireIdentity(ctx: Pick<QueryCtx, "auth">) {
   return identity;
 }
 
-async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
+async function getProfileHandler(ctx: Pick<QueryCtx, "db">, tokenIdentifier: string) {
   return await ctx.db
     .query("userProfiles")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", tokenIdentifier))
     .unique();
 }
 
@@ -33,10 +33,7 @@ export const get = query({
       return null;
     }
     const caller = appIdentity(identity);
-    const profile = await getProfileHandler(ctx, caller.authUserId);
-    if (profile?.tokenIdentifier && profile.tokenIdentifier !== caller.tokenIdentifier) {
-      return null;
-    }
+    const profile = await getProfileHandler(ctx, caller.tokenIdentifier);
     return profile ? { locale: resolveSupportedLocale(profile.locale) } : null;
   },
 });
@@ -49,11 +46,8 @@ export const ensure = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const caller = appIdentity(identity);
-    const existing = await getProfileHandler(ctx, caller.authUserId);
+    const existing = await getProfileHandler(ctx, caller.tokenIdentifier);
     if (existing) {
-      if (existing.tokenIdentifier === undefined) {
-        await ctx.db.patch(existing._id, { tokenIdentifier: caller.tokenIdentifier });
-      }
       return { locale: resolveSupportedLocale(existing.locale) };
     }
 
@@ -75,7 +69,7 @@ export const updateLocale = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const caller = appIdentity(identity);
-    const existing = await getProfileHandler(ctx, caller.authUserId);
+    const existing = await getProfileHandler(ctx, caller.tokenIdentifier);
     if (existing) {
       await ctx.db.patch(existing._id, {
         locale: args.locale,

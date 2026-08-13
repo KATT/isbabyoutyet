@@ -64,11 +64,12 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
   expect(baby).toMatchObject({
     name: HOMEPAGE_DEMO_BABY.name,
     publicId: HOMEPAGE_DEMO_BABY.publicId,
-    userId: HOMEPAGE_DEMO_BABY.ownerUserId,
     theme: HOMEPAGE_DEMO_BABY.theme,
     locale: "en-GB",
     demo: true,
   });
+  expect(baby).not.toHaveProperty("userId");
+  expect(baby).not.toHaveProperty("ownerTokenIdentifier");
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 
   const now = Date.now();
@@ -300,7 +301,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
     return (
       await ctx.db
         .query("timelineItems")
-        .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", realBabyId))
+        .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", realBabyId))
         .collect()
     ).length;
   });

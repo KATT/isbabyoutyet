@@ -164,7 +164,7 @@ async function clearFeedBatchForBaby(
 
   const items = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", babyId))
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", babyId))
     .take(CLEAR_BATCH_SIZE);
 
   for (const item of items) {
