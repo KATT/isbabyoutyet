@@ -481,17 +481,17 @@ export const runTableMigrations = migrations.runner([
 ]);
 
 const TABLE_MIGRATION_NAMES = [
-  "generateThumbnailsForExistingPhotos",
-  "backfillBabyTimeline",
-  "backfillEncouragementTimeline",
-  "separateMilestoneOccurredAt",
-  "clearLegacyStageMessages",
-  "backfillUpdatePostedByUserId",
-  "backfillBabyOwnerTokenIdentifier",
-  "backfillProfileTokenIdentifier",
-  "backfillOnboardingTokenIdentifier",
-  "backfillCoParentTokenIdentifier",
-  "sanitizeOnboardingSteps",
+  "migrations:generateThumbnailsForExistingPhotos",
+  "migrations:backfillBabyTimeline",
+  "migrations:backfillEncouragementTimeline",
+  "migrations:separateMilestoneOccurredAt",
+  "migrations:clearLegacyStageMessages",
+  "migrations:backfillUpdatePostedByUserId",
+  "migrations:backfillBabyOwnerTokenIdentifier",
+  "migrations:backfillProfileTokenIdentifier",
+  "migrations:backfillOnboardingTokenIdentifier",
+  "migrations:backfillCoParentTokenIdentifier",
+  "migrations:sanitizeOnboardingSteps",
 ] as const;
 
 export const deploymentStatus = internalQuery({
