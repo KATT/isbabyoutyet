@@ -46,15 +46,21 @@ function renderDevBar() {
   });
 }
 
+async function expandDevBar() {
+  fireEvent.click(screen.getByRole("button", { name: /expand developer shortcuts/i }));
+  await vi.waitFor(() => {
+    expect(screen.getByRole("complementary", { name: /developer shortcuts/i })).toBeTruthy();
+  });
+}
+
 test("starts collapsed and expands to show seeded baby shortcuts", async () => {
-  window.localStorage.removeItem("isbabyoutyet:dev-bar-expanded");
   mocks.pathname = "/dashboard";
   mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
 
   expect(screen.queryByRole("link", { name: /not yet/i })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: /expand developer shortcuts/i }));
+  await expandDevBar();
 
   for (const baby of DEMO_BABIES) {
     const link = screen.getByRole("link", { name: new RegExp(baby.label, "i") });
@@ -78,32 +84,56 @@ test("hides entirely when demo login is disabled", async () => {
 });
 
 test("marks the current baby link as the active page", async () => {
-  window.localStorage.setItem("isbabyoutyet:dev-bar-expanded", "1");
   mocks.pathname = "/baby/baby-in-labor";
   mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
+  await expandDevBar();
 
-  await vi.waitFor(() => {
-    expect(screen.getByRole("link", { name: /labour started/i }).getAttribute("aria-current")).toBe(
-      "page",
-    );
-  });
+  expect(screen.getByRole("link", { name: /labour started/i }).getAttribute("aria-current")).toBe(
+    "page",
+  );
   expect(screen.getByRole("link", { name: /not yet/i }).getAttribute("aria-current")).toBeNull();
 });
 
-test("collapsing persists the preference", async () => {
-  window.localStorage.setItem("isbabyoutyet:dev-bar-expanded", "1");
+test("closes when the route changes", async () => {
+  mocks.pathname = "/dashboard";
+  mocks.hasDemoLogin = true;
+
+  await using view = renderDevBar();
+  await expandDevBar();
+
+  mocks.pathname = "/baby/baby-waiting";
+  view.rerender(<DevBar />);
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("complementary", { name: /developer shortcuts/i })).toBeNull();
+  });
+  expect(screen.getByRole("button", { name: /expand developer shortcuts/i })).toBeTruthy();
+});
+
+test("closes when clicking outside the bar", async () => {
   mocks.pathname = "/";
   mocks.hasDemoLogin = true;
 
   await using _view = renderDevBar();
+  await expandDevBar();
+
+  fireEvent.pointerDown(document.body);
 
   await vi.waitFor(() => {
-    expect(screen.getByRole("complementary", { name: /developer shortcuts/i })).toBeTruthy();
+    expect(screen.queryByRole("complementary", { name: /developer shortcuts/i })).toBeNull();
   });
+});
 
-  fireEvent.click(screen.getByRole("button", { name: /collapse developer shortcuts/i }));
-  expect(window.localStorage.getItem("isbabyoutyet:dev-bar-expanded")).toBe("0");
-  expect(screen.queryByRole("complementary", { name: /developer shortcuts/i })).toBeNull();
+test("stays open when clicking inside the bar", async () => {
+  mocks.pathname = "/";
+  mocks.hasDemoLogin = true;
+
+  await using _view = renderDevBar();
+  await expandDevBar();
+
+  fireEvent.pointerDown(screen.getByRole("complementary", { name: /developer shortcuts/i }));
+
+  expect(screen.getByRole("complementary", { name: /developer shortcuts/i })).toBeTruthy();
 });

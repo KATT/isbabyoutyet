@@ -10,26 +10,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { CaretDown, CaretUp, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import * as React from "react";
-import { useEffect, useState } from "react";
-
-const STORAGE_KEY = "isbabyoutyet:dev-bar-expanded";
-
-function readExpandedPreference() {
-  if (typeof window === "undefined") return false;
-  try {
-    return window.localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function writeExpandedPreference(expanded: boolean) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, expanded ? "1" : "0");
-  } catch {
-    // Ignore private-mode / quota failures — preference is best-effort.
-  }
-}
+import { useEffect, useRef, useState } from "react";
 
 function activeBabyPublicId(pathname: string) {
   const match = pathname.match(/^\/baby\/([^/]+)/);
@@ -49,22 +30,37 @@ function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const currentPublicId = activeBabyPublicId(pathname);
   const [expanded, setExpanded] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setExpanded(readExpandedPreference());
-  }, []);
+    setExpanded(false);
+  }, [pathname]);
 
-  const setExpandedAndPersist = (next: boolean) => {
-    setExpanded(next);
-    writeExpandedPreference(next);
-  };
+  useEffect(() => {
+    if (!expanded) return;
+
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (rootRef.current?.contains(target)) return;
+      setExpanded(false);
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [expanded]);
 
   if (!expanded) {
     return (
-      <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+      <div
+        ref={rootRef}
+        className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4"
+      >
         <button
           type="button"
-          onClick={() => setExpandedAndPersist(true)}
+          onClick={() => setExpanded(true)}
           className={cn(
             "pointer-events-auto flex items-center gap-2 rounded-full border-2 border-border",
             "bg-background/90 px-3 py-1.5 text-xs font-extrabold tracking-tight shadow-sm",
@@ -85,7 +81,10 @@ function DevBarPanel() {
   }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+    <div
+      ref={rootRef}
+      className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4"
+    >
       <aside
         id="dev-bar-panel"
         className={cn(
@@ -115,7 +114,7 @@ function DevBarPanel() {
             aria-label="Collapse developer shortcuts"
             aria-expanded={true}
             aria-controls="dev-bar-panel"
-            onClick={() => setExpandedAndPersist(false)}
+            onClick={() => setExpanded(false)}
           >
             <CaretUp />
           </Button>
