@@ -12,6 +12,7 @@
     "i18n:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy cookie preferredLanguage baseLocale --output-structure message-modules --emit-ts-declarations --silent",
     "pretypecheck": "pnpm i18n:compile",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "lint": "oxlint",
     "lint-fix": "oxlint --fix",
     "format": "oxfmt && oxlint --fix",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@edge-runtime/vm": "^5.0.0",
     "@inlang/paraglide-js": "^2.23.2",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "catalog:",
     "@tanstack/devtools-vite": "^0.8.3",
     "@testing-library/dom": "^10.4.1",
