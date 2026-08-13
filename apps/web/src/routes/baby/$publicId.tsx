@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dia
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -49,14 +49,21 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
-    // Prefetch so the status card doesn't flash without its message
-    const latestUpdate = await opts.context.convexClient.query(api.timeline.latestUpdate, {
-      babyId: baby._id,
-    });
+    // Prefetch so the status card and feed don't flash empty/loading
+    const [latestUpdate, firstPage] = await Promise.all([
+      opts.context.convexClient.query(api.timeline.latestUpdate, {
+        babyId: baby._id,
+      }),
+      opts.context.convexClient.query(api.timeline.listByBaby, {
+        babyId: baby._id,
+        paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+      }),
+    ]);
     return {
       baby,
       vapidPublicKey,
       latestUpdate,
+      firstPage,
     };
   },
   head: (opts) => {
@@ -287,6 +294,7 @@ function BabyPage() {
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
+                initialPage={loaderData.firstPage}
               />
             </section>
 

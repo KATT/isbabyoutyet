@@ -51,7 +51,7 @@ import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
 
-const PAGE_SIZE = 20;
+export const TIMELINE_PAGE_SIZE = 20;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
@@ -842,11 +842,15 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 // --- Feed ---
 
+type TimelineFirstPage = FunctionReturnType<typeof api.timeline.listByBaby>;
+
 type TimelineFeedProps = {
   babyId: Id<"baby">;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
+  /** Prefetched first page from the route loader so the feed can SSR without a spinner. */
+  initialPage?: TimelineFirstPage;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
@@ -856,13 +860,16 @@ export function TimelineFeed(props: TimelineFeedProps) {
     // visitorId only marks the caller's own encouragements (isMine); the
     // credential itself is never returned by the query
     { babyId: props.babyId, visitorId: currentVisitorId || undefined },
-    { initialNumItems: PAGE_SIZE },
+    { initialNumItems: TIMELINE_PAGE_SIZE },
   );
   const removeUpdate = useMutation(api.updates.remove);
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const liveFirstPageReady = status !== "LoadingFirstPage";
+  const items = liveFirstPageReady ? results : (props.initialPage?.page ?? results);
 
   // Get visitor ID on client side
   useEffect(() => {
@@ -876,7 +883,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          loadMore(PAGE_SIZE);
+          loadMore(TIMELINE_PAGE_SIZE);
         }
       },
       { threshold: 0.1 },
@@ -938,7 +945,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     }
   };
 
-  if (status === "LoadingFirstPage") {
+  if (status === "LoadingFirstPage" && !props.initialPage) {
     return (
       <div className="py-8 text-center text-muted-foreground">
         <Spinner className="mx-auto mb-2" />
@@ -947,7 +954,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     );
   }
 
-  if (results.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
@@ -977,7 +984,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
       </div>
 
       <div className="space-y-4">
-        {results.map((item) =>
+        {items.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
               key={item._id}
