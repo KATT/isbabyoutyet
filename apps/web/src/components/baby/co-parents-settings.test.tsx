@@ -1,7 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import {
   CoParentsSettings,
@@ -37,19 +37,17 @@ function unreachableConvexClient() {
 
 test("CoParentsSettings wires useQuery/useMutation into the view", async () => {
   const client = unreachableConvexClient();
-  await using _client = makeResource(client, (current) => {
-    void current.close();
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
   });
-  await using view = makeResource(
-    render(
-      <ConvexProvider client={client}>
-        <CoParentsSettings babyId={babyId} isOwner={true} />
-      </ConvexProvider>,
-    ),
-    (current) => {
-      current.unmount();
-    },
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <CoParentsSettings babyId={babyId} isOwner={true} />
+    </ConvexProvider>,
   );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
   expect(view.getByText(/Loading co-parents/i)).toBeTruthy();
 });
 
