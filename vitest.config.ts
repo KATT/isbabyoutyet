@@ -8,6 +8,9 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
 export default defineConfig({
   test: {
     projects: ["packages/convex", webUnitProject],
+    experimental: {
+      fsModuleCache: true,
+    },
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
