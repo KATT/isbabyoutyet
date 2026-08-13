@@ -22,7 +22,11 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
     asAlice.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
   ).rejects.toThrow("Not authorized");
   await expect(
-    asAlice.query(api.admin.listBabies, { sortBy: "created", paginationOpts: FIRST_PAGE }),
+    asAlice.query(api.admin.listBabies, {
+      sortBy: "created",
+      sortOrder: "desc",
+      paginationOpts: FIRST_PAGE,
+    }),
   ).rejects.toThrow("Not authorized");
   await expect(
     t.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
@@ -128,6 +132,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
 
   const byCreated = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
+    sortOrder: "desc",
     paginationOpts: FIRST_PAGE,
   });
   expect(byCreated.page.some((row) => row.publicId === "baby-deleted")).toBe(false);
@@ -138,6 +143,15 @@ test("admins can list babies sorted by created or updated with manager emails", 
     expect(byCreated.page[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated.page[i]!.createdAt);
   }
 
+  const byCreatedAsc = await asDemo.query(api.admin.listBabies, {
+    sortBy: "created",
+    sortOrder: "asc",
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(byCreatedAsc.page.map((row) => row._id)).toEqual(
+    [...byCreated.page].reverse().map((row) => row._id),
+  );
+
   const waitingRow = byCreated.page.find((row) => row.publicId === "baby-waiting");
   expect(waitingRow?.managerEmails).toEqual([DEMO_USER.email, "coparent@example.com"]);
 
@@ -147,6 +161,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
 
   const byUpdated = await asDemo.query(api.admin.listBabies, {
     sortBy: "updated",
+    sortOrder: "desc",
     paginationOpts: FIRST_PAGE,
   });
   expect(byUpdated.page.length).toBe(byCreated.page.length);
@@ -157,12 +172,14 @@ test("admins can list babies sorted by created or updated with manager emails", 
   // Tiny pages prove continueCursor pagination works.
   const page1 = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
+    sortOrder: "desc",
     paginationOpts: { numItems: 2, cursor: null },
   });
   expect(page1.page).toHaveLength(2);
   expect(page1.isDone).toBe(false);
   const page2 = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
+    sortOrder: "desc",
     paginationOpts: { numItems: 2, cursor: page1.continueCursor },
   });
   expect(page2.page).toHaveLength(2);
@@ -171,6 +188,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
   await expect(
     asDemo.query(api.admin.listBabies, {
       sortBy: "created",
+      sortOrder: "desc",
       paginationOpts: { numItems: 2, cursor: "nope" },
     }),
   ).rejects.toThrow("Invalid pagination cursor");

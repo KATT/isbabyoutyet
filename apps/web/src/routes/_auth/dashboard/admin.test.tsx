@@ -11,12 +11,25 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
+  Link: (
+    props: React.ComponentProps<"a"> & {
+      to: string | undefined;
+      search: Record<string, string> | undefined;
+    },
+  ) => {
+    const { to, search, children, ...rest } = props;
+    const query = search
+      ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
+      : "";
+    return (
+      <a href={`${typeof to === "string" ? to : "#"}${query}`} {...rest}>
+        {children}
+      </a>
+    );
+  },
   createFileRoute: () => (opts: Record<string, unknown>) => ({
     ...opts,
-    useSearch: () => ({ tab: "babies", sort: "updated" }),
+    useSearch: () => ({ tab: "babies", sort: "updated", order: "desc" }),
   }),
   redirect: vi.fn<() => never>(),
   useNavigate: () => mocks.navigate,
@@ -35,8 +48,14 @@ vi.mock("convex/react", () => ({
   }),
 }));
 
-const { AdminDashboardPage, BabiesSection, LanguageRequestsSection, formatWhen, statusLabel } =
-  await import("@/routes/_auth/dashboard/admin");
+const {
+  AdminDashboardPage,
+  BabiesSection,
+  LanguageRequestsSection,
+  formatWhen,
+  nextSortSearch,
+  statusLabel,
+} = await import("@/routes/_auth/dashboard/admin");
 
 function renderResource(ui: ReactElement) {
   const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
@@ -67,6 +86,18 @@ test("statusLabel covers every baby status", () => {
 
 test("formatWhen returns a locale-aware timestamp", () => {
   expect(formatWhen(Date.UTC(2026, 0, 15, 12, 30), "en-GB")).toMatch(/15/);
+});
+
+test("nextSortSearch toggles order on the active column and defaults desc on switch", () => {
+  expect(
+    nextSortSearch({ currentSort: "updated", currentOrder: "desc", clicked: "updated" }),
+  ).toEqual({ sort: "updated", order: "asc" });
+  expect(
+    nextSortSearch({ currentSort: "updated", currentOrder: "asc", clicked: "updated" }),
+  ).toEqual({ sort: "updated", order: "desc" });
+  expect(
+    nextSortSearch({ currentSort: "updated", currentOrder: "asc", clicked: "created" }),
+  ).toEqual({ sort: "created", order: "desc" });
 });
 
 test("language requests section shows empty, loading, and rows", async () => {
@@ -111,13 +142,13 @@ test("language requests section shows empty, loading, and rows", async () => {
   expect(filled.getByText("user-2")).toBeTruthy();
 });
 
-test("babies section sorts via table headers", async () => {
-  const onSortByChange = vi.fn<(sortBy: "created" | "updated") => void>();
+test("babies section sorts via clickable header links", async () => {
   await using view = renderResource(
     <BabiesSection
-      sortBy="updated"
+      sort="updated"
+      order="desc"
+      tab="babies"
       status="Exhausted"
-      onSortByChange={onSortByChange}
       onLoadMore={() => undefined}
       babies={[
         sampleBaby,
@@ -140,19 +171,22 @@ test("babies section sorts via table headers", async () => {
   expect(view.getByText("owner@example.com, co@example.com")).toBeTruthy();
   expect(view.getByText("Baby born")).toBeTruthy();
 
-  fireEvent.click(view.getByRole("button", { name: "Created" }));
-  expect(onSortByChange).toHaveBeenCalledWith("created");
-  fireEvent.click(view.getByRole("button", { name: "Updated" }));
-  expect(onSortByChange).toHaveBeenCalledWith("updated");
+  const created = view.getByRole("link", { name: "Created" });
+  const updated = view.getByRole("link", { name: "Updated" });
+  expect(created.getAttribute("href")).toContain("sort=created");
+  expect(created.getAttribute("href")).toContain("order=desc");
+  expect(updated.getAttribute("href")).toContain("sort=updated");
+  expect(updated.getAttribute("href")).toContain("order=asc");
 });
 
 test("babies section keeps previous rows while a sort refresh is loading", async () => {
   const first = render(
     <LocaleProvider locale="en-GB">
       <BabiesSection
-        sortBy="updated"
+        sort="updated"
+        order="desc"
+        tab="babies"
         status="Exhausted"
-        onSortByChange={() => undefined}
         onLoadMore={() => undefined}
         babies={[sampleBaby]}
       />
@@ -163,9 +197,10 @@ test("babies section keeps previous rows while a sort refresh is loading", async
   first.rerender(
     <LocaleProvider locale="en-GB">
       <BabiesSection
-        sortBy="created"
+        sort="created"
+        order="asc"
+        tab="babies"
         status="LoadingFirstPage"
-        onSortByChange={() => undefined}
         onLoadMore={() => undefined}
         babies={[]}
       />
@@ -182,8 +217,9 @@ test("babies section shows a spinner on first load and while loading more", asyn
     <BabiesSection
       babies={[]}
       status="LoadingFirstPage"
-      sortBy="created"
-      onSortByChange={() => undefined}
+      sort="created"
+      order="desc"
+      tab="babies"
       onLoadMore={() => undefined}
     />,
   );
@@ -191,9 +227,10 @@ test("babies section shows a spinner on first load and while loading more", asyn
 
   await using loadingMore = renderResource(
     <BabiesSection
-      sortBy="created"
+      sort="created"
+      order="desc"
+      tab="babies"
       status="LoadingMore"
-      onSortByChange={() => undefined}
       onLoadMore={() => undefined}
       babies={[{ ...sampleBaby, demo: false, managerEmails: [] }]}
     />,
@@ -254,9 +291,10 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 
   await using _view = renderResource(
     <BabiesSection
-      sortBy="updated"
+      sort="updated"
+      order="desc"
+      tab="babies"
       status="CanLoadMore"
-      onSortByChange={() => undefined}
       onLoadMore={onLoadMore}
       babies={[sampleBaby]}
     />,
@@ -267,7 +305,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
   globalThis.IntersectionObserver = OriginalObserver;
 });
 
-test("admin dashboard page wires tabs and sort into the URL search", async () => {
+test("admin dashboard page wires tabs into the URL search", async () => {
   await using view = renderResource(<AdminDashboardPage />);
   expect(view.getByText("Admin dashboard")).toBeTruthy();
   expect(view.getByRole("tab", { name: "All babies" })).toBeTruthy();

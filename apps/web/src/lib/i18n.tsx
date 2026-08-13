@@ -129,6 +129,8 @@ const enGB = {
   "Back to Dashboard": "Back to Dashboard",
   Admin: "Admin",
   "Admin dashboard": "Admin dashboard",
+  "Review babies and language requests across the platform.":
+    "Review babies and language requests across the platform.",
   "Requested languages": "Requested languages",
   "All babies": "All babies",
   "Sort by created": "Sort by created",
@@ -623,6 +625,8 @@ const sv: Record<TranslationKey, string> = {
   "Back to Dashboard": "Tillbaka till översikten",
   Admin: "Admin",
   "Admin dashboard": "Adminöversikt",
+  "Review babies and language requests across the platform.":
+    "Granska bäbisar och språkförfrågningar på plattformen.",
   "Requested languages": "Begärda språk",
   "All babies": "Alla bäbisar",
   "Sort by created": "Sortera efter skapad",
@@ -1098,6 +1102,8 @@ const es: Record<TranslationKey, string> = {
   "Back to Dashboard": "Volver al panel",
   Admin: "Admin",
   "Admin dashboard": "Panel de administración",
+  "Review babies and language requests across the platform.":
+    "Revisa bebés y solicitudes de idioma en la plataforma.",
   "Requested languages": "Idiomas solicitados",
   "All babies": "Todos los bebés",
   "Sort by created": "Ordenar por creación",
@@ -1579,6 +1585,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Back to Dashboard": "Voltar ao painel",
   Admin: "Admin",
   "Admin dashboard": "Painel de administração",
+  "Review babies and language requests across the platform.":
+    "Revise bebês e pedidos de idioma na plataforma.",
   "Requested languages": "Idiomas solicitados",
   "All babies": "Todos os bebês",
   "Sort by created": "Ordenar por criação",

@@ -10,6 +10,7 @@ import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
+const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
 
 const languageRequestRowValidator = v.object({
   _id: v.id("languageRequests"),
@@ -145,6 +146,7 @@ export const listLanguageRequests = query({
 export const listBabies = query({
   args: {
     sortBy: sortByValidator,
+    sortOrder: sortOrderValidator,
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -175,7 +177,8 @@ export const listBabies = query({
     }
 
     const key = args.sortBy === "created" ? "createdAt" : "updatedAt";
-    rows.sort((a, b) => b[key] - a[key]);
+    const direction = args.sortOrder === "asc" ? 1 : -1;
+    rows.sort((a, b) => (a[key] - b[key]) * direction);
     return paginateSorted(rows, args.paginationOpts);
   },
 });
