@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
+import "@/lib/paraglide-setup";
 import { getLocale } from "@/paraglide/runtime";
 import {
   DEFAULT_LOCALE,
@@ -8,7 +9,9 @@ import {
 } from "@workspace/convex/src/i18n";
 
 /**
- * Paraglide owns request-safe locale detection and cookie persistence. This
+ * Paraglide owns request-safe locale detection. Cookie persistence is only for
+ * an explicit profile language choice (see paraglide-setup) — not the first
+ * browser sniff — so Accept-Language / Locale Switcher keep working. This
  * catalog accepts an explicit locale because a public baby page can override
  * the visitor's cookie without changing that visitor's own preference.
  */
@@ -347,6 +350,7 @@ const enGB = {
   "Failed to send encouragement": "Failed to send encouragement",
   "Shared with you": "Shared with you",
   "Due {{date}}": "Due {{date}}",
+  "Born {{date}}": "Born {{date}}",
   Your: "Your",
   babies: "babies",
   "Add a": "Add a",
@@ -773,6 +777,7 @@ const sv: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Kunde inte skicka hälsningen",
   "Shared with you": "Delad med dig",
   "Due {{date}}": "Beräknad {{date}}",
+  "Born {{date}}": "Född {{date}}",
   Your: "Dina",
   babies: "bebisar",
   "Add a": "Lägg till en",
@@ -1183,6 +1188,7 @@ const es: Record<TranslationKey, string> = {
   "Failed to send encouragement": "No se pudo enviar el mensaje de ánimo",
   "Shared with you": "Compartida contigo",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nació el {{date}}",
   Your: "Tus",
   babies: "bebés",
   "Add a": "Añadir un",
@@ -1596,6 +1602,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Não foi possível enviar a mensagem de carinho",
   "Shared with you": "Compartilhada com você",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nasceu em {{date}}",
   Your: "Seus",
   babies: "bebês",
   "Add a": "Adicionar um",

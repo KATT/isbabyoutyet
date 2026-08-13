@@ -6,6 +6,7 @@ import {
   HOMEPAGE_DEMO_BABIES,
   HOMEPAGE_DEMO_OWNER_USER_ID,
   HOMEPAGE_DEMO_THEME,
+  isHomepageDemoPublicId,
 } from "../src/seedCredentials";
 import { HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO, homepageDemoFeedFor } from "../src/homepageDemoFeed";
 import type { Milestone } from "../src/types";
@@ -44,11 +45,36 @@ function storageIdsToKeep(photos: DemoPhotos) {
   return keepStorageIds;
 }
 
+/**
+ * Only wipe/patch babies that are explicitly marked demo, or the pre-flag
+ * Juniper-hale row owned by the sentinel homepage-demo userId.
+ */
+function isManagedHomepageDemo(baby: Doc<"baby">) {
+  if (baby.demo === true) return true;
+  return baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID && isHomepageDemoPublicId(baby.publicId);
+}
+
+function refuseNonDemo(publicId: string) {
+  return new Error(
+    `Refusing to overwrite non-demo baby "${publicId}". Homepage seed only touches babies with demo: true.`,
+  );
+}
+
 async function findBabyByPublicId(ctx: MutationCtx, publicId: string) {
   return await ctx.db
     .query("baby")
     .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
     .unique();
+}
+
+async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
+  const baby = await ctx.db.get(babyId);
+  if (!baby || !isManagedHomepageDemo(baby)) {
+    throw new Error(
+      `Refusing to modify baby ${babyId}: not a managed homepage demo (demo: true required).`,
+    );
+  }
+  return baby;
 }
 
 async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLocale) {
@@ -59,10 +85,14 @@ async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLoc
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale,
+    demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(now),
   };
   if (existing) {
+    if (!isManagedHomepageDemo(existing)) {
+      throw refuseNonDemo(demo.publicId);
+    }
     await ctx.db.patch(existing._id, fields);
     return existing._id;
   }
@@ -128,6 +158,8 @@ async function clearFeedBatchForBaby(
   babyId: Id<"baby">,
   keepStorageIds: Set<string>,
 ) {
+  await requireManagedDemoBaby(ctx, babyId);
+
   const items = await ctx.db
     .query("timelineItems")
     .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", babyId))
@@ -146,8 +178,7 @@ async function clearAllFeed(ctx: MutationCtx, babyId: Id<"baby">, keepStorageIds
     if (!result.hasMore) break;
   }
 
-  const baby = await ctx.db.get(babyId);
-  if (!baby) return;
+  const baby = await requireManagedDemoBaby(ctx, babyId);
   await deleteStorageIfExists(ctx, baby.photoId, keepStorageIds);
   await deleteStorageIfExists(ctx, baby.thumbnailId, keepStorageIds);
   await ctx.db.patch(babyId, {
@@ -167,6 +198,8 @@ async function insertFeedDocs(
   ctx: MutationCtx,
   opts: { babyId: Id<"baby">; photos: DemoPhotos; now: number; locale: SupportedLocale },
 ) {
+  await requireManagedDemoBaby(ctx, opts.babyId);
+
   const babyId = opts.babyId;
   const photos = opts.photos;
   const now = opts.now;
@@ -284,6 +317,9 @@ export const insertFeed = internalMutation({
  * fixture story with timestamps relative to now. Does not send push
  * notifications. Call once per locale from the seed script so each baby stays
  * under mutation limits.
+ *
+ * Never touches a baby that is not marked `demo: true` (except grandfathering
+ * the existing sentinel-owned homepage demo publicIds).
  */
 export const refresh = internalMutation({
   args: {
