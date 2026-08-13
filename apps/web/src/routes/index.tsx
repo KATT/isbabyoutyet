@@ -21,12 +21,12 @@ export const Route = createFileRoute("/")({
       "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
     );
     return {
-    meta: [
-      {
+      meta: [
+        {
           title,
-      },
-      {
-        name: "description",
+        },
+        {
+          name: "description",
           content: description,
         },
         {
@@ -44,8 +44,8 @@ export const Route = createFileRoute("/")({
         {
           name: "twitter:description",
           content: description,
-      },
-    ],
+        },
+      ],
       links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
     };
   },
@@ -266,7 +266,7 @@ export function HomePage() {
                   render={<Link to="/dashboard" preload="viewport" />}
                   nativeButton={false}
                 >
-                {t("Go to Dashboard")}
+                  {t("Go to Dashboard")}
                 </Button>
               ) : (
                 <>
@@ -276,7 +276,7 @@ export function HomePage() {
                     render={<Link to="/auth/signup" preload="viewport" />}
                     nativeButton={false}
                   >
-                  {t("Create your page 🎈")}
+                    {t("Create your page 🎈")}
                   </Button>
                   <Button
                     size="lg"
@@ -285,7 +285,7 @@ export function HomePage() {
                     render={<Link to="/auth/login" preload="viewport" />}
                     nativeButton={false}
                   >
-                  {t("Sign in")}
+                    {t("Sign in")}
                   </Button>
                 </>
               )}
