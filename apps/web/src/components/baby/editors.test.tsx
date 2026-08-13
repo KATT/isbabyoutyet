@@ -1,6 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { NameEditor, StatusDateEditor } from "@/components/baby/editors";
+import { DueDateEditor, NameEditor, StatusDateEditor } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
@@ -42,6 +42,22 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));
   // The popover closed after a successful save
   await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
+});
+
+test("due date editor encodes the picker value as a UTC midnight instant", async () => {
+  const onUpdate = vi.fn().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const input = view.getByLabelText("Due date") as HTMLInputElement;
+  expect(input.value).toBe("2026-09-01");
+
+  fireEvent.change(input, { target: { value: "2026-10-15" } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({ dueDate: "2026-10-15T00:00:00.000Z" }),
+  );
 });
 
 test("reopening the editor picks up the latest name without any reset", async () => {

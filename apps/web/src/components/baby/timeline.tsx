@@ -40,7 +40,7 @@ import * as z from "zod";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { BabyData, Milestone } from "@workspace/convex/src/types";
+import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
@@ -49,6 +49,7 @@ import {
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { getVisitorId } from "./encouragements";
 
 const PAGE_SIZE = 20;
@@ -67,33 +68,41 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  * so a whitespace-only message counts as no message (matching the backend).
  * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
  */
-const composerSchema = z
-  .object({
-    message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-    milestone: z.union([
-      z.literal("none"),
-      z.literal("labor_started"),
-      z.literal("gone_to_hospital"),
-      z.literal("born"),
-    ]),
-    occurredAt: z.string(),
-    photo: z.custom<File>().nullable(),
-  })
-  .refine(
-    (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-    { error: "Add a message, a photo, or a milestone to post" },
-  )
-  // Empty = "now". A partially typed/garbled value must block posting.
-  .refine(
-    (draft) =>
-      draft.milestone === "none" ||
-      draft.occurredAt === "" ||
-      !Number.isNaN(Date.parse(draft.occurredAt)),
-    {
-      error: "Pick a valid time — or leave it blank for now",
-      path: ["occurredAt"],
-    },
-  );
+function composerSchema(currentStatus: BabyStatus["type"]) {
+  return z
+    .object({
+      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+      milestone: z.union([
+        z.literal("none"),
+        z.literal("labor_started"),
+        z.literal("gone_to_hospital"),
+        z.literal("born"),
+      ]),
+      occurredAt: optionalHtmlDateTime,
+      photo: z.custom<File>().nullable(),
+    })
+    .refine(
+      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+      { error: "Add a message, a photo, or a milestone to post" },
+    )
+    .refine(
+      (draft) =>
+        draft.milestone === "none" || STATUS_ORDER[draft.milestone] > STATUS_ORDER[currentStatus],
+      {
+        error: "That status has already been marked",
+        path: ["milestone"],
+      },
+    )
+    .transform((draft) => {
+      const milestone = draft.milestone === "none" ? null : draft.milestone;
+      return {
+        message: draft.message,
+        milestone,
+        occurredAt: milestone ? draft.occurredAt : null,
+        photo: draft.photo,
+      };
+    });
+}
 
 const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Heartbeat }> = {
   labor_started: { label: "Labour started", icon: Heartbeat },
@@ -141,12 +150,6 @@ function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
 
-/** Format a date for a `datetime-local` input in the viewer's timezone. */
-function toDatetimeLocalValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
 // --- Owner composer ---
 
 type UpdateComposerProps = {
@@ -168,9 +171,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
+  const schema = useMemo(() => composerSchema(currentStatus.type), [currentStatus.type]);
 
   const form = useZodForm({
-    schema: composerSchema,
+    schema,
+    // RHF re-runs the resolver when this changes (status advanced in another tab)
+    context: currentStatus.type,
     defaultValues: {
       message: "",
       milestone: "none",
@@ -209,7 +215,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     };
   }, [photoPreviewUrl]);
 
-  const canPost = !isPosting && composerSchema.safeParse(draft).success;
+  const canPost = !isPosting && schema.safeParse(draft).success;
 
   const clearPhoto = () => {
     form.setValue("photo", null);
@@ -230,10 +236,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
     form.setValue("photo", file, { shouldDirty: true });
   };
 
-  const handlePost = async (values: z.input<typeof composerSchema>) => {
-    const message = values.message.trim();
-    const milestone = values.milestone === "none" ? null : values.milestone;
-
+  const handlePost = async (values: {
+    message: string;
+    milestone: Milestone | null;
+    occurredAt: number | null;
+    photo: File | null;
+  }) => {
     let photoId: Id<"_storage"> | undefined;
     if (values.photo) {
       const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
@@ -249,16 +257,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
       photoId = uploaded.storageId;
     }
 
-    // A filled event-time means the milestone is backdated; empty means
-    // "it's happening now" (the backend default)
-    const occurredAtMs =
-      milestone && values.occurredAt !== "" ? new Date(values.occurredAt).getTime() : null;
-
     await postUpdate({
       babyId: props.babyId,
-      message: message || undefined,
-      milestone: milestone ?? undefined,
-      occurredAt: occurredAtMs != null && !Number.isNaN(occurredAtMs) ? occurredAtMs : undefined,
+      message: values.message || undefined,
+      milestone: values.milestone ?? undefined,
+      occurredAt: values.occurredAt ?? undefined,
       photoId,
     });
 
@@ -380,7 +383,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={toDatetimeLocalValue(new Date())}
+                              max={htmlDateTimeNow()}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -690,7 +693,7 @@ function EncouragementEditForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onSave(values.message.trim());
+        await props.onSave(values.message);
       }}
     >
       <div className="space-y-2">

@@ -15,7 +15,6 @@ import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/com
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { format, parseISO } from "date-fns";
 import { Clock, Trash } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -26,13 +25,8 @@ import {
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
-import { parseDate, THEME_OPTIONS } from "./utils";
-
-/** Format a date for a `datetime-local` input in the viewer's timezone. */
-function toDatetimeLocalValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
+import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
+import { THEME_OPTIONS } from "./utils";
 
 // The popover editors follow one pattern: the outer component owns the
 // open state, the inner *Form component owns the form and is mounted fresh
@@ -68,9 +62,11 @@ type DueDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const dueDateSchema = z.object({
-  date: z.string().min(1, "Pick a date"),
-});
+const dueDateSchema = z
+  .object({
+    date: htmlDate,
+  })
+  .transform((values) => ({ dueDate: values.date }));
 
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -115,14 +111,14 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
 function DueDateForm(props: EditorFormProps) {
   const form = useZodForm({
     schema: dueDateSchema,
-    defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
+    defaultValues: { date: htmlDate.encode(props.baby.dueDate) },
   });
 
   return (
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ dueDate: parseISO(values.date).toISOString() });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -161,7 +157,7 @@ type StatusDateEditorProps = {
 };
 
 const statusDateSchema = z.object({
-  dateTime: z.string().min(1, "Pick a date and time"),
+  dateTime: htmlDateTime,
 });
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
@@ -200,7 +196,7 @@ function StatusDateForm(props: {
   const [isDeleting, setIsDeleting] = useState(false);
   const form = useZodForm({
     schema: statusDateSchema,
-    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
+    defaultValues: { dateTime: htmlDateTime.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
   const statusLabel = MILESTONE_LABELS[props.status];
@@ -216,13 +212,12 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const dateString = parseISO(values.dateTime).toISOString();
         if (props.status === "labor_started") {
-          await props.onUpdate({ laborStarted: dateString });
+          await props.onUpdate({ laborStarted: values.dateTime });
         } else if (props.status === "gone_to_hospital") {
-          await props.onUpdate({ wentToHospital: dateString });
+          await props.onUpdate({ wentToHospital: values.dateTime });
         } else {
-          await props.onUpdate({ babyBorn: dateString });
+          await props.onUpdate({ babyBorn: values.dateTime });
         }
         props.onClose();
       }}
@@ -236,7 +231,7 @@ function StatusDateForm(props: {
               <Input
                 type="datetime-local"
                 aria-label="Status date and time"
-                max={toDatetimeLocalValue(new Date())}
+                max={htmlDateTimeNow()}
                 {...field}
               />
             </FormControl>
@@ -341,7 +336,7 @@ function NameForm(props: EditorFormProps) {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ name: values.name.trim() });
+        await props.onUpdate({ name: values.name });
         props.onClose();
       }}
     >

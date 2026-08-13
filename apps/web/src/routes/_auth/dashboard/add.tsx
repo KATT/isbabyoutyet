@@ -13,11 +13,12 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
+import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 
 const addBabySchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  dueDate: z.string().min(1, "Due date is required"),
+  name: z.string().trim().min(2, "Name is required"),
+  dueDate: htmlDate,
 });
 
 export const Route = createFileRoute("/_auth/dashboard/add")({

@@ -82,14 +82,14 @@ export function EncouragementForm(props: EncouragementFormProps) {
       <Form
         form={form}
         handleSubmit={async (values) => {
-          const authorName = values.authorName.trim();
+          const authorName = values.authorName;
           // Save name to localStorage for next time
           localStorage.setItem(STORAGE_KEY_NAME, authorName);
 
           const promise = createEncouragement({
             babyId: props.babyId,
             authorName,
-            message: values.message.trim(),
+            message: values.message,
             visitorId: getVisitorId(),
             userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
             locale: typeof navigator !== "undefined" ? navigator.language : undefined,
