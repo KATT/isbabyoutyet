@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from "react";
 import type { ReactNode } from "react";
+import "@/lib/paraglide-setup";
 import { getLocale } from "@/paraglide/runtime";
 import {
   DEFAULT_LOCALE,
@@ -8,7 +9,9 @@ import {
 } from "@workspace/convex/src/i18n";
 
 /**
- * Paraglide owns request-safe locale detection and cookie persistence. This
+ * Paraglide owns request-safe locale detection. Cookie persistence is only for
+ * an explicit profile language choice (see paraglide-setup) — not the first
+ * browser sniff — so Accept-Language / Locale Switcher keep working. This
  * catalog accepts an explicit locale because a public baby page can override
  * the visitor's cookie without changing that visitor's own preference.
  */
