@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { format } from "date-fns";
-import { X } from "lucide-react";
+import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import {

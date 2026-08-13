@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { BabyNav } from "@/components/baby/baby-nav";
-import { Baby } from "lucide-react";
+import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";

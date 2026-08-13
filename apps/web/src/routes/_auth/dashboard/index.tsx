@@ -4,7 +4,7 @@ import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { format } from "date-fns";
-import { Baby as BabyIcon, Plus, LogOut, Calendar, ArrowRight } from "lucide-react";
+import { ArrowRight, Baby as BabyIcon, CalendarHeart, Plus, SignOut } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -69,7 +69,7 @@ function DashboardPage() {
                 });
               }}
             >
-              <LogOut className="w-4 h-4" />
+              <SignOut className="w-4 h-4" />
               Logout
             </Button>
           </div>
@@ -142,7 +142,7 @@ function DashboardPage() {
                       {baby.name}
                     </h2>
                     <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                      <Calendar className="h-3.5 w-3.5" />
+                      <CalendarHeart className="h-3.5 w-3.5" />
                       Due {format(dueDate, "MMMM d, yyyy")}
                     </p>
                     <div className="mt-4">

@@ -10,7 +10,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
-import { Send } from "lucide-react";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -144,7 +144,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
           />
 
           <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-            <Send className="w-4 h-4" />
+            <PaperPlaneTilt className="w-4 h-4" />
             {form.formState.isSubmitting ? "Sending..." : "Send Encouragement"}
           </Button>
         </div>

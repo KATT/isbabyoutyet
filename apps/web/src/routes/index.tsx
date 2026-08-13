@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Baby } from "lucide-react";
+import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
 
 // Static date snapshot for SSR/hydration

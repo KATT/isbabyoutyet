@@ -18,20 +18,20 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import {
-  Activity,
   Camera,
+  ChatCircleText,
   Check,
-  CheckCircle,
+  Confetti,
   Heart,
+  Heartbeat,
   Hospital,
-  ImagePlus,
-  MessageCircleHeart,
-  Pencil,
-  Pin,
-  Send,
-  Trash2,
+  Images,
+  PaperPlaneTilt,
+  PencilSimple,
+  PushPin,
+  Trash,
   X,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -84,10 +84,10 @@ const composerSchema = z
     path: ["occurredAt"],
   });
 
-const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }> = {
-  labor_started: { label: "Labour started", icon: Activity },
+const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Heartbeat }> = {
+  labor_started: { label: "Labour started", icon: Heartbeat },
   gone_to_hospital: { label: "Gone to hospital", icon: Hospital },
-  born: { label: "Born", icon: CheckCircle },
+  born: { label: "Born", icon: Confetti },
 };
 
 function getRelativeTimeFromTimestamp(timestamp: number): string {
@@ -262,7 +262,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <MessageCircleHeart className="w-5 h-5 text-primary" />
+        <ChatCircleText className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Post an update</h3>
       </div>
       <p className="text-sm text-muted-foreground">
@@ -407,11 +407,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
               onClick={() => fileInputRef.current?.click()}
               disabled={isPosting}
             >
-              <ImagePlus className="w-4 h-4" />
+              <Images className="w-4 h-4" />
               {draft.photo ? "Change photo" : "Add photo (optional)"}
             </Button>
             <Button type="submit" disabled={!canPost}>
-              <Send className="w-4 h-4" />
+              <PaperPlaneTilt className="w-4 h-4" />
               {isPosting
                 ? "Posting..."
                 : selectedMilestone
@@ -502,7 +502,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               )}
               {update.isCurrentPagePhoto && (
                 <Badge variant="outline" className="shrink-0">
-                  <Pin className="w-3 h-3" />
+                  <PushPin className="w-3 h-3" />
                   Page photo
                 </Badge>
               )}
@@ -536,7 +536,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   title="Set as page photo"
                   onClick={() => props.onSetAsCurrentPhoto(update._id)}
                 >
-                  <Pin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </Button>
               )}
               <AlertDialog>
@@ -548,7 +548,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                       className="h-8 w-8"
                       aria-label="Delete update"
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                     </Button>
                   }
                 />
@@ -757,7 +757,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                   aria-label="Edit encouragement"
                   onClick={() => setIsEditing(true)}
                 >
-                  <Pencil className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                 </Button>
               )}
               {canDelete && (
@@ -770,7 +770,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                         className="h-8 w-8"
                         aria-label="Delete encouragement"
                       >
-                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
                       </Button>
                     }
                   />

@@ -1,5 +1,5 @@
 import { BabyNav } from "@/components/baby/baby-nav";
-import { Baby } from "lucide-react";
+import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";

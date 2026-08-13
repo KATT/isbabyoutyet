@@ -4,7 +4,7 @@ import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/com
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { format, parseISO } from "date-fns";
-import { Clock } from "lucide-react";
+import { Clock } from "@phosphor-icons/react";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";

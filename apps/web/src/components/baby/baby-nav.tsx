@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { CheckCircle, MessageCircleHeart, Settings, Share2 } from "lucide-react";
+import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link, LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -43,7 +43,7 @@ export function BabyNav({
           render={<Link {...(postUpdateButton as any)} />}
           nativeButton={false}
         >
-          <MessageCircleHeart data-icon="inline-start" />
+          <ChatCircleText data-icon="inline-start" />
           Post update
         </Button>
       )}
@@ -59,7 +59,7 @@ export function BabyNav({
                 nativeButton={false}
                 aria-label={settingsOpen ? "Close settings" : "Settings"}
               >
-                <Settings />
+                <GearSix />
               </Button>
             }
           />
@@ -108,7 +108,7 @@ export function BabyNav({
               disabled={!shareLink}
               aria-label={copied ? "Copied!" : "Copy link to share"}
             >
-              {copied ? <CheckCircle /> : <Share2 />}
+              {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
           }
         />

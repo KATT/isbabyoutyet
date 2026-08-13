@@ -23,7 +23,7 @@ import { authClient } from "@/lib/auth-client";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
-import { Baby } from "lucide-react";
+import { Baby, IconContext } from "@phosphor-icons/react";
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
@@ -123,11 +123,14 @@ function RootComponent() {
         client={context.convexClient}
         authClient={authClient as unknown as AuthClient}
       >
-        <TooltipProvider>
-          <RootDocument>
-            <Outlet />
-          </RootDocument>
-        </TooltipProvider>
+        {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
+        <IconContext.Provider value={{ weight: "duotone" }}>
+          <TooltipProvider>
+            <RootDocument>
+              <Outlet />
+            </RootDocument>
+          </TooltipProvider>
+        </IconContext.Provider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );

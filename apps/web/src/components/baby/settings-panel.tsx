@@ -12,14 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/
 import { Switch } from "@workspace/ui/components/switch";
 import { format } from "date-fns";
 import {
-  Activity,
   Baby,
-  Calendar,
-  CheckCircle,
+  CalendarHeart,
+  ChatCircle,
+  Confetti,
+  Heartbeat,
   Hospital,
-  MessageSquare,
   Palette,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { formatDate, getRelativeTime, parseDate, THEME_OPTIONS } from "./utils";
@@ -64,7 +64,7 @@ export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPa
           {/* Due Date */}
           <Item>
             <ItemMedia variant="icon">
-              <Calendar className="w-4 h-4" />
+              <CalendarHeart className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>Due Date</ItemTitle>
@@ -83,7 +83,7 @@ export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPa
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <Activity className="w-4 h-4" />
+                  <Heartbeat className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>Labour started</ItemTitle>
@@ -133,7 +133,7 @@ export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPa
               <ItemSeparator />
               <Item>
                 <ItemMedia variant="icon">
-                  <CheckCircle className="w-4 h-4" />
+                  <Confetti className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>Baby born</ItemTitle>
@@ -176,7 +176,7 @@ export function SettingsPanel({ baby, onUpdate, open, onOpenChange }: SettingsPa
           {/* Encouragements */}
           <Item>
             <ItemMedia variant="icon">
-              <MessageSquare className="w-4 h-4" />
+              <ChatCircle className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
               <ItemTitle>Encouragements</ItemTitle>
