@@ -81,8 +81,8 @@ for (const [key, value] of Object.entries(convexEnv)) {
 
 convexCli(["run", "migrations:runAll", ...previewArgs]);
 
-console.log("\n$ seed homepage demo");
-execFileSync("pnpm", ["exec", "tsx", "scripts/seedHomepageDemo.ts", ...previewArgs], {
+console.log("\n$ pnpm seed:homepage");
+execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
   cwd: convexPackageDir,
   stdio: "inherit",
   env: process.env,

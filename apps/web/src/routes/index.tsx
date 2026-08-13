@@ -102,7 +102,7 @@ const HOW_IT_WORKS = [
   },
 ];
 
-function HomePage() {
+export function HomePage() {
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();

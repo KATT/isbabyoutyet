@@ -33,7 +33,7 @@ vi.mock("@tanstack/react-router", () => ({
   },
 }));
 
-const { Route } = await import("./index");
+const { HomePage } = await import("./index");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -43,9 +43,6 @@ function renderResource(ui: ReactElement) {
 }
 
 test("homepage links visitors to the live Juniper demo page", async () => {
-  const HomePage = Route.component;
-  if (!HomePage) throw new Error("expected homepage component");
-
   await using _view = renderResource(<HomePage />);
 
   const demoLinks = screen
