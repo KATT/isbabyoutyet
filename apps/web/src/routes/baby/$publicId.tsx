@@ -18,7 +18,14 @@ import {
   getThemePrimaryColor,
 } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
-import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  redirect,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
@@ -183,6 +190,7 @@ function BabyPage() {
   const params = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const router = useRouter();
   const loaderData = Route.useLoaderData();
   // Use prefetched data if available, otherwise use reactive query
   const queryBaby = useQuery(api.baby.getByPublicId, { id: params.publicId });
@@ -228,6 +236,7 @@ function BabyPage() {
                 babyId: babyDoc._id,
                 ...update,
               });
+              await router.invalidate();
             }}
             open={!!search.settings}
             onOpenChange={(open) => {
