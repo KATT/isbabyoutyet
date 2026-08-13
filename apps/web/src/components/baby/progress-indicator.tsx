@@ -53,26 +53,26 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   })();
 
   return (
-    <div className="w-full">
-      {/* The journey: three big badges on a dashed path */}
-      <ol className="relative mb-6 grid grid-cols-3 gap-2 before:absolute before:left-[16%] before:right-[16%] before:top-8 before:border-t-2 before:border-dashed before:border-border">
+    <div className="w-full overflow-x-clip">
+      {/* Compact journey: three badges on a short dashed path */}
+      <ol className="relative mb-3 grid grid-cols-3 gap-1 before:absolute before:left-[18%] before:right-[18%] before:top-5 before:border-t-2 before:border-dashed before:border-border">
         {steps.map((step) => {
           const isCurrent = currentStatus.type === step.key;
           return (
-            <li key={step.key} className="relative flex flex-col items-center text-center">
+            <li key={step.key} className="relative flex min-w-0 flex-col items-center text-center">
               <div
-                className={`mb-2.5 flex h-16 w-16 items-center justify-center rounded-full border-2 text-2xl transition-all duration-300 ${
+                className={`mb-1.5 flex h-10 w-10 items-center justify-center rounded-full border-2 text-lg transition-all duration-300 ${
                   step.completed
-                    ? "border-primary bg-primary/15 pop-shadow scale-105"
+                    ? "border-primary bg-primary/15 pop-shadow"
                     : isCurrent
-                      ? "border-primary/40 bg-card ring-4 ring-primary/15"
+                      ? "border-primary/40 bg-card ring-2 ring-primary/15"
                       : "border-border bg-card opacity-60 grayscale"
                 }`}
               >
                 <span aria-hidden="true">{step.emoji}</span>
               </div>
               <p
-                className={`text-sm md:text-base font-extrabold ${
+                className={`text-[11px] leading-tight font-extrabold text-balance sm:text-xs ${
                   step.completed
                     ? "text-foreground"
                     : isCurrent
@@ -83,7 +83,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
                 {t(step.labelKey)}
               </p>
               {step.date && (
-                <p className="mt-1 rounded-full bg-muted/60 px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
+                <p className="mt-1 max-w-full truncate rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
                   {getRelativeTime(step.date, locale)}
                 </p>
               )}
@@ -91,7 +91,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
           );
         })}
       </ol>
-      <Progress value={progressValue} className="h-3 rounded-full" />
+      <Progress value={progressValue} className="h-2 rounded-full" />
     </div>
   );
 }

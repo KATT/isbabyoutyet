@@ -370,7 +370,7 @@ function BabyPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
           {/* Sticky, but never taller than the viewport: on short screens the
               card scrolls internally instead of clipping below the fold. */}
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
+          <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
             <StatusDisplay
               baby={baby}
               currentStatus={currentStatus}
@@ -391,7 +391,7 @@ function BabyPage() {
                 vapidPublicKey={loaderData.vapidPublicKey}
               />
             </div>
-            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <div className="my-5 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />
           </section>
 
