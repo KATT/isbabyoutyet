@@ -10,11 +10,13 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useConvex, useQuery as useConvexQuery } from "convex/react";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { Bell, BellSlash, Export } from "@phosphor-icons/react";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { useConvexSuspenseQuery } from "@/lib/convex-query";
 import { useI18n } from "@/lib/i18n";
 
 type NotificationSubscribeProps = {
@@ -48,9 +50,8 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
   const { babyId, vapidPublicKey } = props;
-  const convex = useConvex();
 
-  // Check iOS status
+  // Check iOS status (browser-only; not a Convex query)
   const iosStatusQuery = useQuery({
     queryKey: ["iosStatus"],
     queryFn: () => getIOSStatus(),
@@ -58,7 +59,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const iosStatus = iosStatusQuery.data ?? { isIOS: false, isStandalone: false };
   const needsIOSInstall = iosStatus.isIOS && !iosStatus.isStandalone;
 
-  // Check basic push notification support
+  // Check basic push notification support (browser-only)
   const isSupportedQuery = useQuery({
     queryKey: ["isSupported"],
     queryFn: async () => {
@@ -72,7 +73,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
   const isSupported = isSupportedQuery.data ?? false;
 
-  // Get browser subscription endpoint with timeout
+  // Get browser subscription endpoint with timeout (browser-only)
   const pushSubscriptionQuery = useQuery({
     queryKey: ["browserSubscription"],
     queryFn: async () => {
@@ -88,11 +89,8 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     enabled: isSupported && !needsIOSInstall,
   });
 
-  // Check subscription status on server using Convex query (skip in SSR)
-  const isSubscribed = useConvexQuery(
-    api.pushSubscriptions.isSubscribed,
-    pushSubscriptionQuery.data ? { babyId, endpoint: pushSubscriptionQuery.data.endpoint } : "skip",
-  );
+  const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
+  const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
 
   // Subscribe mutation (TanStack mutation that handles browser permission + Convex)
   const subscribeMutation = useMutation({
@@ -129,7 +127,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         subscriptionData.keys?.p256dh &&
         subscriptionData.keys?.auth
       ) {
-        return await convex.mutation(api.pushSubscriptions.subscribe, {
+        return await subscribeMutationFn({
           babyId,
           endpoint: subscriptionData.endpoint,
           p256dh: subscriptionData.keys.p256dh,
@@ -140,17 +138,17 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       throw new Error(t("Failed to get subscription data"));
     },
     onSuccess: () => {
-      pushSubscriptionQuery.refetch();
+      void pushSubscriptionQuery.refetch();
     },
   });
 
   // Unsubscribe mutation (TanStack mutation wrapping Convex mutation)
   const unsubscribeMutation = useMutation({
     mutationFn: async (endpoint: string) => {
-      return await convex.mutation(api.pushSubscriptions.unsubscribe, { endpoint });
+      return await unsubscribeMutationFn({ endpoint });
     },
     onSuccess: () => {
-      pushSubscriptionQuery.refetch();
+      void pushSubscriptionQuery.refetch();
     },
   });
 
@@ -213,53 +211,130 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     );
   }
 
+  const endpoint = pushSubscriptionQuery.data?.endpoint;
+
+  return (
+    <Suspense
+      fallback={
+        <Button variant="default" size="lg" disabled>
+          <Spinner className="w-5 h-5" />
+          {t("Get Notifications")}
+        </Button>
+      }
+    >
+      <NotificationSubscribeButton
+        babyId={babyId}
+        endpoint={endpoint ?? null}
+        isLoading={isLoading}
+        onSubscribe={() => {
+          toast.promise(subscribeMutation.mutateAsync(), {
+            loading: t("Subscribing to notifications..."),
+            success: t("Subscribed to notifications!"),
+            error: (error) =>
+              error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
+          });
+        }}
+        onUnsubscribe={(subEndpoint) => {
+          toast.promise(unsubscribeMutation.mutateAsync(subEndpoint), {
+            loading: t("Unsubscribing from notifications..."),
+            success: t("Unsubscribed from notifications!"),
+            error: (error) =>
+              error instanceof Error
+                ? error.message
+                : t("Failed to unsubscribe from notifications"),
+          });
+          void pushSubscriptionQuery.refetch();
+        }}
+      />
+    </Suspense>
+  );
+}
+
+function NotificationSubscribeButton(props: {
+  babyId: Id<"baby">;
+  endpoint: string | null;
+  isLoading: boolean;
+  onSubscribe: () => void;
+  onUnsubscribe: (endpoint: string) => void;
+}) {
+  const { t } = useI18n();
+
+  // Only suspend on the Convex subscription check when we have an endpoint
+  if (props.endpoint) {
+    return <NotificationSubscribeButtonWithStatus {...props} endpoint={props.endpoint} />;
+  }
+
+  return (
+    <NotificationSubscribeControls
+      isSubscribed={false}
+      isLoading={props.isLoading}
+      onClick={() => {
+        props.onSubscribe();
+      }}
+      t={t}
+    />
+  );
+}
+
+function NotificationSubscribeButtonWithStatus(props: {
+  babyId: Id<"baby">;
+  endpoint: string;
+  isLoading: boolean;
+  onSubscribe: () => void;
+  onUnsubscribe: (endpoint: string) => void;
+}) {
+  const { t } = useI18n();
+  const isSubscribedQuery = useConvexSuspenseQuery(api.pushSubscriptions.isSubscribed, {
+    babyId: props.babyId,
+    endpoint: props.endpoint,
+  });
+  const isSubscribed = isSubscribedQuery.data;
+
+  return (
+    <NotificationSubscribeControls
+      isSubscribed={isSubscribed}
+      isLoading={props.isLoading}
+      onClick={() => {
+        if (isSubscribed) {
+          props.onUnsubscribe(props.endpoint);
+        } else {
+          props.onSubscribe();
+        }
+      }}
+      t={t}
+    />
+  );
+}
+
+function NotificationSubscribeControls(props: {
+  isSubscribed: boolean;
+  isLoading: boolean;
+  onClick: () => void;
+  t: ReturnType<typeof useI18n>["t"];
+}) {
   return (
     <Tooltip>
       <TooltipTrigger
         render={
           <Button
-            onClick={() => {
-              if (isSubscribed) {
-                if (!pushSubscriptionQuery.data) {
-                  toast.error(t("No subscription endpoint found"));
-                  return;
-                }
-                toast.promise(
-                  unsubscribeMutation.mutateAsync(pushSubscriptionQuery.data.endpoint),
-                  {
-                    loading: t("Unsubscribing from notifications..."),
-                    success: t("Unsubscribed from notifications!"),
-                    error: (error) =>
-                      error instanceof Error
-                        ? error.message
-                        : t("Failed to unsubscribe from notifications"),
-                  },
-                );
-                pushSubscriptionQuery.refetch();
-              } else {
-                toast.promise(subscribeMutation.mutateAsync(), {
-                  loading: t("Subscribing to notifications..."),
-                  success: t("Subscribed to notifications!"),
-                  error: (error) =>
-                    error instanceof Error
-                      ? error.message
-                      : t("Failed to subscribe to notifications"),
-                });
-              }
-            }}
-            disabled={isLoading}
-            variant={isSubscribed ? "secondary" : "default"}
+            onClick={props.onClick}
+            disabled={props.isLoading}
+            variant={props.isSubscribed ? "secondary" : "default"}
             size="lg"
           >
-            {isSubscribed ? (
+            {props.isSubscribed ? (
               <>
-                {isLoading ? <Spinner className="w-5 h-5" /> : <BellSlash className="w-5 h-5" />}
-                {t("Unsubscribe")}
+                {props.isLoading ? (
+                  <Spinner className="w-5 h-5" />
+                ) : (
+                  <BellSlash className="w-5 h-5" />
+                )}
+                {props.t("Unsubscribe")}
               </>
             ) : (
               <>
-                {isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                {t("Get Notifications")}
+                {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                {props.t("Get Notifications")}
               </>
             )}
           </Button>
@@ -267,9 +342,9 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       />
       <TooltipContent>
         <p>
-          {isSubscribed
-            ? t("Stop receiving push notifications for updates")
-            : t("Get notified when the baby's status changes")}
+          {props.isSubscribed
+            ? props.t("Stop receiving push notifications for updates")
+            : props.t("Get notified when the baby's status changes")}
         </p>
       </TooltipContent>
     </Tooltip>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -25,6 +25,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
+import { useConvexSuspenseQuery } from "@/lib/convex-query";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
@@ -82,7 +83,8 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
 
 export function LanguageSettings() {
   const { locale, t } = useI18n();
-  const profile = useQuery(api.profile.get, {});
+  const profileQuery = useConvexSuspenseQuery(api.profile.get, {});
+  const profile = profileQuery.data;
   const updateLocale = useMutation(api.profile.updateLocale);
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;

@@ -1,12 +1,13 @@
-import { authServer } from "@/lib/auth-server";
+import { getToken } from "@/lib/auth-server";
+import { ensureConvexQuery } from "@/lib/convex-query";
+import { convexQuery } from "@convex-dev/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 // Server function to check authentication
-const getToken = createServerFn({ method: "GET" }).handler(async () => {
-  const token = await authServer.getToken();
-  return token;
+const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
+  return await getToken();
 });
 
 export const Route = createFileRoute("/_auth")({
@@ -16,26 +17,37 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    // Check authentication server-side
-    const token = await getToken();
+    // Prefer the root-resolved token when present; fall back to a fresh check
+    // for client navigations where root may not have re-fetched yet.
+    const token = opts.context.token ?? (await getAuthToken());
 
     if (!token) {
       throw redirect({
         to: "/",
       });
     }
+
+    // Mutations via the Convex React client during SSR need setAuth too
     if (typeof window === "undefined") {
-      opts.context.convexClient.setAuth(async () => {
-        return token;
-      });
+      opts.context.convexClient.setAuth(async () => token);
     }
-    const existingProfile = await opts.context.convexClient.query(api.profile.get, {});
+
+    const existingProfile = await ensureConvexQuery(
+      opts.context.queryClient,
+      api.profile.get,
+      {},
+    );
     const profile =
       existingProfile ??
       (await opts.context.convexClient.mutation(api.profile.ensure, {
         browserLocale: opts.context.locale,
       }));
-    return { locale: profile.locale };
+
+    if (!existingProfile) {
+      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+    }
+
+    return { locale: profile.locale, token, isAuthenticated: true };
   },
   component: AuthLayout,
 });

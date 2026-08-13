@@ -29,9 +29,10 @@ import {
 } from "@tanstack/react-router";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { ensureConvexQuery, useConvexSuspenseQuery } from "@/lib/convex-query";
 import { translate, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -41,7 +42,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
+    const baby = await ensureConvexQuery(opts.context.queryClient, api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
     if (!baby) {
@@ -59,16 +60,31 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   loader: async (opts) => {
     const baby = opts.context.baby;
-    const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
-      opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
-      opts.context.convexClient.query(api.timeline.latestUpdate, {
-        babyId: baby._id,
-      }),
-      opts.context.convexClient.query(api.timeline.listByBaby, {
+    const queryClient = opts.context.queryClient;
+
+    const [myAccess, vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
+      ensureConvexQuery(queryClient, api.coParents.myAccess, { babyId: baby._id }),
+      ensureConvexQuery(queryClient, api.pushSubscriptions.getPublicKey, {}),
+      ensureConvexQuery(queryClient, api.timeline.latestUpdate, { babyId: baby._id }),
+      ensureConvexQuery(queryClient, api.timeline.listByBaby, {
         babyId: baby._id,
         paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
       }),
     ]);
+    await ensureConvexQuery(queryClient, api.profile.get, {});
+
+    if (myAccess.canManage) {
+      await Promise.all([
+        ensureConvexQuery(queryClient, api.baby.getScheduledNotifications, { babyId: baby._id }),
+        ensureConvexQuery(queryClient, api.pushSubscriptions.getSubscriptions, {
+          babyId: baby._id,
+        }),
+        ensureConvexQuery(queryClient, api.onboarding.getMine, {}),
+        // Prefetch even when settings are closed — Dialog may keep the panel mounted
+        ensureConvexQuery(queryClient, api.coParents.listForBaby, { babyId: baby._id }),
+      ]);
+    }
+
     return {
       baby,
       vapidPublicKey,
@@ -205,28 +221,33 @@ function BabyPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
-  // Use prefetched data if available, otherwise use reactive query
-  const queryBaby = useQuery(api.baby.getByPublicId, { id: params.publicId });
-  // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
-  const babyDoc = queryBaby ?? loaderData.baby;
+
+  const babyQuery = useConvexSuspenseQuery(api.baby.getByPublicId, { id: params.publicId });
+  const babyDoc = babyQuery.data;
+  if (!babyDoc) {
+    throw notFound();
+  }
   const baby = docToBabyData(babyDoc);
+
+  const latestUpdateQuery = useConvexSuspenseQuery(api.timeline.latestUpdate, {
+    babyId: babyDoc._id,
+  });
+  const profileQuery = useConvexSuspenseQuery(api.profile.get, {});
+  const myAccessQuery = useConvexSuspenseQuery(api.coParents.myAccess, { babyId: babyDoc._id });
+  const vapidQuery = useConvexSuspenseQuery(api.pushSubscriptions.getPublicKey, {});
+
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
-  const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
-  const profile = useQuery(api.profile.get, {});
-  const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
-  // Prefer the reactive value; fall back to the loader's prefetch while loading
-  const latestUpdate =
-    latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Prefer server access (includes co-parents); fall back to session owner check
-  // while the query loads so owners don't flash without controls.
-  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
-  const canManage = myAccess?.canManage ?? isOwner;
+  const latestUpdate = latestUpdateQuery.data;
+  const profile = profileQuery.data;
+  const myAccess = myAccessQuery.data;
+  const isOwner = myAccess.isOwner;
+  const canManage = myAccess.canManage;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -384,10 +405,7 @@ function BabyPage() {
               }
             />
             <div className="flex justify-center">
-              <NotificationSubscribe
-                babyId={babyDoc._id}
-                vapidPublicKey={loaderData.vapidPublicKey}
-              />
+              <NotificationSubscribe babyId={babyDoc._id} vapidPublicKey={vapidQuery.data} />
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />

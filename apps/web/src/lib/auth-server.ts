@@ -7,7 +7,16 @@ console.log("env", {
   convexUrl,
   convexSiteUrl,
 });
+
 export const authServer = convexBetterAuthReactStart({
   convexUrl,
   convexSiteUrl,
 });
+
+export const {
+  handler,
+  getToken,
+  fetchAuthQuery,
+  fetchAuthMutation,
+  fetchAuthAction,
+} = authServer;

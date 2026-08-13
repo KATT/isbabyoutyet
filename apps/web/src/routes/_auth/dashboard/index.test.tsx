@@ -17,6 +17,7 @@ vi.mock("@/components/language-settings", () => ({
 
 vi.mock("@/lib/auth-server", () => ({
   authServer: { fetchAuthQuery: vi.fn<() => Promise<unknown>>() },
+  getToken: vi.fn<() => Promise<string | null>>(),
 }));
 
 const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
@@ -28,28 +29,17 @@ function renderResource(ui: ReactElement) {
   });
 }
 
-test("shows a spinner instead of the empty state while the baby list is pending", async () => {
-  await using view = renderResource(
-    <DashboardBabyList babies={[]} isPending tourBabyPublicId={undefined} />,
-  );
-
-  expect(view.getByRole("status", { name: "Loading" })).toBeTruthy();
-  expect(view.queryByText("No baby pages yet")).toBeNull();
-});
-
 test("shows the empty state once the list has loaded with no babies", async () => {
   await using view = renderResource(
-    <DashboardBabyList babies={[]} isPending={false} tourBabyPublicId={undefined} />,
+    <DashboardBabyList babies={[]} tourBabyPublicId={undefined} />,
   );
 
-  expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
   expect(view.getByText("No baby pages yet")).toBeTruthy();
 });
 
 test("shows prefetched babies without a spinner", async () => {
   await using view = renderResource(
     <DashboardBabyList
-      isPending={false}
       tourBabyPublicId="baby-smith"
       babies={[
         {

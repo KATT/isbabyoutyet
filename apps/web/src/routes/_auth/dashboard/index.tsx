@@ -1,16 +1,15 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
-import { authServer } from "@/lib/auth-server";
+import { ensureConvexQuery, useConvexSuspenseQuery } from "@/lib/convex-query";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
@@ -18,31 +17,27 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    // Server: cookie-authenticated HTTP query so the first paint has babies.
-    // Client navigations use the already-authed Convex client.
-    const babies =
-      typeof window === "undefined"
-        ? await authServer.fetchAuthQuery(api.baby.listByUser, {})
-        : await opts.context.convexClient.query(api.baby.listByUser, {});
-    return { babies };
+    await Promise.all([
+      ensureConvexQuery(opts.context.queryClient, api.baby.listByUser, {}),
+      ensureConvexQuery(opts.context.queryClient, api.onboarding.getMine, {}),
+      ensureConvexQuery(opts.context.queryClient, api.profile.get, {}),
+    ]);
   },
 });
 
 function DashboardPage() {
   const { t } = useI18n();
-  const loaderData = Route.useLoaderData();
-  const auth = useConvexAuth();
-  const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
-  const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
+  const babiesQuery = useConvexSuspenseQuery(api.baby.listByUser, {});
+  const onboardingQuery = useConvexSuspenseQuery(api.onboarding.getMine, {});
+  const babies = babiesQuery.data;
+  const progress = onboardingQuery.data;
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
     void claimInvites({});
   }, [claimInvites]);
 
-  const router = useRouter();
   const restartTour = useMutation(api.onboarding.restart);
-  const progress = useQuery(api.onboarding.getMine, {});
 
   return (
     <div className="flex min-h-screen flex-col bg-background bg-dots">
@@ -94,10 +89,11 @@ function DashboardPage() {
               variant="ghost"
               className="rounded-full font-bold"
               onClick={async () => {
+                // expectAuth: reload so auth is re-resolved from a clean slate
                 await authClient.signOut({
                   fetchOptions: {
                     onSuccess: () => {
-                      router.navigate({ to: "/" });
+                      window.location.href = "/";
                     },
                     onError: (error) => {
                       toast.error(error.error.message);
@@ -127,11 +123,7 @@ function DashboardPage() {
           </p>
         </div>
 
-        <DashboardBabyList
-          babies={babies}
-          isPending={liveBabies === undefined && babies.length === 0}
-          tourBabyPublicId={progress?.tourBaby?.publicId}
-        />
+        <DashboardBabyList babies={babies} tourBabyPublicId={progress.tourBaby?.publicId} />
       </main>
 
       <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
@@ -157,18 +149,9 @@ type DashboardBaby = {
 
 export function DashboardBabyList(props: {
   babies: DashboardBaby[];
-  isPending: boolean;
   tourBabyPublicId: string | undefined;
 }) {
   const { t } = useI18n();
-
-  if (props.isPending) {
-    return (
-      <div className="mx-auto max-w-xl py-14 text-center">
-        <Spinner className="mx-auto size-8 text-primary" />
-      </div>
-    );
-  }
 
   if (props.babies.length === 0) {
     return (
