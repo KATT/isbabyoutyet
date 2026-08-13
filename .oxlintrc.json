@@ -1,7 +1,29 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "jsPlugins": [
+    {
+      "name": "i18n-literal",
+      "specifier": "@rrazvan.dev/oxlint-plugin-i18n-literal"
+    }
+  ],
+  "settings": {
+    "i18n-literal": {
+      "presets": ["react"],
+      "translationFunctionNames": ["translate"]
+    }
+  },
   "rules": {
     "vitest/no-hooks": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/src/**/*.{ts,tsx}"],
+      "rules": {
+        "i18n-literal/no-literal-string": "error",
+        "i18n-literal/no-literal-jsx-attribute": "error",
+        "i18n-literal/no-literal-template": "error"
+      }
+    }
+  ]
 }
