@@ -21,7 +21,9 @@
         "scripts/build-web.mjs!"
       ]
     },
-    "packages/convex": {},
+    "packages/convex": {
+      "entry": ["scripts/seedHomepageDemo.ts!"]
+    },
     "packages/ui": {}
   }
 }

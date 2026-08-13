@@ -6,6 +6,7 @@ import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/b
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
+import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
       opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
       opts.context.convexClient.query(api.timeline.latestUpdate, {
-        babyId: baby._id,
+      babyId: baby._id,
       }),
       opts.context.convexClient.query(api.timeline.listByBaby, {
         babyId: baby._id,
@@ -113,6 +114,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     });
 
     const themeColor = getThemePrimaryColor(baby.theme);
+    const themeCssUrl = getThemeCssUrl(baby.theme);
     const manifestUrl = `/baby/manifest/${baby._id}`;
 
     return {
@@ -154,6 +156,14 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
       ],
       links: [
+        ...(themeCssUrl
+          ? [
+              {
+                rel: "stylesheet",
+                href: themeCssUrl,
+              },
+            ]
+          : []),
         {
           rel: "manifest",
           href: manifestUrl,
@@ -199,7 +209,6 @@ function BabyPage() {
   // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
   const babyDoc = queryBaby ?? loaderData.baby;
   const baby = docToBabyData(babyDoc);
-  const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
@@ -227,7 +236,7 @@ function BabyPage() {
 
   return (
     <div className="min-h-screen bg-background bg-dots">
-      {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
+      <HomepageDemoToast publicId={babyDoc.publicId} />
 
       {canManage && (
         <>
