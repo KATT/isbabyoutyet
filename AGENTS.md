@@ -2,7 +2,8 @@
 
 ## Pull requests — always link the seeded demo babies
 
-Every preview deployment is seeded with a demo login and four babies (see
+Every preview deployment is seeded with a demo login, four babies in every
+status, and the public homepage demo baby (see
 [`packages/convex/src/seedCredentials.ts`](packages/convex/src/seedCredentials.ts)
 and [`packages/convex/convex/seed.ts`](packages/convex/convex/seed.ts)).
 
@@ -15,7 +16,8 @@ the top of the description with:
 Resolve the preview base URL from the Vercel bot comment on the PR (the
 branch alias like `https://isbabyoutyet-git-…-alex-katts-projects.vercel.app`),
 not the ephemeral deployment-hash `*.vercel.app` URL. Baby paths are
-`/baby/{publicId}` using the `publicId` values from `DEMO_BABIES`.
+`/baby/{publicId}` using the `publicId` values from `DEMO_BABIES` and
+`HOMEPAGE_DEMO_BABY`.
 
 ### Template (replace `{preview}` with the branch preview origin)
 
@@ -26,6 +28,7 @@ Login: `test@example.com` / `password`
 
 | Status | Preview |
 | --- | --- |
+| Live demo (Juniper Hale) | [{preview}/baby/juniper-hale]({preview}/baby/juniper-hale) |
 | Not yet | [{preview}/baby/baby-waiting]({preview}/baby/baby-waiting) |
 | Labour started | [{preview}/baby/baby-in-labor]({preview}/baby/baby-in-labor) |
 | Gone to hospital | [{preview}/baby/baby-at-hospital]({preview}/baby/baby-at-hospital) |
@@ -40,6 +43,9 @@ Locally the same seed is at `http://localhost:3000` after
 `pnpm --filter @workspace/convex seed` (also run by `setup-dev`). Login and
 signup forms autofill the demo credentials in local DEV and on Vercel preview
 builds (`VITE_HAS_DEMO_LOGIN`).
+
+The homepage live demo (`/baby/juniper-hale`) is also seeded in production. Each
+production deploy refreshes its dates and wipes visitor comments.
 
 ## Convex
 

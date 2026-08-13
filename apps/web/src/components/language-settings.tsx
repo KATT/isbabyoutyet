@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import { Translate } from "@phosphor-icons/react";
 import { toast } from "sonner";
+import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
@@ -14,7 +16,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { Field, FieldGroup, FieldLabel } from "@workspace/ui/components/field";
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import {
   Select,
@@ -24,16 +32,67 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import { Form, useZodForm } from "@/components/Form";
+import type { TranslationFunction } from "@/lib/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { setLocale } from "@/paraglide/runtime";
+
+function languageRequestSchema(t: TranslationFunction) {
+  return z
+    .object({
+      requestedLocale: z
+        .string()
+        .trim()
+        .min(2, t("Enter a language name or language code"))
+        .max(100),
+    })
+    .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
+}
+
+function LanguageRequestForm(props: { onSaved: () => void }) {
+  const { t } = useI18n();
+  const requestLanguage = useMutation(api.profile.requestLanguage);
+  const form = useZodForm({
+    schema: languageRequestSchema(t),
+    defaultValues: { requestedLocale: "" },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await requestLanguage(values);
+        props.onSaved();
+        toast.success(t("Language request saved"));
+      }}
+    >
+      <FormField
+        control={form.control}
+        name="requestedLocale"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>{t("Language name or code")}</FormLabel>
+            <FormControl>
+              <Input maxLength={100} placeholder={t("Example: French / fr-FR")} {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <DialogFooter>
+        <Button type="submit" disabled={form.formState.isSubmitting}>
+          {t("Send request")}
+        </Button>
+      </DialogFooter>
+    </Form>
+  );
+}
 
 export function LanguageSettings() {
   const { locale, t } = useI18n();
   const profile = useQuery(api.profile.get, {});
   const updateLocale = useMutation(api.profile.updateLocale);
-  const requestLanguage = useMutation(api.profile.requestLanguage);
   const [requestOpen, setRequestOpen] = useState(false);
-  const [requestedLocale, setRequestedLocale] = useState("");
   const selectedLocale = profile?.locale ?? locale;
 
   async function selectLocale(value: string | null) {
@@ -81,35 +140,7 @@ export function LanguageSettings() {
               {t("Tell us which language you would like us to add.")}
             </DialogDescription>
           </DialogHeader>
-          <form
-            onSubmit={async (event) => {
-              event.preventDefault();
-              await requestLanguage({ requestedLocale });
-              setRequestedLocale("");
-              setRequestOpen(false);
-              toast.success(t("Language request saved"));
-            }}
-          >
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="requested-language">{t("Language name or code")}</FieldLabel>
-                <Input
-                  id="requested-language"
-                  value={requestedLocale}
-                  onChange={(event) => setRequestedLocale(event.target.value)}
-                  minLength={2}
-                  maxLength={100}
-                  required
-                  placeholder={t("Example: French / fr-FR")}
-                />
-              </Field>
-              <DialogFooter>
-                <Button type="submit" disabled={requestedLocale.trim().length < 2}>
-                  {t("Send request")}
-                </Button>
-              </DialogFooter>
-            </FieldGroup>
-          </form>
+          {requestOpen ? <LanguageRequestForm onSaved={() => setRequestOpen(false)} /> : null}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,6 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   mutate: vi.fn<(args: unknown) => Promise<unknown>>(),
   paginated: {
     results: [] as unknown[],
-    status: "Exhausted",
+    status: "Exhausted" as "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted",
     loadMore: vi.fn<(count: number) => void>(),
   },
 }));
@@ -136,6 +136,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: undefined,
   });
@@ -155,9 +156,32 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+    babyId,
     milestone: "labor_started",
     occurredAt: new Date(backdated).getTime(),
   });
+});
+
+test("the composer previews a selected photo and can remove it", async () => {
+  const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
+  const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  await using _objectUrls = makeResource({}, () => {
+    createObjectURL.mockRestore();
+    revokeObjectURL.mockRestore();
+  });
+  await using composer = renderComposerResource(notYetBaby);
+  const view = composer.view;
+
+  const fileInput = view.container.querySelector('input[type="file"]');
+  if (!fileInput) throw new Error("hidden file input missing");
+
+  fireEvent.change(fileInput, {
+    target: { files: [new File(["png"], "baby.png", { type: "image/png" })] },
+  });
+  expect(view.getByAltText("Photo to post")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Remove photo" }));
+  expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
 test("timeline milestone deletion is disabled while a later status exists", async () => {
@@ -166,6 +190,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
     wentToHospital: "2026-08-20T12:00:00.000Z",
     babyBorn: "2026-08-21T03:00:00.000Z",
   };
+  mocks.paginated.status = "Exhausted";
   mocks.paginated.results = [
     {
       _id: "timeline-item-id",
@@ -189,7 +214,13 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
     <LocaleProvider locale="en-GB">
       <ConvexProvider client={client}>
         <TooltipProvider>
-          <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
+          <TimelineFeed
+            babyId={babyId}
+            baby={bornBaby}
+            babyName={bornBaby.name}
+            isOwner
+            initialPage={{ page: [], isDone: true, continueCursor: "" }}
+          />
         </TooltipProvider>
       </ConvexProvider>
     </LocaleProvider>,
@@ -205,4 +236,75 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
   expect(view.queryByRole("alertdialog")).toBeNull();
+});
+
+function renderFeed(opts: {
+  baby: BabyData;
+  isOwner?: boolean;
+  initialPage: ComponentProps<typeof TimelineFeed>["initialPage"];
+}) {
+  const client = new ConvexReactClient("https://example.convex.cloud", {
+    unsavedChangesWarning: false,
+  });
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <TooltipProvider>
+        <TimelineFeed
+          babyId={babyId}
+          baby={opts.baby}
+          babyName={opts.baby.name}
+          isOwner={opts.isOwner ?? false}
+          initialPage={opts.initialPage}
+        />
+      </TooltipProvider>
+    </ConvexProvider>,
+  );
+  return makeResource(rendered, async () => {
+    rendered.unmount();
+    await client.close();
+  });
+}
+
+test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
+  mocks.paginated.results = [];
+  mocks.paginated.status = "LoadingFirstPage";
+
+  await using view = renderFeed({
+    baby: notYetBaby,
+    initialPage: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "encouragement",
+          postedAt: Date.now(),
+          encouragement: {
+            _id: "encouragement-id" as Id<"encouragements">,
+            authorName: "Grandma",
+            message: "Can't wait to meet you!",
+            createdAt: Date.now(),
+            isMine: false,
+          },
+        },
+      ],
+      isDone: false,
+      continueCursor: "cursor",
+    },
+  });
+
+  expect(view.queryByText("Loading the timeline...")).toBeNull();
+  expect(view.getByText("Grandma")).toBeTruthy();
+  expect(view.getByText("Can't wait to meet you!")).toBeTruthy();
+});
+
+test("shows the empty feed, not a spinner, when the prefetched first page is empty", async () => {
+  mocks.paginated.results = [];
+  mocks.paginated.status = "LoadingFirstPage";
+
+  await using view = renderFeed({
+    baby: notYetBaby,
+    initialPage: { page: [], isDone: true, continueCursor: "" },
+  });
+
+  expect(view.queryByText("Loading the timeline...")).toBeNull();
+  expect(view.getByText("Nothing here yet")).toBeTruthy();
 });

@@ -148,6 +148,20 @@ const enGB = {
   "Signing up...": "Signing up...",
   "Already have an account?": "Already have an account?",
   "Sign in": "Sign in",
+  "Invalid email address": "Invalid email address",
+  "Password must be at least 6 characters": "Password must be at least 6 characters",
+  "Name must be at least 2 characters": "Name must be at least 2 characters",
+  "Name is required": "Name is required",
+  "Name must be {{count}} characters or less": "Name must be {{count}} characters or less",
+  "Message is required": "Message is required",
+  "Pick a date": "Pick a date",
+  "Pick a date and time": "Pick a date and time",
+  "That status has already been marked": "That status has already been marked",
+  "Failed to sign in": "Failed to sign in",
+  "Failed to sign up": "Failed to sign up",
+  "Failed to update theme": "Failed to update theme",
+  "Failed to submit form": "Failed to submit form",
+  "Enter a language name or language code": "Enter a language name or language code",
   "Add a message, a photo, or a milestone to post":
     "Add a message, a photo, or a milestone to post",
   "Pick a valid time — or leave it as now": "Pick a valid time — or leave it as now",
@@ -360,6 +374,17 @@ const enGB = {
   "See it in action": "See it in action",
   "Click any stage to see how your page will look":
     "Click any stage to see how your page will look",
+  "See a live page": "See a live page",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}'s page is a live demo — leave a note, look around, try it out",
+  "Follow {{name}}'s arrival": "Follow {{name}}'s arrival",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
+  "Open the live page →": "Open the live page →",
+  "Or preview how each stage looks": "Or preview how each stage looks",
+  "This is a demo baby": "This is a demo baby",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Feel free to post test messages — they get cleared on each deploy.",
   "How it works": "How it works",
   "Get Started Free 🎉": "Get Started Free 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -550,6 +575,20 @@ const sv: Record<TranslationKey, string> = {
   "Signing up...": "Registrerar...",
   "Already have an account?": "Har du redan ett konto?",
   "Sign in": "Logga in",
+  "Invalid email address": "Ogiltig e-postadress",
+  "Password must be at least 6 characters": "Lösenordet måste vara minst 6 tecken",
+  "Name must be at least 2 characters": "Namnet måste vara minst 2 tecken",
+  "Name is required": "Namn krävs",
+  "Name must be {{count}} characters or less": "Namnet får vara högst {{count}} tecken",
+  "Message is required": "Meddelande krävs",
+  "Pick a date": "Välj ett datum",
+  "Pick a date and time": "Välj datum och tid",
+  "That status has already been marked": "Den statusen är redan markerad",
+  "Failed to sign in": "Det gick inte att logga in",
+  "Failed to sign up": "Det gick inte att skapa konto",
+  "Failed to update theme": "Det gick inte att uppdatera temat",
+  "Failed to submit form": "Det gick inte att skicka formuläret",
+  "Enter a language name or language code": "Ange ett språknamn eller en språkkod",
   "Add a message, a photo, or a milestone to post":
     "Lägg till ett meddelande, ett foto eller en milstolpe",
   "Pick a valid time — or leave it as now": "Välj en giltig tid eller behåll tiden som nu",
@@ -762,6 +801,17 @@ const sv: Record<TranslationKey, string> = {
   "See it in action": "Se hur det fungerar",
   "Click any stage to see how your page will look":
     "Klicka på ett steg för att se hur din sida kommer att se ut",
+  "See a live page": "Se en livesida",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}s sida är en livedemo — lämna en hälsning, titta runt, testa",
+  "Follow {{name}}'s arrival": "Följ {{name}}s ankomst",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "En livedemo med en tvådagars förlossning, foton och meddelanden. Skicka en testhälsning — det här är hela upplevelsen.",
+  "Open the live page →": "Öppna livesidan →",
+  "Or preview how each stage looks": "Eller förhandsgranska hur varje steg ser ut",
+  "This is a demo baby": "Detta är en demobebis",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Skriv gärna testmeddelanden — de rensas vid varje deploy.",
   "How it works": "Så fungerar det",
   "Get Started Free 🎉": "Kom igång gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -933,6 +983,20 @@ const es: Record<TranslationKey, string> = {
   "Signing up...": "Registrando...",
   "Already have an account?": "¿Ya tienes una cuenta?",
   "Sign in": "Inicia sesión",
+  "Invalid email address": "Dirección de correo no válida",
+  "Password must be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+  "Name must be at least 2 characters": "El nombre debe tener al menos 2 caracteres",
+  "Name is required": "El nombre es obligatorio",
+  "Name must be {{count}} characters or less": "El nombre debe tener {{count}} caracteres o menos",
+  "Message is required": "El mensaje es obligatorio",
+  "Pick a date": "Elige una fecha",
+  "Pick a date and time": "Elige fecha y hora",
+  "That status has already been marked": "Ese estado ya está marcado",
+  "Failed to sign in": "No se pudo iniciar sesión",
+  "Failed to sign up": "No se pudo crear la cuenta",
+  "Failed to update theme": "No se pudo actualizar el tema",
+  "Failed to submit form": "No se pudo enviar el formulario",
+  "Enter a language name or language code": "Escribe un nombre o código de idioma",
   "Add a message, a photo, or a milestone to post":
     "Añade un mensaje, una foto o un hito para publicar",
   "Pick a valid time — or leave it as now": "Elige una hora válida o déjala como ahora",
@@ -1148,6 +1212,17 @@ const es: Record<TranslationKey, string> = {
   "See it in action": "Míralo en acción",
   "Click any stage to see how your page will look":
     "Haz clic en cualquier etapa para ver cómo se verá tu página",
+  "See a live page": "Ver una página en vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "La página de {{name}} es una demo en vivo — deja una nota, explora, pruébala",
+  "Follow {{name}}'s arrival": "Sigue la llegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Una demo en vivo con un parto de dos días, fotos y mensajes. Envía un mensaje de prueba — esta es la experiencia completa.",
+  "Open the live page →": "Abrir la página en vivo →",
+  "Or preview how each stage looks": "O previsualiza cómo se ve cada etapa",
+  "This is a demo baby": "Este es un bebé de demostración",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Puedes dejar mensajes de prueba — se borran en cada deploy.",
   "How it works": "Cómo funciona",
   "Get Started Free 🎉": "Empieza gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1322,6 +1397,20 @@ const ptBR: Record<TranslationKey, string> = {
   "Signing up...": "Cadastrando...",
   "Already have an account?": "Já tem uma conta?",
   "Sign in": "Entre",
+  "Invalid email address": "Endereço de e-mail inválido",
+  "Password must be at least 6 characters": "A senha deve ter pelo menos 6 caracteres",
+  "Name must be at least 2 characters": "O nome deve ter pelo menos 2 caracteres",
+  "Name is required": "O nome é obrigatório",
+  "Name must be {{count}} characters or less": "O nome deve ter no máximo {{count}} caracteres",
+  "Message is required": "A mensagem é obrigatória",
+  "Pick a date": "Escolha uma data",
+  "Pick a date and time": "Escolha data e hora",
+  "That status has already been marked": "Esse status já foi marcado",
+  "Failed to sign in": "Não foi possível entrar",
+  "Failed to sign up": "Não foi possível criar a conta",
+  "Failed to update theme": "Não foi possível atualizar o tema",
+  "Failed to submit form": "Não foi possível enviar o formulário",
+  "Enter a language name or language code": "Informe um nome ou código de idioma",
   "Add a message, a photo, or a milestone to post":
     "Adicione uma mensagem, foto ou marco para publicar",
   "Pick a valid time — or leave it as now": "Escolha um horário válido ou deixe como agora",
@@ -1537,6 +1626,17 @@ const ptBR: Record<TranslationKey, string> = {
   "See it in action": "Veja na prática",
   "Click any stage to see how your page will look":
     "Clique em qualquer etapa para ver como sua página vai ficar",
+  "See a live page": "Ver uma página ao vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "A página de {{name}} é uma demo ao vivo — deixe um recado, explore, experimente",
+  "Follow {{name}}'s arrival": "Acompanhe a chegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Uma demo ao vivo com uma história de parto de dois dias, fotos e mensagens. Envie um carinho de teste — esta é a experiência completa.",
+  "Open the live page →": "Abrir a página ao vivo →",
+  "Or preview how each stage looks": "Ou veja como cada etapa fica",
+  "This is a demo baby": "Este é um bebê de demonstração",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Fique à vontade para enviar mensagens de teste — elas são apagadas a cada deploy.",
   "How it works": "Como funciona",
   "Get Started Free 🎉": "Comece grátis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1580,6 +1680,8 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
     "One tap to update everyone — labor started, at the hospital, baby's here! No group texts, no repeated calls.",
   "Before labour starts": "Before labor starts",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labor story, photos, and messages. Send a test encouragement — this is the full experience.",
 };
 
 const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {

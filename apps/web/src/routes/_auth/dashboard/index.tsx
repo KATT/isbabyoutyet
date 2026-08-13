@@ -1,12 +1,15 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Baby as BabyIcon, Plus, SignOut } from "@phosphor-icons/react";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
+import { authServer } from "@/lib/auth-server";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
@@ -14,19 +17,22 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    return {
-      babies: await opts.context.convexClient.query(api.baby.listByUser, {}),
-    };
+    // Server: cookie-authenticated HTTP query so the first paint has babies.
+    // Client navigations use the already-authed Convex client.
+    const babies =
+      typeof window === "undefined"
+        ? await authServer.fetchAuthQuery(api.baby.listByUser, {})
+        : await opts.context.convexClient.query(api.baby.listByUser, {});
+    return { babies };
   },
 });
 
 function DashboardPage() {
   const { t } = useI18n();
   const loaderData = Route.useLoaderData();
-  let babies = useQuery(api.baby.listByUser, {});
-  if (!babies || babies.length === 0) {
-    babies = loaderData.babies;
-  }
+  const auth = useConvexAuth();
+  const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
+  const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
@@ -99,33 +105,65 @@ function DashboardPage() {
           </p>
         </div>
 
-        {babies.length === 0 ? (
-          <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
-            <p className="text-5xl" aria-hidden="true">
-              🍼
-            </p>
-            <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
-            <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
-              {t("Get started by adding your first baby to track their journey")}
-            </p>
-            <Button
-              size="lg"
-              className="mt-6 rounded-full font-extrabold pop-shadow"
-              render={<Link to="/dashboard/add" preload="viewport" />}
-              nativeButton={false}
-            >
-              <Plus className="w-4 h-4" />
-              {t("Add Your First Baby")}
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {babies.map((baby, index) => (
-              <DashboardBabyCard key={baby._id} baby={baby} index={index} />
-            ))}
-          </div>
-        )}
+        <DashboardBabyList
+          babies={babies}
+          isPending={liveBabies === undefined && babies.length === 0}
+        />
       </main>
+    </div>
+  );
+}
+
+type DashboardBaby = {
+  _id: Id<"baby">;
+  name: string;
+  publicId: string;
+  dueDate: string;
+  laborStarted?: string | null;
+  wentToHospital?: string | null;
+  babyBorn?: string | null;
+  role: "owner" | "coParent";
+};
+
+export function DashboardBabyList(props: { babies: DashboardBaby[]; isPending: boolean }) {
+  const { t } = useI18n();
+
+  if (props.isPending) {
+    return (
+      <div className="mx-auto max-w-xl py-14 text-center">
+        <Spinner className="mx-auto size-8 text-primary" />
+      </div>
+    );
+  }
+
+  if (props.babies.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
+        <p className="text-5xl" aria-hidden="true">
+          🍼
+        </p>
+        <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
+        <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
+          {t("Get started by adding your first baby to track their journey")}
+        </p>
+        <Button
+          size="lg"
+          className="mt-6 rounded-full font-extrabold pop-shadow"
+          render={<Link to="/dashboard/add" preload="viewport" />}
+          nativeButton={false}
+        >
+          <Plus className="w-4 h-4" />
+          {t("Add Your First Baby")}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {props.babies.map((baby, index) => (
+        <DashboardBabyCard key={baby._id} baby={baby} index={index} />
+      ))}
     </div>
   );
 }
