@@ -174,7 +174,13 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   const rendered = render(
     <ConvexProvider client={client}>
       <TooltipProvider>
-        <TimelineFeed babyId={babyId} baby={bornBaby} babyName={bornBaby.name} isOwner />
+        <TimelineFeed
+          babyId={babyId}
+          baby={bornBaby}
+          babyName={bornBaby.name}
+          isOwner
+          initialPage={{ page: [], isDone: true, continueCursor: "" }}
+        />
       </TooltipProvider>
     </ConvexProvider>,
   );
@@ -194,7 +200,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 function renderFeed(opts: {
   baby: BabyData;
   isOwner?: boolean;
-  initialPage?: ComponentProps<typeof TimelineFeed>["initialPage"];
+  initialPage: ComponentProps<typeof TimelineFeed>["initialPage"];
 }) {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,

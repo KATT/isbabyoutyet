@@ -850,7 +850,7 @@ type TimelineFeedProps = {
   babyName: string;
   isOwner: boolean;
   /** Prefetched first page from the route loader so the feed can SSR without a spinner. */
-  initialPage?: TimelineFirstPage;
+  initialPage: TimelineFirstPage;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
@@ -868,8 +868,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const liveFirstPageReady = status !== "LoadingFirstPage";
-  const items = liveFirstPageReady ? results : (props.initialPage?.page ?? results);
+  const items = status === "LoadingFirstPage" ? props.initialPage.page : results;
 
   // Get visitor ID on client side
   useEffect(() => {
@@ -944,15 +943,6 @@ export function TimelineFeed(props: TimelineFeedProps) {
       throw error;
     }
   };
-
-  if (status === "LoadingFirstPage" && !props.initialPage) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">
-        <Spinner className="mx-auto mb-2" />
-        <p>Loading the timeline...</p>
-      </div>
-    );
-  }
 
   if (items.length === 0) {
     return (
