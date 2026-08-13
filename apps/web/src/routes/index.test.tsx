@@ -119,8 +119,14 @@ test("homepage language picker saves an explicit language choice", async () => {
   });
   await using _view = renderResource(<HomePage />);
 
-  fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
-  const swedish = await screen.findByRole("option", { name: "Swedish" });
+  const picker = screen.getByRole("combobox", { name: "Language" });
+  expect(picker.textContent).toContain("British English");
+  fireEvent.click(picker);
+  const swedish = await screen.findByRole("option", { name: "svenska" });
+  expect(screen.getByRole("option", { name: "British English" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "American English" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "español" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "português (Brasil)" })).toBeTruthy();
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
 
