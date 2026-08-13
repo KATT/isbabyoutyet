@@ -6,6 +6,7 @@ import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
+import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
@@ -155,6 +156,7 @@ function BabyPage() {
   return (
     <div className="min-h-screen bg-background bg-dots">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
+      <HomepageDemoToast publicId={babyDoc.publicId} />
 
       {isOwner && (
         <>

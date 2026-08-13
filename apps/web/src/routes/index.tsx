@@ -221,41 +221,43 @@ export function HomePage() {
             Stop answering "any news yet?" texts. Share one link, let everyone follow along, and
             tell them all at once when baby arrives. 🍼
           </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
-            {sessionData.data ? (
-              <Button
-                size="lg"
-                className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                render={<Link to="/dashboard" preload="viewport" />}
-                nativeButton={false}
-              >
-                Go to Dashboard
-              </Button>
-            ) : (
-              <>
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
+              {sessionData.data ? (
                 <Button
                   size="lg"
                   className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/dashboard" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Create your page 🎈
+                  Go to Dashboard
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                  render={<Link to="/auth/login" preload="viewport" />}
-                  nativeButton={false}
-                >
-                  Sign in
-                </Button>
-              </>
-            )}
+              ) : (
+                <>
+                  <Button
+                    size="lg"
+                    className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
+                    render={<Link to="/auth/signup" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    Create your page 🎈
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
+                    render={<Link to="/auth/login" preload="viewport" />}
+                    nativeButton={false}
+                  >
+                    Sign in
+                  </Button>
+                </>
+              )}
+            </div>
             <Button
-              size="lg"
-              variant="outline"
-              className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
+              size="sm"
+              variant="ghost"
+              className="rounded-full font-bold text-muted-foreground"
               render={
                 <Link
                   to="/baby/$publicId"
@@ -307,7 +309,7 @@ export function HomePage() {
               See it in action
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
-              {HOMEPAGE_DEMO_BABY.name}'s page is a live example — leave a note, look around, try it
+              {HOMEPAGE_DEMO_BABY.name}'s page is a live demo — leave a note, look around, try it
               out
             </p>
           </div>
@@ -324,7 +326,7 @@ export function HomePage() {
                 Follow {HOMEPAGE_DEMO_BABY.name}'s arrival
               </h3>
               <p className="mx-auto mt-2 max-w-lg font-medium text-muted-foreground">
-                A real page with a two-day labour story, photos, and messages from family. Send
+                A live demo with a two-day labour story, photos, and messages. Send a test
                 encouragement — this is the full experience.
               </p>
               <p className="mt-4 text-sm font-extrabold text-primary">Open the live page →</p>

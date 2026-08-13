@@ -51,4 +51,8 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
   expect(demoLinks.length).toBeGreaterThan(0);
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
   expect(screen.getByText(`Follow ${HOMEPAGE_DEMO_BABY.name}'s arrival`)).toBeTruthy();
+
+  const livePage = screen.getByRole("link", { name: /see a live page/i });
+  const createPage = screen.getByRole("link", { name: /create your page/i });
+  expect(livePage.parentElement).not.toBe(createPage.parentElement);
 });
