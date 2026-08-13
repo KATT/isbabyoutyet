@@ -347,6 +347,7 @@ const enGB = {
   "Failed to send encouragement": "Failed to send encouragement",
   "Shared with you": "Shared with you",
   "Due {{date}}": "Due {{date}}",
+  "Born {{date}}": "Born {{date}}",
   Your: "Your",
   babies: "babies",
   "Add a": "Add a",
@@ -373,6 +374,17 @@ const enGB = {
   "See it in action": "See it in action",
   "Click any stage to see how your page will look":
     "Click any stage to see how your page will look",
+  "See a live page": "See a live page",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}'s page is a live demo — leave a note, look around, try it out",
+  "Follow {{name}}'s arrival": "Follow {{name}}'s arrival",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
+  "Open the live page →": "Open the live page →",
+  "Or preview how each stage looks": "Or preview how each stage looks",
+  "This is a demo baby": "This is a demo baby",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Feel free to post test messages — they get cleared on each deploy.",
   "How it works": "How it works",
   "Get Started Free 🎉": "Get Started Free 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -433,8 +445,8 @@ const enGB = {
   "Add a baby": "Add a baby",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.",
-  "When something changes, post it. Loved ones see the status and can subscribe for push alerts.":
-    "When something changes, post it. Loved ones see the status and can subscribe for push alerts.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).",
   "Peek at settings": "Peek at settings",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Themes, names, and whether visitors can leave encouragements — all in Settings.",
@@ -448,8 +460,8 @@ const enGB = {
   "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
     "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.",
   "Share once, update as you go": "Share once, update as you go",
-  "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.":
-    "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
   "Skip anytime": "Skip anytime",
   "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
     "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
@@ -817,6 +829,7 @@ const sv: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Kunde inte skicka hälsningen",
   "Shared with you": "Delad med dig",
   "Due {{date}}": "Beräknad {{date}}",
+  "Born {{date}}": "Född {{date}}",
   Your: "Dina",
   babies: "bebisar",
   "Add a": "Lägg till en",
@@ -843,6 +856,17 @@ const sv: Record<TranslationKey, string> = {
   "See it in action": "Se hur det fungerar",
   "Click any stage to see how your page will look":
     "Klicka på ett steg för att se hur din sida kommer att se ut",
+  "See a live page": "Se en livesida",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "{{name}}s sida är en livedemo — lämna en hälsning, titta runt, testa",
+  "Follow {{name}}'s arrival": "Följ {{name}}s ankomst",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "En livedemo med en tvådagars förlossning, foton och meddelanden. Skicka en testhälsning — det här är hela upplevelsen.",
+  "Open the live page →": "Öppna livesidan →",
+  "Or preview how each stage looks": "Eller förhandsgranska hur varje steg ser ut",
+  "This is a demo baby": "Detta är en demobebis",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Skriv gärna testmeddelanden — de rensas vid varje deploy.",
   "How it works": "Så fungerar det",
   "Get Started Free 🎉": "Kom igång gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -903,8 +927,8 @@ const sv: Record<TranslationKey, string> = {
   "Add a baby": "Lägg till bebis",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "En länk för alla. Tryck på Dela på bebisens sida för att kopiera den — ingen gruppchattspam.",
-  "When something changes, post it. Loved ones see the status and can subscribe for push alerts.":
-    "När något ändras, lägg upp det. Närstående ser statusen och kan prenumerera på push-aviseringar.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Lägg upp milstolpar och vardagsanteckningar från menyn. Pushnotiser går bara till dem som prenumererar — och bara när du markerar en statusuppdatering (förlossning, sjukhus eller född).",
   "Peek at settings": "Titta i inställningarna",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Teman, namn och om besökare kan lämna uppmuntran — allt under Inställningar.",
@@ -918,8 +942,8 @@ const sv: Record<TranslationKey, string> = {
   "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
     "Lägg till namn och beräknat datum. Du får en delbar länk som isbabyoutyet.com/baby/… som visar aktuell status.",
   "Share once, update as you go": "Dela en gång, uppdatera längs vägen",
-  "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.":
-    "Lägg upp milstolpar och meddelanden från menyn. Besökare kan prenumerera på aviseringar och lämna uppmuntran.",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Lägg upp milstolpar och meddelanden från menyn. Statusuppdateringar notifierar prenumeranter; vardagsanteckningar och uppmuntran hålls tysta.",
   "Skip anytime": "Hoppa över när som helst",
   "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
     "En liten checklista följer dig. Tryck på ett steg för att hoppa dit eller markera knappen. Stäng när du vill — starta om via gnistan på översikten.",
@@ -1271,6 +1295,7 @@ const es: Record<TranslationKey, string> = {
   "Failed to send encouragement": "No se pudo enviar el mensaje de ánimo",
   "Shared with you": "Compartida contigo",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nació el {{date}}",
   Your: "Tus",
   babies: "bebés",
   "Add a": "Añadir un",
@@ -1297,6 +1322,17 @@ const es: Record<TranslationKey, string> = {
   "See it in action": "Míralo en acción",
   "Click any stage to see how your page will look":
     "Haz clic en cualquier etapa para ver cómo se verá tu página",
+  "See a live page": "Ver una página en vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "La página de {{name}} es una demo en vivo — deja una nota, explora, pruébala",
+  "Follow {{name}}'s arrival": "Sigue la llegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Una demo en vivo con un parto de dos días, fotos y mensajes. Envía un mensaje de prueba — esta es la experiencia completa.",
+  "Open the live page →": "Abrir la página en vivo →",
+  "Or preview how each stage looks": "O previsualiza cómo se ve cada etapa",
+  "This is a demo baby": "Este es un bebé de demostración",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Puedes dejar mensajes de prueba — se borran en cada deploy.",
   "How it works": "Cómo funciona",
   "Get Started Free 🎉": "Empieza gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1357,8 +1393,8 @@ const es: Record<TranslationKey, string> = {
   "Add a baby": "Añadir un bebé",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Un enlace para todos. Toca Compartir en la página del bebé para copiarlo — sin spam en el chat del grupo.",
-  "When something changes, post it. Loved ones see the status and can subscribe for push alerts.":
-    "Cuando algo cambie, publícalo. Tus seres queridos ven el estado y pueden suscribirse a avisos push.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Publica hitos y notas cotidianas desde el menú. Las notificaciones push solo van a quien se suscribió — y solo cuando marcas un cambio de estado (parto, hospital o nacido).",
   "Peek at settings": "Echa un vistazo a los ajustes",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Temas, nombres y si los visitantes pueden dejar ánimos — todo en Ajustes.",
@@ -1372,8 +1408,8 @@ const es: Record<TranslationKey, string> = {
   "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
     "Añade un nombre y una fecha prevista. Obtienes un enlace compartible como isbabyoutyet.com/baby/… que muestra el estado actual.",
   "Share once, update as you go": "Comparte una vez, actualiza sobre la marcha",
-  "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.":
-    "Publica hitos y mensajes desde la barra. Los visitantes pueden suscribirse a notificaciones y dejar ánimos.",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Publica hitos y mensajes desde el menú. Los cambios de estado avisan a los suscriptores; las notas cotidianas y los ánimos se quedan en silencio.",
   "Skip anytime": "Sáltalo cuando quieras",
   "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
     "Una pequeña lista te acompaña. Toca un paso para ir allí o resaltar el control. Ciérrala cuando quieras — reinicia desde la chispa del panel.",
@@ -1728,6 +1764,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Failed to send encouragement": "Não foi possível enviar a mensagem de carinho",
   "Shared with you": "Compartilhada com você",
   "Due {{date}}": "Previsto {{date}}",
+  "Born {{date}}": "Nasceu em {{date}}",
   Your: "Seus",
   babies: "bebês",
   "Add a": "Adicionar um",
@@ -1754,6 +1791,17 @@ const ptBR: Record<TranslationKey, string> = {
   "See it in action": "Veja na prática",
   "Click any stage to see how your page will look":
     "Clique em qualquer etapa para ver como sua página vai ficar",
+  "See a live page": "Ver uma página ao vivo",
+  "{{name}}'s page is a live demo — leave a note, look around, try it out":
+    "A página de {{name}} é uma demo ao vivo — deixe um recado, explore, experimente",
+  "Follow {{name}}'s arrival": "Acompanhe a chegada de {{name}}",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "Uma demo ao vivo com uma história de parto de dois dias, fotos e mensagens. Envie um carinho de teste — esta é a experiência completa.",
+  "Open the live page →": "Abrir a página ao vivo →",
+  "Or preview how each stage looks": "Ou veja como cada etapa fica",
+  "This is a demo baby": "Este é um bebê de demonstração",
+  "Feel free to post test messages — they get cleared on each deploy.":
+    "Fique à vontade para enviar mensagens de teste — elas são apagadas a cada deploy.",
   "How it works": "Como funciona",
   "Get Started Free 🎉": "Comece grátis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1814,8 +1862,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a baby": "Adicionar um bebê",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Um link para todos. Toque em Compartilhar na página do bebê para copiá-lo — sem spam no grupo.",
-  "When something changes, post it. Loved ones see the status and can subscribe for push alerts.":
-    "Quando algo mudar, publique. Quem você ama vê o status e pode se inscrever para alertas push.",
+  "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
+    "Publique marcos e notas do dia a dia pelo menu. Notificações push só vão para quem se inscreveu — e só quando você marca uma atualização de status (trabalho de parto, hospital ou nascido).",
   "Peek at settings": "Dê uma olhada nas configurações",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Temas, nomes e se visitantes podem deixar mensagens de incentivo — tudo em Configurações.",
@@ -1829,8 +1877,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
     "Adicione um nome e uma data prevista. Você recebe um link compartilhável como isbabyoutyet.com/baby/… que mostra o status atual.",
   "Share once, update as you go": "Compartilhe uma vez, atualize no caminho",
-  "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.":
-    "Publique marcos e mensagens pelo menu. Visitantes podem assinar notificações e deixar incentivos.",
+  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
+    "Publique marcos e mensagens pelo menu. Atualizações de status avisam assinantes; notas do dia a dia e incentivos ficam quietos.",
   "Skip anytime": "Pule quando quiser",
   "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
     "Uma listinha te acompanha. Toque em um passo para ir até lá ou destacar o controle. Dispense quando quiser — reinicie pelo brilho do painel.",
@@ -1852,6 +1900,8 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
     "One tap to update everyone — labor started, at the hospital, baby's here! No group texts, no repeated calls.",
   "Before labour starts": "Before labor starts",
+  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.":
+    "A live demo with a two-day labor story, photos, and messages. Send a test encouragement — this is the full experience.",
 };
 
 const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {

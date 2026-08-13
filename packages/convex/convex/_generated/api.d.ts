@@ -14,6 +14,7 @@ import type * as babyAccess from "../babyAccess.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as coParents from "../coParents.js";
 import type * as encouragements from "../encouragements.js";
+import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
 import type * as i18n from "../i18n.js";
 import type * as migrations from "../migrations.js";
@@ -40,6 +41,7 @@ declare const fullApi: ApiFromModules<{
   babyThumbnails: typeof babyThumbnails;
   coParents: typeof coParents;
   encouragements: typeof encouragements;
+  homepageDemo: typeof homepageDemo;
   http: typeof http;
   i18n: typeof i18n;
   migrations: typeof migrations;

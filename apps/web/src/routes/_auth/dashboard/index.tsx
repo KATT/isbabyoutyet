@@ -1,20 +1,16 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import {
-  ArrowRight,
-  Baby as BabyIcon,
-  CalendarHeart,
-  Plus,
-  SignOut,
-  Sparkle,
-} from "@phosphor-icons/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
+import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
-import { OnboardingHost } from "@/components/onboarding/onboarding-host";
+import { authServer } from "@/lib/auth-server";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
@@ -22,19 +18,22 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    return {
-      babies: await opts.context.convexClient.query(api.baby.listByUser, {}),
-    };
+    // Server: cookie-authenticated HTTP query so the first paint has babies.
+    // Client navigations use the already-authed Convex client.
+    const babies =
+      typeof window === "undefined"
+        ? await authServer.fetchAuthQuery(api.baby.listByUser, {})
+        : await opts.context.convexClient.query(api.baby.listByUser, {});
+    return { babies };
   },
 });
 
 function DashboardPage() {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const loaderData = Route.useLoaderData();
-  let babies = useQuery(api.baby.listByUser, {});
-  if (!babies || babies.length === 0) {
-    babies = loaderData.babies;
-  }
+  const auth = useConvexAuth();
+  const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
+  const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
@@ -123,110 +122,76 @@ function DashboardPage() {
           </p>
         </div>
 
-        {babies.length === 0 ? (
-          <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
-            <p className="text-5xl" aria-hidden="true">
-              🍼
-            </p>
-            <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
-            <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
-              {t("Get started by adding your first baby to track their journey")}
-            </p>
-            <Button
-              size="lg"
-              className="mt-6 rounded-full font-extrabold pop-shadow"
-              render={<Link to="/dashboard/add" preload="viewport" />}
-              nativeButton={false}
-              data-tour-id="add_baby"
-            >
-              <Plus className="w-4 h-4" />
-              {t("Add Your First Baby")}
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {babies.map((baby, index) => {
-              const dueDate = new Date(baby.dueDate);
-              const now = new Date();
-              const daysUntilDue = Math.ceil(
-                (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-              );
-              const isOverdue = daysUntilDue < 0;
-
-              return (
-                <Link
-                  key={baby._id}
-                  to="/baby/$publicId"
-                  params={{ publicId: baby.publicId }}
-                  preload="viewport"
-                  className="group"
-                  data-tour-id={
-                    progress?.tourBaby?.publicId === baby.publicId ? "tour_baby" : undefined
-                  }
-                >
-                  <div
-                    className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${
-                      index % 2 === 0 ? "group-hover:-rotate-1" : "group-hover:rotate-1"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-xl">
-                        👶
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                    </div>
-                    <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">
-                      {baby.name}
-                    </h2>
-                    <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                      <CalendarHeart className="h-3.5 w-3.5" />
-                      {t("Due {{date}}", {
-                        date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
-                          dueDate,
-                        ),
-                      })}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {"role" in baby && baby.role === "coParent" ? (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
-                        >
-                          {t("Shared with you")}
-                        </Badge>
-                      ) : null}
-                      {isOverdue ? (
-                        <Badge className="rounded-full font-bold">
-                          {t(
-                            Math.abs(daysUntilDue) === 1
-                              ? "{{count}} day overdue"
-                              : "{{count}} days overdue",
-                            { count: Math.abs(daysUntilDue) },
-                          )}
-                        </Badge>
-                      ) : daysUntilDue === 0 ? (
-                        <Badge className="rounded-full font-bold">{t("Due today!")}</Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
-                        >
-                          {t(
-                            daysUntilDue === 1
-                              ? "{{count}} day until due date"
-                              : "{{count}} days until due date",
-                            { count: daysUntilDue },
-                          )}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <DashboardBabyList
+          babies={babies}
+          isPending={liveBabies === undefined && babies.length === 0}
+          tourBabyPublicId={progress?.tourBaby?.publicId}
+        />
       </main>
+    </div>
+  );
+}
+
+type DashboardBaby = {
+  _id: Id<"baby">;
+  name: string;
+  publicId: string;
+  dueDate: string;
+  laborStarted?: string | null;
+  wentToHospital?: string | null;
+  babyBorn?: string | null;
+  role: "owner" | "coParent";
+};
+
+export function DashboardBabyList(props: {
+  babies: DashboardBaby[];
+  isPending: boolean;
+  tourBabyPublicId?: string;
+}) {
+  const { t } = useI18n();
+
+  if (props.isPending) {
+    return (
+      <div className="mx-auto max-w-xl py-14 text-center">
+        <Spinner className="mx-auto size-8 text-primary" />
+      </div>
+    );
+  }
+
+  if (props.babies.length === 0) {
+    return (
+      <div className="mx-auto max-w-xl rounded-[2rem] border-2 border-dashed border-border bg-card/60 py-14 text-center">
+        <p className="text-5xl" aria-hidden="true">
+          🍼
+        </p>
+        <h3 className="mt-4 text-2xl font-black text-foreground">{t("No babies added yet")}</h3>
+        <p className="mx-auto mt-2 max-w-md font-medium text-muted-foreground">
+          {t("Get started by adding your first baby to track their journey")}
+        </p>
+        <Button
+          size="lg"
+          className="mt-6 rounded-full font-extrabold pop-shadow"
+          render={<Link to="/dashboard/add" preload="viewport" />}
+          nativeButton={false}
+          data-tour-id="add_baby"
+        >
+          <Plus className="w-4 h-4" />
+          {t("Add Your First Baby")}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+      {props.babies.map((baby, index) => (
+        <DashboardBabyCard
+          key={baby._id}
+          baby={baby}
+          index={index}
+          dataTourId={props.tourBabyPublicId === baby.publicId ? "tour_baby" : undefined}
+        />
+      ))}
     </div>
   );
 }

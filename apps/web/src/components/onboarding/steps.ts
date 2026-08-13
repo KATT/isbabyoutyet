@@ -38,7 +38,7 @@ export const ONBOARDING_STEPS = [
     id: "post_update",
     title: "Post an update",
     description:
-      "When something changes, post it. Loved ones see the status and can subscribe for push alerts.",
+      "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).",
     surface: "baby",
     targetId: "post_update",
     icon: ChatCircleText,
@@ -81,7 +81,7 @@ export const WELCOME_SLIDES = [
   },
   {
     title: "Share once, update as you go",
-    body: "Post milestones and messages from the nav. Visitors can subscribe for notifications and leave encouragements.",
+    body: "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
     icon: ChatCircleText,
   },
   {
