@@ -26,7 +26,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
 
   // The form mounted with the current name and the link reassurance
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova");
   expect(view.getByText(/any link you've already shared keeps working/i)).toBeTruthy();
 
@@ -40,7 +40,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));
   // The popover closed after a successful save
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
 });
 
 test("reopening the editor picks up the latest name without any reset", async () => {
@@ -49,15 +49,15 @@ test("reopening the editor picks up the latest name without any reset", async ()
 
   // Open, type a draft, then cancel — the draft must not survive
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Scrapped draft" } });
+  fireEvent.change(view.getByLabelText("Baby Name"), { target: { value: "Scrapped draft" } });
   fireEvent.click(view.getByRole("button", { name: "Cancel" }));
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
 
   // The name changes from outside (e.g. the mutation round-trip)
   view.rerender(<NameEditor baby={{ ...baby, name: "Nova Rae" }} onUpdate={onUpdate} />);
 
   // Reopening mounts a fresh form seeded with the latest name
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
 });
