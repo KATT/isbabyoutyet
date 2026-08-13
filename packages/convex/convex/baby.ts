@@ -19,6 +19,8 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
+import { requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { listBabiesForUser } from "./coParents";
 
 export const listByUser = query({
   args: {},
@@ -28,13 +30,7 @@ export const listByUser = query({
       return [];
     }
 
-    const babies = await ctx.db
-      .query("baby")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .order("desc")
-      .collect();
-
-    return babies.filter(isActive);
+    return await listBabiesForUser(ctx, identity.subject);
   },
 });
 
@@ -90,20 +86,7 @@ export type Baby = Doc<"baby">;
 export const generateUploadUrl = mutation({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby || !isActive(baby)) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
-
+    await requireBabyManager(ctx, args.babyId);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -167,19 +150,7 @@ export const updatePhoto = mutationWithTriggers({
     photoId: v.union(v.id("_storage"), v.null()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby || !isActive(baby)) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
 
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
@@ -192,6 +163,7 @@ export const updatePhoto = mutationWithTriggers({
       babyId: args.babyId,
       postedAt: Date.now(),
       photoId: args.photoId,
+      postedByUserId: identity.subject,
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
@@ -298,19 +270,7 @@ export const create = mutationWithTriggers({
 export const remove = mutationWithTriggers({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby || !isActive(baby)) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    await requireBabyOwner(ctx, args.babyId);
 
     const pendingNotifications = await ctx.db
       .query("scheduledNotifications")
@@ -336,19 +296,7 @@ export const remove = mutationWithTriggers({
 export const getScheduledNotifications = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
-    const baby = await ctx.db.get(args.babyId);
-    if (!baby || !isActive(baby)) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    await requireBabyManager(ctx, args.babyId);
 
     const notifications = await ctx.db
       .query("scheduledNotifications")
@@ -363,24 +311,12 @@ export const getScheduledNotifications = query({
 export const cancelScheduledNotification = mutation({
   args: { notificationId: v.id("scheduledNotifications") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) {
-      throw new Error("Not authenticated");
-    }
-
     const notification = await ctx.db.get(args.notificationId);
     if (!notification) {
       throw new Error("Notification not found");
     }
 
-    const baby = await ctx.db.get(notification.babyId);
-    if (!baby || !isActive(baby)) {
-      throw new Error("Baby not found");
-    }
-
-    if (baby.userId !== identity.subject) {
-      throw new Error("Not authorized");
-    }
+    await requireBabyManager(ctx, notification.babyId);
 
     if (notification.status !== "pending") {
       throw new Error("Notification is not pending");
@@ -527,6 +463,7 @@ async function syncMilestoneUpdates(
       babyBorn?: string | null;
     };
     legacyMessages: Partial<Record<Milestone, string | null>>;
+    postedByUserId: string;
   },
 ) {
   const baby = opts.baby;
@@ -562,6 +499,7 @@ async function syncMilestoneUpdates(
           occurredAt,
           milestone,
           message: messageArg ?? null,
+          postedByUserId: opts.postedByUserId,
         });
       }
       continue;
@@ -593,19 +531,13 @@ export const update = mutationWithTriggers({
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Not authenticated");
-
     const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const { identity, baby } = await requireBabyManager(ctx, babyId);
     const legacyMessages = {
       labor_started: laborStartedMessage,
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
-
-    const baby = await ctx.db.get(babyId);
-    if (!baby || !isActive(baby)) throw new Error("Baby not found");
-    if (baby.userId !== identity.subject) throw new Error("Not authorized");
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings
@@ -650,7 +582,12 @@ export const update = mutationWithTriggers({
 
     await ctx.db.patch(babyId, patch);
 
-    await syncMilestoneUpdates(ctx, { baby, patch: rest, legacyMessages });
+    await syncMilestoneUpdates(ctx, {
+      baby,
+      patch: rest,
+      legacyMessages,
+      postedByUserId: identity.subject,
+    });
 
     const updatedBaby = await ctx.db.get(babyId);
     if (!updatedBaby) throw new Error("Baby not found after update");
