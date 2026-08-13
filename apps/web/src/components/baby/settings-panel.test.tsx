@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { LocaleProvider } from "@/lib/i18n";
 
 const baby: BabyData = {
   name: "Nova",
@@ -48,12 +49,34 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByText("Encouragements")).toBeTruthy();
   expect(open.getByText("Visitors can send messages")).toBeTruthy();
+  expect(open.queryByText("Delete page")).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
   expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
 });
 
+test("delete page control appears when onDelete is provided", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onDelete = vi.fn<() => void | Promise<void>>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      onDelete={onDelete}
+      open={true}
+      onOpenChange={onOpenChange}
+    />,
+  );
+
+  expect(view.getByText("Delete page")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Delete" }));
+  expect(view.getByRole("heading", { name: "Delete Nova's page?" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Delete page" }));
+  expect(onDelete).toHaveBeenCalled();
+});
 test("encouragements switch toggles the disabled flag via onUpdate", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
@@ -64,4 +87,24 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
 
   fireEvent.click(view.getByRole("switch"));
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
+});
+
+test("theme constants render through the active translation catalog", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <LocaleProvider locale="sv">
+      <SettingsPanel
+        baby={baby}
+        onUpdate={onUpdate}
+        open
+        onOpenChange={onOpenChange}
+        profileLocale="sv"
+      />
+    </LocaleProvider>,
+  );
+
+  expect(view.getByText("Tema")).toBeTruthy();
+  expect(view.getByText("Standard")).toBeTruthy();
 });

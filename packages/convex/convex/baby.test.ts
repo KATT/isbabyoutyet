@@ -37,6 +37,7 @@ test("create a baby and list it for the owner", async () => {
       dueDate: "2026-09-01",
       publicId: "baby-smith",
       userId: "alice",
+      role: "owner",
     },
   ]);
 
@@ -60,6 +61,43 @@ test("getByPublicId resolves by publicId and by document id", async () => {
 
   const byDocumentId = await t.query(api.baby.getByPublicId, { id: created.babyId });
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });
+});
+
+test("a baby inherits the owner locale until an override is set", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.profile.ensure, { browserLocale: "sv-SE" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Little One",
+    dueDate: "2026-10-15",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    resolvedLocale: "sv",
+  });
+
+  await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    resolvedLocale: "es",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    locale: "en-US",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    locale: "en-US",
+    resolvedLocale: "en-US",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    locale: null,
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    locale: null,
+    resolvedLocale: "es",
+  });
 });
 
 test("renaming a baby rotates the publicId and keeps the old one resolvable", async () => {
@@ -126,4 +164,41 @@ test("moving the status forward schedules a push notification", async () => {
     { status: "pending", notificationType: "born" },
     { status: "cancelled", notificationType: "labor_started" },
   ]);
+});
+
+test("owner can soft-delete a baby; it disappears from lists and public lookup", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const asBob = t.withIdentity({ subject: "bob" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Soft Delete Me",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+
+  await expect(asBob.mutation(api.baby.remove, { babyId: created.babyId })).rejects.toThrow(
+    "Not authorized",
+  );
+
+  await asAlice.mutation(api.baby.remove, { babyId: created.babyId });
+
+  expect(await asAlice.query(api.baby.listByUser, {})).toEqual([]);
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toBeNull();
+
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  expect(stored?.deletedAt).toEqual(expect.any(Number));
+
+  const notifications = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("scheduledNotifications")
+      .withIndex("by_babyId", (q) => q.eq("babyId", created.babyId))
+      .collect();
+  });
+  expect(notifications.every((n) => n.status === "cancelled")).toBe(true);
 });

@@ -16,24 +16,29 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
+import type { TranslationFunction } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 
-const addBabySchema = z
-  .object({
-    name: z.string().trim().min(2, "Name is required"),
-    dueDate: htmlDate,
-  })
-  .transform((values): FunctionArgs<typeof api.baby.create> => values);
+function addBabySchema(t: TranslationFunction) {
+  return z
+    .object({
+      name: z.string().trim().min(2, t("Name is required")),
+      dueDate: htmlDate(t),
+    })
+    .transform((values): FunctionArgs<typeof api.baby.create> => values);
+}
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
 });
 
 function AddBabyPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
 
   const form = useZodForm({
-    schema: addBabySchema,
+    schema: addBabySchema(t),
     defaultValues: {
       name: "",
       dueDate: "",
@@ -51,7 +56,7 @@ function AddBabyPage() {
           nativeButton={false}
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Dashboard
+          {t("Back to Dashboard")}
         </Button>
 
         <div className="mb-8 text-center">
@@ -59,13 +64,13 @@ function AddBabyPage() {
             🎉
           </p>
           <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground md:text-5xl">
-            Add a{" "}
+            {t("Add a")}{" "}
             <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
-              baby
+              {t("baby")}
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            A name and a due date — that's all it takes!
+            {t("A name and a due date — that's all it takes!")}
           </p>
         </div>
 
@@ -89,9 +94,9 @@ function AddBabyPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold">Baby Name</FormLabel>
+                      <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter baby's name" {...field} />
+                        <Input placeholder={t("Enter baby's name")} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -103,7 +108,7 @@ function AddBabyPage() {
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold">Due Date</FormLabel>
+                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -118,7 +123,7 @@ function AddBabyPage() {
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? "Creating..." : "Add Baby 🍼"}
+                  {form.formState.isSubmitting ? t("Creating...") : t("Add Baby 🍼")}
                 </Button>
               </div>
             </Form>

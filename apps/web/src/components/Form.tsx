@@ -12,6 +12,7 @@ import type {
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { useI18n } from "@/lib/i18n";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
   TInput,
@@ -45,6 +46,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   handleSubmit: (values: TOutput) => Promise<void>;
   onInvalid?: (errors: FieldErrors<TInput>) => void;
 }) => {
+  const { t } = useI18n();
   const { id, ...rest } = props.form;
   return (
     <FormProvider {...rest}>
@@ -56,7 +58,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
               await props.handleSubmit(values);
             } catch (error) {
               console.error("Uncaught error in form", error);
-              toast.error(error instanceof Error ? error.message : "Failed to submit form");
+              toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             }
           }, props.onInvalid)(event);
         }}

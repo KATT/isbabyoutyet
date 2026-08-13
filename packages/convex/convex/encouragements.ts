@@ -1,7 +1,9 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { insertEncouragementTimelineItem } from "./timeline";
+import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
+import { canManageBaby } from "./babyAccess";
+import { isActive } from "./softDelete";
 
 const MAX_NAME_LENGTH = 50;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -21,9 +23,9 @@ export const create = mutation({
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    // Validate baby exists
+    // Validate baby exists and is not soft-deleted
     const baby = await ctx.db.get(args.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
@@ -76,7 +78,7 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);
-    if (!encouragement) {
+    if (!encouragement || !isActive(encouragement)) {
       throw new Error("Encouragement not found");
     }
 
@@ -117,10 +119,10 @@ export const listByBaby = query({
       .paginate(args.paginationOpts);
 
     // Public DTO: never return visitorId (the edit/delete credential) or the
-    // userAgent/locale/timezone metadata
+    // userAgent/locale/timezone metadata. Soft-deleted rows are omitted.
     return {
       ...result,
-      page: result.page.map((encouragement) => ({
+      page: result.page.filter(isActive).map((encouragement) => ({
         _id: encouragement._id,
         authorName: encouragement.authorName,
         message: encouragement.message,
@@ -138,18 +140,18 @@ export const remove = mutation({
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);
-    if (!encouragement) {
+    if (!encouragement || !isActive(encouragement)) {
       throw new Error("Encouragement not found");
     }
 
     const baby = await ctx.db.get(encouragement.babyId);
-    if (!baby) {
+    if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
     }
 
-    // Check if user is the baby's owner (authenticated)
+    // Check if user can manage the baby (owner or co-parent)
     const identity = await ctx.auth.getUserIdentity();
-    const isOwner = identity && baby.userId === identity.subject;
+    const isManager = identity ? await canManageBaby(ctx, baby, identity.subject) : false;
 
     // Check if visitor can delete (matches visitorId and within time window)
     const canVisitorDelete =
@@ -157,13 +159,10 @@ export const remove = mutation({
       encouragement.visitorId === args.visitorId &&
       isWithinEditWindow(encouragement.createdAt);
 
-    if (!isOwner && !canVisitorDelete) {
+    if (!isManager && !canVisitorDelete) {
       throw new Error("Not authorized to delete this encouragement");
     }
 
-    await ctx.db.delete(args.encouragementId);
-    if (encouragement.timelineItemId) {
-      await ctx.db.delete(encouragement.timelineItemId);
-    }
+    await deleteEncouragementWithTimelineItem(ctx, encouragement);
   },
 });
