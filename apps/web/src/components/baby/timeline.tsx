@@ -217,59 +217,6 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
   const canPost = !isPosting && schema.safeParse(draft).success;
 
-  const clearPhoto = () => {
-    form.setValue("photo", null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-    if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      toast.error("Photo must be 10 MB or smaller");
-      return;
-    }
-    form.setValue("photo", file, { shouldDirty: true });
-  };
-
-  const handlePost = async (values: {
-    message: string;
-    milestone: Milestone | null;
-    occurredAt: number | null;
-    photo: File | null;
-  }) => {
-    let photoId: Id<"_storage"> | undefined;
-    if (values.photo) {
-      const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": values.photo.type },
-        body: values.photo,
-      });
-      if (!response.ok) {
-        throw new Error("Failed to upload photo");
-      }
-      const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
-      photoId = uploaded.storageId;
-    }
-
-    await postUpdate({
-      babyId: props.babyId,
-      message: values.message || undefined,
-      milestone: values.milestone ?? undefined,
-      occurredAt: values.occurredAt ?? undefined,
-      photoId,
-    });
-
-    toast.success("Update posted!");
-    // No reset needed: the composer lives in a dialog that unmounts on close
-    props.onPosted?.();
-  };
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -281,7 +228,37 @@ export function UpdateComposer(props: UpdateComposerProps) {
         each is optional, any mix works.
       </p>
 
-      <Form form={form} handleSubmit={handlePost}>
+      <Form
+        form={form}
+        handleSubmit={async (values) => {
+          let photoId: Id<"_storage"> | undefined;
+          if (values.photo) {
+            const uploadUrl = await generateUploadUrl({ babyId: props.babyId });
+            const response = await fetch(uploadUrl, {
+              method: "POST",
+              headers: { "Content-Type": values.photo.type },
+              body: values.photo,
+            });
+            if (!response.ok) {
+              throw new Error("Failed to upload photo");
+            }
+            const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
+            photoId = uploaded.storageId;
+          }
+
+          await postUpdate({
+            babyId: props.babyId,
+            message: values.message || undefined,
+            milestone: values.milestone ?? undefined,
+            occurredAt: values.occurredAt ?? undefined,
+            photoId,
+          });
+
+          toast.success("Update posted!");
+          // No reset needed: the composer lives in a dialog that unmounts on close
+          props.onPosted?.();
+        }}
+      >
         <div className="space-y-3">
           <FormField
             control={form.control}
@@ -315,7 +292,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 variant="secondary"
                 size="icon"
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
-                onClick={clearPhoto}
+                onClick={() => {
+                  form.setValue("photo", null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }}
                 disabled={isPosting}
                 aria-label="Remove photo"
               >
@@ -406,7 +386,19 @@ export function UpdateComposer(props: UpdateComposerProps) {
             ref={fileInputRef}
             type="file"
             accept="image/*"
-            onChange={handleFileSelect}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              if (!file.type.startsWith("image/")) {
+                toast.error("Please select an image file");
+                return;
+              }
+              if (file.size > MAX_PHOTO_SIZE_BYTES) {
+                toast.error("Photo must be 10 MB or smaller");
+                return;
+              }
+              form.setValue("photo", file, { shouldDirty: true });
+            }}
             className="hidden"
           />
 
@@ -897,50 +889,6 @@ export function TimelineFeed(props: TimelineFeedProps) {
     };
   }, [status, loadMore]);
 
-  const handleDeleteUpdate = async (updateId: Id<"updates">) => {
-    try {
-      await removeUpdate({ updateId });
-      toast.success("Update removed");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove update");
-    }
-  };
-
-  const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
-    try {
-      await setAsCurrentPhoto({ updateId });
-      toast.success("Set as the page photo");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to set page photo");
-    }
-  };
-
-  const handleDeleteEncouragement = async (
-    encouragementId: Id<"encouragements">,
-    visitorId?: string,
-  ) => {
-    try {
-      await removeEncouragement({ encouragementId, visitorId });
-      toast.success("Encouragement removed");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to remove encouragement");
-    }
-  };
-
-  const handleUpdateEncouragement = async (
-    encouragementId: Id<"encouragements">,
-    visitorId: string,
-    message: string,
-  ) => {
-    try {
-      await updateEncouragement({ encouragementId, visitorId, message });
-      toast.success("Encouragement updated");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update encouragement");
-      throw error;
-    }
-  };
-
   if (status === "LoadingFirstPage") {
     return (
       <div className="py-8 text-center text-muted-foreground">
@@ -988,8 +936,22 @@ export function TimelineFeed(props: TimelineFeedProps) {
               baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
-              onDelete={handleDeleteUpdate}
-              onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
+              onDelete={async (updateId) => {
+                try {
+                  await removeUpdate({ updateId });
+                  toast.success("Update removed");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Failed to remove update");
+                }
+              }}
+              onSetAsCurrentPhoto={async (updateId) => {
+                try {
+                  await setAsCurrentPhoto({ updateId });
+                  toast.success("Set as the page photo");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Failed to set page photo");
+                }
+              }}
             />
           ) : (
             <EncouragementTimelineItem
@@ -997,8 +959,27 @@ export function TimelineFeed(props: TimelineFeedProps) {
               item={item}
               isOwner={props.isOwner}
               currentVisitorId={currentVisitorId}
-              onDelete={handleDeleteEncouragement}
-              onUpdate={handleUpdateEncouragement}
+              onDelete={async (encouragementId, visitorId) => {
+                try {
+                  await removeEncouragement({ encouragementId, visitorId });
+                  toast.success("Encouragement removed");
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Failed to remove encouragement",
+                  );
+                }
+              }}
+              onUpdate={async (encouragementId, visitorId, message) => {
+                try {
+                  await updateEncouragement({ encouragementId, visitorId, message });
+                  toast.success("Encouragement updated");
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error ? error.message : "Failed to update encouragement",
+                  );
+                  throw error;
+                }
+              }}
             />
           ),
         )}
