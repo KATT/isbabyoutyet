@@ -8,7 +8,9 @@
     "oxlint-plugins/**"
   ],
   "workspaces": {
-    ".": {},
+    ".": {
+      "entry": ["scripts/checks-affected.mjs!"]
+    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
