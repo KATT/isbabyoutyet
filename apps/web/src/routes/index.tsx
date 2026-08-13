@@ -3,9 +3,12 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
+import { LanguagePicker } from "@/components/language-picker";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
+import { setLocale } from "@/lib/paraglide-setup";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -143,6 +146,12 @@ export function HomePage() {
 
   const currentDate = useCurrentDate();
 
+  async function selectLocale(value: SupportedLocale) {
+    // Paraglide's configured cookie strategy persists explicit choices, then
+    // reloads so SSR and the hydrated page use the same locale.
+    await setLocale(value);
+  }
+
   // Helper to calculate dates with offsets for realistic demo scenarios
   const hoursAgo = (hours: number) => {
     const date = new Date(currentDate);
@@ -174,7 +183,7 @@ export function HomePage() {
         name: "Sophia",
         laborStarted: hoursAgo(4),
         wentToHospital: hoursAgo(1),
-        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        hospitalMessage: "We've made it in! More news when we have it 💕",
         theme: "bubblegum",
       },
     },
@@ -462,16 +471,24 @@ export function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
-        <a
-          href="https://github.com/KATT/isbabyoutyet"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <GithubIcon className="h-5 w-5" />
-          <span>{t("Open source on GitHub")}</span>
-        </a>
+      <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8 text-center">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
+          <LanguagePicker
+            value={locale}
+            disabled={false}
+            label={t("Language")}
+            onValueChange={selectLocale}
+          />
+          <a
+            href="https://github.com/KATT/isbabyoutyet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <GithubIcon className="h-5 w-5" />
+            <span>{t("Open source on GitHub")}</span>
+          </a>
+        </div>
       </footer>
     </div>
   );

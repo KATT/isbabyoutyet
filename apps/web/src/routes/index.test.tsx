@@ -1,9 +1,10 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
+import { cookieName } from "@/paraglide/runtime";
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
@@ -71,5 +72,22 @@ test("Swedish homepage links visitors to Ella Holm", async () => {
       link.getAttribute("href")?.includes(`/baby/${HOMEPAGE_DEMO_BABIES.sv.publicId}`),
     );
   expect(demoLinks.length).toBeGreaterThan(0);
-  expect(screen.getByText("Följ Ella Holms ankomst")).toBeTruthy();
+  expect(screen.getByText("Följ med tills Ella Holm är här")).toBeTruthy();
+});
+
+test("homepage language picker saves an explicit language choice", async () => {
+  document.cookie = `${cookieName}=; path=/; max-age=0`;
+  await using _cookie = makeResource({}, () => {
+    document.cookie = `${cookieName}=; path=/; max-age=0`;
+  });
+  await using _view = renderResource(<HomePage />);
+
+  fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
+  const swedish = await screen.findByRole("option", { name: "Swedish" });
+  fireEvent.pointerDown(swedish, { pointerType: "mouse" });
+  fireEvent.click(swedish);
+
+  await vi.waitFor(() => {
+    expect(document.cookie).toContain(`${cookieName}=sv`);
+  });
 });
