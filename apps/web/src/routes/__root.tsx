@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useMatches,
   useRouteContext,
 } from "@tanstack/react-router";
 import type { ConvexReactClient } from "convex/react";
@@ -24,74 +25,106 @@ import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
 import { Baby, IconContext } from "@phosphor-icons/react";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
+import { detectRequestLocale } from "@/lib/detect-locale";
+import { m } from "@/paraglide/messages";
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
+  locale: SupportedLocale;
 }>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        name: "description",
-        content: "Track the progress of labor and birth - know when baby arrives!",
-      },
-      {
-        name: "theme-color",
-        content: "#ea580c",
-      },
-      {
-        name: "mobile-web-app-capable",
-        content: "yes",
-      },
-      {
-        name: "apple-mobile-web-app-capable",
-        content: "yes",
-      },
-      {
-        name: "apple-mobile-web-app-status-bar-style",
-        content: "black-translucent",
-      },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: nunitoCss,
-      },
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "stylesheet",
-        href: typeCss,
-      },
-      {
-        rel: "apple-touch-icon",
-        href: "/apple-touch-icon.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "32x32",
-        href: "/favicon-32x32.png",
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        sizes: "16x16",
-        href: "/favicon-16x16.png",
-      },
-    ],
-  }),
+  beforeLoad: async () => {
+    return { locale: await detectRequestLocale() };
+  },
+  head: (opts) => {
+    const locale = opts.match.context.locale ?? getDetectedLocale();
+    const description = translate(
+      locale,
+      "Track the progress of labour and birth – know when baby arrives!",
+    );
+    return {
+      meta: [
+        {
+          charSet: "utf-8",
+        },
+        {
+          name: "viewport",
+          content: "width=device-width, initial-scale=1",
+        },
+        {
+          name: "description",
+          content: description,
+        },
+        {
+          property: "og:locale",
+          content: locale.replace("-", "_"),
+        },
+        {
+          property: "og:site_name",
+          content: m.app_name({}, { locale }),
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary",
+        },
+        {
+          name: "theme-color",
+          content: "#ea580c",
+        },
+        {
+          name: "mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-capable",
+          content: "yes",
+        },
+        {
+          name: "apple-mobile-web-app-status-bar-style",
+          content: "black-translucent",
+        },
+      ],
+      links: [
+        {
+          rel: "stylesheet",
+          href: nunitoCss,
+        },
+        {
+          rel: "stylesheet",
+          href: appCss,
+        },
+        {
+          rel: "stylesheet",
+          href: typeCss,
+        },
+        {
+          rel: "apple-touch-icon",
+          href: "/apple-touch-icon.png",
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "32x32",
+          href: "/favicon-32x32.png",
+        },
+        {
+          rel: "icon",
+          type: "image/png",
+          sizes: "16x16",
+          href: "/favicon-16x16.png",
+        },
+      ],
+    };
+  },
   headers() {
     return {
       "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
+      Vary: "Accept-Language, Cookie",
     };
   },
   component: RootComponent,
@@ -100,6 +133,11 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
+  const matches = useMatches();
+  const locale = matches.reduce((currentLocale, match) => {
+    const matchContext = match.context as { locale?: SupportedLocale };
+    return matchContext.locale ?? currentLocale;
+  }, context.locale);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -126,9 +164,11 @@ function RootComponent() {
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>
-            <RootDocument>
-              <Outlet />
-            </RootDocument>
+            <LocaleProvider locale={locale}>
+              <RootDocument locale={locale}>
+                <Outlet />
+              </RootDocument>
+            </LocaleProvider>
           </TooltipProvider>
         </IconContext.Provider>
       </ConvexBetterAuthProvider>
@@ -137,6 +177,7 @@ function RootComponent() {
 }
 
 function NotFoundComponent() {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
       <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
@@ -144,21 +185,21 @@ function NotFoundComponent() {
           <Baby className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-black text-foreground">Not arrived yet!</h2>
+        <h2 className="text-2xl font-black text-foreground">{t("Not arrived yet!")}</h2>
         <p className="text-muted-foreground font-medium">
-          Looks like this page hasn't arrived yet. Let's get you back home!
+          {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
         <Button size="lg" className="rounded-full" render={<Link to="/" />} nativeButton={false}>
-          Go Home
+          {t("Go Home")}
         </Button>
       </div>
     </div>
   );
 }
 
-function RootDocument(props: { children: React.ReactNode }) {
+function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
   return (
-    <html lang="en">
+    <html lang={props.locale} dir="ltr">
       <head>
         <HeadContent />
       </head>

@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { supportedLocaleValidator } from "./i18n";
 
 export default defineSchema({
   baby: defineTable({
@@ -14,6 +15,7 @@ export default defineSchema({
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
+    locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
@@ -22,6 +24,15 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_publicId", ["publicId"]),
+  userProfiles: defineTable({
+    userId: v.string(), // Better Auth user ID
+    locale: supportedLocaleValidator,
+  }).index("by_userId", ["userId"]),
+  languageRequests: defineTable({
+    userId: v.string(), // Better Auth user ID
+    requestedLocale: v.string(), // Free-form language name or BCP 47 tag
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
   babyPublicIdHistory: defineTable({
     babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId

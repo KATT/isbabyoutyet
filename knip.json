@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**"],
+  "ignore": ["**/_generated/**", "**/routeTree.gen.ts", "coverage/**", "**/paraglide/**"],
   "workspaces": {
     ".": {},
     "apps/web": {
@@ -9,6 +9,7 @@
       },
       "entry": [
         "public/sw.js!",
+        "src/server.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
