@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
-import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
-import { ArrowRight, Baby as BabyIcon, CalendarHeart, Plus, SignOut } from "@phosphor-icons/react";
+import { Baby as BabyIcon, Plus, SignOut } from "@phosphor-icons/react";
+import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 });
 
 function DashboardPage() {
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
   const loaderData = Route.useLoaderData();
   let babies = useQuery(api.baby.listByUser, {});
   if (!babies || babies.length === 0) {
@@ -120,82 +120,9 @@ function DashboardPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {babies.map((baby, index) => {
-              const dueDate = new Date(baby.dueDate);
-              const now = new Date();
-              const daysUntilDue = Math.ceil(
-                (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-              );
-              const isOverdue = daysUntilDue < 0;
-
-              return (
-                <Link
-                  key={baby._id}
-                  to="/baby/$publicId"
-                  params={{ publicId: baby.publicId }}
-                  preload="viewport"
-                  className="group"
-                >
-                  <div
-                    className={`flex h-full flex-col rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform group-hover:-translate-y-1 ${
-                      index % 2 === 0 ? "group-hover:-rotate-1" : "group-hover:rotate-1"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-xl">
-                        👶
-                      </span>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                    </div>
-                    <h2 className="mt-4 text-2xl font-black tracking-tight text-foreground">
-                      {baby.name}
-                    </h2>
-                    <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
-                      <CalendarHeart className="h-3.5 w-3.5" />
-                      {t("Due {{date}}", {
-                        date: new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(
-                          dueDate,
-                        ),
-                      })}
-                    </p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {"role" in baby && baby.role === "coParent" ? (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
-                        >
-                          {t("Shared with you")}
-                        </Badge>
-                      ) : null}
-                      {isOverdue ? (
-                        <Badge className="rounded-full font-bold">
-                          {t(
-                            Math.abs(daysUntilDue) === 1
-                              ? "{{count}} day overdue"
-                              : "{{count}} days overdue",
-                            { count: Math.abs(daysUntilDue) },
-                          )}
-                        </Badge>
-                      ) : daysUntilDue === 0 ? (
-                        <Badge className="rounded-full font-bold">{t("Due today!")}</Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
-                        >
-                          {t(
-                            daysUntilDue === 1
-                              ? "{{count}} day until due date"
-                              : "{{count}} days until due date",
-                            { count: daysUntilDue },
-                          )}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
+            {babies.map((baby, index) => (
+              <DashboardBabyCard key={baby._id} baby={baby} index={index} />
+            ))}
           </div>
         )}
       </main>
