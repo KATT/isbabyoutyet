@@ -16,7 +16,7 @@ type PhotoAvatarProps = {
   photoUrl: string | null | undefined;
   thumbnailUrl: string | null | undefined;
   fallbackEmoji: string;
-  variant?: "default" | "born";
+  variant: "default" | "born";
 };
 
 function PhotoAvatar(props: PhotoAvatarProps) {
@@ -105,19 +105,19 @@ function PhotoAvatar(props: PhotoAvatarProps) {
  * stage — a text-only post refreshes it without a status change.
  */
 type LatestUpdateMessage = {
-  message?: string | null;
+  message: string | null | undefined;
   postedAt: number;
 };
 
 type StatusDisplayProps = {
   baby: BabyData;
   currentStatus: BabyStatus;
-  photoUrl?: string | null;
-  thumbnailUrl?: string | null;
-  latestUpdate?: LatestUpdateMessage | null;
+  photoUrl: string | null | undefined;
+  thumbnailUrl: string | null | undefined;
+  latestUpdate: LatestUpdateMessage | null | undefined;
 };
 
-function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
+function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null | undefined }) {
   const { locale, t } = useI18n();
   const latestUpdate = props.latestUpdate;
   if (!latestUpdate?.message) {

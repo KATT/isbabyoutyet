@@ -117,6 +117,9 @@ function PreviewPage() {
             replace: true,
           });
         }}
+        profileLocale={undefined}
+        onDelete={undefined}
+        coParents={undefined}
       />
 
       <div className="min-h-screen bg-background bg-dots">
@@ -133,6 +136,7 @@ function PreviewPage() {
             </Link>
             <BabyNav
               shareLink={null}
+              onPostUpdate={null}
               settingsButton={{
                 to: "/preview",
                 search: {
@@ -151,7 +155,13 @@ function PreviewPage() {
           </h1>
 
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
-            <StatusDisplay baby={baby} currentStatus={currentStatus} latestUpdate={latestUpdate} />
+            <StatusDisplay
+              baby={baby}
+              currentStatus={currentStatus}
+              latestUpdate={latestUpdate}
+              photoUrl={undefined}
+              thumbnailUrl={undefined}
+            />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />
           </section>

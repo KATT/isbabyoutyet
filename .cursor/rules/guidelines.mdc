@@ -78,6 +78,30 @@ function createClient(router: AnyRouter, url: string, transformer: any, links: a
 }
 ```
 
+### No optional `?` (apps/web)
+
+Enforced by `no-optional/no-optional` in `.oxlintrc.json`. Do not use TypeScript
+optional markers on properties or parameters (`x?: T`, `(x?: T) => …`). Prefer a
+required key with an explicit absence union so callers must pass the value:
+
+```typescript
+// ✅ CORRECT
+type Props = {
+  onClose: (() => void) | null;
+  className: string | undefined;
+};
+
+function load(id: string, visitorId: string | undefined) {}
+
+// ❌ INCORRECT — banned by lint
+type Props = {
+  onClose?: () => void;
+  className?: string;
+};
+
+function load(id: string, visitorId?: string) {}
+```
+
 ### Naming Conventions
 
 #### Type Parameters

@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to?: string }) => (
+  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
 }));
@@ -48,6 +48,7 @@ test("hides the owner group when the visitor has no owner actions", async () => 
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
+      onPostUpdate={null}
       settingsButton={null}
       settingsOpen={false}
     />,

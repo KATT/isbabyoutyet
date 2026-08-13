@@ -59,14 +59,16 @@ type SettingsPanelProps = {
   onUpdate: BabyUpdateHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profileLocale?: SupportedLocale;
+  profileLocale: SupportedLocale | undefined;
   /** Owner-only soft delete. Omitted on the preview page. */
-  onDelete?: () => void | Promise<void>;
+  onDelete: (() => void | Promise<void>) | undefined;
   /** When set, shows the co-parents section (real baby pages only). */
-  coParents?: {
-    babyId: Id<"baby">;
-    isOwner: boolean;
-  };
+  coParents:
+    | {
+        babyId: Id<"baby">;
+        isOwner: boolean;
+      }
+    | undefined;
 };
 
 /**

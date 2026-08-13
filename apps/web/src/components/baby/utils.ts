@@ -14,6 +14,7 @@ export const THEME_OPTIONS = [
     value: null,
     labelKey: "Default",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
+    css: undefined,
   }, // orange primary
   {
     value: "violet-bloom",
@@ -61,7 +62,7 @@ export const THEME_OPTIONS = [
   value: string | null;
   labelKey: TranslationKey;
   colors: readonly string[];
-  css?: string;
+  css: string | undefined;
 }>;
 
 const TIMEZONE = "Europe/Stockholm";
@@ -69,7 +70,7 @@ const TIMEZONE = "Europe/Stockholm";
 export function getThemeCssUrl(theme: string | null | undefined): string | null {
   if (!theme) return null;
   const option = THEME_OPTIONS.find((t) => t.value === theme);
-  return option && "css" in option ? option.css : null;
+  return option?.css ?? null;
 }
 
 export function getThemePrimaryColor(theme: string | null | undefined): string {

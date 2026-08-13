@@ -168,7 +168,7 @@ type UpdateComposerProps = {
   baby: BabyData;
   babyName: string;
   /** Called after a successful post (e.g. to close the containing dialog) */
-  onPosted?: () => void;
+  onPosted: (() => void) | undefined;
 };
 
 export function UpdateComposer(props: UpdateComposerProps) {
@@ -686,7 +686,7 @@ type EncouragementTimelineItemProps = {
   item: EncouragementItemData;
   isOwner: boolean;
   currentVisitorId: string;
-  onDelete: (id: Id<"encouragements">, visitorId?: string) => Promise<void>;
+  onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
 };
 
@@ -964,7 +964,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleDeleteEncouragement = async (
     encouragementId: Id<"encouragements">,
-    visitorId?: string,
+    visitorId: string | undefined,
   ) => {
     try {
       await removeEncouragement({ encouragementId, visitorId });

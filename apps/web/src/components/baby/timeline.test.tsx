@@ -50,7 +50,12 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
   const withProvider = (currentBaby: BabyData): ReactElement => (
     <LocaleProvider locale={locale}>
       <ConvexProvider client={client}>
-        <UpdateComposer babyId={babyId} baby={currentBaby} babyName={currentBaby.name} />
+        <UpdateComposer
+          babyId={babyId}
+          baby={currentBaby}
+          babyName={currentBaby.name}
+          onPosted={undefined}
+        />
       </ConvexProvider>
     </LocaleProvider>
   );
@@ -240,7 +245,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 
 function renderFeed(opts: {
   baby: BabyData;
-  isOwner?: boolean;
+  isOwner: boolean;
   initialPage: ComponentProps<typeof TimelineFeed>["initialPage"];
 }) {
   const client = new ConvexReactClient("https://example.convex.cloud", {
@@ -253,7 +258,7 @@ function renderFeed(opts: {
           babyId={babyId}
           baby={opts.baby}
           babyName={opts.baby.name}
-          isOwner={opts.isOwner ?? false}
+          isOwner={opts.isOwner}
           initialPage={opts.initialPage}
         />
       </TooltipProvider>
@@ -271,6 +276,7 @@ test("shows the prefetched first page instead of a spinner while the live query 
 
   await using view = renderFeed({
     baby: notYetBaby,
+    isOwner: false,
     initialPage: {
       page: [
         {
@@ -302,6 +308,7 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
 
   await using view = renderFeed({
     baby: notYetBaby,
+    isOwner: false,
     initialPage: { page: [], isDone: true, continueCursor: "" },
   });
 

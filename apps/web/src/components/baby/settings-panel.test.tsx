@@ -19,6 +19,12 @@ const baby: BabyData = {
   photoId: null,
 };
 
+const absentSettingsProps = {
+  profileLocale: undefined,
+  onDelete: undefined,
+  coParents: undefined,
+} as const;
+
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
   return makeResource(view, () => {
@@ -31,13 +37,25 @@ test("settings dialog shows page fields when open and stays closed when not", as
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using closed = renderResource(
-    <SettingsPanel baby={baby} onUpdate={onUpdate} open={false} onOpenChange={onOpenChange} />,
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open={false}
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
   );
   expect(closed.queryByRole("dialog")).toBeNull();
   expect(closed.queryByText("Settings")).toBeNull();
 
   await using open = renderResource(
-    <SettingsPanel baby={baby} onUpdate={onUpdate} open={true} onOpenChange={onOpenChange} />,
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open={true}
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
   );
 
   expect(open.getByRole("dialog")).toBeTruthy();
@@ -68,6 +86,8 @@ test("delete page control appears when onDelete is provided", async () => {
       onDelete={onDelete}
       open={true}
       onOpenChange={onOpenChange}
+      profileLocale={undefined}
+      coParents={undefined}
     />,
   );
 
@@ -82,7 +102,13 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
   await using view = renderResource(
-    <SettingsPanel baby={baby} onUpdate={onUpdate} open={true} onOpenChange={onOpenChange} />,
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open={true}
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
   );
 
   fireEvent.click(view.getByRole("switch"));
@@ -101,6 +127,8 @@ test("theme constants render through the active translation catalog", async () =
         open
         onOpenChange={onOpenChange}
         profileLocale="sv"
+        onDelete={undefined}
+        coParents={undefined}
       />
     </LocaleProvider>,
   );

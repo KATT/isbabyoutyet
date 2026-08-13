@@ -6,7 +6,6 @@ import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@workspace/ui/lib/utils";
 import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
@@ -14,8 +13,7 @@ type BabyNavProps = {
   settingsButton: null | LinkProps;
   settingsOpen: boolean;
   /** Owner-only "Post update" action */
-  onPostUpdate?: (() => void) | null;
-  className?: string;
+  onPostUpdate: (() => void) | null;
 };
 
 export function BabyNav(props: BabyNavProps) {
@@ -113,12 +111,7 @@ export function BabyNav(props: BabyNavProps) {
 
   // A floating pill dock; the page decides where it sits
   return (
-    <div
-      className={cn(
-        "flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm",
-        props.className,
-      )}
-    >
+    <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
       {ownerActions}
       {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
       {pageActions}
