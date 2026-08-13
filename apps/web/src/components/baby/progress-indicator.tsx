@@ -2,6 +2,7 @@ import { Progress } from "@workspace/ui/components/progress";
 import { Activity, CheckCircle, Hospital } from "lucide-react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import { getRelativeTime } from "./utils";
+import { useI18n } from "@/lib/i18n";
 
 type ProgressIndicatorProps = {
   baby: BabyData;
@@ -9,6 +10,7 @@ type ProgressIndicatorProps = {
 };
 
 export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProps) {
+  const { locale, t } = useI18n();
   // For progress bar: if a later status is set, show previous statuses as completed
   const isLaborCompletedForProgress =
     !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn;
@@ -53,11 +55,11 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "text-muted-foreground"
             }`}
           >
-            Labour started
+            {t("Labour started")}
           </p>
           {baby.laborStarted && (
             <p className="text-xs text-muted-foreground mt-1">
-              {getRelativeTime(baby.laborStarted)}
+              {getRelativeTime(baby.laborStarted, locale)}
             </p>
           )}
         </div>
@@ -84,11 +86,11 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "text-muted-foreground"
             }`}
           >
-            Gone to hospital
+            {t("Gone to hospital")}
           </p>
           {baby.wentToHospital && (
             <p className="text-xs text-muted-foreground mt-1">
-              {getRelativeTime(baby.wentToHospital)}
+              {getRelativeTime(baby.wentToHospital, locale)}
             </p>
           )}
         </div>
@@ -115,10 +117,12 @@ export function ProgressIndicator({ baby, currentStatus }: ProgressIndicatorProp
                   : "text-muted-foreground"
             }`}
           >
-            Baby born
+            {t("Baby born")}
           </p>
           {baby.babyBorn && (
-            <p className="text-xs text-muted-foreground mt-1">{getRelativeTime(baby.babyBorn)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {getRelativeTime(baby.babyBorn, locale)}
+            </p>
           )}
         </div>
       </div>

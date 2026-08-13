@@ -1,5 +1,4 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
-import { format } from "date-fns";
 import { Activity, Baby, CheckCircle, Hospital, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
@@ -8,8 +7,9 @@ import {
   getOverdueDays,
   getDaysUntilDueDate,
   getRelativeTime,
-  parseDate,
+  formatDueDate,
 } from "./utils";
+import { useI18n } from "@/lib/i18n";
 
 type PhotoAvatarProps = {
   photoUrl: string | null | undefined;
@@ -24,6 +24,7 @@ function PhotoAvatar({
   fallbackIcon,
   variant = "default",
 }: PhotoAvatarProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
 
   // Prefetch the full-size image when component mounts or photoUrl changes
@@ -68,7 +69,7 @@ function PhotoAvatar({
             {avatarImageUrl && (
               <img
                 src={avatarImageUrl}
-                alt="Baby"
+                alt={t("Baby Name")}
                 width={160}
                 height={160}
                 className="w-full h-full object-cover"
@@ -87,7 +88,7 @@ function PhotoAvatar({
           </button>
           <img
             src={photoUrl}
-            alt="Baby"
+            alt={t("Baby Name")}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
           />
         </DialogContent>
@@ -114,6 +115,7 @@ type StatusDisplayProps = {
 };
 
 function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
+  const { locale, t } = useI18n();
   const latestUpdate = props.latestUpdate;
   if (!latestUpdate?.message) {
     return null;
@@ -121,11 +123,13 @@ function LatestUpdateBox(props: { latestUpdate?: LatestUpdateMessage | null }) {
   return (
     <div className="mt-6 p-6 bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/30 rounded-xl w-full max-w-md shadow-lg shadow-primary/10">
       <p className="text-xs font-semibold uppercase tracking-wide text-primary/70 mb-2">
-        Latest from the family
+        {t("Latest from the family")}
       </p>
       <p className="text-lg font-bold text-primary break-words">{latestUpdate.message}</p>
       <p className="text-xs text-primary/70 mt-2">
-        Updated {getRelativeTime(new Date(latestUpdate.postedAt).toISOString())}
+        {t("Updated {{relative}}", {
+          relative: getRelativeTime(new Date(latestUpdate.postedAt).toISOString(), locale),
+        })}
       </p>
     </div>
   );
@@ -138,6 +142,7 @@ export function StatusDisplay({
   thumbnailUrl,
   latestUpdate,
 }: StatusDisplayProps) {
+  const { locale, t } = useI18n();
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
 
@@ -151,10 +156,10 @@ export function StatusDisplay({
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
           <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Not yet
+            {t("Not yet")}
           </span>
         </h2>
-        <p className="text-xl text-muted-foreground mb-6">Baby is still on the way</p>
+        <p className="text-xl text-muted-foreground mb-6">{t("Baby is still on the way")}</p>
         <LatestUpdateBox latestUpdate={latestUpdate} />
         <div
           className={`mt-4 p-6 rounded-xl shadow-lg ${
@@ -166,19 +171,26 @@ export function StatusDisplay({
           {overdueDays > 0 ? (
             <>
               <p className="text-xl font-bold text-primary">
-                {overdueDays} {overdueDays === 1 ? "day" : "days"} overdue
+                {t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
+                  count: overdueDays,
+                })}
               </p>
               <p className="text-sm text-primary/80 mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                {t("Due date: {{date}}", { date: formatDueDate(baby.dueDate, locale) })}
               </p>
             </>
           ) : (
             <>
               <p className="text-lg font-bold text-foreground">
-                {daysUntilDueDate} {daysUntilDueDate === 1 ? "day" : "days"} until due date
+                {t(
+                  daysUntilDueDate === 1
+                    ? "{{count}} day until due date"
+                    : "{{count}} days until due date",
+                  { count: daysUntilDueDate },
+                )}
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                Due date: {format(parseDate(baby.dueDate), "MMMM d, yyyy")}
+                {t("Due date: {{date}}", { date: formatDueDate(baby.dueDate, locale) })}
               </p>
             </>
           )}
@@ -197,12 +209,15 @@ export function StatusDisplay({
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
           <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Labour started
+            {t("Labour started")}
           </span>
         </h2>
-        <p className="text-xl text-muted-foreground mb-2">Not gone to hospital yet</p>
+        <p className="text-xl text-muted-foreground mb-2">{t("Not gone to hospital yet")}</p>
         <p className="text-lg text-muted-foreground mt-2">
-          Started at {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+          {t("Started at {{date}} ({{relative}})", {
+            date: formatDate(currentStatus.date, locale),
+            relative: getRelativeTime(currentStatus.date, locale),
+          })}
         </p>
         <LatestUpdateBox latestUpdate={latestUpdate} />
       </div>
@@ -219,11 +234,11 @@ export function StatusDisplay({
         />
         <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
           <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-            Gone to hospital
+            {t("Gone to hospital")}
           </span>
         </h2>
         <p className="text-xl text-muted-foreground mb-4">
-          {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+          {formatDate(currentStatus.date, locale)} ({getRelativeTime(currentStatus.date, locale)})
         </p>
         <LatestUpdateBox latestUpdate={latestUpdate} />
       </div>
@@ -241,11 +256,14 @@ export function StatusDisplay({
       />
       <h2 className="text-3xl md:text-6xl font-black text-foreground mb-4 whitespace-nowrap">
         <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-          Yes! Baby is out
+          {t("Yes! Baby is out")}
         </span>
       </h2>
       <p className="text-xl text-muted-foreground mb-4">
-        Born on {formatDate(currentStatus.date)} ({getRelativeTime(currentStatus.date)})
+        {t("Born on {{date}} ({{relative}})", {
+          date: formatDate(currentStatus.date, locale),
+          relative: getRelativeTime(currentStatus.date, locale),
+        })}
       </p>
       <LatestUpdateBox latestUpdate={latestUpdate} />
     </div>

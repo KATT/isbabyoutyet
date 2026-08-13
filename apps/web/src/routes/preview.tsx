@@ -9,6 +9,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCssUrl } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
+import { getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 
 function getDefaultBabyData(): BabyData {
   const now = new Date();
@@ -49,7 +50,7 @@ export const Route = createFileRoute("/preview")({
   head: () => ({
     meta: [
       {
-        title: "Preview - Is Baby Out Yet?",
+        title: `Preview – ${translate(getDetectedLocale(), "Is Baby Out Yet? – Share Your Baby's Arrival")}`,
       },
       {
         name: "description",
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/preview")({
 });
 
 function PreviewPage() {
+  const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -132,7 +134,7 @@ function PreviewPage() {
 
           <h1 className="text-4xl md:text-7xl font-black text-foreground tracking-tight whitespace-nowrap py-6 md:py-10 px-6 text-center">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
-              Is {baby.name} out yet?
+              {t("Is {{name}} out yet?", { name: baby.name })}
             </span>
           </h1>
         </div>
@@ -161,7 +163,7 @@ function PreviewPage() {
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            Having a baby? Are people messaging you non-stop? Create your own page →
+            {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
           </Link>
         </div>
       </div>

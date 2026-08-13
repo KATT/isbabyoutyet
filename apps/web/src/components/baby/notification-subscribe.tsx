@@ -15,6 +15,7 @@ import { Bell, BellOff, Share } from "lucide-react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { useI18n } from "@/lib/i18n";
 
 type NotificationSubscribeProps = {
   babyId: Id<"baby">;
@@ -45,6 +46,7 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 }
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
+  const { t } = useI18n();
   const { babyId, vapidPublicKey } = props;
   const convex = useConvex();
 
@@ -165,7 +167,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
                 render={
                   <Button variant="default" size="lg">
                     <Bell className="w-5 h-5" />
-                    Get Notifications
+                    {t("Get Notifications")}
                   </Button>
                 }
               />
@@ -250,12 +252,12 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
             {isSubscribed ? (
               <>
                 {isLoading ? <Spinner className="w-5 h-5" /> : <BellOff className="w-5 h-5" />}
-                Unsubscribe
+                {t("Unsubscribe")}
               </>
             ) : (
               <>
                 {isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                Get Notifications
+                {t("Get Notifications")}
               </>
             )}
           </Button>
@@ -264,8 +266,8 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       <TooltipContent>
         <p>
           {isSubscribed
-            ? "Stop receiving push notifications for updates"
-            : "Get notified when the baby's status changes"}
+            ? t("Stop receiving push notifications for updates")
+            : t("Get notified when the baby's status changes")}
         </p>
       </TooltipContent>
     </Tooltip>

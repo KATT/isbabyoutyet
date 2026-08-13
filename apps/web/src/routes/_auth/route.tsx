@@ -1,6 +1,7 @@
 import { authServer } from "@/lib/auth-server";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { api } from "@workspace/convex/convex/_generated/api";
 
 // Server function to check authentication
 const getToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -28,6 +29,13 @@ export const Route = createFileRoute("/_auth")({
         return token;
       });
     }
+    const existingProfile = await opts.context.convexClient.query(api.profile.get, {});
+    const profile =
+      existingProfile ??
+      (await opts.context.convexClient.mutation(api.profile.ensure, {
+        browserLocale: opts.context.locale,
+      }));
+    return { locale: profile.locale };
   },
   component: AuthLayout,
 });

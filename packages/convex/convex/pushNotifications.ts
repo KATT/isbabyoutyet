@@ -6,6 +6,7 @@ import { convexEnv } from "../src/env";
 import { api, internal } from "./_generated/api";
 import type { ActionCtx } from "./_generated/server";
 import { internalAction } from "./_generated/server";
+import { getPushMessage } from "../src/pushMessages";
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
@@ -67,6 +68,12 @@ export const sendNotification = internalAction({
       v.literal("photo_added"),
     ),
     customMessage: v.optional(v.union(v.string(), v.null())),
+    locale: v.union(
+      v.literal("en-GB"),
+      v.literal("en-US"),
+      v.literal("sv"),
+      v.literal("es"),
+    ),
   },
   handler: async (ctx, args) => {
     // Get all subscriptions for this babyId
@@ -74,28 +81,8 @@ export const sendNotification = internalAction({
       babyId: args.babyId,
     });
 
-    // Generate notification content based on status
-    let title: string;
-    let body: string;
-
-    switch (args.status) {
-      case "labor_started":
-        title = `${args.babyName} - Labor has started!`;
-        body = "Labor has begun. Check for updates!";
-        break;
-      case "gone_to_hospital":
-        title = `${args.babyName} is on the way to the hospital!`;
-        body = args.customMessage || "They're heading to the hospital. Check for updates!";
-        break;
-      case "born":
-        title = `${args.babyName} is here! 🎉`;
-        body = args.customMessage || "The baby has arrived! Check for updates!";
-        break;
-      case "photo_added":
-        title = `${args.babyName} - New photo! 📸`;
-        body = "A new photo has been added. Check it out!";
-        break;
-    }
+    const message = getPushMessage(args.locale, args.status, args.babyName);
+    const body = args.customMessage || message.body;
 
     const url = `/baby/${args.publicId}`;
 
@@ -110,7 +97,7 @@ export const sendNotification = internalAction({
             auth: sub.auth,
           },
           {
-            title,
+            title: message.title,
             body,
             url,
             icon: "/logo192.png",

@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
+import { getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -30,18 +31,42 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
-  head: () => ({
-    meta: [
+  head: () => {
+    const locale = getDetectedLocale();
+    const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");
+    const description = translate(
+      locale,
+      "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
+    );
+    return {
+      meta: [
       {
-        title: "Is Baby Out Yet? - Share Your Baby's Arrival",
+        title,
       },
       {
         name: "description",
-        content:
-          "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
+        content: description,
       },
-    ],
-  }),
+      {
+        property: "og:title",
+        content: title,
+      },
+      {
+        property: "og:description",
+        content: description,
+      },
+      {
+        name: "twitter:title",
+        content: title,
+      },
+      {
+        name: "twitter:description",
+        content: description,
+      },
+      ],
+      links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
+    };
+  },
 });
 
 // lucide-react v1 removed brand icons (including Github), so inline the mark
@@ -63,6 +88,7 @@ function useCurrentDate() {
 }
 
 function HomePage() {
+  const { t } = useI18n();
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();
@@ -90,7 +116,7 @@ function HomePage() {
             className="mb-6 border-primary/20 bg-primary/5 text-primary backdrop-blur-sm"
           >
             <Sparkles className="w-3 h-3 mr-1.5" />
-            Free forever, no ads
+            {t("Free forever, no ads")}
           </Badge>
           <h1 className="text-6xl md:text-8xl font-black text-foreground tracking-tight mb-8 leading-none">
             <span className="bg-linear-to-r from-primary via-primary/90 to-primary/70 bg-clip-text text-transparent">
@@ -98,7 +124,7 @@ function HomePage() {
             </span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-10 max-w-3xl mx-auto leading-relaxed">
-            Stop answering "any news yet?" texts. Share one link and let everyone follow along.
+            {t('Stop answering "any news yet?" texts. Share one link and let everyone follow along.')}
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             {sessionData.data ? (
@@ -108,7 +134,7 @@ function HomePage() {
                 render={<Link to="/dashboard" preload="viewport" />}
                 nativeButton={false}
               >
-                Go to Dashboard
+                {t("Go to Dashboard")}
               </Button>
             ) : (
               <>
@@ -118,7 +144,7 @@ function HomePage() {
                   render={<Link to="/auth/signup" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Get Started
+                  {t("Get Started")}
                 </Button>
                 <Button
                   size="lg"
@@ -127,7 +153,7 @@ function HomePage() {
                   render={<Link to="/auth/login" preload="viewport" />}
                   nativeButton={false}
                 >
-                  Sign In
+                  {t("Sign In")}
                 </Button>
               </>
             )}

@@ -62,6 +62,44 @@ test("getByPublicId resolves by publicId and by document id", async () => {
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });
 });
 
+test("a baby inherits the owner locale until an override is set", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.profile.ensure, { browserLocale: "sv-SE" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Little One",
+    dueDate: "2026-10-15",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    locale: undefined,
+    resolvedLocale: "sv",
+  });
+
+  await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    resolvedLocale: "es",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    locale: "en-US",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    locale: "en-US",
+    resolvedLocale: "en-US",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    locale: null,
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    locale: null,
+    resolvedLocale: "es",
+  });
+});
+
 test("renaming a baby rotates the publicId and keeps the old one resolvable", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

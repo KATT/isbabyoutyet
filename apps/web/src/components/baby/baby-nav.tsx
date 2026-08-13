@@ -7,6 +7,7 @@ import { Link, LinkProps } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { cn } from "@workspace/ui/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
   shareLink: null | string;
@@ -24,6 +25,7 @@ export function BabyNav({
   postUpdateButton,
   postUpdateOpen,
 }: BabyNavProps) {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const hasOwnerActions = !!(postUpdateButton || settingsButton);
 
@@ -34,7 +36,7 @@ export function BabyNav({
   }, [copied]);
 
   const ownerActions = hasOwnerActions ? (
-    <ButtonGroup aria-label="Owner actions">
+    <ButtonGroup aria-label={t("Owner actions")}>
       {postUpdateButton && (
         <Button
           variant={postUpdateOpen ? "default" : "outline"}
@@ -42,7 +44,7 @@ export function BabyNav({
           nativeButton={false}
         >
           <MessageCircleHeart data-icon="inline-start" />
-          Post update
+          {t("Post update")}
         </Button>
       )}
       {settingsButton && (
@@ -54,20 +56,20 @@ export function BabyNav({
                 size="icon"
                 render={<Link {...(settingsButton as any)} />}
                 nativeButton={false}
-                aria-label={settingsOpen ? "Close settings" : "Settings"}
+                aria-label={settingsOpen ? t("Close settings") : t("Settings")}
               >
                 <Settings />
               </Button>
             }
           />
-          <TooltipContent>{settingsOpen ? "Close settings" : "Settings"}</TooltipContent>
+          <TooltipContent>{settingsOpen ? t("Close settings") : t("Settings")}</TooltipContent>
         </Tooltip>
       )}
     </ButtonGroup>
   ) : null;
 
   const pageActions = (
-    <ButtonGroup aria-label="Page actions">
+    <ButtonGroup aria-label={t("Page actions")}>
       <Tooltip>
         <TooltipTrigger
           render={
@@ -77,7 +79,7 @@ export function BabyNav({
                 try {
                   await navigator.clipboard.writeText(shareLink);
                   setCopied(true);
-                  toast.success("Copied to clipboard");
+                  toast.success(t("Copied to clipboard"));
                 } catch {
                   // Fallback for older browsers
                   const textArea = document.createElement("textarea");
@@ -89,7 +91,7 @@ export function BabyNav({
                   try {
                     document.execCommand("copy");
                     setCopied(true);
-                    toast.success("Copied to clipboard");
+                    toast.success(t("Copied to clipboard"));
                   } catch (cause) {
                     toast.error(
                       "Failed to copy to clipboard: " +
@@ -102,13 +104,13 @@ export function BabyNav({
               variant="outline"
               size="icon"
               disabled={!shareLink}
-              aria-label={copied ? "Copied!" : "Copy link to share"}
+              aria-label={copied ? t("Copied!") : t("Copy link to share")}
             >
               {copied ? <CheckCircle /> : <Share2 />}
             </Button>
           }
         />
-        <TooltipContent>{copied ? "Copied!" : "Copy link to share"}</TooltipContent>
+        <TooltipContent>{copied ? t("Copied!") : t("Copy link to share")}</TooltipContent>
       </Tooltip>
 
       <ModeToggle className="rounded-lg" />

@@ -44,6 +44,8 @@ import { getCurrentStatus, STATUS_ORDER } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { getVisitorId } from "./encouragements";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { useI18n } from "@/lib/i18n";
 
 const PAGE_SIZE = 20;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -90,11 +92,11 @@ const MILESTONE_META: Record<Milestone, { label: string; icon: typeof Activity }
   born: { label: "Born", icon: CheckCircle },
 };
 
-function getRelativeTimeFromTimestamp(timestamp: number): string {
+function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {
   const now = Date.now();
   const diffInSeconds = Math.floor((timestamp - now) / 1000);
 
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
   const intervals = [
     { unit: "year" as const, seconds: 31536000 },
@@ -116,8 +118,8 @@ function getRelativeTimeFromTimestamp(timestamp: number): string {
 }
 
 /** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
-function formatOccurredAtLocal(timestamp: number): string {
-  return new Date(timestamp).toLocaleString(undefined, {
+function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): string {
+  return new Date(timestamp).toLocaleString(locale, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -442,6 +444,7 @@ type UpdateTimelineItemProps = {
 };
 
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
+  const { locale, t } = useI18n();
   const update = props.item.update;
   const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
@@ -452,45 +455,51 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-foreground truncate">{props.babyName}'s family</span>
+            <span className="font-medium text-foreground truncate">
+              {t("{{name}}'s family", { name: props.babyName })}
+            </span>
             {milestoneMeta ? (
               <Badge
                 className="shrink-0"
                 title={
                   update.occurredAt
-                    ? `Happened ${formatOccurredAtLocal(update.occurredAt)}`
+                    ? formatOccurredAtLocal(update.occurredAt, locale)
                     : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
-                {milestoneMeta.label}
+                {update.milestone === "labor_started"
+                  ? t("Labour started")
+                  : update.milestone === "gone_to_hospital"
+                    ? t("Gone to hospital")
+                    : t("Baby born")}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt)}
+                    · {formatOccurredAtLocal(update.occurredAt, locale)}
                   </span>
                 )}
               </Badge>
             ) : update.photoUrl ? (
               <Badge variant="secondary" className="shrink-0">
                 <Camera className="w-3 h-3" />
-                New photo
+                {t("New photo")}
               </Badge>
             ) : (
               <Badge variant="secondary" className="shrink-0">
-                Update
+                {t("Update")}
               </Badge>
             )}
             {update.isCurrentPagePhoto && (
               <Badge variant="outline" className="shrink-0">
                 <Pin className="w-3 h-3" />
-                Page photo
+                {t("Page photo")}
               </Badge>
             )}
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={`Posted ${new Date(props.item.postedAt).toLocaleString()}`}
             >
-              {getRelativeTimeFromTimestamp(props.item.postedAt)}
+              {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
             </span>
           </div>
 
@@ -678,6 +687,7 @@ function EncouragementEditForm(props: {
 }
 
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
+  const { locale } = useI18n();
   const encouragement = props.item.encouragement;
   const [isEditing, setIsEditing] = useState(false);
 
@@ -695,7 +705,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               className="text-xs text-muted-foreground shrink-0"
               title={new Date(encouragement.createdAt).toLocaleString()}
             >
-              {getRelativeTimeFromTimestamp(encouragement.createdAt)}
+              {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
             </span>
             {isOwnPost && <span className="text-xs text-primary/70 shrink-0">(you)</span>}
           </div>
@@ -783,6 +793,7 @@ type TimelineFeedProps = {
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
+  const { t } = useI18n();
   const [currentVisitorId, setCurrentVisitorId] = useState("");
   const { results, status, loadMore } = usePaginatedQuery(
     api.timeline.listByBaby,
@@ -875,7 +886,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     return (
       <div className="py-8 text-center text-muted-foreground">
         <Spinner className="mx-auto mb-2" />
-        <p>Loading the timeline...</p>
+        <p>{t("Loading the timeline...")}</p>
       </div>
     );
   }
@@ -885,17 +896,19 @@ export function TimelineFeed(props: TimelineFeedProps) {
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
           <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            {t("Updates & encouragements")}
+          </h3>
         </div>
         <div className="py-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted/50 mb-4">
             <Heart className="w-8 h-8 text-muted-foreground/50" />
           </div>
-          <p className="text-muted-foreground">Nothing here yet</p>
+          <p className="text-muted-foreground">{t("Nothing here yet")}</p>
           <p className="text-sm text-muted-foreground/70">
             {props.isOwner
-              ? "Post your first update to keep everyone in the loop!"
-              : "Updates from the family will show up here."}
+              ? t("Post your first update to keep everyone in the loop!")
+              : t("Updates from the family will show up here.")}
           </p>
         </div>
       </div>
@@ -906,7 +919,9 @@ export function TimelineFeed(props: TimelineFeedProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Updates & encouragements</h3>
+        <h3 className="text-lg font-semibold text-foreground">
+          {t("Updates & encouragements")}
+        </h3>
       </div>
 
       <div className="space-y-3">

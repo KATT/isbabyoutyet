@@ -5,6 +5,7 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useMatches,
   useRouteContext,
 } from "@tanstack/react-router";
 import type { ConvexReactClient } from "convex/react";
@@ -22,12 +23,21 @@ import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
 import { Baby } from "lucide-react";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 
 export const Route = createRootRouteWithContext<{
   convexClient: ConvexReactClient;
+  locale: SupportedLocale;
 }>()({
-  head: () => ({
-    meta: [
+  head: () => {
+    const locale = getDetectedLocale();
+    const description = translate(
+      locale,
+      "Track the progress of labour and birth – know when baby arrives!",
+    );
+    return {
+      meta: [
       {
         charSet: "utf-8",
       },
@@ -37,7 +47,23 @@ export const Route = createRootRouteWithContext<{
       },
       {
         name: "description",
-        content: "Track the progress of labor and birth - know when baby arrives!",
+        content: description,
+      },
+      {
+        property: "og:locale",
+        content: locale.replace("-", "_"),
+      },
+      {
+        property: "og:site_name",
+        content: "Is Baby Out Yet?",
+      },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        name: "twitter:card",
+        content: "summary",
       },
       {
         name: "theme-color",
@@ -55,8 +81,8 @@ export const Route = createRootRouteWithContext<{
         name: "apple-mobile-web-app-status-bar-style",
         content: "black-translucent",
       },
-    ],
-    links: [
+      ],
+      links: [
       {
         rel: "stylesheet",
         href: appCss,
@@ -77,11 +103,13 @@ export const Route = createRootRouteWithContext<{
         sizes: "16x16",
         href: "/favicon-16x16.png",
       },
-    ],
-  }),
+      ],
+    };
+  },
   headers() {
     return {
       "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
+      Vary: "Accept-Language, Cookie",
     };
   },
   component: RootComponent,
@@ -90,6 +118,11 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
+  const matches = useMatches();
+  const locale = matches.reduce((currentLocale, match) => {
+    const matchContext = match.context as { locale?: SupportedLocale };
+    return matchContext.locale ?? currentLocale;
+  }, context.locale);
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -114,9 +147,11 @@ function RootComponent() {
         authClient={authClient as unknown as AuthClient}
       >
         <TooltipProvider>
-          <RootDocument>
-            <Outlet />
-          </RootDocument>
+          <LocaleProvider locale={locale}>
+            <RootDocument locale={locale}>
+              <Outlet />
+            </RootDocument>
+          </LocaleProvider>
         </TooltipProvider>
       </ConvexBetterAuthProvider>
     </ThemeProvider>
@@ -124,6 +159,7 @@ function RootComponent() {
 }
 
 function NotFoundComponent() {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-6">
       <div className="text-center space-y-6 max-w-md">
@@ -131,21 +167,21 @@ function NotFoundComponent() {
           <Baby className="w-10 h-10 text-primary" />
         </div>
         <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-bold text-foreground">Page Not Found</h2>
+        <h2 className="text-2xl font-bold text-foreground">{t("Page Not Found")}</h2>
         <p className="text-muted-foreground">
-          Looks like this page hasn't arrived yet. Let's get you back home!
+          {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
         </p>
         <Button size="lg" render={<Link to="/" />} nativeButton={false}>
-          Go Home
+          {t("Go Home")}
         </Button>
       </div>
     </div>
   );
 }
 
-function RootDocument(props: { children: React.ReactNode }) {
+function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
   return (
-    <html lang="en">
+    <html lang={props.locale} dir="ltr">
       <head>
         <HeadContent />
       </head>

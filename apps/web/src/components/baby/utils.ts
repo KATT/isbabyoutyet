@@ -5,6 +5,8 @@ import bubblegumCss from "@/styles/themes/bubblegum.css?url";
 import catppuccinCss from "@/styles/themes/catppuccin.css?url";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
 import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { getDetectedLocale } from "@/lib/i18n";
 
 export const THEME_OPTIONS = [
   {
@@ -69,9 +71,12 @@ export function parseDate(dateString: string): Date {
   return parseISO(dateString);
 }
 
-export function formatDate(dateString: string): string {
+export function formatDate(
+  dateString: string,
+  locale: SupportedLocale = getDetectedLocale(),
+): string {
   const date = parseDate(dateString);
-  const formatter = new Intl.DateTimeFormat("en-US", {
+  const formatter = new Intl.DateTimeFormat(locale, {
     timeZone: TIMEZONE,
     dateStyle: "long",
     timeStyle: "short",
@@ -79,12 +84,15 @@ export function formatDate(dateString: string): string {
   return formatter.format(date);
 }
 
-export function getRelativeTime(dateString: string): string {
+export function getRelativeTime(
+  dateString: string,
+  locale: SupportedLocale = getDetectedLocale(),
+): string {
   const date = parseDate(dateString);
   const now = new Date();
   const diffInSeconds = Math.floor((date.getTime() - now.getTime()) / 1000);
 
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
 
   const intervals = [
     { unit: "year" as const, seconds: 31536000 },
@@ -103,6 +111,16 @@ export function getRelativeTime(dateString: string): string {
   }
 
   return rtf.format(0, "second");
+}
+
+export function formatDueDate(
+  dateString: string,
+  locale: SupportedLocale = getDetectedLocale(),
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: TIMEZONE,
+    dateStyle: "long",
+  }).format(parseDate(dateString));
 }
 
 export function getDaysUntilDueDate(dueDate: string): number {

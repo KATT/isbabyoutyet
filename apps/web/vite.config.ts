@@ -6,6 +6,7 @@ import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
+import { paraglideVitePlugin } from "@inlang/paraglide-js";
 
 /**
  * Base UI (and recharts, etc.) pull in `use-sync-external-store/shim`, a CJS-only
@@ -67,6 +68,13 @@ function patchLeakedReactRequire(): Plugin {
 const config = defineConfig({
   plugins: [
     aliasUseSyncExternalStoreShim(),
+    paraglideVitePlugin({
+      project: "./project.inlang",
+      outdir: "./src/paraglide",
+      outputStructure: "message-modules",
+      cookieName: "PARAGLIDE_LOCALE",
+      strategy: ["cookie", "preferredLanguage", "baseLocale"],
+    }),
     devtools(),
     // Base UI grows the Nitro SSR rebundle enough that Rolldown's default split
     // creates circular `ssr`/`ssr2` chunks and drops `ssr_exports` (preview 500).

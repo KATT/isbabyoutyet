@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import * as z from "zod";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { parseDate, THEME_OPTIONS } from "./utils";
+import { useI18n } from "@/lib/i18n";
 
 /** Format a date for a `datetime-local` input in the viewer's timezone. */
 function toDatetimeLocalValue(date: Date): string {
@@ -28,6 +29,7 @@ type EditorFormProps = {
 };
 
 function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex gap-2 justify-end">
       <Button
@@ -37,10 +39,10 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
         size="sm"
         disabled={props.isSubmitting}
       >
-        Cancel
+        {t("Cancel")}
       </Button>
       <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
-        Save
+        {t("Save")}
       </Button>
     </div>
   );
@@ -56,6 +58,7 @@ const dueDateSchema = z.object({
 });
 
 export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -84,7 +87,7 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
@@ -148,6 +151,7 @@ const statusDateSchema = z.object({
 });
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -156,7 +160,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         render={
           <Button variant="outline" size="sm">
             <Clock className="w-4 h-4 mr-2" />
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
@@ -234,6 +238,7 @@ const nameSchema = z.object({
 });
 
 export function NameEditor({ baby, onUpdate }: NameEditorProps) {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
   return (
@@ -241,7 +246,7 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Edit
+            {t("Edit")}
           </Button>
         }
       />
@@ -297,6 +302,7 @@ type ThemeSelectorProps = {
 };
 
 export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -305,7 +311,7 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            Change
+            {t("Change")}
           </Button>
         }
       />

@@ -10,11 +10,12 @@ import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
-import { format } from "date-fns";
 import { Baby as BabyIcon, Plus, LogOut, Calendar } from "lucide-react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
+import { LanguageSettings } from "@/components/language-settings";
+import { useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 });
 
 function DashboardPage() {
+  const { locale, t } = useI18n();
   const loaderData = Route.useLoaderData();
   let babies = useQuery(api.baby.listByUser, {});
   if (!babies || babies.length === 0) {
@@ -47,11 +49,11 @@ function DashboardPage() {
           <div>
             <h1 className="text-5xl font-black text-foreground mb-2 tracking-tight">
               <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                Your Babies
+                {t("Your Babies")}
               </span>
             </h1>
             <p className="text-muted-foreground text-lg">
-              Track and manage all your babies' journeys
+              {t("Track and manage all your babies' journeys")}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -61,8 +63,9 @@ function DashboardPage() {
               nativeButton={false}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Add Baby
+              {t("Add Baby")}
             </Button>
+            <LanguageSettings />
             <ModeToggle />
             <Button
               variant="outline"
@@ -81,7 +84,7 @@ function DashboardPage() {
               }}
             >
               <LogOut className="w-4 h-4 mr-2" />
-              Logout
+              {t("Logout")}
             </Button>
           </div>
         </div>
@@ -92,9 +95,11 @@ function DashboardPage() {
               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-6">
                 <BabyIcon className="w-10 h-10 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold text-foreground mb-3">No babies added yet</h3>
+              <h3 className="text-2xl font-bold text-foreground mb-3">
+                {t("No babies added yet")}
+              </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Get started by adding your first baby to track their journey
+                {t("Get started by adding your first baby to track their journey")}
               </p>
               <Button
                 size="lg"
@@ -103,7 +108,7 @@ function DashboardPage() {
                 nativeButton={false}
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Your First Baby
+                {t("Add Your First Baby")}
               </Button>
             </CardContent>
           </Card>
@@ -135,7 +140,7 @@ function DashboardPage() {
                           <CardTitle>{baby.name}</CardTitle>
                           <CardDescription>
                             <Calendar className="w-3.5 h-3.5" />
-                            {format(dueDate, "MMMM d, yyyy")}
+                            {new Intl.DateTimeFormat(locale, { dateStyle: "long" }).format(dueDate)}
                           </CardDescription>
                         </div>
                       </div>
@@ -146,19 +151,28 @@ function DashboardPage() {
                           variant="default"
                           className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                         >
-                          {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}
-                          overdue
+                          {t(
+                            Math.abs(daysUntilDue) === 1
+                              ? "{{count}} day overdue"
+                              : "{{count}} days overdue",
+                            { count: Math.abs(daysUntilDue) },
+                          )}
                         </Badge>
                       ) : daysUntilDue === 0 ? (
                         <Badge
                           variant="default"
                           className="bg-linear-to-r from-primary to-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                         >
-                          Due today!
+                          {t("Due today!")}
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="border-primary/20 bg-primary/5">
-                          {daysUntilDue} {daysUntilDue === 1 ? "day" : "days"} until due date
+                          {t(
+                            daysUntilDue === 1
+                              ? "{{count}} day until due date"
+                              : "{{count}} days until due date",
+                            { count: daysUntilDue },
+                          )}
                         </Badge>
                       )}
                     </CardContent>

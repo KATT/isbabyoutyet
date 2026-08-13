@@ -5,6 +5,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { getCurrentStatus, isStatusForward, MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import type { BabyStatus, Milestone } from "../src/types";
+import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { mutationWithTriggers } from "./triggers";
 import {
   deleteUpdateWithTimelineItem,
@@ -67,11 +68,13 @@ export const getByPublicId = query({
 
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+    const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
       ...baby,
       photoUrl,
       thumbnailUrl,
+      resolvedLocale,
     };
   },
 });
@@ -145,6 +148,7 @@ export async function applyPhotoSideEffects(
         publicId: baby.publicId,
         status: "photo_added",
         customMessage: null,
+        locale: await resolveBabyLocale(ctx.db, baby),
       },
     );
 
@@ -247,6 +251,17 @@ async function generateUniquePublicId(opts: {
   }
 
   return publicId;
+}
+
+async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
+  if (baby.locale) {
+    return resolveSupportedLocale(baby.locale);
+  }
+  const profile = await db
+    .query("userProfiles")
+    .withIndex("by_userId", (q) => q.eq("userId", baby.userId))
+    .unique();
+  return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
 }
 
 export const create = mutationWithTriggers({
@@ -453,6 +468,7 @@ export async function syncStatusNotifications(
       publicId: updatedBaby.publicId,
       status: statusAfter.type,
       customMessage,
+      locale: await resolveBabyLocale(ctx.db, updatedBaby),
     },
   );
 
@@ -533,6 +549,15 @@ export const update = mutationWithTriggers({
     dueDate: v.optional(v.string()),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
+    locale: v.optional(
+      v.union(
+        v.literal("en-GB"),
+        v.literal("en-US"),
+        v.literal("sv"),
+        v.literal("es"),
+        v.null(),
+      ),
+    ),
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never

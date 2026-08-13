@@ -20,6 +20,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
 import { Baby, ArrowLeft } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const addBabySchema = z.object({
   name: z.string().min(2, "Name is required"),
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_auth/dashboard/add")({
 });
 
 function AddBabyPage() {
+  const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
 
@@ -59,15 +61,17 @@ function AddBabyPage() {
             nativeButton={false}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            {t("Back to Dashboard")}
           </Button>
 
           <h1 className="text-5xl font-black text-foreground mb-3 tracking-tight">
             <span className="bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              Add a Baby
+              {t("Add a Baby")}
             </span>
           </h1>
-          <p className="text-muted-foreground text-lg">Track the progress of labor and birth</p>
+          <p className="text-muted-foreground text-lg">
+            {t("Track the progress of labour and birth")}
+          </p>
         </div>
 
         <Card>
@@ -75,8 +79,10 @@ function AddBabyPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 border-2 border-primary/20 mb-2">
               <Baby className="w-8 h-8 text-primary" />
             </div>
-            <CardTitle>Baby Information</CardTitle>
-            <CardDescription>Enter your baby's name and due date to get started</CardDescription>
+            <CardTitle>{t("Baby Information")}</CardTitle>
+            <CardDescription>
+              {t("Enter your baby's name and due date to get started")}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <Form
@@ -100,9 +106,13 @@ function AddBabyPage() {
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Baby Name</FormLabel>
+                      <FormLabel>{t("Baby Name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter baby's name" className="border-2" {...field} />
+                        <Input
+                          placeholder={t("Enter baby's name")}
+                          className="border-2"
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -114,7 +124,7 @@ function AddBabyPage() {
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Due Date</FormLabel>
+                      <FormLabel>{t("Due Date")}</FormLabel>
                       <FormControl>
                         <Input type="date" className="border-2" {...field} />
                       </FormControl>
@@ -129,7 +139,7 @@ function AddBabyPage() {
                   disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? "Creating..." : "Add Baby"}
+                  {form.formState.isSubmitting ? t("Creating...") : t("Add Baby")}
                 </Button>
               </div>
             </Form>

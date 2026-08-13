@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { useI18n } from "@/lib/i18n";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -48,6 +49,7 @@ const encouragementSchema = z.object({
 });
 
 export function EncouragementForm(props: EncouragementFormProps) {
+  const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
 
   const form = useZodForm({
@@ -73,9 +75,9 @@ export function EncouragementForm(props: EncouragementFormProps) {
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-3">
           <Heart className="w-6 h-6 text-primary" />
         </div>
-        <h3 className="text-lg font-semibold text-foreground">Send Encouragement</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("Send Encouragement")}</h3>
         <p className="text-sm text-muted-foreground">
-          Leave a message of support for {props.babyName}'s family
+          {t("Leave a message of support for {{name}}'s family", { name: props.babyName })}
         </p>
       </div>
 
@@ -102,8 +104,8 @@ export function EncouragementForm(props: EncouragementFormProps) {
           });
 
           toast.promise(promise, {
-            loading: "Sending your encouragement...",
-            success: "Your kind words have been sent! 💕",
+            loading: t("Sending your encouragement..."),
+            success: t("Your kind words have been sent! 💕"),
             error: (err) => (err instanceof Error ? err.message : "Failed to send encouragement"),
           });
           form.reset({ authorName, message: "" });
@@ -116,9 +118,9 @@ export function EncouragementForm(props: EncouragementFormProps) {
             name="authorName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Your name</FormLabel>
+                <FormLabel>{t("Your name")}</FormLabel>
                 <FormControl>
-                  <Input placeholder="Your name" maxLength={MAX_NAME_LENGTH} {...field} />
+                  <Input placeholder={t("Your name")} maxLength={MAX_NAME_LENGTH} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -130,10 +132,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
             name="message"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Message</FormLabel>
+                <FormLabel>{t("Message")}</FormLabel>
                 <FormControl>
                   <Textarea
-                    placeholder="Write your message of encouragement..."
+                    placeholder={t("Write your message of encouragement...")}
                     className="min-h-24"
                     {...field}
                   />
@@ -145,7 +147,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
 
           <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
             <Send className="w-4 h-4" />
-            {form.formState.isSubmitting ? "Sending..." : "Send Encouragement"}
+            {form.formState.isSubmitting ? t("Sending...") : t("Send Encouragement")}
           </Button>
         </div>
       </Form>

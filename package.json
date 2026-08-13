@@ -9,7 +9,9 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
+    "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
+    "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
     "knip": "knip --production",
     "checks": "turbo run format lint-fix typecheck && pnpm test:coverage && pnpm knip"
