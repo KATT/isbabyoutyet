@@ -15,25 +15,24 @@ import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/com
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { format, parseISO } from "date-fns";
 import { Clock, Trash } from "@phosphor-icons/react";
+import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
+import type { api } from "@workspace/convex/convex/_generated/api";
 import {
   getBlockingLaterMilestone,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
-import { parseDate, THEME_OPTIONS } from "./utils";
+import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
+import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { THEME_OPTIONS } from "./utils";
 
-/** Format a date for a `datetime-local` input in the viewer's timezone. */
-function toDatetimeLocalValue(date: Date): string {
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
+type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
 // The popover editors follow one pattern: the outer component owns the
 // open state, the inner *Form component owns the form and is mounted fresh
@@ -70,11 +69,15 @@ type DueDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const dueDateSchema = z.object({
-  date: z.string().min(1, "Pick a date"),
-});
+function dueDateSchema(t: TranslationFunction) {
+  return z
+    .object({
+      date: htmlDate(t),
+    })
+    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+}
 
-export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
+export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -109,7 +112,11 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <DueDateForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
+        <DueDateForm
+          baby={props.baby}
+          onUpdate={props.onUpdate}
+          onClose={() => setIsEditing(false)}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -117,16 +124,17 @@ export function DueDateEditor({ baby, onUpdate }: DueDateEditorProps) {
 
 function DueDateForm(props: EditorFormProps) {
   const { t } = useI18n();
+  const dateCodec = htmlDate(t);
   const form = useZodForm({
-    schema: dueDateSchema,
-    defaultValues: { date: format(parseDate(props.baby.dueDate), "yyyy-MM-dd") },
+    schema: dueDateSchema(t),
+    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
   });
 
   return (
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ dueDate: parseISO(values.date).toISOString() });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -164,9 +172,18 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const statusDateSchema = z.object({
-  dateTime: z.string().min(1, "Pick a date and time"),
-});
+function statusDateSchema(t: TranslationFunction, status: Milestone) {
+  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
+    switch (status) {
+      case "labor_started":
+        return { laborStarted: values.dateTime };
+      case "gone_to_hospital":
+        return { wentToHospital: values.dateTime };
+      case "born":
+        return { babyBorn: values.dateTime };
+    }
+  });
+}
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
@@ -204,9 +221,10 @@ function StatusDateForm(props: {
 }) {
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
+  const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema,
-    defaultValues: { dateTime: toDatetimeLocalValue(parseDate(props.currentDate)) },
+    schema: statusDateSchema(t, props.status),
+    defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
   const statusLabel = MILESTONE_LABELS[props.status];
@@ -222,14 +240,7 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const dateString = parseISO(values.dateTime).toISOString();
-        if (props.status === "labor_started") {
-          await props.onUpdate({ laborStarted: dateString });
-        } else if (props.status === "gone_to_hospital") {
-          await props.onUpdate({ wentToHospital: dateString });
-        } else {
-          await props.onUpdate({ babyBorn: dateString });
-        }
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -242,7 +253,7 @@ function StatusDateForm(props: {
               <Input
                 type="datetime-local"
                 aria-label={t("Status date and time")}
-                max={toDatetimeLocalValue(new Date())}
+                max={htmlDateTimeNow()}
                 {...field}
               />
             </FormControl>
@@ -323,11 +334,15 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-const nameSchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
-});
+function nameSchema(t: TranslationFunction) {
+  return z
+    .object({
+      name: z.string().trim().min(1, t("Name is required")),
+    })
+    .transform((values): Pick<BabyPatch, "name"> => values);
+}
 
-export function NameEditor({ baby, onUpdate }: NameEditorProps) {
+export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
 
@@ -341,7 +356,7 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <NameForm baby={baby} onUpdate={onUpdate} onClose={() => setIsEditing(false)} />
+        <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={() => setIsEditing(false)} />
       </PopoverContent>
     </Popover>
   );
@@ -350,7 +365,7 @@ export function NameEditor({ baby, onUpdate }: NameEditorProps) {
 function NameForm(props: EditorFormProps) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: nameSchema,
+    schema: nameSchema(t),
     defaultValues: { name: props.baby.name },
   });
 
@@ -358,7 +373,7 @@ function NameForm(props: EditorFormProps) {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate({ name: values.name.trim() });
+        await props.onUpdate(values);
         props.onClose();
       }}
     >
@@ -393,7 +408,7 @@ type ThemeSelectorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
+export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -412,17 +427,17 @@ export function ThemeSelector({ baby, onUpdate }: ThemeSelectorProps) {
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
-              variant={baby.theme === option.value ? "default" : "ghost"}
+              variant={props.baby.theme === option.value ? "default" : "ghost"}
               size="sm"
               className="justify-start gap-2"
               disabled={isLoading}
               onClick={async () => {
                 setIsLoading(true);
                 try {
-                  await onUpdate({ theme: option.value });
+                  await props.onUpdate({ theme: option.value });
                   setIsOpen(false);
                 } catch (err) {
-                  toast.error(err instanceof Error ? err.message : "Failed to update theme");
+                  toast.error(err instanceof Error ? err.message : t("Failed to update theme"));
                 } finally {
                   setIsLoading(false);
                 }

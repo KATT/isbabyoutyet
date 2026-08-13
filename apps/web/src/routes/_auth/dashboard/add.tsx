@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
+import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -13,13 +14,19 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
+import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-const addBabySchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  dueDate: z.string().min(1, "Due date is required"),
-});
+function addBabySchema(t: TranslationFunction) {
+  return z
+    .object({
+      name: z.string().trim().min(2, t("Name is required")),
+      dueDate: htmlDate(t),
+    })
+    .transform((values): FunctionArgs<typeof api.baby.create> => values);
+}
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
@@ -31,7 +38,7 @@ function AddBabyPage() {
   const createBaby = useMutation(api.baby.create);
 
   const form = useZodForm({
-    schema: addBabySchema,
+    schema: addBabySchema(t),
     defaultValues: {
       name: "",
       dueDate: "",
@@ -72,10 +79,7 @@ function AddBabyPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await createBaby({
-                  name: values.name,
-                  dueDate: values.dueDate,
-                });
+                const result = await createBaby(values);
 
                 await router.navigate({
                   to: "/baby/$publicId",

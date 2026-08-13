@@ -20,12 +20,15 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
+function loginSchema(t: TranslationFunction) {
+  return z.object({
+    email: z.string().email(t("Invalid email address")),
+    password: z.string().min(6, t("Password must be at least 6 characters")),
+  });
+}
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -39,7 +42,7 @@ function LoginPage() {
   const router = useRouter();
 
   const form = useZodForm({
-    schema: loginSchema,
+    schema: loginSchema(t),
     defaultValues: hasDemoLogin
       ? {
           email: DEMO_USER.email,
@@ -84,7 +87,7 @@ function LoginPage() {
                 });
 
                 if (result.error) {
-                  throw new Error(result.error.message || "Failed to sign in");
+                  throw new Error(result.error.message || t("Failed to sign in"));
                 }
 
                 await router.navigate({ to: "/dashboard" });

@@ -45,6 +45,22 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
 });
 
+test("due date editor encodes the picker value as a UTC midnight instant", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const input = view.getByLabelText("Due Date") as HTMLInputElement;
+  expect(input.value).toBe("2026-09-01");
+
+  fireEvent.change(input, { target: { value: "2026-10-15" } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({ dueDate: "2026-10-15T00:00:00.000Z" }),
+  );
+});
+
 test("reopening the editor picks up the latest name without any reset", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
@@ -62,6 +78,31 @@ test("reopening the editor picks up the latest name without any reset", async ()
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Baby Name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
+});
+
+test("status editor saves the matching milestone instant", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const laborBaby = { ...baby, laborStarted: "2026-08-10T08:00:00.000Z" };
+  await using view = renderResource(
+    <StatusDateEditor
+      baby={laborBaby}
+      status="labor_started"
+      currentDate={laborBaby.laborStarted}
+      onUpdate={onUpdate}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.change(view.getByLabelText("Status date and time"), {
+    target: { value: "2026-08-10T09:30" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      laborStarted: new Date("2026-08-10T09:30").toISOString(),
+    }),
+  );
 });
 
 test("due date editor localizes its accessible label", async () => {

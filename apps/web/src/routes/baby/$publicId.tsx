@@ -2,10 +2,11 @@ import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dia
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
+import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
@@ -57,18 +58,21 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   loader: async (opts) => {
     const baby = opts.context.baby;
-    const vapidPublicKey = await opts.context.convexClient.query(
-      api.pushSubscriptions.getPublicKey,
-      {},
-    );
-    // Prefetch so the status card doesn't flash without its message
-    const latestUpdate = await opts.context.convexClient.query(api.timeline.latestUpdate, {
+    const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
+      opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
+      opts.context.convexClient.query(api.timeline.latestUpdate, {
       babyId: baby._id,
-    });
+      }),
+      opts.context.convexClient.query(api.timeline.listByBaby, {
+        babyId: baby._id,
+        paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+      }),
+    ]);
     return {
       baby,
       vapidPublicKey,
       latestUpdate,
+      firstPage,
     };
   },
   head: (opts) => {
@@ -232,6 +236,8 @@ function BabyPage() {
 
   return (
     <div className="min-h-screen bg-background bg-dots">
+      <HomepageDemoToast publicId={babyDoc.publicId} />
+
       {canManage && (
         <>
           <SettingsPanel
@@ -279,8 +285,9 @@ function BabyPage() {
         </>
       )}
 
-      {/* Floating chrome: brand pill left, action dock right */}
-      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+      {/* Page chrome: brand pill left, action dock right. Scrolls with the
+          page so the sticky status card gets the full viewport height. */}
+      <header className="px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
             to="/"
@@ -318,7 +325,9 @@ function BabyPage() {
 
         {/* Split layout: sticky status card on the left, feed on the right */}
         <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
+          {/* Sticky, but never taller than the viewport: on short screens the
+              card scrolls internally instead of clipping below the fold. */}
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
             <StatusDisplay
               baby={baby}
               currentStatus={currentStatus}
@@ -341,23 +350,25 @@ function BabyPage() {
           </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
-              feed comes before the visitor's encouragement form; the owner
-              posts via the "Post update" button in the dock. */}
+              visitor's encouragement form sits above the feed so nobody has
+              to scroll past every message to post; the owner posts via the
+              "Post update" button in the dock. */}
           <div className="space-y-8">
+            {!baby.encouragementsDisabled && (
+              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+              </section>
+            )}
+
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed
                 babyId={babyDoc._id}
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
+                initialPage={loaderData.firstPage}
               />
             </section>
-
-            {!baby.encouragementsDisabled && (
-              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
-                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </section>
-            )}
           </div>
         </div>
       </main>

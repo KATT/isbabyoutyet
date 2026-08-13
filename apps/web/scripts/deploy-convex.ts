@@ -14,6 +14,9 @@
  *    environment variables" in the Convex dashboard; SITE_URL is the only
  *    per-preview value.
  * 3. Pending migrations are run.
+ * 4. The public homepage demo baby is refreshed (dates shifted to now,
+ *    visitor comments wiped, fixture photos/feed restored). Runs in every
+ *    environment, including production.
  */
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";
@@ -77,3 +80,10 @@ for (const [key, value] of Object.entries(convexEnv)) {
 }
 
 convexCli(["run", "migrations:runAll", ...previewArgs]);
+
+console.log("\n$ pnpm seed:homepage");
+execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
+  cwd: convexPackageDir,
+  stdio: "inherit",
+  env: process.env,
+});
