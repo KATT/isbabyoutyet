@@ -273,8 +273,9 @@ function BabyPage() {
         </>
       )}
 
-      {/* Floating chrome: brand pill left, action dock right */}
-      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+      {/* Page chrome: brand pill left, action dock right. Scrolls with the
+          page so the sticky status card gets the full viewport height. */}
+      <header className="px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
             to="/"
@@ -312,7 +313,9 @@ function BabyPage() {
 
         {/* Split layout: sticky status card on the left, feed on the right */}
         <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-20">
+          {/* Sticky, but never taller than the viewport: on short screens the
+              card scrolls internally instead of clipping below the fold. */}
+          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
             <StatusDisplay
               baby={baby}
               currentStatus={currentStatus}
@@ -335,9 +338,16 @@ function BabyPage() {
           </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
-              feed comes before the visitor's encouragement form; the owner
-              posts via the "Post update" button in the dock. */}
+              visitor's encouragement form sits above the feed so nobody has
+              to scroll past every message to post; the owner posts via the
+              "Post update" button in the dock. */}
           <div className="space-y-8">
+            {!baby.encouragementsDisabled && (
+              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+              </section>
+            )}
+
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed
                 babyId={babyDoc._id}
@@ -346,12 +356,6 @@ function BabyPage() {
                 isOwner={canManage}
               />
             </section>
-
-            {!baby.encouragementsDisabled && (
-              <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
-                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </section>
-            )}
           </div>
         </div>
       </main>
