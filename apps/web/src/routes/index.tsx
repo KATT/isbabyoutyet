@@ -3,7 +3,7 @@ import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
 import { useMemo, useSyncExternalStore } from "react";
-import { HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -137,7 +137,8 @@ const HOW_IT_WORKS = [
 }>;
 
 export function HomePage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const demoBaby = homepageDemoBabyFor(locale);
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();
@@ -297,7 +298,7 @@ export function HomePage() {
               render={
                 <Link
                   to="/baby/$publicId"
-                  params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+                  params={{ publicId: demoBaby.publicId }}
                   preload="viewport"
                 />
               }
@@ -346,13 +347,13 @@ export function HomePage() {
             </h2>
             <p className="mt-2 font-semibold text-muted-foreground">
               {t("{{name}}'s page is a live demo — leave a note, look around, try it out", {
-                name: HOMEPAGE_DEMO_BABY.name,
+                name: demoBaby.name,
               })}
             </p>
           </div>
           <Link
             to="/baby/$publicId"
-            params={{ publicId: HOMEPAGE_DEMO_BABY.publicId }}
+            params={{ publicId: demoBaby.publicId }}
             className="group mt-10 block"
           >
             <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/10 p-8 text-center pop-shadow-strong transition-transform group-hover:-translate-y-1 md:p-10">
@@ -360,7 +361,7 @@ export function HomePage() {
                 🍼
               </span>
               <h3 className="mt-4 text-2xl font-black text-foreground">
-                {t("Follow {{name}}'s arrival", { name: HOMEPAGE_DEMO_BABY.name })}
+                {t("Follow {{name}}'s arrival", { name: demoBaby.name })}
               </h3>
               <p className="mx-auto mt-2 max-w-lg font-medium text-muted-foreground">
                 {t(

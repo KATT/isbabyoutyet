@@ -2,13 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useId } from "react";
-import type {
-  DefaultValues,
-  FieldErrors,
-  FieldValues,
-  UseFormProps,
-  UseFormReturn,
-} from "react-hook-form";
+import type { DefaultValues, FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -44,7 +38,6 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   children: React.ReactNode;
   form: UseZodForm<TInput, TContext, TOutput>;
   handleSubmit: (values: TOutput) => Promise<void>;
-  onInvalid?: (errors: FieldErrors<TInput>) => void;
 }) => {
   const { t } = useI18n();
   const { id, ...rest } = props.form;
@@ -60,7 +53,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
               console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             }
-          }, props.onInvalid)(event);
+          })(event);
         }}
       >
         {props.children}

@@ -5,7 +5,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to?: string }) => (
+  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
   createFileRoute: () => (opts: { component: unknown }) => opts,
@@ -52,6 +52,9 @@ test("shows prefetched babies without a spinner", async () => {
           name: "Baby Smith",
           publicId: "baby-smith",
           dueDate: "2026-12-01",
+          laborStarted: null,
+          wentToHospital: null,
+          babyBorn: null,
           role: "owner",
         },
       ]}

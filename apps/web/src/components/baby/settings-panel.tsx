@@ -59,14 +59,14 @@ type SettingsPanelProps = {
   onUpdate: BabyUpdateHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  profileLocale?: SupportedLocale;
-  /** Owner-only soft delete. Omitted on the preview page. */
-  onDelete?: () => void | Promise<void>;
-  /** When set, shows the co-parents section (real baby pages only). */
-  coParents?: {
+  profileLocale: SupportedLocale;
+  /** Owner-only soft delete. Null on the preview page / for co-parents. */
+  onDelete: (() => void | Promise<void>) | null;
+  /** Null on the preview page (no real baby id). */
+  coParents: {
     babyId: Id<"baby">;
     isOwner: boolean;
-  };
+  } | null;
 };
 
 /**
@@ -77,7 +77,9 @@ type SettingsPanelProps = {
  */
 export function SettingsPanel(props: SettingsPanelProps) {
   const { locale, t } = useI18n();
-  const inheritedLocale = props.profileLocale ?? locale;
+  const inheritedLocale = props.profileLocale;
+  const onDelete = props.onDelete;
+  const coParents = props.coParents;
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -286,7 +288,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </ItemActions>
           </Item>
 
-          {props.coParents && (
+          {coParents && (
             <>
               <ItemSeparator />
               <Item variant="default" className="items-start">
@@ -297,21 +299,18 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <div>
                     <ItemTitle>{t("Co-parents")}</ItemTitle>
                     <ItemDescription>
-                      {props.coParents.isOwner
+                      {coParents.isOwner
                         ? t("People who can post updates and change settings")
                         : t("Others who can manage this page with you")}
                     </ItemDescription>
                   </div>
-                  <CoParentsSettings
-                    babyId={props.coParents.babyId}
-                    isOwner={props.coParents.isOwner}
-                  />
+                  <CoParentsSettings babyId={coParents.babyId} isOwner={coParents.isOwner} />
                 </ItemContent>
               </Item>
             </>
           )}
 
-          {props.onDelete && (
+          {onDelete && (
             <>
               <ItemSeparator />
               <Item>
@@ -347,7 +346,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                         <AlertDialogAction
                           variant="destructive"
                           onClick={() => {
-                            void props.onDelete?.();
+                            void onDelete();
                           }}
                         >
                           {t("Delete page")}

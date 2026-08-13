@@ -61,7 +61,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
       opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
       opts.context.convexClient.query(api.timeline.latestUpdate, {
-      babyId: baby._id,
+        babyId: baby._id,
       }),
       opts.context.convexClient.query(api.timeline.listByBaby, {
         babyId: baby._id,
@@ -198,7 +198,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
 }
 
 function BabyPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const params = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
@@ -242,7 +242,7 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
-            profileLocale={profile?.locale}
+            profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
@@ -256,7 +256,7 @@ function BabyPage() {
                     await removeBaby({ babyId: babyDoc._id });
                     void navigate({ to: "/dashboard" });
                   }
-                : undefined
+                : null
             }
             coParents={{ babyId: babyDoc._id, isOwner }}
             open={!!search.settings}
@@ -335,7 +335,10 @@ function BabyPage() {
               thumbnailUrl={babyDoc.thumbnailUrl}
               latestUpdate={
                 latestUpdate
-                  ? { message: latestUpdate.update.message, postedAt: latestUpdate.postedAt }
+                  ? {
+                      message: latestUpdate.update.message ?? null,
+                      postedAt: latestUpdate.postedAt,
+                    }
                   : null
               }
             />

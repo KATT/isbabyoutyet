@@ -124,11 +124,12 @@ type DashboardBaby = {
   name: string;
   publicId: string;
   dueDate: string;
-  laborStarted?: string | null;
-  wentToHospital?: string | null;
-  babyBorn?: string | null;
   role: "owner" | "coParent";
-};
+} & Partial<{
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+}>;
 
 export function DashboardBabyList(props: { babies: DashboardBaby[]; isPending: boolean }) {
   const { t } = useI18n();

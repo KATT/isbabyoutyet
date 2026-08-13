@@ -135,7 +135,7 @@ function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
   const locale = matches.reduce((currentLocale, match) => {
-    const matchContext = match.context as { locale?: SupportedLocale };
+    const matchContext = match.context as { locale: SupportedLocale | undefined };
     return matchContext.locale ?? currentLocale;
   }, context.locale);
 
