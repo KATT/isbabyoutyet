@@ -80,28 +80,28 @@ function composerSchema(
   babyId: Id<"baby">,
 ) {
   return z
-  .object({
-    message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-    milestone: z.union([
-      z.literal("none"),
-      z.literal("labor_started"),
-      z.literal("gone_to_hospital"),
-      z.literal("born"),
-    ]),
+    .object({
+      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+      milestone: z.union([
+        z.literal("none"),
+        z.literal("labor_started"),
+        z.literal("gone_to_hospital"),
+        z.literal("born"),
+      ]),
       occurredAt: optionalHtmlDateTime(t),
-    photo: z.custom<File>().nullable(),
-  })
-  .refine(
-    (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+      photo: z.custom<File>().nullable(),
+    })
+    .refine(
+      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
       { error: t("Add a message, a photo, or a milestone to post") },
-  )
-  .refine(
-    (draft) =>
+    )
+    .refine(
+      (draft) =>
         draft.milestone === "none" || STATUS_ORDER[draft.milestone] > STATUS_ORDER[currentStatus],
-    {
+      {
         error: t("That status has already been marked"),
         path: ["milestone"],
-    },
+      },
     )
     .transform((draft): PostUpdateArgs & { photo: File | null } => {
       const milestone = draft.milestone === "none" ? undefined : draft.milestone;
@@ -111,7 +111,7 @@ function composerSchema(
         milestone,
         occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
         photo: draft.photo,
-};
+      };
     });
 }
 
