@@ -13,6 +13,7 @@ export default defineProject({
     name: "web",
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
+    exclude: ["src/**/*.browser.test.{ts,tsx}"],
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component
