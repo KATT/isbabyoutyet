@@ -8,12 +8,6 @@ type ProgressIndicatorProps = {
   currentStatus: BabyStatus;
 };
 
-/** Badge size — keep in sync with the connector inset (`1.25rem` = half of `h-10`). */
-const BADGE_CLASS = "h-10 w-10";
-const BADGE_RADIUS = "1.25rem";
-/** Matches `gap-1` on the milestone grid. */
-const COLUMN_GAP = "0.25rem";
-
 export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
@@ -57,6 +51,8 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
     }
   })();
 
+  const lastIndex = steps.length - 1;
+
   return (
     <div
       className="w-full overflow-x-clip"
@@ -66,49 +62,60 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
       aria-valuenow={Math.round(progressValue)}
     >
       {/*
-        Connectors live between badge edges (not through centers). Each segment
-        is drawn from this column and spans into the next: width = one column +
-        gap − badge diameter so it stops at the next circle's rim.
+        Each column owns a left half-line + badge + right half-line. Adjacent
+        halves meet between columns, so the stroke reaches the rim and never
+        crosses the badge face.
       */}
-      <ol className={`relative grid grid-cols-3 gap-1`}>
+      <ol className="grid grid-cols-3">
         {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
-          const isLast = index === steps.length - 1;
-          // Fill the path into a milestone once that milestone is reached.
-          const segmentFilled = !isLast && steps[index + 1]?.completed === true;
+          // Path into this milestone fills once the milestone itself is reached.
+          const leftFilled = index > 0 && step.completed;
+          // Path onward fills once the next milestone is reached.
+          const rightFilled = index < lastIndex && steps[index + 1]?.completed === true;
 
           return (
-            <li key={step.key} className="relative flex min-w-0 flex-col items-center text-center">
-              {!isLast && (
+            <li key={step.key} className="flex min-w-0 flex-col items-center text-center">
+              <div className="mb-1.5 flex w-full items-center">
                 <div
                   aria-hidden="true"
-                  className={`pointer-events-none absolute top-5 z-0 border-t-2 ${
-                    segmentFilled ? "border-solid border-primary" : "border-dashed border-border"
+                  className={`h-0 min-w-0 flex-1 border-t-2 ${
+                    index === 0
+                      ? "border-transparent"
+                      : leftFilled
+                        ? "border-solid border-primary"
+                        : "border-dashed border-border"
                   }`}
-                  style={{
-                    left: `calc(50% + ${BADGE_RADIUS})`,
-                    width: `calc(100% + ${COLUMN_GAP} - (${BADGE_RADIUS} * 2))`,
-                  }}
                 />
-              )}
-              <div
-                className={`relative z-10 mb-1.5 flex ${BADGE_CLASS} items-center justify-center rounded-full border-2 bg-card text-lg transition-all duration-300 ${
-                  step.completed
-                    ? "border-primary pop-shadow"
-                    : isCurrent
-                      ? "border-primary/40 ring-2 ring-primary/15"
-                      : "border-border opacity-60 grayscale"
-                }`}
-              >
-                {step.completed && (
-                  <span
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-0 rounded-full bg-primary/15"
-                  />
-                )}
-                <span aria-hidden="true" className="relative">
-                  {step.emoji}
-                </span>
+                <div
+                  className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card text-lg transition-all duration-300 ${
+                    step.completed
+                      ? "border-primary pop-shadow"
+                      : isCurrent
+                        ? "border-primary/40 ring-2 ring-primary/15"
+                        : "border-border opacity-60 grayscale"
+                  }`}
+                >
+                  {step.completed && (
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-0 rounded-full bg-primary/15"
+                    />
+                  )}
+                  <span aria-hidden="true" className="relative">
+                    {step.emoji}
+                  </span>
+                </div>
+                <div
+                  aria-hidden="true"
+                  className={`h-0 min-w-0 flex-1 border-t-2 ${
+                    index === lastIndex
+                      ? "border-transparent"
+                      : rightFilled
+                        ? "border-solid border-primary"
+                        : "border-dashed border-border"
+                  }`}
+                />
               </div>
               <p
                 className={`text-[11px] leading-tight font-extrabold text-balance sm:text-xs ${
