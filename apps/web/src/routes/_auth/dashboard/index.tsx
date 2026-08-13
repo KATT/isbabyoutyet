@@ -1,8 +1,9 @@
+import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { format } from "date-fns";
 import { ArrowRight, Baby as BabyIcon, CalendarHeart, Plus, SignOut } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -24,6 +25,11 @@ function DashboardPage() {
   if (!babies || babies.length === 0) {
     babies = loaderData.babies;
   }
+
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
+  useEffect(() => {
+    void claimInvites({});
+  }, [claimInvites]);
 
   const router = useRouter();
 
@@ -145,7 +151,15 @@ function DashboardPage() {
                       <CalendarHeart className="h-3.5 w-3.5" />
                       Due {format(dueDate, "MMMM d, yyyy")}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {"role" in baby && baby.role === "coParent" ? (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+                        >
+                          Shared with you
+                        </Badge>
+                      ) : null}
                       {isOverdue ? (
                         <Badge className="rounded-full font-bold">
                           {Math.abs(daysUntilDue)} {Math.abs(daysUntilDue) === 1 ? "day" : "days"}{" "}

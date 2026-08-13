@@ -21,7 +21,7 @@ import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstac
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -141,14 +141,25 @@ function BabyPage() {
   const themeCssUrl = getThemeCssUrl(baby.theme);
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
+  const removeBaby = useMutation(api.baby.remove);
+  const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const [composerOpen, setComposerOpen] = useState(false);
   const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
+  const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
   // Prefer the reactive value; fall back to the loader's prefetch while loading
   const latestUpdate =
     latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Better-auth user ID is in session.user.id, but Convex uses identity.subject which is the same
-  const isOwner = sessionResult.data?.user?.id === babyDoc.userId;
+  // Prefer server access (includes co-parents); fall back to session owner check
+  // while the query loads so owners don't flash without controls.
+  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
+  const canManage = myAccess?.canManage ?? isOwner;
+
+  // Claim pending email invites when a signed-in user lands on a baby page
+  useEffect(() => {
+    if (!sessionResult.data?.user) return;
+    void claimInvites({});
+  }, [sessionResult.data?.user, claimInvites]);
 
   const currentStatus = getCurrentStatus(baby);
 
@@ -156,7 +167,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
 
-      {isOwner && (
+      {canManage && (
         <>
           <SettingsPanel
             baby={baby}
@@ -166,6 +177,15 @@ function BabyPage() {
                 ...update,
               });
             }}
+            onDelete={
+              isOwner
+                ? async () => {
+                    await removeBaby({ babyId: babyDoc._id });
+                    void navigate({ to: "/dashboard" });
+                  }
+                : undefined
+            }
+            coParents={{ babyId: babyDoc._id, isOwner }}
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -207,9 +227,9 @@ function BabyPage() {
           </Link>
           <BabyNav
             shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
-            onPostUpdate={isOwner ? () => setComposerOpen(true) : null}
+            onPostUpdate={canManage ? () => setComposerOpen(true) : null}
             settingsButton={
-              isOwner
+              canManage
                 ? {
                     to: "/baby/$publicId",
                     params: { publicId: params.publicId },
@@ -272,7 +292,12 @@ function BabyPage() {
             )}
 
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
-              <TimelineFeed babyId={babyDoc._id} babyName={baby.name} isOwner={isOwner} />
+              <TimelineFeed
+                babyId={babyDoc._id}
+                baby={baby}
+                babyName={baby.name}
+                isOwner={canManage}
+              />
             </section>
           </div>
         </div>

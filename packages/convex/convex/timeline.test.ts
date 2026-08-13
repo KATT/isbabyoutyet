@@ -266,10 +266,15 @@ test("encouragements dual-write timeline rows and cascade on delete", async () =
 
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toEqual([]);
-  const orphanedTimelineItems = await t.run(async (ctx) => {
-    return await ctx.db.query("timelineItems").collect();
+  const softDeleted = await t.run(async (ctx) => {
+    const items = await ctx.db.query("timelineItems").collect();
+    const encouragements = await ctx.db.query("encouragements").collect();
+    return { items, encouragements };
   });
-  expect(orphanedTimelineItems).toEqual([]);
+  expect(softDeleted.items).toHaveLength(1);
+  expect(softDeleted.items[0]?.deletedAt).toEqual(expect.any(Number));
+  expect(softDeleted.encouragements).toHaveLength(1);
+  expect(softDeleted.encouragements[0]?.deletedAt).toEqual(expect.any(Number));
 });
 
 test("removing a milestone update unmarks it and cancels the pending push", async () => {
@@ -292,6 +297,41 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
 
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toEqual([]);
+});
+
+test("milestones must be deleted in reverse order", async () => {
+  await using _timers = useFakeTimersResource();
+  const { t, asAlice, babyId } = await setup();
+
+  const laborUpdateId = await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+  });
+  const hospitalUpdateId = await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "gone_to_hospital",
+  });
+  const bornUpdateId = await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "born",
+  });
+
+  await expect(asAlice.mutation(api.baby.update, { babyId, wentToHospital: null })).rejects.toThrow(
+    "Delete the Born status first",
+  );
+  await expect(asAlice.mutation(api.updates.remove, { updateId: laborUpdateId })).rejects.toThrow(
+    "Delete the Born status first",
+  );
+
+  await asAlice.mutation(api.updates.remove, { updateId: bornUpdateId });
+  await expect(asAlice.mutation(api.updates.remove, { updateId: laborUpdateId })).rejects.toThrow(
+    "Delete the Gone to hospital status first",
+  );
+  await asAlice.mutation(api.updates.remove, { updateId: hospitalUpdateId });
+  await asAlice.mutation(api.updates.remove, { updateId: laborUpdateId });
+
+  const baby = await getBaby(t, babyId);
+  expect(baby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
 });
 
 test("photo updates keep old photos; removing one falls back to the previous", async () => {

@@ -37,6 +37,7 @@ test("create a baby and list it for the owner", async () => {
       dueDate: "2026-09-01",
       publicId: "baby-smith",
       userId: "alice",
+      role: "owner",
     },
   ]);
 
@@ -126,4 +127,41 @@ test("moving the status forward schedules a push notification", async () => {
     { status: "pending", notificationType: "born" },
     { status: "cancelled", notificationType: "labor_started" },
   ]);
+});
+
+test("owner can soft-delete a baby; it disappears from lists and public lookup", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const asBob = t.withIdentity({ subject: "bob" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Soft Delete Me",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+
+  await expect(asBob.mutation(api.baby.remove, { babyId: created.babyId })).rejects.toThrow(
+    "Not authorized",
+  );
+
+  await asAlice.mutation(api.baby.remove, { babyId: created.babyId });
+
+  expect(await asAlice.query(api.baby.listByUser, {})).toEqual([]);
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toBeNull();
+
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  expect(stored?.deletedAt).toEqual(expect.any(Number));
+
+  const notifications = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("scheduledNotifications")
+      .withIndex("by_babyId", (q) => q.eq("babyId", created.babyId))
+      .collect();
+  });
+  expect(notifications.every((n) => n.status === "cancelled")).toBe(true);
 });
