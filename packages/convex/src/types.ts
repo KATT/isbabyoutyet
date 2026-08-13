@@ -27,7 +27,11 @@ export type BabyStatus =
 /**
  * Derive the current status from baby data
  */
-export function getCurrentStatus(baby: BabyData): BabyStatus {
+export function getCurrentStatus(baby: {
+  babyBorn?: string | null;
+  wentToHospital?: string | null;
+  laborStarted?: string | null;
+}): BabyStatus {
   if (baby.babyBorn) {
     return { type: "born", date: baby.babyBorn };
   }

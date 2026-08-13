@@ -30,10 +30,10 @@ export default defineConfig({
         // test run beats them, so coverage can only go up. Never lower them
         // by hand.
         autoUpdate: true,
-        statements: 59.93,
-        branches: 55.15,
-        functions: 55.06,
-        lines: 60.88,
+        statements: 60.14,
+        branches: 55.44,
+        functions: 55.24,
+        lines: 61.08,
       },
     },
   },
