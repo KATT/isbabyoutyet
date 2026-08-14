@@ -59,7 +59,6 @@ function DashboardPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
           <Link
             to="/"
-            preload="viewport"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
@@ -83,7 +82,7 @@ function DashboardPage() {
             <Button
               size="sm"
               className="rounded-full font-bold"
-              render={<Link to="/dashboard/add" preload="viewport" />}
+              render={<Link to="/dashboard/add" />}
               nativeButton={false}
             >
               <Plus className="w-4 h-4" />
@@ -197,7 +196,7 @@ export function DashboardBabyList(props: {
         <Button
           size="lg"
           className="mt-6 rounded-full font-extrabold pop-shadow"
-          render={<Link to="/dashboard/add" preload="viewport" />}
+          render={<Link to="/dashboard/add" />}
           nativeButton={false}
           data-tour-id="add_baby"
         >

@@ -319,7 +319,6 @@ function BabyPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
             to="/"
-            preload="viewport"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
           >
             <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
@@ -342,7 +341,6 @@ function BabyPage() {
                 ? {
                     to: "/baby/$publicId",
                     params: { publicId: params.publicId },
-                    preload: "viewport",
                     search: {
                       ...search,
                       settings: search.settings ? undefined : true,
@@ -426,7 +424,6 @@ function BabyPage() {
       <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
         <Link
           to="/"
-          preload="viewport"
           className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
         >
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
