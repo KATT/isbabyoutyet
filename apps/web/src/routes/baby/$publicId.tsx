@@ -14,7 +14,6 @@ import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
-import { getClientBabyByPublicId } from "@/lib/client-route-cache";
 import {
   createFileRoute,
   Link,
@@ -40,14 +39,9 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    // SSR fetches fresh; client navigations read through a held Convex
-    // subscription so revisits (e.g. the back button) don't await the network.
-    const baby =
-      typeof window === "undefined"
-        ? await opts.context.convexClient.query(api.baby.getByPublicId, {
-            id: opts.params.publicId,
-          })
-        : await getClientBabyByPublicId(opts.context.convexClient, opts.params.publicId);
+    const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
+      id: opts.params.publicId,
+    });
     if (!baby) {
       throw notFound();
     }

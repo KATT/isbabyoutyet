@@ -30,7 +30,6 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
-import { getClientProfile } from "@/lib/client-route-cache";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
@@ -40,14 +39,7 @@ export const Route = createRootRouteWithContext<{
   locale: SupportedLocale;
 }>()({
   beforeLoad: async () => {
-    // SSR detects the locale from request headers. Client navigations resolve
-    // the same cookie → preferred-language chain locally — beforeLoad runs on
-    // every navigation (back button included), so a server round-trip here
-    // would tax them all.
-    if (typeof window === "undefined") {
-      return { locale: await detectRequestLocale() };
-    }
-    return { locale: getDetectedLocale() };
+    return { locale: await detectRequestLocale() };
   },
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
@@ -157,12 +149,6 @@ function RootComponent() {
     return matchContext.locale ?? currentLocale;
   }, context.locale);
 
-  // Warm the client-side profile cache on startup so even the first client
-  // navigation into /_auth resolves its guard without awaiting the network.
-  useEffect(() => {
-    void getClientProfile(context.convexClient);
-  }, [context.convexClient]);
-
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -200,7 +186,7 @@ function RootComponent() {
   );
 }
 
-export function NotFoundComponent() {
+function NotFoundComponent() {
   const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
