@@ -5,7 +5,13 @@ import type { Doc } from "../convex/_generated/dataModel";
  */
 export type BabyData = Omit<
   Doc<"baby">,
-  "userId" | "ownerTokenIdentifier" | "lastActivityAt" | "publicId" | "_id" | "_creationTime"
+  | "userId"
+  | "ownerTokenIdentifier"
+  | "lastActivityAt"
+  | "subscriptionCount"
+  | "publicId"
+  | "_id"
+  | "_creationTime"
 >;
 
 /**

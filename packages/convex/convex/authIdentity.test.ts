@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   backfillBabyLastActivityAtDoc,
   backfillBabyOwnerTokenIdentifierDoc,
+  backfillBabySubscriptionCountDoc,
   backfillCoParentTokenIdentifierDoc,
   backfillOnboardingTokenIdentifierDoc,
   backfillProfileTokenIdentifierDoc,
@@ -22,11 +23,13 @@ test("auth identity migrations remain idempotent after backfill", async () => {
       dueDate: "2026-09-01",
       publicId: "migration-baby",
       lastActivityAt: 1,
+      subscriptionCount: 0,
     });
     const profileId = await ctx.db.insert("userProfiles", {
       userId: "alice",
       tokenIdentifier: "https://convex.test|alice",
       locale: "en-GB",
+      isAdmin: false,
     });
     const onboardingId = await ctx.db.insert("userOnboarding", {
       userId: "alice",
@@ -58,6 +61,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
+    await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
@@ -65,6 +69,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
+    await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
@@ -82,6 +87,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.baby?.lastActivityAt).toBe(1);
+  expect(migrated.baby?.subscriptionCount).toBe(0);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.completedSteps).toEqual(["share_link"]);

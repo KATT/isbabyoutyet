@@ -18,6 +18,7 @@ async function setupWithBaby() {
       dueDate: "2026-09-01",
       publicId: "baby-smith",
       lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
   return { t, babyId };

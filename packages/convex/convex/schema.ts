@@ -23,6 +23,8 @@ export default defineSchema({
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
+    // Denormalized exact Web Push subscriber count, maintained with subscription writes.
+    subscriptionCount: v.number(),
     // Latest timeline activity, materialized for bounded admin sorting.
     lastActivityAt: v.number(),
     // Soft delete: set to ms epoch when deleted; absent/null means active
@@ -36,8 +38,8 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
-    // Platform staff flag — not a baby-page role. Absent/false for everyone else.
-    isAdmin: v.optional(v.boolean()),
+    // Platform staff flag — not a baby-page role. Always set (false for everyone else).
+    isAdmin: v.boolean(),
   })
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
