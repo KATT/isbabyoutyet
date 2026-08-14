@@ -90,11 +90,18 @@ async function jpegAndThumbnail(buffer: Buffer) {
   return { photo, thumbnail };
 }
 
-async function uploadBytes(opts: {
-  bytes: Buffer;
-  contentType: string;
-  extraConvexArgs: string[];
-}): Promise<string> {
+function isLoopbackUploadUrl(uploadUrl: string) {
+  const hostname = new URL(uploadUrl).hostname;
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+/**
+ * Cloud (Vercel/prod): POST to the upload URL. Local anonymous backends die
+ * when `convex run` exits, so the URL's 127.0.0.1:3210 is gone — store bytes
+ * through `storePhoto` instead. That path cannot be used on Linux/Vercel:
+ * resized JPEGs exceed Linux MAX_ARG_STRLEN (~128KiB) as a `convex run` argv.
+ */
+async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   const uploadUrl = convexRun({
     functionName: "homepageDemo:generateUploadUrl",
     args: {},
@@ -104,9 +111,24 @@ async function uploadBytes(opts: {
     throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
   }
 
+  if (isLoopbackUploadUrl(uploadUrl)) {
+    const storageId = convexRun({
+      functionName: "homepageDemo:storePhoto",
+      args: {
+        bytes: { $bytes: opts.bytes.toString("base64") },
+        contentType: "image/jpeg",
+      },
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    if (typeof storageId !== "string") {
+      throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
+    }
+    return storageId;
+  }
+
   const response = await fetch(uploadUrl, {
     method: "POST",
-    headers: { "Content-Type": opts.contentType },
+    headers: { "Content-Type": "image/jpeg" },
     body: new Uint8Array(opts.bytes),
   });
   if (!response.ok) {
@@ -148,12 +170,10 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
     const prepared = await jpegAndThumbnail(photo.buffer);
     const photoId = await uploadBytes({
       bytes: prepared.photo,
-      contentType: "image/jpeg",
       extraConvexArgs,
     });
     const thumbnailId = await uploadBytes({
       bytes: prepared.thumbnail,
-      contentType: "image/jpeg",
       extraConvexArgs,
     });
     photos[photo.key] = { photoId, thumbnailId };
