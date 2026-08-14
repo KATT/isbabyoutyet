@@ -100,12 +100,9 @@ export const Route = createFileRoute("/baby/$publicId")({
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
-        subscriptionCount: preloader.ensureQueryData(
-          api.pushSubscriptions.getSubscriptionCount,
-          {
+        subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
           babyId: babyDoc._id,
-          },
-        ),
+        }),
         onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
         // Prefetch even when settings are closed — Dialog may keep the panel mounted
         coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
