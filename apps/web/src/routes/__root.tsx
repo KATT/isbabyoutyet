@@ -212,7 +212,8 @@ function NotFoundComponent() {
 // this the app looks frozen. SPAs can't trigger the browser's native loading
 // indicator, so we show a top progress bar while the router is loading.
 // value={null} puts Progress in its indeterminate (sweeping) state; the
-// delayed fade-in keeps fast navigations from flashing it.
+// 300ms grace period before the fade-in keeps fast navigations (e.g. the
+// back button) from ever flashing it.
 export function NavigationProgress() {
   const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });

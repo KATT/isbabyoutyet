@@ -258,9 +258,9 @@ code {
 @theme {
   /* Indeterminate sweep for Progress (Base UI sets data-indeterminate when value is null) */
   --animate-progress-indeterminate: progress-indeterminate 1s ease-in-out infinite;
-  /* Fade in after a short delay so briefly-shown elements (e.g. the route
-     progress bar) never flash on fast operations */
-  --animate-appear-delayed: appear-delayed 0.2s ease-out 0.2s forwards;
+  /* Fade in after a 300ms grace period so briefly-shown elements (e.g. the
+     route progress bar) never flash on fast operations */
+  --animate-appear-delayed: appear-delayed 0.15s ease-out 0.3s forwards;
 
   @keyframes progress-indeterminate {
     0% {
