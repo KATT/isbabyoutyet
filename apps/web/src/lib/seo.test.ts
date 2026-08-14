@@ -1,6 +1,13 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { babySeoHead, babyStatusLabel, homepageOgImagePath, robotsNoIndexMeta } from "@/lib/seo";
+import {
+  babySeoHead,
+  babyStatusDetail,
+  babyStatusLabel,
+  homepageOgImagePath,
+  openGraphImageMeta,
+  robotsNoIndexMeta,
+} from "@/lib/seo";
 import { CANONICAL_ORIGIN, absoluteUrl, canonicalUrl } from "@/lib/site-url";
 
 function useFakeTimersResource(now: Date) {
@@ -113,4 +120,123 @@ test("overdue baby titles use the overdue copy", async () => {
 
   expect(seo.title).toContain("overdue");
   expect(robotsNoIndexMeta()[0]?.content).toContain("noindex");
+});
+
+test("baby titles use singular day copy for one-day overdue and one day until due", async () => {
+  await using _untilTimers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const untilDue = babySeoHead({
+    name: "Sage",
+    dueDate: "2026-08-12",
+    publicId: "baby-waiting",
+    theme: null,
+    locale: "en-GB",
+    babyBorn: null,
+    wentToHospital: null,
+    laborStarted: null,
+  });
+  expect(untilDue.title).toContain("1 day until due date");
+
+  await using _overdueTimers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  const overdue = babySeoHead({
+    name: "Sage",
+    dueDate: "2026-08-11",
+    publicId: "baby-waiting",
+    theme: null,
+    locale: "en-GB",
+    babyBorn: null,
+    wentToHospital: null,
+    laborStarted: null,
+  });
+  expect(overdue.title).toContain("1 day overdue");
+});
+
+test("born babies keep the base title without a due-date countdown", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
+  const seo = babySeoHead({
+    name: "Milo",
+    dueDate: "2026-08-01",
+    publicId: "baby-born",
+    theme: null,
+    locale: "en-GB",
+    babyBorn: "2026-08-10T10:00:00.000Z",
+    wentToHospital: "2026-08-10T06:00:00.000Z",
+    laborStarted: "2026-08-10T02:00:00.000Z",
+  });
+  expect(seo.title).toContain("Is Milo out yet?");
+  expect(seo.title).not.toContain("overdue");
+  expect(seo.title).not.toContain("until due date");
+});
+
+test("baby status labels cover hospital and waiting states", () => {
+  expect(
+    babyStatusLabel({
+      status: { type: "gone_to_hospital", date: "2026-08-14T02:00:00.000Z" },
+      locale: "en-GB",
+    }),
+  ).toBe("Gone to hospital");
+  expect(babyStatusLabel({ status: { type: "not_yet" }, locale: "en-GB" })).toBe("Not yet");
+});
+
+test("baby status detail covers born, in-progress, overdue, and due-date copy", async () => {
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-01", babyBorn: "2026-08-10T10:00:00.000Z", locale: "en-GB" },
+      status: { type: "born", date: "2026-08-10" },
+    }),
+  ).toBe("Yes! Baby is out");
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-20", babyBorn: null, locale: "en-GB" },
+      status: { type: "labor_started", date: "2026-08-14T01:00:00.000Z" },
+    }),
+  ).toBe("Labour started");
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-20", babyBorn: null, locale: "en-GB" },
+      status: { type: "gone_to_hospital", date: "2026-08-14T02:00:00.000Z" },
+    }),
+  ).toBe("Gone to hospital");
+
+  await using _untilTimers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-12", babyBorn: null, locale: "en-GB" },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("1 day until due date");
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-09-01", babyBorn: null, locale: "en-GB" },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("21 days until due date");
+
+  await using _overdueTimers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-19", babyBorn: null, locale: "en-GB" },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("1 day overdue");
+  expect(
+    babyStatusDetail({
+      baby: { dueDate: "2026-08-11", babyBorn: null, locale: "en-GB" },
+      status: { type: "not_yet" },
+    }),
+  ).toBe("9 days overdue");
+});
+
+test("Open Graph image meta includes dimensions and a large Twitter card", () => {
+  const tags = openGraphImageMeta({
+    imageUrl: "https://isbabyoutyet.com/og",
+    alt: "Is Baby Out Yet?",
+  });
+  expect(tags).toEqual(
+    expect.arrayContaining([
+      { property: "og:image", content: "https://isbabyoutyet.com/og" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ]),
+  );
 });
