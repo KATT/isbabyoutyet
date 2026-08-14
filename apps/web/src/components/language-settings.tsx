@@ -26,6 +26,8 @@ import { Input } from "@workspace/ui/components/input";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import type { InitiatedQuery, PreloadedQuery } from "@workspace/query-prefetch";
+import { preloadedQueryOptions } from "@workspace/query-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
@@ -82,9 +84,11 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
-export function LanguageSettings() {
+export function LanguageSettings(props: {
+  profile: PreloadedQuery<typeof profileGet> | InitiatedQuery<typeof profileGet>;
+}) {
   const { locale, t } = useI18n();
-  const profileQuery = useSuspenseQuery(profileGet());
+  const profileQuery = useSuspenseQuery(preloadedQueryOptions(profileGet, props.profile));
   const profile = profileQuery.data;
   const updateLocale = useMutation(api.profile.updateLocale);
   const [requestOpen, setRequestOpen] = useState(false);

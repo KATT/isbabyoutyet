@@ -3,7 +3,7 @@ import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
+import { allKeyed, getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -20,12 +20,11 @@ export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
     const preloader = getQueryPreloader(opts.context.queryClient);
-    const [babies, onboarding, profile] = await Promise.all([
-      preloader.ensureQueryData(babiesByUser),
-      preloader.ensureQueryData(onboardingGetMine),
-      preloader.ensureQueryData(profileGet),
-    ]);
-    return { babies, onboarding, profile };
+    return await allKeyed({
+      babies: preloader.ensureQueryData(babiesByUser),
+      onboarding: preloader.ensureQueryData(onboardingGetMine),
+      profile: preloader.ensureQueryData(profileGet),
+    });
   },
 });
 
@@ -52,6 +51,7 @@ function DashboardPage() {
     <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
         surface="dashboard"
+        onboarding={loaderData.onboarding}
         enabled={undefined}
         spotlight={undefined}
         babyPublicId={undefined}
@@ -149,7 +149,7 @@ function DashboardPage() {
 
       <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
         <div className="mx-auto flex max-w-5xl justify-center">
-          <LanguageSettings />
+          <LanguageSettings profile={loaderData.profile} />
         </div>
       </footer>
     </div>

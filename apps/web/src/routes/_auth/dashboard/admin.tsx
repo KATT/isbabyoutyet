@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { getQueryPreloader } from "@workspace/query-prefetch";
+import { allKeyed, getQueryPreloader } from "@workspace/query-prefetch";
 import type { FunctionReturnType } from "convex/server";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
@@ -87,15 +87,14 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   loader: async (opts) => {
     const preloader = getQueryPreloader(opts.context.queryClient);
     const search = opts.deps;
-    const [babies, languages] = await Promise.all([
-      preloader.ensureInfiniteQueryData(adminBabiesInfinite, {
+    return await allKeyed({
+      babies: preloader.ensureInfiniteQueryData(adminBabiesInfinite, {
         sortBy: search.sort,
         sortOrder: search.order,
         hideDemo: search.hideDemo,
       }),
-      preloader.ensureInfiniteQueryData(adminLanguageRequestsInfinite),
-    ]);
-    return { babies, languages };
+      languages: preloader.ensureInfiniteQueryData(adminLanguageRequestsInfinite),
+    });
   },
 });
 

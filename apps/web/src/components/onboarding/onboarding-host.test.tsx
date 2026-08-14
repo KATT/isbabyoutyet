@@ -52,6 +52,8 @@ vi.mock("./coachmark", () => ({
 }));
 
 const { OnboardingHost } = await import("./onboarding-host");
+const { testPreloadedQuery } = await import("@workspace/query-prefetch/test-helpers");
+const { onboardingGetMine } = await import("@/queries/convex");
 
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
@@ -64,13 +66,15 @@ const progress = {
   welcomeDismissed: true,
   checklistDismissed: false,
   minimized: false,
-  completedSteps: [],
+  completedSteps: [] as string[],
   hasBaby: true,
   hasUpdate: false,
   effectiveSteps: ["add_baby"],
   allDone: false,
   tourBaby: { publicId: "baby-smith", name: "Smith" },
-} as const;
+};
+
+const onboardingHandle = testPreloadedQuery(onboardingGetMine, progress);
 
 test("returns null for anonymous visitors", async () => {
   mocks.useSession.mockReturnValue({ data: null, isPending: false });
@@ -78,6 +82,7 @@ test("returns null for anonymous visitors", async () => {
   await using view = renderResource(
     <OnboardingHost
       surface="dashboard"
+      onboarding={onboardingHandle}
       enabled={undefined}
       spotlight={undefined}
       babyPublicId={undefined}
@@ -98,6 +103,7 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   await using view = renderResource(
     <OnboardingHost
       surface="dashboard"
+      onboarding={onboardingHandle}
       enabled={undefined}
       spotlight={undefined}
       babyPublicId={undefined}
@@ -118,6 +124,7 @@ test("renders on the tour baby page when babyPublicId matches", async () => {
   await using view = renderResource(
     <OnboardingHost
       surface="baby"
+      onboarding={onboardingHandle}
       enabled={undefined}
       spotlight={undefined}
       babyPublicId="baby-smith"

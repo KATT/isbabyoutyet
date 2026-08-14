@@ -2,6 +2,8 @@ import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useEffect, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { preloadedQueryOptions } from "@workspace/query-prefetch";
+import type { InitiatedQuery, PreloadedQuery } from "@workspace/query-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { onboardingGetMine } from "@/queries/convex";
@@ -12,6 +14,7 @@ import { ONBOARDING_STEPS } from "./steps";
 
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
+  onboarding: PreloadedQuery<typeof onboardingGetMine> | InitiatedQuery<typeof onboardingGetMine>;
   /** Baby-page owners only — visitors never see the tour */
   enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */
@@ -52,7 +55,9 @@ export function OnboardingHost(props: OnboardingHostProps) {
 function OnboardingHostAuthed(props: OnboardingHostProps) {
   const { t } = useI18n();
   const spotlight = props.spotlight !== false;
-  const progressQuery = useSuspenseQuery(onboardingGetMine());
+  const progressQuery = useSuspenseQuery(
+    preloadedQueryOptions(onboardingGetMine, props.onboarding),
+  );
   const progress = progressQuery.data;
   const dismissWelcome = useMutation(api.onboarding.dismissWelcome);
   const setMinimized = useMutation(api.onboarding.setMinimized);

@@ -125,11 +125,22 @@ function Route() {
 Await independent blocking queries together:
 
 ```ts
-const [post, author] = await Promise.all([
-  preloader.ensureQueryData(postById, { postId }),
-  preloader.ensureQueryData(authorByPostId, { postId }),
-]);
+const { post, author } = await allKeyed({
+  post: preloader.ensureQueryData(postById, { postId }),
+  author: preloader.ensureQueryData(authorByPostId, { postId }),
+});
 ```
+
+Or spread straight into the loader return:
+
+```ts
+return await allKeyed({
+  post: preloader.ensureQueryData(postById, { postId }),
+  author: preloader.ensureQueryData(authorByPostId, { postId }),
+});
+```
+
+`allKeyed` is a ponyfill of the Stage 3 [`Promise.allKeyed`](https://github.com/tc39/proposal-await-dictionary) proposal — same keys in, same keys out.
 
 Let awaited failures reach the nearest route `ErrorBoundary` — don't catch them
 just to keep navigation alive.

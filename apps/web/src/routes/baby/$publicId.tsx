@@ -28,7 +28,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
+import { allKeyed, getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -81,43 +81,42 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
 
-    const [myAccess, vapidPublicKey, latestUpdate, timeline, profile] = await Promise.all([
-      preloader.ensureQueryData(coParentsMyAccess, { babyId: babyDoc._id }),
-      preloader.ensureQueryData(pushPublicKey),
-      preloader.ensureQueryData(timelineLatestUpdate, { babyId: babyDoc._id }),
-      preloader.ensureInfiniteQueryData(timelineByBaby, {
+    const shared = await allKeyed({
+      myAccess: preloader.ensureQueryData(coParentsMyAccess, { babyId: babyDoc._id }),
+      vapidPublicKey: preloader.ensureQueryData(pushPublicKey),
+      latestUpdate: preloader.ensureQueryData(timelineLatestUpdate, { babyId: babyDoc._id }),
+      timeline: preloader.ensureInfiniteQueryData(timelineByBaby, {
         babyId: babyDoc._id,
         visitorId: undefined,
       }),
-      preloader.ensureQueryData(profileGet),
-    ]);
+      profile: preloader.ensureQueryData(profileGet),
+    });
 
-    let scheduledNotifications = null;
-    let subscriptions = null;
-    let onboarding = null;
-    let coParentsList = null;
-
-    if (myAccess.initialData.canManage) {
-      [scheduledNotifications, subscriptions, onboarding, coParentsList] = await Promise.all([
-        preloader.ensureQueryData(scheduledNotificationsForBaby, { babyId: babyDoc._id }),
-        preloader.ensureQueryData(pushSubscriptionsForBaby, { babyId: babyDoc._id }),
-        preloader.ensureQueryData(onboardingGetMine),
-        // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        preloader.ensureQueryData(coParentsListForBaby, { babyId: babyDoc._id }),
-      ]);
+    if (!shared.myAccess.initialData.canManage) {
+      return {
+        baby: babyHandle,
+        ...shared,
+        scheduledNotifications: null,
+        subscriptions: null,
+        onboarding: null,
+        coParentsList: null,
+      };
     }
 
     return {
       baby: babyHandle,
-      myAccess,
-      vapidPublicKey,
-      latestUpdate,
-      timeline,
-      profile,
-      scheduledNotifications,
-      subscriptions,
-      onboarding,
-      coParentsList,
+      ...shared,
+      ...(await allKeyed({
+        scheduledNotifications: preloader.ensureQueryData(scheduledNotificationsForBaby, {
+          babyId: babyDoc._id,
+        }),
+        subscriptions: preloader.ensureQueryData(pushSubscriptionsForBaby, {
+          babyId: babyDoc._id,
+        }),
+        onboarding: preloader.ensureQueryData(onboardingGetMine),
+        // Prefetch even when settings are closed — Dialog may keep the panel mounted
+        coParentsList: preloader.ensureQueryData(coParentsListForBaby, { babyId: babyDoc._id }),
+      })),
     };
   },
   head: (opts) => {
@@ -299,6 +298,7 @@ function BabyPage() {
       {canManage && loaderData.onboarding ? (
         <OnboardingHost
           surface="baby"
+          onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
           spotlight={!search.settings && !composerOpen}

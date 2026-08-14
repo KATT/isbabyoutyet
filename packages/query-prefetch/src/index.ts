@@ -10,6 +10,7 @@ export type {
   QueryOptionsFactory,
 } from "./types.js";
 
+export { allKeyed } from "./allKeyed.js";
 export { getQueryInitiator, getQueryPreloader } from "./query-loader.js";
 export { preloadedInfiniteQueryOptions, preloadedQueryOptions } from "./query-options.js";
 export { useInitiateInfiniteQuery, useInitiateQuery } from "./query-initiate-hooks.js";
