@@ -36,8 +36,10 @@ export function getRouter() {
 
   const router = createRouter({
     routeTree,
-    // Intent preload runs loaders on hover/focus so ensureQueryData prefetchers work
-    defaultPreload: "intent",
+    // Render preload runs loaders as soon as a Link renders (not just on
+    // hover/focus), so e.g. dashboard baby cards prefetch their baby pages
+    // immediately via the ensureQueryData prefetchers.
+    defaultPreload: "render",
     context: {
       queryClient,
       convexQueryClient,
