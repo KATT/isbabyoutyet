@@ -12,12 +12,7 @@ import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import {
-  getDaysUntilDueDate,
-  getOverdueDays,
-  getThemeCss,
-  getThemePrimaryColor,
-} from "@/components/baby/utils";
+import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
   createFileRoute,
@@ -32,7 +27,10 @@ import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { translate, useI18n } from "@/lib/i18n";
+import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
+import { useI18n } from "@/lib/i18n";
+import { canonicalUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -83,38 +81,16 @@ export const Route = createFileRoute("/baby/$publicId")({
       return {};
     }
 
-    const overdueDays = getOverdueDays(baby.dueDate);
-    const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
-    const isBorn = !!baby.babyBorn;
-
-    const locale = baby.resolvedLocale;
-    let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-    if (!isBorn) {
-      if (overdueDays > 0) {
-        title = translate(
-          locale,
-          overdueDays === 1
-            ? "{{count}} day overdue – Is {{name}} out yet?"
-            : "{{count}} days overdue – Is {{name}} out yet?",
-          { count: overdueDays, name: baby.name },
-        );
-      } else {
-        title = translate(
-          locale,
-          daysUntilDueDate === 1
-            ? "{{count}} day until due date – Is {{name}} out yet?"
-            : "{{count}} days until due date – Is {{name}} out yet?",
-          { count: daysUntilDueDate, name: baby.name },
-        );
-      }
-    }
-    title = translate(locale, "{{title}} – Track Your Baby's Journey", { title });
-
-    const description = translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
+    const seo = babySeoHead({
       name: baby.name,
+      dueDate: baby.dueDate,
+      publicId: baby.publicId,
+      theme: baby.theme,
+      locale: baby.resolvedLocale,
+      babyBorn: baby.babyBorn,
+      wentToHospital: baby.wentToHospital,
+      laborStarted: baby.laborStarted,
     });
-
-    const themeColor = getThemePrimaryColor(baby.theme);
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
     // navigating away. Inline head styles still paint before body (no FOUC)
@@ -125,40 +101,46 @@ export const Route = createFileRoute("/baby/$publicId")({
     return {
       meta: [
         {
-          title,
+          title: seo.title,
         },
         {
           name: "description",
-          content: description,
+          content: seo.description,
         },
         {
           property: "og:title",
-          content: title,
+          content: seo.title,
         },
         {
           property: "og:description",
-          content: description,
+          content: seo.description,
         },
         {
           property: "og:url",
-          content: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          content: seo.ogUrl,
         },
         {
           property: "og:locale",
-          content: locale.replace("-", "_"),
+          content: seo.locale.replace("-", "_"),
         },
         {
+          property: "og:type",
+          content: "website",
+        },
+        ...openGraphImageMeta({ imageUrl: seo.imageUrl, alt: seo.imageAlt }),
+        {
           name: "twitter:title",
-          content: title,
+          content: seo.title,
         },
         {
           name: "twitter:description",
-          content: description,
+          content: seo.description,
         },
         {
           name: "theme-color",
-          content: themeColor,
+          content: seo.themeColor,
         },
+        ...searchRobotsMeta({ index: seo.indexable }),
       ],
       styles: themeCss
         ? [
@@ -175,11 +157,12 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
         {
           rel: "canonical",
-          href: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          href: seo.canonical,
         },
       ],
     };
   },
+  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
 });
 
 /**
@@ -331,7 +314,7 @@ function BabyPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+            shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
             onShareCopied={
               canManage
                 ? () => {
