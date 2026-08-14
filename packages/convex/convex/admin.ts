@@ -11,6 +11,7 @@ import { isActive } from "./softDelete";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
+const ADMIN_SCAN_LIMIT = 1_000;
 
 const languageRequestRowValidator = v.object({
   _id: v.id("languageRequests"),
@@ -69,7 +70,8 @@ async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
   const coParents = await ctx.db
     .query("babyCoParents")
     .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
-    .collect();
+    .order("desc")
+    .take(100);
   for (const row of coParents) {
     if (!isActive(row)) continue;
     if (!emails.includes(row.email)) {
@@ -120,7 +122,7 @@ export const listLanguageRequests = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const rows = await ctx.db.query("languageRequests").collect();
+    const rows = await ctx.db.query("languageRequests").take(ADMIN_SCAN_LIMIT);
     rows.sort((a, b) => b.createdAt - a.createdAt);
 
     const emailByUserId = new Map<string, string | null>();
@@ -157,7 +159,7 @@ export const listBabies = query({
   }),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const babies = await ctx.db.query("baby").collect();
+    const babies = await ctx.db.query("baby").take(ADMIN_SCAN_LIMIT);
     const active = babies.filter(isActive).filter((baby) => {
       if (!args.hideDemo) return true;
       return baby.demo !== true;
