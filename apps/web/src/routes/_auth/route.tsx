@@ -59,6 +59,11 @@ export const Route = createFileRoute("/_auth")({
     if (!token) {
       throw redirect({ to: "/" });
     }
+    // Right after login the auth provider may not have re-authenticated the
+    // websocket yet, so ensure (and the route loaders after it) would throw
+    // "Not authenticated". Authenticate it with the fresh token; the
+    // provider's own setAuth supersedes this once its session effect runs.
+    opts.context.convexClient.setAuth(async () => token);
     const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
       browserLocale: opts.context.locale,
     });

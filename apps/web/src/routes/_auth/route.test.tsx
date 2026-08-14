@@ -57,6 +57,36 @@ test("client navigations with a cached profile skip the token round-trip", async
   expect(getToken).not.toHaveBeenCalled();
 });
 
+test("regression: a fresh login authenticates the websocket before ensuring the profile", async () => {
+  // Right after login the cache still says "no profile" and the auth provider
+  // hasn't re-authenticated the websocket yet — the guard must setAuth with
+  // its fresh token before running profile.ensure, or ensure throws
+  // "Not authenticated" and the login form shows "Something went wrong".
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "en-US", isAdmin: false }),
+  );
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { setAuth, mutation };
+
+  const result = await guard.beforeLoad(guard.ctx);
+
+  expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  const setAuthOrder = setAuth.mock.invocationCallOrder[0] ?? Infinity;
+  const mutationOrder = mutation.mock.invocationCallOrder[0] ?? 0;
+  expect(setAuthOrder).toBeLessThan(mutationOrder);
+  // The guard's token fetcher authenticates with the fresh token.
+  const fetchToken = setAuth.mock.calls[0]?.[0];
+  expect(await fetchToken?.()).toBe("fresh-token");
+  // The ensured profile lands in the cache for subsequent navigations.
+  expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toMatchObject({
+    locale: "en-US",
+  });
+});
+
 test("client navigations without a session redirect home after one token check", async () => {
   getToken.mockReset();
   getToken.mockResolvedValueOnce(null);
