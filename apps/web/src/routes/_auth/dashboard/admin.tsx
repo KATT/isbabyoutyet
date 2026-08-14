@@ -14,7 +14,9 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@workspace/ui/components/empty";
+import { Field, FieldLabel } from "@workspace/ui/components/field";
 import { Spinner } from "@workspace/ui/components/spinner";
+import { Switch } from "@workspace/ui/components/switch";
 import {
   Table,
   TableBody,
@@ -36,11 +38,13 @@ const adminSearchSchema = z.object({
   tab: z.enum(["babies", "languages"]).default("babies"),
   sort: z.enum(["created", "updated"]).default("updated"),
   order: z.enum(["asc", "desc"]).default("desc"),
+  hideDemo: z.boolean().default(true),
 });
 
 type AdminTab = z.infer<typeof adminSearchSchema>["tab"];
 type SortBy = z.infer<typeof adminSearchSchema>["sort"];
 type SortOrder = z.infer<typeof adminSearchSchema>["order"];
+type AdminSearch = z.infer<typeof adminSearchSchema>;
 
 type LanguageRequestRow = {
   _id: string;
@@ -171,6 +175,7 @@ function SortableHeaderLink(props: {
   sort: SortBy;
   order: SortOrder;
   tab: AdminTab;
+  hideDemo: boolean;
 }) {
   const active = props.column === props.sort;
   const next = nextSortSearch({
@@ -184,7 +189,12 @@ function SortableHeaderLink(props: {
     <TableHead aria-sort={active ? (props.order === "asc" ? "ascending" : "descending") : "none"}>
       <Link
         to="/dashboard/admin"
-        search={{ tab: props.tab, sort: next.sort, order: next.order }}
+        search={{
+          tab: props.tab,
+          sort: next.sort,
+          order: next.order,
+          hideDemo: props.hideDemo,
+        }}
         replace
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
@@ -291,6 +301,7 @@ export function BabiesSection(props: {
   sort: SortBy;
   order: SortOrder;
   tab: AdminTab;
+  hideDemo: boolean;
   onLoadMore: () => void;
 }) {
   const { t, locale } = useI18n();
@@ -325,6 +336,7 @@ export function BabiesSection(props: {
               sort={props.sort}
               order={props.order}
               tab={props.tab}
+              hideDemo={props.hideDemo}
             />
             <SortableHeaderLink
               label={t("Updated")}
@@ -332,6 +344,7 @@ export function BabiesSection(props: {
               sort={props.sort}
               order={props.order}
               tab={props.tab}
+              hideDemo={props.hideDemo}
             />
             <TableHead>
               <span className="sr-only">{t("Open")}</span>
@@ -391,7 +404,7 @@ export function AdminDashboardPage() {
   const babiesQuery = usePaginatedQuery(
     api.admin.listBabies,
     auth.isAuthenticated && search.tab === "babies"
-      ? { sortBy: search.sort, sortOrder: search.order }
+      ? { sortBy: search.sort, sortOrder: search.order, hideDemo: search.hideDemo }
       : "skip",
     { initialNumItems: ADMIN_PAGE_SIZE },
   );
@@ -402,6 +415,20 @@ export function AdminDashboardPage() {
       replace: true,
     });
   }
+
+  function setHideDemo(hideDemo: boolean) {
+    void navigate({
+      search: (prev) => ({ ...prev, hideDemo }),
+      replace: true,
+    });
+  }
+
+  const tabSearch = (tab: AdminTab): AdminSearch => ({
+    tab,
+    sort: search.sort,
+    order: search.order,
+    hideDemo: search.hideDemo,
+  });
 
   return (
     <div className="min-h-screen bg-background bg-dots">
@@ -444,34 +471,37 @@ export function AdminDashboardPage() {
                 }
               }}
             >
-              <TabsList variant="default">
-                <TabsTrigger
-                  value="babies"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      to="/dashboard/admin"
-                      search={{ tab: "babies", sort: search.sort, order: search.order }}
-                      replace
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <TabsList variant="default">
+                  <TabsTrigger
+                    value="babies"
+                    nativeButton={false}
+                    render={<Link to="/dashboard/admin" search={tabSearch("babies")} replace />}
+                  >
+                    {t("All babies")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="languages"
+                    nativeButton={false}
+                    render={<Link to="/dashboard/admin" search={tabSearch("languages")} replace />}
+                  >
+                    {t("Requested languages")}
+                  </TabsTrigger>
+                </TabsList>
+
+                {search.tab === "babies" ? (
+                  <Field orientation="horizontal" className="w-auto">
+                    <Switch
+                      id="admin-hide-demo"
+                      checked={search.hideDemo}
+                      onCheckedChange={setHideDemo}
                     />
-                  }
-                >
-                  {t("All babies")}
-                </TabsTrigger>
-                <TabsTrigger
-                  value="languages"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      to="/dashboard/admin"
-                      search={{ tab: "languages", sort: search.sort, order: search.order }}
-                      replace
-                    />
-                  }
-                >
-                  {t("Requested languages")}
-                </TabsTrigger>
-              </TabsList>
+                    <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
+                      {t("Hide demo babies")}
+                    </FieldLabel>
+                  </Field>
+                ) : null}
+              </div>
 
               <TabsContent value="babies" className="mt-0">
                 <BabiesSection
@@ -480,6 +510,7 @@ export function AdminDashboardPage() {
                   sort={search.sort}
                   order={search.order}
                   tab={search.tab}
+                  hideDemo={search.hideDemo}
                   onLoadMore={() => babiesQuery.loadMore(ADMIN_PAGE_SIZE)}
                 />
               </TabsContent>

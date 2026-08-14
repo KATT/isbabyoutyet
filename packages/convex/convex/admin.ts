@@ -147,6 +147,7 @@ export const listBabies = query({
   args: {
     sortBy: sortByValidator,
     sortOrder: sortOrderValidator,
+    hideDemo: v.boolean(),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -157,7 +158,10 @@ export const listBabies = query({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
     const babies = await ctx.db.query("baby").collect();
-    const active = babies.filter(isActive);
+    const active = babies.filter(isActive).filter((baby) => {
+      if (!args.hideDemo) return true;
+      return baby.demo !== true;
+    });
 
     const rows = [];
     for (const baby of active) {

@@ -30,7 +30,7 @@ vi.mock("@tanstack/react-router", () => ({
   },
   createFileRoute: () => (opts: Record<string, unknown>) => ({
     ...opts,
-    useSearch: () => ({ tab: "babies", sort: "updated", order: "desc" }),
+    useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
   }),
   redirect: vi.fn<() => never>(),
   useNavigate: () => mocks.navigate,
@@ -149,6 +149,7 @@ test("babies section sorts via clickable header links", async () => {
       sort="updated"
       order="desc"
       tab="babies"
+      hideDemo={true}
       status="Exhausted"
       onLoadMore={() => undefined}
       babies={[
@@ -176,6 +177,7 @@ test("babies section sorts via clickable header links", async () => {
   const updated = view.getByRole("link", { name: "Updated" });
   expect(created.getAttribute("href")).toContain("sort=created");
   expect(created.getAttribute("href")).toContain("order=desc");
+  expect(created.getAttribute("href")).toContain("hideDemo=true");
   expect(updated.getAttribute("href")).toContain("sort=updated");
   expect(updated.getAttribute("href")).toContain("order=asc");
 });
@@ -187,6 +189,7 @@ test("babies section keeps previous rows while a sort refresh is loading", async
         sort="updated"
         order="desc"
         tab="babies"
+        hideDemo={true}
         status="Exhausted"
         onLoadMore={() => undefined}
         babies={[sampleBaby]}
@@ -201,6 +204,7 @@ test("babies section keeps previous rows while a sort refresh is loading", async
         sort="created"
         order="asc"
         tab="babies"
+        hideDemo={true}
         status="LoadingFirstPage"
         onLoadMore={() => undefined}
         babies={[]}
@@ -221,6 +225,7 @@ test("babies section shows a spinner on first load and while loading more", asyn
       sort="created"
       order="desc"
       tab="babies"
+      hideDemo={true}
       onLoadMore={() => undefined}
     />,
   );
@@ -231,6 +236,7 @@ test("babies section shows a spinner on first load and while loading more", asyn
       sort="created"
       order="desc"
       tab="babies"
+      hideDemo={true}
       status="LoadingMore"
       onLoadMore={() => undefined}
       babies={[{ ...sampleBaby, demo: false, managerEmails: [] }]}
@@ -295,6 +301,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
       sort="updated"
       order="desc"
       tab="babies"
+      hideDemo={true}
       status="CanLoadMore"
       onLoadMore={onLoadMore}
       babies={[sampleBaby]}
@@ -306,7 +313,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
   globalThis.IntersectionObserver = OriginalObserver;
 });
 
-test("admin dashboard page exposes tab triggers as search links", async () => {
+test("admin dashboard page exposes tab links and hide-demo filter", async () => {
   await using view = renderResource(<AdminDashboardPage />);
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
@@ -316,6 +323,11 @@ test("admin dashboard page exposes tab triggers as search links", async () => {
   expect(languagesTab.tagName).toBe("A");
   expect(babiesTab.getAttribute("href")).toContain("tab=babies");
   expect(languagesTab.getAttribute("href")).toContain("tab=languages");
+
+  const hideDemo = view.getByRole("switch", { name: "Hide demo babies" });
+  expect(hideDemo.getAttribute("aria-checked")).toBe("true");
+  fireEvent.click(hideDemo);
+  expect(mocks.navigate).toHaveBeenCalled();
 
   fireEvent.click(languagesTab);
   expect(mocks.navigate).toHaveBeenCalled();

@@ -25,6 +25,7 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
     asAlice.query(api.admin.listBabies, {
       sortBy: "created",
       sortOrder: "desc",
+      hideDemo: true,
       paginationOpts: FIRST_PAGE,
     }),
   ).rejects.toThrow("Not authorized");
@@ -133,6 +134,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const byCreated = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
     sortOrder: "desc",
+    hideDemo: false,
     paginationOpts: FIRST_PAGE,
   });
   expect(byCreated.page.some((row) => row.publicId === "baby-deleted")).toBe(false);
@@ -143,9 +145,20 @@ test("admins can list babies sorted by created or updated with manager emails", 
     expect(byCreated.page[i - 1]!.createdAt).toBeGreaterThanOrEqual(byCreated.page[i]!.createdAt);
   }
 
+  const hiddenDemos = await asDemo.query(api.admin.listBabies, {
+    sortBy: "created",
+    sortOrder: "desc",
+    hideDemo: true,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(hiddenDemos.page.every((row) => row.demo === false)).toBe(true);
+  expect(hiddenDemos.page.some((row) => row.publicId === "juniper-hale")).toBe(false);
+  expect(hiddenDemos.page.some((row) => row.publicId === "baby-quiet")).toBe(true);
+
   const byCreatedAsc = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
     sortOrder: "asc",
+    hideDemo: false,
     paginationOpts: FIRST_PAGE,
   });
   expect(byCreatedAsc.page.map((row) => row._id)).toEqual(
@@ -154,6 +167,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
 
   const waitingRow = byCreated.page.find((row) => row.publicId === "baby-waiting");
   expect(waitingRow?.managerEmails).toEqual([DEMO_USER.email, "coparent@example.com"]);
+  expect(waitingRow?.demo).toBe(true);
 
   const quiet = byCreated.page.find((row) => row.publicId === "baby-quiet");
   expect(quiet?.updatedAt).toBe(quiet?.createdAt);
@@ -162,6 +176,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const byUpdated = await asDemo.query(api.admin.listBabies, {
     sortBy: "updated",
     sortOrder: "desc",
+    hideDemo: false,
     paginationOpts: FIRST_PAGE,
   });
   expect(byUpdated.page.length).toBe(byCreated.page.length);
@@ -173,6 +188,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const page1 = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
     sortOrder: "desc",
+    hideDemo: false,
     paginationOpts: { numItems: 2, cursor: null },
   });
   expect(page1.page).toHaveLength(2);
@@ -180,6 +196,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const page2 = await asDemo.query(api.admin.listBabies, {
     sortBy: "created",
     sortOrder: "desc",
+    hideDemo: false,
     paginationOpts: { numItems: 2, cursor: page1.continueCursor },
   });
   expect(page2.page).toHaveLength(2);
@@ -189,6 +206,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
     asDemo.query(api.admin.listBabies, {
       sortBy: "created",
       sortOrder: "desc",
+      hideDemo: false,
       paginationOpts: { numItems: 2, cursor: "nope" },
     }),
   ).rejects.toThrow("Invalid pagination cursor");

@@ -26,6 +26,9 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     for (const spec of SEED_BABIES) {
       const baby = babiesByPublicId.get(spec.publicId);
       if (baby) {
+        if (baby.demo !== true) {
+          await ctx.db.patch(baby._id, { demo: true });
+        }
         await seedEncouragements({ ctx, babyId: baby._id, now, spec });
       }
     }
@@ -270,6 +273,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBorn,
       theme: null,
       encouragementsDisabled: false,
+      demo: true,
     });
 
     await seedMilestoneUpdates(ctx, {
