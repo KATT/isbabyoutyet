@@ -9,13 +9,14 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { useMutation, useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { convexQuery, useConvexMutation } from "@convex-dev/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { Bell, BellSlash, Export } from "@phosphor-icons/react";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { useInitiateConvexQuery, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 
 type NotificationSubscribeProps = {
@@ -297,14 +298,13 @@ function NotificationSubscribeButtonWithStatus(props: {
   onSubscribe: () => void;
   onUnsubscribe: () => void;
 }) {
-  // The push endpoint only exists in the browser, so this can't be preloaded
-  // in a loader — suspend on it directly.
-  // eslint-disable-next-line query-prefetch/require-preloaded-query-options -- render-time-only input
-  const isSubscribedQuery = useSuspenseQuery(
-    convexQuery(api.pushSubscriptions.isSubscribed, {
-      babyId: props.babyId,
-      endpoint: props.endpoint,
-    }),
+  const isSubscribedHandle = useInitiateConvexQuery(api.pushSubscriptions.isSubscribed, {
+    babyId: props.babyId,
+    endpoint: props.endpoint,
+  });
+  const isSubscribedQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.isSubscribed,
+    isSubscribedHandle,
   );
   const isSubscribed = isSubscribedQuery.data;
 

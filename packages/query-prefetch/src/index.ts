@@ -1,5 +1,7 @@
 export type {
   AnyQueryOptions,
+  InitiatedInfiniteQuery,
+  InitiatedQuery,
   PreloadedInfiniteQuery,
   PreloadedQuery,
   QueryDataOf,
@@ -9,5 +11,6 @@ export type {
 } from "./types.js";
 
 export { allKeyed } from "./allKeyed.js";
-export { getQueryPreloader } from "./query-loader.js";
+export { getQueryInitiator, getQueryPreloader } from "./query-loader.js";
 export { preloadedInfiniteQueryOptions, preloadedQueryOptions } from "./query-options.js";
+export { useInitiateInfiniteQuery, useInitiateQuery } from "./query-initiate-hooks.js";

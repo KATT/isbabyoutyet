@@ -4,6 +4,8 @@ import type { FunctionArgs } from "convex/server";
 import { convexInfiniteQuery } from "./convexInfiniteQuery.js";
 import type { PaginatedQueryReference, PaginationArgs } from "./convexInfiniteQuery.js";
 import type {
+  InitiatedConvexInfiniteQuery,
+  InitiatedConvexQuery,
   PreloadedConvexInfiniteQuery,
   PreloadedConvexQuery,
   QueryReference,
@@ -66,6 +68,45 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
         numItems: opts.numItems,
         initialData,
       } as PreloadedConvexInfiniteQuery<TQuery>;
+    },
+
+    /**
+     * Starts a Convex query WITHOUT awaiting it and returns an
+     * {@link InitiatedConvexQuery} handle — the suspense read site blocks
+     * instead of the loader. Use on client navigations so they commit
+     * immediately; SSR should keep awaiting via `ensureQueryData` so the
+     * first paint is complete.
+     */
+    initiateQueryData<TQuery extends QueryReference>(
+      funcRef: TQuery,
+      args: FunctionArgs<TQuery>,
+    ): InitiatedConvexQuery<TQuery> {
+      const options = convexQuery(funcRef, args as never);
+      void queryClient.prefetchQuery(
+        options as unknown as Parameters<QueryClient["prefetchQuery"]>[0],
+      );
+      return { input: args } as InitiatedConvexQuery<TQuery>;
+    },
+
+    /**
+     * Starts the first page of a paginated Convex query WITHOUT awaiting it
+     * and returns an {@link InitiatedConvexInfiniteQuery} handle.
+     */
+    initiateInfiniteQueryData<TQuery extends PaginatedQueryReference>(
+      funcRef: TQuery,
+      opts: {
+        args: PaginationArgs<TQuery>;
+        numItems: number;
+      },
+    ): InitiatedConvexInfiniteQuery<TQuery> {
+      const options = convexInfiniteQuery(funcRef, {
+        args: opts.args,
+        initialNumItems: opts.numItems,
+      });
+      void queryClient.prefetchInfiniteQuery(
+        options as unknown as Parameters<QueryClient["prefetchInfiniteQuery"]>[0],
+      );
+      return { input: opts.args, numItems: opts.numItems } as InitiatedConvexInfiniteQuery<TQuery>;
     },
   };
 }

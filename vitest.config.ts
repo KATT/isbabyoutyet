@@ -51,10 +51,10 @@ export default defineConfig({
         // Lowered alongside removing the covered Initiated* handle code and
         // its tests (deleting tested code shrinks the ratio); the ratchet
         // snaps back to exact values on the next run.
-        statements: 71.23,
-        branches: 63.59,
-        functions: 69.48,
-        lines: 71.87,
+        statements: 71.52,
+        branches: 63.82,
+        functions: 69.85,
+        lines: 72.17,
       },
     },
   },

@@ -14,23 +14,36 @@ declare const convexInfiniteQueryBrand: unique symbol;
 export type QueryReference = FunctionReference<"query", "public">;
 
 /**
- * Awaited loader handle for a Convex query. Serializable: stores the function
- * args and the resolved `initialData`; the brand is type-only.
+ * Fire-and-forget handle for a Convex query started in a loader (or during
+ * render via {@link useInitiateConvexQuery}). Serializable: stores only the
+ * function args; the brand is type-only.
  */
-export interface PreloadedConvexQuery<TQuery extends QueryReference> {
+export interface InitiatedConvexQuery<TQuery extends QueryReference> {
   readonly input: FunctionArgs<TQuery>;
-  readonly initialData: FunctionReturnType<TQuery>;
   readonly [convexQueryBrand]?: TQuery;
 }
 
+/** Awaited loader handle for a Convex query; carries `initialData`. */
+export interface PreloadedConvexQuery<
+  TQuery extends QueryReference,
+> extends InitiatedConvexQuery<TQuery> {
+  readonly initialData: FunctionReturnType<TQuery>;
+}
+
 /**
- * Awaited loader handle for a paginated Convex query. `numItems` is stored so
+ * Fire-and-forget handle for a paginated Convex query. `numItems` is stored so
  * the read site can rebuild the same `initialPageParam` without re-declaring
  * the page size.
  */
-export interface PreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryReference> {
+export interface InitiatedConvexInfiniteQuery<TQuery extends PaginatedQueryReference> {
   readonly input: PaginationArgs<TQuery>;
   readonly numItems: number;
-  readonly initialData: InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>;
   readonly [convexInfiniteQueryBrand]?: TQuery;
+}
+
+/** Awaited loader handle for a paginated Convex query. */
+export interface PreloadedConvexInfiniteQuery<
+  TQuery extends PaginatedQueryReference,
+> extends InitiatedConvexInfiniteQuery<TQuery> {
+  readonly initialData: InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>;
 }

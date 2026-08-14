@@ -65,13 +65,15 @@ const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
 ## Client-only inputs
 
-When the input only exists in the browser (e.g. a push endpoint), skip the
-loader handle and suspend on the query directly:
+When the input only exists in the browser (e.g. a push endpoint), initiate at
+render and read through the same handle shape:
 
 ```tsx
-const isSubscribedQuery = useSuspenseQuery(
-  convexQuery(api.pushSubscriptions.isSubscribed, { babyId, endpoint }),
-);
+const handle = useInitiateConvexQuery(api.pushSubscriptions.isSubscribed, {
+  babyId,
+  endpoint,
+});
+const isSubscribedQuery = usePreloadedConvexQuery(api.pushSubscriptions.isSubscribed, handle);
 ```
 
 ## Testing
