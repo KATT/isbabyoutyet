@@ -39,7 +39,7 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: {},
 }));
 
-const { NavigationProgress } = await import("@/routes/__root");
+const { NavigationProgress, Route } = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -47,6 +47,15 @@ function renderResource(ui: ReactElement) {
     view.unmount();
   });
 }
+
+test("beforeLoad resolves the locale locally on the client, without a server round-trip", async () => {
+  // With createRootRouteWithContext mocked, Route is the options object.
+  const options = Route as unknown as { beforeLoad: () => Promise<{ locale: string }> };
+
+  const result = await options.beforeLoad();
+
+  expect(result.locale).toBeTruthy();
+});
 
 test("no progress bar renders while the router is idle", async () => {
   routerState.isLoading = false;

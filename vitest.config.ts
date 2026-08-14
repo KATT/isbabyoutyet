@@ -32,10 +32,10 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 66.7,
-        branches: 60.25,
-        functions: 63.57,
-        lines: 67.24,
+        statements: 67.07,
+        branches: 60.43,
+        functions: 64.08,
+        lines: 67.64,
       },
     },
   },

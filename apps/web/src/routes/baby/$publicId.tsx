@@ -38,7 +38,12 @@ export const Route = createFileRoute("/baby/$publicId")({
     settings: z.boolean().optional(),
     beta: z.boolean().optional(),
   }),
-  beforeLoad: async (opts) => {
+  // Everything is fetched in the loader (not beforeLoad) so link preloading
+  // works: the router caches loader data from viewport/intent preloads, while
+  // beforeLoad re-runs and blocks on every navigation. notFound/redirect
+  // guards work from loaders too. The page locale rides along in loader data,
+  // where the root route picks it up.
+  loader: async (opts) => {
     const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -53,10 +58,6 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
-    return { baby, locale: baby.resolvedLocale };
-  },
-  loader: async (opts) => {
-    const baby = opts.context.baby;
     const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
       opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
       opts.context.convexClient.query(api.timeline.latestUpdate, {
@@ -69,6 +70,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     ]);
     return {
       baby,
+      locale: baby.resolvedLocale,
       vapidPublicKey,
       latestUpdate,
       firstPage,
