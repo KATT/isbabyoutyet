@@ -3,9 +3,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { deriveCachePurgeToken } from "@workspace/convex/src/cacheTags";
 
 const dangerouslyDeleteByTag =
-  vi.fn<
-    (tags: string[], options: { revalidationDeadlineSeconds: number }) => Promise<void>
-  >();
+  vi.fn<(tags: string[], options: { revalidationDeadlineSeconds: number }) => Promise<void>>();
 
 vi.mock("@vercel/functions", () => ({
   dangerouslyDeleteByTag,

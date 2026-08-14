@@ -26,6 +26,11 @@ function mergeTags(current: readonly string[], incoming: readonly string[]) {
   return Array.from(new Set([...current, ...incoming]));
 }
 
+function isLocalSite(siteUrl: string) {
+  const hostname = new URL(siteUrl).hostname;
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 /**
  * Durable outbox enqueue. The job write and its watchdog are committed in the
  * same transaction as the public data change. The watchdog is a scheduled
@@ -87,6 +92,14 @@ export const purge = internalAction({
     const siteUrl = env.SITE_URL;
     if (!secret || !siteUrl) {
       throw new Error("Cache purge requires BETTER_AUTH_SECRET and SITE_URL");
+    }
+
+    if (isLocalSite(siteUrl)) {
+      const completed: null = await ctx.runMutation(internal.cacheInvalidation.complete, {
+        jobId: job._id,
+        version: job.version,
+      });
+      return completed;
     }
 
     const response = await fetch(new URL("/api/cache/purge", siteUrl), {
