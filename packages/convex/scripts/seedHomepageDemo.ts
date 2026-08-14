@@ -90,19 +90,55 @@ async function jpegAndThumbnail(buffer: Buffer) {
   return { photo, thumbnail };
 }
 
-function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }): string {
-  const storageId = convexRun({
-    functionName: "homepageDemo:storePhoto",
-    args: {
-      bytes: { $bytes: opts.bytes.toString("base64") },
-      contentType: "image/jpeg",
-    },
+function isLoopbackUploadUrl(uploadUrl: string) {
+  const hostname = new URL(uploadUrl).hostname;
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+/**
+ * Cloud (Vercel/prod): POST to the upload URL. Local anonymous backends die
+ * when `convex run` exits, so the URL's 127.0.0.1:3210 is gone — store bytes
+ * through `storePhoto` instead. That path cannot be used on Linux/Vercel:
+ * resized JPEGs exceed Linux MAX_ARG_STRLEN (~128KiB) as a `convex run` argv.
+ */
+async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
+  const uploadUrl = convexRun({
+    functionName: "homepageDemo:generateUploadUrl",
+    args: {},
     extraConvexArgs: opts.extraConvexArgs,
   });
-  if (typeof storageId !== "string") {
-    throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
+  if (typeof uploadUrl !== "string") {
+    throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
   }
-  return storageId;
+
+  if (isLoopbackUploadUrl(uploadUrl)) {
+    const storageId = convexRun({
+      functionName: "homepageDemo:storePhoto",
+      args: {
+        bytes: { $bytes: opts.bytes.toString("base64") },
+        contentType: "image/jpeg",
+      },
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    if (typeof storageId !== "string") {
+      throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
+    }
+    return storageId;
+  }
+
+  const response = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Type": "image/jpeg" },
+    body: new Uint8Array(opts.bytes),
+  });
+  if (!response.ok) {
+    throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
+  }
+  const payload = (await response.json()) as { storageId?: string };
+  if (!payload.storageId) {
+    throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
+  }
+  return payload.storageId;
 }
 
 export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
@@ -132,11 +168,11 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
 
   for (const photo of photosOnDisk) {
     const prepared = await jpegAndThumbnail(photo.buffer);
-    const photoId = uploadBytes({
+    const photoId = await uploadBytes({
       bytes: prepared.photo,
       extraConvexArgs,
     });
-    const thumbnailId = uploadBytes({
+    const thumbnailId = await uploadBytes({
       bytes: prepared.thumbnail,
       extraConvexArgs,
     });
