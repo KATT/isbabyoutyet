@@ -36,10 +36,10 @@ export function getRouter() {
 
   const router = createRouter({
     routeTree,
-    // Render preload runs loaders as soon as a Link renders (not just on
-    // hover/focus), so e.g. dashboard baby cards prefetch their baby pages
-    // immediately via the ensureQueryData prefetchers.
-    defaultPreload: "render",
+    // Viewport preload runs loaders when a Link scrolls into view (not just on
+    // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
+    // pages via the ensureQueryData prefetchers.
+    defaultPreload: "viewport",
     context: {
       queryClient,
       convexQueryClient,
