@@ -6,6 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",
+    "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
