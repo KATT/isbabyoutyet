@@ -60,6 +60,7 @@ export const ensure = mutation({
     await ctx.db.insert("userProfiles", {
       userId: identity.subject,
       locale,
+      isAdmin: false,
     });
     return { locale, isAdmin: false };
   },
@@ -80,6 +81,7 @@ export const updateLocale = mutation({
     await ctx.db.insert("userProfiles", {
       userId: identity.subject,
       locale: args.locale,
+      isAdmin: false,
     });
     return { locale: args.locale, isAdmin: false };
   },
