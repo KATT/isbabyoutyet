@@ -4,7 +4,13 @@ import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { THEME_OPTIONS } from "@/components/baby/utils";
-import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, babyStatusDetail, babyStatusLabel } from "@/lib/seo";
+import {
+  OG_IMAGE_HEIGHT,
+  OG_IMAGE_WIDTH,
+  babyPageDescription,
+  babyStatusDetail,
+  babyStatusLabel,
+} from "@/lib/seo";
 import { translate } from "@/lib/i18n";
 import { CANONICAL_ORIGIN } from "@/lib/site-url";
 
@@ -118,8 +124,15 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
   const detail =
     status.type === "not_yet"
       ? babyStatusDetail({ baby, status })
-      : translate(baby.locale, "Track {{name}}'s journey – know when baby arrives!", {
+      : babyPageDescription({
           name: baby.name,
+          dueDate: baby.dueDate,
+          publicId: "",
+          theme: baby.theme,
+          locale: baby.locale,
+          babyBorn: baby.babyBorn,
+          wentToHospital: baby.wentToHospital,
+          laborStarted: baby.laborStarted,
         });
   const brand = translate(baby.locale, "Is Baby Out Yet?");
   const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;

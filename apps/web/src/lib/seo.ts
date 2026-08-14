@@ -48,7 +48,7 @@ function babyPageTitle(baby: BabySeoInput) {
   return translate(locale, "{{title}} – Track Your Baby's Journey", { title });
 }
 
-function babyPageDescription(baby: BabySeoInput) {
+export function babyPageDescription(baby: BabySeoInput) {
   const status = getCurrentStatus(baby);
   const locale = baby.locale;
   switch (status.type) {
