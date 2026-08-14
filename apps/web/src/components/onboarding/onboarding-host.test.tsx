@@ -1,20 +1,14 @@
 import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { useConvexSuspenseQuery } from "@/lib/convex-query";
 
 const mocks = vi.hoisted(() => ({
-  useConvexSuspenseQuery:
-    vi.fn<
-      (
-        ...args: Parameters<typeof useConvexSuspenseQuery>
-      ) => ReturnType<typeof useConvexSuspenseQuery>
-    >(),
+  useSuspenseQuery: vi.fn<() => { data: unknown }>(),
   useSession: vi.fn<() => { data: { user: { id: string } } | null; isPending: boolean }>(),
-  dismissWelcome: vi.fn(),
-  setMinimized: vi.fn(),
-  dismissChecklist: vi.fn(),
-  completeStep: vi.fn(),
+  dismissWelcome: vi.fn<() => void>(),
+  setMinimized: vi.fn<() => void>(),
+  dismissChecklist: vi.fn<() => void>(),
+  completeStep: vi.fn<() => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -23,10 +17,13 @@ vi.mock("@/lib/auth-client", () => ({
   },
 }));
 
-vi.mock("@/lib/convex-query", () => ({
-  useConvexSuspenseQuery: mocks.useConvexSuspenseQuery,
-  ensureConvexQuery: vi.fn(),
-}));
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useSuspenseQuery: () => mocks.useSuspenseQuery(),
+  };
+});
 
 vi.mock("convex/react", () => ({
   useMutation: (() => {
@@ -96,9 +93,7 @@ test("mounts authed onboarding host when progress is loaded", async () => {
     data: { user: { id: "user-1" } },
     isPending: false,
   });
-  mocks.useConvexSuspenseQuery.mockReturnValue({
-    data: progress,
-  } as ReturnType<typeof useConvexSuspenseQuery>);
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
 
   await using view = renderResource(
     <OnboardingHost
@@ -106,6 +101,26 @@ test("mounts authed onboarding host when progress is loaded", async () => {
       enabled={undefined}
       spotlight={undefined}
       babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  expect(view.getByTestId("getting-started")).toBeTruthy();
+});
+
+test("renders on the tour baby page when babyPublicId matches", async () => {
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="baby"
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId="baby-smith"
       onGoToStep={undefined}
     />,
   );

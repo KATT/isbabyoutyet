@@ -35,6 +35,7 @@
     "@tanstack/react-start": "^1.168.42",
     "@vercel/analytics": "^2.0.1",
     "@workspace/convex": "workspace:*",
+    "@workspace/query-prefetch": "workspace:*",
     "@workspace/ui": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",

@@ -25,10 +25,11 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
-import { useConvexSuspenseQuery } from "@/lib/convex-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { profileGet } from "@/queries/convex";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
@@ -83,7 +84,7 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
 
 export function LanguageSettings() {
   const { locale, t } = useI18n();
-  const profileQuery = useConvexSuspenseQuery(api.profile.get, {});
+  const profileQuery = useSuspenseQuery(profileGet());
   const profile = profileQuery.data;
   const updateLocale = useMutation(api.profile.updateLocale);
   const [requestOpen, setRequestOpen] = useState(false);

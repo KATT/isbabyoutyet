@@ -7,7 +7,7 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
  */
 export default defineConfig({
   test: {
-    projects: ["packages/convex", webUnitProject],
+    projects: ["packages/convex", "packages/query-prefetch", webUnitProject],
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
@@ -17,6 +17,7 @@ export default defineConfig({
         "apps/web/src/**/*.{ts,tsx}",
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
+        "packages/query-prefetch/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",
@@ -31,10 +32,10 @@ export default defineConfig({
         // test run beats them, so coverage can only go up. Never lower them
         // by hand.
         autoUpdate: true,
-        statements: 65.51,
-        branches: 60.48,
-        functions: 61.76,
-        lines: 66.23,
+        statements: 66.29,
+        branches: 60.74,
+        functions: 63.48,
+        lines: 66.88,
       },
     },
   },

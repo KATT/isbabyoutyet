@@ -1,9 +1,10 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useEffect, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { authClient } from "@/lib/auth-client";
-import { useConvexSuspenseQuery } from "@/lib/convex-query";
 import { useI18n } from "@/lib/i18n";
+import { onboardingGetMine } from "@/queries/convex";
 import { GettingStartedCard } from "./getting-started";
 import { WelcomeTourDialog } from "./welcome-tour";
 import { Coachmark } from "./coachmark";
@@ -51,7 +52,7 @@ export function OnboardingHost(props: OnboardingHostProps) {
 function OnboardingHostAuthed(props: OnboardingHostProps) {
   const { t } = useI18n();
   const spotlight = props.spotlight !== false;
-  const progressQuery = useConvexSuspenseQuery(api.onboarding.getMine, {});
+  const progressQuery = useSuspenseQuery(onboardingGetMine());
   const progress = progressQuery.data;
   const dismissWelcome = useMutation(api.onboarding.dismissWelcome);
   const setMinimized = useMutation(api.onboarding.setMinimized);

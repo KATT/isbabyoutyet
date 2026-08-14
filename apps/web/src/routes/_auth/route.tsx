@@ -1,9 +1,9 @@
 import { authServer } from "@/lib/auth-server";
-import { ensureConvexQuery } from "@/lib/convex-query";
-import { convexQuery } from "@convex-dev/react-query";
+import { getQueryPreloader } from "@workspace/query-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { profileGet } from "@/queries/convex";
 
 // Server function to check authentication
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -32,11 +32,9 @@ export const Route = createFileRoute("/_auth")({
       opts.context.convexClient.setAuth(async () => token);
     }
 
-    const existingProfile = await ensureConvexQuery({
-      queryClient: opts.context.queryClient,
-      queryRef: api.profile.get,
-      args: {},
-    });
+    const preloader = getQueryPreloader(opts.context.queryClient);
+    const profileHandle = await preloader.ensureQueryData(profileGet);
+    const existingProfile = profileHandle.initialData;
     const profile =
       existingProfile ??
       (await opts.context.convexClient.mutation(api.profile.ensure, {
@@ -44,7 +42,7 @@ export const Route = createFileRoute("/_auth")({
       }));
 
     if (!existingProfile) {
-      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+      opts.context.queryClient.setQueryData(profileGet().queryKey, profile);
     }
 
     return { locale: profile.locale, token, isAuthenticated: true };

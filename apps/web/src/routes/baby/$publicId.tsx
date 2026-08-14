@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dia
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -27,12 +27,25 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { ensureConvexQuery, useConvexSuspenseQuery } from "@/lib/convex-query";
+import {
+  babyByPublicId,
+  coParentsListForBaby,
+  coParentsMyAccess,
+  onboardingGetMine,
+  profileGet,
+  pushPublicKey,
+  pushSubscriptionsForBaby,
+  scheduledNotificationsForBaby,
+  timelineFirstPage,
+  timelineLatestUpdate,
+} from "@/queries/convex";
 import { translate, useI18n } from "@/lib/i18n";
 
 export const Route = createFileRoute("/baby/$publicId")({
@@ -42,105 +55,81 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const baby = await ensureConvexQuery({
-      queryClient: opts.context.queryClient,
-      queryRef: api.baby.getByPublicId,
-      args: { id: opts.params.publicId },
-    });
-    if (!baby) {
+    const preloader = getQueryPreloader(opts.context.queryClient);
+    const baby = await preloader.ensureQueryData(babyByPublicId, { id: opts.params.publicId });
+    const babyDoc = baby.initialData;
+    if (!babyDoc) {
       throw notFound();
     }
-    if (baby.publicId !== opts.params.publicId) {
+    if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
         to: "/baby/$publicId",
-        params: { publicId: baby.publicId },
+        params: { publicId: babyDoc.publicId },
         search: opts.location.search,
         replace: true,
       });
     }
-    return { baby, locale: baby.resolvedLocale };
+    return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const baby = opts.context.baby;
-    const queryClient = opts.context.queryClient;
-
-    const [myAccess, vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
-      ensureConvexQuery({
-        queryClient,
-        queryRef: api.coParents.myAccess,
-        args: { babyId: baby._id },
-      }),
-      ensureConvexQuery({
-        queryClient,
-        queryRef: api.pushSubscriptions.getPublicKey,
-        args: {},
-      }),
-      ensureConvexQuery({
-        queryClient,
-        queryRef: api.timeline.latestUpdate,
-        args: { babyId: baby._id },
-      }),
-      ensureConvexQuery({
-        queryClient,
-        queryRef: api.timeline.listByBaby,
-        args: {
-          babyId: baby._id,
-          paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
-        },
-      }),
-    ]);
-    await ensureConvexQuery({
-      queryClient,
-      queryRef: api.profile.get,
-      args: {},
+    const preloader = getQueryPreloader(opts.context.queryClient);
+    const babyHandle = await preloader.ensureQueryData(babyByPublicId, {
+      id: opts.params.publicId,
     });
+    const babyDoc = babyHandle.initialData;
+    if (!babyDoc) {
+      throw notFound();
+    }
 
-    if (myAccess.canManage) {
-      await Promise.all([
-        ensureConvexQuery({
-          queryClient,
-          queryRef: api.baby.getScheduledNotifications,
-          args: { babyId: baby._id },
-        }),
-        ensureConvexQuery({
-          queryClient,
-          queryRef: api.pushSubscriptions.getSubscriptions,
-          args: { babyId: baby._id },
-        }),
-        ensureConvexQuery({
-          queryClient,
-          queryRef: api.onboarding.getMine,
-          args: {},
-        }),
+    const [myAccess, vapidPublicKey, latestUpdate, firstPage, profile] = await Promise.all([
+      preloader.ensureQueryData(coParentsMyAccess, { babyId: babyDoc._id }),
+      preloader.ensureQueryData(pushPublicKey),
+      preloader.ensureQueryData(timelineLatestUpdate, { babyId: babyDoc._id }),
+      preloader.ensureQueryData(timelineFirstPage, { babyId: babyDoc._id }),
+      preloader.ensureQueryData(profileGet),
+    ]);
+
+    let scheduledNotifications = null;
+    let subscriptions = null;
+    let onboarding = null;
+    let coParentsList = null;
+
+    if (myAccess.initialData.canManage) {
+      [scheduledNotifications, subscriptions, onboarding, coParentsList] = await Promise.all([
+        preloader.ensureQueryData(scheduledNotificationsForBaby, { babyId: babyDoc._id }),
+        preloader.ensureQueryData(pushSubscriptionsForBaby, { babyId: babyDoc._id }),
+        preloader.ensureQueryData(onboardingGetMine),
         // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        ensureConvexQuery({
-          queryClient,
-          queryRef: api.coParents.listForBaby,
-          args: { babyId: baby._id },
-        }),
+        preloader.ensureQueryData(coParentsListForBaby, { babyId: babyDoc._id }),
       ]);
     }
 
     return {
-      baby,
+      baby: babyHandle,
+      myAccess,
       vapidPublicKey,
       latestUpdate,
       firstPage,
+      profile,
+      scheduledNotifications,
+      subscriptions,
+      onboarding,
+      coParentsList,
     };
   },
   head: (opts) => {
-    const baby = opts.loaderData?.baby;
+    const babyDoc = opts.loaderData?.baby.initialData;
 
-    if (!baby) {
+    if (!babyDoc) {
       return {};
     }
 
-    const overdueDays = getOverdueDays(baby.dueDate);
-    const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
-    const isBorn = !!baby.babyBorn;
+    const overdueDays = getOverdueDays(babyDoc.dueDate);
+    const daysUntilDueDate = getDaysUntilDueDate(babyDoc.dueDate);
+    const isBorn = !!babyDoc.babyBorn;
 
-    const locale = baby.resolvedLocale;
-    let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
+    const locale = babyDoc.resolvedLocale;
+    let title = translate(locale, "Is {{name}} out yet?", { name: babyDoc.name });
     if (!isBorn) {
       if (overdueDays > 0) {
         title = translate(
@@ -148,7 +137,7 @@ export const Route = createFileRoute("/baby/$publicId")({
           overdueDays === 1
             ? "{{count}} day overdue – Is {{name}} out yet?"
             : "{{count}} days overdue – Is {{name}} out yet?",
-          { count: overdueDays, name: baby.name },
+          { count: overdueDays, name: babyDoc.name },
         );
       } else {
         title = translate(
@@ -156,19 +145,19 @@ export const Route = createFileRoute("/baby/$publicId")({
           daysUntilDueDate === 1
             ? "{{count}} day until due date – Is {{name}} out yet?"
             : "{{count}} days until due date – Is {{name}} out yet?",
-          { count: daysUntilDueDate, name: baby.name },
+          { count: daysUntilDueDate, name: babyDoc.name },
         );
       }
     }
     title = translate(locale, "{{title}} – Track Your Baby's Journey", { title });
 
     const description = translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
-      name: baby.name,
+      name: babyDoc.name,
     });
 
-    const themeColor = getThemePrimaryColor(baby.theme);
-    const themeCssUrl = getThemeCssUrl(baby.theme);
-    const manifestUrl = `/baby/manifest/${baby._id}`;
+    const themeColor = getThemePrimaryColor(babyDoc.theme);
+    const themeCssUrl = getThemeCssUrl(babyDoc.theme);
+    const manifestUrl = `/baby/manifest/${babyDoc._id}`;
 
     return {
       meta: [
@@ -189,7 +178,7 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
         {
           property: "og:url",
-          content: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          content: `https://isbabyoutyet.com/baby/${babyDoc.publicId}`,
         },
         {
           property: "og:locale",
@@ -223,7 +212,7 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
         {
           rel: "canonical",
-          href: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          href: `https://isbabyoutyet.com/baby/${babyDoc.publicId}`,
         },
       ],
     };
@@ -257,20 +246,27 @@ function BabyPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
+  if (!loaderData) {
+    throw notFound();
+  }
 
-  const babyQuery = useConvexSuspenseQuery(api.baby.getByPublicId, { id: params.publicId });
+  const babyQuery = useSuspenseQuery(preloadedQueryOptions(babyByPublicId, loaderData.baby));
   const babyDoc = babyQuery.data;
   if (!babyDoc) {
     throw notFound();
   }
   const baby = docToBabyData(babyDoc);
 
-  const latestUpdateQuery = useConvexSuspenseQuery(api.timeline.latestUpdate, {
-    babyId: babyDoc._id,
-  });
-  const profileQuery = useConvexSuspenseQuery(api.profile.get, {});
-  const myAccessQuery = useConvexSuspenseQuery(api.coParents.myAccess, { babyId: babyDoc._id });
-  const vapidQuery = useConvexSuspenseQuery(api.pushSubscriptions.getPublicKey, {});
+  const latestUpdateQuery = useSuspenseQuery(
+    preloadedQueryOptions(timelineLatestUpdate, loaderData.latestUpdate),
+  );
+  const profileQuery = useSuspenseQuery(preloadedQueryOptions(profileGet, loaderData.profile));
+  const myAccessQuery = useSuspenseQuery(
+    preloadedQueryOptions(coParentsMyAccess, loaderData.myAccess),
+  );
+  const vapidQuery = useSuspenseQuery(
+    preloadedQueryOptions(pushPublicKey, loaderData.vapidPublicKey),
+  );
 
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
@@ -297,7 +293,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && (
+      {canManage && loaderData.onboarding ? (
         <OnboardingHost
           surface="baby"
           enabled={undefined}
@@ -319,9 +315,9 @@ function BabyPage() {
             }
           }}
         />
-      )}
+      ) : null}
 
-      {canManage && (
+      {canManage ? (
         <>
           <SettingsPanel
             baby={baby}
@@ -341,7 +337,15 @@ function BabyPage() {
                   }
                 : null
             }
-            coParents={{ babyId: babyDoc._id, isOwner }}
+            coParents={
+              loaderData.coParentsList
+                ? {
+                    babyId: babyDoc._id,
+                    isOwner,
+                    listing: loaderData.coParentsList,
+                  }
+                : null
+            }
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -353,7 +357,12 @@ function BabyPage() {
               });
             }}
           />
-          <ScheduledNotificationToast babyId={babyDoc._id} />
+          {loaderData.scheduledNotifications && loaderData.subscriptions ? (
+            <ScheduledNotificationToast
+              notifications={loaderData.scheduledNotifications}
+              subscriptions={loaderData.subscriptions}
+            />
+          ) : null}
           <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
@@ -369,7 +378,7 @@ function BabyPage() {
             </DialogContent>
           </Dialog>
         </>
-      )}
+      ) : null}
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
       <header className="px-4 pt-3 pb-1">
@@ -468,7 +477,7 @@ function BabyPage() {
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
-                initialPage={loaderData.firstPage}
+                initialPage={loaderData.firstPage.initialData}
               />
             </section>
           </div>

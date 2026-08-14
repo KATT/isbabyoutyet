@@ -53,6 +53,13 @@
       "rules": {
         "eslint/max-params": "off"
       }
+    },
+    {
+      // query-prefetch overloads use an optional third `remixInput` param (KATT gist API).
+      "files": ["packages/query-prefetch/src/**"],
+      "rules": {
+        "eslint/max-params": "off"
+      }
     }
   ]
 }

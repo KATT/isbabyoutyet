@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -9,7 +11,7 @@ import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
-import { ensureConvexQuery, useConvexSuspenseQuery } from "@/lib/convex-query";
+import { babiesByUser, onboardingGetMine, profileGet } from "@/queries/convex";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
@@ -17,30 +19,23 @@ import { useI18n } from "@/lib/i18n";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    await Promise.all([
-      ensureConvexQuery({
-        queryClient: opts.context.queryClient,
-        queryRef: api.baby.listByUser,
-        args: {},
-      }),
-      ensureConvexQuery({
-        queryClient: opts.context.queryClient,
-        queryRef: api.onboarding.getMine,
-        args: {},
-      }),
-      ensureConvexQuery({
-        queryClient: opts.context.queryClient,
-        queryRef: api.profile.get,
-        args: {},
-      }),
+    const preloader = getQueryPreloader(opts.context.queryClient);
+    const [babies, onboarding, profile] = await Promise.all([
+      preloader.ensureQueryData(babiesByUser),
+      preloader.ensureQueryData(onboardingGetMine),
+      preloader.ensureQueryData(profileGet),
     ]);
+    return { babies, onboarding, profile };
   },
 });
 
 function DashboardPage() {
   const { t } = useI18n();
-  const babiesQuery = useConvexSuspenseQuery(api.baby.listByUser, {});
-  const onboardingQuery = useConvexSuspenseQuery(api.onboarding.getMine, {});
+  const loaderData = Route.useLoaderData();
+  const babiesQuery = useSuspenseQuery(preloadedQueryOptions(babiesByUser, loaderData.babies));
+  const onboardingQuery = useSuspenseQuery(
+    preloadedQueryOptions(onboardingGetMine, loaderData.onboarding),
+  );
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
 

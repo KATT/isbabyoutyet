@@ -44,6 +44,7 @@ import {
 } from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { InitiatedQuery, PreloadedQuery } from "@workspace/query-prefetch";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
 import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
@@ -53,6 +54,7 @@ import {
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
+import { coParentsListForBaby } from "@/queries/convex";
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -66,6 +68,9 @@ type SettingsPanelProps = {
   coParents: {
     babyId: Id<"baby">;
     isOwner: boolean;
+    listing:
+      | PreloadedQuery<typeof coParentsListForBaby>
+      | InitiatedQuery<typeof coParentsListForBaby>;
   } | null;
 };
 
@@ -304,7 +309,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                         : t("Others who can manage this page with you")}
                     </ItemDescription>
                   </div>
-                  <CoParentsSettings babyId={coParents.babyId} isOwner={coParents.isOwner} />
+                  <CoParentsSettings
+                    babyId={coParents.babyId}
+                    isOwner={coParents.isOwner}
+                    listing={coParents.listing}
+                  />
                 </ItemContent>
               </Item>
             </>

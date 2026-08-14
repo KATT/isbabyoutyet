@@ -24,6 +24,7 @@
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!"]
     },
+    "packages/query-prefetch": {},
     "packages/ui": {}
   }
 }

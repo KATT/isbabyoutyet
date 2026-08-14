@@ -23,6 +23,10 @@
     "paths": {
       "@/*": ["./src/*"],
       "@workspace/convex/*": ["../../packages/convex/*"],
+      "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
+      "@workspace/query-prefetch/test-helpers": [
+        "../../packages/query-prefetch/src/test-helpers.ts"
+      ],
       "@workspace/ui/*": ["../../packages/ui/src/*"]
     }
   }

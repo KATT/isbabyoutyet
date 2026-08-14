@@ -8,7 +8,7 @@ import {
   ItemTitle,
 } from "@workspace/ui/components/item";
 import { Spinner } from "@workspace/ui/components/spinner";
-import { useMutation as useTanstackMutation } from "@tanstack/react-query";
+import { useMutation as useTanstackMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -16,27 +16,34 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
-import { useConvexSuspenseQuery } from "@/lib/convex-query";
+import type { InitiatedQuery, PreloadedQuery } from "@workspace/query-prefetch";
+import { preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
+import { pushSubscriptionsForBaby, scheduledNotificationsForBaby } from "@/queries/convex";
 
 type ScheduledNotificationToastProps = {
-  babyId: Id<"baby">;
+  notifications:
+    | PreloadedQuery<typeof scheduledNotificationsForBaby>
+    | InitiatedQuery<typeof scheduledNotificationsForBaby>;
+  subscriptions:
+    | PreloadedQuery<typeof pushSubscriptionsForBaby>
+    | InitiatedQuery<typeof pushSubscriptionsForBaby>;
 };
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
   const { t } = useI18n();
-  const notificationsQuery = useConvexSuspenseQuery(api.baby.getScheduledNotifications, {
-    babyId: props.babyId,
-  });
+  const notificationsQuery = useSuspenseQuery(
+    preloadedQueryOptions(scheduledNotificationsForBaby, props.notifications),
+  );
   const notifications = notificationsQuery.data;
   const pendingNotifications = useMemo(
     () => notifications.filter((n) => n.status === "pending"),
     [notifications],
   );
-  const subscriptionsQuery = useConvexSuspenseQuery(api.pushSubscriptions.getSubscriptions, {
-    babyId: props.babyId,
-  });
+  const subscriptionsQuery = useSuspenseQuery(
+    preloadedQueryOptions(pushSubscriptionsForBaby, props.subscriptions),
+  );
   const subscriptionCount = subscriptionsQuery.data.length;
 
   // Track active toasts and previous notification states
