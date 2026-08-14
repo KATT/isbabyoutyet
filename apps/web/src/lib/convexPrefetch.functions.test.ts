@@ -1,8 +1,8 @@
 import { expect, test } from "vitest";
-import { prefetchCacheHeadersForTest } from "./convexPrefetch.functions";
+import { privatePrefetchHeaders, publicPrefetchHeaders } from "./convexPrefetchCache";
 
 test("anonymous Convex prefetches get a short shared Vercel cache", () => {
-  const headers = prefetchCacheHeadersForTest.public("baby-waiting");
+  const headers = publicPrefetchHeaders("baby-waiting");
 
   expect(headers["Cache-Control"]).toBe("public, max-age=0, must-revalidate");
   expect(headers["Vercel-CDN-Cache-Control"]).toContain("s-maxage=60");
@@ -11,7 +11,7 @@ test("anonymous Convex prefetches get a short shared Vercel cache", () => {
 });
 
 test("authenticated Convex prefetches are private and vary by identity", () => {
-  const headers = prefetchCacheHeadersForTest.private();
+  const headers = privatePrefetchHeaders();
 
   expect(headers["Cache-Control"]).toContain("private");
   expect(headers["Cache-Control"]).toContain("no-store");
