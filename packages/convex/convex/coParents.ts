@@ -3,7 +3,9 @@ import { components } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
+import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { findActiveCoParent, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { isActive, softDeletePatch } from "./softDelete";
 
@@ -79,16 +81,19 @@ export const myAccess = query({
     if (!identity) {
       return { isOwner: false, isCoParent: false, canManage: false };
     }
+    const caller = appIdentity(identity);
 
     const baby = await ctx.db.get(args.babyId);
     if (!baby || !isActive(baby)) {
       return { isOwner: false, isCoParent: false, canManage: false };
     }
 
-    const isOwner = baby.userId === identity.subject;
+    const isOwner =
+      baby.ownerTokenIdentifier === caller.tokenIdentifier ||
+      (baby.ownerTokenIdentifier === undefined && baby.userId === caller.authUserId);
     const isCoParent =
       !isOwner &&
-      (await findActiveCoParent(ctx, { babyId: args.babyId, userId: identity.subject })) != null;
+      (await findActiveCoParent(ctx, { babyId: args.babyId, identity: caller })) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
 });
@@ -139,7 +144,7 @@ export const invite = mutation({
       throw new Error("Enter a valid email address");
     }
 
-    const caller = await resolveCallerProfile(ctx, identity.subject);
+    const caller = await resolveCallerProfile(ctx, identity.authUserId);
     if (caller && caller.email === email) {
       throw new Error("You already own this page");
     }
@@ -150,7 +155,14 @@ export const invite = mutation({
       if (userId === baby.userId) {
         throw new Error("That person already owns this page");
       }
-      const existing = await findActiveCoParent(ctx, { babyId: args.babyId, userId });
+      const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
+      const existing = await findActiveCoParent(ctx, {
+        babyId: args.babyId,
+        identity: {
+          authUserId: userId,
+          tokenIdentifier,
+        },
+      });
       if (existing) {
         throw new Error("That person is already a co-parent");
       }
@@ -164,9 +176,10 @@ export const invite = mutation({
       await ctx.db.insert("babyCoParents", {
         babyId: args.babyId,
         userId,
+        tokenIdentifier,
         email,
         name: typeof existingUser.name === "string" ? existingUser.name : null,
-        addedByUserId: identity.subject,
+        addedByUserId: identity.authUserId,
         addedAt: Date.now(),
       });
       return { status: "added" as const };
@@ -180,7 +193,7 @@ export const invite = mutation({
     await ctx.db.insert("babyCoParentInvites", {
       babyId: args.babyId,
       email,
-      invitedByUserId: identity.subject,
+      invitedByUserId: identity.authUserId,
       createdAt: Date.now(),
     });
     return { status: "invited" as const };
@@ -219,10 +232,11 @@ export const leave = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Not authenticated");
+    const caller = appIdentity(identity);
 
     const membership = await findActiveCoParent(ctx, {
       babyId: args.babyId,
-      userId: identity.subject,
+      identity: caller,
     });
     if (!membership) {
       throw new Error("You are not a co-parent on this page");
@@ -244,8 +258,9 @@ export const claimPendingInvites = mutation({
     if (!identity) {
       return { claimed: 0 };
     }
+    const caller = appIdentity(identity);
 
-    const profile = await resolveCallerProfile(ctx, identity.subject);
+    const profile = await resolveCallerProfile(ctx, caller.authUserId);
     if (!profile) {
       return { claimed: 0 };
     }
@@ -269,19 +284,23 @@ export const claimPendingInvites = mutation({
       }
 
       // Never make the owner a co-parent of their own page
-      if (baby.userId === identity.subject) {
+      const isOwner =
+        baby.ownerTokenIdentifier === caller.tokenIdentifier ||
+        (baby.ownerTokenIdentifier === undefined && baby.userId === caller.authUserId);
+      if (isOwner) {
         await ctx.db.patch(invite._id, softDeletePatch());
         continue;
       }
 
       const existing = await findActiveCoParent(ctx, {
         babyId: invite.babyId,
-        userId: identity.subject,
+        identity: caller,
       });
       if (!existing) {
         await ctx.db.insert("babyCoParents", {
           babyId: invite.babyId,
-          userId: identity.subject,
+          userId: caller.authUserId,
+          tokenIdentifier: caller.tokenIdentifier,
           email,
           name,
           addedByUserId: invite.invitedByUserId,
@@ -299,27 +318,36 @@ export const claimPendingInvites = mutation({
 /**
  * Babies the caller owns or co-parents, with a role for dashboard labeling.
  */
-export async function listBabiesForUser(ctx: QueryCtx, userId: string) {
+export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
   const owned = await ctx.db
     .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .withIndex("by_user", (q) => q.eq("userId", identity.authUserId))
     .order("desc")
     .collect();
 
   const memberships = await ctx.db
     .query("babyCoParents")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .withIndex("by_userId", (q) => q.eq("userId", identity.authUserId))
     .collect();
 
   const shared: Array<Doc<"baby"> & { role: "owner" | "coParent" }> = [];
   const seen = new Set<string>();
 
-  for (const baby of owned.filter(isActive)) {
+  for (const baby of owned.filter(
+    (row) =>
+      isActive(row) &&
+      (row.ownerTokenIdentifier === undefined ||
+        row.ownerTokenIdentifier === identity.tokenIdentifier),
+  )) {
     seen.add(baby._id);
     shared.push({ ...baby, role: "owner" });
   }
 
-  for (const membership of memberships.filter(isActive)) {
+  for (const membership of memberships.filter(
+    (row) =>
+      isActive(row) &&
+      (row.tokenIdentifier === undefined || row.tokenIdentifier === identity.tokenIdentifier),
+  )) {
     if (seen.has(membership.babyId)) continue;
     const baby = await ctx.db.get(membership.babyId);
     if (!baby || !isActive(baby)) continue;

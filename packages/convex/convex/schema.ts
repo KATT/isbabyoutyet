@@ -5,6 +5,7 @@ import { supportedLocaleValidator } from "./i18n";
 export default defineSchema({
   baby: defineTable({
     userId: v.string(), // Better-auth user ID
+    ownerTokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
@@ -21,22 +22,45 @@ export default defineSchema({
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
+    // Denormalized exact Web Push subscriber count, maintained with subscription writes.
+    subscriptionCount: v.optional(v.number()),
+    // Latest timeline activity, materialized for bounded admin sorting.
+    lastActivityAt: v.optional(v.number()),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_user", ["userId"])
+    .index("by_ownerTokenIdentifier", {
+      fields: ["ownerTokenIdentifier"],
+      staged: true,
+    })
+    .index("by_lastActivityAt", {
+      fields: ["lastActivityAt"],
+      staged: true,
+    })
     .index("by_publicId", ["publicId"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
+    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
     locale: supportedLocaleValidator,
-    // Platform staff flag — not a baby-page role. Always set (false for everyone else).
-    isAdmin: v.boolean(),
-  }).index("by_userId", ["userId"]),
+    // Platform staff flag. Optional only until #84 backfills stale preview rows.
+    isAdmin: v.optional(v.boolean()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_tokenIdentifier", {
+      fields: ["tokenIdentifier"],
+      staged: true,
+    }),
   languageRequests: defineTable({
     userId: v.string(), // Better Auth user ID
     requestedLocale: v.string(), // Free-form language name or BCP 47 tag
     createdAt: v.number(),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_createdAt", {
+      fields: ["createdAt"],
+      staged: true,
+    }),
   babyPublicIdHistory: defineTable({
     babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId
@@ -68,6 +92,10 @@ export default defineSchema({
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])
+    .index("by_babyId_and_status", {
+      fields: ["babyId", "status"],
+      staged: true,
+    })
     .index("by_scheduledId", ["scheduledId"]),
   encouragements: defineTable({
     babyId: v.id("baby"), // Reference to the baby
@@ -84,6 +112,10 @@ export default defineSchema({
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
     .index("by_babyId", ["babyId"])
+    .index("by_babyId_and_createdAt", {
+      fields: ["babyId", "createdAt"],
+      staged: true,
+    })
     .index("by_timelineItemId", ["timelineItemId"]),
   // Binding table for the per-baby feed: owns ordering (postedAt) and the kind
   // discriminator; children (updates/encouragements) point at it via timelineItemId.
@@ -127,7 +159,8 @@ export default defineSchema({
     .index("by_timelineItemId", ["timelineItemId"]),
   // Per-user first-run guided tour progress. One row per user.
   userOnboarding: defineTable({
-    userId: v.string(), // Better-auth user ID (identity.subject)
+    userId: v.string(), // Better Auth user ID
+    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
     /** Steps the user explicitly completed or acknowledged */
     completedSteps: v.array(v.string()),
     /** Welcome carousel seen or skipped */
@@ -136,11 +169,17 @@ export default defineSchema({
     checklistDismissed: v.boolean(),
     /** Checklist collapsed to a small chip */
     minimized: v.boolean(),
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_tokenIdentifier", {
+      fields: ["tokenIdentifier"],
+      staged: true,
+    })
+    .index("by_user", ["userId"]),
   // Co-parents authorized to manage a baby page (not including the owner).
   babyCoParents: defineTable({
     babyId: v.id("baby"),
     userId: v.string(), // Better Auth user id
+    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
     email: v.string(), // Denormalized for settings display
     name: v.optional(v.union(v.string(), v.null())),
     addedByUserId: v.string(),
@@ -149,6 +188,14 @@ export default defineSchema({
   })
     .index("by_babyId", ["babyId"])
     .index("by_userId", ["userId"])
+    .index("by_tokenIdentifier", {
+      fields: ["tokenIdentifier"],
+      staged: true,
+    })
+    .index("by_babyId_and_tokenIdentifier", {
+      fields: ["babyId", "tokenIdentifier"],
+      staged: true,
+    })
     .index("by_babyId_userId", ["babyId", "userId"]),
   // Pending co-parent invites for emails that do not yet have an account.
   babyCoParentInvites: defineTable({

@@ -13,6 +13,7 @@ import type { Milestone } from "../src/types";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 
 const CLEAR_BATCH_SIZE = 32;
@@ -82,12 +83,14 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
   const existing = await findBabyByPublicId(ctx, demo.publicId);
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
+    ownerTokenIdentifier: tokenIdentifierForAuthUserId(HOMEPAGE_DEMO_OWNER_USER_ID),
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale: opts.locale,
     demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(opts.now),
+    lastActivityAt: opts.now,
   };
   if (existing) {
     if (!isManagedHomepageDemo(existing)) {
@@ -105,6 +108,7 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     babyBorn: null,
     photoId: null,
     thumbnailId: null,
+    subscriptionCount: 0,
   });
 }
 

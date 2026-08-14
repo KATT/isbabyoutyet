@@ -182,6 +182,16 @@ export const latestUpdate = query({
 
 // --- Write helpers (shared by baby.ts, updates.ts, encouragements.ts, migrations.ts) ---
 
+async function advanceBabyActivity(
+  ctx: MutationCtx,
+  opts: { babyId: Id<"baby">; activityAt: number },
+) {
+  const baby = await ctx.db.get(opts.babyId);
+  if (baby && (baby.lastActivityAt === undefined || opts.activityAt > baby.lastActivityAt)) {
+    await ctx.db.patch(opts.babyId, { lastActivityAt: opts.activityAt });
+  }
+}
+
 /**
  * Inserts an owner update together with its timeline row.
  * `postedAt` is the feed sort key (when announced). `occurredAt` is the
@@ -215,6 +225,10 @@ export async function insertUpdateWithTimelineItem(
     thumbnailId: opts.thumbnailId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
   });
+  await advanceBabyActivity(ctx, {
+    babyId: opts.babyId,
+    activityAt: opts.postedAt,
+  });
   return { timelineItemId, updateId };
 }
 
@@ -225,6 +239,10 @@ export async function deleteUpdateWithTimelineItem(ctx: MutationCtx, update: Doc
   const patch = softDeletePatch();
   await ctx.db.patch(update._id, patch);
   await ctx.db.patch(update.timelineItemId, patch);
+  await advanceBabyActivity(ctx, {
+    babyId: update.babyId,
+    activityAt: patch.deletedAt,
+  });
 }
 
 /**
@@ -239,6 +257,10 @@ export async function deleteEncouragementWithTimelineItem(
   if (encouragement.timelineItemId) {
     await ctx.db.patch(encouragement.timelineItemId, patch);
   }
+  await advanceBabyActivity(ctx, {
+    babyId: encouragement.babyId,
+    activityAt: patch.deletedAt,
+  });
 }
 
 /**
@@ -267,9 +289,14 @@ export async function insertEncouragementTimelineItem(
   ctx: MutationCtx,
   opts: { babyId: Id<"baby">; postedAt: number },
 ) {
-  return await ctx.db.insert("timelineItems", {
+  const timelineItemId = await ctx.db.insert("timelineItems", {
     babyId: opts.babyId,
     kind: "encouragement",
     postedAt: opts.postedAt,
   });
+  await advanceBabyActivity(ctx, {
+    babyId: opts.babyId,
+    activityAt: opts.postedAt,
+  });
+  return timelineItemId;
 }

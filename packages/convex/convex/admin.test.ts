@@ -46,6 +46,16 @@ test("seedDemoData marks the demo user as admin", async () => {
 
   await t.mutation(internal.seed.seedDemoData, {});
   expect(await asDemo.query(api.profile.get, {})).toMatchObject({ isAdmin: true });
+
+  const sameSubjectFromAnotherIssuer = t.withIdentity({
+    subject: seeded.userId,
+    issuer: "https://other-issuer.test",
+  });
+  await expect(
+    sameSubjectFromAnotherIssuer.query(api.admin.listLanguageRequests, {
+      paginationOpts: FIRST_PAGE,
+    }),
+  ).rejects.toThrow("Not authorized");
 });
 
 test("admins can list language requests with requester emails", async () => {

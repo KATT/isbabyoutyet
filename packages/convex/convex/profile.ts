@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
+import { appIdentity } from "./authIdentity";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -24,10 +25,10 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
     .unique();
 }
 
-function toProfileResult(profile: { locale: string; isAdmin: boolean }) {
+function toProfileResult(profile: { locale: string; isAdmin?: boolean | undefined }) {
   return {
     locale: resolveSupportedLocale(profile.locale),
-    isAdmin: profile.isAdmin,
+    isAdmin: profile.isAdmin === true,
   };
 }
 
@@ -39,7 +40,11 @@ export const get = query({
     if (!identity) {
       return null;
     }
-    const profile = await getProfileHandler(ctx, identity.subject);
+    const caller = appIdentity(identity);
+    const profile = await getProfileHandler(ctx, caller.authUserId);
+    if (profile?.tokenIdentifier && profile.tokenIdentifier !== caller.tokenIdentifier) {
+      return null;
+    }
     return profile ? toProfileResult(profile) : null;
   },
 });
@@ -51,14 +56,19 @@ export const ensure = mutation({
   returns: profileResultValidator,
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    const existing = await getProfileHandler(ctx, identity.subject);
+    const caller = appIdentity(identity);
+    const existing = await getProfileHandler(ctx, caller.authUserId);
     if (existing) {
+      if (existing.tokenIdentifier === undefined) {
+        await ctx.db.patch(existing._id, { tokenIdentifier: caller.tokenIdentifier });
+      }
       return toProfileResult(existing);
     }
 
     const locale = resolveSupportedLocale(args.browserLocale);
     await ctx.db.insert("userProfiles", {
-      userId: identity.subject,
+      userId: caller.authUserId,
+      tokenIdentifier: caller.tokenIdentifier,
       locale,
       isAdmin: false,
     });
@@ -73,13 +83,18 @@ export const updateLocale = mutation({
   returns: profileResultValidator,
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
-    const existing = await getProfileHandler(ctx, identity.subject);
+    const caller = appIdentity(identity);
+    const existing = await getProfileHandler(ctx, caller.authUserId);
     if (existing) {
-      await ctx.db.patch(existing._id, { locale: args.locale });
-      return { locale: args.locale, isAdmin: existing.isAdmin };
+      await ctx.db.patch(existing._id, {
+        locale: args.locale,
+        tokenIdentifier: caller.tokenIdentifier,
+      });
+      return { locale: args.locale, isAdmin: existing.isAdmin === true };
     }
     await ctx.db.insert("userProfiles", {
-      userId: identity.subject,
+      userId: caller.authUserId,
+      tokenIdentifier: caller.tokenIdentifier,
       locale: args.locale,
       isAdmin: false,
     });
@@ -99,7 +114,7 @@ export const requestLanguage = mutation({
       throw new Error("Enter a language name or language code");
     }
     return await ctx.db.insert("languageRequests", {
-      userId: identity.subject,
+      userId: appIdentity(identity).authUserId,
       requestedLocale,
       createdAt: Date.now(),
     });
