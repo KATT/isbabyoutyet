@@ -42,6 +42,18 @@ function calleeName(node) {
   return null;
 }
 
+function specifierImportedName(node) {
+  return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
+}
+
+function importSource(node) {
+  const parent = node.parent;
+  if (parent?.type !== "ImportDeclaration") {
+    return null;
+  }
+  return parent.source.value;
+}
+
 function isPreloadedOptionsCall(node) {
   return node?.type === "CallExpression" && PRELOADED_OPTION_FNS.has(calleeName(node.callee));
 }
@@ -178,19 +190,32 @@ const noConvexQueryHooks = {
     schema: [],
     messages: {
       banned:
-        "Do not use `{{name}}` from `convex/react`. Prefer TanStack Query (`useSuspenseQuery` / infinite queries) with query-prefetch handles.",
+        "Do not use `{{name}}` from `convex/react`. Use `usePreloadedConvexQuery` for Convex data, or TanStack Query (`useQuery` / `useSuspenseQuery`) with `preloadedQueryOptions`.",
     },
   },
   create(context) {
+    /** @type {Map<string, string>} local name → imported name */
+    const convexHookLocals = new Map();
+
     return {
       ImportSpecifier(node) {
-        const imported =
-          node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
-        if (!CONVEX_BANNED_HOOKS.has(imported)) {
+        const imported = specifierImportedName(node);
+        if (!CONVEX_BANNED_HOOKS.has(imported) || importSource(node) !== "convex/react") {
           return;
         }
-        const parent = node.parent;
-        if (parent?.type !== "ImportDeclaration" || parent.source.value !== "convex/react") {
+        convexHookLocals.set(node.local.name, imported);
+        context.report({
+          node,
+          messageId: "banned",
+          data: { name: imported },
+        });
+      },
+      CallExpression(node) {
+        if (node.callee.type !== "Identifier") {
+          return;
+        }
+        const imported = convexHookLocals.get(node.callee.name);
+        if (!imported) {
           return;
         }
         context.report({
@@ -213,11 +238,15 @@ const requirePreloadedQueryOptions = {
     schema: [],
     messages: {
       requirePreloaded:
-        "`{{name}}` must receive `preloadedQueryOptions(...)` or `preloadedInfiniteQueryOptions(...)` (or use `usePreloadedConvexInfiniteQuery`). Ad-hoc `{ queryKey, queryFn }` objects are allowed for non-Convex queries.",
+        "`{{name}}` must receive `preloadedQueryOptions(...)` or `preloadedInfiniteQueryOptions(...)` (or use `usePreloadedConvexQuery` / `usePreloadedConvexInfiniteQuery`). Ad-hoc `{ queryKey, queryFn }` objects are allowed for non-Convex queries.",
     },
   },
   create(context) {
     const preloadedBindings = new Set();
+    /** Local names imported from `convex/react` that are banned Convex query hooks. */
+    const convexHookLocals = new Set();
+    /** @type {Map<string, string>} local name → imported name from `@tanstack/react-query` */
+    const tanstackHookLocals = new Map();
 
     function unwrap(node) {
       if (!node) {
@@ -243,26 +272,59 @@ const requirePreloadedQueryOptions = {
       return false;
     }
 
+    function resolveTanstackHook(callee) {
+      if (callee?.type === "Identifier") {
+        if (convexHookLocals.has(callee.name)) {
+          return null;
+        }
+        const importedFromTanstack = tanstackHookLocals.get(callee.name);
+        if (importedFromTanstack) {
+          return { reportName: callee.name, importedName: importedFromTanstack };
+        }
+        if (TANSTACK_QUERY_HOOKS.has(callee.name)) {
+          return { reportName: callee.name, importedName: callee.name };
+        }
+        return null;
+      }
+
+      const name = calleeName(callee);
+      if (!name || !TANSTACK_QUERY_HOOKS.has(name)) {
+        return null;
+      }
+      return { reportName: name, importedName: name };
+    }
+
     return {
+      ImportSpecifier(node) {
+        const imported = specifierImportedName(node);
+        const source = importSource(node);
+        if (source === "convex/react" && CONVEX_BANNED_HOOKS.has(imported)) {
+          convexHookLocals.add(node.local.name);
+          return;
+        }
+        if (source === "@tanstack/react-query" && TANSTACK_QUERY_HOOKS.has(imported)) {
+          tanstackHookLocals.set(node.local.name, imported);
+        }
+      },
       VariableDeclarator(node) {
         if (node.id.type === "Identifier" && node.init && isPreloadedOptionsCall(unwrap(node.init))) {
           preloadedBindings.add(node.id.name);
         }
       },
       CallExpression(node) {
-        const name = calleeName(node.callee);
-        if (!name || !TANSTACK_QUERY_HOOKS.has(name)) {
+        const hook = resolveTanstackHook(node.callee);
+        if (!hook) {
           return;
         }
 
         const firstArg = node.arguments[0];
         if (!firstArg) {
-          context.report({ node, messageId: "requirePreloaded", data: { name } });
+          context.report({ node, messageId: "requirePreloaded", data: { name: hook.reportName } });
           return;
         }
 
         // Ad-hoc client queries: useQuery({ queryKey, queryFn })
-        if (name === "useQuery" && unwrap(firstArg).type === "ObjectExpression") {
+        if (hook.importedName === "useQuery" && unwrap(firstArg).type === "ObjectExpression") {
           return;
         }
 
@@ -270,7 +332,7 @@ const requirePreloadedQueryOptions = {
           return;
         }
 
-        context.report({ node, messageId: "requirePreloaded", data: { name } });
+        context.report({ node, messageId: "requirePreloaded", data: { name: hook.reportName } });
       },
     };
   },

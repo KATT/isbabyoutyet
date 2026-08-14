@@ -9,6 +9,12 @@ const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: "tsx" } },
 });
 
+const convexUseQuerySnippet = `import { useQuery } from "convex/react";
+     useQuery(api.profile.get, {});`;
+
+const aliasedConvexUseQuerySnippet = `import { useQuery as useConvexQuery } from "convex/react";
+     useConvexQuery(api.profile.get, {});`;
+
 tester.run("no-convex-query-hooks", plugin.rules["no-convex-query-hooks"], {
   valid: [
     `import { useMutation } from "convex/react";`,
@@ -23,6 +29,14 @@ tester.run("no-convex-query-hooks", plugin.rules["no-convex-query-hooks"], {
       code: `import { usePaginatedQuery } from "convex/react";`,
       errors: [{ messageId: "banned" }],
     },
+    {
+      code: convexUseQuerySnippet,
+      errors: [{ messageId: "banned" }, { messageId: "banned" }],
+    },
+    {
+      code: aliasedConvexUseQuerySnippet,
+      errors: [{ messageId: "banned" }, { messageId: "banned" }],
+    },
   ],
 });
 
@@ -36,6 +50,8 @@ tester.run("require-preloaded-query-options", plugin.rules["require-preloaded-qu
     `import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
      import { preloadedInfiniteQueryOptions } from "@workspace/query-prefetch";
      useSuspenseInfiniteQuery(preloadedInfiniteQueryOptions(factory, handle));`,
+    convexUseQuerySnippet,
+    aliasedConvexUseQuerySnippet,
   ],
   invalid: [
     {
@@ -46,6 +62,11 @@ tester.run("require-preloaded-query-options", plugin.rules["require-preloaded-qu
     {
       code: `import { useSuspenseQuery } from "@tanstack/react-query";
        useSuspenseQuery(onboardingGetMine());`,
+      errors: [{ messageId: "requirePreloaded" }],
+    },
+    {
+      code: `import { useQuery as useTanstackQuery } from "@tanstack/react-query";
+       useTanstackQuery(profileGet());`,
       errors: [{ messageId: "requirePreloaded" }],
     },
   ],
