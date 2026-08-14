@@ -3,6 +3,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
 import { translate } from "@/lib/i18n";
+import { isIndexableBabyPublicId, searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 
 export const OG_IMAGE_WIDTH = 1200;
@@ -159,9 +160,10 @@ export function babySeoHead(baby: BabySeoInput) {
     imageUrl,
     imageAlt: title,
     locale: baby.locale,
+    indexable: isIndexableBabyPublicId(baby.publicId),
   };
 }
 
 export function robotsNoIndexMeta() {
-  return [{ name: "robots", content: "noindex, nofollow" }];
+  return searchRobotsMeta({ index: false });
 }

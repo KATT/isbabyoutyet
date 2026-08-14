@@ -9,6 +9,7 @@ import { LanguagePicker } from "@/components/language-picker";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
+import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
 
@@ -60,6 +61,7 @@ export const Route = createFileRoute("/")({
           name: "twitter:description",
           content: description,
         },
+        ...searchRobotsMeta({ index: true }),
       ],
       links: [{ rel: "canonical", href: canonicalUrl("/") }],
     };

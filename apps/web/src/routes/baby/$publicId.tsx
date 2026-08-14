@@ -28,6 +28,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
 
@@ -135,6 +136,7 @@ export const Route = createFileRoute("/baby/$publicId")({
           name: "theme-color",
           content: seo.themeColor,
         },
+        ...searchRobotsMeta({ index: seo.indexable }),
       ],
       links: [
         ...(themeCssUrl
@@ -156,6 +158,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       ],
     };
   },
+  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
 });
 
 /**

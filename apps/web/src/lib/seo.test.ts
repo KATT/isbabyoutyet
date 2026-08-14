@@ -43,6 +43,7 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
   expect(seo.description).toContain("Juniper");
   expect(seo.canonical).toBe(`${CANONICAL_ORIGIN}/baby/juniper-hale`);
   expect(seo.imageUrl).toContain("/og/baby/juniper-hale");
+  expect(seo.indexable).toBe(true);
 });
 
 test("baby SEO description changes when the baby is born", () => {
@@ -58,6 +59,7 @@ test("baby SEO description changes when the baby is born", () => {
   });
 
   expect(seo.description).toContain("arrived");
+  expect(seo.indexable).toBe(false);
   expect(babyStatusLabel({ status: { type: "born", date: "2026-08-10" }, locale: "en-GB" })).toBe(
     "Yes! Baby is out",
   );
