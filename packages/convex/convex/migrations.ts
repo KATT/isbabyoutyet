@@ -391,6 +391,23 @@ export const backfillUpdatePostedByUserId = migrations.define({
   migrateOne: backfillUpdatePostedByUserIdDoc,
 });
 
+/**
+ * Prefills `isAdmin: false` on existing userProfiles so a later PR can tighten
+ * the field to required.
+ */
+export async function backfillUserProfileIsAdminDoc(
+  ctx: MutationCtx,
+  profile: Doc<"userProfiles">,
+) {
+  if (profile.isAdmin !== undefined) return;
+  await ctx.db.patch(profile._id, { isAdmin: false });
+}
+
+export const backfillUserProfileIsAdmin = migrations.define({
+  table: "userProfiles",
+  migrateOne: backfillUserProfileIsAdminDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -398,6 +415,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
+  internal.migrations.backfillUserProfileIsAdmin,
 ]);
 
 // Run all pending migrations - called automatically during deployment.
