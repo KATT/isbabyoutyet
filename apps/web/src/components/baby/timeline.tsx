@@ -17,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { useMutation, usePaginatedQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import {
   Camera,
   ChatCircleText,
@@ -40,6 +40,7 @@ import * as z from "zod";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
@@ -50,13 +51,13 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
+import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
-export const TIMELINE_PAGE_SIZE = 20;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
@@ -891,34 +892,35 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 // --- Feed ---
 
-type TimelineFirstPage = FunctionReturnType<typeof api.timeline.listByBaby>;
-
 type TimelineFeedProps = {
   babyId: Id<"baby">;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
-  /** Prefetched first page from the route loader so the feed can SSR without a spinner. */
-  initialPage: TimelineFirstPage;
+  /** Prefetched infinite timeline handle from the route loader (SSR first page). */
+  timeline: PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
   const { t } = useI18n();
   const [currentVisitorId, setCurrentVisitorId] = useState("");
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.timeline.listByBaby,
-    // visitorId only marks the caller's own encouragements (isMine); the
-    // credential itself is never returned by the query
-    { babyId: props.babyId, visitorId: currentVisitorId || undefined },
-    { initialNumItems: TIMELINE_PAGE_SIZE },
-  );
+  // visitorId only marks the caller's own encouragements (isMine); the
+  // credential itself is never returned by the query. Remix after mount so
+  // the first render matches the SSR handle (no visitorId).
+  const timelineQuery = usePreloadedConvexInfiniteQuery(api.timeline.listByBaby, {
+    handle: props.timeline,
+    remixArgs: (args) => ({
+      ...args,
+      ...(currentVisitorId ? { visitorId: currentVisitorId } : {}),
+    }),
+  });
   const removeUpdate = useMutation(api.updates.remove);
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const items = status === "LoadingFirstPage" ? props.initialPage.page : results;
+  const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
   // Get visitor ID on client side
   useEffect(() => {
@@ -927,12 +929,12 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
-    if (status !== "CanLoadMore") return;
+    if (!timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          loadMore(TIMELINE_PAGE_SIZE);
+          void timelineQuery.fetchNextPage();
         }
       },
       { threshold: 0.1 },
@@ -948,7 +950,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
         observer.unobserve(currentRef);
       }
     };
-  }, [status, loadMore]);
+  }, [timelineQuery.hasNextPage, timelineQuery.isFetchingNextPage, timelineQuery.fetchNextPage]);
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
@@ -1049,11 +1051,11 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
         {/* Infinite scroll trigger */}
         <div ref={loadMoreRef} className="py-2">
-          {status === "LoadingMore" && (
+          {timelineQuery.isFetchingNextPage ? (
             <div className="text-center text-muted-foreground">
               <Spinner className="mx-auto" />
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

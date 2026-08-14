@@ -9,6 +9,10 @@
     {
       "name": "no-optional",
       "specifier": "./oxlint-plugins/no-optional.mjs"
+    },
+    {
+      "name": "query-prefetch",
+      "specifier": "./oxlint-plugins/query-prefetch.mjs"
     }
   ],
   "settings": {
@@ -17,13 +21,14 @@
       "translationFunctionNames": ["translate"],
       "ignoredAttributes": ["to", "params", "search"],
       "ignoredComponents": ["TanStackDevtools"],
-      "ignorePatterns": ["^LoadingMore$", "^Tanstack Router$", "^/[A-Za-z0-9_$/.-]+$"]
+      "ignorePatterns": ["^LoadingMore$", "^TanStack (Router|Query)$", "^/[A-Za-z0-9_$/.-]+$"]
     }
   },
   "rules": {
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
-    "eslint/max-params": ["error", 2]
+    "eslint/max-params": ["error", 2],
+    "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [
     {
@@ -32,7 +37,9 @@
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
-        "no-optional/no-optional": "error"
+        "no-optional/no-optional": "error",
+        "query-prefetch/require-preloaded-query-options": "error",
+        "query-prefetch/use-loader-preloads": "error"
       }
     },
     {
@@ -47,12 +54,21 @@
       "rules": {
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
-        "i18n-literal/no-literal-template": "off"
+        "i18n-literal/no-literal-template": "off",
+        "query-prefetch/require-preloaded-query-options": "off",
+        "query-prefetch/use-loader-preloads": "off"
       }
     },
     {
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/components/**"],
+      "rules": {
+        "eslint/max-params": "off"
+      }
+    },
+    {
+      // query-prefetch overloads use an optional third `remixInput` param (KATT gist API).
+      "files": ["packages/query-prefetch/src/**"],
       "rules": {
         "eslint/max-params": "off"
       }
