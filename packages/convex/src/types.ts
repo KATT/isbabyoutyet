@@ -1,6 +1,13 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
 /**
+ * Sentinel returned by manager-only queries when the caller lacks access,
+ * instead of throwing. Lets route loaders fetch the same set of queries for
+ * every visitor; read sites narrow it away.
+ */
+export const FORBIDDEN = "forbidden" as const;
+
+/**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
 export type BabyData = Omit<

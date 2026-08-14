@@ -196,32 +196,42 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
   });
 }
 
-test("loader gives visitors awaited shared handles and no owner-only data", async () => {
+test("loader queries the same set for visitors; gated queries come back forbidden", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: false, isOwner: false },
     "timeline:listByBaby": EMPTY_PAGE,
+    "baby:getScheduledNotifications": "forbidden",
+    "pushSubscriptions:getSubscriptionCount": "forbidden",
+    "coParents:listForBaby": "forbidden",
   });
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
-  expect(result.scheduledNotifications).toBeNull();
-  expect(result.subscriptionCount).toBeNull();
-  expect(result.onboarding).toBeNull();
-  expect(result.coParentsList).toBeNull();
+  expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
+  expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
+  expect(result.coParentsList).toMatchObject({ initialData: "forbidden" });
 });
 
-test("loader gives owners awaited owner-only handles", async () => {
+test("loader gives managers the same handles with real data", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: true, isOwner: true },
     "timeline:listByBaby": EMPTY_PAGE,
+    "baby:getScheduledNotifications": [],
+    "pushSubscriptions:getSubscriptionCount": 2,
     "coParents:listForBaby": { coParents: [], invites: [] },
   });
 
-  expect(result.scheduledNotifications).toMatchObject({ input: { babyId: "baby-1" } });
-  expect(result.subscriptionCount).toMatchObject({ input: { babyId: "baby-1" } });
+  expect(result.scheduledNotifications).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: [],
+  });
+  expect(result.subscriptionCount).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: 2,
+  });
   expect(result.onboarding).toMatchObject({ input: {} });
   expect(result.coParentsList).toMatchObject({
     input: { babyId: "baby-1" },

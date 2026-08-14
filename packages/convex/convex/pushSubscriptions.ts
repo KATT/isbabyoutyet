@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
-import { requireBabyManager } from "./babyAccess";
+import { findBabyManager } from "./babyAccess";
+import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
 import schema from "./schema";
 import { isActive } from "./softDelete";
@@ -119,9 +120,14 @@ export const getSubscriptionCount = query({
   args: {
     babyId: v.id("baby"),
   },
-  returns: v.number(),
+  returns: v.union(v.number(), v.literal(FORBIDDEN)),
   handler: async (ctx, args) => {
-    const access = await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
     return access.baby.subscriptionCount ?? 0;
   },
 });
