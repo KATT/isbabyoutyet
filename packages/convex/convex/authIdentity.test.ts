@@ -23,7 +23,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
       dueDate: "2026-09-01",
       publicId: "migration-baby",
       lastActivityAt: 1,
-      subscriptionCount: 0,
+      subscriptionCount: 99,
     });
     const profileId = await ctx.db.insert("userProfiles", {
       userId: "alice",
