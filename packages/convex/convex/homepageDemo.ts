@@ -108,6 +108,7 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     babyBorn: null,
     photoId: null,
     thumbnailId: null,
+    subscriptionCount: 0,
   });
 }
 

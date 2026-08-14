@@ -1,30 +1,75 @@
 import { fireEvent, render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import type { ComponentProps, ReactElement } from "react";
+import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
+import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
+import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
+import type { FunctionReturnType } from "convex/server";
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
 const mocks = vi.hoisted(() => ({
   mutate: vi.fn<(args: unknown) => Promise<unknown>>(),
-  paginated: {
-    results: [] as unknown[],
-    status: "Exhausted" as "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted",
-    loadMore: vi.fn<(count: number) => void>(),
-  },
 }));
 vi.mock("convex/react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("convex/react")>()),
   useMutation: () => mocks.mutate,
-  usePaginatedQuery: () => mocks.paginated,
 }));
+
+// Replace the live Convex page fetch/watch with pure TanStack reads over the
+// handle's initialData (no registered Convex client in these tests).
+vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
+  const { useSuspenseInfiniteQuery } = await import("@tanstack/react-query");
+  return {
+    ...actual,
+    usePreloadedConvexInfiniteQuery: (
+      funcRef: unknown,
+      opts: {
+        handle: PreloadedConvexInfiniteQuery<never>;
+        remixArgs: ((args: Record<string, unknown>) => Record<string, unknown>) | null;
+      },
+    ) => {
+      const input = opts.handle.input as Record<string, unknown>;
+      const args = opts.remixArgs ? opts.remixArgs(input) : input;
+      return useSuspenseInfiniteQuery({
+        queryKey: ["test-infinite", funcRef, args],
+        queryFn: async () => {
+          throw new Error("not fetched in tests");
+        },
+        initialPageParam: { numItems: opts.handle.numItems, cursor: null },
+        getNextPageParam: () => undefined,
+        initialData: opts.handle.initialData,
+        staleTime: Infinity,
+      } as never);
+    },
+  };
+});
+
+{
+  class MockIntersectionObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+    root = null;
+    rootMargin = "";
+    thresholds = [];
+  }
+  globalThis.IntersectionObserver =
+    MockIntersectionObserver as unknown as typeof IntersectionObserver;
+}
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
@@ -42,6 +87,19 @@ const laborStartedBaby: BabyData = {
 // The mutations are never invoked in these tests; the client only needs to
 // exist for the `useMutation` hooks to mount.
 const babyId = "fake-baby-id" as Id<"baby">;
+
+type TimelinePage = FunctionReturnType<typeof api.timeline.listByBaby>;
+
+function timelineHandle(page: TimelinePage) {
+  return testPreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>({
+    input: { babyId },
+    numItems: 20,
+    initialData: {
+      pages: [page],
+      pageParams: [{ numItems: 20, cursor: null }],
+    },
+  });
+}
 
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
@@ -189,50 +247,68 @@ test("the composer previews a selected photo and can remove it", async () => {
   expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
+function renderFeed(opts: { baby: BabyData; isOwner: boolean; page: TimelinePage }) {
+  const client = new ConvexReactClient("https://example.convex.cloud", {
+    unsavedChangesWarning: false,
+  });
+  const handle = timelineHandle(opts.page);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+
+  const rendered = render(
+    <QueryClientProvider client={queryClient}>
+      <LocaleProvider locale="en-GB">
+        <ConvexProvider client={client}>
+          <TooltipProvider>
+            <TimelineFeed
+              babyId={babyId}
+              baby={opts.baby}
+              babyName={opts.baby.name}
+              isOwner={opts.isOwner}
+              timeline={handle}
+            />
+          </TooltipProvider>
+        </ConvexProvider>
+      </LocaleProvider>
+    </QueryClientProvider>,
+  );
+  return makeResource(rendered, async () => {
+    rendered.unmount();
+    await client.close();
+    queryClient.clear();
+  });
+}
+
 test("timeline milestone deletion is disabled while a later status exists", async () => {
   const bornBaby: BabyData = {
     ...laborStartedBaby,
     wentToHospital: "2026-08-20T12:00:00.000Z",
     babyBorn: "2026-08-21T03:00:00.000Z",
   };
-  mocks.paginated.status = "Exhausted";
-  mocks.paginated.results = [
-    {
-      _id: "timeline-item-id",
-      kind: "update",
-      postedAt: Date.now(),
-      update: {
-        _id: "update-id",
-        message: null,
-        milestone: "gone_to_hospital",
-        occurredAt: Date.now(),
-        photoUrl: null,
-        thumbnailUrl: null,
-        isCurrentPagePhoto: false,
-      },
+  await using view = renderFeed({
+    baby: bornBaby,
+    isOwner: true,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: null,
+            milestone: "gone_to_hospital",
+            occurredAt: Date.now(),
+            photoUrl: null,
+            thumbnailUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
     },
-  ];
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
-  const rendered = render(
-    <LocaleProvider locale="en-GB">
-      <ConvexProvider client={client}>
-        <TooltipProvider>
-          <TimelineFeed
-            babyId={babyId}
-            baby={bornBaby}
-            babyName={bornBaby.name}
-            isOwner
-            initialPage={{ page: [], isDone: true, continueCursor: "" }}
-          />
-        </TooltipProvider>
-      </ConvexProvider>
-    </LocaleProvider>,
-  );
-  await using view = makeResource(rendered, async () => {
-    rendered.unmount();
-    await client.close();
   });
 
   const deleteButton = view.getByRole("button", { name: "Delete update" }) as HTMLButtonElement;
@@ -243,41 +319,11 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   expect(view.queryByRole("alertdialog")).toBeNull();
 });
 
-function renderFeed(opts: {
-  baby: BabyData;
-  isOwner: boolean;
-  initialPage: ComponentProps<typeof TimelineFeed>["initialPage"];
-}) {
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
-  const rendered = render(
-    <ConvexProvider client={client}>
-      <TooltipProvider>
-        <TimelineFeed
-          babyId={babyId}
-          baby={opts.baby}
-          babyName={opts.baby.name}
-          isOwner={opts.isOwner}
-          initialPage={opts.initialPage}
-        />
-      </TooltipProvider>
-    </ConvexProvider>,
-  );
-  return makeResource(rendered, async () => {
-    rendered.unmount();
-    await client.close();
-  });
-}
-
 test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
-  mocks.paginated.results = [];
-  mocks.paginated.status = "LoadingFirstPage";
-
   await using view = renderFeed({
     baby: notYetBaby,
     isOwner: false,
-    initialPage: {
+    page: {
       page: [
         {
           _id: "timeline-item-id" as Id<"timelineItems">,
@@ -303,13 +349,10 @@ test("shows the prefetched first page instead of a spinner while the live query 
 });
 
 test("shows the empty feed, not a spinner, when the prefetched first page is empty", async () => {
-  mocks.paginated.results = [];
-  mocks.paginated.status = "LoadingFirstPage";
-
   await using view = renderFeed({
     baby: notYetBaby,
     isOwner: false,
-    initialPage: { page: [], isDone: true, continueCursor: "" },
+    page: { page: [], isDone: true, continueCursor: "" },
   });
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();

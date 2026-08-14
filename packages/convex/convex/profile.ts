@@ -25,10 +25,10 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
     .unique();
 }
 
-function toProfileResult(profile: { locale: string; isAdmin?: boolean | undefined }) {
+function toProfileResult(profile: { locale: string; isAdmin: boolean }) {
   return {
     locale: resolveSupportedLocale(profile.locale),
-    isAdmin: profile.isAdmin === true,
+    isAdmin: profile.isAdmin,
   };
 }
 
@@ -70,6 +70,7 @@ export const ensure = mutation({
       userId: caller.authUserId,
       tokenIdentifier: caller.tokenIdentifier,
       locale,
+      isAdmin: false,
     });
     return { locale, isAdmin: false };
   },
@@ -89,12 +90,13 @@ export const updateLocale = mutation({
         locale: args.locale,
         tokenIdentifier: caller.tokenIdentifier,
       });
-      return { locale: args.locale, isAdmin: existing.isAdmin === true };
+      return { locale: args.locale, isAdmin: existing.isAdmin };
     }
     await ctx.db.insert("userProfiles", {
       userId: caller.authUserId,
       tokenIdentifier: caller.tokenIdentifier,
       locale: args.locale,
+      isAdmin: false,
     });
     return { locale: args.locale, isAdmin: false };
   },

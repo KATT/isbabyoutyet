@@ -8,12 +8,16 @@ import {
   useMatches,
   useRouteContext,
 } from "@tanstack/react-router";
+import type { ConvexQueryClient } from "@convex-dev/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
+import { createServerFn } from "@tanstack/react-start";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
@@ -21,6 +25,7 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
+import { authServer } from "@/lib/auth-server";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
@@ -28,15 +33,37 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
+import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 
+// Cookie-authenticated token for SSR (and client navigations via server fn)
+const getAuth = createServerFn({ method: "GET" }).handler(async () => {
+  return await authServer.getToken();
+});
+
 export const Route = createRootRouteWithContext<{
+  queryClient: QueryClient;
+  convexQueryClient: ConvexQueryClient;
   convexClient: ConvexReactClient;
   locale: SupportedLocale;
+  isAuthenticated: boolean;
+  token: string | null | undefined;
 }>()({
-  beforeLoad: async () => {
-    return { locale: await detectRequestLocale() };
+  beforeLoad: async (ctx) => {
+    const [locale, token] = await Promise.all([detectRequestLocale(), getAuth()]);
+
+    // During SSR only (serverHttpClient exists), attach the token so
+    // ensureQueryData / useSuspenseQuery run as the signed-in user.
+    if (token) {
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
+
+    return {
+      locale,
+      isAuthenticated: !!token,
+      token,
+    };
   },
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
@@ -44,6 +71,7 @@ export const Route = createRootRouteWithContext<{
       locale,
       "Track the progress of labour and birth – know when baby arrives!",
     );
+    const title = m.app_name({}, { locale });
     return {
       meta: [
         {
@@ -52,6 +80,9 @@ export const Route = createRootRouteWithContext<{
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
+        },
+        {
+          title,
         },
         {
           name: "description",
@@ -63,7 +94,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           property: "og:site_name",
-          content: m.app_name({}, { locale }),
+          content: title,
         },
         {
           property: "og:type",
@@ -71,7 +102,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           name: "twitter:card",
-          content: "summary",
+          content: "summary_large_image",
         },
         {
           name: "theme-color",
@@ -89,6 +120,7 @@ export const Route = createRootRouteWithContext<{
           name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
         },
+        ...aiNoTrainMeta(),
       ],
       links: [
         {
@@ -126,6 +158,7 @@ export const Route = createRootRouteWithContext<{
     return {
       "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
       Vary: "Accept-Language, Cookie",
+      ...aiNoTrainHeaders(),
     };
   },
   component: RootComponent,
@@ -159,8 +192,9 @@ function RootComponent() {
           AuthClient type (upstream types against better-auth 1.6.15). Runtime is
           compatible per the peer range (>=1.6.11 <1.7.0). */}
       <ConvexBetterAuthProvider
-        client={context.convexClient}
+        client={context.convexQueryClient.convexClient}
         authClient={authClient as unknown as AuthClient}
+        initialToken={context.token}
       >
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
@@ -215,7 +249,11 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
           }}
           plugins={[
             {
-              name: "Tanstack Router",
+              name: "TanStack Query",
+              render: <ReactQueryDevtoolsPanel />,
+            },
+            {
+              name: "TanStack Router",
               render: <TanStackRouterDevtoolsPanel />,
             },
           ]}

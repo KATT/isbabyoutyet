@@ -3,6 +3,7 @@ import { expect, test } from "vitest";
 import {
   backfillBabyLastActivityAtDoc,
   backfillBabyOwnerTokenIdentifierDoc,
+  backfillBabySubscriptionCountDoc,
   backfillCoParentTokenIdentifierDoc,
   backfillOnboardingTokenIdentifierDoc,
   backfillProfileTokenIdentifierDoc,
@@ -24,6 +25,7 @@ test("auth identity backfills are complete and idempotent", async () => {
     const profileId = await ctx.db.insert("userProfiles", {
       userId: "alice",
       locale: "en-GB",
+      isAdmin: false,
     });
     const onboardingId = await ctx.db.insert("userOnboarding", {
       userId: "alice",
@@ -53,6 +55,7 @@ test("auth identity backfills are complete and idempotent", async () => {
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
+    await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
@@ -60,6 +63,7 @@ test("auth identity backfills are complete and idempotent", async () => {
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
+    await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
@@ -77,6 +81,7 @@ test("auth identity backfills are complete and idempotent", async () => {
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.baby?.lastActivityAt).toBe(migrated.baby?._creationTime);
+  expect(migrated.baby?.subscriptionCount).toBe(0);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.completedSteps).toEqual(["share_link"]);

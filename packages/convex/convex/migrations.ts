@@ -424,6 +424,22 @@ export const backfillBabyLastActivityAt = migrations.define({
   migrateOne: backfillBabyLastActivityAtDoc,
 });
 
+export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.subscriptionCount !== undefined) return;
+  let subscriptionCount = 0;
+  for await (const _subscription of ctx.db
+    .query("pushSubscriptions")
+    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))) {
+    subscriptionCount += 1;
+  }
+  await ctx.db.patch(baby._id, { subscriptionCount });
+}
+
+export const backfillBabySubscriptionCount = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabySubscriptionCountDoc,
+});
+
 export async function backfillProfileTokenIdentifierDoc(
   ctx: MutationCtx,
   profile: Doc<"userProfiles">,
@@ -483,6 +499,23 @@ export const sanitizeOnboardingSteps = migrations.define({
   migrateOne: sanitizeOnboardingStepsDoc,
 });
 
+/**
+ * Prefills `isAdmin: false` on existing userProfiles so a later PR can tighten
+ * the field to required.
+ */
+export async function backfillUserProfileIsAdminDoc(
+  ctx: MutationCtx,
+  profile: Doc<"userProfiles">,
+) {
+  if (profile.isAdmin !== undefined) return;
+  await ctx.db.patch(profile._id, { isAdmin: false });
+}
+
+export const backfillUserProfileIsAdmin = migrations.define({
+  table: "userProfiles",
+  migrateOne: backfillUserProfileIsAdminDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -492,10 +525,12 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
   internal.migrations.backfillBabyLastActivityAt,
+  internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
   internal.migrations.backfillOnboardingTokenIdentifier,
   internal.migrations.backfillCoParentTokenIdentifier,
   internal.migrations.sanitizeOnboardingSteps,
+  internal.migrations.backfillUserProfileIsAdmin,
 ]);
 
 const TABLE_MIGRATION_NAMES = [
@@ -507,10 +542,12 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
   "migrations:backfillBabyLastActivityAt",
+  "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
   "migrations:backfillOnboardingTokenIdentifier",
   "migrations:backfillCoParentTokenIdentifier",
   "migrations:sanitizeOnboardingSteps",
+  "migrations:backfillUserProfileIsAdmin",
 ] as const;
 
 export const deploymentStatus = internalQuery({
