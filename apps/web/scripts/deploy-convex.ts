@@ -7,8 +7,11 @@
  * 1. `convex deploy` pushes functions and runs the web build via `--cmd`,
  *    with the deployment URL exposed as VITE_CONVEX_URL. On Vercel it
  *    automatically targets production or a per-branch preview deployment
- *    based on the CONVEX_DEPLOY_KEY, and `--preview-run` seeds fresh
- *    preview backends with the demo login + babies (ignored in production).
+ *    based on the CONVEX_DEPLOY_KEY. `--preview-create` recreates the
+ *    branch's preview backend from scratch on every deploy so previews
+ *    never fail schema validation against stale data from an earlier
+ *    schema, and `--preview-run` reseeds the fresh backend with the demo
+ *    login + babies (both flags are ignored in production).
  * 2. Runtime environment variables are synced to the Convex deployment.
  *    Tip: most of these can instead be configured once as project "default
  *    environment variables" in the Convex dashboard; SITE_URL is the only
@@ -82,7 +85,9 @@ convexCli([
   "VITE_CONVEX_URL",
   "--cmd",
   "node ../../apps/web/scripts/build-web.mjs",
-  ...(isPreview ? ["--preview-run", "seed:seedDemoData"] : []),
+  ...(isPreview
+    ? ["--preview-create", env.VERCEL_GIT_COMMIT_REF, "--preview-run", "seed:seedDemoData"]
+    : []),
 ]);
 
 // `convex deploy` infers the preview name from the git branch; the other
