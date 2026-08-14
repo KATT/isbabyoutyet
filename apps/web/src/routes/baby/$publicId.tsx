@@ -43,7 +43,7 @@ import {
   pushPublicKey,
   pushSubscriptionsForBaby,
   scheduledNotificationsForBaby,
-  timelineFirstPage,
+  timelineByBaby,
   timelineLatestUpdate,
 } from "@/queries/convex";
 import { translate, useI18n } from "@/lib/i18n";
@@ -81,11 +81,14 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
 
-    const [myAccess, vapidPublicKey, latestUpdate, firstPage, profile] = await Promise.all([
+    const [myAccess, vapidPublicKey, latestUpdate, timeline, profile] = await Promise.all([
       preloader.ensureQueryData(coParentsMyAccess, { babyId: babyDoc._id }),
       preloader.ensureQueryData(pushPublicKey),
       preloader.ensureQueryData(timelineLatestUpdate, { babyId: babyDoc._id }),
-      preloader.ensureQueryData(timelineFirstPage, { babyId: babyDoc._id }),
+      preloader.ensureInfiniteQueryData(timelineByBaby, {
+        babyId: babyDoc._id,
+        visitorId: undefined,
+      }),
       preloader.ensureQueryData(profileGet),
     ]);
 
@@ -109,7 +112,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       myAccess,
       vapidPublicKey,
       latestUpdate,
-      firstPage,
+      timeline,
       profile,
       scheduledNotifications,
       subscriptions,
@@ -477,7 +480,7 @@ function BabyPage() {
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
-                initialPage={loaderData.firstPage.initialData}
+                timeline={loaderData.timeline}
               />
             </section>
           </div>

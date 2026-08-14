@@ -4,6 +4,10 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { ConvexQueryClient } from "@convex-dev/react-query";
 import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
+import {
+  convexInfiniteQueryFn,
+  registerConvexInfiniteQueryClient,
+} from "./lib/convexInfiniteQuery";
 import { getDetectedLocale } from "./lib/i18n";
 
 export function getRouter() {
@@ -17,12 +21,14 @@ export function getRouter() {
   const convexQueryClient = new ConvexQueryClient(convexUrl, {
     expectAuth: true,
   });
+  registerConvexInfiniteQueryClient(convexQueryClient);
 
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
-        queryFn: convexQueryClient.queryFn(),
+        // Wraps ConvexQueryClient.queryFn so infinite/paginated keys work too.
+        queryFn: convexInfiniteQueryFn(convexQueryClient) as never,
       },
     },
   });

@@ -4,10 +4,11 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
+import { testPreloadedInfiniteQuery } from "@workspace/query-prefetch/test-helpers";
+import { adminBabiesInfinite, adminLanguageRequestsInfinite } from "@/queries/convex";
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(opts: unknown) => void>(),
-  loadMore: vi.fn<(numItems: number) => void>(),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -31,22 +32,55 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (opts: Record<string, unknown>) => ({
     ...opts,
     useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
+    useLoaderData: () => ({
+      babies: testPreloadedInfiniteQuery(
+        adminBabiesInfinite,
+        {
+          pages: [{ page: [], isDone: true, continueCursor: "" }],
+          pageParams: [{ numItems: 20, cursor: null }],
+        },
+        { sortBy: "updated", sortOrder: "desc", hideDemo: true },
+      ),
+      languages: testPreloadedInfiniteQuery(adminLanguageRequestsInfinite, {
+        pages: [{ page: [], isDone: true, continueCursor: "" }],
+        pageParams: [{ numItems: 20, cursor: null }],
+      }),
+    }),
   }),
   redirect: vi.fn<() => never>(),
   useNavigate: () => mocks.navigate,
 }));
 
-vi.mock("@/lib/auth-server", () => ({
-  authServer: { fetchAuthQuery: vi.fn<() => Promise<unknown>>() },
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
+  return {
+    ...actual,
+    useSuspenseInfiniteQuery: () => ({
+      data: {
+        pages: [{ page: [], isDone: true, continueCursor: "" }],
+        pageParams: [{ numItems: 20, cursor: null }],
+      },
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: vi.fn<() => Promise<unknown>>(),
+    }),
+  };
+});
+
+vi.mock("@/lib/usePreloadedConvexInfiniteQuery", () => ({
+  usePreloadedConvexInfiniteQuery: () => ({
+    data: {
+      pages: [{ page: [], isDone: true, continueCursor: "" }],
+      pageParams: [{ numItems: 20, cursor: null }],
+    },
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: vi.fn<() => Promise<unknown>>(),
+  }),
 }));
 
-vi.mock("convex/react", () => ({
-  useConvexAuth: () => ({ isAuthenticated: true, isLoading: false }),
-  usePaginatedQuery: () => ({
-    results: [],
-    status: "Exhausted",
-    loadMore: mocks.loadMore,
-  }),
+vi.mock("@/lib/useLiveConvexInfinitePages", () => ({
+  useLiveConvexInfinitePages: () => undefined,
 }));
 
 const {
@@ -101,24 +135,21 @@ test("nextSortSearch toggles order on the active column and defaults desc on swi
   ).toEqual({ sort: "created", order: "desc" });
 });
 
-test("language requests section shows empty, loading, and rows", async () => {
-  await using loading = renderResource(
+test("language requests section shows empty and rows", async () => {
+  await using empty = renderResource(
     <LanguageRequestsSection
       requests={[]}
-      status="LoadingFirstPage"
+      hasNextPage={false}
+      isFetchingNextPage={false}
       onLoadMore={() => undefined}
     />,
-  );
-  expect(loading.getByRole("status", { name: "Loading" })).toBeTruthy();
-
-  await using empty = renderResource(
-    <LanguageRequestsSection requests={[]} status="Exhausted" onLoadMore={() => undefined} />,
   );
   expect(empty.getByText("No language requests yet")).toBeTruthy();
 
   await using filled = renderResource(
     <LanguageRequestsSection
-      status="Exhausted"
+      hasNextPage={false}
+      isFetchingNextPage={false}
       onLoadMore={() => undefined}
       requests={[
         {
@@ -150,7 +181,8 @@ test("babies section sorts via clickable header links", async () => {
       order="desc"
       tab="babies"
       hideDemo={true}
-      status="Exhausted"
+      hasNextPage={false}
+      isFetchingNextPage={false}
       onLoadMore={() => undefined}
       babies={[
         sampleBaby,
@@ -182,62 +214,15 @@ test("babies section sorts via clickable header links", async () => {
   expect(updated.getAttribute("href")).toContain("order=asc");
 });
 
-test("babies section keeps previous rows while a sort refresh is loading", async () => {
-  const first = render(
-    <LocaleProvider locale="en-GB">
-      <BabiesSection
-        sort="updated"
-        order="desc"
-        tab="babies"
-        hideDemo={true}
-        status="Exhausted"
-        onLoadMore={() => undefined}
-        babies={[sampleBaby]}
-      />
-    </LocaleProvider>,
-  );
-  expect(first.getByText("Avery")).toBeTruthy();
-
-  first.rerender(
-    <LocaleProvider locale="en-GB">
-      <BabiesSection
-        sort="created"
-        order="asc"
-        tab="babies"
-        hideDemo={true}
-        status="LoadingFirstPage"
-        onLoadMore={() => undefined}
-        babies={[]}
-      />
-    </LocaleProvider>,
-  );
-
-  expect(first.getByText("Avery")).toBeTruthy();
-  expect(first.getByText("Loading")).toBeTruthy();
-  first.unmount();
-});
-
-test("babies section shows a spinner on first load and while loading more", async () => {
-  await using firstLoad = renderResource(
-    <BabiesSection
-      babies={[]}
-      status="LoadingFirstPage"
-      sort="created"
-      order="desc"
-      tab="babies"
-      hideDemo={true}
-      onLoadMore={() => undefined}
-    />,
-  );
-  expect(firstLoad.getByRole("status", { name: "Loading" })).toBeTruthy();
-
+test("babies section shows a spinner while loading more", async () => {
   await using loadingMore = renderResource(
     <BabiesSection
       sort="created"
       order="desc"
       tab="babies"
       hideDemo={true}
-      status="LoadingMore"
+      hasNextPage={true}
+      isFetchingNextPage={true}
       onLoadMore={() => undefined}
       babies={[{ ...sampleBaby, demo: false, managerEmails: [] }]}
     />,
@@ -249,7 +234,8 @@ test("babies section shows a spinner on first load and while loading more", asyn
 test("language requests section shows loading-more spinner", async () => {
   await using view = renderResource(
     <LanguageRequestsSection
-      status="LoadingMore"
+      hasNextPage={true}
+      isFetchingNextPage={true}
       onLoadMore={() => undefined}
       requests={[
         {
@@ -302,7 +288,8 @@ test("infinite scroll sentinel requests another page when visible", async () => 
       order="desc"
       tab="babies"
       hideDemo={true}
-      status="CanLoadMore"
+      hasNextPage={true}
+      isFetchingNextPage={false}
       onLoadMore={onLoadMore}
       babies={[sampleBaby]}
     />,

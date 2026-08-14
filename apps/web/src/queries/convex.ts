@@ -1,7 +1,10 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { TIMELINE_PAGE_SIZE } from "@/components/baby/timeline";
+import { convexInfiniteQuery } from "@/lib/convexInfiniteQuery";
+
+export const ADMIN_PAGE_SIZE = 20;
+const TIMELINE_PAGE_SIZE = 20;
 
 /** Public baby page by publicId (or legacy Convex id). */
 export const babyByPublicId = (input: { id: string }) => convexQuery(api.baby.getByPublicId, input);
@@ -27,11 +30,32 @@ export const coParentsListForBaby = (input: { babyId: Id<"baby"> }) =>
 export const timelineLatestUpdate = (input: { babyId: Id<"baby"> }) =>
   convexQuery(api.timeline.latestUpdate, input);
 
-/** First page of the interleaved timeline feed. */
-export const timelineFirstPage = (input: { babyId: Id<"baby"> }) =>
-  convexQuery(api.timeline.listByBaby, {
-    babyId: input.babyId,
-    paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
+/** Interleaved timeline feed (infinite / cursor pages). */
+export const timelineByBaby = (input: { babyId: Id<"baby">; visitorId: string | undefined }) =>
+  convexInfiniteQuery(api.timeline.listByBaby, {
+    args: {
+      babyId: input.babyId,
+      ...(input.visitorId ? { visitorId: input.visitorId } : {}),
+    },
+    initialNumItems: TIMELINE_PAGE_SIZE,
+  });
+
+/** Admin: all babies table. */
+export const adminBabiesInfinite = (input: {
+  sortBy: "created" | "updated";
+  sortOrder: "asc" | "desc";
+  hideDemo: boolean;
+}) =>
+  convexInfiniteQuery(api.admin.listBabies, {
+    args: input,
+    initialNumItems: ADMIN_PAGE_SIZE,
+  });
+
+/** Admin: language request table. */
+export const adminLanguageRequestsInfinite = () =>
+  convexInfiniteQuery(api.admin.listLanguageRequests, {
+    args: {},
+    initialNumItems: ADMIN_PAGE_SIZE,
   });
 
 /** VAPID public key for push subscription. */
