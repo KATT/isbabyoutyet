@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
 import { convexTest } from "convex-test";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
@@ -151,4 +152,72 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   expect(view.getByText("Ainda não")).toBeTruthy();
   expect(view.getByText("O bebê ainda está a caminho")).toBeTruthy();
   expect(view.getByText("Data prevista: 1 de setembro de 2026")).toBeTruthy();
+});
+
+// --- Route loader: client navigations only await the guard queries ---
+
+const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
+
+function makeLoaderQueryClient(handlers: Record<string, unknown>) {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: (ctx: { queryKey: readonly unknown[] }) => {
+          const name = String(ctx.queryKey[1]);
+          if (name in handlers) {
+            return Promise.resolve(handlers[name]);
+          }
+          return Promise.resolve(null);
+        },
+      },
+    },
+  });
+}
+
+async function runBabyLoader(handlers: Record<string, unknown>) {
+  const routeModule = await import("@/routes/baby/$publicId");
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: { queryClient: QueryClient };
+    params: { publicId: string };
+  }) => Promise<Record<string, unknown>>;
+  return await loader({
+    context: { queryClient: makeLoaderQueryClient(handlers) },
+    params: { publicId: "baby-smith" },
+  });
+}
+
+test("client loader gives visitors initiated shared handles and no owner-only data", async () => {
+  const result = await runBabyLoader({
+    "baby:getByPublicId": BABY_DOC,
+    "coParents:myAccess": { canManage: false, isOwner: false },
+  });
+
+  expect(result.baby).toMatchObject({ initialData: BABY_DOC });
+  expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
+  // Shared queries are initiated, not awaited: handles carry only their input.
+  expect(result.timeline).toEqual({ input: { babyId: "baby-1" }, numItems: 20 });
+  expect(result.latestUpdate).toEqual({ input: { babyId: "baby-1" } });
+  expect(result.scheduledNotifications).toBeNull();
+  expect(result.subscriptions).toBeNull();
+  expect(result.onboarding).toBeNull();
+  expect(result.coParentsList).toBeNull();
+});
+
+test("client loader gives owners initiated owner-only handles", async () => {
+  const result = await runBabyLoader({
+    "baby:getByPublicId": BABY_DOC,
+    "coParents:myAccess": { canManage: true, isOwner: true },
+  });
+
+  expect(result.scheduledNotifications).toEqual({ input: { babyId: "baby-1" } });
+  expect(result.subscriptions).toEqual({ input: { babyId: "baby-1" } });
+  expect(result.onboarding).toEqual({ input: {} });
+  expect(result.coParentsList).toEqual({ input: { babyId: "baby-1" } });
+});
+
+test("client loader still 404s unknown babies", async () => {
+  const pending = runBabyLoader({ "baby:getByPublicId": null });
+
+  await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });

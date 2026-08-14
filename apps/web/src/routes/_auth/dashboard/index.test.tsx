@@ -61,3 +61,25 @@ test("shows prefetched babies without a spinner", async () => {
   expect(view.getByText("Baby Smith")).toBeTruthy();
   expect(view.container.querySelector('[data-tour-id="tour_baby"]')).toBeTruthy();
 });
+
+test("client navigations return initiated handles without awaiting any data", async () => {
+  const { QueryClient } = await import("@tanstack/react-query");
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, queryFn: () => Promise.resolve(null) },
+    },
+  });
+
+  const { Route } = await import("@/routes/_auth/dashboard/index");
+  const options = Route as unknown as {
+    loader: (opts: { context: { queryClient: unknown } }) => Promise<Record<string, unknown>>;
+  };
+  const result = await options.loader({ context: { queryClient } });
+
+  // Initiated handles carry only the query input — data streams in via suspense.
+  expect(result).toEqual({
+    babies: { input: {} },
+    onboarding: { input: {} },
+    profile: { input: {} },
+  });
+});

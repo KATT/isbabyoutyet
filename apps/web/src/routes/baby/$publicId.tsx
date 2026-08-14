@@ -27,7 +27,7 @@ import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/con
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
@@ -71,20 +71,71 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
 
-    const shared = await allKeyed({
-      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
-      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+    // SSR awaits everything for a complete first paint.
+    if (typeof window === "undefined") {
+      const shared = await allKeyed({
+        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
+        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
+        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+          args: { babyId: babyDoc._id },
+          numItems: TIMELINE_PAGE_SIZE,
+        }),
+        profile: preloader.ensureQueryData(api.profile.get, {}),
+      });
+
+      if (!shared.myAccess.initialData.canManage) {
+        return {
+          baby: babyHandle,
+          ...shared,
+          scheduledNotifications: null,
+          subscriptions: null,
+          onboarding: null,
+          coParentsList: null,
+        };
+      }
+
+      return {
+        baby: babyHandle,
+        ...shared,
+        ...(await allKeyed({
+          scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+            babyId: babyDoc._id,
+          }),
+          subscriptions: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptions, {
+            babyId: babyDoc._id,
+          }),
+          onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+          // Prefetch even when settings are closed — Dialog may keep the panel mounted
+          coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
+            babyId: babyDoc._id,
+          }),
+        })),
+      };
+    }
+
+    // Client navigations: await only what the owner/visitor branching needs
+    // (both cache-warm after a viewport preload), start everything else
+    // without blocking, and let the page's suspense reads fill in.
+    const myAccess = await preloader.ensureQueryData(api.coParents.myAccess, {
+      babyId: babyDoc._id,
+    });
+    const shared = {
+      baby: babyHandle,
+      myAccess,
+      vapidPublicKey: preloader.initiateQueryData(api.pushSubscriptions.getPublicKey, {}),
+      latestUpdate: preloader.initiateQueryData(api.timeline.latestUpdate, {
+        babyId: babyDoc._id,
+      }),
+      timeline: preloader.initiateInfiniteQueryData(api.timeline.listByBaby, {
         args: { babyId: babyDoc._id },
         numItems: TIMELINE_PAGE_SIZE,
       }),
-      profile: preloader.ensureQueryData(api.profile.get, {}),
-    });
+      profile: preloader.initiateQueryData(api.profile.get, {}),
+    };
 
-    if (!shared.myAccess.initialData.canManage) {
+    if (!myAccess.initialData.canManage) {
       return {
-        baby: babyHandle,
         ...shared,
         scheduledNotifications: null,
         subscriptions: null,
@@ -94,21 +145,18 @@ export const Route = createFileRoute("/baby/$publicId")({
     }
 
     return {
-      baby: babyHandle,
       ...shared,
-      ...(await allKeyed({
-        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
-          babyId: babyDoc._id,
-        }),
-        subscriptions: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptions, {
-          babyId: babyDoc._id,
-        }),
-        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-        // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
-          babyId: babyDoc._id,
-        }),
-      })),
+      scheduledNotifications: preloader.initiateQueryData(api.baby.getScheduledNotifications, {
+        babyId: babyDoc._id,
+      }),
+      subscriptions: preloader.initiateQueryData(api.pushSubscriptions.getSubscriptions, {
+        babyId: babyDoc._id,
+      }),
+      onboarding: preloader.initiateQueryData(api.onboarding.getMine, {}),
+      // Prefetch even when settings are closed — Dialog may keep the panel mounted
+      coParentsList: preloader.initiateQueryData(api.coParents.listForBaby, {
+        babyId: babyDoc._id,
+      }),
     };
   },
   head: (opts) => {
@@ -276,93 +324,97 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && loaderData.onboarding ? (
-        <OnboardingHost
-          surface="baby"
-          onboarding={loaderData.onboarding}
-          enabled={undefined}
-          babyPublicId={babyDoc.publicId}
-          spotlight={!search.settings && !composerOpen}
-          onGoToStep={(stepId) => {
-            if (stepId === "post_update") {
-              setComposerOpen(true);
-              return;
-            }
-            if (stepId === "explore_settings") {
-              void navigate({
-                search: {
-                  ...search,
-                  settings: true,
-                },
-                replace: true,
-              });
-            }
-          }}
-        />
-      ) : null}
-
-      {canManage ? (
-        <>
-          <SettingsPanel
-            baby={baby}
-            profileLocale={profile?.locale ?? locale}
-            onUpdate={async (update) => {
-              await updateBaby({
-                babyId: babyDoc._id,
-                ...update,
-              });
-              await router.invalidate();
-            }}
-            onDelete={
-              isOwner
-                ? async () => {
-                    await removeBaby({ babyId: babyDoc._id });
-                    void navigate({ to: "/dashboard" });
-                  }
-                : null
-            }
-            coParents={
-              loaderData.coParentsList
-                ? {
-                    babyId: babyDoc._id,
-                    isOwner,
-                    listing: loaderData.coParentsList,
-                  }
-                : null
-            }
-            open={!!search.settings}
-            onOpenChange={(open) => {
-              void navigate({
-                search: {
-                  ...search,
-                  settings: open || undefined,
-                },
-                replace: true,
-              });
+      {/* Own boundary: the owner-only queries stream in on client navigations
+          (and canManage can flip live) — never suspend the whole page for them. */}
+      <Suspense fallback={null}>
+        {canManage && loaderData.onboarding ? (
+          <OnboardingHost
+            surface="baby"
+            onboarding={loaderData.onboarding}
+            enabled={undefined}
+            babyPublicId={babyDoc.publicId}
+            spotlight={!search.settings && !composerOpen}
+            onGoToStep={(stepId) => {
+              if (stepId === "post_update") {
+                setComposerOpen(true);
+                return;
+              }
+              if (stepId === "explore_settings") {
+                void navigate({
+                  search: {
+                    ...search,
+                    settings: true,
+                  },
+                  replace: true,
+                });
+              }
             }}
           />
-          {loaderData.scheduledNotifications && loaderData.subscriptions ? (
-            <ScheduledNotificationToast
-              notifications={loaderData.scheduledNotifications}
-              subscriptions={loaderData.subscriptions}
+        ) : null}
+
+        {canManage ? (
+          <>
+            <SettingsPanel
+              baby={baby}
+              profileLocale={profile?.locale ?? locale}
+              onUpdate={async (update) => {
+                await updateBaby({
+                  babyId: babyDoc._id,
+                  ...update,
+                });
+                await router.invalidate();
+              }}
+              onDelete={
+                isOwner
+                  ? async () => {
+                      await removeBaby({ babyId: babyDoc._id });
+                      void navigate({ to: "/dashboard" });
+                    }
+                  : null
+              }
+              coParents={
+                loaderData.coParentsList
+                  ? {
+                      babyId: babyDoc._id,
+                      isOwner,
+                      listing: loaderData.coParentsList,
+                    }
+                  : null
+              }
+              open={!!search.settings}
+              onOpenChange={(open) => {
+                void navigate({
+                  search: {
+                    ...search,
+                    settings: open || undefined,
+                  },
+                  replace: true,
+                });
+              }}
             />
-          ) : null}
-          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-              <UpdateComposer
-                babyId={babyDoc._id}
-                baby={baby}
-                babyName={baby.name}
-                onPosted={() => {
-                  setComposerOpen(false);
-                  void completeOnboardingStep({ stepId: "post_update" });
-                }}
+            {loaderData.scheduledNotifications && loaderData.subscriptions ? (
+              <ScheduledNotificationToast
+                notifications={loaderData.scheduledNotifications}
+                subscriptions={loaderData.subscriptions}
               />
-            </DialogContent>
-          </Dialog>
-        </>
-      ) : null}
+            ) : null}
+            <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
+              <DialogContent className="sm:max-w-lg">
+                <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
+                <UpdateComposer
+                  babyId={babyDoc._id}
+                  baby={baby}
+                  babyName={baby.name}
+                  onPosted={() => {
+                    setComposerOpen(false);
+                    void completeOnboardingStep({ stepId: "post_update" });
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+          </>
+        ) : null}
+      </Suspense>
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
       <header className="px-4 pt-3 pb-1">
