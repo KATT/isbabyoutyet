@@ -12,6 +12,7 @@ import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
 import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
+import { publicCacheHeaders } from "@/lib/cachePolicy";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -19,6 +20,7 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  headers: () => publicCacheHeaders({ maxAgeSeconds: 86_400, tags: ["homepage"] }),
   head: (opts) => {
     const locale = opts.match.context.locale;
     const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");

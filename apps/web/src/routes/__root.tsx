@@ -34,6 +34,7 @@ import { detectRequestLocale } from "@/lib/detect-locale";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
+import { privateCacheHeaders } from "@/lib/cachePolicy";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -141,7 +142,7 @@ export const Route = createRootRouteWithContext<{
   },
   headers() {
     return {
-      "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
+      ...privateCacheHeaders(),
       ...aiNoTrainHeaders(),
     };
   },

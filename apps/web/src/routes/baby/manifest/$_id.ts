@@ -3,6 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { translate } from "@/lib/i18n";
+import { withPublicCache } from "@/lib/cachePolicy";
+import { ALL_BABY_PAGES_CACHE_TAG, babyIdCacheTag } from "@workspace/convex/src/cacheTags";
 
 export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
@@ -61,11 +63,17 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
           ],
         };
 
-        return Response.json(manifest, {
-          headers: {
-            "Content-Type": "application/manifest+json",
+        return withPublicCache(
+          Response.json(manifest, {
+            headers: {
+              "Content-Type": "application/manifest+json",
+            },
+          }),
+          {
+            maxAgeSeconds: 86_400,
+            tags: [ALL_BABY_PAGES_CACHE_TAG, babyIdCacheTag(params._id)],
           },
-        });
+        );
       },
     },
   },

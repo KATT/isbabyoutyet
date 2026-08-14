@@ -8,10 +8,35 @@ const PRIVATE_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-reva
 const PUBLIC_BROWSER_CACHE_CONTROL = "public, max-age=0, must-revalidate";
 const PUBLIC_STALE_SECONDS = 86_400;
 
-type PublicCachePolicy = {
+export type PublicCachePolicy = {
   maxAgeSeconds: number;
   tags: readonly string[];
 };
+
+export function publicCacheHeaders(policy: PublicCachePolicy) {
+  return {
+    "Cache-Control": PUBLIC_BROWSER_CACHE_CONTROL,
+    "Vercel-CDN-Cache-Control": `public, s-maxage=${policy.maxAgeSeconds}, stale-while-revalidate=${PUBLIC_STALE_SECONDS}`,
+    "Vercel-Cache-Tag": policy.tags.join(","),
+    Vary: "Accept-Language, Cookie",
+  };
+}
+
+export function privateCacheHeaders() {
+  return {
+    "Cache-Control": PRIVATE_CACHE_CONTROL,
+    "Vercel-CDN-Cache-Control": PRIVATE_CACHE_CONTROL,
+    Vary: "Cookie",
+  };
+}
+
+export function withPublicCache(response: Response, policy: PublicCachePolicy) {
+  const headers = new Headers(response.headers);
+  for (const [name, value] of Object.entries(publicCacheHeaders(policy))) {
+    headers.set(name, value);
+  }
+  return responseWithHeaders(response, headers);
+}
 
 function publicPagePolicy(pathname: string): PublicCachePolicy | null {
   if (pathname === "/") {

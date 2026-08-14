@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { createBabyOgImage } from "@/lib/og-image";
+import { withPublicCache } from "@/lib/cachePolicy";
+import { ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag } from "@workspace/convex/src/cacheTags";
 
 export const Route = createFileRoute("/og/baby/$publicId")({
   server: {
@@ -21,16 +23,22 @@ export const Route = createFileRoute("/og/baby/$publicId")({
           return new Response("Baby not found", { status: 404 });
         }
 
-        return createBabyOgImage({
-          name: baby.name,
-          dueDate: baby.dueDate,
-          theme: baby.theme,
-          locale: baby.resolvedLocale,
-          babyBorn: baby.babyBorn,
-          wentToHospital: baby.wentToHospital,
-          laborStarted: baby.laborStarted,
-          photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
-        });
+        return withPublicCache(
+          await createBabyOgImage({
+            name: baby.name,
+            dueDate: baby.dueDate,
+            theme: baby.theme,
+            locale: baby.resolvedLocale,
+            babyBorn: baby.babyBorn,
+            wentToHospital: baby.wentToHospital,
+            laborStarted: baby.laborStarted,
+            photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
+          }),
+          {
+            maxAgeSeconds: 86_400,
+            tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(params.publicId)],
+          },
+        );
       },
     },
   },
