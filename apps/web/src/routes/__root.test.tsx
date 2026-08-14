@@ -56,20 +56,30 @@ function renderResource(ui: ReactElement) {
   });
 }
 
-test("beforeLoad resolves the locale locally on the client, without a server round-trip", async () => {
+test("beforeLoad resolves locale and auth locally on the client, without a server round-trip", async () => {
+  const { QueryClient } = await import("@tanstack/react-query");
+  const { convexQuery } = await import("@convex-dev/react-query");
+  const { api } = await import("@workspace/convex/convex/_generated/api");
+  const queryClient = new QueryClient();
   // With createRootRouteWithContext mocked, Route is the options object.
   const options = Route as unknown as {
     beforeLoad: (ctx: {
-      context: { convexQueryClient: { serverHttpClient: undefined } };
-    }) => Promise<{ locale: string; isAuthenticated: boolean }>;
+      context: { queryClient: unknown; convexQueryClient: { serverHttpClient: undefined } };
+    }) => Promise<{ locale: string; isAuthenticated: boolean; token: string | null }>;
   };
+  const ctx = { context: { queryClient, convexQueryClient: { serverHttpClient: undefined } } };
 
-  const result = await options.beforeLoad({
-    context: { convexQueryClient: { serverHttpClient: undefined } },
+  const anonymous = await options.beforeLoad(ctx);
+  expect(anonymous.locale).toBeTruthy();
+  expect(anonymous.isAuthenticated).toBe(false);
+
+  // A cached profile is the session signal for client navigations.
+  queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
+    locale: "sv",
+    isAdmin: false,
   });
-
-  expect(result.locale).toBeTruthy();
-  expect(result.isAuthenticated).toBe(false);
+  const authed = await options.beforeLoad(ctx);
+  expect(authed.isAuthenticated).toBe(true);
 });
 
 test("the not-found page offers a way back home", async () => {

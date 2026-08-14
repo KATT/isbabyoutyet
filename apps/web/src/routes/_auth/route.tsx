@@ -21,34 +21,48 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    // Prefer the root-resolved token when present; fall back to a fresh check
-    // for client navigations where root may not have re-fetched yet.
-    const token = opts.context.token ?? (await getAuthToken());
-
-    if (!token) {
-      throw redirect({
-        to: "/",
-      });
-    }
-
-    // Mutations via the Convex React client during SSR need setAuth too
-    if (typeof window === "undefined") {
-      opts.context.convexClient.setAuth(async () => token);
-    }
-
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
+
+    if (typeof window === "undefined") {
+      const token = opts.context.token ?? (await getAuthToken());
+      if (!token) {
+        throw redirect({ to: "/" });
+      }
+      // Mutations via the Convex React client during SSR need setAuth too
+      opts.context.convexClient.setAuth(async () => token);
+
+      const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      const existingProfile = profileHandle.initialData;
+      const profile =
+        existingProfile ??
+        (await opts.context.convexClient.mutation(api.profile.ensure, {
+          browserLocale: opts.context.locale,
+        }));
+      if (!existingProfile) {
+        opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+      }
+      return { locale: profile.locale, token, isAuthenticated: true };
+    }
+
+    // Client navigations: the cached profile IS the auth signal — no token
+    // round-trip (sign-out does a full page reload, so the cache can't say
+    // "signed in" after logging out). A null profile means logged out or a
+    // first-ever visit before ensure ran: confirm with the server function
+    // once, then ensure the profile row exists.
     const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
     const existingProfile = profileHandle.initialData;
-    const profile =
-      existingProfile ??
-      (await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      }));
-
-    if (!existingProfile) {
-      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+    if (existingProfile) {
+      return { locale: existingProfile.locale, token: opts.context.token, isAuthenticated: true };
     }
 
+    const token = await getAuthToken();
+    if (!token) {
+      throw redirect({ to: "/" });
+    }
+    const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
+      browserLocale: opts.context.locale,
+    });
+    opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
     return { locale: profile.locale, token, isAuthenticated: true };
   },
   component: AuthLayout,

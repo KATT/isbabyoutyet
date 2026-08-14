@@ -9,7 +9,9 @@ import {
   useRouteContext,
   useRouterState,
 } from "@tanstack/react-router";
+import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { api } from "@workspace/convex/convex/_generated/api";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
@@ -53,25 +55,33 @@ export const Route = createRootRouteWithContext<{
   token: string | null | undefined;
 }>()({
   beforeLoad: async (ctx) => {
-    // SSR detects the locale from request headers. Client navigations resolve
-    // the same cookie → preferred-language chain locally — beforeLoad re-runs
-    // on every navigation (back button included), so the extra server
-    // round-trip would tax them all.
-    const [locale, token] = await Promise.all([
-      typeof window === "undefined" ? detectRequestLocale() : getDetectedLocale(),
-      getAuth(),
-    ]);
-
-    // During SSR only (serverHttpClient exists), attach the token so
-    // ensureQueryData / useSuspenseQuery run as the signed-in user.
-    if (token) {
-      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    // SSR: detect the locale from request headers and exchange the session
+    // cookie for a Convex token so ensureQueryData / useSuspenseQuery run as
+    // the signed-in user.
+    if (typeof window === "undefined") {
+      const [locale, token] = await Promise.all([detectRequestLocale(), getAuth()]);
+      if (token) {
+        ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+      }
+      return {
+        locale,
+        isAuthenticated: !!token,
+        token,
+      };
     }
 
+    // Client navigations: zero network — beforeLoad re-runs on every
+    // navigation (back button included), so a server round-trip here would
+    // tax them all. The locale resolves locally, live auth belongs to
+    // ConvexBetterAuthProvider (initialToken only matters at hydration), and
+    // the cached profile tells us whether a session exists.
+    const cachedProfile = ctx.context.queryClient.getQueryData(
+      convexQuery(api.profile.get, {}).queryKey,
+    );
     return {
-      locale,
-      isAuthenticated: !!token,
-      token,
+      locale: getDetectedLocale(),
+      isAuthenticated: cachedProfile != null,
+      token: null,
     };
   },
   head: (opts) => {
