@@ -1,10 +1,10 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { noIndexHeaders } from "@/lib/robots";
+import { preloadPrivateProfile } from "@/lib/convexPrefetch.functions";
 
 // Server function to check authentication
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -36,8 +36,7 @@ export const Route = createFileRoute("/_auth")({
       opts.context.convexClient.setAuth(async () => token);
     }
 
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    const profileHandle = await preloadPrivateProfile();
     const existingProfile = profileHandle.initialData;
     const profile =
       existingProfile ??

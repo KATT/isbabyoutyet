@@ -33,6 +33,7 @@ import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
+import { preloadPublicBaby } from "@/lib/convexPrefetch.functions";
 
 const TIMELINE_PAGE_SIZE = 20;
 
@@ -43,9 +44,10 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
+    const baby = await preloadPublicBaby({
+      data: {
+        id: opts.params.publicId,
+      },
     });
     const babyDoc = baby.initialData;
     if (!babyDoc) {
@@ -59,13 +61,11 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
-    return { locale: babyDoc.resolvedLocale };
+    return { locale: babyDoc.resolvedLocale, baby };
   },
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
+    const babyHandle = opts.context.baby;
     const babyDoc = babyHandle.initialData;
     if (!babyDoc) {
       throw notFound();
