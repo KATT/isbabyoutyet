@@ -90,33 +90,19 @@ async function jpegAndThumbnail(buffer: Buffer) {
   return { photo, thumbnail };
 }
 
-async function uploadBytes(opts: {
-  bytes: Buffer;
-  contentType: string;
-  extraConvexArgs: string[];
-}): Promise<string> {
-  const uploadUrl = convexRun({
-    functionName: "homepageDemo:generateUploadUrl",
-    args: {},
+function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }): string {
+  const storageId = convexRun({
+    functionName: "homepageDemo:storePhoto",
+    args: {
+      bytes: { $bytes: opts.bytes.toString("base64") },
+      contentType: "image/jpeg",
+    },
     extraConvexArgs: opts.extraConvexArgs,
   });
-  if (typeof uploadUrl !== "string") {
-    throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
+  if (typeof storageId !== "string") {
+    throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
   }
-
-  const response = await fetch(uploadUrl, {
-    method: "POST",
-    headers: { "Content-Type": opts.contentType },
-    body: new Uint8Array(opts.bytes),
-  });
-  if (!response.ok) {
-    throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
-  }
-  const payload = (await response.json()) as { storageId?: string };
-  if (!payload.storageId) {
-    throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
-  }
-  return payload.storageId;
+  return storageId;
 }
 
 export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
@@ -146,14 +132,12 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
 
   for (const photo of photosOnDisk) {
     const prepared = await jpegAndThumbnail(photo.buffer);
-    const photoId = await uploadBytes({
+    const photoId = uploadBytes({
       bytes: prepared.photo,
-      contentType: "image/jpeg",
       extraConvexArgs,
     });
-    const thumbnailId = await uploadBytes({
+    const thumbnailId = uploadBytes({
       bytes: prepared.thumbnail,
-      contentType: "image/jpeg",
       extraConvexArgs,
     });
     photos[photo.key] = { photoId, thumbnailId };
