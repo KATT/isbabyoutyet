@@ -13,6 +13,7 @@
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
     "checks": "turbo run format lint-fix typecheck test:coverage knip"
   },
