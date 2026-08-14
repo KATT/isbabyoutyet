@@ -4,7 +4,8 @@ export function toBabyDto(baby: Doc<"baby">) {
   const {
     userId: _userId,
     ownerTokenIdentifier: _ownerTokenIdentifier,
-    ...babyWithoutAuthIdentity
+    lastActivityAt: _lastActivityAt,
+    ...publicBaby
   } = baby;
-  return babyWithoutAuthIdentity;
+  return publicBaby;
 }

@@ -44,10 +44,13 @@ async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string)
   };
 }
 
-async function findActiveInvite(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">, email: string) {
+async function findActiveInvite(
+  ctx: QueryCtx | MutationCtx,
+  opts: { babyId: Id<"baby">; email: string },
+) {
   const invites = await ctx.db
     .query("babyCoParentInvites")
-    .withIndex("by_babyId_and_email", (q) => q.eq("babyId", babyId).eq("email", email))
+    .withIndex("by_babyId_and_email", (q) => q.eq("babyId", opts.babyId).eq("email", opts.email))
     .order("desc")
     .take(32);
   return invites.find(isActive) ?? null;
@@ -90,7 +93,9 @@ export const myAccess = query({
     }
 
     const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
-    const isCoParent = !isOwner && (await findActiveCoParent(ctx, args.babyId, caller)) != null;
+    const isCoParent =
+      !isOwner &&
+      (await findActiveCoParent(ctx, { babyId: args.babyId, identity: caller })) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
 });
@@ -152,16 +157,19 @@ export const invite = mutation({
       if (tokenIdentifier === baby.ownerTokenIdentifier) {
         throw new Error("That person already owns this page");
       }
-      const existing = await findActiveCoParent(ctx, args.babyId, {
-        authUserId: userId,
-        tokenIdentifier,
+      const existing = await findActiveCoParent(ctx, {
+        babyId: args.babyId,
+        identity: {
+          authUserId: userId,
+          tokenIdentifier,
+        },
       });
       if (existing) {
         throw new Error("That person is already a co-parent");
       }
 
       // Clear any stale pending invite for this email
-      const pending = await findActiveInvite(ctx, args.babyId, email);
+      const pending = await findActiveInvite(ctx, { babyId: args.babyId, email });
       if (pending) {
         await ctx.db.patch(pending._id, softDeletePatch());
       }
@@ -178,7 +186,7 @@ export const invite = mutation({
       return { status: "added" as const };
     }
 
-    const pending = await findActiveInvite(ctx, args.babyId, email);
+    const pending = await findActiveInvite(ctx, { babyId: args.babyId, email });
     if (pending) {
       throw new Error("An invite is already pending for that email");
     }
@@ -227,7 +235,10 @@ export const leave = mutation({
     if (!identity) throw new Error("Not authenticated");
     const caller = appIdentity(identity);
 
-    const membership = await findActiveCoParent(ctx, args.babyId, caller);
+    const membership = await findActiveCoParent(ctx, {
+      babyId: args.babyId,
+      identity: caller,
+    });
     if (!membership) {
       throw new Error("You are not a co-parent on this page");
     }
@@ -281,7 +292,10 @@ export const claimPendingInvites = mutation({
         continue;
       }
 
-      const existing = await findActiveCoParent(ctx, invite.babyId, caller);
+      const existing = await findActiveCoParent(ctx, {
+        babyId: invite.babyId,
+        identity: caller,
+      });
       if (!existing) {
         await ctx.db.insert("babyCoParents", {
           babyId: invite.babyId,

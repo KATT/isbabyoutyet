@@ -13,17 +13,19 @@ import { requiredEnv } from "./requiredEnv";
 
 async function sendNotificationToSubscription(
   ctx: ActionCtx,
-  subscription: {
-    endpoint: string;
-    p256dh: string;
-    auth: string;
-  },
-  payload: {
-    title: string;
-    body: string;
-    url: string;
-    icon?: string;
-    tag?: string;
+  opts: {
+    subscription: {
+      endpoint: string;
+      p256dh: string;
+      auth: string;
+    };
+    payload: {
+      title: string;
+      body: string;
+      url: string;
+      icon?: string;
+      tag?: string;
+    };
   },
 ): Promise<boolean> {
   webPush.setVapidDetails(
@@ -33,14 +35,14 @@ async function sendNotificationToSubscription(
   );
   try {
     const pushSubscription = {
-      endpoint: subscription.endpoint,
+      endpoint: opts.subscription.endpoint,
       keys: {
-        p256dh: subscription.p256dh,
-        auth: subscription.auth,
+        p256dh: opts.subscription.p256dh,
+        auth: opts.subscription.auth,
       },
     };
 
-    await webPush.sendNotification(pushSubscription, JSON.stringify(payload));
+    await webPush.sendNotification(pushSubscription, JSON.stringify(opts.payload));
     return true;
   } catch (error) {
     // Handle specific error types
@@ -49,7 +51,7 @@ async function sendNotificationToSubscription(
       if ("statusCode" in error && (error.statusCode === 410 || error.statusCode === 404)) {
         // Delete invalid subscription
         await ctx.runMutation(internal.pushSubscriptions.removeByEndpoint, {
-          endpoint: subscription.endpoint,
+          endpoint: opts.subscription.endpoint,
         });
       }
     }
@@ -74,7 +76,11 @@ export const sendNotification = internalAction({
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
-    const message = getPushMessage(args.locale, args.status, args.babyName);
+    const message = getPushMessage({
+      locale: args.locale,
+      status: args.status,
+      babyName: args.babyName,
+    });
     const body = args.customMessage || message.body;
 
     const url = `/baby/${args.publicId}`;
@@ -92,14 +98,13 @@ export const sendNotification = internalAction({
       );
       const results = await Promise.allSettled(
         subscriptions.page.map((subscription) =>
-          sendNotificationToSubscription(
-            ctx,
-            {
+          sendNotificationToSubscription(ctx, {
+            subscription: {
               endpoint: subscription.endpoint,
               p256dh: subscription.p256dh,
               auth: subscription.auth,
             },
-            {
+            payload: {
               title: message.title,
               body,
               url,
@@ -107,7 +112,7 @@ export const sendNotification = internalAction({
               // Unique tag per baby to prevent notifications from different babies replacing each other
               tag: `baby-update-${args.publicId}-${args.status}`,
             },
-          ),
+          }),
         ),
       );
       const pageSuccessCount = results.filter(

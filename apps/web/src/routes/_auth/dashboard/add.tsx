@@ -52,7 +52,7 @@ function AddBabyPage() {
           variant="outline"
           size="sm"
           className="mb-8 rounded-full border-2 font-bold"
-          render={<Link to="/dashboard" preload="viewport" />}
+          render={<Link to="/dashboard" />}
           nativeButton={false}
         >
           <ArrowLeft className="w-4 h-4" />

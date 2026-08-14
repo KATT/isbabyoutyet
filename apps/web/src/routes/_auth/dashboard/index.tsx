@@ -4,7 +4,7 @@ import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
+import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
@@ -34,6 +34,7 @@ function DashboardPage() {
   const auth = useConvexAuth();
   const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
   const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
+  const profile = useQuery(api.profile.get, auth.isAuthenticated ? {} : "skip");
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
@@ -66,10 +67,22 @@ function DashboardPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
+            {profile?.isAdmin ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full font-bold"
+                render={<Link to="/dashboard/admin" preload="viewport" />}
+                nativeButton={false}
+              >
+                <Shield className="w-4 h-4" />
+                {t("Admin")}
+              </Button>
+            ) : null}
             <Button
               size="sm"
               className="rounded-full font-bold"
-              render={<Link to="/dashboard/add" preload="viewport" />}
+              render={<Link to="/dashboard/add" />}
               nativeButton={false}
             >
               <Plus className="w-4 h-4" />
@@ -183,7 +196,7 @@ export function DashboardBabyList(props: {
         <Button
           size="lg"
           className="mt-6 rounded-full font-extrabold pop-shadow"
-          render={<Link to="/dashboard/add" preload="viewport" />}
+          render={<Link to="/dashboard/add" />}
           nativeButton={false}
           data-tour-id="add_baby"
         >

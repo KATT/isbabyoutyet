@@ -283,6 +283,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
     });
   });
 
@@ -323,6 +324,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
     });
   });
 
@@ -346,6 +348,7 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
     });
   });
 

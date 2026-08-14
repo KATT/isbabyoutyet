@@ -17,6 +17,7 @@ import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
 import { Route as BabyPublicIdRouteImport } from "./routes/baby/$publicId";
 import { Route as AuthDashboardIndexRouteImport } from "./routes/_auth/dashboard/index";
 import { Route as AuthDashboardAddRouteImport } from "./routes/_auth/dashboard/add";
+import { Route as AuthDashboardAdminRouteImport } from "./routes/_auth/dashboard/admin";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as BabyManifest_idRouteImport } from "./routes/baby/manifest/$_id";
 import { Route as DemoApiNamesRouteImport } from "./routes/demo/api.names";
@@ -64,6 +65,11 @@ const AuthDashboardIndexRoute = AuthDashboardIndexRouteImport.update({
 const AuthDashboardAddRoute = AuthDashboardAddRouteImport.update({
   id: "/dashboard/add",
   path: "/dashboard/add",
+  getParentRoute: () => AuthRouteRoute,
+} as any);
+const AuthDashboardAdminRoute = AuthDashboardAdminRouteImport.update({
+  id: "/dashboard/admin",
+  path: "/dashboard/admin",
   getParentRoute: () => AuthRouteRoute,
 } as any);
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -119,6 +125,7 @@ export interface FileRoutesByFullPath {
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
+  "/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/demo/api/names": typeof DemoApiNamesRoute;
@@ -137,6 +144,7 @@ export interface FileRoutesByTo {
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
+  "/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/demo/api/names": typeof DemoApiNamesRoute;
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
   "/_auth/dashboard/add": typeof AuthDashboardAddRoute;
+  "/_auth/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/demo/api/names": typeof DemoApiNamesRoute;
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | "/auth/signup"
     | "/baby/$publicId"
     | "/dashboard/add"
+    | "/dashboard/admin"
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/demo/api/names"
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | "/auth/signup"
     | "/baby/$publicId"
     | "/dashboard/add"
+    | "/dashboard/admin"
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/demo/api/names"
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | "/auth/signup"
     | "/baby/$publicId"
     | "/_auth/dashboard/add"
+    | "/_auth/dashboard/admin"
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/demo/api/names"
@@ -302,6 +314,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthDashboardAddRouteImport;
       parentRoute: typeof AuthRouteRoute;
     };
+    "/_auth/dashboard/admin": {
+      id: "/_auth/dashboard/admin";
+      path: "/dashboard/admin";
+      fullPath: "/dashboard/admin";
+      preLoaderRoute: typeof AuthDashboardAdminRouteImport;
+      parentRoute: typeof AuthRouteRoute;
+    };
     "/api/auth/$": {
       id: "/api/auth/$";
       path: "/api/auth/$";
@@ -370,11 +389,13 @@ declare module "@tanstack/react-router" {
 
 interface AuthRouteRouteChildren {
   AuthDashboardAddRoute: typeof AuthDashboardAddRoute;
+  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute;
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute;
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDashboardAddRoute: AuthDashboardAddRoute,
+  AuthDashboardAdminRoute: AuthDashboardAdminRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,
 };
 

@@ -86,7 +86,6 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
     <Link
       to="/baby/$publicId"
       params={{ publicId: baby.publicId }}
-      preload="viewport"
       className="group"
       data-tour-id={props.dataTourId}
     >

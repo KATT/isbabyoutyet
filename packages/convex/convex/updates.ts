@@ -64,7 +64,10 @@ export const post = mutationWithTriggers({
       if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {
         throw new Error("Only a future status can be marked");
       }
-      const existing = await findMilestoneUpdate(ctx, args.babyId, milestone);
+      const existing = await findMilestoneUpdate(ctx, {
+        babyId: args.babyId,
+        milestone: milestone,
+      });
       if (existing) {
         throw new Error("This milestone is already marked");
       }

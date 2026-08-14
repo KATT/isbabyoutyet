@@ -72,7 +72,7 @@ test("welcome tour renders overview slides and can be skipped", async () => {
     <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
   );
 
-  expect(screen.getByText(/welcome — here's the idea/i)).toBeTruthy();
+  expect(screen.getByText(/welcome! here's the idea/i)).toBeTruthy();
   expect(screen.getByText(/create a baby page/i)).toBeTruthy();
   expect(screen.getByRole("button", { name: /^next$/i })).toBeTruthy();
 

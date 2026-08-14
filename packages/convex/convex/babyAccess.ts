@@ -8,23 +8,28 @@ type DbCtx = QueryCtx | MutationCtx;
 
 export async function findActiveCoParent(
   ctx: DbCtx,
-  babyId: Id<"baby">,
-  identity: AppIdentity,
+  opts: { babyId: Id<"baby">; identity: AppIdentity },
 ): Promise<Doc<"babyCoParents"> | null> {
   const rows = await ctx.db
     .query("babyCoParents")
     .withIndex("by_babyId_and_tokenIdentifier", (q) =>
-      q.eq("babyId", babyId).eq("tokenIdentifier", identity.tokenIdentifier),
+      q.eq("babyId", opts.babyId).eq("tokenIdentifier", opts.identity.tokenIdentifier),
     )
     .order("desc")
     .take(32);
   return rows.find(isActive) ?? null;
 }
 
-export async function canManageBaby(ctx: DbCtx, baby: Doc<"baby">, identity: AppIdentity) {
-  const isOwner = baby.ownerTokenIdentifier === identity.tokenIdentifier;
+export async function canManageBaby(
+  ctx: DbCtx,
+  opts: { baby: Doc<"baby">; identity: AppIdentity },
+) {
+  const isOwner = opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier;
   if (isOwner) return true;
-  const coParent = await findActiveCoParent(ctx, baby._id, identity);
+  const coParent = await findActiveCoParent(ctx, {
+    babyId: opts.baby._id,
+    identity: opts.identity,
+  });
   return coParent != null;
 }
 
@@ -46,7 +51,10 @@ export async function requireBabyManager(ctx: DbCtx, babyId: Id<"baby">) {
 
   const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
   if (!isOwner) {
-    const coParent = await findActiveCoParent(ctx, babyId, caller);
+    const coParent = await findActiveCoParent(ctx, {
+      babyId,
+      identity: caller,
+    });
     if (!coParent) {
       throw new Error("Not authorized");
     }
