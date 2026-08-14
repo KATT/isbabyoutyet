@@ -48,10 +48,13 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 70.36,
-        branches: 63.51,
-        functions: 68.14,
-        lines: 70.83,
+        // Lowered alongside removing the covered Initiated* handle code and
+        // its tests (deleting tested code shrinks the ratio); the ratchet
+        // snaps back to exact values on the next run.
+        statements: 70.28,
+        branches: 63.46,
+        functions: 67.86,
+        lines: 70.75,
       },
     },
   },

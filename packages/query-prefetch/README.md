@@ -1,10 +1,10 @@
 # Query Prefetching
 
-Start TanStack queries in a React Router `clientLoader`, hand the component a tiny
-serializable **handle**, and rebuild the exact same query options at the read
-site. The result: navigation is never blocked on data you don't need up front,
-loader data stays serializable, and the loader and component share one query
-factory — so the data type flows end to end with zero duplication.
+Await TanStack queries in a React Router `clientLoader`, hand the component a
+tiny serializable **handle**, and rebuild the exact same query options at the
+read site. The result: loader data stays serializable, revisits are free via
+the query cache, and the loader and component share one query factory — so the
+data type flows end to end with zero duplication.
 
 ## TL;DR
 
@@ -16,10 +16,10 @@ const postById = (input: { postId: string }) =>
     queryFn: () => fetchPost(input),
   });
 
-// 2. Start it in the loader (fire-and-forget) and return the handle.
+// 2. Await it in the loader and return the handle.
 export async function clientLoader() {
-  const initiator = getQueryInitiator(getQueryClient(), { onError });
-  return { post: initiator.ensureQueryData(postById, { postId }) };
+  const preloader = getQueryPreloader(getQueryClient());
+  return { post: await preloader.ensureQueryData(postById, { postId }) };
 }
 
 // 3. Rebuild options from the handle at the read site.
@@ -32,11 +32,8 @@ function PostRoute() {
 
 ## Why this pattern
 
-- **Non-blocking by default** — `getQueryInitiator` warms the cache without
-  `await`, so the route renders immediately and components suspend only where
-  data is actually read.
 - **Loader data proves intent** — the returned handles are the route's data
-  contract; they show exactly which queries were started or fully awaited.
+  contract; they show exactly which queries the route depends on.
 - **Serializable** — handles store only the factory **input** plus a type-only
   brand, never live query options or functions.
 - **One factory, one data type** — the loader and the component call the same
@@ -54,52 +51,25 @@ query factory ──(loader)──▶ handle ──(component)──▶ rebuilt 
 A **handle** is the only thing that crosses the loader→component boundary:
 
 ```ts
-interface InitiatedQuery<TFactory> {
+interface PreloadedQuery<TFactory> {
   readonly input?: QueryInput<TFactory>; // the factory's single argument
-}
-
-interface PreloadedQuery<TFactory> extends InitiatedQuery<TFactory> {
-  readonly initialData: QueryDataOf<TFactory>; // present only when awaited
+  readonly initialData: QueryDataOf<TFactory>; // the awaited loader result
 }
 ```
 
-`preloadedQueryOptions(factory, handle)` rebuilds `factory(handle.input)`. When the
-handle is preloaded, the rebuilt options also carry `initialData`, so a
-non-suspense `useQuery(...)` infers defined `data`.
+`preloadedQueryOptions(factory, handle)` rebuilds `factory(handle.input)` with the
+handle's `initialData` attached, so a non-suspense `useQuery(...)` infers
+defined `data`.
 
 > **Factories take 0 or 1 argument.** `QueryOptionsFactory` is typed to reject
 > any factory with two or more parameters — the single argument is the query's
 > `input`. No-arg factories are fine; pass nothing (or `undefined`).
 
-## Initiating queries (fire-and-forget)
+## Preloading queries
 
-Use `getQueryInitiator(queryClient, { onError })` for cache warming that must not
-block navigation. Read the handle with `useSuspenseQuery(...)`.
-
-```tsx
-export async function clientLoader() {
-  const initiator = getQueryInitiator(getQueryClient(), { onError });
-  return {
-    post: initiator.ensureQueryData(postById, { postId }),
-    settings: initiator.ensureQueryData(accountSettings), // no-arg factory
-  };
-}
-
-function PostRoute() {
-  const loaderData = useLoaderData<typeof clientLoader>();
-  const postQuery = useSuspenseQuery(preloadedQueryOptions(postById, loaderData.post));
-  return <Post post={postQuery.data} />;
-}
-```
-
-`onError` receives `{ error }` for any rejected prefetch — wire it to your error
-reporter (e.g. `captureError`). Rejected prefetches never throw out of the loader.
-
-## Blocking queries (preloading)
-
-Use `getQueryPreloader(queryClient)` when a later query's input depends on
-already-loaded data, or when the route genuinely should not render without the
-data. The awaited handle carries `initialData`.
+Use `getQueryPreloader(queryClient)` to await queries in the loader. The
+awaited handle carries `initialData`, and the query cache keeps repeat
+navigations free.
 
 ```tsx
 export async function clientLoader() {
@@ -152,8 +122,8 @@ just to keep navigation alive.
 
 ```tsx
 export async function clientLoader() {
-  const initiator = getQueryInitiator(getQueryClient(), { onError });
-  return { posts: initiator.ensureInfiniteQueryData(postsInfinite, { authorId }) };
+  const preloader = getQueryPreloader(getQueryClient());
+  return { posts: await preloader.ensureInfiniteQueryData(postsInfinite, { authorId }) };
 }
 
 function PostsRoute() {
@@ -182,7 +152,7 @@ stored input before the options are rebuilt:
 const postsInfinite = (input: { authorId: string; sort: "newest" | "oldest" }) =>
   infiniteQueryOptions({ queryKey: ["posts", input] /* ... */ });
 
-function PostList(props: { posts: InitiatedInfiniteQuery<typeof postsInfinite> }) {
+function PostList(props: { posts: PreloadedInfiniteQuery<typeof postsInfinite> }) {
   // The sort is a local toggle, so it can't come from the loader. Seed it from
   // the handle's input so the first render matches the prefetched variant.
   const [sort, setSort] = useState(props.posts.input?.sort ?? "newest");
@@ -197,11 +167,10 @@ function PostList(props: { posts: InitiatedInfiniteQuery<typeof postsInfinite> }
 How it behaves:
 
 - Remixing changes the query key, so the read fetches the remixed variant.
-- On the **unremixed first render** the key matches the initiated query, so the
-  prefetched data is reused with no extra round trip.
-- For **preloaded** handles, `initialData` corresponds to the handle's original
-  input — only remix a preloaded handle when the first render is the identity
-  transform.
+- On the **unremixed first render** the key matches the preloaded query, so the
+  loader data is reused with no extra round trip.
+- `initialData` corresponds to the handle's original input — only remix a
+  handle when the first render is the identity transform.
 
 ## Component-side waterfalls
 
@@ -209,45 +178,32 @@ How it behaves:
 > **Last resort — prefer prefetching.** A waterfall is a second round trip keyed
 > off data only known at render time. First try to read the dependency from the
 > route/search params (so the loader can prefetch it), or get the backend to
-> return it alongside its dependency. Use a waterfall **only** when the input is
-> genuinely unknowable until render.
+> return it alongside its dependency.
 
 When a query's input is only known at render time — e.g. an id pulled from a
-parent query's result — the loader can't start it. Use `useInitiateQuery` /
-`useInitiateInfiniteQuery` to start it during render and get back a handle, so
-the rest of the tree consumes it just like a loader handle:
+parent query's result — the loader can't start it. Suspend on the query
+directly instead of going through a handle:
 
 ```tsx
-function PostRoute(props: { post: InitiatedQuery<typeof postById> }) {
+function PostRoute(props: { post: PreloadedQuery<typeof postById> }) {
   const postQuery = useSuspenseQuery(preloadedQueryOptions(postById, props.post));
   const { authorId } = postQuery.data; // only known once the post resolves
 
   // authorId is render-time data, so the loader couldn't have started this.
-  const author = useInitiateQuery(authorById, { authorId });
-  const authorQuery = useSuspenseQuery(preloadedQueryOptions(authorById, author));
+  const authorQuery = useSuspenseQuery(authorById({ authorId }));
   // ...
 }
 ```
-
-The `Waterfall` name is the warning: reach for it only when the input can't be
-known earlier. If it can, initiate the query in the loader instead.
 
 ## Producing handles as high as possible
 
 A child that reads a query should receive a **handle**, not fetch for itself —
 that keeps it a pure consumer and pushes the fetch as early as possible. Create
-the handle at the highest point that knows its input:
-
-1. **In the loader (preferred)** when the input is known from route/search params.
-2. **Via a waterfall** in the topmost component that has the input, when it's only
-   known at render time (a parent query's result, a dynamically chosen id).
-
-The consumer is identical either way — it reads the handle and remixes any local
-state:
+the handle in the loader, which knows the input from the route/search params:
 
 ```tsx
 // Pure consumer: receives the handle, owns only the local sort.
-function CommentList(props: { comments: InitiatedInfiniteQuery<typeof commentsInfinite> }) {
+function CommentList(props: { comments: PreloadedInfiniteQuery<typeof commentsInfinite> }) {
   const [sort, setSort] = useState(props.comments.input?.sort ?? "newest");
   const commentsQuery = useSuspenseInfiniteQuery(
     preloadedInfiniteQueryOptions(commentsInfinite, props.comments, (input) => ({
@@ -258,11 +214,11 @@ function CommentList(props: { comments: InitiatedInfiniteQuery<typeof commentsIn
   // ...
 }
 
-// Producer A — loader knows the postId from the route, so it prefetches.
+// Producer — the loader knows the postId from the route, so it preloads.
 export async function clientLoader({ params }) {
-  const initiator = getQueryInitiator(getQueryClient(), { onError });
+  const preloader = getQueryPreloader(getQueryClient());
   return {
-    comments: initiator.ensureInfiniteQueryData(commentsInfinite, {
+    comments: await preloader.ensureInfiniteQueryData(commentsInfinite, {
       postId: params.postId,
       sort: "newest",
     }),
@@ -272,38 +228,24 @@ function PostRoute() {
   const loaderData = useLoaderData<typeof clientLoader>();
   return <CommentList comments={loaderData.comments} />;
 }
-
-// Producer B — no loader owns this dialog; the postId is only known once a parent
-// query resolves, so the handle is created with a waterfall at that point.
-function PostPreviewDialog(props: { post: InitiatedQuery<typeof postById> }) {
-  const postQuery = useSuspenseQuery(preloadedQueryOptions(postById, props.post));
-  const comments = useInitiateInfiniteQuery(commentsInfinite, {
-    postId: postQuery.data.id,
-    sort: "newest",
-  });
-  return <CommentList comments={comments} />;
-}
 ```
 
 ## API reference
 
-| Export                                                     | Use                                                                                       |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| `getQueryInitiator(queryClient, { onError })`              | Fire-and-forget cache warming → `InitiatedQuery` / `InitiatedInfiniteQuery` handles       |
-| `getQueryPreloader(queryClient)`                           | Awaited prefetch → `PreloadedQuery` / `PreloadedInfiniteQuery` handles with `initialData` |
-| `preloadedQueryOptions(factory, handle, remix?)`           | Rebuild query options from a handle; optional `remix` transforms the input                |
-| `preloadedInfiniteQueryOptions(factory, handle, remix?)`   | Infinite-query counterpart                                                                |
-| `useInitiateQuery(factory, input?)`                        | Start a query during render (render-time input) → handle                                  |
-| `useInitiateInfiniteQuery(factory, input?)`                | Infinite-query counterpart                                                                |
-| `testInitiatedQuery` / `testPreloadedQuery` / `*Infinite*` | `./test-helpers` builders for typed handles in tests                                      |
+| Export                                                   | Use                                                                                       |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `getQueryPreloader(queryClient)`                         | Awaited prefetch → `PreloadedQuery` / `PreloadedInfiniteQuery` handles with `initialData` |
+| `preloadedQueryOptions(factory, handle, remix?)`         | Rebuild query options from a handle; optional `remix` transforms the input                |
+| `preloadedInfiniteQueryOptions(factory, handle, remix?)` | Infinite-query counterpart                                                                |
+| `allKeyed(promises)`                                     | Await an object of promises, preserving keys                                              |
+| `testPreloadedQuery` / `testPreloadedInfiniteQuery`      | `./test-helpers` builders for typed handles in tests                                      |
 
-Handle types: `InitiatedQuery`, `PreloadedQuery`, `InitiatedInfiniteQuery`,
-`PreloadedInfiniteQuery`, plus the `QueryOptionsFactory` constraint.
+Handle types: `PreloadedQuery`, `PreloadedInfiniteQuery`, plus the
+`QueryOptionsFactory` constraint.
 
 ## Source files
 
-- `src/query-loader.ts` — `getQueryInitiator(...)` and `getQueryPreloader(...)`
+- `src/query-loader.ts` — `getQueryPreloader(...)`
 - `src/query-options.ts` — `preloadedQueryOptions(...)` and `preloadedInfiniteQueryOptions(...)` (incl. `remix`)
-- `src/query-initiate-hooks.ts` — `useInitiateQuery(...)` and `useInitiateInfiniteQuery(...)`
 - `src/test-helpers.ts` — typed handle builders (`./test-helpers` entry point)
 - `src/types.ts` — branded handle types and the `QueryOptionsFactory` / `QueryInput` helpers

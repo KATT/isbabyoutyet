@@ -8,7 +8,7 @@ import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
 import * as z from "zod";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -18,9 +18,7 @@ type CoParentsSettingsProps = {
   babyId: Id<"baby">;
   /** Only the owner can invite/remove; co-parents see a read-only list. */
   isOwner: boolean;
-  listing:
-    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
-    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
+  listing: PreloadedConvexQuery<typeof api.coParents.listForBaby>;
 };
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {

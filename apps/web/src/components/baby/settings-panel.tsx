@@ -44,7 +44,7 @@ import {
 } from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
@@ -68,9 +68,7 @@ type SettingsPanelProps = {
   coParents: {
     babyId: Id<"baby">;
     isOwner: boolean;
-    listing:
-      | PreloadedConvexQuery<typeof api.coParents.listForBaby>
-      | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
+    listing: PreloadedConvexQuery<typeof api.coParents.listForBaby>;
   } | null;
 };
 

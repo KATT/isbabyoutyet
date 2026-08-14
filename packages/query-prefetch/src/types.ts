@@ -1,7 +1,7 @@
 import type { InferDataFromTag, QueryKey } from "@tanstack/react-query";
 
-declare const initiatedQueryBrand: unique symbol;
-declare const initiatedInfiniteQueryBrand: unique symbol;
+declare const preloadedQueryBrand: unique symbol;
+declare const preloadedInfiniteQueryBrand: unique symbol;
 
 /**
  * The minimal shape every TanStack `queryOptions(...)` /
@@ -39,24 +39,6 @@ export type QueryInputArgs<TFactory extends QueryOptionsFactory> =
     : [input?: QueryInput<TFactory>];
 
 /**
- * Fire-and-forget loader handle. The query has been started, but data is not
- * guaranteed by render time; component reads may still suspend or be pending.
- */
-export interface InitiatedQuery<TFactory extends QueryOptionsFactory> {
-  readonly input?: QueryInput<TFactory>;
-  readonly [initiatedQueryBrand]: TFactory;
-}
-
-/**
- * Fire-and-forget infinite-query loader handle. The initial page has been
- * started, but data is not guaranteed by render time.
- */
-export interface InitiatedInfiniteQuery<TFactory extends QueryOptionsFactory> {
-  readonly input?: QueryInput<TFactory>;
-  readonly [initiatedInfiniteQueryBrand]: TFactory;
-}
-
-/**
  * Data type inferred from a query's `queryFn`. Used as the fallback for
  * {@link QueryDataOf} because the `queryKey` `DataTag`'s unique-symbol brand
  * does not always survive declaration emit across package boundaries (e.g. the
@@ -83,18 +65,18 @@ export type QueryDataOf<TOptions extends AnyQueryOptions> = InferDataFromTag<
  * Awaited loader handle. The query completed in the loader and carries
  * `initialData`, allowing non-suspense `useQuery(...)` reads to infer data.
  */
-export interface PreloadedQuery<
-  TFactory extends QueryOptionsFactory,
-> extends InitiatedQuery<TFactory> {
+export interface PreloadedQuery<TFactory extends QueryOptionsFactory> {
+  readonly input?: QueryInput<TFactory>;
   readonly initialData: QueryDataOf<ReturnType<TFactory>>;
+  readonly [preloadedQueryBrand]: TFactory;
 }
 
 /**
  * Awaited infinite-query loader handle. The query completed in the loader and
  * carries the `InfiniteData` wrapper as `initialData`.
  */
-export interface PreloadedInfiniteQuery<
-  TFactory extends QueryOptionsFactory,
-> extends InitiatedInfiniteQuery<TFactory> {
+export interface PreloadedInfiniteQuery<TFactory extends QueryOptionsFactory> {
+  readonly input?: QueryInput<TFactory>;
   readonly initialData: QueryDataOf<ReturnType<TFactory>>;
+  readonly [preloadedInfiniteQueryBrand]: TFactory;
 }

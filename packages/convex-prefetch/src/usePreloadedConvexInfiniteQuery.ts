@@ -6,7 +6,7 @@ import {
 import type { FunctionReturnType, PaginationOptions } from "convex/server";
 import { convexInfiniteQuery } from "./convexInfiniteQuery.js";
 import type { PaginatedQueryReference, PaginationArgs } from "./convexInfiniteQuery.js";
-import type { InitiatedConvexInfiniteQuery, PreloadedConvexInfiniteQuery } from "./handles.js";
+import type { PreloadedConvexInfiniteQuery } from "./handles.js";
 import { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages.js";
 
 /**
@@ -28,7 +28,7 @@ import { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages.js";
 export function usePreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryReference>(
   funcRef: TQuery,
   opts: {
-    handle: InitiatedConvexInfiniteQuery<TQuery> | PreloadedConvexInfiniteQuery<TQuery>;
+    handle: PreloadedConvexInfiniteQuery<TQuery>;
     remixArgs: ((args: PaginationArgs<TQuery>) => PaginationArgs<TQuery>) | null;
   },
 ): UseSuspenseInfiniteQueryResult<
@@ -40,8 +40,7 @@ export function usePreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryRef
     args,
     initialNumItems: opts.handle.numItems,
   });
-  const optionsWithInitialData =
-    "initialData" in opts.handle ? { ...options, initialData: opts.handle.initialData } : options;
+  const optionsWithInitialData = { ...options, initialData: opts.handle.initialData };
 
   const result = useSuspenseInfiniteQuery(
     optionsWithInitialData as never,

@@ -20,21 +20,11 @@ export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    // SSR awaits so the first paint is complete. Client navigations only
-    // start the fetches: the navigation commits immediately and the page's
-    // suspense reads block (against warm cache after the first visit).
-    if (typeof window === "undefined") {
-      return await allKeyed({
-        babies: preloader.ensureQueryData(api.baby.listByUser, {}),
-        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-        profile: preloader.ensureQueryData(api.profile.get, {}),
-      });
-    }
-    return {
-      babies: preloader.initiateQueryData(api.baby.listByUser, {}),
-      onboarding: preloader.initiateQueryData(api.onboarding.getMine, {}),
-      profile: preloader.initiateQueryData(api.profile.get, {}),
-    };
+    return await allKeyed({
+      babies: preloader.ensureQueryData(api.baby.listByUser, {}),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
+    });
   },
 });
 

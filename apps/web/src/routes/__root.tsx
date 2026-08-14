@@ -220,7 +220,7 @@ function RootComponent() {
   );
 }
 
-function NotFoundComponent() {
+export function NotFoundComponent() {
   const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">

@@ -154,9 +154,10 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   expect(view.getByText("Data prevista: 1 de setembro de 2026")).toBeTruthy();
 });
 
-// --- Route loader: client navigations only await the guard queries ---
+// --- Route loader: awaited handles plus the owner/visitor branching ---
 
 const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
+const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
@@ -176,6 +177,12 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 }
 
 async function runBabyLoader(handlers: Record<string, unknown>) {
+  // The infinite timeline query fetches through the registered Convex client.
+  const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
+  registerConvexInfiniteQueryClient({
+    convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
+    serverHttpClient: undefined,
+  } as never);
   const routeModule = await import("@/routes/baby/$publicId");
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: { queryClient: QueryClient };
@@ -187,36 +194,40 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
   });
 }
 
-test("client loader gives visitors initiated shared handles and no owner-only data", async () => {
+test("loader gives visitors awaited shared handles and no owner-only data", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: false, isOwner: false },
+    "timeline:listByBaby": EMPTY_PAGE,
   });
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
-  // Shared queries are initiated, not awaited: handles carry only their input.
-  expect(result.timeline).toEqual({ input: { babyId: "baby-1" }, numItems: 20 });
-  expect(result.latestUpdate).toEqual({ input: { babyId: "baby-1" } });
+  expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toBeNull();
   expect(result.subscriptions).toBeNull();
   expect(result.onboarding).toBeNull();
   expect(result.coParentsList).toBeNull();
 });
 
-test("client loader gives owners initiated owner-only handles", async () => {
+test("loader gives owners awaited owner-only handles", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: true, isOwner: true },
+    "timeline:listByBaby": EMPTY_PAGE,
+    "coParents:listForBaby": { coParents: [], invites: [] },
   });
 
-  expect(result.scheduledNotifications).toEqual({ input: { babyId: "baby-1" } });
-  expect(result.subscriptions).toEqual({ input: { babyId: "baby-1" } });
-  expect(result.onboarding).toEqual({ input: {} });
-  expect(result.coParentsList).toEqual({ input: { babyId: "baby-1" } });
+  expect(result.scheduledNotifications).toMatchObject({ input: { babyId: "baby-1" } });
+  expect(result.subscriptions).toMatchObject({ input: { babyId: "baby-1" } });
+  expect(result.onboarding).toMatchObject({ input: {} });
+  expect(result.coParentsList).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: { coParents: [], invites: [] },
+  });
 });
 
-test("client loader still 404s unknown babies", async () => {
+test("loader 404s unknown babies", async () => {
   const pending = runBabyLoader({ "baby:getByPublicId": null });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });

@@ -8,18 +8,7 @@ import {
   convexInfiniteQueryFn,
   registerConvexInfiniteQueryClient,
 } from "@workspace/convex-prefetch";
-import { Spinner } from "@workspace/ui/components/spinner";
 import { getDetectedLocale } from "./lib/i18n";
-
-// Suspense fallback for routes whose data is still streaming in after an
-// instant (non-blocking) client navigation.
-function RoutePending() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background bg-dots">
-      <Spinner className="size-8 text-primary" />
-    </div>
-  );
-}
 
 export function getRouter() {
   const convexUrl = import.meta.env.VITE_CONVEX_URL!;
@@ -51,9 +40,6 @@ export function getRouter() {
     // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
     // pages via the ensureQueryData prefetchers.
     defaultPreload: "viewport",
-    // Wraps every route in a Suspense boundary: client navigations commit
-    // immediately and this renders while the route's suspense queries load.
-    defaultPendingComponent: RoutePending,
     context: {
       queryClient,
       convexQueryClient,

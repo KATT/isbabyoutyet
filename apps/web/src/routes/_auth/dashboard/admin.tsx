@@ -90,33 +90,22 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const search = opts.deps;
-    const babiesQuery = {
-      args: {
-        sortBy: search.sort,
-        sortOrder: search.order,
-        hideDemo: search.hideDemo,
-      },
-      numItems: ADMIN_PAGE_SIZE,
-    };
-    const languagesQuery = { args: {}, numItems: ADMIN_PAGE_SIZE };
-    // SSR awaits for a complete first paint; client navigations commit
-    // immediately and the tables' suspense reads block instead.
-    if (typeof window === "undefined") {
-      return await allKeyed({
-        babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, babiesQuery),
-        languages: preloader.ensureInfiniteQueryData(
-          api.admin.listLanguageRequests,
-          languagesQuery,
-        ),
-      });
-    }
-    return {
-      babies: preloader.initiateInfiniteQueryData(api.admin.listBabies, babiesQuery),
-      languages: preloader.initiateInfiniteQueryData(
-        api.admin.listLanguageRequests,
-        languagesQuery,
-      ),
-    };
+    // Infinite queries stay blocking on the client too: the react-query cache
+    // makes revisits free, and suspense churn on paginated tables isn't worth it.
+    return await allKeyed({
+      babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
+        args: {
+          sortBy: search.sort,
+          sortOrder: search.order,
+          hideDemo: search.hideDemo,
+        },
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+      languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
+        args: {},
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+    });
   },
 });
 
