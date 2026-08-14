@@ -32,8 +32,7 @@ export async function canManageBaby(
 ) {
   const isOwner =
     opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier ||
-    (opts.baby.ownerTokenIdentifier === undefined &&
-      opts.baby.userId === opts.identity.authUserId);
+    (opts.baby.ownerTokenIdentifier === undefined && opts.baby.userId === opts.identity.authUserId);
   if (isOwner) return true;
   const coParent = await findActiveCoParent(ctx, {
     babyId: opts.baby._id,

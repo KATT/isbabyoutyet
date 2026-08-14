@@ -11,8 +11,7 @@ export async function getUserAdminFlag(ctx: Pick<QueryCtx, "db">, identity: AppI
     .unique();
   return (
     profile?.isAdmin === true &&
-    (profile.tokenIdentifier === undefined ||
-      profile.tokenIdentifier === identity.tokenIdentifier)
+    (profile.tokenIdentifier === undefined || profile.tokenIdentifier === identity.tokenIdentifier)
   );
 }
 
