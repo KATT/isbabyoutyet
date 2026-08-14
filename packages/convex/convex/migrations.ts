@@ -89,7 +89,7 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const isoDate = baby[fields.date];
     if (!isoDate) continue;
 
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
     if (existing) continue;
 
     const occurredAt = parseIsoMs(isoDate) ?? Date.now();
@@ -256,7 +256,7 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
     // No milestone date → no timeline row to carry the message. Keep it.
     if (!baby[fields.date]) continue;
 
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
     if (!existing) {
       // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
       // event time on occurredAt

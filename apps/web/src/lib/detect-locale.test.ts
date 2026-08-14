@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { resolveAcceptLanguage } from "./accept-language";
 import { detectRequestLocale } from "./detect-locale";
-import { getLanguageName } from "./i18n";
+import { getLanguageName, translate } from "./i18n";
 import { detectLocaleFromRequestHeaders } from "./locale-request-handler";
 
 test.each([
@@ -23,23 +23,35 @@ test("displays supported language names in the active language", () => {
   expect(getLanguageName("sv", "es").toLocaleLowerCase("es")).toContain("sueco");
 });
 
+test("keeps British and American English copy distinct", () => {
+  expect(translate("en-GB", "Gone to hospital")).toBe("Gone to hospital");
+  expect(translate("en-US", "Gone to hospital")).toBe("Gone to the hospital");
+  expect(translate("en-US", "Track the progress of labour and birth")).toBe(
+    "Follow labor and birth",
+  );
+  expect(
+    translate(
+      "en-US",
+      "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.",
+    ),
+  ).toBe("Pick soft pastels, bold colors or whatever feels like you.");
+});
+
 test("reads Accept-Language from the current request", () => {
   expect(
-    detectLocaleFromRequestHeaders(
-      undefined,
-      () => "es-ES,es;q=0.9",
-      () => undefined,
-    ),
+    detectLocaleFromRequestHeaders(undefined, {
+      readHeader: () => "es-ES,es;q=0.9",
+      readCookie: () => undefined,
+    }),
   ).toBe("es");
 });
 
 test("a saved locale takes precedence over Accept-Language", () => {
   expect(
-    detectLocaleFromRequestHeaders(
-      undefined,
-      () => "en-GB,en;q=0.9",
-      () => "sv",
-    ),
+    detectLocaleFromRequestHeaders(undefined, {
+      readHeader: () => "en-GB,en;q=0.9",
+      readCookie: () => "sv",
+    }),
   ).toBe("sv");
 });
 

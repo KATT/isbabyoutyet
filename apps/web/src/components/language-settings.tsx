@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionArgs } from "convex/server";
-import { Translate } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -24,17 +23,10 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
 import { Form, useZodForm } from "@/components/Form";
+import { LanguagePicker } from "@/components/language-picker";
 import type { TranslationFunction } from "@/lib/i18n";
-import { getLanguageName, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
 
 function languageRequestSchema(t: TranslationFunction) {
@@ -95,35 +87,19 @@ export function LanguageSettings() {
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
 
-  async function selectLocale(value: string | null) {
-    if (!value || !isSupportedLocale(value) || value === selectedLocale) {
-      return;
-    }
+  async function selectLocale(value: SupportedLocale) {
     await updateLocale({ locale: value });
     await setLocale(value);
   }
 
   return (
     <div className="flex items-center gap-2">
-      <Select
+      <LanguagePicker
         value={selectedLocale}
-        onValueChange={(value) => void selectLocale(value)}
         disabled={!profile}
-      >
-        <SelectTrigger aria-label={t("Profile language")}>
-          <Translate data-icon="inline-start" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false}>
-          <SelectGroup>
-            {SUPPORTED_LOCALES.map((supportedLocale) => (
-              <SelectItem key={supportedLocale} value={supportedLocale}>
-                {getLanguageName(supportedLocale, locale)}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+        label={t("Profile language")}
+        onValueChange={selectLocale}
+      />
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
         <DialogTrigger

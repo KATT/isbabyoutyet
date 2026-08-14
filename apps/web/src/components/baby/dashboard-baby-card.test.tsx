@@ -60,7 +60,7 @@ test("a born baby with a past due date shows born, not overdue", async () => {
 test("an unborn baby past the due date still shows overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
-    name: "Baby Waiting",
+    name: "Avery",
     publicId: "baby-waiting",
     dueDate: "2025-12-31",
     laborStarted: null,
@@ -80,7 +80,7 @@ test("an unborn baby past the due date still shows overdue", async () => {
 test("labour in progress beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const inLabor: DashboardBabyCardBaby = {
-    name: "Baby In Labor",
+    name: "Frankie",
     publicId: "baby-in-labor",
     dueDate: "2025-12-31",
     laborStarted: "2026-08-13T08:00:00.000Z",
@@ -108,7 +108,7 @@ test("marks the tour baby card for coachmarks", async () => {
 test("an unborn baby before the due date shows days remaining", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
-    name: "Baby Waiting",
+    name: "Avery",
     publicId: "baby-waiting",
     dueDate: "2026-09-01",
     role: "coParent",

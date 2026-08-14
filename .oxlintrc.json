@@ -21,7 +21,9 @@
     }
   },
   "rules": {
-    "vitest/no-hooks": "error"
+    "vitest/no-hooks": "error",
+    // Prefer an options object over long positional argument lists.
+    "eslint/max-params": ["error", 2]
   },
   "overrides": [
     {
@@ -34,11 +36,22 @@
       }
     },
     {
-      "files": ["apps/web/src/routes/demo/**/*.{ts,tsx}", "apps/web/src/**/*.test.{ts,tsx}"],
+      "files": [
+        "apps/web/src/routes/demo/**/*.{ts,tsx}",
+        "apps/web/src/**/*.test.{ts,tsx}",
+        "apps/web/src/components/dev-bar.tsx"
+      ],
       "rules": {
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
         "i18n-literal/no-literal-template": "off"
+      }
+    },
+    {
+      // Vendored shadcn/ui registry components — not first-party code.
+      "files": ["packages/ui/src/components/**"],
+      "rules": {
+        "eslint/max-params": "off"
       }
     }
   ]
