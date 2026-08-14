@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { env, mutation, query } from "./_generated/server";
 import { requiredEnv } from "./requiredEnv";
+import { isActive } from "./softDelete";
 
 export const subscribe = mutation({
   args: {
@@ -10,6 +11,11 @@ export const subscribe = mutation({
     auth: v.string(),
   },
   handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby || !isActive(baby)) {
+      throw new Error("Baby not found");
+    }
+
     // Check if subscription already exists for this babyId and endpoint
     const existing = await ctx.db
       .query("pushSubscriptions")
@@ -35,6 +41,9 @@ export const subscribe = mutation({
       auth: args.auth,
       createdAt: Date.now(),
     });
+    await ctx.db.patch(args.babyId, {
+      subscriptionCount: (baby.subscriptionCount ?? 0) + 1,
+    });
 
     return subscriptionId;
   },
@@ -52,6 +61,12 @@ export const unsubscribe = mutation({
 
     if (subscription) {
       await ctx.db.delete(subscription._id);
+      const baby = await ctx.db.get(subscription.babyId);
+      if (baby) {
+        await ctx.db.patch(baby._id, {
+          subscriptionCount: Math.max(0, (baby.subscriptionCount ?? 0) - 1),
+        });
+      }
     }
   },
 });

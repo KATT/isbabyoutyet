@@ -37,6 +37,17 @@ const enGB = {
   "{{title}} – Track Your Baby's Journey": "{{title}} | Baby updates",
   "Track {{name}}'s journey – know when baby arrives!":
     "Follow {{name}}'s updates. Know when baby arrives!",
+  "{{name}}'s labour has started — follow live updates on the baby page.":
+    "{{name}}'s labour has started — follow live updates on the baby page.",
+  "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
+    "{{name}}'s family has gone to hospital — follow live updates on the baby page.",
+  "{{name}} has arrived! See the announcement and follow along.":
+    "{{name}} has arrived! See the announcement and follow along.",
+  "Log in – Is Baby Out Yet?": "Log in | Is Baby Out Yet?",
+  "Sign up – Is Baby Out Yet?": "Sign up | Is Baby Out Yet?",
+  "Dashboard – Is Baby Out Yet?": "Dashboard | Is Baby Out Yet?",
+  "Add a baby – Is Baby Out Yet?": "Add a baby | Is Baby Out Yet?",
+  "Admin – Is Baby Out Yet?": "Admin | Is Baby Out Yet?",
   "Not yet": "Not yet",
   "Baby is still on the way": "Baby is still on the way",
   "{{count}} day overdue": "{{count}} day overdue",
@@ -533,6 +544,17 @@ const sv: Record<TranslationKey, string> = {
     "{{count}} dagar kvar till beräknat datum: Har {{name}} kommit?",
   "{{title}} – Track Your Baby's Journey": "{{title}}: Följ med fram till födseln",
   "Track {{name}}'s journey – know when baby arrives!": "Följ med tills {{name}} är här!",
+  "{{name}}'s labour has started — follow live updates on the baby page.":
+    "{{name}}s förlossning är igång — följ liveuppdateringar på babyssida.",
+  "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
+    "{{name}}s familj har åkt in till förlossningen — följ liveuppdateringar på babyssida.",
+  "{{name}} has arrived! See the announcement and follow along.":
+    "{{name}} har kommit! Se tillkännagivandet och följ med.",
+  "Log in – Is Baby Out Yet?": "Logga in | Har bäbisen kommit?",
+  "Sign up – Is Baby Out Yet?": "Skapa konto | Har bäbisen kommit?",
+  "Dashboard – Is Baby Out Yet?": "Översikt | Har bäbisen kommit?",
+  "Add a baby – Is Baby Out Yet?": "Lägg till bäbis | Har bäbisen kommit?",
+  "Admin – Is Baby Out Yet?": "Admin | Har bäbisen kommit?",
   "Not yet": "Inte än",
   "Baby is still on the way": "Bäbisen är fortfarande på väg",
   "{{count}} day overdue": "{{count}} dag över tiden",
@@ -1010,6 +1032,17 @@ const es: Record<TranslationKey, string> = {
   "{{title}} – Track Your Baby's Journey": "{{title}}: sigue la llegada de tu bebé",
   "Track {{name}}'s journey – know when baby arrives!":
     "Sigue la llegada de {{name}} y entérate en cuanto nazca.",
+  "{{name}}'s labour has started — follow live updates on the baby page.":
+    "El parto de {{name}} ha comenzado — sigue las actualizaciones en vivo en la página del bebé.",
+  "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
+    "La familia de {{name}} ha ido al hospital — sigue las actualizaciones en vivo en la página del bebé.",
+  "{{name}} has arrived! See the announcement and follow along.":
+    "¡{{name}} ya nació! Mira el anuncio y síguelos.",
+  "Log in – Is Baby Out Yet?": "Iniciar sesión | ¿Ya nació el bebé?",
+  "Sign up – Is Baby Out Yet?": "Crear cuenta | ¿Ya nació el bebé?",
+  "Dashboard – Is Baby Out Yet?": "Panel | ¿Ya nació el bebé?",
+  "Add a baby – Is Baby Out Yet?": "Añadir un bebé | ¿Ya nació el bebé?",
+  "Admin – Is Baby Out Yet?": "Admin | ¿Ya nació el bebé?",
   "Not yet": "Todavía no",
   "Baby is still on the way": "El bebé todavía no ha llegado",
   "{{count}} day overdue": "{{count}} día después de la fecha prevista",
@@ -1493,6 +1526,17 @@ const ptBR: Record<TranslationKey, string> = {
   "{{title}} – Track Your Baby's Journey": "{{title}}: acompanhe a chegada do bebê",
   "Track {{name}}'s journey – know when baby arrives!":
     "Acompanhe as novidades de {{name}} e saiba quando o bebê nascer!",
+  "{{name}}'s labour has started — follow live updates on the baby page.":
+    "O trabalho de parto de {{name}} começou — acompanhe as atualizações ao vivo na página do bebê.",
+  "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
+    "A família de {{name}} foi para o hospital — acompanhe as atualizações ao vivo na página do bebê.",
+  "{{name}} has arrived! See the announcement and follow along.":
+    "{{name}} chegou! Veja o anúncio e acompanhe.",
+  "Log in – Is Baby Out Yet?": "Entrar | O bebê já nasceu?",
+  "Sign up – Is Baby Out Yet?": "Criar conta | O bebê já nasceu?",
+  "Dashboard – Is Baby Out Yet?": "Painel | O bebê já nasceu?",
+  "Add a baby – Is Baby Out Yet?": "Adicionar um bebê | O bebê já nasceu?",
+  "Admin – Is Baby Out Yet?": "Admin | O bebê já nasceu?",
   "Not yet": "Ainda não",
   "Baby is still on the way": "O bebê ainda está a caminho",
   "{{count}} day overdue": "{{count}} dia além da data prevista",
@@ -1958,6 +2002,10 @@ const enUS: Partial<Record<TranslationKey, string>> = {
     "Follow the labor and birth. Know when baby arrives!",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
+  "{{name}}'s labour has started — follow live updates on the baby page.":
+    "{{name}}'s labor has started — follow live updates on the baby page.",
+  "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
+    "{{name}}'s family has gone to the hospital — follow live updates on the baby page.",
   "Track the progress of labour and birth": "Follow labor and birth",
   "Not gone to hospital yet": "Not at the hospital yet",
   "Gone to hospital": "Gone to the hospital",
