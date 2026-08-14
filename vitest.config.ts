@@ -49,7 +49,7 @@ export default defineConfig({
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
         statements: 71.64,
-        branches: 64.6,
+        branches: 64.66,
         functions: 70.17,
         lines: 72.06,
       },
