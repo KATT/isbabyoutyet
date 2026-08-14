@@ -115,7 +115,7 @@ export const listByBaby = query({
   handler: async (ctx, args) => {
     const result = await ctx.db
       .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_createdAt", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 

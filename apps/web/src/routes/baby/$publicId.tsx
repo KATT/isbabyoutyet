@@ -25,7 +25,7 @@ import {
 import { allKeyed } from "@workspace/query-prefetch";
 import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -87,7 +87,7 @@ export const Route = createFileRoute("/baby/$publicId")({
         baby: babyHandle,
         ...shared,
         scheduledNotifications: null,
-        subscriptions: null,
+        subscriptionCount: null,
         onboarding: null,
         coParentsList: null,
       };
@@ -100,9 +100,12 @@ export const Route = createFileRoute("/baby/$publicId")({
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
-        subscriptions: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptions, {
+        subscriptionCount: preloader.ensureQueryData(
+          api.pushSubscriptions.getSubscriptionCount,
+          {
           babyId: babyDoc._id,
-        }),
+          },
+        ),
         onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
         // Prefetch even when settings are closed — Dialog may keep the panel mounted
         coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
@@ -205,7 +208,9 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+function docToBabyData(
+  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -341,10 +346,10 @@ function BabyPage() {
               });
             }}
           />
-          {loaderData.scheduledNotifications && loaderData.subscriptions ? (
+          {loaderData.scheduledNotifications && loaderData.subscriptionCount ? (
             <ScheduledNotificationToast
               notifications={loaderData.scheduledNotifications}
-              subscriptions={loaderData.subscriptions}
+              subscriptionCount={loaderData.subscriptionCount}
             />
           ) : null}
           <Dialog open={composerOpen} onOpenChange={setComposerOpen}>

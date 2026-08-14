@@ -124,7 +124,7 @@ export const listByBaby = query({
 
     const result = await ctx.db
       .query("timelineItems")
-      .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -158,7 +158,8 @@ export const latestUpdate = query({
     const updates = await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
-      .collect();
+      .order("desc")
+      .take(256);
 
     let latest: { update: Doc<"updates">; item: Doc<"timelineItems"> } | null = null;
     for (const update of updates) {
@@ -274,10 +275,11 @@ export async function findMilestoneUpdate(
 ) {
   const updates = await ctx.db
     .query("updates")
-    .withIndex("by_babyId_milestone", (q) =>
+    .withIndex("by_babyId_and_milestone", (q) =>
       q.eq("babyId", opts.babyId).eq("milestone", opts.milestone),
     )
-    .collect();
+    .order("desc")
+    .take(32);
   return updates.find(isActive) ?? null;
 }
 

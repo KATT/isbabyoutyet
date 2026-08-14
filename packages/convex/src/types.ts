@@ -3,7 +3,16 @@ import type { Doc } from "../convex/_generated/dataModel";
 /**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
-export type BabyData = Omit<Doc<"baby">, "userId" | "publicId" | "_id" | "_creationTime">;
+export type BabyData = Omit<
+  Doc<"baby">,
+  | "userId"
+  | "ownerTokenIdentifier"
+  | "lastActivityAt"
+  | "subscriptionCount"
+  | "publicId"
+  | "_id"
+  | "_creationTime"
+>;
 
 /**
  * Partial update to baby data - used by editors

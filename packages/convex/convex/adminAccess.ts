@@ -7,12 +7,9 @@ type AuthDbCtx = Pick<QueryCtx, "auth" | "db">;
 export async function getUserAdminFlag(ctx: Pick<QueryCtx, "db">, identity: AppIdentity) {
   const profile = await ctx.db
     .query("userProfiles")
-    .withIndex("by_userId", (q) => q.eq("userId", identity.authUserId))
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .unique();
-  return (
-    profile?.isAdmin === true &&
-    (profile.tokenIdentifier === undefined || profile.tokenIdentifier === identity.tokenIdentifier)
-  );
+  return profile?.isAdmin === true;
 }
 
 /**

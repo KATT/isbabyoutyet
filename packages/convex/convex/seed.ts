@@ -18,8 +18,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
 
   const existingBabies = await ctx.db
     .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .take(100);
 
   if (existingBabies.length > 0) {
     const now = new Date();

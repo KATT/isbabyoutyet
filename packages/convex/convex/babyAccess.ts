@@ -12,27 +12,19 @@ export async function findActiveCoParent(
 ): Promise<Doc<"babyCoParents"> | null> {
   const rows = await ctx.db
     .query("babyCoParents")
-    .withIndex("by_babyId_userId", (q) =>
-      q.eq("babyId", opts.babyId).eq("userId", opts.identity.authUserId),
+    .withIndex("by_babyId_and_tokenIdentifier", (q) =>
+      q.eq("babyId", opts.babyId).eq("tokenIdentifier", opts.identity.tokenIdentifier),
     )
-    .collect();
-  return (
-    rows.find(
-      (row) =>
-        isActive(row) &&
-        (row.tokenIdentifier === undefined ||
-          row.tokenIdentifier === opts.identity.tokenIdentifier),
-    ) ?? null
-  );
+    .order("desc")
+    .take(32);
+  return rows.find(isActive) ?? null;
 }
 
 export async function canManageBaby(
   ctx: DbCtx,
   opts: { baby: Doc<"baby">; identity: AppIdentity },
 ) {
-  const isOwner =
-    opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier ||
-    (opts.baby.ownerTokenIdentifier === undefined && opts.baby.userId === opts.identity.authUserId);
+  const isOwner = opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier;
   if (isOwner) return true;
   const coParent = await findActiveCoParent(ctx, {
     babyId: opts.baby._id,
@@ -57,9 +49,7 @@ export async function requireBabyManager(ctx: DbCtx, babyId: Id<"baby">) {
     throw new Error("Baby not found");
   }
 
-  const isOwner =
-    baby.ownerTokenIdentifier === caller.tokenIdentifier ||
-    (baby.ownerTokenIdentifier === undefined && baby.userId === caller.authUserId);
+  const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
   if (!isOwner) {
     const coParent = await findActiveCoParent(ctx, {
       babyId,

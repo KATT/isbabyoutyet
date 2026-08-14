@@ -14,6 +14,7 @@ import type * as auth from "../auth.js";
 import type * as authIdentity from "../authIdentity.js";
 import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
+import type * as babyDto from "../babyDto.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as coParents from "../coParents.js";
 import type * as encouragements from "../encouragements.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   authIdentity: typeof authIdentity;
   baby: typeof baby;
   babyAccess: typeof babyAccess;
+  babyDto: typeof babyDto;
   babyThumbnails: typeof babyThumbnails;
   coParents: typeof coParents;
   encouragements: typeof encouragements;

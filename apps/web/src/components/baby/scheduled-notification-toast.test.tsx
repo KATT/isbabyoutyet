@@ -16,6 +16,15 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
   return {
     ...actual,
     useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
+    useMutation: () => ({ isPending: false, mutate: vi.fn<(args: unknown) => void>() }),
+  };
+});
+
+vi.mock("@convex-dev/react-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@convex-dev/react-query")>();
+  return {
+    ...actual,
+    useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
   };
 });
 
@@ -38,28 +47,33 @@ function renderResource(ui: React.ReactElement) {
   });
 }
 
-test("runs with empty notifications and subscriptions", async () => {
+test("runs with empty notifications and no subscriptions", async () => {
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
     initialData: [],
   });
-  const subscriptions = testPreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptions>({
+  const subscriptionCount = testPreloadedConvexQuery<
+    typeof api.pushSubscriptions.getSubscriptionCount
+  >({
     input: { babyId },
-    initialData: [],
+    initialData: 0,
   });
   mocks.useSuspenseQuery.mockImplementation((options) => ({
     data: options.initialData,
   }));
 
   await using view = renderResource(
-    <ScheduledNotificationToast notifications={notifications} subscriptions={subscriptions} />,
+    <ScheduledNotificationToast
+      notifications={notifications}
+      subscriptionCount={subscriptionCount}
+    />,
   );
 
   expect(view.container.firstChild).toBeNull();
   expect(mocks.custom).not.toHaveBeenCalled();
 });
 
-test("shows a countdown toast when a pending notification has subscribers", async () => {
+test("shows the exact subscriber count in a pending notification toast", async () => {
   const notificationId = "jd7sched0000000000000000" as Id<"scheduledNotifications">;
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
@@ -77,28 +91,27 @@ test("shows a countdown toast when a pending notification has subscribers", asyn
       },
     ],
   });
-  const subscriptions = testPreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptions>({
+  const subscriptionCount = testPreloadedConvexQuery<
+    typeof api.pushSubscriptions.getSubscriptionCount
+  >({
     input: { babyId },
-    initialData: [
-      {
-        _id: "jd7push00000000000000000" as Id<"pushSubscriptions">,
-        _creationTime: Date.now(),
-        babyId,
-        createdAt: Date.now(),
-        endpoint: "https://push.example/sub",
-        p256dh: "key",
-        auth: "auth",
-      },
-    ],
+    initialData: 3,
   });
   mocks.useSuspenseQuery.mockImplementation((options) => ({
     data: options.initialData,
   }));
 
   await using view = renderResource(
-    <ScheduledNotificationToast notifications={notifications} subscriptions={subscriptions} />,
+    <ScheduledNotificationToast
+      notifications={notifications}
+      subscriptionCount={subscriptionCount}
+    />,
   );
 
   expect(view.container.firstChild).toBeNull();
   expect(mocks.custom).toHaveBeenCalled();
+  const renderToast = mocks.custom.mock.calls[0]?.[0];
+  if (typeof renderToast !== "function") throw new Error("Toast renderer missing");
+  await using toastView = renderResource(renderToast() as React.ReactElement);
+  expect(toastView.container.textContent).toContain("3 people");
 });

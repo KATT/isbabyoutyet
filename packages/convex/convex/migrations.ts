@@ -56,7 +56,8 @@ export async function resolveMilestoneAnnounceAt(
   const notifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId", (q) => q.eq("babyId", opts.babyId))
-    .collect();
+    .order("desc")
+    .take(256);
 
   let bestCreatedAt: number | null = null;
   let bestDistance = Infinity;
@@ -117,7 +118,8 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const existingUpdates = await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
-      .collect();
+      .order("desc")
+      .take(256);
     const currentPhotoAlreadyInFeed = existingUpdates.some(
       (update) => update.photoId === baby.photoId,
     );
@@ -322,7 +324,7 @@ function authUserId(user: unknown) {
 export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
   const sentinel = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+    .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
     .unique();
   if (sentinel) {
     return {
@@ -410,7 +412,7 @@ export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", baby._id))
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", baby._id))
     .order("desc")
     .take(256);
   const latest = timelineItems.find(isActive);

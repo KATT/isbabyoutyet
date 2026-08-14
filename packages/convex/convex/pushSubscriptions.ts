@@ -1,7 +1,30 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
-import { env, mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import { requireBabyManager } from "./babyAccess";
 import { requiredEnv } from "./requiredEnv";
+import schema from "./schema";
 import { isActive } from "./softDelete";
+
+async function deleteSubscription(ctx: MutationCtx, subscription: Doc<"pushSubscriptions">) {
+  await ctx.db.delete(subscription._id);
+  const baby = await ctx.db.get(subscription.babyId);
+  if (baby) {
+    await ctx.db.patch(baby._id, {
+      subscriptionCount: Math.max(0, (baby.subscriptionCount ?? 0) - 1),
+    });
+  }
+}
+
+async function deleteByEndpoint(ctx: MutationCtx, endpoint: string) {
+  for await (const subscription of ctx.db
+    .query("pushSubscriptions")
+    .withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))) {
+    await deleteSubscription(ctx, subscription);
+  }
+}
 
 export const subscribe = mutation({
   args: {
@@ -19,7 +42,7 @@ export const subscribe = mutation({
     // Check if subscription already exists for this babyId and endpoint
     const existing = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_babyId_endpoint", (q) =>
+      .withIndex("by_babyId_and_endpoint", (q) =>
         q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
       )
       .first();
@@ -51,37 +74,55 @@ export const subscribe = mutation({
 
 export const unsubscribe = mutation({
   args: {
+    babyId: v.id("baby"),
     endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
   },
   handler: async (ctx, args) => {
     const subscription = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_endpoint", (q) => q.eq("endpoint", args.endpoint))
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+      )
       .first();
-
-    if (subscription) {
-      await ctx.db.delete(subscription._id);
-      const baby = await ctx.db.get(subscription.babyId);
-      if (baby) {
-        await ctx.db.patch(baby._id, {
-          subscriptionCount: Math.max(0, (baby.subscriptionCount ?? 0) - 1),
-        });
-      }
+    if (subscription && subscription.p256dh === args.p256dh && subscription.auth === args.auth) {
+      await deleteSubscription(ctx, subscription);
     }
   },
 });
 
-export const getSubscriptions = query({
+export const removeByEndpoint = internalMutation({
+  args: {
+    endpoint: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await deleteByEndpoint(ctx, args.endpoint);
+  },
+});
+
+export const getSubscriptionsPage = internalQuery({
+  args: {
+    babyId: v.id("baby"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(schema.doc("pushSubscriptions")),
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("pushSubscriptions")
+      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .paginate(args.paginationOpts);
+  },
+});
+
+export const getSubscriptionCount = query({
   args: {
     babyId: v.id("baby"),
   },
+  returns: v.number(),
   handler: async (ctx, args) => {
-    const subscriptions = await ctx.db
-      .query("pushSubscriptions")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
-      .collect();
-
-    return subscriptions;
+    const access = await requireBabyManager(ctx, args.babyId);
+    return access.baby.subscriptionCount ?? 0;
   },
 });
 
@@ -101,7 +142,7 @@ export const isSubscribed = query({
   handler: async (ctx, args) => {
     const subscription = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_babyId_endpoint", (q) =>
+      .withIndex("by_babyId_and_endpoint", (q) =>
         q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
       )
       .first();

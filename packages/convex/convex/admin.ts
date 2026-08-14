@@ -1,9 +1,9 @@
-import { paginationOptsValidator } from "convex/server";
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Doc } from "./_generated/dataModel";
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { requireAdmin } from "./adminAccess";
@@ -11,7 +11,6 @@ import { isActive } from "./softDelete";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
-const ADMIN_SCAN_LIMIT = 1_000;
 
 const languageRequestRowValidator = v.object({
   _id: v.id("languageRequests"),
@@ -81,53 +80,22 @@ async function managerEmailsForBaby(ctx: QueryCtx, baby: Doc<"baby">) {
   return emails;
 }
 
-async function lastActivityAt(ctx: QueryCtx, opts: { babyId: Id<"baby">; createdAt: number }) {
-  const items = await ctx.db
-    .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", opts.babyId))
-    .order("desc")
-    .take(20);
-  const latest = items.find(isActive);
-  if (!latest) {
-    return opts.createdAt;
-  }
-  return Math.max(opts.createdAt, latest.postedAt);
-}
-
-/** Offset-cursor pagination over an already-sorted in-memory list (admin scale). */
-function paginateSorted<T>(
-  items: T[],
-  paginationOpts: { numItems: number; cursor: string | null },
-) {
-  const startIndex = paginationOpts.cursor ? Number.parseInt(paginationOpts.cursor, 10) : 0;
-  if (!Number.isFinite(startIndex) || startIndex < 0) {
-    throw new Error("Invalid pagination cursor");
-  }
-  const endIndex = startIndex + paginationOpts.numItems;
-  return {
-    page: items.slice(startIndex, endIndex),
-    isDone: endIndex >= items.length,
-    continueCursor: String(endIndex),
-  };
-}
-
 export const listLanguageRequests = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(languageRequestRowValidator),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(languageRequestRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const rows = await ctx.db.query("languageRequests").take(ADMIN_SCAN_LIMIT);
-    rows.sort((a, b) => b.createdAt - a.createdAt);
+    const result = await ctx.db
+      .query("languageRequests")
+      .withIndex("by_createdAt")
+      .order("desc")
+      .paginate(args.paginationOpts);
 
     const emailByUserId = new Map<string, string | null>();
     const mapped = [];
-    for (const row of rows) {
+    for (const row of result.page) {
       let userEmail = emailByUserId.get(row.userId);
       if (userEmail === undefined) {
         userEmail = await findUserEmail(ctx, row.userId);
@@ -141,7 +109,7 @@ export const listLanguageRequests = query({
         userEmail,
       });
     }
-    return paginateSorted(mapped, args.paginationOpts);
+    return { ...result, page: mapped };
   },
 });
 
@@ -152,15 +120,18 @@ export const listBabies = query({
     hideDemo: v.boolean(),
     paginationOpts: paginationOptsValidator,
   },
-  returns: v.object({
-    page: v.array(babyRowValidator),
-    isDone: v.boolean(),
-    continueCursor: v.string(),
-  }),
+  returns: paginationResultValidator(babyRowValidator),
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const babies = await ctx.db.query("baby").take(ADMIN_SCAN_LIMIT);
-    const active = babies.filter(isActive).filter((baby) => {
+    const result =
+      args.sortBy === "created"
+        ? await ctx.db.query("baby").order(args.sortOrder).paginate(args.paginationOpts)
+        : await ctx.db
+            .query("baby")
+            .withIndex("by_lastActivityAt")
+            .order(args.sortOrder)
+            .paginate(args.paginationOpts);
+    const active = result.page.filter(isActive).filter((baby) => {
       if (!args.hideDemo) return true;
       return baby.demo !== true;
     });
@@ -168,7 +139,6 @@ export const listBabies = query({
     const rows = [];
     for (const baby of active) {
       const createdAt = baby._creationTime;
-      const updatedAt = await lastActivityAt(ctx, { babyId: baby._id, createdAt });
       rows.push({
         _id: baby._id,
         name: baby.name,
@@ -177,14 +147,10 @@ export const listBabies = query({
         status: getCurrentStatus(baby).type,
         demo: baby.demo === true,
         createdAt,
-        updatedAt,
+        updatedAt: Math.max(createdAt, baby.lastActivityAt ?? createdAt),
         managerEmails: await managerEmailsForBaby(ctx, baby),
       });
     }
-
-    const key = args.sortBy === "created" ? "createdAt" : "updatedAt";
-    const direction = args.sortOrder === "asc" ? 1 : -1;
-    rows.sort((a, b) => (a[key] - b[key]) * direction);
-    return paginateSorted(rows, args.paginationOpts);
+    return { ...result, page: rows };
   },
 });
