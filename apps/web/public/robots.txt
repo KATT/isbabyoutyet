@@ -1,3 +1,10 @@
 # https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /demo/
+Disallow: /preview
+
+Sitemap: https://isbabyoutyet.com/sitemap.xml

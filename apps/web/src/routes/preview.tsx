@@ -9,6 +9,7 @@ import { getThemeCssUrl } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
+import { robotsNoIndexMeta } from "@/lib/seo";
 
 function getDefaultBabyData(): BabyData {
   const now = new Date();
@@ -63,6 +64,7 @@ export const Route = createFileRoute("/preview")({
           "Preview how your baby tracking page will look at different stages.",
         ),
       },
+      ...robotsNoIndexMeta(),
     ],
   }),
 });

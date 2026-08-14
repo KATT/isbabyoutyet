@@ -44,6 +44,7 @@ export const Route = createRootRouteWithContext<{
       locale,
       "Track the progress of labour and birth – know when baby arrives!",
     );
+    const title = m.app_name({}, { locale });
     return {
       meta: [
         {
@@ -52,6 +53,9 @@ export const Route = createRootRouteWithContext<{
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
+        },
+        {
+          title,
         },
         {
           name: "description",
@@ -63,7 +67,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           property: "og:site_name",
-          content: m.app_name({}, { locale }),
+          content: title,
         },
         {
           property: "og:type",
@@ -71,7 +75,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           name: "twitter:card",
-          content: "summary",
+          content: "summary_large_image",
         },
         {
           name: "theme-color",

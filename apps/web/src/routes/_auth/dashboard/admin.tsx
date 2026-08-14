@@ -30,7 +30,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
 import { authServer } from "@/lib/auth-server";
 import type { TranslationFunction } from "@/lib/i18n";
-import { useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
 
 export const ADMIN_PAGE_SIZE = 20;
 
@@ -76,6 +76,13 @@ type BabyRow = {
 export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
+  head: (opts) => ({
+    meta: [
+      {
+        title: translate(opts.match.context.locale, "Admin – Is Baby Out Yet?"),
+      },
+    ],
+  }),
   beforeLoad: async (opts) => {
     const profile =
       typeof window === "undefined"

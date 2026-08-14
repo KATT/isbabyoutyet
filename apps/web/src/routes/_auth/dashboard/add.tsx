@@ -17,7 +17,7 @@ import { Form, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
-import { useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
 
 function addBabySchema(t: TranslationFunction) {
   return z
@@ -30,6 +30,13 @@ function addBabySchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
+  head: (opts) => ({
+    meta: [
+      {
+        title: translate(opts.match.context.locale, "Add a baby – Is Baby Out Yet?"),
+      },
+    ],
+  }),
 });
 
 function AddBabyPage() {

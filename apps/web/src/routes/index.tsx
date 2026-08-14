@@ -8,6 +8,8 @@ import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
+import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
+import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
 
 // Static date snapshot for SSR/hydration
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/")({
       locale,
       "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
     );
+    const imageUrl = absoluteUrl(homepageOgImagePath());
     return {
       meta: [
         {
@@ -41,6 +44,15 @@ export const Route = createFileRoute("/")({
           content: description,
         },
         {
+          property: "og:url",
+          content: canonicalUrl("/"),
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        ...openGraphImageMeta({ imageUrl, alt: title }),
+        {
           name: "twitter:title",
           content: title,
         },
@@ -49,7 +61,7 @@ export const Route = createFileRoute("/")({
           content: description,
         },
       ],
-      links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
+      links: [{ rel: "canonical", href: canonicalUrl("/") }],
     };
   },
 });

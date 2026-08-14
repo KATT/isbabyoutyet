@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as OgDotpngRouteImport } from './routes/og[.]png'
 import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as BabyPublicIdRouteImport } from './routes/baby/$publicId'
@@ -19,6 +21,7 @@ import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard
 import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
 import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as BabyPublicIdOgDotpngRouteImport } from './routes/baby/$publicId.og[.]png'
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
@@ -37,9 +40,19 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OgDotpngRoute = OgDotpngRouteImport.update({
+  id: '/og.png',
+  path: '/og.png',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -76,6 +89,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const BabyPublicIdOgDotpngRoute = BabyPublicIdOgDotpngRouteImport.update({
+  id: '/og.png',
+  path: '/og.png',
+  getParentRoute: () => BabyPublicIdRoute,
 } as any)
 const BabyManifest_idRoute = BabyManifest_idRouteImport.update({
   id: '/baby/manifest/$_id',
@@ -120,13 +138,16 @@ const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/og.png': typeof OgDotpngRoute
   '/preview': typeof PreviewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/baby/$publicId': typeof BabyPublicIdRoute
+  '/baby/$publicId': typeof BabyPublicIdRouteWithChildren
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/og.png': typeof BabyPublicIdOgDotpngRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -139,13 +160,16 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/og.png': typeof OgDotpngRoute
   '/preview': typeof PreviewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/baby/$publicId': typeof BabyPublicIdRoute
+  '/baby/$publicId': typeof BabyPublicIdRouteWithChildren
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/og.png': typeof BabyPublicIdOgDotpngRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -160,13 +184,16 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/og.png': typeof OgDotpngRoute
   '/preview': typeof PreviewRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/baby/$publicId': typeof BabyPublicIdRoute
+  '/baby/$publicId': typeof BabyPublicIdRouteWithChildren
   '/_auth/dashboard/add': typeof AuthDashboardAddRoute
   '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/og.png': typeof BabyPublicIdOgDotpngRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
@@ -181,13 +208,16 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/og.png'
     | '/preview'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/og.png'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
@@ -200,13 +230,16 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/og.png'
     | '/preview'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/og.png'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
@@ -220,13 +253,16 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/og.png'
     | '/preview'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/_auth/dashboard/add'
     | '/_auth/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/og.png'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
@@ -241,10 +277,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  OgDotpngRoute: typeof OgDotpngRoute
   PreviewRoute: typeof PreviewRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
-  BabyPublicIdRoute: typeof BabyPublicIdRoute
+  BabyPublicIdRoute: typeof BabyPublicIdRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   BabyManifest_idRoute: typeof BabyManifest_idRoute
   DemoApiNamesRoute: typeof DemoApiNamesRoute
@@ -272,11 +310,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/og.png': {
+      id: '/og.png'
+      path: '/og.png'
+      fullPath: '/og.png'
+      preLoaderRoute: typeof OgDotpngRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview': {
       id: '/preview'
       path: '/preview'
       fullPath: '/preview'
       preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/login': {
@@ -327,6 +379,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/baby/$publicId/og.png': {
+      id: '/baby/$publicId/og.png'
+      path: '/og.png'
+      fullPath: '/baby/$publicId/og.png'
+      preLoaderRoute: typeof BabyPublicIdOgDotpngRouteImport
+      parentRoute: typeof BabyPublicIdRoute
     }
     '/baby/manifest/$_id': {
       id: '/baby/manifest/$_id'
@@ -403,13 +462,27 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
   AuthRouteRouteChildren,
 )
 
+interface BabyPublicIdRouteChildren {
+  BabyPublicIdOgDotpngRoute: typeof BabyPublicIdOgDotpngRoute
+}
+
+const BabyPublicIdRouteChildren: BabyPublicIdRouteChildren = {
+  BabyPublicIdOgDotpngRoute: BabyPublicIdOgDotpngRoute,
+}
+
+const BabyPublicIdRouteWithChildren = BabyPublicIdRoute._addFileChildren(
+  BabyPublicIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  OgDotpngRoute: OgDotpngRoute,
   PreviewRoute: PreviewRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
-  BabyPublicIdRoute: BabyPublicIdRoute,
+  BabyPublicIdRoute: BabyPublicIdRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   BabyManifest_idRoute: BabyManifest_idRoute,
   DemoApiNamesRoute: DemoApiNamesRoute,
