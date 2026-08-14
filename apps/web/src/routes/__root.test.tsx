@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const routerState = vi.hoisted(() => ({ isLoading: false }));
+const routeContext = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
 
 vi.mock("@tanstack/react-router", () => ({
   HeadContent: () => null,
@@ -14,9 +15,18 @@ vi.mock("@tanstack/react-router", () => ({
   Scripts: () => null,
   createRootRouteWithContext: () => (opts: unknown) => opts,
   useMatches: () => [],
-  useRouteContext: () => ({}),
+  useRouteContext: () => routeContext.value,
   useRouterState: (opts: { select: (state: typeof routerState) => unknown }) =>
     opts.select(routerState),
+}));
+
+vi.mock("next-themes", () => ({
+  ThemeProvider: (props: { children: React.ReactNode }) => props.children,
+  useTheme: () => ({ theme: "light", setTheme: () => {} }),
+}));
+
+vi.mock("@/components/dev-bar", () => ({
+  DevBar: () => null,
 }));
 
 vi.mock("@tanstack/react-router-devtools", () => ({
@@ -112,6 +122,24 @@ test("an empty session resumes the expectAuth-paused Convex socket; a real sessi
   session.value = { data: { session: { id: "s1" } }, isPending: false };
   hook.rerender();
   expect(setAuth).not.toHaveBeenCalled();
+});
+
+test("regression: rendering the root as an anonymous visitor resumes the paused Convex socket", async () => {
+  // Repro of the frozen-navigation bug: expectAuth pauses the websocket and
+  // ConvexProviderWithAuth never resolves signed-out visitors, so unless the
+  // root explicitly calls setAuth for them, their client-side queries hang.
+  const setAuth = vi.fn<(fetchToken: unknown) => void>();
+  routeContext.value = {
+    convexQueryClient: { convexClient: { setAuth } },
+    locale: "en-GB",
+    token: null,
+  };
+  session.value = { data: null, isPending: false };
+  const RootComponent = (Route as unknown as { component: () => ReactElement }).component;
+
+  await using _view = renderResource(<RootComponent />);
+
+  expect(setAuth).toHaveBeenCalledTimes(1);
 });
 
 test("the not-found page offers a way back home", async () => {
