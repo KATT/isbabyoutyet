@@ -1,7 +1,7 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { convexInfiniteQuery } from "@/lib/convexInfiniteQuery";
+import { convexInfiniteQuery } from "@workspace/convex-infinite-query";
 
 export const ADMIN_PAGE_SIZE = 20;
 const TIMELINE_PAGE_SIZE = 20;

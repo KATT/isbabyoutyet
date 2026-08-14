@@ -23,6 +23,7 @@
     "paths": {
       "@/*": ["./src/*"],
       "@workspace/convex/*": ["../../packages/convex/*"],
+      "@workspace/convex-infinite-query": ["../../packages/convex-infinite-query/src/index.ts"],
       "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
       "@workspace/query-prefetch/test-helpers": [
         "../../packages/query-prefetch/src/test-helpers.ts"

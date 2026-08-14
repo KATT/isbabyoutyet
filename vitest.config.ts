@@ -15,7 +15,13 @@ const oxlintPluginsProject = {
 
 export default defineConfig({
   test: {
-    projects: ["packages/convex", "packages/query-prefetch", webUnitProject, oxlintPluginsProject],
+    projects: [
+      "packages/convex",
+      "packages/query-prefetch",
+      "packages/convex-infinite-query",
+      webUnitProject,
+      oxlintPluginsProject,
+    ],
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
@@ -26,6 +32,7 @@ export default defineConfig({
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
+        "packages/convex-infinite-query/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",

@@ -16,7 +16,7 @@ import {
   timelineByBaby,
   timelineLatestUpdate,
 } from "./convex";
-import { CONVEX_INFINITE_QUERY_KEY } from "@/lib/convexInfiniteQuery";
+import { CONVEX_INFINITE_QUERY_KEY } from "@workspace/convex-infinite-query";
 
 test("convex query factories build stable query keys", () => {
   const babyId = "jd7baby000000000000000000" as Id<"baby">;

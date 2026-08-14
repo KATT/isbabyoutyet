@@ -67,21 +67,22 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
   };
 });
 
-vi.mock("@/lib/usePreloadedConvexInfiniteQuery", () => ({
-  usePreloadedConvexInfiniteQuery: () => ({
-    data: {
-      pages: [{ page: [], isDone: true, continueCursor: "" }],
-      pageParams: [{ numItems: 20, cursor: null }],
-    },
-    hasNextPage: false,
-    isFetchingNextPage: false,
-    fetchNextPage: vi.fn<() => Promise<unknown>>(),
-  }),
-}));
-
-vi.mock("@/lib/useLiveConvexInfinitePages", () => ({
-  useLiveConvexInfinitePages: () => undefined,
-}));
+vi.mock("@workspace/convex-infinite-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@workspace/convex-infinite-query")>();
+  return {
+    ...actual,
+    usePreloadedConvexInfiniteQuery: () => ({
+      data: {
+        pages: [{ page: [], isDone: true, continueCursor: "" }],
+        pageParams: [{ numItems: 20, cursor: null }],
+      },
+      hasNextPage: false,
+      isFetchingNextPage: false,
+      fetchNextPage: vi.fn<() => Promise<unknown>>(),
+    }),
+    useLiveConvexInfinitePages: () => undefined,
+  };
+});
 
 const {
   AdminDashboardPage,

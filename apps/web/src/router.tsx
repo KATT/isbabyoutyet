@@ -7,7 +7,7 @@ import { routeTree } from "./routeTree.gen";
 import {
   convexInfiniteQueryFn,
   registerConvexInfiniteQueryClient,
-} from "./lib/convexInfiniteQuery";
+} from "@workspace/convex-infinite-query";
 import { getDetectedLocale } from "./lib/i18n";
 
 export function getRouter() {

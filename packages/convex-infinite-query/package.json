@@ -1,0 +1,39 @@
+{
+  "name": "@workspace/convex-infinite-query",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "lint-fix": "oxlint --fix",
+    "format": "oxfmt && oxlint --fix",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@workspace/query-prefetch": "workspace:*"
+  },
+  "devDependencies": {
+    "@convex-dev/react-query": "^0.1.0",
+    "@tanstack/react-query": "^5.101.4",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "catalog:",
+    "convex": "catalog:",
+    "jsdom": "^30.0.1",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^4.1.10"
+  },
+  "peerDependencies": {
+    "@convex-dev/react-query": "^0.1.0",
+    "@tanstack/react-query": "^5.0.0",
+    "convex": "^1.0.0",
+    "react": "^19.0.0"
+  }
+}

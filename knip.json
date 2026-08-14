@@ -25,6 +25,7 @@
       "entry": ["scripts/seedHomepageDemo.ts!"]
     },
     "packages/query-prefetch": {},
+    "packages/convex-infinite-query": {},
     "packages/ui": {}
   }
 }

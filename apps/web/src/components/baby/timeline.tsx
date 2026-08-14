@@ -51,8 +51,10 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
-import { useLiveConvexInfinitePages } from "@/lib/useLiveConvexInfinitePages";
-import { usePreloadedConvexInfiniteQuery } from "@/lib/usePreloadedConvexInfiniteQuery";
+import {
+  useLiveConvexInfinitePages,
+  usePreloadedConvexInfiniteQuery,
+} from "@workspace/convex-infinite-query";
 import { timelineByBaby } from "@/queries/convex";
 import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";

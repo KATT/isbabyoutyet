@@ -26,14 +26,13 @@ vi.mock("convex/react", async (importOriginal) => ({
   useMutation: () => mocks.mutate,
 }));
 
-vi.mock("@/lib/useLiveConvexInfinitePages", () => ({
-  useLiveConvexInfinitePages: () => undefined,
-}));
-
-vi.mock("@/lib/usePreloadedConvexInfiniteQuery", async () => {
+vi.mock("@workspace/convex-infinite-query", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@workspace/convex-infinite-query")>();
   const { useSuspenseInfiniteQuery } = await import("@tanstack/react-query");
   const { preloadedInfiniteQueryOptions } = await import("@workspace/query-prefetch");
   return {
+    ...actual,
+    useLiveConvexInfinitePages: () => undefined,
     usePreloadedConvexInfiniteQuery: (
       factory: Parameters<typeof preloadedInfiniteQueryOptions>[0],
       opts: {

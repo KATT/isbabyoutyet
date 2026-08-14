@@ -29,8 +29,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
-import { useLiveConvexInfinitePages } from "@/lib/useLiveConvexInfinitePages";
-import { usePreloadedConvexInfiniteQuery } from "@/lib/usePreloadedConvexInfiniteQuery";
+import {
+  useLiveConvexInfinitePages,
+  usePreloadedConvexInfiniteQuery,
+} from "@workspace/convex-infinite-query";
 import {
   ADMIN_PAGE_SIZE,
   adminBabiesInfinite,
