@@ -38,8 +38,8 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
-    // Platform staff flag. Optional only until #84 backfills stale preview rows.
-    isAdmin: v.optional(v.boolean()),
+    // Platform staff flag, backfilled before this final schema tightening.
+    isAdmin: v.boolean(),
   })
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
