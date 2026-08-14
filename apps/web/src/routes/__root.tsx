@@ -242,12 +242,12 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
           }}
           plugins={[
             {
-              name: "Tanstack Router",
-              render: <TanStackRouterDevtoolsPanel />,
+              name: "TanStack Query",
+              render: <ReactQueryDevtoolsPanel />,
             },
             {
-              name: "Tanstack Query",
-              render: <ReactQueryDevtoolsPanel />,
+              name: "TanStack Router",
+              render: <TanStackRouterDevtoolsPanel />,
             },
           ]}
         />
