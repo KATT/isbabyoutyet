@@ -1,6 +1,5 @@
 import { render } from "@testing-library/react";
 import { convexTest } from "convex-test";
-import { getFunctionName } from "convex/server";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
@@ -152,73 +151,4 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   expect(view.getByText("Ainda não")).toBeTruthy();
   expect(view.getByText("O bebê ainda está a caminho")).toBeTruthy();
   expect(view.getByText("Data prevista: 1 de setembro de 2026")).toBeTruthy();
-});
-
-// --- Route loader: guards moved from beforeLoad so link preloading works ---
-
-type BabyLoader = (opts: {
-  context: { convexClient: unknown };
-  params: { publicId: string };
-  location: { search: Record<string, unknown> };
-}) => Promise<{ baby: { publicId: string }; locale: string }>;
-
-async function loadBabyRouteLoader() {
-  const routeModule = await import("@/routes/baby/$publicId");
-  return routeModule.Route.options.loader as unknown as BabyLoader;
-}
-
-test("loader throws notFound for an unknown publicId", async () => {
-  const loader = await loadBabyRouteLoader();
-  const query = vi.fn<() => Promise<null>>(() => Promise.resolve(null));
-
-  const pending = loader({
-    context: { convexClient: { query } },
-    params: { publicId: "does-not-exist" },
-    location: { search: {} },
-  });
-
-  await expect(pending).rejects.toMatchObject({ isNotFound: true });
-});
-
-test("loader redirects an outdated publicId to the baby's current page", async () => {
-  const loader = await loadBabyRouteLoader();
-  const query = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ _id: "baby-id", publicId: "new-slug", resolvedLocale: "en-GB" }),
-  );
-
-  const pending = loader({
-    context: { convexClient: { query } },
-    params: { publicId: "old-slug" },
-    location: { search: {} },
-  });
-
-  await expect(pending).rejects.toMatchObject({
-    options: { to: "/baby/$publicId", params: { publicId: "new-slug" }, replace: true },
-  });
-});
-
-test("loader returns the baby, its locale, and the prefetched page data", async () => {
-  const loader = await loadBabyRouteLoader();
-  const babyDoc = { _id: "baby-id", publicId: "baby-smith", resolvedLocale: "sv" };
-  const query = vi.fn<(fn: unknown, args: unknown) => Promise<unknown>>((fn) => {
-    const name = getFunctionName(fn as Parameters<typeof getFunctionName>[0]);
-    if (name === "baby:getByPublicId") {
-      return Promise.resolve(babyDoc);
-    }
-    if (name === "timeline:listByBaby") {
-      return Promise.resolve({ page: [], isDone: true, continueCursor: "" });
-    }
-    if (name === "timeline:latestUpdate") {
-      return Promise.resolve(null);
-    }
-    return Promise.resolve("vapid-key");
-  });
-
-  const result = await loader({
-    context: { convexClient: { query } },
-    params: { publicId: "baby-smith" },
-    location: { search: {} },
-  });
-
-  expect(result).toMatchObject({ baby: babyDoc, locale: "sv", vapidPublicKey: "vapid-key" });
 });

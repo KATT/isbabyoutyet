@@ -39,6 +39,14 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: {},
 }));
 
+vi.mock("@tanstack/react-start", () => ({
+  createServerFn: () => ({ handler: (fn: unknown) => fn }),
+}));
+
+vi.mock("@/lib/auth-server", () => ({
+  authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
+}));
+
 const { NavigationProgress, Route } = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
@@ -50,11 +58,18 @@ function renderResource(ui: ReactElement) {
 
 test("beforeLoad resolves the locale locally on the client, without a server round-trip", async () => {
   // With createRootRouteWithContext mocked, Route is the options object.
-  const options = Route as unknown as { beforeLoad: () => Promise<{ locale: string }> };
+  const options = Route as unknown as {
+    beforeLoad: (ctx: {
+      context: { convexQueryClient: { serverHttpClient: undefined } };
+    }) => Promise<{ locale: string; isAuthenticated: boolean }>;
+  };
 
-  const result = await options.beforeLoad();
+  const result = await options.beforeLoad({
+    context: { convexQueryClient: { serverHttpClient: undefined } },
+  });
 
   expect(result.locale).toBeTruthy();
+  expect(result.isAuthenticated).toBe(false);
 });
 
 test("no progress bar renders while the router is idle", async () => {

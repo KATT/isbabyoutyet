@@ -1,6 +1,8 @@
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useEffect, useState } from "react";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
@@ -10,6 +12,9 @@ import { ONBOARDING_STEPS } from "./steps";
 
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
+  onboarding:
+    | PreloadedConvexQuery<typeof api.onboarding.getMine>
+    | InitiatedConvexQuery<typeof api.onboarding.getMine>;
   /** Baby-page owners only — visitors never see the tour */
   enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */
@@ -31,14 +36,27 @@ function scrollToTourTarget(targetId: string) {
 /**
  * Owns the first-run welcome carousel + floating checklist + one active coachmark.
  * Mount on the dashboard index (not /dashboard/add) and the first baby's owner page.
+ *
+ * Auth-gated: only mounts the suspense query once the session is known so
+ * anonymous visitors never suspend on `onboarding.getMine`.
  */
 export function OnboardingHost(props: OnboardingHostProps) {
-  const { t } = useI18n();
   const enabled = props.enabled !== false;
-  const spotlight = props.spotlight !== false;
   const session = authClient.useSession();
   const isAuthed = !!session.data?.user;
-  const progress = useQuery(api.onboarding.getMine, isAuthed && enabled ? {} : "skip");
+
+  if (!enabled || !isAuthed || session.isPending) {
+    return null;
+  }
+
+  return <OnboardingHostAuthed {...props} />;
+}
+
+function OnboardingHostAuthed(props: OnboardingHostProps) {
+  const { t } = useI18n();
+  const spotlight = props.spotlight !== false;
+  const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
+  const progress = progressQuery.data;
   const dismissWelcome = useMutation(api.onboarding.dismissWelcome);
   const setMinimized = useMutation(api.onboarding.setMinimized);
   const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
@@ -49,7 +67,6 @@ export function OnboardingHost(props: OnboardingHostProps) {
 
   // Open welcome once progress loads — skip if already dismissed or they already have a baby
   useEffect(() => {
-    if (!progress) return;
     if (progress.welcomeDismissed) return;
     if (progress.hasBaby) {
       void dismissWelcome({});
@@ -60,24 +77,18 @@ export function OnboardingHost(props: OnboardingHostProps) {
 
   // Don't leave a finished checklist hanging on the page
   useEffect(() => {
-    if (!progress?.allDone || progress.checklistDismissed) return;
+    if (!progress.allDone || progress.checklistDismissed) return;
     const timeout = window.setTimeout(() => {
       void dismissChecklist({});
     }, 4000);
     return () => window.clearTimeout(timeout);
-  }, [progress?.allDone, progress?.checklistDismissed, dismissChecklist]);
+  }, [progress.allDone, progress.checklistDismissed, dismissChecklist]);
 
-  const nextStep = progress
-    ? ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id))
-    : undefined;
+  const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 
   useEffect(() => {
     setCoachmarkHidden(false);
   }, [nextStep?.id]);
-
-  if (!enabled || !isAuthed || !progress) {
-    return null;
-  }
 
   const isTourBabyPage =
     props.surface !== "baby" ||

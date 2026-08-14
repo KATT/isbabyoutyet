@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { useConvexAuth, usePaginatedQuery } from "convex/react";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { allKeyed } from "@workspace/query-prefetch";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -28,11 +28,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
-import { authServer } from "@/lib/auth-server";
+import {
+  getConvexQueryPreloader,
+  usePreloadedConvexInfiniteQuery,
+} from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-export const ADMIN_PAGE_SIZE = 20;
+const ADMIN_PAGE_SIZE = 20;
 
 const adminSearchSchema = z.object({
   tab: z.enum(["babies", "languages"]).default("babies"),
@@ -76,14 +79,31 @@ type BabyRow = {
 export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
+  loaderDeps: (opts) => opts.search,
   beforeLoad: async (opts) => {
-    const profile =
-      typeof window === "undefined"
-        ? await authServer.fetchAuthQuery(api.profile.get, {})
-        : await opts.context.convexClient.query(api.profile.get, {});
-    if (!profile?.isAdmin) {
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const profile = await preloader.ensureQueryData(api.profile.get, {});
+    if (!profile.initialData?.isAdmin) {
       throw redirect({ to: "/dashboard" });
     }
+  },
+  loader: async (opts) => {
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const search = opts.deps;
+    return await allKeyed({
+      babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
+        args: {
+          sortBy: search.sort,
+          sortOrder: search.order,
+          hideDemo: search.hideDemo,
+        },
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+      languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
+        args: {},
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+    });
   },
 });
 
@@ -127,20 +147,6 @@ export function nextSortSearch(opts: {
   return { sort: opts.clicked, order: "desc" as SortOrder };
 }
 
-function useStablePaginatedRows<T>(opts: { results: T[]; status: string }) {
-  const [rows, setRows] = useState(opts.results);
-  const isFirstLoad = opts.status === "LoadingFirstPage" && rows.length === 0;
-  const isRefreshing = opts.status === "LoadingFirstPage" && rows.length > 0;
-
-  useEffect(() => {
-    if (opts.status !== "LoadingFirstPage") {
-      setRows(opts.results);
-    }
-  }, [opts.results, opts.status]);
-
-  return { rows, isFirstLoad, isRefreshing };
-}
-
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -166,15 +172,22 @@ function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () =>
   return <div ref={loadMoreRef} className="h-8 w-full" aria-hidden="true" />;
 }
 
-function RefreshingBadge() {
-  const { t } = useI18n();
+function AdminTableCard(props: {
+  children: ReactNode;
+  canLoadMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
+}) {
   return (
-    <div className="absolute inset-x-0 top-0 z-10 flex justify-center py-2">
-      <Badge variant="secondary" className="gap-1.5">
-        <Spinner />
-        {t("Loading")}
-      </Badge>
-    </div>
+    <Card className="relative gap-0 py-0">
+      <CardContent className="p-0">{props.children}</CardContent>
+      <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
+      {props.isLoadingMore ? (
+        <div className="flex justify-center border-t py-3">
+          <Spinner className="size-5 text-primary" />
+        </div>
+      ) : null}
+    </Card>
   );
 }
 
@@ -195,7 +208,7 @@ function SortableHeaderLink(props: {
   const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
 
   return (
-    <TableHead aria-sort={active ? (props.order === "asc" ? "ascending" : "descending") : "none"}>
+    <TableHead>
       <Link
         to="/dashboard/admin"
         search={{
@@ -221,45 +234,15 @@ function SortableHeaderLink(props: {
   );
 }
 
-function AdminTableCard(props: {
-  children: ReactNode;
-  isRefreshing: boolean;
-  canLoadMore: boolean;
-  isLoadingMore: boolean;
-  onLoadMore: () => void;
-}) {
-  return (
-    <Card className="relative gap-0 py-0">
-      {props.isRefreshing ? <RefreshingBadge /> : null}
-      <CardContent className={cn("p-0", props.isRefreshing && "opacity-70")}>
-        {props.children}
-      </CardContent>
-      <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
-      {props.isLoadingMore ? (
-        <div className="flex justify-center border-t py-3">
-          <Spinner className="size-5 text-primary" />
-        </div>
-      ) : null}
-    </Card>
-  );
-}
-
 export function LanguageRequestsSection(props: {
   requests: LanguageRequestRow[];
-  status: string;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
   onLoadMore: () => void;
 }) {
   const { t, locale } = useI18n();
-  const { rows, isFirstLoad, isRefreshing } = useStablePaginatedRows({
-    results: props.requests,
-    status: props.status,
-  });
 
-  if (isFirstLoad) {
-    return <Spinner className="size-6 text-primary" />;
-  }
-
-  if (rows.length === 0) {
+  if (props.requests.length === 0) {
     return (
       <Empty className="border border-dashed">
         <EmptyHeader>
@@ -272,14 +255,10 @@ export function LanguageRequestsSection(props: {
     );
   }
 
-  const canLoadMore = props.status === "CanLoadMore";
-  const isLoadingMore = props.status === "LoadingMore";
-
   return (
     <AdminTableCard
-      isRefreshing={isRefreshing}
-      canLoadMore={canLoadMore}
-      isLoadingMore={isLoadingMore}
+      canLoadMore={props.hasNextPage && !props.isFetchingNextPage}
+      isLoadingMore={props.isFetchingNextPage}
       onLoadMore={props.onLoadMore}
     >
       <Table>
@@ -291,7 +270,7 @@ export function LanguageRequestsSection(props: {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((request) => (
+          {props.requests.map((request) => (
             <TableRow key={request._id}>
               <TableCell className="font-medium">{request.requestedLocale}</TableCell>
               <TableCell>{request.userEmail ?? request.userId}</TableCell>
@@ -306,7 +285,8 @@ export function LanguageRequestsSection(props: {
 
 export function BabiesSection(props: {
   babies: BabyRow[];
-  status: string;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
   sort: SortBy;
   order: SortOrder;
   tab: AdminTab;
@@ -314,23 +294,11 @@ export function BabiesSection(props: {
   onLoadMore: () => void;
 }) {
   const { t, locale } = useI18n();
-  const { rows, isFirstLoad, isRefreshing } = useStablePaginatedRows({
-    results: props.babies,
-    status: props.status,
-  });
-
-  if (isFirstLoad) {
-    return <Spinner className="size-6 text-primary" />;
-  }
-
-  const canLoadMore = props.status === "CanLoadMore";
-  const isLoadingMore = props.status === "LoadingMore";
 
   return (
     <AdminTableCard
-      isRefreshing={isRefreshing}
-      canLoadMore={canLoadMore}
-      isLoadingMore={isLoadingMore}
+      canLoadMore={props.hasNextPage && !props.isFetchingNextPage}
+      isLoadingMore={props.isFetchingNextPage}
       onLoadMore={props.onLoadMore}
     >
       <Table>
@@ -361,7 +329,7 @@ export function BabiesSection(props: {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {rows.map((baby) => (
+          {props.babies.map((baby) => (
             <TableRow key={baby._id}>
               <TableCell className="font-medium">
                 <span className="inline-flex items-center gap-2">
@@ -379,13 +347,7 @@ export function BabiesSection(props: {
                 <Button
                   size="sm"
                   variant="outline"
-                  render={
-                    <Link
-                      to="/baby/$publicId"
-                      params={{ publicId: baby.publicId }}
-                      preload="viewport"
-                    />
-                  }
+                  render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
                   nativeButton={false}
                 >
                   {t("Open")}
@@ -399,24 +361,57 @@ export function BabiesSection(props: {
   );
 }
 
+function AdminBabiesTab() {
+  const search = Route.useSearch();
+  const loaderData = Route.useLoaderData();
+  const babiesQuery = usePreloadedConvexInfiniteQuery(api.admin.listBabies, {
+    handle: loaderData.babies,
+    remixArgs: null,
+  });
+
+  const babies = babiesQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <BabiesSection
+      babies={babies}
+      hasNextPage={babiesQuery.hasNextPage}
+      isFetchingNextPage={babiesQuery.isFetchingNextPage}
+      sort={search.sort}
+      order={search.order}
+      tab={search.tab}
+      hideDemo={search.hideDemo}
+      onLoadMore={() => {
+        void babiesQuery.fetchNextPage();
+      }}
+    />
+  );
+}
+
+function AdminLanguagesTab() {
+  const loaderData = Route.useLoaderData();
+  const languagesQuery = usePreloadedConvexInfiniteQuery(api.admin.listLanguageRequests, {
+    handle: loaderData.languages,
+    remixArgs: null,
+  });
+
+  const requests = languagesQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <LanguageRequestsSection
+      requests={requests}
+      hasNextPage={languagesQuery.hasNextPage}
+      isFetchingNextPage={languagesQuery.isFetchingNextPage}
+      onLoadMore={() => {
+        void languagesQuery.fetchNextPage();
+      }}
+    />
+  );
+}
+
 export function AdminDashboardPage() {
   const { t } = useI18n();
-  const auth = useConvexAuth();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
-
-  const languageQuery = usePaginatedQuery(
-    api.admin.listLanguageRequests,
-    auth.isAuthenticated && search.tab === "languages" ? {} : "skip",
-    { initialNumItems: ADMIN_PAGE_SIZE },
-  );
-  const babiesQuery = usePaginatedQuery(
-    api.admin.listBabies,
-    auth.isAuthenticated && search.tab === "babies"
-      ? { sortBy: search.sort, sortOrder: search.order, hideDemo: search.hideDemo }
-      : "skip",
-    { initialNumItems: ADMIN_PAGE_SIZE },
-  );
 
   function setTab(tab: AdminTab) {
     void navigate({
@@ -446,7 +441,7 @@ export function AdminDashboardPage() {
           variant="outline"
           size="sm"
           className="w-fit"
-          render={<Link to="/dashboard" preload="viewport" />}
+          render={<Link to="/dashboard" />}
           nativeButton={false}
         >
           <ArrowLeft data-icon="inline-start" />
@@ -513,23 +508,11 @@ export function AdminDashboardPage() {
               </div>
 
               <TabsContent value="babies" className="mt-0">
-                <BabiesSection
-                  babies={babiesQuery.results}
-                  status={babiesQuery.status}
-                  sort={search.sort}
-                  order={search.order}
-                  tab={search.tab}
-                  hideDemo={search.hideDemo}
-                  onLoadMore={() => babiesQuery.loadMore(ADMIN_PAGE_SIZE)}
-                />
+                {search.tab === "babies" ? <AdminBabiesTab /> : null}
               </TabsContent>
 
               <TabsContent value="languages" className="mt-0">
-                <LanguageRequestsSection
-                  requests={languageQuery.results}
-                  status={languageQuery.status}
-                  onLoadMore={() => languageQuery.loadMore(ADMIN_PAGE_SIZE)}
-                />
+                {search.tab === "languages" ? <AdminLanguagesTab /> : null}
               </TabsContent>
             </Tabs>
           </CardContent>

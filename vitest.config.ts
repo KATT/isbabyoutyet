@@ -5,9 +5,23 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
  * Monorepo Vitest projects (formerly "workspaces").
  * Run all packages from the repo root with `pnpm test` / `pnpm exec vitest run`.
  */
+const oxlintPluginsProject = {
+  test: {
+    name: "oxlint-plugins",
+    include: ["oxlint-plugins/**/*.test.ts"],
+    environment: "node" as const,
+  },
+};
+
 export default defineConfig({
   test: {
-    projects: ["packages/convex", webUnitProject],
+    projects: [
+      "packages/convex",
+      "packages/query-prefetch",
+      "packages/convex-prefetch",
+      webUnitProject,
+      oxlintPluginsProject,
+    ],
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
@@ -17,6 +31,8 @@ export default defineConfig({
         "apps/web/src/**/*.{ts,tsx}",
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
+        "packages/query-prefetch/src/**/*.ts",
+        "packages/convex-prefetch/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",
@@ -32,10 +48,10 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 67.07,
-        branches: 60.43,
-        functions: 64.08,
-        lines: 67.64,
+        statements: 70.06,
+        branches: 63.46,
+        functions: 67.88,
+        lines: 70.52,
       },
     },
   },
