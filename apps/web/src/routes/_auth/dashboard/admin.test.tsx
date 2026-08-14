@@ -306,12 +306,17 @@ test("infinite scroll sentinel requests another page when visible", async () => 
   globalThis.IntersectionObserver = OriginalObserver;
 });
 
-test("admin dashboard page wires tabs into the URL search", async () => {
+test("admin dashboard page exposes tab triggers as search links", async () => {
   await using view = renderResource(<AdminDashboardPage />);
   expect(view.getByText("Admin dashboard")).toBeTruthy();
-  expect(view.getByRole("tab", { name: "All babies" })).toBeTruthy();
-  expect(view.getByRole("tab", { name: "Requested languages" })).toBeTruthy();
 
-  fireEvent.click(view.getByRole("tab", { name: "Requested languages" }));
+  const babiesTab = view.getByRole("tab", { name: "All babies" });
+  const languagesTab = view.getByRole("tab", { name: "Requested languages" });
+  expect(babiesTab.tagName).toBe("A");
+  expect(languagesTab.tagName).toBe("A");
+  expect(babiesTab.getAttribute("href")).toContain("tab=babies");
+  expect(languagesTab.getAttribute("href")).toContain("tab=languages");
+
+  fireEvent.click(languagesTab);
   expect(mocks.navigate).toHaveBeenCalled();
 });

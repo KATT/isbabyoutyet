@@ -445,8 +445,32 @@ export function AdminDashboardPage() {
               }}
             >
               <TabsList variant="default">
-                <TabsTrigger value="babies">{t("All babies")}</TabsTrigger>
-                <TabsTrigger value="languages">{t("Requested languages")}</TabsTrigger>
+                <TabsTrigger
+                  value="babies"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      to="/dashboard/admin"
+                      search={{ tab: "babies", sort: search.sort, order: search.order }}
+                      replace
+                    />
+                  }
+                >
+                  {t("All babies")}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="languages"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      to="/dashboard/admin"
+                      search={{ tab: "languages", sort: search.sort, order: search.order }}
+                      replace
+                    />
+                  }
+                >
+                  {t("Requested languages")}
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="babies" className="mt-0">
