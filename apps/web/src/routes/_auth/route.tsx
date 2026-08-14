@@ -1,4 +1,5 @@
 import { authServer } from "@/lib/auth-server";
+import { getClientProfile } from "@/lib/client-route-cache";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -20,6 +21,16 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
+    if (typeof window !== "undefined") {
+      // Fast path for client navigations: the profile comes from a held
+      // Convex subscription (kept fresh reactively), so nothing is awaited
+      // over the network. A null profile (logged out, or first navigation
+      // before the cache is warm) falls through to the full check below.
+      const cachedProfile = await getClientProfile(opts.context.convexClient);
+      if (cachedProfile) {
+        return { locale: cachedProfile.locale };
+      }
+    }
     // Check authentication server-side
     const token = await getToken();
 

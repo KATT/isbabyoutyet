@@ -39,7 +39,14 @@ export const Route = createRootRouteWithContext<{
   locale: SupportedLocale;
 }>()({
   beforeLoad: async () => {
-    return { locale: await detectRequestLocale() };
+    // SSR detects the locale from request headers. Client navigations resolve
+    // the same cookie → preferred-language chain locally — beforeLoad runs on
+    // every navigation (back button included), so a server round-trip here
+    // would tax them all.
+    if (typeof window === "undefined") {
+      return { locale: await detectRequestLocale() };
+    }
+    return { locale: getDetectedLocale() };
   },
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();

@@ -4,6 +4,7 @@ import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-ro
 import { useConvexAuth, usePaginatedQuery } from "convex/react";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { getClientProfile } from "@/lib/client-route-cache";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -80,7 +81,8 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
     const profile =
       typeof window === "undefined"
         ? await authServer.fetchAuthQuery(api.profile.get, {})
-        : await opts.context.convexClient.query(api.profile.get, {});
+        : // Held-subscription cache: no network awaited on warm client navs.
+          await getClientProfile(opts.context.convexClient);
     if (!profile?.isAdmin) {
       throw redirect({ to: "/dashboard" });
     }
