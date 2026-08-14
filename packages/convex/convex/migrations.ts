@@ -427,13 +427,11 @@ export const backfillBabyLastActivityAt = migrations.define({
 });
 
 export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  let subscriptionCount = 0;
-  for await (const _subscription of ctx.db
+  const subscriptions = await ctx.db
     .query("pushSubscriptions")
-    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))) {
-    subscriptionCount += 1;
-  }
-  await ctx.db.patch(baby._id, { subscriptionCount });
+    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
+    .collect();
+  await ctx.db.patch(baby._id, { subscriptionCount: subscriptions.length });
 }
 
 export const backfillBabySubscriptionCount = migrations.define({

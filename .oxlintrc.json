@@ -11,7 +11,7 @@
     "builtin": true
   },
   // Generated code is not ours to lint
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts"],
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "oxlint-plugins/**"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -41,7 +41,7 @@
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
-    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime"] }],
+    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [

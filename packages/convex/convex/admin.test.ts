@@ -185,7 +185,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
     paginationOpts: FIRST_PAGE,
   });
   expect(byCreatedAsc.page.map((row) => row._id)).toEqual(
-    [...byCreated.page].reverse().map((row) => row._id),
+    [...byCreated.page].toReversed().map((row) => row._id),
   );
 
   const waitingRow = byCreated.page.find((row) => row.publicId === "baby-waiting");
