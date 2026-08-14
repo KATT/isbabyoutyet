@@ -15,7 +15,7 @@ import { getCurrentStatus } from "@workspace/convex/src/types";
 import {
   getDaysUntilDueDate,
   getOverdueDays,
-  getThemeCssUrl,
+  getThemeCss,
   getThemePrimaryColor,
 } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
@@ -115,7 +115,11 @@ export const Route = createFileRoute("/baby/$publicId")({
     });
 
     const themeColor = getThemePrimaryColor(baby.theme);
-    const themeCssUrl = getThemeCssUrl(baby.theme);
+    // Inline via `styles` (not `links`): TanStack Asset forces React 19
+    // `precedence` on stylesheet links, which can leave theme CSS stuck after
+    // navigating away. Inline head styles still paint before body (no FOUC)
+    // and unmount cleanly with the route.
+    const themeCss = getThemeCss(baby.theme);
     const manifestUrl = `/baby/manifest/${baby._id}`;
 
     return {
@@ -156,15 +160,15 @@ export const Route = createFileRoute("/baby/$publicId")({
           content: themeColor,
         },
       ],
+      styles: themeCss
+        ? [
+            {
+              "data-baby-theme": baby.theme ?? "",
+              children: themeCss,
+            },
+          ]
+        : [],
       links: [
-        ...(themeCssUrl
-          ? [
-              {
-                rel: "stylesheet",
-                href: themeCssUrl,
-              },
-            ]
-          : []),
         {
           rel: "manifest",
           href: manifestUrl,
