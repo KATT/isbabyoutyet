@@ -4,6 +4,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { ONBOARDING_STEPS } from "./steps";
@@ -20,13 +21,13 @@ type GettingStartedCardProps = {
   minimized: boolean;
   onMinimize: (minimized: boolean) => void;
   onDismiss: () => void;
-  onAcknowledgeStep: (stepId: string) => void;
+  onAcknowledgeStep: (stepId: OnboardingStepId) => void;
   /** Current route context for CTAs */
   surface: "dashboard" | "baby";
   /** First created baby — checklist links go here, not to later babies */
   tourBaby: TourBaby | null;
   /** Baby-page actions: open a dialog or scroll to a control */
-  onGoToStep: ((stepId: string) => void) | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   className: string | undefined;
 };
 
@@ -39,7 +40,6 @@ function babyPageLink(opts: { publicId: string; settings: boolean | undefined })
     to: "/baby/$publicId",
     params: { publicId: opts.publicId },
     search: opts.settings ? { settings: true } : undefined,
-    preload: "viewport",
   };
 }
 
@@ -47,8 +47,8 @@ function getStepAction(opts: {
   step: OnboardingStep;
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
-  onGoToStep: ((stepId: string) => void) | undefined;
-  onAcknowledge: (stepId: string) => void;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
+  onAcknowledge: (stepId: OnboardingStepId) => void;
   t: TranslationFunction;
 }): StepAction | null {
   const step = opts.step;
@@ -63,7 +63,7 @@ function getStepAction(opts: {
     }
     return {
       kind: "link",
-      link: { to: "/dashboard/add", preload: "viewport" },
+      link: { to: "/dashboard/add" },
       label: t(ctaLabel),
       onClick: undefined,
     };
@@ -330,7 +330,7 @@ function NextStepHint(props: {
   step: OnboardingStep;
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
-  onGoToStep: ((stepId: string) => void) | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   onAcknowledge: () => void;
   t: TranslationFunction;
 }) {
@@ -340,7 +340,7 @@ function NextStepHint(props: {
     surface: props.surface,
     tourBaby: props.tourBaby,
     onGoToStep: props.onGoToStep,
-    onAcknowledge: (stepId: string) => {
+    onAcknowledge: (stepId: OnboardingStepId) => {
       if (stepId === props.step.id) {
         props.onAcknowledge();
       }

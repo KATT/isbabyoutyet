@@ -20,8 +20,10 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
-import { useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
+import { robotsNoIndexMeta } from "@/lib/seo";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -32,10 +34,15 @@ function loginSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
+  head: (opts) => ({
+    meta: [
+      {
+        title: translate(opts.match.context.locale, "Log in – Is Baby Out Yet?"),
+      },
+      ...robotsNoIndexMeta(),
+    ],
+  }),
 });
-
-// Build-time flag: preview deploys set VITE_HAS_DEMO_LOGIN via deploy-convex.
-const hasDemoLogin = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 function LoginPage() {
   const { t } = useI18n();
@@ -137,7 +144,6 @@ function LoginPage() {
               {t("Don't have an account?")}{" "}
               <Link
                 to="/auth/signup"
-                preload="viewport"
                 className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
               >
                 {t("Sign up")}

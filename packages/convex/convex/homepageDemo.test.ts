@@ -64,11 +64,12 @@ test("refresh creates Juniper Hale as born after a two-day labour with fixture e
   expect(baby).toMatchObject({
     name: HOMEPAGE_DEMO_BABY.name,
     publicId: HOMEPAGE_DEMO_BABY.publicId,
-    userId: HOMEPAGE_DEMO_BABY.ownerUserId,
     theme: HOMEPAGE_DEMO_BABY.theme,
     locale: "en-GB",
     demo: true,
   });
+  expect(baby).not.toHaveProperty("userId");
+  expect(baby).not.toHaveProperty("ownerTokenIdentifier");
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 
   const now = Date.now();
@@ -174,6 +175,19 @@ test("generateUploadUrl returns a storage upload URL", async () => {
   expect(url.length).toBeGreaterThan(0);
 });
 
+test("storePhoto stores JPEG bytes and returns a storage id", async () => {
+  const t = await setup();
+  const bytes = Uint8Array.from([0xff, 0xd8, 0xff, 0xd9]).buffer;
+  const storageId = await t.action(internal.homepageDemo.storePhoto, {
+    bytes,
+    contentType: "image/jpeg",
+  });
+  expect(storageId).toEqual(expect.any(String));
+
+  const url = await t.run(async (ctx) => await ctx.storage.getUrl(storageId));
+  expect(url).toEqual(expect.any(String));
+});
+
 test("clearFeedBatch reports hasMore until the feed is empty", async () => {
   const t = await setup();
   const { babyId } = await t.mutation(internal.homepageDemo.refresh, {});
@@ -275,12 +289,15 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   const realBabyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Real Willow",
       dueDate: "2026-12-01",
       publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 
@@ -300,7 +317,7 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
     return (
       await ctx.db
         .query("timelineItems")
-        .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", realBabyId))
+        .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", realBabyId))
         .collect()
     ).length;
   });
@@ -313,6 +330,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
   const legacyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: HOMEPAGE_DEMO_BABY.ownerUserId,
+      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
       name: "Juniper Hale",
       dueDate: "2026-01-01",
       publicId: HOMEPAGE_DEMO_BABY.publicId,
@@ -320,6 +338,8 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 
@@ -336,12 +356,15 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
   const babyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Someone Else",
       dueDate: "2026-12-01",
       publicId: "someone-else",
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 

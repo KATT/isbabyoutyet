@@ -2,6 +2,7 @@ import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
+import { appIdentity } from "./authIdentity";
 import { canManageBaby } from "./babyAccess";
 import { isActive } from "./softDelete";
 
@@ -114,7 +115,7 @@ export const listByBaby = query({
   handler: async (ctx, args) => {
     const result = await ctx.db
       .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_createdAt", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -152,7 +153,7 @@ export const remove = mutation({
     // Check if user can manage the baby (owner or co-parent)
     const identity = await ctx.auth.getUserIdentity();
     const isManager = identity
-      ? await canManageBaby(ctx, { baby, userId: identity.subject })
+      ? await canManageBaby(ctx, { baby, identity: appIdentity(identity) })
       : false;
 
     // Check if visitor can delete (matches visitorId and within time window)

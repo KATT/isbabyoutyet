@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -20,7 +20,6 @@ vi.mock("@tanstack/react-router", () => ({
     search: unknown;
     children: React.ReactNode;
     className: string | undefined;
-    preload: string | undefined;
   }) => {
     const href = props.params?.publicId
       ? `/baby/${props.params.publicId}`
@@ -59,6 +58,43 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
   expect(livePage.parentElement).not.toBe(createPage.parentElement);
 });
 
+test("hero headline cycles through baby names", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+  await using _view = renderResource(<HomePage />);
+
+  expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
+
+  // Before the first tick only the invisible sizer copy of the name exists.
+  expect(screen.getAllByText("Juniper")).toHaveLength(1);
+
+  act(() => {
+    vi.advanceTimersByTime(2400);
+  });
+
+  // After a tick the name is also rendered as the visible rotating word.
+  expect(screen.getAllByText("Juniper")).toHaveLength(2);
+});
+
+test("Swedish homepage hero uses Swedish name pool", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+  await using _view = renderResource(
+    <LocaleProvider locale="sv">
+      <HomePage />
+    </LocaleProvider>,
+  );
+
+  act(() => {
+    vi.advanceTimersByTime(2400);
+  });
+  expect(screen.getAllByText("Ella")).toHaveLength(2);
+});
+
 test("Swedish homepage links visitors to Ella Holm", async () => {
   await using _view = renderResource(
     <LocaleProvider locale="sv">
@@ -82,8 +118,14 @@ test("homepage language picker saves an explicit language choice", async () => {
   });
   await using _view = renderResource(<HomePage />);
 
-  fireEvent.click(screen.getByRole("combobox", { name: "Language" }));
-  const swedish = await screen.findByRole("option", { name: "Swedish" });
+  const picker = screen.getByRole("combobox", { name: "Language" });
+  expect(picker.textContent).toContain("British English");
+  fireEvent.click(picker);
+  const swedish = await screen.findByRole("option", { name: "svenska" });
+  expect(screen.getByRole("option", { name: "British English" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "American English" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "español" })).toBeTruthy();
+  expect(screen.getByRole("option", { name: "português (Brasil)" })).toBeTruthy();
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
 

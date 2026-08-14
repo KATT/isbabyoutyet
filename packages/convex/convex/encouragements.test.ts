@@ -13,9 +13,12 @@ async function setupWithBaby() {
   const babyId: Id<"baby"> = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Baby Smith",
       dueDate: "2026-09-01",
       publicId: "baby-smith",
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
   return { t, babyId };
@@ -125,6 +128,11 @@ test("the baby's owner can remove an encouragement", async () => {
     message: "Something inappropriate",
     visitorId: "visitor-x",
   });
+
+  const asUnrelatedUser = t.withIdentity({ subject: "bob" });
+  await expect(
+    asUnrelatedUser.mutation(api.encouragements.remove, { encouragementId }),
+  ).rejects.toThrow("Not authorized to delete this encouragement");
 
   const asOwner = t.withIdentity({ subject: "alice" });
   await asOwner.mutation(api.encouragements.remove, { encouragementId });

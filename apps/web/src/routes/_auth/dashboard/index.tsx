@@ -1,53 +1,55 @@
 import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useConvexAuth, useMutation, useQuery } from "convex/react";
-import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { allKeyed } from "@workspace/query-prefetch";
+import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { useMutation } from "convex/react";
+import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
-import { authServer } from "@/lib/auth-server";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
+import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    // Server: cookie-authenticated HTTP query so the first paint has babies.
-    // Client navigations use the already-authed Convex client.
-    const babies =
-      typeof window === "undefined"
-        ? await authServer.fetchAuthQuery(api.baby.listByUser, {})
-        : await opts.context.convexClient.query(api.baby.listByUser, {});
-    return { babies };
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    return await allKeyed({
+      babies: preloader.ensureQueryData(api.baby.listByUser, {}),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
+    });
   },
 });
 
 function DashboardPage() {
   const { t } = useI18n();
   const loaderData = Route.useLoaderData();
-  const auth = useConvexAuth();
-  const liveBabies = useQuery(api.baby.listByUser, auth.isAuthenticated ? {} : "skip");
-  const babies = liveBabies === undefined ? loaderData.babies : liveBabies;
+  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, loaderData.babies);
+  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, loaderData.onboarding);
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const babies = babiesQuery.data;
+  const progress = onboardingQuery.data;
+  const profile = profileQuery.data;
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
     void claimInvites({});
   }, [claimInvites]);
 
-  const router = useRouter();
   const restartTour = useMutation(api.onboarding.restart);
-  const progress = useQuery(api.onboarding.getMine, {});
 
   return (
     <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
         surface="dashboard"
+        onboarding={loaderData.onboarding}
         enabled={undefined}
         spotlight={undefined}
         babyPublicId={undefined}
@@ -66,10 +68,24 @@ function DashboardPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
+            {profile?.isAdmin ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full font-bold"
+                render={
+                  <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
+                }
+                nativeButton={false}
+              >
+                <Shield className="w-4 h-4" />
+                {t("Admin")}
+              </Button>
+            ) : null}
             <Button
               size="sm"
               className="rounded-full font-bold"
-              render={<Link to="/dashboard/add" preload="viewport" />}
+              render={<Link to="/dashboard/add" />}
               nativeButton={false}
             >
               <Plus className="w-4 h-4" />
@@ -94,10 +110,11 @@ function DashboardPage() {
               variant="ghost"
               className="rounded-full font-bold"
               onClick={async () => {
+                // expectAuth: reload so auth is re-resolved from a clean slate
                 await authClient.signOut({
                   fetchOptions: {
                     onSuccess: () => {
-                      router.navigate({ to: "/" });
+                      window.location.href = "/";
                     },
                     onError: (error) => {
                       toast.error(error.error.message);
@@ -127,16 +144,12 @@ function DashboardPage() {
           </p>
         </div>
 
-        <DashboardBabyList
-          babies={babies}
-          isPending={liveBabies === undefined && babies.length === 0}
-          tourBabyPublicId={progress?.tourBaby?.publicId}
-        />
+        <DashboardBabyList babies={babies} tourBabyPublicId={progress.tourBaby?.publicId} />
       </main>
 
       <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
         <div className="mx-auto flex max-w-5xl justify-center">
-          <LanguageSettings />
+          <LanguageSettings profile={loaderData.profile} />
         </div>
       </footer>
     </div>
@@ -157,18 +170,9 @@ type DashboardBaby = {
 
 export function DashboardBabyList(props: {
   babies: DashboardBaby[];
-  isPending: boolean;
   tourBabyPublicId: string | undefined;
 }) {
   const { t } = useI18n();
-
-  if (props.isPending) {
-    return (
-      <div className="mx-auto max-w-xl py-14 text-center">
-        <Spinner className="mx-auto size-8 text-primary" />
-      </div>
-    );
-  }
 
   if (props.babies.length === 0) {
     return (
@@ -183,7 +187,7 @@ export function DashboardBabyList(props: {
         <Button
           size="lg"
           className="mt-6 rounded-full font-extrabold pop-shadow"
-          render={<Link to="/dashboard/add" preload="viewport" />}
+          render={<Link to="/dashboard/add" />}
           nativeButton={false}
           data-tour-id="add_baby"
         >

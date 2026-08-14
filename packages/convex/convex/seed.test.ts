@@ -30,7 +30,7 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
   const docs = await t.run(async (ctx) => {
     return await ctx.db
       .query("baby")
-      .withIndex("by_user", (q) => q.eq("userId", "seed-user"))
+      .withIndex("by_userId", (q) => q.eq("userId", "seed-user"))
       .collect();
   });
 
@@ -108,7 +108,7 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
   const onboarding = await t.run(async (ctx) => {
     return await ctx.db
       .query("userOnboarding")
-      .withIndex("by_user", (q) => q.eq("userId", String(authUser._id)))
+      .withIndex("by_userId", (q) => q.eq("userId", String(authUser._id)))
       .unique();
   });
   expect(onboarding).toMatchObject({
@@ -129,7 +129,7 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
     return (
       await ctx.db
         .query("baby")
-        .withIndex("by_user", (q) => q.eq("userId", first.userId))
+        .withIndex("by_userId", (q) => q.eq("userId", first.userId))
         .collect()
     ).length;
   });

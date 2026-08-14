@@ -67,6 +67,9 @@ function patchLeakedReactRequire(): Plugin {
 
 const config = defineConfig({
   plugins: [
+    // Docs require devtools() as the first Vite plugin:
+    // https://tanstack.com/devtools/latest/docs/quick-start#vite-plugin
+    devtools(),
     aliasUseSyncExternalStoreShim(),
     paraglideVitePlugin({
       project: "./project.inlang",
@@ -76,7 +79,6 @@ const config = defineConfig({
       cookieName: "PARAGLIDE_LOCALE",
       strategy: ["cookie", "preferredLanguage", "baseLocale"],
     }),
-    devtools(),
     // Base UI grows the Nitro SSR rebundle enough that Rolldown's default split
     // creates circular `ssr`/`ssr2` chunks and drops `ssr_exports` (preview 500).
     // Keep the SSR service graph in one chunk; still split real node_modules

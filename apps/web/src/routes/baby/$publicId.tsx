@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dia
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, TIMELINE_PAGE_SIZE, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
@@ -12,12 +12,7 @@ import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import {
-  getDaysUntilDueDate,
-  getOverdueDays,
-  getThemeCssUrl,
-  getThemePrimaryColor,
-} from "@/components/baby/utils";
+import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
   createFileRoute,
@@ -27,12 +22,19 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
+import { allKeyed } from "@workspace/query-prefetch";
+import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
+import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { translate, useI18n } from "@/lib/i18n";
+import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
+import { useI18n } from "@/lib/i18n";
+import { canonicalUrl } from "@/lib/site-url";
+
+const TIMELINE_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -41,147 +43,171 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const baby = await opts.context.convexClient.query(api.baby.getByPublicId, {
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
-    if (!baby) {
+    const babyDoc = baby.initialData;
+    if (!babyDoc) {
       throw notFound();
     }
-    if (baby.publicId !== opts.params.publicId) {
+    if (babyDoc.publicId !== opts.params.publicId) {
       throw redirect({
         to: "/baby/$publicId",
-        params: { publicId: baby.publicId },
+        params: { publicId: babyDoc.publicId },
         search: opts.location.search,
         replace: true,
       });
     }
-    return { baby, locale: baby.resolvedLocale };
+    return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const baby = opts.context.baby;
-    const [vapidPublicKey, latestUpdate, firstPage] = await Promise.all([
-      opts.context.convexClient.query(api.pushSubscriptions.getPublicKey, {}),
-      opts.context.convexClient.query(api.timeline.latestUpdate, {
-        babyId: baby._id,
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
+      id: opts.params.publicId,
+    });
+    const babyDoc = babyHandle.initialData;
+    if (!babyDoc) {
+      throw notFound();
+    }
+
+    const shared = await allKeyed({
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: babyDoc._id },
+        numItems: TIMELINE_PAGE_SIZE,
       }),
-      opts.context.convexClient.query(api.timeline.listByBaby, {
-        babyId: baby._id,
-        paginationOpts: { numItems: TIMELINE_PAGE_SIZE, cursor: null },
-      }),
-    ]);
+      profile: preloader.ensureQueryData(api.profile.get, {}),
+    });
+
+    if (!shared.myAccess.initialData.canManage) {
+      return {
+        baby: babyHandle,
+        ...shared,
+        scheduledNotifications: null,
+        subscriptionCount: null,
+        onboarding: null,
+        coParentsList: null,
+      };
+    }
+
     return {
-      baby,
-      vapidPublicKey,
-      latestUpdate,
-      firstPage,
+      baby: babyHandle,
+      ...shared,
+      ...(await allKeyed({
+        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+          babyId: babyDoc._id,
+        }),
+        subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
+          babyId: babyDoc._id,
+        }),
+        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+        // Prefetch even when settings are closed — Dialog may keep the panel mounted
+        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
+          babyId: babyDoc._id,
+        }),
+      })),
     };
   },
   head: (opts) => {
-    const baby = opts.loaderData?.baby;
+    const babyDoc = opts.loaderData?.baby.initialData;
 
-    if (!baby) {
+    if (!babyDoc) {
       return {};
     }
 
-    const overdueDays = getOverdueDays(baby.dueDate);
-    const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
-    const isBorn = !!baby.babyBorn;
-
-    const locale = baby.resolvedLocale;
-    let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-    if (!isBorn) {
-      if (overdueDays > 0) {
-        title = translate(
-          locale,
-          overdueDays === 1
-            ? "{{count}} day overdue – Is {{name}} out yet?"
-            : "{{count}} days overdue – Is {{name}} out yet?",
-          { count: overdueDays, name: baby.name },
-        );
-      } else {
-        title = translate(
-          locale,
-          daysUntilDueDate === 1
-            ? "{{count}} day until due date – Is {{name}} out yet?"
-            : "{{count}} days until due date – Is {{name}} out yet?",
-          { count: daysUntilDueDate, name: baby.name },
-        );
-      }
-    }
-    title = translate(locale, "{{title}} – Track Your Baby's Journey", { title });
-
-    const description = translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
-      name: baby.name,
+    const seo = babySeoHead({
+      name: babyDoc.name,
+      dueDate: babyDoc.dueDate,
+      publicId: babyDoc.publicId,
+      theme: babyDoc.theme,
+      locale: babyDoc.resolvedLocale,
+      babyBorn: babyDoc.babyBorn,
+      wentToHospital: babyDoc.wentToHospital,
+      laborStarted: babyDoc.laborStarted,
     });
-
-    const themeColor = getThemePrimaryColor(baby.theme);
-    const themeCssUrl = getThemeCssUrl(baby.theme);
-    const manifestUrl = `/baby/manifest/${baby._id}`;
+    // Inline via `styles` (not `links`): TanStack Asset forces React 19
+    // `precedence` on stylesheet links, which can leave theme CSS stuck after
+    // navigating away. Inline head styles still paint before body (no FOUC)
+    // and unmount cleanly with the route.
+    const themeCss = getThemeCss(babyDoc.theme);
+    const manifestUrl = `/baby/manifest/${babyDoc._id}`;
 
     return {
       meta: [
         {
-          title,
+          title: seo.title,
         },
         {
           name: "description",
-          content: description,
+          content: seo.description,
         },
         {
           property: "og:title",
-          content: title,
+          content: seo.title,
         },
         {
           property: "og:description",
-          content: description,
+          content: seo.description,
         },
         {
           property: "og:url",
-          content: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          content: seo.ogUrl,
         },
         {
           property: "og:locale",
-          content: locale.replace("-", "_"),
+          content: seo.locale.replace("-", "_"),
         },
         {
+          property: "og:type",
+          content: "website",
+        },
+        ...openGraphImageMeta({ imageUrl: seo.imageUrl, alt: seo.imageAlt }),
+        {
           name: "twitter:title",
-          content: title,
+          content: seo.title,
         },
         {
           name: "twitter:description",
-          content: description,
+          content: seo.description,
         },
         {
           name: "theme-color",
-          content: themeColor,
+          content: seo.themeColor,
         },
+        ...searchRobotsMeta({ index: seo.indexable }),
       ],
+      styles: themeCss
+        ? [
+            {
+              "data-baby-theme": babyDoc.theme ?? "",
+              children: themeCss,
+            },
+          ]
+        : [],
       links: [
-        ...(themeCssUrl
-          ? [
-              {
-                rel: "stylesheet",
-                href: themeCssUrl,
-              },
-            ]
-          : []),
         {
           rel: "manifest",
           href: manifestUrl,
         },
         {
           rel: "canonical",
-          href: `https://isbabyoutyet.com/baby/${baby.publicId}`,
+          href: seo.canonical,
         },
       ],
     };
   },
+  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
 });
 
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+function docToBabyData(
+  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -205,28 +231,40 @@ function BabyPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
-  // Use prefetched data if available, otherwise use reactive query
-  const queryBaby = useQuery(api.baby.getByPublicId, { id: params.publicId });
-  // Prefer query result (reactive) over prefetched data, but use prefetched as fallback
-  const babyDoc = queryBaby ?? loaderData.baby;
+  if (!loaderData) {
+    throw notFound();
+  }
+
+  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
+  const babyDoc = babyQuery.data;
+  if (!babyDoc) {
+    throw notFound();
+  }
   const baby = docToBabyData(babyDoc);
+
+  const latestUpdateQuery = usePreloadedConvexQuery(
+    api.timeline.latestUpdate,
+    loaderData.latestUpdate,
+  );
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
+  const vapidQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.getPublicKey,
+    loaderData.vapidPublicKey,
+  );
+
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
-  const latestUpdateQuery = useQuery(api.timeline.latestUpdate, { babyId: babyDoc._id });
-  const profile = useQuery(api.profile.get, {});
-  const myAccess = useQuery(api.coParents.myAccess, { babyId: babyDoc._id });
-  // Prefer the reactive value; fall back to the loader's prefetch while loading
-  const latestUpdate =
-    latestUpdateQuery === undefined ? loaderData.latestUpdate : latestUpdateQuery;
 
-  // Prefer server access (includes co-parents); fall back to session owner check
-  // while the query loads so owners don't flash without controls.
-  const isOwner = myAccess?.isOwner ?? sessionResult.data?.user?.id === babyDoc.userId;
-  const canManage = myAccess?.canManage ?? isOwner;
+  const latestUpdate = latestUpdateQuery.data;
+  const profile = profileQuery.data;
+  const myAccess = myAccessQuery.data;
+  const isOwner = myAccess.isOwner;
+  const canManage = myAccess.canManage;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -240,9 +278,10 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && (
+      {canManage && loaderData.onboarding ? (
         <OnboardingHost
           surface="baby"
+          onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
           spotlight={!search.settings && !composerOpen}
@@ -262,9 +301,9 @@ function BabyPage() {
             }
           }}
         />
-      )}
+      ) : null}
 
-      {canManage && (
+      {canManage ? (
         <>
           <SettingsPanel
             baby={baby}
@@ -284,7 +323,15 @@ function BabyPage() {
                   }
                 : null
             }
-            coParents={{ babyId: babyDoc._id, isOwner }}
+            coParents={
+              loaderData.coParentsList
+                ? {
+                    babyId: babyDoc._id,
+                    isOwner,
+                    listing: loaderData.coParentsList,
+                  }
+                : null
+            }
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -296,7 +343,12 @@ function BabyPage() {
               });
             }}
           />
-          <ScheduledNotificationToast babyId={babyDoc._id} />
+          {loaderData.scheduledNotifications && loaderData.subscriptionCount ? (
+            <ScheduledNotificationToast
+              notifications={loaderData.scheduledNotifications}
+              subscriptionCount={loaderData.subscriptionCount}
+            />
+          ) : null}
           <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
@@ -312,10 +364,9 @@ function BabyPage() {
             </DialogContent>
           </Dialog>
         </>
-      )}
+      ) : null}
 
-      {/* Page chrome: brand pill left, action dock right. Scrolls with the
-          page so the sticky status card gets the full viewport height. */}
+      {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
       <header className="px-4 pt-3 pb-1">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
           <Link
@@ -328,7 +379,7 @@ function BabyPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={`https://isbabyoutyet.com/baby/${babyDoc.publicId}`}
+            shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
             onShareCopied={
               canManage
                 ? () => {
@@ -366,11 +417,10 @@ function BabyPage() {
           {t("Is {{name}} out yet?", { name: baby.name })}
         </h1>
 
-        {/* Split layout: sticky status card on the left, feed on the right */}
+        {/* Split layout: sticky status card on the left, feed on the right.
+            No internal scroll on the card — that steals wheel/trackpad from the page. */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
-          {/* Sticky, but never taller than the viewport: on short screens the
-              card scrolls internally instead of clipping below the fold. */}
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-8 lg:sticky lg:top-4 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:overscroll-contain">
+          <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
             <StatusDisplay
               baby={baby}
               currentStatus={currentStatus}
@@ -386,13 +436,11 @@ function BabyPage() {
               }
             />
             <div className="flex justify-center">
-              <NotificationSubscribe
-                babyId={babyDoc._id}
-                vapidPublicKey={loaderData.vapidPublicKey}
-              />
+              <NotificationSubscribe babyId={babyDoc._id} vapidPublicKey={vapidQuery.data} />
             </div>
-            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
-            <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            <div className="mt-4">
+              <ProgressIndicator baby={baby} currentStatus={currentStatus} />
+            </div>
           </section>
 
           {/* Timeline: owner updates interleaved with encouragements. The
@@ -415,7 +463,7 @@ function BabyPage() {
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
-                initialPage={loaderData.firstPage}
+                timeline={loaderData.timeline}
               />
             </section>
           </div>

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation } from "./_generated/server";
+import { internalAction, internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -13,6 +13,7 @@ import type { Milestone } from "../src/types";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 
 const CLEAR_BATCH_SIZE = 32;
@@ -82,12 +83,14 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
   const existing = await findBabyByPublicId(ctx, demo.publicId);
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
+    ownerTokenIdentifier: tokenIdentifierForAuthUserId(HOMEPAGE_DEMO_OWNER_USER_ID),
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale: opts.locale,
     demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(opts.now),
+    lastActivityAt: opts.now,
   };
   if (existing) {
     if (!isManagedHomepageDemo(existing)) {
@@ -105,6 +108,7 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     babyBorn: null,
     photoId: null,
     thumbnailId: null,
+    subscriptionCount: 0,
   });
 }
 
@@ -168,7 +172,7 @@ async function clearFeedBatchForBaby(
 
   const items = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", opts.babyId))
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", opts.babyId))
     .take(CLEAR_BATCH_SIZE);
 
   for (const item of items) {
@@ -283,13 +287,32 @@ async function insertFeedDocs(
 }
 
 /**
- * Upload URL for homepage-demo photos. Called from the deploy/seed script
- * (admin `convex run`), not from the browser.
+ * Upload URL for homepage-demo photos. Prefer `storePhoto` from the seed
+ * script: `convex run` auto-starts the local backend, but the upload URL
+ * points at 127.0.0.1:3210 which is gone once that process exits.
  */
 export const generateUploadUrl = internalMutation({
   args: {},
+  returns: v.string(),
   handler: async (ctx) => {
     return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Store a homepage-demo JPEG via `convex run` so the CLI keeps the local
+ * backend alive for the whole call (no HTTP POST to 3210).
+ */
+export const storePhoto = internalAction({
+  args: {
+    bytes: v.bytes(),
+    contentType: v.literal("image/jpeg"),
+  },
+  returns: v.id("_storage"),
+  handler: async (ctx, args) => {
+    return await ctx.storage.store(
+      new Blob([new Uint8Array(args.bytes)], { type: args.contentType }),
+    );
   },
 });
 

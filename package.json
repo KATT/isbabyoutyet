@@ -6,6 +6,7 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",
+    "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "turbo format",
@@ -13,6 +14,7 @@
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
     "checks": "turbo run format lint-fix typecheck test:coverage knip"
   },
@@ -21,12 +23,13 @@
     "@vitest/coverage-v8": "^4.1.10",
     "knip": "^6.32.2",
     "npm-run-all": "^4.1.5",
+    "oxlint": "catalog:",
     "turbo": "^2.10.9",
     "typescript": "catalog:",
     "vitest": "^4.1.10"
   },
   "engines": {
-    "node": "^22.0.0"
+    "node": "^24.0.0"
   },
   "packageManager": "pnpm@10.26.1+sha512.664074abc367d2c9324fdc18037097ce0a8f126034160f709928e9e9f95d98714347044e5c3164d65bd5da6c59c6be362b107546292a8eecb7999196e5ce58fa"
 }

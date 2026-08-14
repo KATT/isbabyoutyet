@@ -11,17 +11,22 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as OgRouteImport } from './routes/og'
 import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as BabyPublicIdRouteImport } from './routes/baby/$publicId'
 import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard/index'
 import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
+import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as DemoApiNamesRouteImport } from './routes/demo/api.names'
 import { Route as DemoStartApiRequestRouteImport } from './routes/demo/start.api-request'
 import { Route as DemoStartServerFuncsRouteImport } from './routes/demo/start.server-funcs'
+import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
 import { Route as DemoStartSsrIndexRouteImport } from './routes/demo/start.ssr.index'
 import { Route as DemoStartSsrDataOnlyRouteImport } from './routes/demo/start.ssr.data-only'
 import { Route as DemoStartSsrFullSsrRouteImport } from './routes/demo/start.ssr.full-ssr'
@@ -36,9 +41,24 @@ const AuthRouteRoute = AuthRouteRouteImport.update({
   id: '/_auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OgRoute = OgRouteImport.update({
+  id: '/og',
+  path: '/og',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PreviewRoute = PreviewRouteImport.update({
   id: '/preview',
   path: '/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -66,6 +86,11 @@ const AuthDashboardAddRoute = AuthDashboardAddRouteImport.update({
   path: '/dashboard/add',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AuthDashboardAdminRoute = AuthDashboardAdminRouteImport.update({
+  id: '/dashboard/admin',
+  path: '/dashboard/admin',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -91,6 +116,11 @@ const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
   path: '/demo/start/server-funcs',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OgBabyPublicIdRoute = OgBabyPublicIdRouteImport.update({
+  id: '/baby/$publicId',
+  path: '/baby/$publicId',
+  getParentRoute: () => OgRoute,
+} as any)
 const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
   id: '/demo/start/ssr/',
   path: '/demo/start/ssr/',
@@ -114,16 +144,21 @@ const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/og': typeof OgRouteWithChildren
   '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/baby/$publicId': typeof BabyPublicIdRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
+  '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard/': typeof AuthDashboardIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
@@ -132,16 +167,21 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/og': typeof OgRouteWithChildren
   '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/baby/$publicId': typeof BabyPublicIdRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
+  '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/dashboard': typeof AuthDashboardIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
@@ -152,16 +192,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_auth': typeof AuthRouteRouteWithChildren
+  '/og': typeof OgRouteWithChildren
   '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
   '/baby/$publicId': typeof BabyPublicIdRoute
   '/_auth/dashboard/add': typeof AuthDashboardAddRoute
+  '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/demo/api/names': typeof DemoApiNamesRoute
   '/demo/start/api-request': typeof DemoStartApiRequestRoute
   '/demo/start/server-funcs': typeof DemoStartServerFuncsRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
   '/_auth/dashboard/': typeof AuthDashboardIndexRoute
   '/demo/start/ssr/data-only': typeof DemoStartSsrDataOnlyRoute
   '/demo/start/ssr/full-ssr': typeof DemoStartSsrFullSsrRoute
@@ -172,16 +217,21 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/og'
     | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/dashboard/add'
+    | '/dashboard/admin'
     | '/api/auth/$'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/og/baby/$publicId'
     | '/dashboard/'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
@@ -190,16 +240,21 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/og'
     | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/dashboard/add'
+    | '/dashboard/admin'
     | '/api/auth/$'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/og/baby/$publicId'
     | '/dashboard'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
@@ -209,16 +264,21 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_auth'
+    | '/og'
     | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
     | '/baby/$publicId'
     | '/_auth/dashboard/add'
+    | '/_auth/dashboard/admin'
     | '/api/auth/$'
     | '/baby/manifest/$_id'
     | '/demo/api/names'
     | '/demo/start/api-request'
     | '/demo/start/server-funcs'
+    | '/og/baby/$publicId'
     | '/_auth/dashboard/'
     | '/demo/start/ssr/data-only'
     | '/demo/start/ssr/full-ssr'
@@ -229,7 +289,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  OgRoute: typeof OgRouteWithChildren
   PreviewRoute: typeof PreviewRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
   BabyPublicIdRoute: typeof BabyPublicIdRoute
@@ -260,11 +323,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/og': {
+      id: '/og'
+      path: '/og'
+      fullPath: '/og'
+      preLoaderRoute: typeof OgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/preview': {
       id: '/preview'
       path: '/preview'
       fullPath: '/preview'
       preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/login': {
@@ -302,6 +386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardAddRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_auth/dashboard/admin': {
+      id: '/_auth/dashboard/admin'
+      path: '/dashboard/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof AuthDashboardAdminRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -337,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoStartServerFuncsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/og/baby/$publicId': {
+      id: '/og/baby/$publicId'
+      path: '/baby/$publicId'
+      fullPath: '/og/baby/$publicId'
+      preLoaderRoute: typeof OgBabyPublicIdRouteImport
+      parentRoute: typeof OgRoute
+    }
     '/demo/start/ssr/': {
       id: '/demo/start/ssr/'
       path: '/demo/start/ssr'
@@ -370,11 +468,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthRouteRouteChildren {
   AuthDashboardAddRoute: typeof AuthDashboardAddRoute
+  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDashboardAddRoute: AuthDashboardAddRoute,
+  AuthDashboardAdminRoute: AuthDashboardAdminRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,
 }
 
@@ -382,10 +482,23 @@ const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
   AuthRouteRouteChildren,
 )
 
+interface OgRouteChildren {
+  OgBabyPublicIdRoute: typeof OgBabyPublicIdRoute
+}
+
+const OgRouteChildren: OgRouteChildren = {
+  OgBabyPublicIdRoute: OgBabyPublicIdRoute,
+}
+
+const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
+  OgRoute: OgRouteWithChildren,
   PreviewRoute: PreviewRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
   BabyPublicIdRoute: BabyPublicIdRoute,

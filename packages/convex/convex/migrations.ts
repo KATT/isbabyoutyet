@@ -2,17 +2,20 @@ import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
-import { internalMutation } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { isOnboardingStepId } from "../src/onboardingSteps";
 import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
   insertUpdateWithTimelineItem,
 } from "./timeline";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { isActive } from "./softDelete";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -53,7 +56,8 @@ export async function resolveMilestoneAnnounceAt(
   const notifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId", (q) => q.eq("babyId", opts.babyId))
-    .collect();
+    .order("desc")
+    .take(256);
 
   let bestCreatedAt: number | null = null;
   let bestDistance = Infinity;
@@ -114,7 +118,8 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const existingUpdates = await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
-      .collect();
+      .order("desc")
+      .take(256);
     const currentPhotoAlreadyInFeed = existingUpdates.some(
       (update) => update.photoId === baby.photoId,
     );
@@ -319,7 +324,7 @@ function authUserId(user: unknown) {
 export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
   const sentinel = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+    .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
     .unique();
   if (sentinel) {
     return {
@@ -391,6 +396,127 @@ export const backfillUpdatePostedByUserId = migrations.define({
   migrateOne: backfillUpdatePostedByUserIdDoc,
 });
 
+export async function backfillBabyOwnerTokenIdentifierDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.ownerTokenIdentifier !== undefined) return;
+  await ctx.db.patch(baby._id, {
+    ownerTokenIdentifier: tokenIdentifierForAuthUserId(baby.userId),
+  });
+}
+
+export const backfillBabyOwnerTokenIdentifier = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyOwnerTokenIdentifierDoc,
+});
+
+export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.lastActivityAt !== undefined) return;
+  const timelineItems = await ctx.db
+    .query("timelineItems")
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", baby._id))
+    .order("desc")
+    .take(256);
+  const latest = timelineItems.find(isActive);
+  await ctx.db.patch(baby._id, {
+    lastActivityAt: Math.max(baby._creationTime, latest?.postedAt ?? baby._creationTime),
+  });
+}
+
+export const backfillBabyLastActivityAt = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyLastActivityAtDoc,
+});
+
+export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  let subscriptionCount = 0;
+  for await (const _subscription of ctx.db
+    .query("pushSubscriptions")
+    .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))) {
+    subscriptionCount += 1;
+  }
+  await ctx.db.patch(baby._id, { subscriptionCount });
+}
+
+export const backfillBabySubscriptionCount = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabySubscriptionCountDoc,
+});
+
+export async function backfillProfileTokenIdentifierDoc(
+  ctx: MutationCtx,
+  profile: Doc<"userProfiles">,
+) {
+  if (profile.tokenIdentifier !== undefined) return;
+  await ctx.db.patch(profile._id, {
+    tokenIdentifier: tokenIdentifierForAuthUserId(profile.userId),
+  });
+}
+
+export const backfillProfileTokenIdentifier = migrations.define({
+  table: "userProfiles",
+  migrateOne: backfillProfileTokenIdentifierDoc,
+});
+
+export async function backfillOnboardingTokenIdentifierDoc(
+  ctx: MutationCtx,
+  onboarding: Doc<"userOnboarding">,
+) {
+  if (onboarding.tokenIdentifier !== undefined) return;
+  await ctx.db.patch(onboarding._id, {
+    tokenIdentifier: tokenIdentifierForAuthUserId(onboarding.userId),
+  });
+}
+
+export const backfillOnboardingTokenIdentifier = migrations.define({
+  table: "userOnboarding",
+  migrateOne: backfillOnboardingTokenIdentifierDoc,
+});
+
+export async function backfillCoParentTokenIdentifierDoc(
+  ctx: MutationCtx,
+  coParent: Doc<"babyCoParents">,
+) {
+  if (coParent.tokenIdentifier !== undefined) return;
+  await ctx.db.patch(coParent._id, {
+    tokenIdentifier: tokenIdentifierForAuthUserId(coParent.userId),
+  });
+}
+
+export const backfillCoParentTokenIdentifier = migrations.define({
+  table: "babyCoParents",
+  migrateOne: backfillCoParentTokenIdentifierDoc,
+});
+
+export async function sanitizeOnboardingStepsDoc(
+  ctx: MutationCtx,
+  onboarding: Doc<"userOnboarding">,
+) {
+  const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
+  if (completedSteps.length === onboarding.completedSteps.length) return;
+  await ctx.db.patch(onboarding._id, { completedSteps });
+}
+
+export const sanitizeOnboardingSteps = migrations.define({
+  table: "userOnboarding",
+  migrateOne: sanitizeOnboardingStepsDoc,
+});
+
+/**
+ * Prefills `isAdmin: false` on existing userProfiles so a later PR can tighten
+ * the field to required.
+ */
+export async function backfillUserProfileIsAdminDoc(
+  ctx: MutationCtx,
+  profile: Doc<"userProfiles">,
+) {
+  if (profile.isAdmin !== undefined) return;
+  await ctx.db.patch(profile._id, { isAdmin: false });
+}
+
+export const backfillUserProfileIsAdmin = migrations.define({
+  table: "userProfiles",
+  migrateOne: backfillUserProfileIsAdminDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -398,7 +524,49 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.separateMilestoneOccurredAt,
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
+  internal.migrations.backfillBabyOwnerTokenIdentifier,
+  internal.migrations.backfillBabyLastActivityAt,
+  internal.migrations.backfillBabySubscriptionCount,
+  internal.migrations.backfillProfileTokenIdentifier,
+  internal.migrations.backfillOnboardingTokenIdentifier,
+  internal.migrations.backfillCoParentTokenIdentifier,
+  internal.migrations.sanitizeOnboardingSteps,
+  internal.migrations.backfillUserProfileIsAdmin,
 ]);
+
+const TABLE_MIGRATION_NAMES = [
+  "migrations:generateThumbnailsForExistingPhotos",
+  "migrations:backfillBabyTimeline",
+  "migrations:backfillEncouragementTimeline",
+  "migrations:separateMilestoneOccurredAt",
+  "migrations:clearLegacyStageMessages",
+  "migrations:backfillUpdatePostedByUserId",
+  "migrations:backfillBabyOwnerTokenIdentifier",
+  "migrations:backfillBabyLastActivityAt",
+  "migrations:backfillBabySubscriptionCount",
+  "migrations:backfillProfileTokenIdentifier",
+  "migrations:backfillOnboardingTokenIdentifier",
+  "migrations:backfillCoParentTokenIdentifier",
+  "migrations:sanitizeOnboardingSteps",
+  "migrations:backfillUserProfileIsAdmin",
+] as const;
+
+export const deploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
+    const statuses = await migrations.getStatus(ctx, {
+      migrations: [...TABLE_MIGRATION_NAMES],
+    });
+    return {
+      isDone:
+        statuses.length === TABLE_MIGRATION_NAMES.length &&
+        statuses.every((status) => status.isDone),
+      failed: statuses
+        .filter((status) => status.error !== undefined)
+        .map((status) => `${status.name}: ${status.error}`),
+    };
+  },
+});
 
 // Run all pending migrations - called automatically during deployment.
 // skipTourForExistingUsers is not a table walker (users live in the Better

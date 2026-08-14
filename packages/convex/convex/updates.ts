@@ -92,7 +92,7 @@ export const post = mutationWithTriggers({
       // Settings can still redate occurredAt later without moving the feed position
       occurredAt,
       photoId,
-      postedByUserId: identity.subject,
+      postedByUserId: identity.authUserId,
     });
 
     if (photoId) {
@@ -213,7 +213,8 @@ async function findLatestRemainingPhotoUpdate(ctx: MutationCtx, removed: Doc<"up
   const photoUpdates = await ctx.db
     .query("updates")
     .withIndex("by_babyId", (q) => q.eq("babyId", removed.babyId))
-    .collect();
+    .order("desc")
+    .take(256);
 
   let latest: { update: Doc<"updates">; postedAt: number } | null = null;
   for (const candidate of photoUpdates) {

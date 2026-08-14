@@ -9,6 +9,11 @@ export default defineProject({
     env: {
       SITE_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",
+      CONVEX_SITE_URL: "https://convex.test",
+      NODE_ENV: "test",
+      VAPID_PRIVATE_KEY: "test-vapid-private-key",
+      VAPID_PUBLIC_KEY: "test-vapid-public-key",
+      VAPID_SUBJECT: "mailto:test@example.com",
     },
     server: {
       deps: {
