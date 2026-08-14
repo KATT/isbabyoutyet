@@ -130,6 +130,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
       dueDate: "2026-12-01",
       publicId: "baby-deleted",
       lastActivityAt: now,
+      subscriptionCount: 0,
       deletedAt: Date.now(),
     });
     await ctx.db.insert("baby", {
@@ -139,6 +140,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
       dueDate: "2026-12-01",
       publicId: "baby-quiet",
       lastActivityAt: now,
+      subscriptionCount: 0,
     });
     await ctx.db.insert("baby", {
       userId: HOMEPAGE_DEMO_OWNER_USER_ID,
@@ -148,6 +150,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
       publicId: "juniper-hale",
       demo: true,
       lastActivityAt: now,
+      subscriptionCount: 0,
     });
   });
 

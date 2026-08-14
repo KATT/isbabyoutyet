@@ -1,11 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
+import { onboardingStepIdValidator } from "./onboardingValidators";
 
 export default defineSchema({
   baby: defineTable({
     userId: v.string(), // Better-auth user ID
-    ownerTokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
@@ -23,9 +24,9 @@ export default defineSchema({
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
     // Denormalized exact Web Push subscriber count, maintained with subscription writes.
-    subscriptionCount: v.optional(v.number()),
+    subscriptionCount: v.number(),
     // Latest timeline activity, materialized for bounded admin sorting.
-    lastActivityAt: v.optional(v.number()),
+    lastActivityAt: v.number(),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
@@ -35,10 +36,10 @@ export default defineSchema({
     .index("by_publicId", ["publicId"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
-    // Platform staff flag. Optional only until #84 backfills stale preview rows.
-    isAdmin: v.optional(v.boolean()),
+    // Platform staff flag, backfilled before this final schema tightening.
+    isAdmin: v.boolean(),
   })
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", ["tokenIdentifier"]),
@@ -142,9 +143,9 @@ export default defineSchema({
   // Per-user first-run guided tour progress. One row per user.
   userOnboarding: defineTable({
     userId: v.string(), // Better Auth user ID
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     /** Steps the user explicitly completed or acknowledged */
-    completedSteps: v.array(v.string()),
+    completedSteps: v.array(onboardingStepIdValidator),
     /** Welcome carousel seen or skipped */
     welcomeDismissed: v.boolean(),
     /** Floating checklist dismissed forever (until restart) */
@@ -158,7 +159,7 @@ export default defineSchema({
   babyCoParents: defineTable({
     babyId: v.id("baby"),
     userId: v.string(), // Better Auth user id
-    tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
+    tokenIdentifier: v.string(), // Stable Convex auth identity
     email: v.string(), // Denormalized for settings display
     name: v.optional(v.union(v.string(), v.null())),
     addedByUserId: v.string(),
