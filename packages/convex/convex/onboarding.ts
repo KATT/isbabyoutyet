@@ -20,6 +20,14 @@ const emptyState = {
   tourBaby: null as null | { publicId: string; name: string },
 };
 
+const onboardingStepIdValidator = v.union(
+  v.literal("add_baby"),
+  v.literal("share_link"),
+  v.literal("post_update"),
+  v.literal("explore_settings"),
+  v.literal("learn_encouragements"),
+);
+
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -34,6 +42,9 @@ async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
     .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .unique();
   if (existing) {
+    if (existing.tokenIdentifier === undefined) {
+      await ctx.db.patch(existing._id, { tokenIdentifier: identity.tokenIdentifier });
+    }
     return existing;
   }
   const id = await ctx.db.insert("userOnboarding", {
@@ -67,7 +78,12 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
       )
       .order("asc")
       .take(40)
-  ).filter(isActive);
+  ).filter(
+    (baby) =>
+      isActive(baby) &&
+      (baby.ownerTokenIdentifier === undefined ||
+        baby.ownerTokenIdentifier === identity.tokenIdentifier),
+  );
 
   const first = babies[0];
   const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
