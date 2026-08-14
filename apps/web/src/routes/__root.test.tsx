@@ -61,8 +61,13 @@ vi.mock("@/lib/auth-server", () => ({
   authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
 }));
 
-const { NavigationProgress, NotFoundComponent, Route, useResolveAnonymousAuth } =
-  await import("@/routes/__root");
+const {
+  NavigationProgress,
+  NotFoundComponent,
+  RootErrorComponent,
+  Route,
+  useResolveAnonymousAuth,
+} = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -140,6 +145,29 @@ test("regression: rendering the root as an anonymous visitor resumes the paused 
   await using _view = renderResource(<RootComponent />);
 
   expect(setAuth).toHaveBeenCalledTimes(1);
+});
+
+test("the error page offers reload and go-home recovery, with details in dev", async () => {
+  await using view = renderResource(<RootErrorComponent error={new Error("boom")} />);
+
+  expect(view.getByText("Something went wrong")).toBeTruthy();
+  expect(view.getByText("Go Home")).toBeTruthy();
+  expect(view.getByText("boom")).toBeTruthy();
+
+  // Recovery: the reload button triggers a full page reload (jsdom no-ops it).
+  view.getByText("Reload page").click();
+});
+
+test("the error page hides technical details outside dev", async () => {
+  vi.stubEnv("DEV", false);
+  await using _env = makeResource({}, () => {
+    vi.unstubAllEnvs();
+  });
+
+  await using view = renderResource(<RootErrorComponent error={new Error("boom")} />);
+
+  expect(view.getByText("Something went wrong")).toBeTruthy();
+  expect(view.queryByText("boom")).toBeNull();
 });
 
 test("the not-found page offers a way back home", async () => {

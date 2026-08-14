@@ -46,9 +46,13 @@ export const Route = createFileRoute("/_auth")({
 
     // Client navigations: the cached profile IS the auth signal — no token
     // round-trip (sign-out does a full page reload, so the cache can't say
-    // "signed in" after logging out). A null profile means logged out or a
-    // first-ever visit before ensure ran: confirm with the server function
-    // once, then ensure the profile row exists.
+    // "signed in" after logging out). If the session expires mid-browse the
+    // cache self-heals: the live profile.get subscription flips to null (all
+    // dashboard queries return empty for anonymous callers rather than
+    // throwing), so the next navigation lands in the fallback below and
+    // redirects home. A null profile means logged out or a first-ever visit
+    // before ensure ran: confirm with the server function once, then ensure
+    // the profile row exists.
     const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
     const existingProfile = profileHandle.initialData;
     if (existingProfile) {

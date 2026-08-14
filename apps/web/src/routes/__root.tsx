@@ -247,6 +247,52 @@ function RootComponent() {
   );
 }
 
+// Router-wide error fallback (registered as defaultErrorComponent): residual
+// failures — expired sessions, stale deploys, dropped connections — land here
+// instead of TanStack's raw default, and a full reload re-resolves everything
+// from a clean slate.
+export function RootErrorComponent(props: { error: Error }) {
+  const { t } = useI18n();
+  return (
+    <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
+      <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
+          <Baby className="w-10 h-10 text-primary" />
+        </div>
+        <h1 className="text-2xl font-black text-foreground">{t("Something went wrong")}</h1>
+        <p className="text-muted-foreground font-medium">
+          {t("An unexpected error occurred. Reloading usually fixes it.")}
+        </p>
+        {import.meta.env.DEV ? (
+          <pre className="max-h-40 overflow-auto rounded-lg bg-muted p-3 text-left text-xs text-muted-foreground">
+            {props.error.message}
+          </pre>
+        ) : null}
+        <div className="flex justify-center gap-3">
+          <Button
+            size="lg"
+            className="rounded-full"
+            onClick={() => {
+              window.location.reload();
+            }}
+          >
+            {t("Reload page")}
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="rounded-full"
+            render={<Link to="/" />}
+            nativeButton={false}
+          >
+            {t("Go Home")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function NotFoundComponent() {
   const { t } = useI18n();
   return (

@@ -8,6 +8,7 @@ import {
   convexInfiniteQueryFn,
   registerConvexInfiniteQueryClient,
 } from "@workspace/convex-prefetch";
+import { RootErrorComponent } from "./routes/__root";
 import { getDetectedLocale } from "./lib/i18n";
 
 export function getRouter() {
@@ -40,6 +41,8 @@ export function getRouter() {
     // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
     // pages via the ensureQueryData prefetchers.
     defaultPreload: "viewport",
+    // Friendly recoverable fallback for any route error (reload / go home).
+    defaultErrorComponent: RootErrorComponent,
     context: {
       queryClient,
       convexQueryClient,

@@ -499,6 +499,10 @@ const enGB = {
   "Let's go": "Let's go",
   Next: "Next",
   "Go Home": "Go Home",
+  "Something went wrong": "Something went wrong",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "An unexpected error occurred. Reloading usually fixes it.",
+  "Reload page": "Reload page",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -1006,6 +1010,10 @@ const sv: Record<TranslationKey, string> = {
   "Let's go": "Nu kör vi",
   Next: "Nästa",
   "Go Home": "Gå hem",
+  "Something went wrong": "Något gick fel",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ett oväntat fel inträffade. Att ladda om sidan brukar hjälpa.",
+  "Reload page": "Ladda om sidan",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -1499,6 +1507,10 @@ const es: Record<TranslationKey, string> = {
   "Let's go": "Empecemos",
   Next: "Siguiente",
   "Go Home": "Ir al inicio",
+  "Something went wrong": "Algo salió mal",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ocurrió un error inesperado. Recargar la página suele solucionarlo.",
+  "Reload page": "Recargar la página",
 };
 
 const ptBR: Record<TranslationKey, string> = {
@@ -1995,6 +2007,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Let's go": "Vamos lá",
   Next: "Próximo",
   "Go Home": "Ir para o início",
+  "Something went wrong": "Algo deu errado",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ocorreu um erro inesperado. Recarregar a página costuma resolver.",
+  "Reload page": "Recarregar a página",
 };
 
 const enUS: Partial<Record<TranslationKey, string>> = {
