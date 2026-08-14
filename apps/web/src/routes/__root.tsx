@@ -30,6 +30,7 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
+import { getClientProfile } from "@/lib/client-route-cache";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
@@ -156,6 +157,12 @@ function RootComponent() {
     return matchContext.locale ?? currentLocale;
   }, context.locale);
 
+  // Warm the client-side profile cache on startup so even the first client
+  // navigation into /_auth resolves its guard without awaiting the network.
+  useEffect(() => {
+    void getClientProfile(context.convexClient);
+  }, [context.convexClient]);
+
   useEffect(() => {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -193,7 +200,7 @@ function RootComponent() {
   );
 }
 
-function NotFoundComponent() {
+export function NotFoundComponent() {
   const { t } = useI18n();
   return (
     <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">

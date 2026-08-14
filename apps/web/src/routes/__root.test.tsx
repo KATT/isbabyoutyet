@@ -39,7 +39,7 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: {},
 }));
 
-const { NavigationProgress, Route } = await import("@/routes/__root");
+const { NavigationProgress, NotFoundComponent, Route } = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -55,6 +55,13 @@ test("beforeLoad resolves the locale locally on the client, without a server rou
   const result = await options.beforeLoad();
 
   expect(result.locale).toBeTruthy();
+});
+
+test("the not-found page offers a way back home", async () => {
+  await using view = renderResource(<NotFoundComponent />);
+
+  expect(view.getByText("404")).toBeTruthy();
+  expect(view.getByText("Go Home")).toBeTruthy();
 });
 
 test("no progress bar renders while the router is idle", async () => {
