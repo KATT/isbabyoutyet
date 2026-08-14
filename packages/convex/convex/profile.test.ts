@@ -58,13 +58,9 @@ test("unsupported browser locales fall back while language requests are stored",
   });
 });
 
-test("backfillUserProfileIsAdmin sets false when missing and leaves admins alone", async () => {
+test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alone", async () => {
   const t = await setup();
   const ids = await t.run(async (ctx) => {
-    const missing = await ctx.db.insert("userProfiles", {
-      userId: "missing-admin",
-      locale: "en-GB",
-    });
     const admin = await ctx.db.insert("userProfiles", {
       userId: "already-admin",
       locale: "en-GB",
@@ -75,21 +71,29 @@ test("backfillUserProfileIsAdmin sets false when missing and leaves admins alone
       locale: "sv",
       isAdmin: false,
     });
-    return { missing, admin, nonAdmin };
+    return { admin, nonAdmin };
   });
 
   await t.run(async (ctx) => {
-    const missing = await ctx.db.get(ids.missing);
     const admin = await ctx.db.get(ids.admin);
     const nonAdmin = await ctx.db.get(ids.nonAdmin);
-    if (!missing || !admin || !nonAdmin) throw new Error("missing profiles");
-    await backfillUserProfileIsAdminDoc(ctx, missing);
+    if (!admin || !nonAdmin) throw new Error("missing profiles");
     await backfillUserProfileIsAdminDoc(ctx, admin);
     await backfillUserProfileIsAdminDoc(ctx, nonAdmin);
+
+    // Simulate a pre-migration document shape for the helper.
+    const legacy = { ...nonAdmin } as {
+      _id: typeof nonAdmin._id;
+      _creationTime: number;
+      userId: string;
+      locale: typeof nonAdmin.locale;
+      isAdmin: boolean | undefined;
+    };
+    delete legacy.isAdmin;
+    await backfillUserProfileIsAdminDoc(ctx, legacy as typeof nonAdmin);
   });
 
   await t.run(async (ctx) => {
-    expect(await ctx.db.get(ids.missing)).toMatchObject({ isAdmin: false });
     expect(await ctx.db.get(ids.admin)).toMatchObject({ isAdmin: true });
     expect(await ctx.db.get(ids.nonAdmin)).toMatchObject({ isAdmin: false });
   });

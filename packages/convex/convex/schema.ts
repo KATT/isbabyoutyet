@@ -29,8 +29,8 @@ export default defineSchema({
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
     locale: supportedLocaleValidator,
-    // Platform staff flag — not a baby-page role. Absent/false for everyone else.
-    isAdmin: v.optional(v.boolean()),
+    // Platform staff flag — not a baby-page role. Always set (false for everyone else).
+    isAdmin: v.boolean(),
   }).index("by_userId", ["userId"]),
   languageRequests: defineTable({
     userId: v.string(), // Better Auth user ID
