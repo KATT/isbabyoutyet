@@ -7,16 +7,20 @@ test("getThemeCss returns null for the default theme and unknown names", () => {
   expect(getThemeCss("not-a-real-theme")).toBeNull();
 });
 
+test("default theme option has no css payload", () => {
+  const defaultTheme = THEME_OPTIONS.find((option) => option.value === null);
+  expect(defaultTheme?.css ?? "missing").toBeNull();
+});
+
 test("named themes expose a css string for head.styles injection", () => {
-  for (const option of THEME_OPTIONS) {
-    if (option.value === null) {
-      expect(option.css).toBeNull();
-      continue;
-    }
-    // Vitest stubs CSS module imports as ""; Vite `?raw` returns file text in the app.
-    expect(typeof option.css).toBe("string");
-    expect(getThemeCss(option.value)).toBe(option.css);
-  }
+  const named = THEME_OPTIONS.filter((option) => option.value !== null);
+  expect(named.length).toBeGreaterThan(0);
+  expect(named.map((option) => typeof option.css)).toEqual(
+    named.map(() => "string"),
+  );
+  expect(named.map((option) => getThemeCss(option.value))).toEqual(
+    named.map((option) => option.css),
+  );
 });
 
 test("getThemePrimaryColor matches known theme accents", () => {
