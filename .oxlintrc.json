@@ -46,7 +46,10 @@
       "files": [
         "apps/web/src/routes/demo/**/*.{ts,tsx}",
         "apps/web/src/**/*.test.{ts,tsx}",
-        "apps/web/src/components/dev-bar.tsx"
+        "apps/web/src/components/dev-bar.tsx",
+        "apps/web/src/lib/robots.ts",
+        "apps/web/src/routes/robots[.]txt.ts",
+        "apps/web/src/routes/sitemap[.]xml.ts"
       ],
       "rules": {
         "i18n-literal/no-literal-string": "off",

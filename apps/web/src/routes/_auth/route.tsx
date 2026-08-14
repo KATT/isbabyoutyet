@@ -4,6 +4,7 @@ import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { noIndexHeaders } from "@/lib/robots";
 
 // Server function to check authentication
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -14,6 +15,9 @@ export const Route = createFileRoute("/_auth")({
   headers() {
     return {
       Vary: "Cookie",
+      // Prefer header over route `head` — TanStack's head+beforeLoad typing
+      // currently collapses child beforeLoad to `never` when the layout sets head.
+      ...noIndexHeaders(),
     };
   },
   beforeLoad: async (opts) => {

@@ -33,6 +33,7 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
+import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 
@@ -70,6 +71,7 @@ export const Route = createRootRouteWithContext<{
       locale,
       "Track the progress of labour and birth – know when baby arrives!",
     );
+    const title = m.app_name({}, { locale });
     return {
       meta: [
         {
@@ -78,6 +80,9 @@ export const Route = createRootRouteWithContext<{
         {
           name: "viewport",
           content: "width=device-width, initial-scale=1",
+        },
+        {
+          title,
         },
         {
           name: "description",
@@ -89,7 +94,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           property: "og:site_name",
-          content: m.app_name({}, { locale }),
+          content: title,
         },
         {
           property: "og:type",
@@ -97,7 +102,7 @@ export const Route = createRootRouteWithContext<{
         },
         {
           name: "twitter:card",
-          content: "summary",
+          content: "summary_large_image",
         },
         {
           name: "theme-color",
@@ -115,6 +120,7 @@ export const Route = createRootRouteWithContext<{
           name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
         },
+        ...aiNoTrainMeta(),
       ],
       links: [
         {
@@ -152,6 +158,7 @@ export const Route = createRootRouteWithContext<{
     return {
       "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
       Vary: "Accept-Language, Cookie",
+      ...aiNoTrainHeaders(),
     };
   },
   component: RootComponent,
