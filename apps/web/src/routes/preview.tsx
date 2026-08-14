@@ -10,7 +10,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
-import { publicCacheHeaders } from "@/lib/cachePolicy";
+import { previewCacheHeaders } from "@/lib/cachePolicy";
 
 function getDefaultBabyData(): BabyData {
   const now = new Date();
@@ -48,7 +48,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
   validateSearch: searchSchema,
-  headers: () => publicCacheHeaders({ maxAgeSeconds: 86_400, tags: ["preview"] }),
+  headers: previewCacheHeaders,
   head: (opts) => ({
     meta: [
       {

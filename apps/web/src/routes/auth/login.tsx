@@ -24,7 +24,7 @@ import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
-import { publicCacheHeaders } from "@/lib/cachePolicy";
+import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -35,7 +35,7 @@ function loginSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
-  headers: () => publicCacheHeaders({ maxAgeSeconds: 3_600, tags: ["auth-pages"] }),
+  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {

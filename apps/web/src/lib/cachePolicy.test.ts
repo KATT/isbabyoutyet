@@ -1,7 +1,10 @@
 import { describe, expect, test } from "vitest";
 import {
   applyCachePolicy,
+  authPageCacheHeaders,
+  homepageCacheHeaders,
   privateCacheHeaders,
+  previewCacheHeaders,
   publicCacheHeaders,
   withPublicCache,
 } from "./cachePolicy";
@@ -68,6 +71,9 @@ describe("applyCachePolicy", () => {
       "Cache-Control": expect.stringContaining("private"),
       "Vercel-CDN-Cache-Control": expect.stringContaining("no-store"),
     });
+    expect(homepageCacheHeaders()["Vercel-Cache-Tag"]).toBe("homepage");
+    expect(previewCacheHeaders()["Vercel-Cache-Tag"]).toBe("preview");
+    expect(authPageCacheHeaders()["Vercel-Cache-Tag"]).toBe("auth-pages");
   });
 
   test("adds public caching to resource responses without losing their headers", async () => {
