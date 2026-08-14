@@ -22,7 +22,8 @@ import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
-import { useI18n } from "@/lib/i18n";
+import { translate, useI18n } from "@/lib/i18n";
+import { robotsNoIndexMeta } from "@/lib/seo";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -34,6 +35,14 @@ function signupSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
+  head: (opts) => ({
+    meta: [
+      {
+        title: translate(opts.match.context.locale, "Sign up – Is Baby Out Yet?"),
+      },
+      ...robotsNoIndexMeta(),
+    ],
+  }),
 });
 
 function SignupPage() {

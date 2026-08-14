@@ -289,6 +289,7 @@ export const create = mutationWithTriggers({
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
 

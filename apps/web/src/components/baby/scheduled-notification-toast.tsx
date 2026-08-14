@@ -9,40 +9,51 @@ import {
 } from "@workspace/ui/components/item";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
-import { useConvex, useQuery } from "convex/react";
+import { useConvexMutation } from "@convex-dev/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationToastProps = {
-  babyId: Id<"baby">;
+  notifications:
+    | PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>
+    | InitiatedConvexQuery<typeof api.baby.getScheduledNotifications>;
+  subscriptionCount:
+    | PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>
+    | InitiatedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
   const { t } = useI18n();
-  const notifications = useQuery(api.baby.getScheduledNotifications, { babyId: props.babyId });
+  const notificationsQuery = usePreloadedConvexQuery(
+    api.baby.getScheduledNotifications,
+    props.notifications,
+  );
+  const notifications = notificationsQuery.data;
   const pendingNotifications = useMemo(
-    () => notifications?.filter((n) => n.status === "pending") ?? [],
+    () => notifications.filter((n) => n.status === "pending"),
     [notifications],
   );
-  const hasSubscriptions = useQuery(api.pushSubscriptions.hasSubscriptions, {
-    babyId: props.babyId,
-  });
+  const subscriptionCountQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.getSubscriptionCount,
+    props.subscriptionCount,
+  );
+  const subscriptionCount = subscriptionCountQuery.data;
 
   // Track active toasts and previous notification states
   const activeToasts = useRef(new Set<Id<"scheduledNotifications">>());
   const previousPendingIds = useRef(new Set<Id<"scheduledNotifications">>());
 
   useEffect(() => {
-    if (!notifications) return;
-
     // Don't show any toasts if there are no subscribers
-    if (hasSubscriptions !== true) {
+    if (subscriptionCount === 0) {
       // Dismiss any existing toasts
       for (const id of activeToasts.current) {
         toast.dismiss(id);
@@ -71,7 +82,10 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
                 <ItemContent>
                   <ItemTitle>{t("Notification sent!")}</ItemTitle>
                   <ItemDescription>
-                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])}
+                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])} ·{" "}
+                    {t(subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+                      count: subscriptionCount,
+                    })}
                   </ItemDescription>
                 </ItemContent>
               </Item>
@@ -99,6 +113,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
               notificationId={notification._id}
               notificationType={notification.notificationType}
               scheduledFor={notification.scheduledFor}
+              subscriptionCount={subscriptionCount}
             />
           ),
           {
@@ -108,7 +123,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
         );
       }
     }
-  }, [hasSubscriptions, notifications, pendingNotifications, t]);
+  }, [notifications, pendingNotifications, subscriptionCount, t]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -127,22 +142,17 @@ type NotificationToastContentProps = {
   notificationId: Id<"scheduledNotifications">;
   notificationType: NotifiableStatus;
   scheduledFor: number;
+  subscriptionCount: number;
 };
 
 function NotificationToastContent(props: NotificationToastContentProps) {
   const { t } = useI18n();
-  const convex = useConvex();
   const [seconds, setSeconds] = useState(() =>
     Math.max(0, Math.ceil((props.scheduledFor - Date.now()) / 1000)),
   );
 
   const cancelMutation = useTanstackMutation({
-    mutationFn: async () => {
-      await new Promise<void>((resolve) => setTimeout(resolve, 1000));
-      await convex.mutation(api.baby.cancelScheduledNotification, {
-        notificationId: props.notificationId,
-      });
-    },
+    mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
     onSuccess: () => {
       toast.dismiss(props.notificationId);
       toast.success(t("Notification cancelled"));
@@ -172,14 +182,19 @@ function NotificationToastContent(props: NotificationToastContentProps) {
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{t("Sending notification...")}</ItemTitle>
-        <ItemDescription>{t(NOTIFICATION_LABEL_KEYS[props.notificationType])}</ItemDescription>
+        <ItemDescription>
+          {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
+          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+            count: props.subscriptionCount,
+          })}
+        </ItemDescription>
       </ItemContent>
       <ItemActions>
         <Button
           variant="outline"
           size="sm"
           disabled={cancelMutation.isPending}
-          onClick={() => cancelMutation.mutate()}
+          onClick={() => cancelMutation.mutate({ notificationId: props.notificationId })}
         >
           {cancelMutation.isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
           {t("Cancel")}
