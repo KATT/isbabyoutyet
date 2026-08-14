@@ -104,8 +104,8 @@ test("internal pagination reaches every subscription without a cap", async () =>
     const result: PaginationResult<Doc<"pushSubscriptions">> = await t.query(
       internal.pushSubscriptions.getSubscriptionsPage,
       {
-      babyId: created.babyId,
-      paginationOpts: { numItems: 100, cursor },
+        babyId: created.babyId,
+        paginationOpts: { numItems: 100, cursor },
       },
     );
     total += result.page.length;
