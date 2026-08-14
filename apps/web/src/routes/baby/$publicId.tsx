@@ -233,14 +233,6 @@ function BabyManagerControls(props: BabyManagerControlsProps) {
   const coParentsList = useInitiateConvexQuery(api.coParents.listForBaby, {
     babyId: props.babyDoc._id,
   });
-  const scheduledNotificationsQuery = usePreloadedConvexQuery(
-    api.baby.getScheduledNotifications,
-    scheduledNotifications,
-  );
-  const subscriptionCountQuery = usePreloadedConvexQuery(
-    api.pushSubscriptions.getSubscriptionCount,
-    subscriptionCount,
-  );
 
   return (
     <>
@@ -301,8 +293,8 @@ function BabyManagerControls(props: BabyManagerControlsProps) {
         }}
       />
       <ScheduledNotificationToast
-        notifications={scheduledNotificationsQuery.data}
-        subscriptionCount={subscriptionCountQuery.data}
+        notifications={scheduledNotifications}
+        subscriptionCount={subscriptionCount}
       />
       <Dialog open={props.composerOpen} onOpenChange={props.onComposerOpenChange}>
         <DialogContent className="sm:max-w-lg">

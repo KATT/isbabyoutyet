@@ -101,11 +101,11 @@ export const purge = internalAction({
       throw new Error(`Cache purge failed with status ${response.status}`);
     }
 
-    const _completed: null = await ctx.runMutation(internal.cacheInvalidation.complete, {
+    const completed: null = await ctx.runMutation(internal.cacheInvalidation.complete, {
       jobId: job._id,
       version: job.version,
     });
-    return null;
+    return completed;
   },
 });
 
