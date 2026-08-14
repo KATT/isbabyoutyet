@@ -12,7 +12,7 @@ import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import { getThemeCssUrl } from "@/components/baby/utils";
+import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
   createFileRoute,
@@ -91,7 +91,11 @@ export const Route = createFileRoute("/baby/$publicId")({
       wentToHospital: baby.wentToHospital,
       laborStarted: baby.laborStarted,
     });
-    const themeCssUrl = getThemeCssUrl(baby.theme);
+    // Inline via `styles` (not `links`): TanStack Asset forces React 19
+    // `precedence` on stylesheet links, which can leave theme CSS stuck after
+    // navigating away. Inline head styles still paint before body (no FOUC)
+    // and unmount cleanly with the route.
+    const themeCss = getThemeCss(baby.theme);
     const manifestUrl = `/baby/manifest/${baby._id}`;
 
     return {
@@ -138,15 +142,15 @@ export const Route = createFileRoute("/baby/$publicId")({
         },
         ...searchRobotsMeta({ index: seo.indexable }),
       ],
+      styles: themeCss
+        ? [
+            {
+              "data-baby-theme": baby.theme ?? "",
+              children: themeCss,
+            },
+          ]
+        : [],
       links: [
-        ...(themeCssUrl
-          ? [
-              {
-                rel: "stylesheet",
-                href: themeCssUrl,
-              },
-            ]
-          : []),
         {
           rel: "manifest",
           href: manifestUrl,
