@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import {
+  backfillBabyLastActivityAtDoc,
   backfillBabyOwnerTokenIdentifierDoc,
   backfillCoParentTokenIdentifierDoc,
   backfillOnboardingTokenIdentifierDoc,
@@ -51,12 +52,14 @@ test("auth identity backfills are complete and idempotent", async () => {
     }
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
     await sanitizeOnboardingStepsDoc(ctx, onboarding);
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
     await backfillOnboardingTokenIdentifierDoc(ctx, onboarding);
     await backfillCoParentTokenIdentifierDoc(ctx, coParent);
@@ -73,6 +76,7 @@ test("auth identity backfills are complete and idempotent", async () => {
   });
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.baby?.lastActivityAt).toBe(migrated.baby?._creationTime);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.completedSteps).toEqual(["share_link"]);

@@ -15,6 +15,7 @@ import {
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { isActive } from "./softDelete";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -92,7 +93,7 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const isoDate = baby[fields.date];
     if (!isoDate) continue;
 
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
     if (existing) continue;
 
     const occurredAt = parseIsoMs(isoDate) ?? Date.now();
@@ -260,7 +261,7 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
     // No milestone date → no timeline row to carry the message. Keep it.
     if (!baby[fields.date]) continue;
 
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
     if (!existing) {
       // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
       // event time on occurredAt
@@ -407,6 +408,24 @@ export const backfillBabyOwnerTokenIdentifier = migrations.define({
   migrateOne: backfillBabyOwnerTokenIdentifierDoc,
 });
 
+export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.lastActivityAt !== undefined) return;
+  const timelineItems = await ctx.db
+    .query("timelineItems")
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", baby._id))
+    .order("desc")
+    .take(256);
+  const latest = timelineItems.find(isActive);
+  await ctx.db.patch(baby._id, {
+    lastActivityAt: Math.max(baby._creationTime, latest?.postedAt ?? baby._creationTime),
+  });
+}
+
+export const backfillBabyLastActivityAt = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyLastActivityAtDoc,
+});
+
 export async function backfillProfileTokenIdentifierDoc(
   ctx: MutationCtx,
   profile: Doc<"userProfiles">,
@@ -474,6 +493,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
+  internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillProfileTokenIdentifier,
   internal.migrations.backfillOnboardingTokenIdentifier,
   internal.migrations.backfillCoParentTokenIdentifier,
@@ -488,6 +508,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:clearLegacyStageMessages",
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
+  "migrations:backfillBabyLastActivityAt",
   "migrations:backfillProfileTokenIdentifier",
   "migrations:backfillOnboardingTokenIdentifier",
   "migrations:backfillCoParentTokenIdentifier",

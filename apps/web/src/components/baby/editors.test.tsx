@@ -28,7 +28,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
 
   // The form mounted with the current name and the link reassurance
-  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby name") as HTMLInputElement;
   expect(input.value).toBe("Nova");
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
@@ -42,7 +42,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));
   // The popover closed after a successful save
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
 });
 
 test("due date editor encodes the picker value as a UTC midnight instant", async () => {
@@ -50,7 +50,7 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Due Date") as HTMLInputElement;
+  const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
 
   fireEvent.change(input, { target: { value: "2026-10-15" } });
@@ -67,16 +67,16 @@ test("reopening the editor picks up the latest name without any reset", async ()
 
   // Open, type a draft, then cancel — the draft must not survive
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  fireEvent.change(view.getByLabelText("Baby Name"), { target: { value: "Scrapped draft" } });
+  fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Scrapped draft" } });
   fireEvent.click(view.getByRole("button", { name: "Cancel" }));
-  await vi.waitFor(() => expect(view.queryByLabelText("Baby Name")).toBeNull());
+  await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
 
   // The name changes from outside (e.g. the mutation round-trip)
   view.rerender(<NameEditor baby={{ ...baby, name: "Nova Rae" }} onUpdate={onUpdate} />);
 
   // Reopening mounts a fresh form seeded with the latest name
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Baby Name") as HTMLInputElement;
+  const input = view.getByLabelText("Baby name") as HTMLInputElement;
   expect(input.value).toBe("Nova Rae");
 });
 

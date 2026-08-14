@@ -289,6 +289,7 @@ export const create = mutationWithTriggers({
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: Date.now(),
     });
 
     return { babyId, publicId };
@@ -505,7 +506,7 @@ async function syncMilestoneUpdates(
     const dateArg = opts.patch[fields.date];
     const messageArg = opts.legacyMessages[milestone];
     if (dateArg === undefined && messageArg === undefined) continue;
-    const existing = await findMilestoneUpdate(ctx, baby._id, milestone);
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
 
     if (dateArg === null) {
       // Unmarked: the milestone leaves the feed

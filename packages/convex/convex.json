@@ -1,7 +1,13 @@
 {
+  "$schema": "./node_modules/convex/schemas/convex.schema.json",
   "node": {
     "externalPackages": ["web-push", "sharp"],
-    "nodeVersion": "22"
+    "nodeVersion": "24"
   },
-  "$schema": "https://raw.githubusercontent.com/get-convex/convex-backend/refs/heads/main/npm-packages/convex/schemas/convex.schema.json"
+  "aiFiles": {
+    "enabled": true,
+    "skills": {
+      "agents": ["cursor", "claude-code", "codex"]
+    }
+  }
 }

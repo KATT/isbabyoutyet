@@ -60,12 +60,12 @@ test("settings dialog shows page fields when open and stays closed when not", as
 
   expect(open.getByRole("dialog")).toBeTruthy();
   expect(open.getByRole("heading", { name: "Settings" })).toBeTruthy();
-  expect(open.getByText("Baby Name")).toBeTruthy();
+  expect(open.getByText("Baby name")).toBeTruthy();
   expect(open.getByText("Nova")).toBeTruthy();
-  expect(open.getByText("Due Date")).toBeTruthy();
+  expect(open.getByText("Due date")).toBeTruthy();
   expect(open.getByText("Labour started")).toBeTruthy();
   expect(open.getByText("Theme")).toBeTruthy();
-  expect(open.getByText("Encouragements")).toBeTruthy();
+  expect(open.getByText("Messages")).toBeTruthy();
   expect(open.getByText("Visitors can send messages")).toBeTruthy();
   expect(open.queryByText("Delete page")).toBeNull();
 

@@ -58,3 +58,22 @@ test("marks every stage complete with its relative time once born", async () => 
   // Each completed milestone shows when it happened
   expect(view.getAllByText("yesterday")).toHaveLength(3);
 });
+
+const atHospitalBaby: BabyData = {
+  ...waitingBaby,
+  laborStarted: "2026-08-11T03:00:00.000Z",
+  wentToHospital: "2026-08-11T08:00:00.000Z",
+  babyBorn: null,
+};
+
+test("fills only the path into reached milestones while still in hospital", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  await using view = renderResource(
+    <ProgressIndicator baby={atHospitalBaby} currentStatus={getCurrentStatus(atHospitalBaby)} />,
+  );
+
+  expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("67");
+  // Two completed milestones get relative times; the unreached one does not.
+  expect(view.getAllByText("yesterday")).toHaveLength(2);
+  expect(view.getByText("Baby born")).toBeTruthy();
+});

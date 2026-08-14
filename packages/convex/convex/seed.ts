@@ -22,6 +22,17 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     .take(100);
 
   if (existingBabies.length > 0) {
+    const now = new Date();
+    const babiesByPublicId = new Map(existingBabies.map((baby) => [baby.publicId, baby]));
+    for (const spec of SEED_BABIES) {
+      const baby = babiesByPublicId.get(spec.publicId);
+      if (baby) {
+        if (baby.demo !== true) {
+          await ctx.db.patch(baby._id, { demo: true });
+        }
+        await seedEncouragements({ ctx, babyId: baby._id, now, spec });
+      }
+    }
     return {
       success: true,
       message: "Seed data already exists",
@@ -49,10 +60,17 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
   if (!existing) {
-    await ctx.db.insert("userProfiles", { userId, tokenIdentifier, locale: "en-GB" });
-  } else if (existing.tokenIdentifier === undefined) {
-    await ctx.db.patch(existing._id, { tokenIdentifier });
+    // Demo login is the preview/local staff account — mark as admin so
+    // /dashboard/admin is available on staging without a separate promote step.
+    await ctx.db.insert("userProfiles", {
+      userId,
+      tokenIdentifier,
+      locale: "en-GB",
+      isAdmin: true,
+    });
+    return;
   }
+  await ctx.db.patch(existing._id, { tokenIdentifier, isAdmin: true });
 }
 
 /**
@@ -142,15 +160,15 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
       {
         authorName: "Grandpa Jim",
-        message: "Thinking of you all — keep us posted!",
+        message: "Thinking of you all. Keep us posted!",
         minutesAgo: 45,
       },
     ],
   },
   "baby-at-hospital": {
     dueDateOffsetDays: 1,
-    laborStartedMessage: "Contractions got serious — heading in!",
-    hospitalMessage: "Checked in and settling into the delivery room.",
+    laborStartedMessage: "Contractions got serious. Heading in!",
+    hospitalMessage: "Checked in and getting comfy.",
     hoursAgo: { laborStarted: 8, wentToHospital: 3 },
     encouragements: [
       {
@@ -163,8 +181,8 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
   "baby-born": {
     dueDateOffsetDays: -2,
     laborStartedMessage: "Here we go!",
-    hospitalMessage: "At the hospital and ready.",
-    babyBornMessage: "Welcome to the world — everyone is healthy and happy!",
+    hospitalMessage: "At hospital. Let's do this.",
+    babyBornMessage: "Baby's here! Everyone's healthy and doing brilliantly.",
     hoursAgo: { laborStarted: 30, wentToHospital: 24, babyBorn: 12 },
     encouragements: [
       {
@@ -173,9 +191,49 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
         minutesAgo: 60 * 6,
       },
       {
-        authorName: "Neighbor Jo",
-        message: "What wonderful news. Rest up!",
+        authorName: "Neighbour Jo",
+        message: "Best news ever. Rest up!",
         minutesAgo: 60 * 2,
+      },
+      {
+        authorName: "NoSpacesAuthorNameAtMaximumLength123456789012345",
+        message: "W".repeat(240),
+        minutesAgo: 110,
+      },
+      {
+        authorName: "Link Tester",
+        message: `A deliberately long link: https://layout-stress.example/${"deep-path/".repeat(30)}`,
+        minutesAgo: 100,
+      },
+      {
+        authorName: "Emoji Parade",
+        message: `Welcome, baby! ${"👶🏽🎉🍼".repeat(30)}`,
+        minutesAgo: 90,
+      },
+      {
+        authorName: "Excited Cousins",
+        message: `**${"WELCOME".repeat(40)}**`,
+        minutesAgo: 80,
+      },
+      {
+        authorName: "Code Block Friend",
+        message: `\`${"CONGRATULATIONS".repeat(24)}\``,
+        minutesAgo: 70,
+      },
+      {
+        authorName: "Very Online Aunt",
+        message: `#baby #welcome #soexcited ${"#cantwaittomeetyou".repeat(20)}`,
+        minutesAgo: 60,
+      },
+      {
+        authorName: "Multilingual Family",
+        message: "Välkommen—Bienvenida—Bem-vinda—Welcome—".repeat(16),
+        minutesAgo: 50,
+      },
+      {
+        authorName: "Caps Lock Grandpa",
+        message: "THIS IS THE BEST NEWS EVER!!! ".repeat(20),
+        minutesAgo: 40,
       },
     ],
   },
@@ -222,6 +280,8 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBorn,
       theme: null,
       encouragementsDisabled: false,
+      demo: true,
+      lastActivityAt: now.getTime(),
     });
 
     await seedMilestoneUpdates(ctx, {
@@ -234,21 +294,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBornMessage: spec.babyBornMessage ?? null,
     });
 
-    for (const encouragement of spec.encouragements ?? []) {
-      const createdAt = now.getTime() - encouragement.minutesAgo * 60_000;
-      const timelineItemId = await insertEncouragementTimelineItem(ctx, {
-        babyId,
-        postedAt: createdAt,
-      });
-      await ctx.db.insert("encouragements", {
-        babyId,
-        authorName: encouragement.authorName,
-        message: encouragement.message,
-        createdAt,
-        timelineItemId,
-        visitorId: `seed-visitor-${encouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`,
-      });
-    }
+    await seedEncouragements({ ctx, babyId, now, spec });
 
     created.push({
       id: babyId,
@@ -259,6 +305,38 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
   }
 
   return created;
+}
+
+async function seedEncouragements(options: {
+  ctx: MutationCtx;
+  babyId: Id<"baby">;
+  now: Date;
+  spec: SeedBabySpec;
+}) {
+  const existing = await options.ctx.db
+    .query("encouragements")
+    .withIndex("by_babyId", (q) => q.eq("babyId", options.babyId))
+    .take(100);
+  const existingVisitorIds = new Set(existing.map((encouragement) => encouragement.visitorId));
+
+  for (const encouragement of options.spec.encouragements ?? []) {
+    const visitorId = `seed-visitor-${encouragement.authorName.toLowerCase().replace(/\s+/g, "-")}`;
+    if (existingVisitorIds.has(visitorId)) continue;
+
+    const createdAt = options.now.getTime() - encouragement.minutesAgo * 60_000;
+    const timelineItemId = await insertEncouragementTimelineItem(options.ctx, {
+      babyId: options.babyId,
+      postedAt: createdAt,
+    });
+    await options.ctx.db.insert("encouragements", {
+      babyId: options.babyId,
+      authorName: encouragement.authorName,
+      message: encouragement.message,
+      createdAt,
+      timelineItemId,
+      visitorId,
+    });
+  }
 }
 
 function hoursAgoIso(now: Date, hoursAgo: number | undefined) {

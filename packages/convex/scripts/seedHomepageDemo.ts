@@ -28,10 +28,10 @@ function extraConvexArgsFromArgv(argv: string[]) {
   return extra;
 }
 
-function convexRun(functionName: string, args: unknown, extraConvexArgs: string[]) {
+function convexRun(opts: { functionName: string; args: unknown; extraConvexArgs: string[] }) {
   const result = execFileSync(
     "pnpm",
-    ["convex", "run", functionName, JSON.stringify(args), ...extraConvexArgs],
+    ["convex", "run", opts.functionName, JSON.stringify(opts.args), ...opts.extraConvexArgs],
     { cwd: convexPackageDir, encoding: "utf8", env: process.env },
   );
   return parseConvexRunOutput(result);
@@ -90,20 +90,24 @@ async function jpegAndThumbnail(buffer: Buffer) {
   return { photo, thumbnail };
 }
 
-async function uploadBytes(
-  bytes: Buffer,
-  contentType: string,
-  extraConvexArgs: string[],
-): Promise<string> {
-  const uploadUrl = convexRun("homepageDemo:generateUploadUrl", {}, extraConvexArgs);
+async function uploadBytes(opts: {
+  bytes: Buffer;
+  contentType: string;
+  extraConvexArgs: string[];
+}): Promise<string> {
+  const uploadUrl = convexRun({
+    functionName: "homepageDemo:generateUploadUrl",
+    args: {},
+    extraConvexArgs: opts.extraConvexArgs,
+  });
   if (typeof uploadUrl !== "string") {
     throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
   }
 
   const response = await fetch(uploadUrl, {
     method: "POST",
-    headers: { "Content-Type": contentType },
-    body: new Uint8Array(bytes),
+    headers: { "Content-Type": opts.contentType },
+    body: new Uint8Array(opts.bytes),
   });
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
@@ -142,15 +146,27 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
 
   for (const photo of photosOnDisk) {
     const prepared = await jpegAndThumbnail(photo.buffer);
-    const photoId = await uploadBytes(prepared.photo, "image/jpeg", extraConvexArgs);
-    const thumbnailId = await uploadBytes(prepared.thumbnail, "image/jpeg", extraConvexArgs);
+    const photoId = await uploadBytes({
+      bytes: prepared.photo,
+      contentType: "image/jpeg",
+      extraConvexArgs,
+    });
+    const thumbnailId = await uploadBytes({
+      bytes: prepared.thumbnail,
+      contentType: "image/jpeg",
+      extraConvexArgs,
+    });
     photos[photo.key] = { photoId, thumbnailId };
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 
   const results = [];
   for (const locale of homepageDemoLocales()) {
-    const result = convexRun("homepageDemo:refresh", { photos, locale }, extraConvexArgs);
+    const result = convexRun({
+      functionName: "homepageDemo:refresh",
+      args: { photos, locale },
+      extraConvexArgs,
+    });
     console.log(`Homepage demo seeded (${locale}):`, result);
     results.push(result);
   }
