@@ -128,6 +128,11 @@ test("the baby's owner can remove an encouragement", async () => {
     visitorId: "visitor-x",
   });
 
+  const asUnrelatedUser = t.withIdentity({ subject: "bob" });
+  await expect(
+    asUnrelatedUser.mutation(api.encouragements.remove, { encouragementId }),
+  ).rejects.toThrow("Not authorized to delete this encouragement");
+
   const asOwner = t.withIdentity({ subject: "alice" });
   await asOwner.mutation(api.encouragements.remove, { encouragementId });
 
