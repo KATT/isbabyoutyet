@@ -2,6 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
+import { backfillUserProfileIsAdminDoc } from "./migrations";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {
@@ -54,5 +55,42 @@ test("unsupported browser locales fall back while language requests are stored",
   expect(request).toMatchObject({
     userId: "alice",
     requestedLocale: "French (fr-FR)",
+  });
+});
+
+test("backfillUserProfileIsAdmin sets false when missing and leaves admins alone", async () => {
+  const t = await setup();
+  const ids = await t.run(async (ctx) => {
+    const missing = await ctx.db.insert("userProfiles", {
+      userId: "missing-admin",
+      locale: "en-GB",
+    });
+    const admin = await ctx.db.insert("userProfiles", {
+      userId: "already-admin",
+      locale: "en-GB",
+      isAdmin: true,
+    });
+    const nonAdmin = await ctx.db.insert("userProfiles", {
+      userId: "already-false",
+      locale: "sv",
+      isAdmin: false,
+    });
+    return { missing, admin, nonAdmin };
+  });
+
+  await t.run(async (ctx) => {
+    const missing = await ctx.db.get(ids.missing);
+    const admin = await ctx.db.get(ids.admin);
+    const nonAdmin = await ctx.db.get(ids.nonAdmin);
+    if (!missing || !admin || !nonAdmin) throw new Error("missing profiles");
+    await backfillUserProfileIsAdminDoc(ctx, missing);
+    await backfillUserProfileIsAdminDoc(ctx, admin);
+    await backfillUserProfileIsAdminDoc(ctx, nonAdmin);
+  });
+
+  await t.run(async (ctx) => {
+    expect(await ctx.db.get(ids.missing)).toMatchObject({ isAdmin: false });
+    expect(await ctx.db.get(ids.admin)).toMatchObject({ isAdmin: true });
+    expect(await ctx.db.get(ids.nonAdmin)).toMatchObject({ isAdmin: false });
   });
 });
