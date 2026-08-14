@@ -15,6 +15,7 @@ import { babiesByUser, onboardingGetMine, profileGet } from "@/queries/convex";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
+import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
@@ -75,7 +76,9 @@ function DashboardPage() {
                 size="sm"
                 variant="outline"
                 className="rounded-full font-bold"
-                render={<Link to="/dashboard/admin" preload="viewport" />}
+                render={
+                  <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
+                }
                 nativeButton={false}
               >
                 <Shield className="w-4 h-4" />

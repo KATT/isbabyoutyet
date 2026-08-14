@@ -124,7 +124,7 @@ test("formatWhen returns a locale-aware timestamp", () => {
   expect(formatWhen(Date.UTC(2026, 0, 15, 12, 30), "en-GB")).toMatch(/15/);
 });
 
-test("nextSortSearch toggles order on the active column and defaults desc on switch", () => {
+test("nextSortSearch defaults to desc and only toggles to asc on the active desc column", () => {
   expect(
     nextSortSearch({ currentSort: "updated", currentOrder: "desc", clicked: "updated" }),
   ).toEqual({ sort: "updated", order: "asc" });
@@ -134,6 +134,9 @@ test("nextSortSearch toggles order on the active column and defaults desc on swi
   expect(
     nextSortSearch({ currentSort: "updated", currentOrder: "asc", clicked: "created" }),
   ).toEqual({ sort: "created", order: "desc" });
+  expect(
+    nextSortSearch({ currentSort: "created", currentOrder: "desc", clicked: "updated" }),
+  ).toEqual({ sort: "updated", order: "desc" });
 });
 
 test("language requests section shows empty and rows", async () => {

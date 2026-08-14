@@ -56,6 +56,14 @@ type SortBy = z.infer<typeof adminSearchSchema>["sort"];
 type SortOrder = z.infer<typeof adminSearchSchema>["order"];
 type AdminSearch = z.infer<typeof adminSearchSchema>;
 
+/** Default admin babies list: newest updates first, demos hidden. */
+export const ADMIN_DEFAULT_SEARCH = {
+  tab: "babies",
+  sort: "updated",
+  order: "desc",
+  hideDemo: true,
+} as const satisfies AdminSearch;
+
 type LanguageRequestRow = {
   _id: string;
   requestedLocale: string;
@@ -124,17 +132,18 @@ export function formatWhen(ms: number, locale: string) {
   }).format(new Date(ms));
 }
 
-/** Next URL sort state when a sortable column header is clicked. */
+/**
+ * Next URL sort state when a sortable column header is clicked.
+ * Selecting a column always starts at desc; clicking the active desc column
+ * toggles to asc.
+ */
 export function nextSortSearch(opts: {
   currentSort: SortBy;
   currentOrder: SortOrder;
   clicked: SortBy;
 }) {
-  if (opts.clicked === opts.currentSort) {
-    return {
-      sort: opts.clicked,
-      order: (opts.currentOrder === "desc" ? "asc" : "desc") as SortOrder,
-    };
+  if (opts.clicked === opts.currentSort && opts.currentOrder === "desc") {
+    return { sort: opts.clicked, order: "asc" as SortOrder };
   }
   return { sort: opts.clicked, order: "desc" as SortOrder };
 }
