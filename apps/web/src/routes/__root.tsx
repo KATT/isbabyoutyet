@@ -22,6 +22,7 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
+import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
@@ -210,7 +211,9 @@ function NotFoundComponent() {
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
 // indicator, so we show a top progress bar while the router is loading.
-function NavigationProgress() {
+// value={null} puts Progress in its indeterminate (sweeping) state; the
+// delayed fade-in keeps fast navigations from flashing it.
+export function NavigationProgress() {
   const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
 
@@ -218,9 +221,11 @@ function NavigationProgress() {
     return null;
   }
   return (
-    <div className="nav-progress" role="progressbar" aria-label={t("Loading")}>
-      <div className="nav-progress-bar" />
-    </div>
+    <Progress
+      value={null}
+      aria-label={t("Loading")}
+      className="pointer-events-none fixed inset-x-0 top-0 z-50 opacity-0 animate-appear-delayed"
+    />
   );
 }
 
