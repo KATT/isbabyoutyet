@@ -1,11 +1,14 @@
 import { parseISO } from "date-fns";
-import violetBloomCss from "@/styles/themes/violet-bloom.css?url";
-import twitterCss from "@/styles/themes/twitter.css?url";
-import bubblegumCss from "@/styles/themes/bubblegum.css?url";
-import catppuccinCss from "@/styles/themes/catppuccin.css?url";
-import mochaMousseCss from "@/styles/themes/mocha-mousse.css?url";
-import quantumRoseCss from "@/styles/themes/quantum-rose.css?url";
-import sunnyDaysCss from "@/styles/themes/sunny-days.css?url";
+// Inline theme CSS (?raw) so we can inject via route `head.styles`.
+// External `head.links` stylesheets get React 19 `precedence` via TanStack's
+// Asset helper and can stay in the document after navigating away.
+import violetBloomCss from "@/styles/themes/violet-bloom.css?raw";
+import twitterCss from "@/styles/themes/twitter.css?raw";
+import bubblegumCss from "@/styles/themes/bubblegum.css?raw";
+import catppuccinCss from "@/styles/themes/catppuccin.css?raw";
+import mochaMousseCss from "@/styles/themes/mocha-mousse.css?raw";
+import quantumRoseCss from "@/styles/themes/quantum-rose.css?raw";
+import sunnyDaysCss from "@/styles/themes/sunny-days.css?raw";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationKey } from "@/lib/i18n";
 
@@ -67,7 +70,8 @@ export const THEME_OPTIONS = [
 
 const TIMEZONE = "Europe/Stockholm";
 
-export function getThemeCssUrl(theme: string | null | undefined): string | null {
+/** Raw CSS for a theme preset, or null for the default (app) theme. */
+export function getThemeCss(theme: string | null | undefined): string | null {
   if (!theme) return null;
   const option = THEME_OPTIONS.find((t) => t.value === theme);
   return option?.css ?? null;

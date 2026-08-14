@@ -5,7 +5,7 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import { getThemeCssUrl } from "@/components/baby/utils";
+import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
@@ -77,7 +77,7 @@ function PreviewPage() {
     ...search,
   };
   const currentStatus = getCurrentStatus(baby);
-  const themeCssUrl = getThemeCssUrl(baby.theme);
+  const themeCss = getThemeCss(baby.theme);
 
   // The preview has no timeline; simulate the latest update from the stage message
   const stageMessage =
@@ -95,7 +95,7 @@ function PreviewPage() {
 
   return (
     <div>
-      {themeCssUrl && <link rel="stylesheet" href={themeCssUrl} />}
+      {themeCss ? <style dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
       <SettingsPanel
         baby={baby}
         onUpdate={(update) => {
