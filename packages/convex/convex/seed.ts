@@ -6,6 +6,7 @@ import { createAuth } from "./auth";
 import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
@@ -17,8 +18,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
 
   const existingBabies = await ctx.db
     .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .take(100);
 
   if (existingBabies.length > 0) {
     const now = new Date();
@@ -53,6 +54,7 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
 }
 
 async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
+  const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userProfiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -60,12 +62,15 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
   if (!existing) {
     // Demo login is the preview/local staff account — mark as admin so
     // /dashboard/admin is available on staging without a separate promote step.
-    await ctx.db.insert("userProfiles", { userId, locale: "en-GB", isAdmin: true });
+    await ctx.db.insert("userProfiles", {
+      userId,
+      tokenIdentifier,
+      locale: "en-GB",
+      isAdmin: true,
+    });
     return;
   }
-  if (existing.isAdmin !== true) {
-    await ctx.db.patch(existing._id, { isAdmin: true });
-  }
+  await ctx.db.patch(existing._id, { tokenIdentifier, isAdmin: true });
 }
 
 /**
@@ -244,6 +249,7 @@ const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
  * Exported for tests that supply their own userId without Better Auth.
  */
 export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
+  const ownerTokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const now = new Date();
   const created: Array<{
     id: Id<"baby">;
@@ -265,6 +271,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
     // timeline rows via seedMilestoneUpdates below.
     const babyId = await ctx.db.insert("baby", {
       userId,
+      ownerTokenIdentifier,
       name: spec.name,
       dueDate: dueDate.toISOString(),
       publicId: spec.publicId,
@@ -274,6 +281,8 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       theme: null,
       encouragementsDisabled: false,
       demo: true,
+      subscriptionCount: 0,
+      lastActivityAt: now.getTime(),
     });
 
     await seedMilestoneUpdates(ctx, {

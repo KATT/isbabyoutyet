@@ -36,14 +36,28 @@ test("create a baby and list it for the owner", async () => {
       name: "Baby Smith",
       dueDate: "2026-09-01",
       publicId: "baby-smith",
-      userId: "alice",
       role: "owner",
     },
   ]);
+  expect(babies[0]).not.toHaveProperty("userId");
+  expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
+  expect(babies[0]).not.toHaveProperty("lastActivityAt");
+  expect(babies[0]).not.toHaveProperty("subscriptionCount");
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
   expect(await asBob.query(api.baby.listByUser, {})).toEqual([]);
+  const sameSubjectFromAnotherIssuer = t.withIdentity({
+    subject: "alice",
+    issuer: "https://other-issuer.test",
+  });
+  expect(await sameSubjectFromAnotherIssuer.query(api.baby.listByUser, {})).toEqual([]);
+  await expect(
+    sameSubjectFromAnotherIssuer.mutation(api.baby.update, {
+      babyId: created.babyId,
+      name: "Not Alice",
+    }),
+  ).rejects.toThrow("Not authorized");
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
 });
 
@@ -58,6 +72,10 @@ test("getByPublicId resolves by publicId and by document id", async () => {
 
   const byPublicId = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(byPublicId).toMatchObject({ _id: created.babyId, name: "Little One" });
+  expect(byPublicId).not.toHaveProperty("userId");
+  expect(byPublicId).not.toHaveProperty("ownerTokenIdentifier");
+  expect(byPublicId).not.toHaveProperty("lastActivityAt");
+  expect(byPublicId).not.toHaveProperty("subscriptionCount");
 
   const byDocumentId = await t.query(api.baby.getByPublicId, { id: created.babyId });
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });
@@ -121,6 +139,16 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   // Historical publicId still resolves to the same baby
   const byOldPublicId = await t.query(api.baby.getByPublicId, { id: "working-title" });
   expect(byOldPublicId).toMatchObject({ _id: created.babyId, name: "Final Name" });
+
+  const sameSubjectFromAnotherIssuer = t.withIdentity({
+    subject: "alice",
+    issuer: "https://other-issuer.test",
+  });
+  const impostorBaby = await sameSubjectFromAnotherIssuer.mutation(api.baby.create, {
+    name: "Working Title",
+    dueDate: "2026-09-01",
+  });
+  expect(impostorBaby.publicId).toBe("working-title-1");
 });
 
 test("homepage demo publicIds are reserved and never assigned to real babies", async () => {

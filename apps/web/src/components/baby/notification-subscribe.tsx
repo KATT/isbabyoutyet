@@ -143,8 +143,21 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   // Unsubscribe mutation (TanStack mutation wrapping Convex mutation)
   const unsubscribeMutation = useMutation({
-    mutationFn: async (endpoint: string) => {
-      return await unsubscribeMutationFn({ endpoint });
+    mutationFn: async (subscription: PushSubscription) => {
+      const subscriptionData = subscription.toJSON();
+      if (
+        !subscriptionData.endpoint ||
+        !subscriptionData.keys?.p256dh ||
+        !subscriptionData.keys.auth
+      ) {
+        throw new Error(t("Failed to get subscription data"));
+      }
+      return await unsubscribeMutationFn({
+        babyId,
+        endpoint: subscriptionData.endpoint,
+        p256dh: subscriptionData.keys.p256dh,
+        auth: subscriptionData.keys.auth,
+      });
     },
     onSuccess: () => {
       void pushSubscriptionQuery.refetch();
@@ -233,8 +246,13 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
               error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
           });
         }}
-        onUnsubscribe={(subEndpoint) => {
-          toast.promise(unsubscribeMutation.mutateAsync(subEndpoint), {
+        onUnsubscribe={() => {
+          const subscription = pushSubscriptionQuery.data;
+          if (!subscription) {
+            toast.error(t("No subscription endpoint found"));
+            return;
+          }
+          toast.promise(unsubscribeMutation.mutateAsync(subscription), {
             loading: t("Unsubscribing from notifications..."),
             success: t("Unsubscribed from notifications!"),
             error: (error) =>
@@ -254,7 +272,7 @@ function NotificationSubscribeButton(props: {
   endpoint: string | null;
   isLoading: boolean;
   onSubscribe: () => void;
-  onUnsubscribe: (endpoint: string) => void;
+  onUnsubscribe: () => void;
 }) {
   // Only suspend on the Convex subscription check when we have an endpoint
   if (props.endpoint) {
@@ -277,7 +295,7 @@ function NotificationSubscribeButtonWithStatus(props: {
   endpoint: string;
   isLoading: boolean;
   onSubscribe: () => void;
-  onUnsubscribe: (endpoint: string) => void;
+  onUnsubscribe: () => void;
 }) {
   // The push endpoint only exists in the browser, so this can't be preloaded
   // in a loader — suspend on it directly.
@@ -296,7 +314,7 @@ function NotificationSubscribeButtonWithStatus(props: {
       isLoading={props.isLoading}
       onClick={() => {
         if (isSubscribed) {
-          props.onUnsubscribe(props.endpoint);
+          props.onUnsubscribe();
         } else {
           props.onSubscribe();
         }

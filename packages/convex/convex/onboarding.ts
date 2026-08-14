@@ -2,7 +2,9 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { isOnboardingStepId, ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import type { AppIdentity } from "./authIdentity";
+import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { isActive } from "./softDelete";
 
 const emptyState = {
@@ -17,24 +19,36 @@ const emptyState = {
   tourBaby: null as null | { publicId: string; name: string },
 };
 
+const onboardingStepIdValidator = v.union(
+  v.literal("add_baby"),
+  v.literal("share_link"),
+  v.literal("post_update"),
+  v.literal("explore_settings"),
+  v.literal("learn_encouragements"),
+);
+
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
     return null;
   }
-  return identity.subject;
+  return appIdentity(identity);
 }
 
-async function getOrCreateOnboarding(ctx: MutationCtx, userId: string) {
+async function getOrCreateOnboarding(ctx: MutationCtx, identity: AppIdentity) {
   const existing = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
     .unique();
   if (existing) {
+    if (existing.tokenIdentifier === undefined) {
+      await ctx.db.patch(existing._id, { tokenIdentifier: identity.tokenIdentifier });
+    }
     return existing;
   }
   const id = await ctx.db.insert("userOnboarding", {
-    userId,
+    userId: identity.authUserId,
+    tokenIdentifier: identity.tokenIdentifier,
     completedSteps: [],
     welcomeDismissed: false,
     checklistDismissed: false,
@@ -54,14 +68,21 @@ type AutoProgress = {
   encouragementsDisabled: boolean;
 };
 
-async function computeAutoProgress(ctx: QueryCtx | MutationCtx, userId: string) {
+async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIdentity) {
   const babies = (
     await ctx.db
       .query("baby")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_ownerTokenIdentifier", (q) =>
+        q.eq("ownerTokenIdentifier", identity.tokenIdentifier),
+      )
       .order("asc")
       .take(40)
-  ).filter(isActive);
+  ).filter(
+    (baby) =>
+      isActive(baby) &&
+      (baby.ownerTokenIdentifier === undefined ||
+        baby.ownerTokenIdentifier === identity.tokenIdentifier),
+  );
 
   const first = babies[0];
   const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
@@ -128,17 +149,17 @@ function toClientState(doc: Doc<"userOnboarding"> | null, auto: AutoProgress) {
 export const getMine = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       return emptyState;
     }
 
     const doc = await ctx.db
       .query("userOnboarding")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
       .unique();
 
-    const auto = await computeAutoProgress(ctx, userId);
+    const auto = await computeAutoProgress(ctx, identity);
     return toClientState(doc, auto);
   },
 });
@@ -146,11 +167,11 @@ export const getMine = query({
 export const dismissWelcome = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       throw new Error("Not authenticated");
     }
-    const doc = await getOrCreateOnboarding(ctx, userId);
+    const doc = await getOrCreateOnboarding(ctx, identity);
     await ctx.db.patch(doc._id, { welcomeDismissed: true });
     return null;
   },
@@ -159,11 +180,11 @@ export const dismissWelcome = mutation({
 export const setMinimized = mutation({
   args: { minimized: v.boolean() },
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       throw new Error("Not authenticated");
     }
-    const doc = await getOrCreateOnboarding(ctx, userId);
+    const doc = await getOrCreateOnboarding(ctx, identity);
     await ctx.db.patch(doc._id, { minimized: args.minimized });
     return null;
   },
@@ -172,11 +193,11 @@ export const setMinimized = mutation({
 export const dismissChecklist = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       throw new Error("Not authenticated");
     }
-    const doc = await getOrCreateOnboarding(ctx, userId);
+    const doc = await getOrCreateOnboarding(ctx, identity);
     await ctx.db.patch(doc._id, {
       checklistDismissed: true,
       welcomeDismissed: true,
@@ -187,16 +208,13 @@ export const dismissChecklist = mutation({
 });
 
 export const completeStep = mutation({
-  args: { stepId: v.string() },
+  args: { stepId: onboardingStepIdValidator },
   handler: async (ctx, args) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       throw new Error("Not authenticated");
     }
-    if (!isOnboardingStepId(args.stepId)) {
-      throw new Error(`Unknown onboarding step: ${args.stepId}`);
-    }
-    const doc = await getOrCreateOnboarding(ctx, userId);
+    const doc = await getOrCreateOnboarding(ctx, identity);
     if (doc.completedSteps.includes(args.stepId)) {
       return null;
     }
@@ -212,12 +230,12 @@ export const completeStep = mutation({
 export const restart = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await requireUserId(ctx);
-    if (!userId) {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
       throw new Error("Not authenticated");
     }
-    const doc = await getOrCreateOnboarding(ctx, userId);
-    const auto = await computeAutoProgress(ctx, userId);
+    const doc = await getOrCreateOnboarding(ctx, identity);
+    const auto = await computeAutoProgress(ctx, identity);
     await ctx.db.patch(doc._id, {
       // Replay the welcome carousel only if they still have no baby
       welcomeDismissed: auto.hasBaby,
@@ -240,9 +258,10 @@ export const SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL = "migration:skipTourForExist
  * interrupted by the first-run tour.
  */
 export async function markUserOnboardingComplete(ctx: MutationCtx, userId: string) {
+  const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userOnboarding")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
 
   const patch = {
@@ -253,12 +272,13 @@ export async function markUserOnboardingComplete(ctx: MutationCtx, userId: strin
   };
 
   if (existing) {
-    await ctx.db.patch(existing._id, patch);
+    await ctx.db.patch(existing._id, { ...patch, tokenIdentifier });
     return existing._id;
   }
 
   return await ctx.db.insert("userOnboarding", {
     userId,
+    tokenIdentifier,
     ...patch,
   });
 }

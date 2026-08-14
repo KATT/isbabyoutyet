@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useEffect, useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -20,7 +21,7 @@ type OnboardingHostProps = {
   /** When set, the baby-page tour only runs on the first created baby */
   babyPublicId: string | undefined;
   /** Baby-page: open post-update / settings from the checklist */
-  onGoToStep: ((stepId: string) => void) | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
 };
 
 function scrollToTourTarget(targetId: string) {
@@ -117,7 +118,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
       ? t(nextStep.description)
       : "";
 
-  function handleGoToStep(stepId: string) {
+  function handleGoToStep(stepId: OnboardingStepId) {
     if (stepId === "post_update") {
       props.onGoToStep?.(stepId);
       return;

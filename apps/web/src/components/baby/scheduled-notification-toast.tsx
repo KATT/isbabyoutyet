@@ -23,7 +23,7 @@ import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationToastProps = {
   notifications: PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>;
-  subscriptions: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptions>;
+  subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
@@ -37,11 +37,11 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     () => notifications.filter((n) => n.status === "pending"),
     [notifications],
   );
-  const subscriptionsQuery = usePreloadedConvexQuery(
-    api.pushSubscriptions.getSubscriptions,
-    props.subscriptions,
+  const subscriptionCountQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.getSubscriptionCount,
+    props.subscriptionCount,
   );
-  const subscriptionCount = subscriptionsQuery.data.length;
+  const subscriptionCount = subscriptionCountQuery.data;
 
   // Track active toasts and previous notification states
   const activeToasts = useRef(new Set<Id<"scheduledNotifications">>());

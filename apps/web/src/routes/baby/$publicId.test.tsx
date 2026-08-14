@@ -1,11 +1,11 @@
 import { render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { convexTest } from "convex-test";
+import type { FunctionReturnType } from "convex/server";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
@@ -23,7 +23,9 @@ function useFakeTimersResource(now: Date) {
 /**
  * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
  */
-function docToBabyData(doc: Doc<"baby">): BabyData {
+type PublicBaby = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
+
+function docToBabyData(doc: PublicBaby): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -43,7 +45,7 @@ function docToBabyData(doc: Doc<"baby">): BabyData {
  * Happy-path stand-in for the baby detail page: heading + status from
  * data loaded via convex-test (in-memory local Convex).
  */
-function BabyDetailPage(props: { baby: Doc<"baby"> }) {
+function BabyDetailPage(props: { baby: PublicBaby }) {
   const baby = docToBabyData(props.baby);
   const currentStatus = getCurrentStatus(baby);
 
@@ -205,7 +207,7 @@ test("loader gives visitors awaited shared handles and no owner-only data", asyn
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toBeNull();
-  expect(result.subscriptions).toBeNull();
+  expect(result.subscriptionCount).toBeNull();
   expect(result.onboarding).toBeNull();
   expect(result.coParentsList).toBeNull();
 });
@@ -219,7 +221,7 @@ test("loader gives owners awaited owner-only handles", async () => {
   });
 
   expect(result.scheduledNotifications).toMatchObject({ input: { babyId: "baby-1" } });
-  expect(result.subscriptions).toMatchObject({ input: { babyId: "baby-1" } });
+  expect(result.subscriptionCount).toMatchObject({ input: { babyId: "baby-1" } });
   expect(result.onboarding).toMatchObject({ input: {} });
   expect(result.coParentsList).toMatchObject({
     input: { babyId: "baby-1" },

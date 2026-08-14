@@ -1,25 +1,34 @@
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { AppIdentity } from "./authIdentity";
+import { appIdentity } from "./authIdentity";
 import { isActive } from "./softDelete";
 
 type DbCtx = QueryCtx | MutationCtx;
 
 export async function findActiveCoParent(
   ctx: DbCtx,
-  opts: { babyId: Id<"baby">; userId: string },
+  opts: { babyId: Id<"baby">; identity: AppIdentity },
 ): Promise<Doc<"babyCoParents"> | null> {
   const rows = await ctx.db
     .query("babyCoParents")
-    .withIndex("by_babyId_userId", (q) => q.eq("babyId", opts.babyId).eq("userId", opts.userId))
-    .collect();
+    .withIndex("by_babyId_and_tokenIdentifier", (q) =>
+      q.eq("babyId", opts.babyId).eq("tokenIdentifier", opts.identity.tokenIdentifier),
+    )
+    .order("desc")
+    .take(32);
   return rows.find(isActive) ?? null;
 }
 
-export async function canManageBaby(ctx: DbCtx, opts: { baby: Doc<"baby">; userId: string }) {
-  if (opts.baby.userId === opts.userId) return true;
+export async function canManageBaby(
+  ctx: DbCtx,
+  opts: { baby: Doc<"baby">; identity: AppIdentity },
+) {
+  const isOwner = opts.baby.ownerTokenIdentifier === opts.identity.tokenIdentifier;
+  if (isOwner) return true;
   const coParent = await findActiveCoParent(ctx, {
     babyId: opts.baby._id,
-    userId: opts.userId,
+    identity: opts.identity,
   });
   return coParent != null;
 }
@@ -33,24 +42,25 @@ export async function requireBabyManager(ctx: DbCtx, babyId: Id<"baby">) {
   if (!identity) {
     throw new Error("Not authenticated");
   }
+  const caller = appIdentity(identity);
 
   const baby = await ctx.db.get(babyId);
   if (!baby || !isActive(baby)) {
     throw new Error("Baby not found");
   }
 
-  const isOwner = baby.userId === identity.subject;
+  const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
   if (!isOwner) {
     const coParent = await findActiveCoParent(ctx, {
       babyId,
-      userId: identity.subject,
+      identity: caller,
     });
     if (!coParent) {
       throw new Error("Not authorized");
     }
   }
 
-  return { identity, baby, isOwner };
+  return { identity: caller, baby, isOwner };
 }
 
 /**

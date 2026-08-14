@@ -124,7 +124,7 @@ export const listByBaby = query({
 
     const result = await ctx.db
       .query("timelineItems")
-      .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -158,7 +158,8 @@ export const latestUpdate = query({
     const updates = await ctx.db
       .query("updates")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
-      .collect();
+      .order("desc")
+      .take(256);
 
     let latest: { update: Doc<"updates">; item: Doc<"timelineItems"> } | null = null;
     for (const update of updates) {
@@ -181,6 +182,16 @@ export const latestUpdate = query({
 });
 
 // --- Write helpers (shared by baby.ts, updates.ts, encouragements.ts, migrations.ts) ---
+
+async function advanceBabyActivity(
+  ctx: MutationCtx,
+  opts: { babyId: Id<"baby">; activityAt: number },
+) {
+  const baby = await ctx.db.get(opts.babyId);
+  if (baby && (baby.lastActivityAt === undefined || opts.activityAt > baby.lastActivityAt)) {
+    await ctx.db.patch(opts.babyId, { lastActivityAt: opts.activityAt });
+  }
+}
 
 /**
  * Inserts an owner update together with its timeline row.
@@ -215,6 +226,10 @@ export async function insertUpdateWithTimelineItem(
     thumbnailId: opts.thumbnailId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
   });
+  await advanceBabyActivity(ctx, {
+    babyId: opts.babyId,
+    activityAt: opts.postedAt,
+  });
   return { timelineItemId, updateId };
 }
 
@@ -225,6 +240,10 @@ export async function deleteUpdateWithTimelineItem(ctx: MutationCtx, update: Doc
   const patch = softDeletePatch();
   await ctx.db.patch(update._id, patch);
   await ctx.db.patch(update.timelineItemId, patch);
+  await advanceBabyActivity(ctx, {
+    babyId: update.babyId,
+    activityAt: patch.deletedAt,
+  });
 }
 
 /**
@@ -239,6 +258,10 @@ export async function deleteEncouragementWithTimelineItem(
   if (encouragement.timelineItemId) {
     await ctx.db.patch(encouragement.timelineItemId, patch);
   }
+  await advanceBabyActivity(ctx, {
+    babyId: encouragement.babyId,
+    activityAt: patch.deletedAt,
+  });
 }
 
 /**
@@ -252,10 +275,11 @@ export async function findMilestoneUpdate(
 ) {
   const updates = await ctx.db
     .query("updates")
-    .withIndex("by_babyId_milestone", (q) =>
+    .withIndex("by_babyId_and_milestone", (q) =>
       q.eq("babyId", opts.babyId).eq("milestone", opts.milestone),
     )
-    .collect();
+    .order("desc")
+    .take(32);
   return updates.find(isActive) ?? null;
 }
 
@@ -267,9 +291,14 @@ export async function insertEncouragementTimelineItem(
   ctx: MutationCtx,
   opts: { babyId: Id<"baby">; postedAt: number },
 ) {
-  return await ctx.db.insert("timelineItems", {
+  const timelineItemId = await ctx.db.insert("timelineItems", {
     babyId: opts.babyId,
     kind: "encouragement",
     postedAt: opts.postedAt,
   });
+  await advanceBabyActivity(ctx, {
+    babyId: opts.babyId,
+    activityAt: opts.postedAt,
+  });
+  return timelineItemId;
 }

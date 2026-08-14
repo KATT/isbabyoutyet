@@ -62,6 +62,20 @@ function convexCli(args: string[]) {
   });
 }
 
+function convexCliOutput(args: string[]) {
+  console.log(`\n$ convex ${args.join(" ")}`);
+  return execFileSync("pnpm", ["convex", ...args], {
+    cwd: convexPackageDir,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "inherit"],
+    env: {
+      ...process.env,
+      VITE_SITE_URL: siteUrl,
+      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
+    },
+  });
+}
+
 convexCli([
   "deploy",
   "--cmd-url-env-var-name",
@@ -80,6 +94,27 @@ for (const [key, value] of Object.entries(convexEnv)) {
 }
 
 convexCli(["run", "migrations:runAll", ...previewArgs]);
+
+const migrationStatusSchema = z.object({
+  isDone: z.boolean(),
+  failed: z.array(z.string()),
+});
+
+for (let attempt = 0; attempt < 300; attempt += 1) {
+  const status = migrationStatusSchema.parse(
+    JSON.parse(convexCliOutput(["run", "migrations:deploymentStatus", ...previewArgs])),
+  );
+  if (status.failed.length > 0) {
+    throw new Error(`Migration failed: ${status.failed.join("; ")}`);
+  }
+  if (status.isDone) {
+    break;
+  }
+  if (attempt === 299) {
+    throw new Error("Migrations did not finish before the deployment deadline");
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1_000));
+}
 
 console.log("\n$ pnpm seed:homepage");
 execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
