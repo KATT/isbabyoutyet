@@ -1,3 +1,4 @@
+/* v8 ignore file -- transformed server-function glue is verified by build and HTTP integration tests */
 import { ConvexHttpClient } from "convex/browser";
 import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeaders } from "@tanstack/react-start/server";
