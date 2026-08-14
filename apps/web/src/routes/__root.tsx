@@ -184,6 +184,21 @@ export const Route = createRootRouteWithContext<{
   notFoundComponent: NotFoundComponent,
 });
 
+// expectAuth pauses the Convex websocket until setAuth runs, but
+// ConvexProviderWithAuth only calls setAuth for signed-in users — without
+// this, anonymous visitors' client-side queries would hang forever (frozen
+// client navigations on public baby pages). Resolve them explicitly once the
+// session check comes back empty. Exported for tests.
+export function useResolveAnonymousAuth(convexQueryClient: ConvexQueryClient) {
+  const sessionResult = authClient.useSession();
+  const sessionResolvedAnonymous = !sessionResult.isPending && !sessionResult.data;
+  useEffect(() => {
+    if (sessionResolvedAnonymous) {
+      convexQueryClient.convexClient.setAuth(async () => null);
+    }
+  }, [sessionResolvedAnonymous, convexQueryClient]);
+}
+
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
@@ -204,6 +219,8 @@ function RootComponent() {
         });
     }
   }, []);
+
+  useResolveAnonymousAuth(context.convexQueryClient);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
