@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { applyCachePolicy } from "./cachePolicy";
+import {
+  applyCachePolicy,
+  privateCacheHeaders,
+  publicCacheHeaders,
+  withPublicCache,
+} from "./cachePolicy";
 
 function responseFor(path: string, method: string) {
   const request = new Request(`https://example.com${path}`, { method });
@@ -51,5 +56,28 @@ describe("applyCachePolicy", () => {
     );
 
     expect(response.headers.get("Vary")).toBe("Accept-Encoding, Accept-Language, Cookie");
+  });
+
+  test("builds route-level public and private cache headers", () => {
+    expect(publicCacheHeaders({ maxAgeSeconds: 120, tags: ["one", "two"] })).toMatchObject({
+      "Cache-Control": "public, max-age=0, must-revalidate",
+      "Vercel-CDN-Cache-Control": expect.stringContaining("s-maxage=120"),
+      "Vercel-Cache-Tag": "one,two",
+    });
+    expect(privateCacheHeaders()).toMatchObject({
+      "Cache-Control": expect.stringContaining("private"),
+      "Vercel-CDN-Cache-Control": expect.stringContaining("no-store"),
+    });
+  });
+
+  test("adds public caching to resource responses without losing their headers", async () => {
+    const response = withPublicCache(
+      new Response("manifest", { headers: { "Content-Type": "application/manifest+json" } }),
+      { maxAgeSeconds: 600, tags: ["baby-id:123"] },
+    );
+
+    expect(response.headers.get("Content-Type")).toBe("application/manifest+json");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBe("baby-id:123");
+    expect(await response.text()).toBe("manifest");
   });
 });
