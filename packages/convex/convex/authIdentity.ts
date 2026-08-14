@@ -1,6 +1,5 @@
 import type { UserIdentity } from "convex/server";
 import { env } from "./_generated/server";
-import { requiredEnv } from "./requiredEnv";
 
 /**
  * Better Auth puts its user id in the JWT subject. Keep that provider-local id
@@ -20,5 +19,5 @@ export type AppIdentity = ReturnType<typeof appIdentity>;
  * Convex defines tokenIdentifier as `${issuer}|${subject}`.
  */
 export function tokenIdentifierForAuthUserId(authUserId: string) {
-  return `${requiredEnv("CONVEX_SITE_URL", env.CONVEX_SITE_URL)}|${authUserId}`;
+  return `${env.CONVEX_SITE_URL}|${authUserId}`;
 }
