@@ -6,6 +6,7 @@ import { supportedLocaleValidator } from "./i18n";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
+  isAdmin: v.boolean(),
 });
 
 async function requireIdentity(ctx: Pick<QueryCtx, "auth">) {
@@ -23,6 +24,13 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
     .unique();
 }
 
+function toProfileResult(profile: { locale: string; isAdmin?: boolean | undefined }) {
+  return {
+    locale: resolveSupportedLocale(profile.locale),
+    isAdmin: profile.isAdmin === true,
+  };
+}
+
 export const get = query({
   args: {},
   returns: v.union(profileResultValidator, v.null()),
@@ -32,7 +40,7 @@ export const get = query({
       return null;
     }
     const profile = await getProfileHandler(ctx, identity.subject);
-    return profile ? { locale: resolveSupportedLocale(profile.locale) } : null;
+    return profile ? toProfileResult(profile) : null;
   },
 });
 
@@ -45,7 +53,7 @@ export const ensure = mutation({
     const identity = await requireIdentity(ctx);
     const existing = await getProfileHandler(ctx, identity.subject);
     if (existing) {
-      return { locale: resolveSupportedLocale(existing.locale) };
+      return toProfileResult(existing);
     }
 
     const locale = resolveSupportedLocale(args.browserLocale);
@@ -53,7 +61,7 @@ export const ensure = mutation({
       userId: identity.subject,
       locale,
     });
-    return { locale };
+    return { locale, isAdmin: false };
   },
 });
 
@@ -67,13 +75,13 @@ export const updateLocale = mutation({
     const existing = await getProfileHandler(ctx, identity.subject);
     if (existing) {
       await ctx.db.patch(existing._id, { locale: args.locale });
-    } else {
-      await ctx.db.insert("userProfiles", {
-        userId: identity.subject,
-        locale: args.locale,
-      });
+      return { locale: args.locale, isAdmin: existing.isAdmin === true };
     }
-    return { locale: args.locale };
+    await ctx.db.insert("userProfiles", {
+      userId: identity.subject,
+      locale: args.locale,
+    });
+    return { locale: args.locale, isAdmin: false };
   },
 });
 

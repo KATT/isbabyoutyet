@@ -19,19 +19,22 @@ test("a profile defaults from the browser and persists an explicit locale", asyn
     await asAlice.mutation(api.profile.ensure, {
       browserLocale: "sv-SE",
     }),
-  ).toEqual({ locale: "sv" });
+  ).toEqual({ locale: "sv", isAdmin: false });
 
   expect(
     await asAlice.mutation(api.profile.ensure, {
       browserLocale: "es-MX",
     }),
-  ).toEqual({ locale: "sv" });
+  ).toEqual({ locale: "sv", isAdmin: false });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
-  expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "es" });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "es", isAdmin: false });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "pt-BR" });
-  expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "pt-BR" });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({
+    locale: "pt-BR",
+    isAdmin: false,
+  });
 });
 
 test("unsupported browser locales fall back while language requests are stored", async () => {
@@ -42,7 +45,7 @@ test("unsupported browser locales fall back while language requests are stored",
     await asAlice.mutation(api.profile.ensure, {
       browserLocale: "fr-FR",
     }),
-  ).toEqual({ locale: "en-GB" });
+  ).toEqual({ locale: "en-GB", isAdmin: false });
 
   const requestId = await asAlice.mutation(api.profile.requestLanguage, {
     requestedLocale: "French (fr-FR)",

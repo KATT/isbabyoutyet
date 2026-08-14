@@ -5,7 +5,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useMutation } from "convex/react";
-import { Baby as BabyIcon, Plus, SignOut, Sparkle } from "@phosphor-icons/react";
+import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
@@ -36,8 +36,10 @@ function DashboardPage() {
   const onboardingQuery = useSuspenseQuery(
     preloadedQueryOptions(onboardingGetMine, loaderData.onboarding),
   );
+  const profileQuery = useSuspenseQuery(preloadedQueryOptions(profileGet, loaderData.profile));
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
+  const profile = profileQuery.data;
 
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   useEffect(() => {
@@ -68,6 +70,18 @@ function DashboardPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
+            {profile?.isAdmin ? (
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full font-bold"
+                render={<Link to="/dashboard/admin" preload="viewport" />}
+                nativeButton={false}
+              >
+                <Shield className="w-4 h-4" />
+                {t("Admin")}
+              </Button>
+            ) : null}
             <Button
               size="sm"
               className="rounded-full font-bold"

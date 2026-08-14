@@ -32,6 +32,7 @@ export default defineConfig({
         // test run beats them, so coverage can only go up. Never lower them
         // by hand.
         autoUpdate: true,
+        // Merge: take the higher of each side so the ratchet never goes down.
         statements: 66.29,
         branches: 60.74,
         functions: 63.48,

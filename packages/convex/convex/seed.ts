@@ -26,6 +26,9 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     for (const spec of SEED_BABIES) {
       const baby = babiesByPublicId.get(spec.publicId);
       if (baby) {
+        if (baby.demo !== true) {
+          await ctx.db.patch(baby._id, { demo: true });
+        }
         await seedEncouragements({ ctx, babyId: baby._id, now, spec });
       }
     }
@@ -55,7 +58,13 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
   if (!existing) {
-    await ctx.db.insert("userProfiles", { userId, locale: "en-GB" });
+    // Demo login is the preview/local staff account — mark as admin so
+    // /dashboard/admin is available on staging without a separate promote step.
+    await ctx.db.insert("userProfiles", { userId, locale: "en-GB", isAdmin: true });
+    return;
+  }
+  if (existing.isAdmin !== true) {
+    await ctx.db.patch(existing._id, { isAdmin: true });
   }
 }
 
@@ -264,6 +273,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       babyBorn,
       theme: null,
       encouragementsDisabled: false,
+      demo: true,
     });
 
     await seedMilestoneUpdates(ctx, {
