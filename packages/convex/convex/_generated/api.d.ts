@@ -23,6 +23,7 @@ import type * as http from "../http.js";
 import type * as i18n from "../i18n.js";
 import type * as migrations from "../migrations.js";
 import type * as onboarding from "../onboarding.js";
+import type * as onboardingValidators from "../onboardingValidators.js";
 import type * as profile from "../profile.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
@@ -51,6 +52,7 @@ declare const fullApi: ApiFromModules<{
   i18n: typeof i18n;
   migrations: typeof migrations;
   onboarding: typeof onboarding;
+  onboardingValidators: typeof onboardingValidators;
   profile: typeof profile;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;

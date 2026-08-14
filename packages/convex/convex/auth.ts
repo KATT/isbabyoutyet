@@ -11,12 +11,16 @@ import type { DataModel } from "./_generated/dataModel";
 // as well as helper methods for general use.
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
+export function resolveAuthBaseUrl(siteUrl: string | undefined, convexSiteUrl: string) {
+  return siteUrl ?? convexSiteUrl;
+}
+
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
     // Fresh preview deployments run the demo seed before deploy-convex.ts can
     // set their branch URL. The Convex site URL is a safe bootstrap origin;
     // subsequent requests use the synced web preview URL.
-    baseURL: env.SITE_URL ?? env.CONVEX_SITE_URL,
+    baseURL: resolveAuthBaseUrl(env.SITE_URL, env.CONVEX_SITE_URL),
     database: authComponent.adapter(ctx),
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {

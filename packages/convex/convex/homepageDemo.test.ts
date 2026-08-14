@@ -289,12 +289,15 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   const realBabyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Real Willow",
       dueDate: "2026-12-01",
       publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 
@@ -327,6 +330,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
   const legacyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: HOMEPAGE_DEMO_BABY.ownerUserId,
+      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
       name: "Juniper Hale",
       dueDate: "2026-01-01",
       publicId: HOMEPAGE_DEMO_BABY.publicId,
@@ -334,6 +338,8 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 
@@ -350,12 +356,15 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
   const babyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
       userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
       name: "Someone Else",
       dueDate: "2026-12-01",
       publicId: "someone-else",
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
     });
   });
 
