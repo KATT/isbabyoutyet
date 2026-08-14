@@ -17,6 +17,7 @@ import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { createServerFn } from "@tanstack/react-start";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
@@ -243,6 +244,10 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
             {
               name: "Tanstack Router",
               render: <TanStackRouterDevtoolsPanel />,
+            },
+            {
+              name: "Tanstack Query",
+              render: <ReactQueryDevtoolsPanel />,
             },
           ]}
         />
