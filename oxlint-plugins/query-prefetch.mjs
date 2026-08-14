@@ -18,9 +18,14 @@ const TANSTACK_QUERY_HOOKS = new Set([
 const PRELOADED_OPTION_FNS = new Set([
   "preloadedQueryOptions",
   "preloadedInfiniteQueryOptions",
+  "preloadedConvexQueryOptions",
 ]);
 
+/** Wrapper hooks with an options-object `handle` (2nd argument). */
 const PRELOADED_WRAPPER_HOOKS = new Set(["usePreloadedConvexInfiniteQuery"]);
+
+/** Wrapper hooks where the handle is the 2nd positional argument. */
+const POSITIONAL_WRAPPER_HOOKS = new Set(["usePreloadedConvexQuery"]);
 
 const ENSURE_FNS = new Set(["ensureQueryData", "ensureInfiniteQueryData"]);
 
@@ -385,6 +390,9 @@ const useLoaderPreloads = {
         }
         const name = calleeName(node.callee);
         if (PRELOADED_OPTION_FNS.has(name) && node.arguments[1]) {
+          markKeyFromExpression(node.arguments[1], usedKeys);
+        }
+        if (POSITIONAL_WRAPPER_HOOKS.has(name) && node.arguments[1]) {
           markKeyFromExpression(node.arguments[1], usedKeys);
         }
         if (PRELOADED_WRAPPER_HOOKS.has(name)) {

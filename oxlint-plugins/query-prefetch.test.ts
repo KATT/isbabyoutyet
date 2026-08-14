@@ -53,25 +53,45 @@ tester.run("require-preloaded-query-options", plugin.rules["require-preloaded-qu
 
 tester.run("use-loader-preloads", plugin.rules["use-loader-preloads"], {
   valid: [
-    `import { allKeyed, getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
-     import { useSuspenseQuery } from "@tanstack/react-query";
+    `import { allKeyed } from "@workspace/query-prefetch";
+     import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
      const Route = createFileRoute("/x")({
        loader: async (opts) => {
-         const preloader = getQueryPreloader(opts.context.queryClient);
+         const preloader = getConvexQueryPreloader(opts.context.queryClient);
          return await allKeyed({
-           profile: preloader.ensureQueryData(profileGet),
+           profile: preloader.ensureQueryData(api.profile.get, {}),
          });
        },
        component: function Page() {
          const loaderData = Route.useLoaderData();
-         useSuspenseQuery(preloadedQueryOptions(profileGet, loaderData.profile));
+         const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+         return null;
+       },
+     });`,
+    `import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
+     const Route = createFileRoute("/x")({
+       loader: async (opts) => {
+         const preloader = getConvexQueryPreloader(opts.context.queryClient);
+         return await allKeyed({
+           babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
+             args: {},
+             numItems: 20,
+           }),
+         });
+       },
+       component: function Page() {
+         const loaderData = Route.useLoaderData();
+         const babiesQuery = usePreloadedConvexInfiniteQuery(api.admin.listBabies, {
+           handle: loaderData.babies,
+           remixArgs: null,
+         });
          return null;
        },
      });`,
     `const Route = createFileRoute("/x")({
        loader: async (opts) => {
-         const preloader = getQueryPreloader(opts.context.queryClient);
-         const profile = await preloader.ensureQueryData(profileGet);
+         const preloader = getConvexQueryPreloader(opts.context.queryClient);
+         const profile = await preloader.ensureQueryData(api.profile.get, {});
          return { profile };
        },
        component: function Page() {
@@ -83,8 +103,8 @@ tester.run("use-loader-preloads", plugin.rules["use-loader-preloads"], {
     {
       code: `const Route = createFileRoute("/x")({
          loader: async (opts) => {
-           const preloader = getQueryPreloader(opts.context.queryClient);
-           const profile = await preloader.ensureQueryData(profileGet);
+           const preloader = getConvexQueryPreloader(opts.context.queryClient);
+           const profile = await preloader.ensureQueryData(api.profile.get, {});
            return { profile };
          },
          component: function Page() {

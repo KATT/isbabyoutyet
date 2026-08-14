@@ -2,10 +2,10 @@ import { fireEvent, render } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
-import { testPreloadedInfiniteQuery } from "@workspace/query-prefetch/test-helpers";
-import { adminBabiesInfinite, adminLanguageRequestsInfinite } from "@/queries/convex";
+import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(opts: unknown) => void>(),
@@ -33,17 +33,21 @@ vi.mock("@tanstack/react-router", () => ({
     ...opts,
     useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
     useLoaderData: () => ({
-      babies: testPreloadedInfiniteQuery(
-        adminBabiesInfinite,
-        {
+      babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
+        input: { sortBy: "updated", sortOrder: "desc", hideDemo: true },
+        numItems: 20,
+        initialData: {
           pages: [{ page: [], isDone: true, continueCursor: "" }],
           pageParams: [{ numItems: 20, cursor: null }],
         },
-        { sortBy: "updated", sortOrder: "desc", hideDemo: true },
-      ),
-      languages: testPreloadedInfiniteQuery(adminLanguageRequestsInfinite, {
-        pages: [{ page: [], isDone: true, continueCursor: "" }],
-        pageParams: [{ numItems: 20, cursor: null }],
+      }),
+      languages: testPreloadedConvexInfiniteQuery<typeof api.admin.listLanguageRequests>({
+        input: {},
+        numItems: 20,
+        initialData: {
+          pages: [{ page: [], isDone: true, continueCursor: "" }],
+          pageParams: [{ numItems: 20, cursor: null }],
+        },
       }),
     }),
   }),
@@ -51,24 +55,8 @@ vi.mock("@tanstack/react-router", () => ({
   useNavigate: () => mocks.navigate,
 }));
 
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseInfiniteQuery: () => ({
-      data: {
-        pages: [{ page: [], isDone: true, continueCursor: "" }],
-        pageParams: [{ numItems: 20, cursor: null }],
-      },
-      hasNextPage: false,
-      isFetchingNextPage: false,
-      fetchNextPage: vi.fn<() => Promise<unknown>>(),
-    }),
-  };
-});
-
-vi.mock("@workspace/convex-infinite-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-infinite-query")>();
+vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
   return {
     ...actual,
     usePreloadedConvexInfiniteQuery: () => ({
@@ -80,7 +68,6 @@ vi.mock("@workspace/convex-infinite-query", async (importOriginal) => {
       isFetchingNextPage: false,
       fetchNextPage: vi.fn<() => Promise<unknown>>(),
     }),
-    useLiveConvexInfinitePages: () => undefined,
   };
 });
 

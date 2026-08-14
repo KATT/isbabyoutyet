@@ -40,7 +40,7 @@ import * as z from "zod";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { PreloadedInfiniteQuery } from "@workspace/query-prefetch";
+import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
@@ -51,11 +51,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
-import {
-  useLiveConvexInfinitePages,
-  usePreloadedConvexInfiniteQuery,
-} from "@workspace/convex-infinite-query";
-import { timelineByBaby } from "@/queries/convex";
+import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
@@ -902,7 +898,7 @@ type TimelineFeedProps = {
   babyName: string;
   isOwner: boolean;
   /** Prefetched infinite timeline handle from the route loader (SSR first page). */
-  timeline: PreloadedInfiniteQuery<typeof timelineByBaby>;
+  timeline: PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
@@ -911,22 +907,12 @@ export function TimelineFeed(props: TimelineFeedProps) {
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
-  const queryInput = {
-    babyId: props.babyId,
-    visitorId: currentVisitorId || undefined,
-  };
-  const timelineQuery = usePreloadedConvexInfiniteQuery(timelineByBaby, {
+  const timelineQuery = usePreloadedConvexInfiniteQuery(api.timeline.listByBaby, {
     handle: props.timeline,
-    remixInput: () => queryInput as never,
-  });
-  useLiveConvexInfinitePages({
-    queryKey: timelineByBaby(queryInput).queryKey,
-    funcRef: api.timeline.listByBaby,
-    args: {
-      babyId: props.babyId,
+    remixArgs: (args) => ({
+      ...args,
       ...(currentVisitorId ? { visitorId: currentVisitorId } : {}),
-    },
-    pageParams: timelineQuery.data.pageParams,
+    }),
   });
   const removeUpdate = useMutation(api.updates.remove);
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
@@ -934,9 +920,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const items = timelineQuery.data.pages.flatMap(
-    (page) => (page as FunctionReturnType<typeof api.timeline.listByBaby>).page,
-  );
+  const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
   // Get visitor ID on client side
   useEffect(() => {

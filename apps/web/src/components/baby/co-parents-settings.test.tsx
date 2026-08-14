@@ -2,9 +2,16 @@ import { fireEvent, render, waitFor } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
+import { api } from "@workspace/convex/convex/_generated/api";
+import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { CoParentsSettings } from "@/components/baby/co-parents-settings";
-import { coParentsListForBaby } from "@/queries/convex";
+
+function listingHandle(listingData: { coParents: unknown[]; invites: unknown[] }) {
+  return testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
+    input: { babyId },
+    initialData: listingData as never,
+  });
+}
 
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
@@ -50,7 +57,7 @@ const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
 test("owner can invite a co-parent by email", async () => {
   const listingData = { coParents: [], invites: [] };
-  const listing = testPreloadedQuery(coParentsListForBaby, listingData, { babyId });
+  const listing = listingHandle(listingData);
   mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
   mocks.invite.mockResolvedValue({ status: "added" });
 
@@ -91,7 +98,7 @@ test("lists co-parents and pending invites; owner can remove them", async () => 
       },
     ],
   };
-  const listing = testPreloadedQuery(coParentsListForBaby, listingData, { babyId });
+  const listing = listingHandle(listingData);
   mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
   mocks.removeCoParent.mockResolvedValue(null);
   mocks.cancelInvite.mockResolvedValue(null);
@@ -127,7 +134,7 @@ test("co-parents see a read-only list without invite form", async () => {
     ],
     invites: [],
   };
-  const listing = testPreloadedQuery(coParentsListForBaby, listingData, { babyId });
+  const listing = listingHandle(listingData);
   mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
 
   await using view = renderResource(

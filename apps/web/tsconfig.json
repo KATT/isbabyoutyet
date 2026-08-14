@@ -23,11 +23,11 @@
     "paths": {
       "@/*": ["./src/*"],
       "@workspace/convex/*": ["../../packages/convex/*"],
-      "@workspace/convex-infinite-query": ["../../packages/convex-infinite-query/src/index.ts"],
-      "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
-      "@workspace/query-prefetch/test-helpers": [
-        "../../packages/query-prefetch/src/test-helpers.ts"
+      "@workspace/convex-prefetch": ["../../packages/convex-prefetch/src/index.ts"],
+      "@workspace/convex-prefetch/test-helpers": [
+        "../../packages/convex-prefetch/src/test-helpers.ts"
       ],
+      "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
       "@workspace/ui/*": ["../../packages/ui/src/*"]
     }
   }

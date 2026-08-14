@@ -1,10 +1,11 @@
 {
-  "name": "@workspace/convex-infinite-query",
+  "name": "@workspace/convex-prefetch",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./test-helpers": "./src/test-helpers.ts"
   },
   "scripts": {
     "lint": "oxlint",
@@ -13,9 +14,6 @@
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
-  },
-  "dependencies": {
-    "@workspace/query-prefetch": "workspace:*"
   },
   "devDependencies": {
     "@convex-dev/react-query": "^0.1.0",

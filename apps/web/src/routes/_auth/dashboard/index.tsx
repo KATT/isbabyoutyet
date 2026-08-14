@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { allKeyed, getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
+import { allKeyed } from "@workspace/query-prefetch";
+import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -11,7 +11,6 @@ import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
-import { babiesByUser, onboardingGetMine, profileGet } from "@/queries/convex";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
@@ -20,11 +19,11 @@ import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    const preloader = getQueryPreloader(opts.context.queryClient);
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
     return await allKeyed({
-      babies: preloader.ensureQueryData(babiesByUser),
-      onboarding: preloader.ensureQueryData(onboardingGetMine),
-      profile: preloader.ensureQueryData(profileGet),
+      babies: preloader.ensureQueryData(api.baby.listByUser, {}),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
     });
   },
 });
@@ -32,11 +31,9 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 function DashboardPage() {
   const { t } = useI18n();
   const loaderData = Route.useLoaderData();
-  const babiesQuery = useSuspenseQuery(preloadedQueryOptions(babiesByUser, loaderData.babies));
-  const onboardingQuery = useSuspenseQuery(
-    preloadedQueryOptions(onboardingGetMine, loaderData.onboarding),
-  );
-  const profileQuery = useSuspenseQuery(preloadedQueryOptions(profileGet, loaderData.profile));
+  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, loaderData.babies);
+  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, loaderData.onboarding);
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
   const profile = profileQuery.data;

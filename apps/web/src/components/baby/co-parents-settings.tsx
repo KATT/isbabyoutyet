@@ -8,21 +8,19 @@ import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
 import * as z from "zod";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import type { InitiatedQuery, PreloadedQuery } from "@workspace/query-prefetch";
-import { preloadedQueryOptions } from "@workspace/query-prefetch";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { coParentsListForBaby } from "@/queries/convex";
 
 type CoParentsSettingsProps = {
   babyId: Id<"baby">;
   /** Only the owner can invite/remove; co-parents see a read-only list. */
   isOwner: boolean;
   listing:
-    | PreloadedQuery<typeof coParentsListForBaby>
-    | InitiatedQuery<typeof coParentsListForBaby>;
+    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
+    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
 };
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
@@ -93,7 +91,7 @@ function InviteCoParentForm(props: {
  */
 export function CoParentsSettings(props: CoParentsSettingsProps) {
   const { t } = useI18n();
-  const listingQuery = useSuspenseQuery(preloadedQueryOptions(coParentsListForBaby, props.listing));
+  const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
   const listing = listingQuery.data;
   const invite = useMutation(api.coParents.invite);
   const removeCoParent = useMutation(api.coParents.removeCoParent);

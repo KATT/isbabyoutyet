@@ -18,7 +18,7 @@ export default defineConfig({
     projects: [
       "packages/convex",
       "packages/query-prefetch",
-      "packages/convex-infinite-query",
+      "packages/convex-prefetch",
       webUnitProject,
       oxlintPluginsProject,
     ],
@@ -32,7 +32,7 @@ export default defineConfig({
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
-        "packages/convex-infinite-query/src/**/*.ts",
+        "packages/convex-prefetch/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",
@@ -48,10 +48,10 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 68.54,
+        statements: 68.88,
         branches: 62.61,
-        functions: 65.7,
-        lines: 69.09,
+        functions: 66.38,
+        lines: 69.51,
       },
     },
   },

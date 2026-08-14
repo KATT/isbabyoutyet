@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { allKeyed, getQueryPreloader } from "@workspace/query-prefetch";
-import type { FunctionReturnType } from "convex/server";
+import { allKeyed } from "@workspace/query-prefetch";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -30,19 +29,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
 import {
-  useLiveConvexInfinitePages,
+  getConvexQueryPreloader,
   usePreloadedConvexInfiniteQuery,
-} from "@workspace/convex-infinite-query";
-import {
-  ADMIN_PAGE_SIZE,
-  adminBabiesInfinite,
-  adminLanguageRequestsInfinite,
-  profileGet,
-} from "@/queries/convex";
+} from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-export { ADMIN_PAGE_SIZE };
+const ADMIN_PAGE_SIZE = 20;
 
 const adminSearchSchema = z.object({
   tab: z.enum(["babies", "languages"]).default("babies"),
@@ -88,22 +81,28 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,
   beforeLoad: async (opts) => {
-    const preloader = getQueryPreloader(opts.context.queryClient);
-    const profile = await preloader.ensureQueryData(profileGet);
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const profile = await preloader.ensureQueryData(api.profile.get, {});
     if (!profile.initialData?.isAdmin) {
       throw redirect({ to: "/dashboard" });
     }
   },
   loader: async (opts) => {
-    const preloader = getQueryPreloader(opts.context.queryClient);
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const search = opts.deps;
     return await allKeyed({
-      babies: preloader.ensureInfiniteQueryData(adminBabiesInfinite, {
-        sortBy: search.sort,
-        sortOrder: search.order,
-        hideDemo: search.hideDemo,
+      babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
+        args: {
+          sortBy: search.sort,
+          sortOrder: search.order,
+          hideDemo: search.hideDemo,
+        },
+        numItems: ADMIN_PAGE_SIZE,
       }),
-      languages: preloader.ensureInfiniteQueryData(adminLanguageRequestsInfinite),
+      languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
+        args: {},
+        numItems: ADMIN_PAGE_SIZE,
+      }),
     });
   },
 });
@@ -365,25 +364,12 @@ export function BabiesSection(props: {
 function AdminBabiesTab() {
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
-  const babiesInput = {
-    sortBy: search.sort,
-    sortOrder: search.order,
-    hideDemo: search.hideDemo,
-  };
-  const babiesQuery = usePreloadedConvexInfiniteQuery(adminBabiesInfinite, {
+  const babiesQuery = usePreloadedConvexInfiniteQuery(api.admin.listBabies, {
     handle: loaderData.babies,
-    remixInput: null,
-  });
-  useLiveConvexInfinitePages({
-    queryKey: adminBabiesInfinite(babiesInput).queryKey,
-    funcRef: api.admin.listBabies,
-    args: babiesInput,
-    pageParams: babiesQuery.data.pageParams,
+    remixArgs: null,
   });
 
-  const babies = babiesQuery.data.pages.flatMap(
-    (page) => (page as FunctionReturnType<typeof api.admin.listBabies>).page,
-  );
+  const babies = babiesQuery.data.pages.flatMap((page) => page.page);
 
   return (
     <BabiesSection
@@ -403,20 +389,12 @@ function AdminBabiesTab() {
 
 function AdminLanguagesTab() {
   const loaderData = Route.useLoaderData();
-  const languagesQuery = usePreloadedConvexInfiniteQuery(adminLanguageRequestsInfinite, {
+  const languagesQuery = usePreloadedConvexInfiniteQuery(api.admin.listLanguageRequests, {
     handle: loaderData.languages,
-    remixInput: null,
-  });
-  useLiveConvexInfinitePages({
-    queryKey: adminLanguageRequestsInfinite().queryKey,
-    funcRef: api.admin.listLanguageRequests,
-    args: {},
-    pageParams: languagesQuery.data.pageParams,
+    remixArgs: null,
   });
 
-  const requests = languagesQuery.data.pages.flatMap(
-    (page) => (page as FunctionReturnType<typeof api.admin.listLanguageRequests>).page,
-  );
+  const requests = languagesQuery.data.pages.flatMap((page) => page.page);
 
   return (
     <LanguageRequestsSection

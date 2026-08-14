@@ -134,9 +134,9 @@ importers:
       '@workspace/convex':
         specifier: workspace:*
         version: link:../../packages/convex
-      '@workspace/convex-infinite-query':
+      '@workspace/convex-prefetch':
         specifier: workspace:*
-        version: link:../../packages/convex-infinite-query
+        version: link:../../packages/convex-prefetch
       '@workspace/query-prefetch':
         specifier: workspace:*
         version: link:../../packages/query-prefetch
@@ -314,11 +314,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
 
-  packages/convex-infinite-query:
-    dependencies:
-      '@workspace/query-prefetch':
-        specifier: workspace:*
-        version: link:../query-prefetch
+  packages/convex-prefetch:
     devDependencies:
       '@convex-dev/react-query':
         specifier: ^0.1.0

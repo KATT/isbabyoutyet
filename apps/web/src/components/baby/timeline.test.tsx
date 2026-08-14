@@ -11,9 +11,8 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
-import { preloadedInfiniteQueryOptions } from "@workspace/query-prefetch";
-import { testPreloadedInfiniteQuery } from "@workspace/query-prefetch/test-helpers";
-import { timelineByBaby } from "@/queries/convex";
+import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
+import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { FunctionReturnType } from "convex/server";
 
 // Observe what the composer submits: every useMutation hook in the component
@@ -26,26 +25,32 @@ vi.mock("convex/react", async (importOriginal) => ({
   useMutation: () => mocks.mutate,
 }));
 
-vi.mock("@workspace/convex-infinite-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-infinite-query")>();
+// Replace the live Convex page fetch/watch with pure TanStack reads over the
+// handle's initialData (no registered Convex client in these tests).
+vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
   const { useSuspenseInfiniteQuery } = await import("@tanstack/react-query");
-  const { preloadedInfiniteQueryOptions } = await import("@workspace/query-prefetch");
   return {
     ...actual,
-    useLiveConvexInfinitePages: () => undefined,
     usePreloadedConvexInfiniteQuery: (
-      factory: Parameters<typeof preloadedInfiniteQueryOptions>[0],
+      funcRef: unknown,
       opts: {
-        handle: Parameters<typeof preloadedInfiniteQueryOptions>[1];
-        remixInput: ((input: never) => never) | null;
+        handle: PreloadedConvexInfiniteQuery<never>;
+        remixArgs: ((args: Record<string, unknown>) => Record<string, unknown>) | null;
       },
     ) => {
-      const options = preloadedInfiniteQueryOptions(
-        factory,
-        opts.handle,
-        opts.remixInput === null ? undefined : opts.remixInput,
-      );
-      return useSuspenseInfiniteQuery(options);
+      const input = opts.handle.input as Record<string, unknown>;
+      const args = opts.remixArgs ? opts.remixArgs(input) : input;
+      return useSuspenseInfiniteQuery({
+        queryKey: ["test-infinite", funcRef, args],
+        queryFn: async () => {
+          throw new Error("not fetched in tests");
+        },
+        initialPageParam: { numItems: opts.handle.numItems, cursor: null },
+        getNextPageParam: () => undefined,
+        initialData: opts.handle.initialData,
+        staleTime: Infinity,
+      } as never);
     },
   };
 });
@@ -86,14 +91,14 @@ const babyId = "fake-baby-id" as Id<"baby">;
 type TimelinePage = FunctionReturnType<typeof api.timeline.listByBaby>;
 
 function timelineHandle(page: TimelinePage) {
-  return testPreloadedInfiniteQuery(
-    timelineByBaby,
-    {
+  return testPreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>({
+    input: { babyId },
+    numItems: 20,
+    initialData: {
       pages: [page],
       pageParams: [{ numItems: 20, cursor: null }],
     },
-    { babyId, visitorId: undefined },
-  );
+  });
 }
 
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
@@ -250,8 +255,6 @@ function renderFeed(opts: { baby: BabyData; isOwner: boolean; page: TimelinePage
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  const options = preloadedInfiniteQueryOptions(timelineByBaby, handle);
-  queryClient.setQueryData(options.queryKey, handle.initialData);
 
   const rendered = render(
     <QueryClientProvider client={queryClient}>

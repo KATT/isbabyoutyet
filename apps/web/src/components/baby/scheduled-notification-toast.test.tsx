@@ -2,8 +2,8 @@ import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
-import { pushSubscriptionsForBaby, scheduledNotificationsForBaby } from "@/queries/convex";
+import { api } from "@workspace/convex/convex/_generated/api";
+import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
@@ -39,8 +39,14 @@ function renderResource(ui: React.ReactElement) {
 }
 
 test("runs with empty notifications and subscriptions", async () => {
-  const notifications = testPreloadedQuery(scheduledNotificationsForBaby, [], { babyId });
-  const subscriptions = testPreloadedQuery(pushSubscriptionsForBaby, [], { babyId });
+  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
+    input: { babyId },
+    initialData: [],
+  });
+  const subscriptions = testPreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptions>({
+    input: { babyId },
+    initialData: [],
+  });
   mocks.useSuspenseQuery.mockImplementation((options) => ({
     data: options.initialData,
   }));
@@ -55,9 +61,9 @@ test("runs with empty notifications and subscriptions", async () => {
 
 test("shows a countdown toast when a pending notification has subscribers", async () => {
   const notificationId = "jd7sched0000000000000000" as Id<"scheduledNotifications">;
-  const notifications = testPreloadedQuery(
-    scheduledNotificationsForBaby,
-    [
+  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
+    input: { babyId },
+    initialData: [
       {
         _id: notificationId,
         _creationTime: Date.now(),
@@ -70,11 +76,10 @@ test("shows a countdown toast when a pending notification has subscribers", asyn
         scheduledId: "sched-1" as Id<"_scheduled_functions">,
       },
     ],
-    { babyId },
-  );
-  const subscriptions = testPreloadedQuery(
-    pushSubscriptionsForBaby,
-    [
+  });
+  const subscriptions = testPreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptions>({
+    input: { babyId },
+    initialData: [
       {
         _id: "jd7push00000000000000000" as Id<"pushSubscriptions">,
         _creationTime: Date.now(),
@@ -85,8 +90,7 @@ test("shows a countdown toast when a pending notification has subscribers", asyn
         auth: "auth",
       },
     ],
-    { babyId },
-  );
+  });
   mocks.useSuspenseQuery.mockImplementation((options) => ({
     data: options.initialData,
   }));

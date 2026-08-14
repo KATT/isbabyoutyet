@@ -52,8 +52,8 @@ vi.mock("./coachmark", () => ({
 }));
 
 const { OnboardingHost } = await import("./onboarding-host");
-const { testPreloadedQuery } = await import("@workspace/query-prefetch/test-helpers");
-const { onboardingGetMine } = await import("@/queries/convex");
+const { testPreloadedConvexQuery } = await import("@workspace/convex-prefetch/test-helpers");
+const { api } = await import("@workspace/convex/convex/_generated/api");
 
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
@@ -74,7 +74,10 @@ const progress = {
   tourBaby: { publicId: "baby-smith", name: "Smith" },
 };
 
-const onboardingHandle = testPreloadedQuery(onboardingGetMine, progress);
+const onboardingHandle = testPreloadedConvexQuery<typeof api.onboarding.getMine>({
+  input: {},
+  initialData: progress,
+});
 
 test("returns null for anonymous visitors", async () => {
   mocks.useSession.mockReturnValue({ data: null, isPending: false });

@@ -28,7 +28,8 @@ export type PaginatedQueryReference = FunctionReference<
   PaginationResult<any>
 >;
 
-type PaginationArgs<TFunc extends PaginatedQueryReference> = Omit<
+/** A paginated query's args minus the `paginationOpts` the page fetch injects. */
+export type PaginationArgs<TFunc extends PaginatedQueryReference> = Omit<
   FunctionArgs<TFunc>,
   "paginationOpts"
 >;

@@ -27,26 +27,16 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { allKeyed, getQueryPreloader, preloadedQueryOptions } from "@workspace/query-prefetch";
+import { allKeyed } from "@workspace/query-prefetch";
+import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { Doc } from "@workspace/convex/convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import {
-  babyByPublicId,
-  coParentsListForBaby,
-  coParentsMyAccess,
-  onboardingGetMine,
-  profileGet,
-  pushPublicKey,
-  pushSubscriptionsForBaby,
-  scheduledNotificationsForBaby,
-  timelineByBaby,
-  timelineLatestUpdate,
-} from "@/queries/convex";
 import { translate, useI18n } from "@/lib/i18n";
+
+const TIMELINE_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -55,8 +45,10 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const preloader = getQueryPreloader(opts.context.queryClient);
-    const baby = await preloader.ensureQueryData(babyByPublicId, { id: opts.params.publicId });
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
+      id: opts.params.publicId,
+    });
     const babyDoc = baby.initialData;
     if (!babyDoc) {
       throw notFound();
@@ -72,8 +64,8 @@ export const Route = createFileRoute("/baby/$publicId")({
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const preloader = getQueryPreloader(opts.context.queryClient);
-    const babyHandle = await preloader.ensureQueryData(babyByPublicId, {
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
     const babyDoc = babyHandle.initialData;
@@ -82,14 +74,14 @@ export const Route = createFileRoute("/baby/$publicId")({
     }
 
     const shared = await allKeyed({
-      myAccess: preloader.ensureQueryData(coParentsMyAccess, { babyId: babyDoc._id }),
-      vapidPublicKey: preloader.ensureQueryData(pushPublicKey),
-      latestUpdate: preloader.ensureQueryData(timelineLatestUpdate, { babyId: babyDoc._id }),
-      timeline: preloader.ensureInfiniteQueryData(timelineByBaby, {
-        babyId: babyDoc._id,
-        visitorId: undefined,
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: babyDoc._id },
+        numItems: TIMELINE_PAGE_SIZE,
       }),
-      profile: preloader.ensureQueryData(profileGet),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
     });
 
     if (!shared.myAccess.initialData.canManage) {
@@ -107,15 +99,17 @@ export const Route = createFileRoute("/baby/$publicId")({
       baby: babyHandle,
       ...shared,
       ...(await allKeyed({
-        scheduledNotifications: preloader.ensureQueryData(scheduledNotificationsForBaby, {
+        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
-        subscriptions: preloader.ensureQueryData(pushSubscriptionsForBaby, {
+        subscriptions: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptions, {
           babyId: babyDoc._id,
         }),
-        onboarding: preloader.ensureQueryData(onboardingGetMine),
+        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
         // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        coParentsList: preloader.ensureQueryData(coParentsListForBaby, { babyId: babyDoc._id }),
+        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
+          babyId: babyDoc._id,
+        }),
       })),
     };
   },
@@ -252,22 +246,22 @@ function BabyPage() {
     throw notFound();
   }
 
-  const babyQuery = useSuspenseQuery(preloadedQueryOptions(babyByPublicId, loaderData.baby));
+  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const babyDoc = babyQuery.data;
   if (!babyDoc) {
     throw notFound();
   }
   const baby = docToBabyData(babyDoc);
 
-  const latestUpdateQuery = useSuspenseQuery(
-    preloadedQueryOptions(timelineLatestUpdate, loaderData.latestUpdate),
+  const latestUpdateQuery = usePreloadedConvexQuery(
+    api.timeline.latestUpdate,
+    loaderData.latestUpdate,
   );
-  const profileQuery = useSuspenseQuery(preloadedQueryOptions(profileGet, loaderData.profile));
-  const myAccessQuery = useSuspenseQuery(
-    preloadedQueryOptions(coParentsMyAccess, loaderData.myAccess),
-  );
-  const vapidQuery = useSuspenseQuery(
-    preloadedQueryOptions(pushPublicKey, loaderData.vapidPublicKey),
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
+  const vapidQuery = usePreloadedConvexQuery(
+    api.pushSubscriptions.getPublicKey,
+    loaderData.vapidPublicKey,
   );
 
   const sessionResult = authClient.useSession();
