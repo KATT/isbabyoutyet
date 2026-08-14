@@ -425,7 +425,6 @@ export const backfillBabyLastActivityAt = migrations.define({
 });
 
 export async function backfillBabySubscriptionCountDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (baby.subscriptionCount !== undefined) return;
   let subscriptionCount = 0;
   for await (const _subscription of ctx.db
     .query("pushSubscriptions")

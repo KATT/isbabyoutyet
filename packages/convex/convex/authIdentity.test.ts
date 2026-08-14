@@ -21,6 +21,7 @@ test("auth identity backfills are complete and idempotent", async () => {
       name: "Migration Baby",
       dueDate: "2026-09-01",
       publicId: "migration-baby",
+      subscriptionCount: 99,
     });
     const profileId = await ctx.db.insert("userProfiles", {
       userId: "alice",
