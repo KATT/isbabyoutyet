@@ -222,9 +222,7 @@ function NotFoundComponent() {
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
 // indicator, so we show a top progress bar while the router is loading.
-// value={null} puts Progress in its indeterminate (sweeping) state; the
-// 300ms grace period before the fade-in keeps fast navigations (e.g. the
-// back button) from ever flashing it.
+// value={null} puts Progress in its indeterminate (sweeping) state.
 export function NavigationProgress() {
   const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
@@ -236,7 +234,7 @@ export function NavigationProgress() {
     <Progress
       value={null}
       aria-label={t("Loading")}
-      className="pointer-events-none fixed inset-x-0 top-0 z-50 opacity-0 animate-appear-delayed"
+      className="pointer-events-none fixed inset-x-0 top-0 z-50"
     />
   );
 }
