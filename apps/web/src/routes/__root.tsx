@@ -7,6 +7,7 @@ import {
   createRootRouteWithContext,
   useMatches,
   useRouteContext,
+  useRouterState,
 } from "@tanstack/react-router";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
@@ -205,6 +206,24 @@ function NotFoundComponent() {
   );
 }
 
+// Global pending indicator: the URL updates immediately on navigation, but on
+// slow connections the next page's chunks/loaders can take a while — without
+// this the app looks frozen. SPAs can't trigger the browser's native loading
+// indicator, so we show a top progress bar while the router is loading.
+function NavigationProgress() {
+  const { t } = useI18n();
+  const isNavigating = useRouterState({ select: (state) => state.isLoading });
+
+  if (!isNavigating) {
+    return null;
+  }
+  return (
+    <div className="nav-progress" role="progressbar" aria-label={t("Loading")}>
+      <div className="nav-progress-bar" />
+    </div>
+  );
+}
+
 function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
   return (
     <html lang={props.locale} dir="ltr">
@@ -212,6 +231,7 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
         <HeadContent />
       </head>
       <body>
+        <NavigationProgress />
         {props.children}
         <DevBar />
         <Toaster />
