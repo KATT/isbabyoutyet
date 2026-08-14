@@ -14,6 +14,7 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
 export const Route = createFileRoute("/_auth")({
   headers() {
     return {
+      "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
       Vary: "Cookie",
       // Prefer header over route `head` — TanStack's head+beforeLoad typing
       // currently collapses child beforeLoad to `never` when the layout sets head.
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/_auth")({
 
     // Mutations via the Convex React client during SSR need setAuth too
     if (typeof window === "undefined") {
+      opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
       opts.context.convexClient.setAuth(async () => token);
     }
 

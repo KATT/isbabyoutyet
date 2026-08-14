@@ -14,7 +14,7 @@ import {
 import type { BabyStatus, Milestone } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
-import { mutationWithTriggers } from "./triggers";
+import { internalMutationWithTriggers, mutationWithTriggers } from "./triggers";
 import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
@@ -382,7 +382,7 @@ export const markNotificationSent = internalMutation({
 });
 
 // Internal mutation to update thumbnail ID (called from action)
-export const updateThumbnail = internalMutation({
+export const updateThumbnail = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),

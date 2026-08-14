@@ -4,6 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
+import { mutationWithTriggers } from "./triggers";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -46,7 +47,7 @@ export const get = query({
   },
 });
 
-export const ensure = mutation({
+export const ensure = mutationWithTriggers({
   args: {
     browserLocale: v.string(),
   },
@@ -70,7 +71,7 @@ export const ensure = mutation({
   },
 });
 
-export const updateLocale = mutation({
+export const updateLocale = mutationWithTriggers({
   args: {
     locale: supportedLocaleValidator,
   },

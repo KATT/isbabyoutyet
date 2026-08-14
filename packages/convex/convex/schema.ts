@@ -50,6 +50,13 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_createdAt", ["createdAt"]),
+  cacheInvalidationJobs: defineTable({
+    key: v.string(),
+    tags: v.array(v.string()),
+    version: v.number(),
+    attempts: v.number(),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
   babyPublicIdHistory: defineTable({
     babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId

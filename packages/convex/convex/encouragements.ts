@@ -1,10 +1,11 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
 import { appIdentity } from "./authIdentity";
 import { canManageBaby } from "./babyAccess";
 import { isActive } from "./softDelete";
+import { mutationWithTriggers } from "./triggers";
 
 const MAX_NAME_LENGTH = 50;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -13,7 +14,7 @@ function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
 
-export const create = mutation({
+export const create = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     authorName: v.string(),
@@ -71,7 +72,7 @@ export const create = mutation({
   },
 });
 
-export const update = mutation({
+export const update = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
     visitorId: v.string(),
@@ -134,7 +135,7 @@ export const listByBaby = query({
   },
 });
 
-export const remove = mutation({
+export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
     visitorId: v.optional(v.string()),

@@ -15,7 +15,6 @@ import * as React from "react";
 import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
-import { createServerFn } from "@tanstack/react-start";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -25,7 +24,6 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
-import { authServer } from "@/lib/auth-server";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
@@ -37,11 +35,6 @@ import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 
-// Cookie-authenticated token for SSR (and client navigations via server fn)
-const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
-
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
@@ -50,19 +43,11 @@ export const Route = createRootRouteWithContext<{
   isAuthenticated: boolean;
   token: string | null | undefined;
 }>()({
-  beforeLoad: async (ctx) => {
-    const [locale, token] = await Promise.all([detectRequestLocale(), getAuth()]);
-
-    // During SSR only (serverHttpClient exists), attach the token so
-    // ensureQueryData / useSuspenseQuery run as the signed-in user.
-    if (token) {
-      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
-    }
-
+  beforeLoad: async () => {
     return {
-      locale,
-      isAuthenticated: !!token,
-      token,
+      locale: await detectRequestLocale(),
+      isAuthenticated: false,
+      token: null,
     };
   },
   head: (opts) => {
@@ -156,8 +141,7 @@ export const Route = createRootRouteWithContext<{
   },
   headers() {
     return {
-      "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
-      Vary: "Accept-Language, Cookie",
+      "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
       ...aiNoTrainHeaders(),
     };
   },
@@ -168,6 +152,10 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
+  const token = matches.reduce<string | null | undefined>((currentToken, match) => {
+    const matchContext = match.context as { token: string | null | undefined };
+    return matchContext.token ?? currentToken;
+  }, context.token);
   const locale = matches.reduce((currentLocale, match) => {
     const matchContext = match.context as { locale: SupportedLocale | undefined };
     return matchContext.locale ?? currentLocale;
@@ -194,7 +182,7 @@ function RootComponent() {
       <ConvexBetterAuthProvider
         client={context.convexQueryClient.convexClient}
         authClient={authClient as unknown as AuthClient}
-        initialToken={context.token}
+        initialToken={token}
       >
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
