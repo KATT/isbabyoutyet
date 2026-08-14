@@ -35,10 +35,7 @@ test("baby and related writes leave a durable targeted purge job", async () => {
     attempts: 0,
   });
   expect(jobs[0]?.tags).toEqual(
-    expect.arrayContaining([
-      `baby-id:${created.babyId}`,
-      "baby-public-id:baby-jones",
-    ]),
+    expect.arrayContaining([`baby-id:${created.babyId}`, "baby-public-id:baby-jones"]),
   );
   expect(jobs[0]?.version).toBeGreaterThanOrEqual(1);
 });
