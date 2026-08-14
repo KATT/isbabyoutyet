@@ -7,6 +7,7 @@ import { appIdentity } from "./authIdentity";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
+  isAdmin: v.boolean(),
 });
 
 async function requireIdentity(ctx: Pick<QueryCtx, "auth">) {
@@ -24,6 +25,13 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, userId: string) {
     .unique();
 }
 
+function toProfileResult(profile: { locale: string; isAdmin?: boolean | undefined }) {
+  return {
+    locale: resolveSupportedLocale(profile.locale),
+    isAdmin: profile.isAdmin === true,
+  };
+}
+
 export const get = query({
   args: {},
   returns: v.union(profileResultValidator, v.null()),
@@ -37,7 +45,7 @@ export const get = query({
     if (profile?.tokenIdentifier && profile.tokenIdentifier !== caller.tokenIdentifier) {
       return null;
     }
-    return profile ? { locale: resolveSupportedLocale(profile.locale) } : null;
+    return profile ? toProfileResult(profile) : null;
   },
 });
 
@@ -54,7 +62,7 @@ export const ensure = mutation({
       if (existing.tokenIdentifier === undefined) {
         await ctx.db.patch(existing._id, { tokenIdentifier: caller.tokenIdentifier });
       }
-      return { locale: resolveSupportedLocale(existing.locale) };
+      return toProfileResult(existing);
     }
 
     const locale = resolveSupportedLocale(args.browserLocale);
@@ -63,7 +71,7 @@ export const ensure = mutation({
       tokenIdentifier: caller.tokenIdentifier,
       locale,
     });
-    return { locale };
+    return { locale, isAdmin: false };
   },
 });
 
@@ -81,14 +89,14 @@ export const updateLocale = mutation({
         locale: args.locale,
         tokenIdentifier: caller.tokenIdentifier,
       });
-    } else {
-      await ctx.db.insert("userProfiles", {
-        userId: caller.authUserId,
-        tokenIdentifier: caller.tokenIdentifier,
-        locale: args.locale,
-      });
+      return { locale: args.locale, isAdmin: existing.isAdmin === true };
     }
-    return { locale: args.locale };
+    await ctx.db.insert("userProfiles", {
+      userId: caller.authUserId,
+      tokenIdentifier: caller.tokenIdentifier,
+      locale: args.locale,
+    });
+    return { locale: args.locale, isAdmin: false };
   },
 });
 

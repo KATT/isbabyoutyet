@@ -74,11 +74,11 @@ const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
  */
 type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
-function composerSchema(
-  t: TranslationFunction,
-  currentStatus: BabyStatus["type"],
-  babyId: Id<"baby">,
-) {
+function composerSchema(opts: {
+  t: TranslationFunction;
+  currentStatus: BabyStatus["type"];
+  babyId: Id<"baby">;
+}) {
   return z
     .object({
       message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
@@ -88,25 +88,26 @@ function composerSchema(
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(t),
+      occurredAt: optionalHtmlDateTime(opts.t),
       photo: z.custom<File>().nullable(),
     })
     .refine(
       (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-      { error: t("Add a message, a photo, or a milestone to post") },
+      { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
       (draft) =>
-        draft.milestone === "none" || STATUS_ORDER[draft.milestone] > STATUS_ORDER[currentStatus],
+        draft.milestone === "none" ||
+        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
       {
-        error: t("That status has already been marked"),
+        error: opts.t("That status has already been marked"),
         path: ["milestone"],
       },
     )
     .transform((draft): PostUpdateArgs & { photo: File | null } => {
       const milestone = draft.milestone === "none" ? undefined : draft.milestone;
       return {
-        babyId,
+        babyId: opts.babyId,
         message: draft.message || undefined,
         milestone,
         occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
@@ -184,7 +185,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
   const schema = useMemo(
-    () => composerSchema(t, currentStatus.type, props.babyId),
+    () =>
+      composerSchema({
+        t,
+        currentStatus: currentStatus.type,
+        babyId: props.babyId,
+      }),
     [t, currentStatus.type, props.babyId],
   );
 
@@ -508,61 +514,49 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
       </span>
       <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-primary/20 bg-primary/5 p-4">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="font-medium text-foreground truncate">
-                {t("{{name}}'s family", { name: props.babyName })}
-              </span>
-              {milestoneMeta ? (
-                <Badge
-                  className="shrink-0"
-                  title={
-                    update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
-                  }
-                >
-                  <MilestoneIcon className="w-3 h-3" />
-                  {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
-                  {update.occurredAt != null && (
-                    <span className="font-normal opacity-90">
-                      · {formatOccurredAtLocal(update.occurredAt, locale)}
-                    </span>
-                  )}
-                </Badge>
-              ) : update.photoUrl ? (
-                <Badge variant="secondary" className="shrink-0">
-                  <Camera className="w-3 h-3" />
-                  {t("New photo")}
-                </Badge>
-              ) : (
-                <Badge variant="secondary" className="shrink-0">
-                  {t("Update")}
-                </Badge>
-              )}
-              {update.isCurrentPagePhoto && (
-                <Badge variant="outline" className="shrink-0">
-                  <PushPin className="w-3 h-3" />
-                  {t("Page photo")}
-                </Badge>
-              )}
-              <span
-                className="text-xs text-muted-foreground shrink-0"
-                title={t("Posted {{date}}", {
-                  date: new Date(props.item.postedAt).toLocaleString(locale),
-                })}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <span className="font-medium text-foreground truncate">
+              {t("{{name}}'s family", { name: props.babyName })}
+            </span>
+            {milestoneMeta ? (
+              <Badge
+                className="shrink-0"
+                title={
+                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
+                }
               >
-                {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
-              </span>
-            </div>
-
-            {update.message && (
-              <div className="text-sm text-foreground/90 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
-                <Streamdown>{update.message}</Streamdown>
-              </div>
+                <MilestoneIcon className="w-3 h-3" />
+                {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
+                {update.occurredAt != null && (
+                  <span className="font-normal opacity-90">
+                    · {formatOccurredAtLocal(update.occurredAt, locale)}
+                  </span>
+                )}
+              </Badge>
+            ) : update.photoUrl ? (
+              <Badge variant="secondary" className="shrink-0">
+                <Camera className="w-3 h-3" />
+                {t("New photo")}
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="shrink-0">
+                {t("Update")}
+              </Badge>
             )}
-
-            {update.photoUrl && (
-              <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
+            {update.isCurrentPagePhoto && (
+              <Badge variant="outline" className="shrink-0">
+                <PushPin className="w-3 h-3" />
+                {t("Page photo")}
+              </Badge>
             )}
+            <span
+              className="text-xs text-muted-foreground shrink-0"
+              title={t("Posted {{date}}", {
+                date: new Date(props.item.postedAt).toLocaleString(locale),
+              })}
+            >
+              {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
+            </span>
           </div>
 
           {props.isOwner && (
@@ -632,6 +626,18 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             </div>
           )}
         </div>
+
+        {/* Photo first when present; the caption/message sits last so long
+            copy doesn't push the image below the fold of the card. */}
+        {update.photoUrl && (
+          <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
+        )}
+
+        {update.message && (
+          <div className="mt-2 min-w-0 max-w-none break-words text-sm text-foreground/90 prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
+            <Streamdown>{update.message}</Streamdown>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -653,12 +659,12 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         render={
           <button
             aria-label={t("View photo full size")}
-            className="mt-2 block cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+            className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <img
               src={inlineUrl}
               alt={t("Baby update")}
-              className="max-h-64 w-auto object-cover"
+              className="max-h-64 w-full object-cover"
               loading="lazy"
             />
           </button>
@@ -816,7 +822,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 onCancel={() => setIsEditing(false)}
               />
             ) : (
-              <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary">
+              <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
                 <Streamdown>{encouragement.message}</Streamdown>
               </div>
             )}

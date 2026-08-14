@@ -22,6 +22,8 @@ export default defineSchema({
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
+    // Latest timeline activity, materialized for bounded admin sorting.
+    lastActivityAt: v.optional(v.number()),
     // Soft delete: set to ms epoch when deleted; absent/null means active
     deletedAt: v.optional(v.union(v.number(), v.null())),
   })
@@ -30,11 +32,17 @@ export default defineSchema({
       fields: ["ownerTokenIdentifier"],
       staged: true,
     })
+    .index("by_lastActivityAt", {
+      fields: ["lastActivityAt"],
+      staged: true,
+    })
     .index("by_publicId", ["publicId"]),
   userProfiles: defineTable({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.optional(v.string()), // Stable Convex auth identity; required after backfill
     locale: supportedLocaleValidator,
+    // Platform staff flag — not a baby-page role. Absent/false for everyone else.
+    isAdmin: v.optional(v.boolean()),
   })
     .index("by_userId", ["userId"])
     .index("by_tokenIdentifier", {
@@ -45,7 +53,12 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     requestedLocale: v.string(), // Free-form language name or BCP 47 tag
     createdAt: v.number(),
-  }).index("by_userId", ["userId"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_createdAt", {
+      fields: ["createdAt"],
+      staged: true,
+    }),
   babyPublicIdHistory: defineTable({
     babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId

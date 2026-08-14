@@ -13,30 +13,30 @@ import { SUPPORTED_LOCALES } from "./i18n";
 export const DEMO_USER = {
   email: "test@example.com",
   password: "password",
-  name: "Test User",
+  name: "Demo Parent",
 } as const;
 
 export const DEMO_BABIES = [
   {
-    name: "Baby Waiting",
+    name: "Avery",
     publicId: "baby-waiting",
     state: "not_yet",
     label: "Not yet",
   },
   {
-    name: "Baby In Labor",
+    name: "Frankie",
     publicId: "baby-in-labor",
     state: "labor_started",
     label: "Labour started",
   },
   {
-    name: "Baby At Hospital",
+    name: "Rowan",
     publicId: "baby-at-hospital",
     state: "gone_to_hospital",
     label: "Gone to hospital",
   },
   {
-    name: "Baby Born",
+    name: "Milo",
     publicId: "baby-born",
     state: "born",
     label: "Born",

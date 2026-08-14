@@ -98,9 +98,9 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
 
   expect(view.getByRole("radiogroup", { name: "Statusändring (valfritt)" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Ingen statusändring" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Förlossningen har börjat" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Åkt till sjukhuset" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Bebisen är född" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Förlossningen är igång" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Åkt in till förlossningen" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {
@@ -137,7 +137,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
   // The picker appears empty (= now) — leave it blank
   const picker = view.getByLabelText(/when did it happen/i) as HTMLInputElement;
   expect(picker.value).toBe("");
-  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+  fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
@@ -157,7 +157,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   fireEvent.change(view.getByLabelText(/when did it happen/i), {
     target: { value: backdated },
   });
-  fireEvent.click(view.getByRole("button", { name: /post & mark/i }));
+  fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
   await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({

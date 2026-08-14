@@ -34,7 +34,7 @@ test("shows a spinner instead of the empty state while the baby list is pending"
   );
 
   expect(view.getByRole("status", { name: "Loading" })).toBeTruthy();
-  expect(view.queryByText("No babies added yet")).toBeNull();
+  expect(view.queryByText("No baby pages yet")).toBeNull();
 });
 
 test("shows the empty state once the list has loaded with no babies", async () => {
@@ -43,7 +43,7 @@ test("shows the empty state once the list has loaded with no babies", async () =
   );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();
-  expect(view.getByText("No babies added yet")).toBeTruthy();
+  expect(view.getByText("No baby pages yet")).toBeTruthy();
 });
 
 test("shows prefetched babies without a spinner", async () => {

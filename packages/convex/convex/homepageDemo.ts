@@ -78,18 +78,19 @@ async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
   return baby;
 }
 
-async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLocale) {
-  const demo = HOMEPAGE_DEMO_BABIES[locale];
+async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: SupportedLocale }) {
+  const demo = HOMEPAGE_DEMO_BABIES[opts.locale];
   const existing = await findBabyByPublicId(ctx, demo.publicId);
   const fields = {
     userId: HOMEPAGE_DEMO_OWNER_USER_ID,
     ownerTokenIdentifier: tokenIdentifierForAuthUserId(HOMEPAGE_DEMO_OWNER_USER_ID),
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
-    locale,
+    locale: opts.locale,
     demo: true as const,
     encouragementsDisabled: false,
-    dueDate: dueDateIso(now),
+    dueDate: dueDateIso(opts.now),
+    lastActivityAt: opts.now,
   };
   if (existing) {
     if (!isManagedHomepageDemo(existing)) {
@@ -112,44 +113,51 @@ async function ensureBabyDoc(ctx: MutationCtx, now: number, locale: SupportedLoc
 
 async function deleteStorageIfExists(
   ctx: MutationCtx,
-  storageId: Id<"_storage"> | null | undefined,
-  keepStorageIds: Set<string>,
+  opts: {
+    storageId: Id<"_storage"> | null | undefined;
+    keepStorageIds: Set<string>;
+  },
 ) {
-  if (!storageId) return;
-  if (keepStorageIds.has(storageId)) return;
-  const meta = await ctx.db.system.get(storageId);
+  if (!opts.storageId) return;
+  if (opts.keepStorageIds.has(opts.storageId)) return;
+  const meta = await ctx.db.system.get(opts.storageId);
   if (!meta) return;
-  await ctx.storage.delete(storageId);
+  await ctx.storage.delete(opts.storageId);
 }
 
 async function deleteTimelineItem(
   ctx: MutationCtx,
-  item: Doc<"timelineItems">,
-  keepStorageIds: Set<string>,
+  opts: { item: Doc<"timelineItems">; keepStorageIds: Set<string> },
 ) {
-  switch (item.kind) {
+  switch (opts.item.kind) {
     case "update": {
       const update = await ctx.db
         .query("updates")
-        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", item._id))
+        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", opts.item._id))
         .first();
       if (update) {
-        await deleteStorageIfExists(ctx, update.photoId, keepStorageIds);
-        await deleteStorageIfExists(ctx, update.thumbnailId, keepStorageIds);
+        await deleteStorageIfExists(ctx, {
+          storageId: update.photoId,
+          keepStorageIds: opts.keepStorageIds,
+        });
+        await deleteStorageIfExists(ctx, {
+          storageId: update.thumbnailId,
+          keepStorageIds: opts.keepStorageIds,
+        });
         await ctx.db.delete(update._id);
       }
-      await ctx.db.delete(item._id);
+      await ctx.db.delete(opts.item._id);
       return;
     }
     case "encouragement": {
       const encouragement = await ctx.db
         .query("encouragements")
-        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", item._id))
+        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", opts.item._id))
         .first();
       if (encouragement) {
         await ctx.db.delete(encouragement._id);
       }
-      await ctx.db.delete(item._id);
+      await ctx.db.delete(opts.item._id);
       return;
     }
   }
@@ -157,33 +165,41 @@ async function deleteTimelineItem(
 
 async function clearFeedBatchForBaby(
   ctx: MutationCtx,
-  babyId: Id<"baby">,
-  keepStorageIds: Set<string>,
+  opts: { babyId: Id<"baby">; keepStorageIds: Set<string> },
 ) {
-  await requireManagedDemoBaby(ctx, babyId);
+  await requireManagedDemoBaby(ctx, opts.babyId);
 
   const items = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", babyId))
+    .withIndex("by_babyId_postedAt", (q) => q.eq("babyId", opts.babyId))
     .take(CLEAR_BATCH_SIZE);
 
   for (const item of items) {
-    await deleteTimelineItem(ctx, item, keepStorageIds);
+    await deleteTimelineItem(ctx, { item, keepStorageIds: opts.keepStorageIds });
   }
 
   return { deleted: items.length, hasMore: items.length === CLEAR_BATCH_SIZE };
 }
 
-async function clearAllFeed(ctx: MutationCtx, babyId: Id<"baby">, keepStorageIds: Set<string>) {
+async function clearAllFeed(
+  ctx: MutationCtx,
+  opts: { babyId: Id<"baby">; keepStorageIds: Set<string> },
+) {
   for (;;) {
-    const result = await clearFeedBatchForBaby(ctx, babyId, keepStorageIds);
+    const result = await clearFeedBatchForBaby(ctx, opts);
     if (!result.hasMore) break;
   }
 
-  const baby = await requireManagedDemoBaby(ctx, babyId);
-  await deleteStorageIfExists(ctx, baby.photoId, keepStorageIds);
-  await deleteStorageIfExists(ctx, baby.thumbnailId, keepStorageIds);
-  await ctx.db.patch(babyId, {
+  const baby = await requireManagedDemoBaby(ctx, opts.babyId);
+  await deleteStorageIfExists(ctx, {
+    storageId: baby.photoId,
+    keepStorageIds: opts.keepStorageIds,
+  });
+  await deleteStorageIfExists(ctx, {
+    storageId: baby.thumbnailId,
+    keepStorageIds: opts.keepStorageIds,
+  });
+  await ctx.db.patch(opts.babyId, {
     photoId: null,
     thumbnailId: null,
     laborStarted: null,
@@ -283,7 +299,10 @@ export const generateUploadUrl = internalMutation({
 export const ensureBaby = internalMutation({
   args: { locale: localeArg },
   handler: async (ctx, args) => {
-    return await ensureBabyDoc(ctx, Date.now(), resolveDemoLocale(args.locale));
+    return await ensureBabyDoc(ctx, {
+      now: Date.now(),
+      locale: resolveDemoLocale(args.locale),
+    });
   },
 });
 
@@ -293,7 +312,10 @@ export const clearFeedBatch = internalMutation({
     keepStorageIds: v.optional(v.array(v.id("_storage"))),
   },
   handler: async (ctx, args) => {
-    return await clearFeedBatchForBaby(ctx, args.babyId, new Set(args.keepStorageIds ?? []));
+    return await clearFeedBatchForBaby(ctx, {
+      babyId: args.babyId,
+      keepStorageIds: new Set(args.keepStorageIds ?? []),
+    });
   },
 });
 
@@ -332,8 +354,8 @@ export const refresh = internalMutation({
     const now = Date.now();
     const photos = args.photos ?? {};
     const locale = resolveDemoLocale(args.locale);
-    const babyId = await ensureBabyDoc(ctx, now, locale);
-    await clearAllFeed(ctx, babyId, storageIdsToKeep(photos));
+    const babyId = await ensureBabyDoc(ctx, { now, locale });
+    await clearAllFeed(ctx, { babyId, keepStorageIds: storageIdsToKeep(photos) });
     return await insertFeedDocs(ctx, { babyId, photos, now, locale });
   },
 });
