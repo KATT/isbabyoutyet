@@ -1,11 +1,7 @@
 import type { BabyStatus } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import {
-  getDaysUntilDueDate,
-  getOverdueDays,
-  getThemePrimaryColor,
-} from "@/components/baby/utils";
+import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
 import { translate } from "@/lib/i18n";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 
@@ -23,7 +19,7 @@ type BabySeoInput = {
   laborStarted: string | null | undefined;
 };
 
-export function babyPageTitle(baby: BabySeoInput) {
+function babyPageTitle(baby: BabySeoInput) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
   const isBorn = !!baby.babyBorn;
@@ -52,7 +48,7 @@ export function babyPageTitle(baby: BabySeoInput) {
   return translate(locale, "{{title}} – Track Your Baby's Journey", { title });
 }
 
-export function babyPageDescription(baby: BabySeoInput) {
+function babyPageDescription(baby: BabySeoInput) {
   const status = getCurrentStatus(baby);
   const locale = baby.locale;
   switch (status.type) {
@@ -83,10 +79,7 @@ export function babyPageDescription(baby: BabySeoInput) {
   }
 }
 
-export function babyStatusLabel(opts: {
-  status: BabyStatus;
-  locale: SupportedLocale;
-}) {
+export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLocale }) {
   switch (opts.status.type) {
     case "born":
       return translate(opts.locale, "Yes! Baby is out");
@@ -130,18 +123,15 @@ export function babyStatusDetail(opts: {
   );
 }
 
-export function babyOgImagePath(publicId: string) {
-  return `/baby/${publicId}/og.png`;
+function babyOgImagePath(publicId: string) {
+  return `/og/baby/${publicId}`;
 }
 
 export function homepageOgImagePath() {
-  return "/og.png";
+  return "/og";
 }
 
-export function openGraphImageMeta(opts: {
-  imageUrl: string;
-  alt: string;
-}) {
+export function openGraphImageMeta(opts: { imageUrl: string; alt: string }) {
   return [
     { property: "og:image", content: opts.imageUrl },
     { property: "og:image:width", content: String(OG_IMAGE_WIDTH) },

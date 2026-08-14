@@ -8,7 +8,7 @@ export const CANONICAL_ORIGIN = "https://isbabyoutyet.com";
  * Origin for absolute asset URLs (og:image, sitemap). Prefers the current
  * deployment's VITE_SITE_URL so preview/local share cards resolve to this host.
  */
-export function getSiteOrigin() {
+function getSiteOrigin() {
   const fromEnv = import.meta.env.VITE_SITE_URL;
   if (typeof fromEnv === "string" && fromEnv.length > 0) {
     return fromEnv.replace(/\/$/, "");

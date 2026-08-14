@@ -2,7 +2,6 @@ import { authServer } from "@/lib/auth-server";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { robotsNoIndexMeta } from "@/lib/seo";
 
 // Server function to check authentication
 const getToken = createServerFn({ method: "GET" }).handler(async () => {
@@ -14,11 +13,11 @@ export const Route = createFileRoute("/_auth")({
   headers() {
     return {
       Vary: "Cookie",
+      // Prefer header over route `head` — TanStack's head+beforeLoad typing
+      // currently collapses child beforeLoad to `never` when the layout sets head.
+      "X-Robots-Tag": "noindex, nofollow",
     };
   },
-  head: () => ({
-    meta: [...robotsNoIndexMeta()],
-  }),
   beforeLoad: async (opts) => {
     // Check authentication server-side
     const token = await getToken();

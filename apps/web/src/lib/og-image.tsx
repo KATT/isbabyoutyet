@@ -1,13 +1,10 @@
-import { ImageResponse } from "@vercel/og";
+import satori from "satori";
+import { Resvg } from "@resvg/resvg-js";
+import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { THEME_OPTIONS } from "@/components/baby/utils";
-import {
-  OG_IMAGE_HEIGHT,
-  OG_IMAGE_WIDTH,
-  babyStatusDetail,
-  babyStatusLabel,
-} from "@/lib/seo";
+import { OG_IMAGE_HEIGHT, OG_IMAGE_WIDTH, babyStatusDetail, babyStatusLabel } from "@/lib/seo";
 import { translate } from "@/lib/i18n";
 import { CANONICAL_ORIGIN } from "@/lib/site-url";
 
@@ -58,6 +55,30 @@ async function loadNunitoFont(opts: { weight: 700 | 900; text: string }) {
   return buffer;
 }
 
+async function pngResponse(opts: {
+  element: ReactNode;
+  fonts: { name: string; data: ArrayBuffer; weight: 700 | 900; style: "normal" }[];
+  cacheControl: string;
+}) {
+  const svg = await satori(opts.element as ReactElement, {
+    width: OG_IMAGE_WIDTH,
+    height: OG_IMAGE_HEIGHT,
+    fonts: opts.fonts,
+  });
+  const png = new Resvg(svg, {
+    fitTo: { mode: "width", value: OG_IMAGE_WIDTH },
+  })
+    .render()
+    .asPng();
+
+  return new Response(Buffer.from(png), {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": opts.cacheControl,
+    },
+  });
+}
+
 export type BabyOgImageInput = {
   name: string;
   dueDate: string;
@@ -68,6 +89,23 @@ export type BabyOgImageInput = {
   laborStarted: string | null | undefined;
   photoUrl: string | null;
 };
+
+async function resolvePhotoDataUrl(photoUrl: string | null) {
+  if (!photoUrl) {
+    return null;
+  }
+  try {
+    const response = await fetch(photoUrl);
+    if (!response.ok) {
+      return null;
+    }
+    const contentType = response.headers.get("content-type") ?? "image/jpeg";
+    const bytes = Buffer.from(await response.arrayBuffer());
+    return `data:${contentType};base64,${bytes.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
 
 export async function createBabyOgImage(baby: BabyOgImageInput) {
   const colors = themeColors(baby.theme);
@@ -84,15 +122,23 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
           name: baby.name,
         });
   const brand = translate(baby.locale, "Is Baby Out Yet?");
-  const fontText = `${headline}${statusText}${detail}${brand}`;
+  const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;
+  const photoDataUrl = await resolvePhotoDataUrl(baby.photoUrl);
 
   const [bold, black] = await Promise.all([
     loadNunitoFont({ weight: 700, text: fontText }),
     loadNunitoFont({ weight: 900, text: fontText }),
   ]);
 
-  return new ImageResponse(
-    (
+  const initial = baby.name.trim().slice(0, 1).toUpperCase() || baby.name;
+
+  return pngResponse({
+    fonts: [
+      { name: "Nunito", data: bold, weight: 700, style: "normal" },
+      { name: "Nunito", data: black, weight: 900, style: "normal" },
+    ],
+    cacheControl: "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
+    element: (
       <div
         style={{
           width: "100%",
@@ -107,9 +153,9 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 40 }}>
-          {baby.photoUrl ? (
+          {photoDataUrl ? (
             <img
-              src={baby.photoUrl}
+              src={photoDataUrl}
               width={180}
               height={180}
               style={{
@@ -135,7 +181,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
                 fontWeight: 900,
               }}
             >
-              {baby.name.trim().slice(0, 1).toUpperCase() || baby.name}
+              {initial}
             </div>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: 20, flex: 1 }}>
@@ -184,18 +230,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
         </div>
       </div>
     ),
-    {
-      width: OG_IMAGE_WIDTH,
-      height: OG_IMAGE_HEIGHT,
-      fonts: [
-        { name: "Nunito", data: bold, weight: 700, style: "normal" },
-        { name: "Nunito", data: black, weight: 900, style: "normal" },
-      ],
-      headers: {
-        "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
-      },
-    },
-  );
+  });
 }
 
 export async function createHomepageOgImage(locale: SupportedLocale) {
@@ -214,8 +249,13 @@ export async function createHomepageOgImage(locale: SupportedLocale) {
     loadNunitoFont({ weight: 900, text: fontText }),
   ]);
 
-  return new ImageResponse(
-    (
+  return pngResponse({
+    fonts: [
+      { name: "Nunito", data: bold, weight: 700, style: "normal" },
+      { name: "Nunito", data: black, weight: 900, style: "normal" },
+    ],
+    cacheControl: "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
+    element: (
       <div
         style={{
           width: "100%",
@@ -268,21 +308,12 @@ export async function createHomepageOgImage(locale: SupportedLocale) {
         >
           {description}
         </div>
-        <div style={{ display: "flex", marginTop: 12, fontSize: 28, fontWeight: 700, color: primary }}>
+        <div
+          style={{ display: "flex", marginTop: 12, fontSize: 28, fontWeight: 700, color: primary }}
+        >
           {SITE_HOST}
         </div>
       </div>
     ),
-    {
-      width: OG_IMAGE_WIDTH,
-      height: OG_IMAGE_HEIGHT,
-      fonts: [
-        { name: "Nunito", data: bold, weight: 700, style: "normal" },
-        { name: "Nunito", data: black, weight: 900, style: "normal" },
-      ],
-      headers: {
-        "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
-      },
-    },
-  );
+  });
 }

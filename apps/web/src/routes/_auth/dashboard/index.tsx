@@ -13,18 +13,11 @@ import { authClient } from "@/lib/auth-client";
 import { authServer } from "@/lib/auth-server";
 import { toast } from "sonner";
 import { LanguageSettings } from "@/components/language-settings";
-import { useI18n, translate } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
-  head: (opts) => ({
-    meta: [
-      {
-        title: translate(opts.match.context.locale, "Dashboard – Is Baby Out Yet?"),
-      },
-    ],
-  }),
   loader: async (opts) => {
     // Server: cookie-authenticated HTTP query so the first paint has babies.
     // Client navigations use the already-authed Convex client.

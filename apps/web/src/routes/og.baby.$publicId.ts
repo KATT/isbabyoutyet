@@ -3,7 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { createBabyOgImage } from "@/lib/og-image";
 
-export const Route = createFileRoute("/baby/$publicId/og.png")({
+export const Route = createFileRoute("/og/baby/$publicId")({
   server: {
     handlers: {
       GET: async ({ params }) => {
