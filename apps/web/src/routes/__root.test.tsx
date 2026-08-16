@@ -61,13 +61,8 @@ vi.mock("@/lib/auth-server", () => ({
   authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
 }));
 
-const {
-  NavigationProgress,
-  NotFoundComponent,
-  RootErrorComponent,
-  Route,
-  useResolveAnonymousAuth,
-} = await import("@/routes/__root");
+const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route } =
+  await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -102,63 +97,20 @@ test("beforeLoad resolves locale and auth locally on the client, without a serve
   expect(authed.isAuthenticated).toBe(true);
 });
 
-test("an empty session resumes the expectAuth-paused Convex socket; a real session does not", async () => {
-  const { renderHook } = await import("@testing-library/react");
+test("the root component renders the document shell", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
-  const { convexQuery } = await import("@convex-dev/react-query");
-  const { api } = await import("@workspace/convex/convex/_generated/api");
-  const setAuth = vi.fn<(fetchToken: unknown) => void>();
-  const convexQueryClient = { convexClient: { setAuth } };
-  const queryClient = new QueryClient();
-  const profileKey = convexQuery(api.profile.get, {}).queryKey;
-  // A stale profile from an expired session must not survive the anonymous
-  // resolution — it is the /_auth guard's session signal.
-  queryClient.setQueryData(profileKey, { locale: "sv", isAdmin: false });
-
-  // Still resolving: don't touch auth yet.
-  session.value = { data: null, isPending: true };
-  const hook = renderHook(() => useResolveAnonymousAuth(convexQueryClient as never, queryClient));
-  await using _hook = makeResource(hook, () => {
-    hook.unmount();
-  });
-  expect(setAuth).not.toHaveBeenCalled();
-  expect(queryClient.getQueryData(profileKey)).not.toBeNull();
-
-  // Resolved anonymous: resume the socket and clear the stale profile.
-  session.value = { data: null, isPending: false };
-  hook.rerender();
-  expect(setAuth).toHaveBeenCalledTimes(1);
-  const fetchToken = setAuth.mock.calls[0]?.[0] as () => Promise<string | null>;
-  expect(await fetchToken()).toBeNull();
-  expect(queryClient.getQueryData(profileKey)).toBeNull();
-
-  // Signed in: ConvexProviderWithAuth owns setAuth — nothing to do here.
-  setAuth.mockClear();
-  queryClient.setQueryData(profileKey, { locale: "sv", isAdmin: false });
-  session.value = { data: { session: { id: "s1" } }, isPending: false };
-  hook.rerender();
-  expect(setAuth).not.toHaveBeenCalled();
-  expect(queryClient.getQueryData(profileKey)).not.toBeNull();
-});
-
-test("regression: rendering the root as an anonymous visitor resumes the paused Convex socket", async () => {
-  // Repro of the frozen-navigation bug: expectAuth pauses the websocket and
-  // ConvexProviderWithAuth never resolves signed-out visitors, so unless the
-  // root explicitly calls setAuth for them, their client-side queries hang.
-  const { QueryClient } = await import("@tanstack/react-query");
-  const setAuth = vi.fn<(fetchToken: unknown) => void>();
   routeContext.value = {
-    convexQueryClient: { convexClient: { setAuth } },
+    convexQueryClient: { convexClient: {} },
     queryClient: new QueryClient(),
     locale: "en-GB",
     token: null,
   };
-  session.value = { data: null, isPending: false };
   const RootComponent = (Route as unknown as { component: () => ReactElement }).component;
 
   await using _view = renderResource(<RootComponent />);
 
-  expect(setAuth).toHaveBeenCalledTimes(1);
+  // React 19 hoists the <html> element onto the real document.
+  expect(document.documentElement.getAttribute("lang")).toBe("en-GB");
 });
 
 test("the error page offers reload and go-home recovery, with details in dev", async () => {

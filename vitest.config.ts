@@ -51,10 +51,13 @@ export default defineConfig({
         // Lowered alongside removing the covered Initiated* handle code and
         // its tests (deleting tested code shrinks the ratio); the ratchet
         // snaps back to exact values on the next run.
-        statements: 72.58,
-        branches: 64.66,
-        functions: 71.13,
-        lines: 73.04,
+        // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
+        // hook with creation-time wiring in router.tsx (an untested-by-design
+        // entry file); the ratchet snaps to exact values on the next run.
+        statements: 72.51,
+        branches: 64.65,
+        functions: 71.17,
+        lines: 72.98,
       },
     },
   },
