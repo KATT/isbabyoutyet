@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -7,6 +7,7 @@ import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helper
 
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
+  mutate: vi.fn<(args: unknown) => void>(),
 }));
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
@@ -14,7 +15,7 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
   return {
     ...actual,
     useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
-    useMutation: () => ({ isPending: false, mutate: vi.fn<(args: unknown) => void>() }),
+    useMutation: () => ({ isPending: false, mutate: mocks.mutate }),
   };
 });
 
@@ -70,6 +71,7 @@ test("runs with empty notifications and no subscriptions", async () => {
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
+  mocks.mutate.mockClear();
   const notificationId = "jd7sched0000000000000000" as Id<"scheduledNotifications">;
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
@@ -106,4 +108,45 @@ test("shows the exact subscriber count in a pending notification toast", async (
 
   expect(view.container.textContent).toContain("3 people");
   expect(view.container.textContent).toContain("Sending notification...");
+  fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+  expect(mocks.mutate).toHaveBeenCalledWith({ notificationId });
+});
+
+test("shows recently sent notifications as query-derived success", async () => {
+  const notificationId = "jd7sched0000000000000001" as Id<"scheduledNotifications">;
+  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
+    input: { babyId },
+    initialData: [
+      {
+        _id: notificationId,
+        _creationTime: Date.now(),
+        babyId,
+        createdAt: Date.now(),
+        status: "sent" as const,
+        notificationType: "born" as const,
+        scheduledFor: Date.now() - 1000,
+        customMessage: null,
+        scheduledId: "sched-2" as Id<"_scheduled_functions">,
+      },
+    ],
+  });
+  const subscriptionCount = testPreloadedConvexQuery<
+    typeof api.pushSubscriptions.getSubscriptionCount
+  >({
+    input: { babyId },
+    initialData: 1,
+  });
+  mocks.useSuspenseQuery.mockImplementation((options) => ({
+    data: options.initialData,
+  }));
+
+  await using view = renderResource(
+    <ScheduledNotificationToast
+      notifications={notifications}
+      subscriptionCount={subscriptionCount}
+    />,
+  );
+
+  expect(view.getByText("Notification sent!")).toBeTruthy();
+  expect(view.container.textContent).toContain("1 person");
 });
