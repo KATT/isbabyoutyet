@@ -13,6 +13,10 @@
     {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
+    },
+    {
+      "name": "react-compiler",
+      "specifier": "./oxlint-plugins/react-compiler.mjs"
     }
   ],
   "settings": {
@@ -28,25 +32,7 @@
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
-    "eslint/no-restricted-imports": [
-      "error",
-      {
-        "paths": [
-          {
-            "name": "react",
-            "importNames": ["useMemo"],
-            "message": "React Compiler handles memoization automatically."
-          }
-        ]
-      }
-    ],
-    "eslint/no-restricted-properties": [
-      "error",
-      {
-        "property": "useMemo",
-        "message": "React Compiler handles memoization automatically."
-      }
-    ],
+    "react-compiler/no-use-memo": "error",
     "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [
