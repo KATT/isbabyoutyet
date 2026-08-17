@@ -46,31 +46,28 @@ body {
  */
 @keyframes hero-rotating-word {
   0%,
-  10.5% {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg);
+  12.6% {
+    visibility: visible;
   }
 
-  12.5%,
+  12.61%,
   100% {
-    opacity: 0;
-    transform: translateY(-105%) rotate(-6deg);
+    visibility: hidden;
   }
 }
 
 .hero-rotating-word {
-  opacity: 0;
-  animation: hero-rotating-word 19.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  visibility: hidden;
+  animation: hero-rotating-word 19.2s steps(1, end) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .hero-rotating-word {
     animation: none;
-    opacity: 0;
-    transform: none;
+    visibility: hidden;
   }
 
   .hero-rotating-word:first-child {
-    opacity: 1;
+    visibility: visible;
   }
 }
