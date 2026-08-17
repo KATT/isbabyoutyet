@@ -25,7 +25,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
-import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -82,7 +82,11 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
-export function LanguageSettings(props: { profile: PreloadedConvexQuery<typeof api.profile.get> }) {
+export function LanguageSettings(props: {
+  profile:
+    | PreloadedConvexQuery<typeof api.profile.get>
+    | InitiatedConvexQuery<typeof api.profile.get>;
+}) {
   const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const profile = profileQuery.data;

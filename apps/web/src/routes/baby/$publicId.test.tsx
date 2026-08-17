@@ -1,4 +1,5 @@
 import { render } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
 import { convexTest } from "convex-test";
 import type { FunctionReturnType } from "convex/server";
 import type { ReactElement } from "react";
@@ -153,4 +154,93 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   expect(view.getByText("Ainda não")).toBeTruthy();
   expect(view.getByText("O bebê ainda está a caminho")).toBeTruthy();
   expect(view.getByText("Data prevista: 1 de setembro de 2026")).toBeTruthy();
+});
+
+// --- Route loader: awaited handles plus the owner/visitor branching ---
+
+const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
+const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+
+function makeLoaderQueryClient(handlers: Record<string, unknown>) {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: (ctx: { queryKey: readonly unknown[] }) => {
+          const name = String(ctx.queryKey[1]);
+          if (name in handlers) {
+            return Promise.resolve(handlers[name]);
+          }
+          return Promise.resolve(null);
+        },
+      },
+    },
+  });
+}
+
+async function runBabyLoader(handlers: Record<string, unknown>) {
+  // The infinite timeline query fetches through the registered Convex client.
+  const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
+  registerConvexInfiniteQueryClient({
+    convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
+    serverHttpClient: undefined,
+  } as never);
+  const routeModule = await import("@/routes/baby/$publicId");
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: { queryClient: QueryClient };
+    params: { publicId: string };
+  }) => Promise<Record<string, unknown>>;
+  return await loader({
+    context: { queryClient: makeLoaderQueryClient(handlers) },
+    params: { publicId: "baby-smith" },
+  });
+}
+
+test("loader queries the same set for visitors; gated queries come back forbidden", async () => {
+  const result = await runBabyLoader({
+    "baby:getByPublicId": BABY_DOC,
+    "coParents:myAccess": { canManage: false, isOwner: false },
+    "timeline:listByBaby": EMPTY_PAGE,
+    "baby:getScheduledNotifications": "forbidden",
+    "pushSubscriptions:getSubscriptionCount": "forbidden",
+    "coParents:listForBaby": "forbidden",
+  });
+
+  expect(result.baby).toMatchObject({ initialData: BABY_DOC });
+  expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
+  expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
+  expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
+  expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
+  expect(result.coParentsList).toMatchObject({ initialData: "forbidden" });
+});
+
+test("loader gives managers the same handles with real data", async () => {
+  const result = await runBabyLoader({
+    "baby:getByPublicId": BABY_DOC,
+    "coParents:myAccess": { canManage: true, isOwner: true },
+    "timeline:listByBaby": EMPTY_PAGE,
+    "baby:getScheduledNotifications": [],
+    "pushSubscriptions:getSubscriptionCount": 2,
+    "coParents:listForBaby": { coParents: [], invites: [] },
+  });
+
+  expect(result.scheduledNotifications).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: [],
+  });
+  expect(result.subscriptionCount).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: 2,
+  });
+  expect(result.onboarding).toMatchObject({ input: {} });
+  expect(result.coParentsList).toMatchObject({
+    input: { babyId: "baby-1" },
+    initialData: { coParents: [], invites: [] },
+  });
+});
+
+test("loader 404s unknown babies", async () => {
+  const pending = runBabyLoader({ "baby:getByPublicId": null });
+
+  await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });

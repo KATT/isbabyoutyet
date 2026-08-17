@@ -4,6 +4,7 @@ import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import {
+  FORBIDDEN,
   getBlockingLaterMilestone,
   getCurrentStatus,
   isStatusForward,
@@ -21,7 +22,7 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
-import { requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
@@ -329,7 +330,12 @@ export const remove = mutationWithTriggers({
 export const getScheduledNotifications = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
 
     const notifications = await ctx.db
       .query("scheduledNotifications")

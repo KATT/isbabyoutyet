@@ -64,6 +64,38 @@ export async function requireBabyManager(ctx: DbCtx, babyId: Id<"baby">) {
 }
 
 /**
+ * Non-throwing counterpart of {@link requireBabyManager}: resolves to null
+ * for anonymous callers, missing babies, and non-managers. For queries that
+ * return a FORBIDDEN sentinel so route loaders can fetch the same queries
+ * for every visitor.
+ */
+export async function findBabyManager(ctx: DbCtx, babyId: Id<"baby">) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return null;
+  }
+  const caller = appIdentity(identity);
+
+  const baby = await ctx.db.get(babyId);
+  if (!baby || !isActive(baby)) {
+    return null;
+  }
+
+  const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
+  if (!isOwner) {
+    const coParent = await findActiveCoParent(ctx, {
+      babyId,
+      identity: caller,
+    });
+    if (!coParent) {
+      return null;
+    }
+  }
+
+  return { identity: caller, baby, isOwner };
+}
+
+/**
  * Only the baby page owner (creator). Co-parents are refused.
  */
 export async function requireBabyOwner(ctx: DbCtx, babyId: Id<"baby">) {

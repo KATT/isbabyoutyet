@@ -40,7 +40,10 @@ import * as z from "zod";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
+import type {
+  InitiatedConvexInfiniteQuery,
+  PreloadedConvexInfiniteQuery,
+} from "@workspace/convex-prefetch";
 import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
@@ -906,7 +909,9 @@ type TimelineFeedProps = {
   babyName: string;
   isOwner: boolean;
   /** Prefetched infinite timeline handle from the route loader (SSR first page). */
-  timeline: PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
+  timeline:
+    | PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>
+    | InitiatedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
