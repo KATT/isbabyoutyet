@@ -71,32 +71,21 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
 
-    const shared = await allKeyed({
-      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
-      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-        args: { babyId: babyDoc._id },
-        numItems: TIMELINE_PAGE_SIZE,
-      }),
-      profile: preloader.ensureQueryData(api.profile.get, {}),
-    });
-
-    if (!shared.myAccess.initialData.canManage) {
-      return {
-        baby: babyHandle,
-        ...shared,
-        scheduledNotifications: null,
-        subscriptionCount: null,
-        onboarding: null,
-        coParentsList: null,
-      };
-    }
-
+    // One homogeneous set for every visitor: manager-only queries return a
+    // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
-      ...shared,
       ...(await allKeyed({
+        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
+        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+          babyId: babyDoc._id,
+        }),
+        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+          args: { babyId: babyDoc._id },
+          numItems: TIMELINE_PAGE_SIZE,
+        }),
+        profile: preloader.ensureQueryData(api.profile.get, {}),
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
@@ -278,7 +267,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && loaderData.onboarding ? (
+      {canManage ? (
         <OnboardingHost
           surface="baby"
           onboarding={loaderData.onboarding}
@@ -323,15 +312,11 @@ function BabyPage() {
                   }
                 : null
             }
-            coParents={
-              loaderData.coParentsList
-                ? {
-                    babyId: babyDoc._id,
-                    isOwner,
-                    listing: loaderData.coParentsList,
-                  }
-                : null
-            }
+            coParents={{
+              babyId: babyDoc._id,
+              isOwner,
+              listing: loaderData.coParentsList,
+            }}
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -343,12 +328,10 @@ function BabyPage() {
               });
             }}
           />
-          {loaderData.scheduledNotifications && loaderData.subscriptionCount ? (
-            <ScheduledNotificationToast
-              notifications={loaderData.scheduledNotifications}
-              subscriptionCount={loaderData.subscriptionCount}
-            />
-          ) : null}
+          <ScheduledNotificationToast
+            notifications={loaderData.scheduledNotifications}
+            subscriptionCount={loaderData.subscriptionCount}
+          />
           <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>

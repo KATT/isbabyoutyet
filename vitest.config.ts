@@ -48,10 +48,16 @@ export default defineConfig({
         // by hand.
         autoUpdate: true,
         // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 71.15,
-        branches: 63.63,
-        functions: 69.57,
-        lines: 71.58,
+        // Lowered alongside removing the covered Initiated* handle code and
+        // its tests (deleting tested code shrinks the ratio); the ratchet
+        // snaps back to exact values on the next run.
+        // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
+        // hook with creation-time wiring in router.tsx (an untested-by-design
+        // entry file); the ratchet snaps to exact values on the next run.
+        statements: 72.51,
+        branches: 64.65,
+        functions: 71.17,
+        lines: 72.98,
       },
     },
   },

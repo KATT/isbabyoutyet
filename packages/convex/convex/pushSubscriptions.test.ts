@@ -28,16 +28,18 @@ test("subscription secrets stay internal while managers see the exact count", as
       babyId: created.babyId,
     }),
   ).toBe(1);
-  await expect(
-    asBob.query(api.pushSubscriptions.getSubscriptionCount, {
+  // Non-managers get a sentinel instead of a throw so the baby route loader
+  // can query the count homogeneously for every visitor.
+  expect(
+    await asBob.query(api.pushSubscriptions.getSubscriptionCount, {
       babyId: created.babyId,
     }),
-  ).rejects.toThrow("Not authorized");
-  await expect(
-    t.query(api.pushSubscriptions.getSubscriptionCount, {
+  ).toBe("forbidden");
+  expect(
+    await t.query(api.pushSubscriptions.getSubscriptionCount, {
       babyId: created.babyId,
     }),
-  ).rejects.toThrow("Not authenticated");
+  ).toBe("forbidden");
 
   const internalPage = await t.query(internal.pushSubscriptions.getSubscriptionsPage, {
     babyId: created.babyId,

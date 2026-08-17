@@ -8,6 +8,7 @@ import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
 import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
 import * as z from "zod";
+import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Form, useZodForm } from "@/components/Form";
@@ -92,7 +93,10 @@ function InviteCoParentForm(props: {
 export function CoParentsSettings(props: CoParentsSettingsProps) {
   const { t } = useI18n();
   const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
-  const listing = listingQuery.data;
+  // FORBIDDEN only happens for non-managers, who never render this component —
+  // treat it like an empty listing so the types stay honest.
+  const listing =
+    listingQuery.data === FORBIDDEN ? { coParents: [], invites: [] } : listingQuery.data;
   const invite = useMutation(api.coParents.invite);
   const removeCoParent = useMutation(api.coParents.removeCoParent);
   const cancelInvite = useMutation(api.coParents.cancelInvite);

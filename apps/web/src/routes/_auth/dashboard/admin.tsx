@@ -90,6 +90,8 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const search = opts.deps;
+    // Infinite queries stay blocking on the client too: the react-query cache
+    // makes revisits free, and suspense churn on paginated tables isn't worth it.
     return await allKeyed({
       babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
         args: {
