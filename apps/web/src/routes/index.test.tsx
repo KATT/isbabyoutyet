@@ -63,7 +63,7 @@ test("hero headline cycles through baby names", async () => {
 
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
   expect(screen.getByText("Juniper").classList.contains("hero-rotating-word")).toBe(true);
-  expect(screen.getByText("Alfie").getAttribute("style")).toContain("2400ms");
+  expect(screen.getByText("Alfie").getAttribute("style")).toContain("4800ms");
 });
 
 test("Swedish homepage hero uses Swedish name pool", async () => {

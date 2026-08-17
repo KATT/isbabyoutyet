@@ -38,9 +38,10 @@ function createCoachmarkStore(targetId: string) {
       if (!(element instanceof HTMLElement)) {
         return () => undefined;
       }
+      const target = element;
 
       function measure() {
-        const rect = element.getBoundingClientRect();
+        const rect = target.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) {
           if (snapshot !== null) {
             snapshot = null;
@@ -68,13 +69,13 @@ function createCoachmarkStore(targetId: string) {
         notify();
       }
 
-      element.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+      target.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
       measure();
       window.addEventListener("resize", measure);
       window.addEventListener("scroll", measure, true);
       const resizeObserver =
         typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-      resizeObserver?.observe(element);
+      resizeObserver?.observe(target);
 
       return () => {
         window.removeEventListener("resize", measure);
