@@ -1,6 +1,6 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
