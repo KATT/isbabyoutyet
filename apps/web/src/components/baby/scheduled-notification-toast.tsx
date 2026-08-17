@@ -16,6 +16,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
+import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
@@ -36,7 +37,10 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     api.baby.getScheduledNotifications,
     props.notifications,
   );
-  const notifications = notificationsQuery.data;
+  // FORBIDDEN only happens for non-managers, who never render this component —
+  // treat it like "nothing scheduled" so the types stay honest.
+  const notificationsData = notificationsQuery.data;
+  const notifications = notificationsData === FORBIDDEN ? [] : notificationsData;
   const pendingNotifications = notifications.filter(
     (notification) => notification.status === "pending",
   );
@@ -44,7 +48,8 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
     api.pushSubscriptions.getSubscriptionCount,
     props.subscriptionCount,
   );
-  const subscriptionCount = subscriptionCountQuery.data;
+  const subscriptionCount =
+    subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
 
   // Track active toasts and previous notification states
   const activeToasts = useRef(new Set<Id<"scheduledNotifications">>());

@@ -6,7 +6,8 @@ import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
-import { findActiveCoParent, requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
+import { FORBIDDEN } from "../src/types";
 import { toBabyDto } from "./babyDto";
 import { isActive, softDeletePatch } from "./softDelete";
 
@@ -106,7 +107,12 @@ export const myAccess = query({
 export const listForBaby = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
 
     const [coParents, invites] = await Promise.all([
       listActiveCoParents(ctx, args.babyId),

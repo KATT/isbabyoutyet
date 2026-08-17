@@ -102,6 +102,9 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   expect(inviteResult).toEqual({ status: "invited" });
 
   const listed = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
+  if (listed === "forbidden") {
+    throw new Error("expected manager access");
+  }
   expect(listed.invites).toMatchObject([{ email: "newbie@example.com" }]);
   expect(listed.coParents).toEqual([]);
 
@@ -116,6 +119,9 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   expect(claimed).toEqual({ claimed: 1 });
 
   const after = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
+  if (after === "forbidden") {
+    throw new Error("expected manager access");
+  }
   expect(after.invites).toEqual([]);
   expect(after.coParents).toMatchObject([{ email: "newbie@example.com" }]);
   expect(after.coParents[0]).not.toHaveProperty("userId");
@@ -171,6 +177,9 @@ test("only the owner can manage co-parents and delete the baby", async () => {
     email: "bob2@example.com",
   });
   const listed = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
+  if (listed === "forbidden") {
+    throw new Error("expected manager access");
+  }
   const bobRow = listed.coParents[0];
   expect(bobRow).not.toHaveProperty("userId");
   await asAlice.mutation(api.coParents.removeCoParent, { coParentId: bobRow!._id });
@@ -188,6 +197,9 @@ test("only the owner can manage co-parents and delete the baby", async () => {
   ).rejects.toThrow("An invite is already pending");
 
   const withInvite = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
+  if (withInvite === "forbidden") {
+    throw new Error("expected manager access");
+  }
   const inviteId = withInvite.invites[0]?._id;
   expect(inviteId).toBeTruthy();
   await asAlice.mutation(api.coParents.cancelInvite, { inviteId: inviteId! });
@@ -214,4 +226,28 @@ test("only the owner can manage co-parents and delete the baby", async () => {
 
   const anonAccess = await t.query(api.coParents.myAccess, { babyId: created.babyId });
   expect(anonAccess).toEqual({ isOwner: false, isCoParent: false, canManage: false });
+});
+
+test("manager-only listings return forbidden for visitors instead of throwing", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const asBob = t.withIdentity({ subject: "bob" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Gated Baby",
+    dueDate: "2026-09-01",
+  });
+
+  // Signed-in non-manager and anonymous visitors get the sentinel, so the
+  // baby route loader can query these homogeneously for everyone.
+  expect(await asBob.query(api.coParents.listForBaby, { babyId: created.babyId })).toBe(
+    "forbidden",
+  );
+  expect(await t.query(api.coParents.listForBaby, { babyId: created.babyId })).toBe("forbidden");
+  expect(await asBob.query(api.baby.getScheduledNotifications, { babyId: created.babyId })).toBe(
+    "forbidden",
+  );
+  expect(await t.query(api.baby.getScheduledNotifications, { babyId: created.babyId })).toBe(
+    "forbidden",
+  );
 });
