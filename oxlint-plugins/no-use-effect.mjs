@@ -1,13 +1,14 @@
 /**
- * Disallow React's `useEffect` outside the vendored UI package.
+ * Disallow React's effect hooks outside the vendored UI package.
  *
  * App state should come from route search params, queries, mutations, or
  * direct user interactions. External subscriptions belong behind
  * `useSyncExternalStore` instead of effect-driven synchronization.
  */
 
+const BANNED_EFFECT_HOOKS = new Set(["useEffect", "useLayoutEffect"]);
 const MESSAGE =
-  "Do not use React `useEffect`. Derive state during render, update it in user interactions, or subscribe with `useSyncExternalStore`.";
+  "Do not use React `{{name}}`. Derive state during render, update it in user interactions, or subscribe with `useSyncExternalStore`.";
 
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
@@ -27,7 +28,7 @@ const noUseEffect = {
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow React useEffect",
+      description: "Disallow React useEffect and useLayoutEffect",
     },
     schema: [],
     messages: {
@@ -43,9 +44,13 @@ const noUseEffect = {
         if (
           node.parent?.type === "ImportDeclaration" &&
           node.parent.source.value === "react" &&
-          importedName(node) === "useEffect"
+          BANNED_EFFECT_HOOKS.has(importedName(node))
         ) {
-          context.report({ node, messageId: "banned" });
+          context.report({
+            node,
+            messageId: "banned",
+            data: { name: importedName(node) },
+          });
         }
       },
 
@@ -65,9 +70,13 @@ const noUseEffect = {
         if (
           node.object.type === "Identifier" &&
           reactNamespaces.has(node.object.name) &&
-          propertyName(node) === "useEffect"
+          BANNED_EFFECT_HOOKS.has(propertyName(node))
         ) {
-          context.report({ node, messageId: "banned" });
+          context.report({
+            node,
+            messageId: "banned",
+            data: { name: propertyName(node) },
+          });
         }
       },
 
@@ -84,9 +93,13 @@ const noUseEffect = {
             property.type === "Property" &&
             !property.computed &&
             property.key.type === "Identifier" &&
-            property.key.name === "useEffect"
+            BANNED_EFFECT_HOOKS.has(property.key.name)
           ) {
-            context.report({ node: property, messageId: "banned" });
+            context.report({
+              node: property,
+              messageId: "banned",
+              data: { name: property.key.name },
+            });
           }
         }
       },
@@ -96,13 +109,16 @@ const noUseEffect = {
           return;
         }
         for (const specifier of node.specifiers) {
-          if (
-            specifier.type === "ExportSpecifier" &&
-            (specifier.local.type === "Identifier"
-              ? specifier.local.name
-              : specifier.local.value) === "useEffect"
-          ) {
-            context.report({ node: specifier, messageId: "banned" });
+          if (specifier.type === "ExportSpecifier") {
+            const name =
+              specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
+            if (BANNED_EFFECT_HOOKS.has(name)) {
+              context.report({
+                node: specifier,
+                messageId: "banned",
+                data: { name },
+              });
+            }
           }
         }
       },

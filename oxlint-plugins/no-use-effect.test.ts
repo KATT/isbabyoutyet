@@ -44,5 +44,21 @@ tester.run("no-use-effect", plugin.rules["no-use-effect"], {
       code: `export { useEffect } from "react";`,
       errors: [{ messageId: "banned" }],
     },
+    {
+      code: `import { useLayoutEffect } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import React from "react"; React.useLayoutEffect(() => {}, []);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import * as React from "react"; const { useLayoutEffect } = React;`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export { useLayoutEffect } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
   ],
 });
