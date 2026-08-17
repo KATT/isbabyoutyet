@@ -45,12 +45,7 @@ body {
  * pure projection of the locale's word list.
  */
 @keyframes hero-rotating-word {
-  0% {
-    opacity: 0;
-    transform: translateY(105%) rotate(6deg);
-  }
-
-  2%,
+  0%,
   10.5% {
     opacity: 1;
     transform: translateY(0) rotate(0deg);
