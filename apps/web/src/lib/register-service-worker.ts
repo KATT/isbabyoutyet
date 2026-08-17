@@ -12,3 +12,5 @@ if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
       console.error("Service Worker registration failed:", error);
     });
 }
+
+export {};
