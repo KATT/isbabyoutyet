@@ -34,13 +34,14 @@ function makeGuardCtx() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, queryFn: () => Promise.resolve(null) } },
   });
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null));
   const ctx: GuardCtx = {
-    context: { queryClient, convexClient: {}, token: null, locale: "en-GB" },
+    context: { queryClient, convexClient: { mutation }, token: null, locale: "en-GB" },
   };
   const options = Route as unknown as {
     beforeLoad: (opts: GuardCtx) => Promise<{ locale: string; isAuthenticated: boolean }>;
   };
-  return { ctx, queryClient, beforeLoad: options.beforeLoad };
+  return { ctx, queryClient, mutation, beforeLoad: options.beforeLoad };
 }
 
 test("client navigations with a cached profile skip the token round-trip", async () => {
@@ -55,6 +56,7 @@ test("client navigations with a cached profile skip the token round-trip", async
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(getToken).not.toHaveBeenCalled();
+  expect(guard.mutation).toHaveBeenCalledWith(api.coParents.claimPendingInvites, {});
 });
 
 test("regression: a fresh login authenticates the websocket before ensuring the profile", async () => {
