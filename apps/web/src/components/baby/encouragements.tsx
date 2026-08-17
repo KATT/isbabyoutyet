@@ -31,7 +31,7 @@ const STORAGE_KEY_VISITOR_ID = "encouragement-visitor-id";
 const VISITOR_ID_CHANGE_EVENT = "encouragement-visitor-id-change";
 
 // Get or create a unique visitor ID (immutable once created) - client-side only
-export function getVisitorId(): string {
+function getVisitorId(): string {
   if (typeof window === "undefined") return "";
   let visitorId = localStorage.getItem(STORAGE_KEY_VISITOR_ID);
   if (!visitorId) {
