@@ -3,6 +3,7 @@
  */
 
 const MESSAGE = "React Compiler handles memoization automatically.";
+const MANUAL_MEMOIZATION_HOOKS = new Set(["useCallback", "useMemo"]);
 
 function propertyName(node) {
   if (node.type === "Identifier") {
@@ -14,15 +15,15 @@ function propertyName(node) {
   return null;
 }
 
-function reportUseMemo(context, node) {
+function reportManualMemoization(context, node) {
   context.report({ messageId: "banned", node });
 }
 
-const noUseMemo = {
+const noManualMemoization = {
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow manual useMemo calls when React Compiler is enabled",
+      description: "Disallow manual useCallback and useMemo calls when React Compiler is enabled",
     },
     schema: [],
     messages: {
@@ -37,21 +38,24 @@ const noUseMemo = {
         if (
           declaration?.type === "ImportDeclaration" &&
           declaration.source.value === "react" &&
-          propertyName(node.imported) === "useMemo"
+          MANUAL_MEMOIZATION_HOOKS.has(propertyName(node.imported))
         ) {
-          reportUseMemo(context, node);
+          reportManualMemoization(context, node);
         }
       },
 
       MemberExpression(node) {
-        if (propertyName(node.property) === "useMemo") {
-          reportUseMemo(context, node);
+        if (MANUAL_MEMOIZATION_HOOKS.has(propertyName(node.property))) {
+          reportManualMemoization(context, node);
         }
       },
 
       Property(node) {
-        if (node.parent?.type === "ObjectPattern" && propertyName(node.key) === "useMemo") {
-          reportUseMemo(context, node);
+        if (
+          node.parent?.type === "ObjectPattern" &&
+          MANUAL_MEMOIZATION_HOOKS.has(propertyName(node.key))
+        ) {
+          reportManualMemoization(context, node);
         }
       },
     };
@@ -63,7 +67,7 @@ const plugin = {
     name: "react-compiler",
   },
   rules: {
-    "no-use-memo": noUseMemo,
+    "no-manual-memoization": noManualMemoization,
   },
 };
 

@@ -9,7 +9,7 @@ const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: "tsx" } },
 });
 
-tester.run("no-use-memo", plugin.rules["no-use-memo"], {
+tester.run("no-manual-memoization", plugin.rules["no-manual-memoization"], {
   valid: [
     `import * as React from "react";
      React.useState(0);`,
@@ -38,6 +38,29 @@ tester.run("no-use-memo", plugin.rules["no-use-memo"], {
     },
     {
       code: `const { useMemo } = React;`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useCallback } from "react";
+             useCallback(() => 1, []);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useCallback as stabilize } from "react";
+             stabilize(() => 1, []);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import * as React from "react";
+             React.useCallback(() => 1, []);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `react["useCallback"](() => 1, []);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `const { useCallback } = React;`,
       errors: [{ messageId: "banned" }],
     },
   ],
