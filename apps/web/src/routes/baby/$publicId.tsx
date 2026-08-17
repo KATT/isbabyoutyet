@@ -13,7 +13,6 @@ import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboardi
 import type { BabyData } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import { authClient } from "@/lib/auth-client";
 import {
   createFileRoute,
   Link,
@@ -27,7 +26,7 @@ import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/con
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
@@ -253,10 +252,8 @@ function BabyPage() {
     loaderData.vapidPublicKey,
   );
 
-  const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
-  const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
 
@@ -265,12 +262,6 @@ function BabyPage() {
   const myAccess = myAccessQuery.data;
   const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
-
-  // Claim pending email invites when a signed-in user lands on a baby page
-  useEffect(() => {
-    if (!sessionResult.data?.user) return;
-    void claimInvites({});
-  }, [sessionResult.data?.user, claimInvites]);
 
   const currentStatus = getCurrentStatus(baby);
 

@@ -12,7 +12,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -28,6 +28,7 @@ type EncouragementFormProps = {
 const MAX_NAME_LENGTH = 50;
 const STORAGE_KEY_NAME = "encouragement-author-name";
 const STORAGE_KEY_VISITOR_ID = "encouragement-visitor-id";
+const VISITOR_ID_CHANGE_EVENT = "encouragement-visitor-id-change";
 
 // Get or create a unique visitor ID (immutable once created) - client-side only
 export function getVisitorId(): string {
@@ -36,8 +37,28 @@ export function getVisitorId(): string {
   if (!visitorId) {
     visitorId = crypto.randomUUID();
     localStorage.setItem(STORAGE_KEY_VISITOR_ID, visitorId);
+    window.dispatchEvent(new Event(VISITOR_ID_CHANGE_EVENT));
   }
   return visitorId;
+}
+
+export function getStoredVisitorId(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(STORAGE_KEY_VISITOR_ID) ?? "";
+}
+
+export function subscribeToStoredVisitorId(notify: () => void) {
+  window.addEventListener(VISITOR_ID_CHANGE_EVENT, notify);
+  window.addEventListener("storage", notify);
+  return () => {
+    window.removeEventListener(VISITOR_ID_CHANGE_EVENT, notify);
+    window.removeEventListener("storage", notify);
+  };
+}
+
+function getStoredAuthorName() {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
 // Trim before validating, so whitespace-only input doesn't pass "required"
@@ -73,19 +94,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
   const form = useZodForm({
     schema,
     defaultValues: {
-      authorName: "",
+      authorName: getStoredAuthorName(),
       message: "",
     },
   });
-
-  // Load saved name from localStorage on mount (client-side only)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedName = localStorage.getItem(STORAGE_KEY_NAME);
-    if (savedName) {
-      form.setValue("authorName", savedName);
-    }
-  }, [form]);
 
   return (
     <div className="space-y-4">

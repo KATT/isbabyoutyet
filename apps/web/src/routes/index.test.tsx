@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -59,40 +59,21 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
 });
 
 test("hero headline cycles through baby names", async () => {
-  await using _timers = makeResource({}, () => {
-    vi.useRealTimers();
-  });
-  vi.useFakeTimers();
   await using _view = renderResource(<HomePage />);
 
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
-
-  // Before the first tick only the invisible sizer copy of the name exists.
-  expect(screen.getAllByText("Juniper")).toHaveLength(1);
-
-  act(() => {
-    vi.advanceTimersByTime(2400);
-  });
-
-  // After a tick the name is also rendered as the visible rotating word.
-  expect(screen.getAllByText("Juniper")).toHaveLength(2);
+  expect(screen.getByText("Juniper").classList.contains("hero-rotating-word")).toBe(true);
+  expect(screen.getByText("Alfie").getAttribute("style")).toContain("2400ms");
 });
 
 test("Swedish homepage hero uses Swedish name pool", async () => {
-  await using _timers = makeResource({}, () => {
-    vi.useRealTimers();
-  });
-  vi.useFakeTimers();
   await using _view = renderResource(
     <LocaleProvider locale="sv">
       <HomePage />
     </LocaleProvider>,
   );
 
-  act(() => {
-    vi.advanceTimersByTime(2400);
-  });
-  expect(screen.getAllByText("Ella")).toHaveLength(2);
+  expect(screen.getByText("Ella").classList.contains("hero-rotating-word")).toBe(true);
 });
 
 test("Swedish homepage links visitors to Ella Holm", async () => {

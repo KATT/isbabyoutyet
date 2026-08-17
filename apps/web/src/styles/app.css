@@ -41,46 +41,41 @@ body {
 }
 
 /*
- * Hero headline name carousel: the incoming word bounces up into the pill
- * while the outgoing one rolls away upwards, like a split-flap board with a
- * spring in it.
+ * Hero headline name carousel. CSS owns the clock, so rendering remains a
+ * pure projection of the locale's word list.
  */
-@keyframes hero-word-in {
+@keyframes hero-rotating-word {
   0% {
     opacity: 0;
     transform: translateY(105%) rotate(6deg);
   }
-  100% {
-    opacity: 1;
-    transform: translateY(0) rotate(0deg);
-  }
-}
 
-@keyframes hero-word-out {
-  0% {
+  2%,
+  10.5% {
     opacity: 1;
     transform: translateY(0) rotate(0deg);
   }
+
+  12.5%,
   100% {
     opacity: 0;
     transform: translateY(-105%) rotate(-6deg);
   }
 }
 
-.hero-word-in {
-  animation: hero-word-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-.hero-word-out {
-  animation: hero-word-out 0.45s cubic-bezier(0.55, 0.055, 0.675, 0.19) both;
+.hero-rotating-word {
+  opacity: 0;
+  animation: hero-rotating-word 19.2s cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-word-in {
+  .hero-rotating-word {
     animation: none;
+    opacity: 0;
+    transform: none;
   }
 
-  .hero-word-out {
-    display: none;
+  .hero-rotating-word:first-child {
+    opacity: 1;
   }
 }

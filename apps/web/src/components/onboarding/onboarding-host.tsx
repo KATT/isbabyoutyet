@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
@@ -63,33 +63,9 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
   const completeStep = useMutation(api.onboarding.completeStep);
 
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
-  const [coachmarkHidden, setCoachmarkHidden] = useState(false);
-
-  // Open welcome once progress loads — skip if already dismissed or they already have a baby
-  useEffect(() => {
-    if (progress.welcomeDismissed) return;
-    if (progress.hasBaby) {
-      void dismissWelcome({});
-      return;
-    }
-    setWelcomeOpen(true);
-  }, [progress, dismissWelcome]);
-
-  // Don't leave a finished checklist hanging on the page
-  useEffect(() => {
-    if (!progress.allDone || progress.checklistDismissed) return;
-    const timeout = window.setTimeout(() => {
-      void dismissChecklist({});
-    }, 4000);
-    return () => window.clearTimeout(timeout);
-  }, [progress.allDone, progress.checklistDismissed, dismissChecklist]);
+  const [hiddenCoachmarkStep, setHiddenCoachmarkStep] = useState<OnboardingStepId | null>(null);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
-
-  useEffect(() => {
-    setCoachmarkHidden(false);
-  }, [nextStep?.id]);
 
   const isTourBabyPage =
     props.surface !== "baby" ||
@@ -99,14 +75,16 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
     return null;
   }
 
-  const showChecklist = progress.welcomeDismissed && !progress.checklistDismissed;
+  const welcomeComplete = progress.welcomeDismissed || progress.hasBaby;
+  const showWelcome = !welcomeComplete;
+  const showChecklist = welcomeComplete && !progress.checklistDismissed;
   const highlightBabyCard =
     props.surface === "dashboard" && nextStep?.surface === "baby" && progress.tourBaby != null;
   const showCoachmark =
     spotlight &&
     showChecklist &&
     !progress.minimized &&
-    !coachmarkHidden &&
+    hiddenCoachmarkStep !== nextStep?.id &&
     nextStep &&
     (nextStep.surface === props.surface || highlightBabyCard);
 
@@ -139,8 +117,8 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   return (
     <>
       <WelcomeTourDialog
-        open={welcomeOpen}
-        onOpenChange={setWelcomeOpen}
+        open={showWelcome}
+        onOpenChange={() => undefined}
         onFinished={() => {
           void dismissWelcome({});
         }}
@@ -175,7 +153,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}
-          onDismiss={() => setCoachmarkHidden(true)}
+          onDismiss={() => setHiddenCoachmarkStep(nextStep.id)}
         />
       ) : null}
     </>

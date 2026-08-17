@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { X } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import {
   formatDate,
@@ -23,24 +23,6 @@ function PhotoAvatar(props: PhotoAvatarProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Prefetch the full-size image when component mounts or photoUrl changes
-  useEffect(() => {
-    if (props.photoUrl) {
-      const link = document.createElement("link");
-      link.rel = "prefetch";
-      link.as = "image";
-      link.href = props.photoUrl;
-      document.head.appendChild(link);
-
-      return () => {
-        // Only remove if still in the document
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-      };
-    }
-  }, [props.photoUrl]);
-
   const baseClasses =
     "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
   const variantClasses =
@@ -62,41 +44,44 @@ function PhotoAvatar(props: PhotoAvatarProps) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
-          >
-            {avatarImageUrl && (
-              <img
-                src={avatarImageUrl}
-                alt={t("Photo of {{name}}", { name: props.babyName })}
-                width={160}
-                height={160}
-                className="w-full h-full object-cover"
-              />
-            )}
-          </button>
-        }
-      />
-      {props.photoUrl && (
-        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-          <button
-            onClick={() => setIsOpen(false)}
-            aria-label={t("Close photo")}
-            className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <img
-            src={props.photoUrl}
-            alt={t("Photo of {{name}}", { name: props.babyName })}
-            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-          />
-        </DialogContent>
-      )}
-    </Dialog>
+    <>
+      {props.photoUrl ? <link rel="prefetch" as="image" href={props.photoUrl} /> : null}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger
+          render={
+            <button
+              className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+            >
+              {avatarImageUrl && (
+                <img
+                  src={avatarImageUrl}
+                  alt={t("Photo of {{name}}", { name: props.babyName })}
+                  width={160}
+                  height={160}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </button>
+          }
+        />
+        {props.photoUrl && (
+          <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
+            <button
+              onClick={() => setIsOpen(false)}
+              aria-label={t("Close photo")}
+              className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <img
+              src={props.photoUrl}
+              alt={t("Photo of {{name}}", { name: props.babyName })}
+              className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+            />
+          </DialogContent>
+        )}
+      </Dialog>
+    </>
   );
 }
 

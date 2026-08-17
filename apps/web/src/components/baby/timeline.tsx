@@ -33,7 +33,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -52,7 +52,7 @@ import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
-import { getVisitorId } from "./encouragements";
+import { getStoredVisitorId, subscribeToStoredVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -174,31 +174,45 @@ type UpdateComposerProps = {
 };
 
 export function UpdateComposer(props: UpdateComposerProps) {
+  const currentStatus = getCurrentStatus(props.baby);
+  return (
+    <UpdateComposerForm
+      key={currentStatus.type}
+      babyId={props.babyId}
+      baby={props.baby}
+      babyName={props.babyName}
+      onPosted={props.onPosted}
+      currentStatus={currentStatus}
+    />
+  );
+}
+
+function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabyStatus }) {
   const { t } = useI18n();
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
-  const currentStatus = getCurrentStatus(props.baby);
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
-    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
+    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[props.currentStatus.type],
   );
   const schema = useMemo(
     () =>
       composerSchema({
         t,
-        currentStatus: currentStatus.type,
+        currentStatus: props.currentStatus.type,
         babyId: props.babyId,
       }),
-    [t, currentStatus.type, props.babyId],
+    [t, props.currentStatus.type, props.babyId],
   );
 
   const form = useZodForm({
     schema,
     // RHF re-runs the resolver when this changes (status advanced in another tab)
-    context: currentStatus.type,
+    context: props.currentStatus.type,
     defaultValues: {
       message: "",
       milestone: "none",
@@ -211,31 +225,10 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
   const draft = form.watch();
 
-  // Guard against a stale selection: the status may have advanced from
-  // another tab while a milestone was selected here. The mask keeps the
-  // current render correct; the effect clears the value so the old choice
-  // can't resurface if the status regresses later via unmarking.
   const selectedMilestone =
     draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
       ? draft.milestone
       : null;
-  useEffect(() => {
-    const value = form.getValues("milestone");
-    if (value !== "none" && STATUS_ORDER[value] <= STATUS_ORDER[currentStatus.type]) {
-      form.setValue("milestone", "none");
-      form.resetField("occurredAt");
-    }
-  }, [form, currentStatus.type]);
-
-  const photoPreviewUrl = useMemo(
-    () => (draft.photo ? URL.createObjectURL(draft.photo) : null),
-    [draft.photo],
-  );
-  useEffect(() => {
-    return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    };
-  }, [photoPreviewUrl]);
 
   const canPost = !isPosting && schema.safeParse(draft).success;
 
@@ -313,6 +306,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
                 onClick={() => {
                   form.setValue("photo", null);
+                  setPhotoPreviewUrl(null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 disabled={isPosting}
@@ -423,6 +417,20 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 return;
               }
               form.setValue("photo", file, { shouldDirty: true });
+              const reader = new FileReader();
+              reader.addEventListener(
+                "load",
+                () => {
+                  if (
+                    typeof reader.result === "string" &&
+                    fileInputRef.current?.files?.[0] === file
+                  ) {
+                    setPhotoPreviewUrl(reader.result);
+                  }
+                },
+                { once: true },
+              );
+              reader.readAsDataURL(file);
             }}
             className="hidden"
           />
@@ -903,7 +911,11 @@ type TimelineFeedProps = {
 
 export function TimelineFeed(props: TimelineFeedProps) {
   const { t } = useI18n();
-  const [currentVisitorId, setCurrentVisitorId] = useState("");
+  const currentVisitorId = useSyncExternalStore(
+    subscribeToStoredVisitorId,
+    getStoredVisitorId,
+    () => "",
+  );
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
@@ -918,39 +930,8 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const items = timelineQuery.data.pages.flatMap((page) => page.page);
-
-  // Get visitor ID on client side
-  useEffect(() => {
-    setCurrentVisitorId(getVisitorId());
-  }, []);
-
-  // Infinite scroll with IntersectionObserver
-  useEffect(() => {
-    if (!timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          void timelineQuery.fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [timelineQuery.hasNextPage, timelineQuery.isFetchingNextPage, timelineQuery.fetchNextPage]);
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
@@ -1049,14 +1030,20 @@ export function TimelineFeed(props: TimelineFeedProps) {
           ),
         )}
 
-        {/* Infinite scroll trigger */}
-        <div ref={loadMoreRef} className="py-2">
-          {timelineQuery.isFetchingNextPage ? (
-            <div className="text-center text-muted-foreground">
-              <Spinner className="mx-auto" />
-            </div>
-          ) : null}
-        </div>
+        {timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage ? (
+          <div className="flex justify-center py-2">
+            <Button
+              variant="outline"
+              disabled={timelineQuery.isFetchingNextPage}
+              onClick={() => {
+                void timelineQuery.fetchNextPage();
+              }}
+            >
+              {timelineQuery.isFetchingNextPage ? <Spinner /> : null}
+              {t("Next")}
+            </Button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

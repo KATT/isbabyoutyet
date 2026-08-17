@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
@@ -147,44 +146,28 @@ export function nextSortSearch(opts: {
   return { sort: opts.clicked, order: "desc" as SortOrder };
 }
 
-function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!props.canLoadMore) return;
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          props.onLoadMore();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(node);
-    return () => {
-      observer.unobserve(node);
-    };
-  }, [props.canLoadMore, props.onLoadMore]);
-
-  return <div ref={loadMoreRef} className="h-8 w-full" aria-hidden="true" />;
-}
-
 function AdminTableCard(props: {
   children: ReactNode;
   canLoadMore: boolean;
   isLoadingMore: boolean;
   onLoadMore: () => void;
 }) {
+  const { t } = useI18n();
+
   return (
     <Card className="relative gap-0 py-0">
       <CardContent className="p-0">{props.children}</CardContent>
-      <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
-      {props.isLoadingMore ? (
+      {props.canLoadMore || props.isLoadingMore ? (
         <div className="flex justify-center border-t py-3">
-          <Spinner className="size-5 text-primary" />
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={props.isLoadingMore}
+            onClick={props.onLoadMore}
+          >
+            {props.isLoadingMore ? <Spinner className="size-5 text-primary" /> : null}
+            {t("Next")}
+          </Button>
         </div>
       ) : null}
     </Card>

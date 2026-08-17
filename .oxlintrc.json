@@ -13,6 +13,10 @@
     {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
+    },
+    {
+      "name": "no-use-effect",
+      "specifier": "./oxlint-plugins/no-use-effect.mjs"
     }
   ],
   "settings": {
@@ -28,7 +32,8 @@
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
-    "query-prefetch/no-convex-query-hooks": "error"
+    "query-prefetch/no-convex-query-hooks": "error",
+    "no-use-effect/no-use-effect": "error"
   },
   "overrides": [
     {
@@ -61,9 +66,10 @@
     },
     {
       // Vendored shadcn/ui registry components — not first-party code.
-      "files": ["packages/ui/src/components/**"],
+      "files": ["packages/ui/src/**"],
       "rules": {
-        "eslint/max-params": "off"
+        "eslint/max-params": "off",
+        "no-use-effect/no-use-effect": "off"
       }
     },
     {

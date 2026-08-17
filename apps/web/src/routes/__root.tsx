@@ -12,7 +12,6 @@ import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
-import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { createServerFn } from "@tanstack/react-start";
@@ -36,6 +35,7 @@ import { detectRequestLocale } from "@/lib/detect-locale";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
+import "@/lib/register-service-worker";
 
 // Cookie-authenticated token for SSR (and client navigations via server fn)
 const getAuth = createServerFn({ method: "GET" }).handler(async () => {
@@ -172,19 +172,6 @@ function RootComponent() {
     const matchContext = match.context as { locale: SupportedLocale | undefined };
     return matchContext.locale ?? currentLocale;
   }, context.locale);
-
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.log("Service Worker registered:", registration);
-        })
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
-    }
-  }, []);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>

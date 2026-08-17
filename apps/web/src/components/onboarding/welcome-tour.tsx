@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n";
 import { WELCOME_SLIDES } from "./steps";
 
@@ -26,25 +26,22 @@ type WelcomeTourDialogProps = {
 export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
   const { t } = useI18n();
   const [api, setApi] = useState<CarouselApi>();
-  const [index, setIndex] = useState(0);
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      if (!api) return () => undefined;
+      api.on("select", notify);
+      return () => {
+        api.off("select", notify);
+      };
+    },
+    [api],
+  );
+  const index = useSyncExternalStore(
+    subscribe,
+    () => api?.selectedScrollSnap() ?? 0,
+    () => 0,
+  );
   const isLast = index >= WELCOME_SLIDES.length - 1;
-
-  useEffect(() => {
-    if (!api) return;
-    const onSelect = () => setIndex(api.selectedScrollSnap());
-    onSelect();
-    api.on("select", onSelect);
-    return () => {
-      api.off("select", onSelect);
-    };
-  }, [api]);
-
-  // Reset to first slide whenever the dialog re-opens
-  useEffect(() => {
-    if (!props.open || !api) return;
-    api.scrollTo(0);
-    setIndex(0);
-  }, [props.open, api]);
 
   return (
     <Dialog

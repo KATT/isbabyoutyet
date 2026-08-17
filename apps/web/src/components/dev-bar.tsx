@@ -17,7 +17,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function activeBabyPublicId(pathname: string) {
   const match = pathname.match(/^\/baby\/([^/]+)/);
@@ -30,17 +30,18 @@ function activeBabyPublicId(pathname: string) {
  */
 export function DevBar() {
   if (!hasDemoLogin) return null;
-  return <DevBarPanel />;
+  return <DevBarRouteKey />;
 }
 
-function DevBarPanel() {
+function DevBarRouteKey() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  return <DevBarPanel key={pathname} pathname={pathname} />;
+}
+
+function DevBarPanel(props: { pathname: string }) {
+  const pathname = props.pathname;
   const currentPublicId = activeBabyPublicId(pathname);
   const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">

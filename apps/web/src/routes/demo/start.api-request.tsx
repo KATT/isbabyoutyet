@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import { createFileRoute } from "@tanstack/react-router";
 
 function getNames() {
@@ -7,15 +5,12 @@ function getNames() {
 }
 
 export const Route = createFileRoute("/demo/start/api-request")({
+  loader: async () => await getNames(),
   component: Home,
 });
 
 function Home() {
-  const [names, setNames] = useState<Array<string>>([]);
-
-  useEffect(() => {
-    getNames().then(setNames);
-  }, []);
+  const names = Route.useLoaderData();
 
   return (
     <div

@@ -18,12 +18,11 @@ vi.mock("@workspace/ui/components/carousel", () => {
   }) {
     const indexRef = React.useRef(0);
     const listeners = React.useRef(new Set<() => void>());
-
-    React.useEffect(() => {
+    const api = React.useMemo(() => {
       const notify = () => {
         for (const listener of listeners.current) listener();
       };
-      const api: Api = {
+      return {
         selectedScrollSnap: () => indexRef.current,
         scrollTo: (next) => {
           indexRef.current = next;
@@ -39,11 +38,18 @@ vi.mock("@workspace/ui/components/carousel", () => {
         off: (_event, cb) => {
           listeners.current.delete(cb);
         },
-      };
-      props.setApi?.(api);
-    }, [props.setApi]);
+      } satisfies Api;
+    }, []);
 
-    return <div>{props.children}</div>;
+    return (
+      <div
+        ref={(element) => {
+          if (element) props.setApi?.(api);
+        }}
+      >
+        {props.children}
+      </div>
+    );
   }
 
   return {

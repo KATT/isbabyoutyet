@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -126,71 +126,17 @@ const HERO_HEADLINES = {
 const NAME_ROTATE_INTERVAL_MS = 2400;
 
 function RotatingBabyName(props: { words: readonly string[] }) {
-  const words = props.words;
-  const [indices, setIndices] = useState({ current: 0, previous: null as number | null });
-  const [width, setWidth] = useState<number | null>(null);
-  const sizerRefs = useRef<(HTMLSpanElement | null)[]>([]);
-
-  useEffect(() => {
-    const reducedMotion =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || words.length < 2) {
-      return;
-    }
-    const intervalId = window.setInterval(() => {
-      setIndices((prev) => ({
-        current: (prev.current + 1) % words.length,
-        previous: prev.current,
-      }));
-    }, NAME_ROTATE_INTERVAL_MS);
-    return () => window.clearInterval(intervalId);
-  }, [words]);
-
-  useEffect(() => {
-    function measure() {
-      const sizer = sizerRefs.current[indices.current];
-      if (sizer) {
-        setWidth(sizer.offsetWidth);
-      }
-    }
-    measure();
-    // Remeasure once webfonts land so the pill hugs the word exactly.
-    if (document.fonts) {
-      void document.fonts.ready.then(measure);
-    }
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [indices]);
-
   return (
-    <span
-      aria-hidden="true"
-      className="relative inline-block overflow-hidden whitespace-nowrap transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
-      style={width === null ? undefined : { width }}
-    >
-      {words.map((word, wordIndex) => (
+    <span aria-hidden="true" className="inline-grid overflow-hidden whitespace-nowrap">
+      {props.words.map((word, wordIndex) => (
         <span
           key={word}
-          ref={(el) => {
-            sizerRefs.current[wordIndex] = el;
-          }}
-          className="invisible absolute left-0 top-0"
+          className="hero-rotating-word col-start-1 row-start-1"
+          style={{ animationDelay: `${wordIndex * NAME_ROTATE_INTERVAL_MS}ms` }}
         >
           {word}
         </span>
       ))}
-      {indices.previous !== null && (
-        <span
-          key={`out-${indices.previous}-${indices.current}`}
-          className="hero-word-out absolute left-0 top-0"
-        >
-          {words[indices.previous]}
-        </span>
-      )}
-      <span key={`in-${indices.current}`} className="hero-word-in inline-block">
-        {words[indices.current]}
-      </span>
     </span>
   );
 }

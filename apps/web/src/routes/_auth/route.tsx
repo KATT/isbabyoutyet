@@ -49,6 +49,10 @@ export const Route = createFileRoute("/_auth")({
       opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
     }
 
+    // Authentication is the seam where pending email invitations become
+    // memberships, before child loaders derive their data.
+    await opts.context.convexClient.mutation(api.coParents.claimPendingInvites, {});
+
     return { locale: profile.locale, token, isAuthenticated: true };
   },
   component: AuthLayout,

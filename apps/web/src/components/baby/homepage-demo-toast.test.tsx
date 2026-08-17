@@ -1,19 +1,7 @@
 import { render } from "@testing-library/react";
-import { expect, test, vi } from "vitest";
+import { expect, test } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
-
-const mocks = vi.hoisted(() => ({
-  custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id: string | number | undefined) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: {
-    custom: mocks.custom,
-    dismiss: mocks.dismiss,
-  },
-}));
 
 const { HomepageDemoToast } = await import("./homepage-demo-toast");
 
@@ -25,42 +13,18 @@ function renderToastResource(publicId: string) {
 }
 
 test("shows a persistent demo toast on the homepage demo baby", async () => {
-  mocks.custom.mockClear();
-  mocks.dismiss.mockClear();
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
 
-  await using _view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
-
-  expect(mocks.custom).toHaveBeenCalledTimes(1);
-  const [renderToast, options] = mocks.custom.mock.calls[0] ?? [];
-  expect(options).toMatchObject({
-    duration: Infinity,
-    closeButton: true,
-  });
-  expect(typeof renderToast).toBe("function");
+  expect(view.getByText("This is a demo page")).toBeTruthy();
+  expect(view.getByRole("complementary")).toBeTruthy();
 });
 
-test("does not toast on a real baby page, and dismisses when leaving the demo", async () => {
-  mocks.custom.mockClear();
-  mocks.dismiss.mockClear();
-
-  {
-    await using _demo = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
-    expect(mocks.custom).toHaveBeenCalledTimes(1);
-  }
-
-  const options = mocks.custom.mock.calls[0]?.[1];
-  if (!options || typeof options !== "object" || !("id" in options)) {
-    throw new Error("expected toast options with an id");
-  }
-  expect(mocks.dismiss).toHaveBeenCalledWith(options.id);
-
-  mocks.custom.mockClear();
-  await using _other = renderToastResource("baby-waiting");
-  expect(mocks.custom).not.toHaveBeenCalled();
+test("does not render the notice on a real baby page", async () => {
+  await using view = renderToastResource("baby-waiting");
+  expect(view.container.firstChild).toBeNull();
 });
 
 test("shows the demo toast on every locale homepage baby", async () => {
-  mocks.custom.mockClear();
-  await using _view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
-  expect(mocks.custom).toHaveBeenCalledTimes(1);
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
+  expect(view.getByRole("complementary")).toBeTruthy();
 });

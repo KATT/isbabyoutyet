@@ -1,6 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 
@@ -22,58 +22,89 @@ type Rect = {
   height: number;
 };
 
+type CoachmarkSnapshot = {
+  rect: Rect;
+  placement: "above" | "below";
+  viewportWidth: number;
+};
+
+function createCoachmarkStore(targetId: string) {
+  let snapshot: CoachmarkSnapshot | null = null;
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (notify: () => void) => {
+      const element = document.querySelector(`[data-tour-id="${targetId}"]`);
+      if (!(element instanceof HTMLElement)) {
+        return () => undefined;
+      }
+
+      function measure() {
+        const rect = element.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          if (snapshot !== null) {
+            snapshot = null;
+            notify();
+          }
+          return;
+        }
+        const next = {
+          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+          placement:
+            window.innerHeight - rect.bottom < 160 ? ("above" as const) : ("below" as const),
+          viewportWidth: window.innerWidth,
+        };
+        if (
+          snapshot?.rect.top === next.rect.top &&
+          snapshot.rect.left === next.rect.left &&
+          snapshot.rect.width === next.rect.width &&
+          snapshot.rect.height === next.rect.height &&
+          snapshot.placement === next.placement &&
+          snapshot.viewportWidth === next.viewportWidth
+        ) {
+          return;
+        }
+        snapshot = next;
+        notify();
+      }
+
+      element.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+      measure();
+      window.addEventListener("resize", measure);
+      window.addEventListener("scroll", measure, true);
+      const resizeObserver =
+        typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+      resizeObserver?.observe(element);
+
+      return () => {
+        window.removeEventListener("resize", measure);
+        window.removeEventListener("scroll", measure, true);
+        resizeObserver?.disconnect();
+      };
+    },
+  };
+}
+
 /**
  * Soft spotlight + tip bubble anchored to `[data-tour-id=…]`.
  * Skippable; does not block the whole page (pointer-events only on the tip).
  */
 export function Coachmark(props: CoachmarkProps) {
   const { t } = useI18n();
-  const [rect, setRect] = useState<Rect | null>(null);
-  const [placement, setPlacement] = useState<"above" | "below">("below");
+  const store = useMemo(() => createCoachmarkStore(props.targetId), [props.targetId]);
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
 
-  useEffect(() => {
-    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-    if (!(el instanceof HTMLElement)) {
-      return;
-    }
-    el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
-  }, [props.targetId]);
-
-  useEffect(() => {
-    function measure() {
-      const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-      if (!(el instanceof HTMLElement)) {
-        setRect(null);
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) {
-        setRect(null);
-        return;
-      }
-      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-      // Prefer below the target; flip above if near the bottom of the viewport
-      const spaceBelow = window.innerHeight - r.bottom;
-      setPlacement(spaceBelow < 160 ? "above" : "below");
-    }
-
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    const interval = window.setInterval(measure, 500);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-      window.clearInterval(interval);
-    };
-  }, [props.targetId]);
-
-  if (!rect || typeof document === "undefined") {
+  if (!snapshot || typeof document === "undefined") {
     return null;
   }
 
-  const tipTop = placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
-  const tipLeft = Math.min(Math.max(12, rect.left + rect.width / 2 - 140), window.innerWidth - 292);
+  const rect = snapshot.rect;
+  const tipTop =
+    snapshot.placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
+  const tipLeft = Math.min(
+    Math.max(12, rect.left + rect.width / 2 - 140),
+    snapshot.viewportWidth - 292,
+  );
 
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">
@@ -89,7 +120,7 @@ export function Coachmark(props: CoachmarkProps) {
       <div
         className={cn(
           "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
-          placement === "above" && "-translate-y-full",
+          snapshot.placement === "above" && "-translate-y-full",
         )}
         style={{ top: tipTop, left: tipLeft }}
         role="status"

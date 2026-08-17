@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import { useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useConvex } from "convex/react";
 import type { FunctionReference, PaginationOptions } from "convex/server";
@@ -25,50 +25,58 @@ export function useLiveConvexInfinitePages(opts: {
   const convex = useConvex();
   const pageParamsKey = JSON.stringify(opts.pageParams);
   const argsKey = JSON.stringify(opts.args);
+  const queryKeyKey = JSON.stringify(opts.queryKey);
+  const args = useMemo(() => JSON.parse(argsKey) as Record<string, unknown>, [argsKey]);
+  const pageParams = useMemo(
+    () => JSON.parse(pageParamsKey) as PaginationOptions[],
+    [pageParamsKey],
+  );
+  const queryKey = useMemo(() => JSON.parse(queryKeyKey) as QueryKey, [queryKeyKey]);
 
-  useEffect(() => {
-    const unsubscribers = opts.pageParams.map((pageParam, index) => {
-      const watch = convex.watchQuery(opts.funcRef, {
-        ...opts.args,
-        paginationOpts: pageParam,
+  const subscribe = useCallback(
+    (notify: () => void) => {
+      const unsubscribers = pageParams.map((pageParam, index) => {
+        const watch = convex.watchQuery(opts.funcRef, {
+          ...args,
+          paginationOpts: pageParam,
+        });
+        return watch.onUpdate(() => {
+          let value: LivePage | undefined;
+          try {
+            value = watch.localQueryResult() as LivePage | undefined;
+          } catch {
+            return;
+          }
+          if (value === undefined) {
+            return;
+          }
+          queryClient.setQueryData(
+            queryKey,
+            (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
+              if (!previous) {
+                return previous;
+              }
+              const pages = [...previous.pages];
+              pages[index] = value;
+              return { ...previous, pages };
+            },
+          );
+          notify();
+        });
       });
-      return watch.onUpdate(() => {
-        let value: LivePage | undefined;
-        try {
-          value = watch.localQueryResult() as LivePage | undefined;
-        } catch {
-          return;
-        }
-        if (value === undefined) {
-          return;
-        }
-        queryClient.setQueryData(
-          opts.queryKey,
-          (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
-            if (!previous) {
-              return previous;
-            }
-            const pages = [...previous.pages];
-            pages[index] = value;
-            return { ...previous, pages };
-          },
-        );
-      });
-    });
 
-    return () => {
-      for (const unsubscribe of unsubscribers) {
-        unsubscribe();
-      }
-    };
-  }, [
-    argsKey,
-    convex,
-    opts.args,
-    opts.funcRef,
-    opts.pageParams,
-    opts.queryKey,
-    pageParamsKey,
-    queryClient,
-  ]);
+      return () => {
+        for (const unsubscribe of unsubscribers) {
+          unsubscribe();
+        }
+      };
+    },
+    [args, convex, opts.funcRef, pageParams, queryClient, queryKey],
+  );
+
+  useSyncExternalStore(
+    subscribe,
+    () => 0,
+    () => 0,
+  );
 }

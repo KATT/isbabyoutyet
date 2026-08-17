@@ -1,10 +1,9 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
+import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
@@ -22,14 +21,7 @@ type BabyNavProps = {
 
 export function BabyNav(props: BabyNavProps) {
   const { t } = useI18n();
-  const [copied, setCopied] = useState(false);
   const hasOwnerActions = !!(props.onPostUpdate || props.settingsButton);
-
-  useEffect(() => {
-    if (!copied) return;
-    const timeout = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timeout);
-  }, [copied]);
 
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
@@ -84,7 +76,6 @@ export function BabyNav(props: BabyNavProps) {
                 if (!props.shareLink) return;
                 try {
                   await navigator.clipboard.writeText(props.shareLink);
-                  setCopied(true);
                   toast.success(t("Copied to clipboard"));
                   props.onShareCopied?.();
                 } catch {
@@ -97,7 +88,6 @@ export function BabyNav(props: BabyNavProps) {
                   textArea.select();
                   try {
                     document.execCommand("copy");
-                    setCopied(true);
                     toast.success(t("Copied to clipboard"));
                     props.onShareCopied?.();
                   } catch (cause) {
@@ -113,14 +103,14 @@ export function BabyNav(props: BabyNavProps) {
               size="icon"
               className="rounded-full"
               disabled={!props.shareLink}
-              aria-label={copied ? t("Copied!") : t("Copy link to share")}
+              aria-label={t("Copy link to share")}
               data-tour-id="share_link"
             >
-              {copied ? <CheckCircle /> : <ShareNetwork />}
+              <ShareNetwork />
             </Button>
           }
         />
-        <TooltipContent>{copied ? t("Copied!") : t("Copy link to share")}</TooltipContent>
+        <TooltipContent>{t("Copy link to share")}</TooltipContent>
       </Tooltip>
 
       <ModeToggle className="rounded-full" />

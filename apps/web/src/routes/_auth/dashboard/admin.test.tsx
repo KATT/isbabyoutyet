@@ -243,37 +243,10 @@ test("language requests section shows loading-more spinner", async () => {
   expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
 });
 
-test("infinite scroll sentinel requests another page when visible", async () => {
+test("requests another page through an explicit interaction", async () => {
   const onLoadMore = vi.fn<() => void>();
-  type ObserverCallback = IntersectionObserverCallback;
-  const observers: ObserverCallback[] = [];
 
-  const OriginalObserver = globalThis.IntersectionObserver;
-  class MockIntersectionObserver {
-    callback: ObserverCallback;
-    constructor(callback: ObserverCallback) {
-      this.callback = callback;
-      observers.push(callback);
-    }
-    observe() {
-      this.callback(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
-        this as unknown as IntersectionObserver,
-      );
-    }
-    unobserve() {}
-    disconnect() {}
-    takeRecords() {
-      return [];
-    }
-    root = null;
-    rootMargin = "";
-    thresholds = [];
-  }
-  globalThis.IntersectionObserver =
-    MockIntersectionObserver as unknown as typeof IntersectionObserver;
-
-  await using _view = renderResource(
+  await using view = renderResource(
     <BabiesSection
       sort="updated"
       order="desc"
@@ -286,9 +259,8 @@ test("infinite scroll sentinel requests another page when visible", async () => 
     />,
   );
 
-  expect(onLoadMore).toHaveBeenCalled();
-  expect(observers.length).toBeGreaterThan(0);
-  globalThis.IntersectionObserver = OriginalObserver;
+  fireEvent.click(view.getByRole("button", { name: "Next" }));
+  expect(onLoadMore).toHaveBeenCalledOnce();
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {

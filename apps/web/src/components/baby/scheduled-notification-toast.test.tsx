@@ -7,8 +7,6 @@ import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helper
 
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
-  custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id: string | number | undefined) => void>(),
 }));
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
@@ -30,9 +28,8 @@ vi.mock("@convex-dev/react-query", async (importOriginal) => {
 
 vi.mock("sonner", () => ({
   toast: {
-    custom: mocks.custom,
-    dismiss: mocks.dismiss,
     success: vi.fn<(message: string) => void>(),
+    error: vi.fn<(message: string) => void>(),
   },
 }));
 
@@ -70,7 +67,6 @@ test("runs with empty notifications and no subscriptions", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
@@ -108,10 +104,6 @@ test("shows the exact subscriber count in a pending notification toast", async (
     />,
   );
 
-  expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).toHaveBeenCalled();
-  const renderToast = mocks.custom.mock.calls[0]?.[0];
-  if (typeof renderToast !== "function") throw new Error("Toast renderer missing");
-  await using toastView = renderResource(renderToast() as React.ReactElement);
-  expect(toastView.container.textContent).toContain("3 people");
+  expect(view.container.textContent).toContain("3 people");
+  expect(view.container.textContent).toContain("Sending notification...");
 });

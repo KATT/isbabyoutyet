@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -37,11 +36,6 @@ function DashboardPage() {
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
   const profile = profileQuery.data;
-
-  const claimInvites = useMutation(api.coParents.claimPendingInvites);
-  useEffect(() => {
-    void claimInvites({});
-  }, [claimInvites]);
 
   const restartTour = useMutation(api.onboarding.restart);
 
