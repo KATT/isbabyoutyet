@@ -28,6 +28,25 @@
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "react",
+            "importNames": ["useMemo"],
+            "message": "React Compiler handles memoization automatically."
+          }
+        ]
+      }
+    ],
+    "eslint/no-restricted-properties": [
+      "error",
+      {
+        "property": "useMemo",
+        "message": "React Compiler handles memoization automatically."
+      }
+    ],
     "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [

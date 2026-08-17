@@ -33,7 +33,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -66,6 +66,23 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
+
+function usePhotoPreviewUrl(photo: File | null) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!photo) {
+      setUrl(null);
+      return;
+    }
+
+    const nextUrl = URL.createObjectURL(photo);
+    setUrl(nextUrl);
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [photo]);
+
+  return url;
+}
 
 /**
  * A post's three fields are mutually inclusive: any combination works, as
@@ -185,15 +202,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
-  const schema = useMemo(
-    () =>
-      composerSchema({
-        t,
-        currentStatus: currentStatus.type,
-        babyId: props.babyId,
-      }),
-    [t, currentStatus.type, props.babyId],
-  );
+  const schema = composerSchema({
+    t,
+    currentStatus: currentStatus.type,
+    babyId: props.babyId,
+  });
 
   const form = useZodForm({
     schema,
@@ -227,15 +240,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     }
   }, [form, currentStatus.type]);
 
-  const photoPreviewUrl = useMemo(
-    () => (draft.photo ? URL.createObjectURL(draft.photo) : null),
-    [draft.photo],
-  );
-  useEffect(() => {
-    return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    };
-  }, [photoPreviewUrl]);
+  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
 
   const canPost = !isPosting && schema.safeParse(draft).success;
 
