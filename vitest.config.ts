@@ -58,7 +58,9 @@ export default defineConfig({
         // covered submit/prefill code shrinks the ratio).
         // Lowered alongside deleting the redundant covered migration reset.
         statements: 77.33,
-        branches: 69.05,
+        // V8 reports one fewer covered branch on the GitHub runner than on
+        // Linux locally; keep the ratchet at the reproducible CI value.
+        branches: 69,
         functions: 77.77,
         lines: 77.95,
       },
