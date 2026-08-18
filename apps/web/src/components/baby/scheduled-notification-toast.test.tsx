@@ -9,6 +9,7 @@ import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helper
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
   mutate: vi.fn<(args: unknown) => void>(),
+  mutationSuccess: null as (() => void) | null,
 }));
 
 vi.mock("@tanstack/react-query", async (importOriginal) => {
@@ -16,7 +17,10 @@ vi.mock("@tanstack/react-query", async (importOriginal) => {
   return {
     ...actual,
     useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
-    useMutation: () => ({ isPending: false, mutate: mocks.mutate }),
+    useMutation: (options: { onSuccess: () => void }) => {
+      mocks.mutationSuccess = options.onSuccess;
+      return { isPending: false, mutate: mocks.mutate };
+    },
   };
 });
 
@@ -136,6 +140,8 @@ test("shows the exact subscriber count in a pending notification toast", async (
   expect(view.container.textContent).toContain("Sending notification...");
   fireEvent.click(view.getByRole("button", { name: "Cancel" }));
   expect(mocks.mutate).toHaveBeenCalledWith({ notificationId });
+  act(() => mocks.mutationSuccess?.());
+  expect(view.queryByText("Sending notification...")).toBeNull();
 });
 
 test("shows a pending-to-sent transition for four seconds without replaying history", async () => {
