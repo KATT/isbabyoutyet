@@ -105,30 +105,21 @@ const migrationStatusSchema = z.object({
   failed: z.array(z.string()),
 });
 
-async function waitForMigrations(statusFunction: string) {
-  for (let attempt = 0; attempt < 300; attempt += 1) {
-    const status = migrationStatusSchema.parse(
-      JSON.parse(convexCliOutput(["run", statusFunction, ...previewArgs])),
-    );
-    if (status.failed.length > 0) {
-      throw new Error(`Migration failed: ${status.failed.join("; ")}`);
-    }
-    if (status.isDone) return;
-    if (attempt === 299) {
-      throw new Error(`${statusFunction} did not finish before the deployment deadline`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
+for (let attempt = 0; attempt < 300; attempt += 1) {
+  const status = migrationStatusSchema.parse(
+    JSON.parse(convexCliOutput(["run", "migrations:deploymentStatus", ...previewArgs])),
+  );
+  if (status.failed.length > 0) {
+    throw new Error(`Migration failed: ${status.failed.join("; ")}`);
   }
+  if (status.isDone) {
+    break;
+  }
+  if (attempt === 299) {
+    throw new Error("Migrations did not finish before the deployment deadline");
+  }
+  await new Promise((resolve) => setTimeout(resolve, 1_000));
 }
-
-// Finish the stable chain first: it copies legacy status data into timeline
-// updates. New migrations use independent runners because an older in-flight
-// chain's stored `next` list cannot include functions added by this deploy.
-await waitForMigrations("migrations:historicalDeploymentStatus");
-convexCli(["run", "migrations:runBirthJourneyBackfill", ...previewArgs]);
-convexCli(["run", "migrations:runDueDateDisplayBackfill", ...previewArgs]);
-convexCli(["run", "migrations:runPushImageBackfill", ...previewArgs]);
-await waitForMigrations("migrations:deploymentStatus");
 
 console.log("\n$ pnpm seed:homepage");
 execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {

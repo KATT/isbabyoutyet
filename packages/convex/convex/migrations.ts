@@ -683,6 +683,10 @@ export const runAll = internalMutation({
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
       cursor: null,
     });
-    return await ctx.runMutation(internal.migrations.runTableMigrations, args);
+    const historical = await ctx.runMutation(internal.migrations.runTableMigrations, args);
+    await ctx.runMutation(internal.migrations.runBirthJourneyBackfill, {});
+    await ctx.runMutation(internal.migrations.runDueDateDisplayBackfill, {});
+    await ctx.runMutation(internal.migrations.runPushImageBackfill, {});
+    return historical;
   },
 });
