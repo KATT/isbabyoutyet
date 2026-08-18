@@ -255,6 +255,9 @@ test("hiding and restoring a milestone preserves content and notification histor
   });
 
   const hiddenNotifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  if (hiddenNotifications === "forbidden") {
+    throw new Error("Owner should be allowed to read notifications");
+  }
   expect(hiddenNotifications).toHaveLength(notificationsBefore.length);
   expect(
     hiddenNotifications
