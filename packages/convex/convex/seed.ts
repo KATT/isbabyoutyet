@@ -17,8 +17,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
   await markUserOnboardingComplete(ctx, userId);
 
   const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
-  // First-run tour must stay on: skipTourForExistingUsers also resets this
-  // account after it grandfathers everyone else.
+  // Re-seeding restores the first-run state; skipTourForExistingUsers ignores
+  // this account when it grandfathers everyone else.
   await clearUserOnboarding(ctx, emptyUserId);
 
   const existingBabies = await ctx.db

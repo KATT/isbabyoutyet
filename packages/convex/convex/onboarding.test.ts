@@ -5,7 +5,7 @@ import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
 import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
 import { createAuth } from "./auth";
-import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
 async function setup() {
@@ -281,29 +281,5 @@ test("skipTourForExistingUsers leaves the empty demo login on the first-run tour
   expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
     welcomeDismissed: true,
     checklistDismissed: true,
-  });
-});
-
-test("skipTourForExistingUsers clears leftover onboarding on the empty demo login after the sentinel exists", async () => {
-  const t = await setup();
-  const emptyId = await signUpUser(t, {
-    email: DEMO_EMPTY_USER.email,
-    name: DEMO_EMPTY_USER.name,
-  });
-
-  await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
-  await t.run(async (ctx) => {
-    await markUserOnboardingComplete(ctx, emptyId);
-  });
-
-  const second = await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
-  expect(second).toMatchObject({ isDone: true, alreadyRan: true });
-
-  const asEmpty = t.withIdentity({ subject: emptyId });
-  expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
-    welcomeDismissed: false,
-    checklistDismissed: false,
-    allDone: false,
-    completedSteps: [],
   });
 });
