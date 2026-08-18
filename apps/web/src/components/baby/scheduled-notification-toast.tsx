@@ -10,7 +10,7 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -41,9 +41,8 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   // treat it like "nothing scheduled" so the types stay honest.
   const notificationsData = notificationsQuery.data;
   const notifications = notificationsData === FORBIDDEN ? [] : notificationsData;
-  const pendingNotifications = useMemo(
-    () => notifications.filter((n) => n.status === "pending"),
-    [notifications],
+  const pendingNotifications = notifications.filter(
+    (notification) => notification.status === "pending",
   );
   const subscriptionCountQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getSubscriptionCount,
