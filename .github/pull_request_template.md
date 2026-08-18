@@ -5,13 +5,17 @@ PR column. Omit this entire section if this PR is not part of a stack — do not
 write n/a.
 -->
 
-## Summary
+## Why
 
-<!-- Concise bullets covering why, how, and what. -->
+-
 
-- Why:
-- How:
-- What:
+## How
+
+-
+
+## What
+
+-
 
 ## Schema changes
 
