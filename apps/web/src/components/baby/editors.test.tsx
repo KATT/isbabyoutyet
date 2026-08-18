@@ -77,7 +77,9 @@ test("due date editor requires and saves a custom visitor message", async () => 
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
   expect(publicMessageInput.placeholder).toBe("Baby arriving soon");
   fireEvent.click(view.getByRole("button", { name: "Save" }));
-  expect(view.getByText("Enter a message for visitors")).toBeTruthy();
+  await vi.waitFor(() => {
+    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
+  });
   expect(onUpdate).not.toHaveBeenCalled();
 
   fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
