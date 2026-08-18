@@ -12,7 +12,7 @@ test("birth journey helpers preserve legacy defaults and planned C-section miles
   expect(getBirthJourney({ birthJourney: "planned_c_section" })).toBe("planned_c_section");
   expect(isBirthJourney("planned_c_section")).toBe(true);
   expect(isBirthJourney("home_birth")).toBe(true);
-  expect(isBirthJourney("home_birth")).toBe(false);
+  expect(isBirthJourney("water_birth")).toBe(false);
   expect(getMilestonesForJourney({ birthJourney: "planned_c_section" })).toEqual([
     "gone_to_hospital",
     "born",

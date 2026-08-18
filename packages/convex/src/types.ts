@@ -60,7 +60,7 @@ export function getCurrentStatus(baby: {
   if (baby.wentToHospital) {
     return { type: "gone_to_hospital", date: baby.wentToHospital };
   }
-  if (getBirthJourney(baby) === "labour" && baby.laborStarted) {
+  if (isMilestoneInJourney(baby, "labor_started") && baby.laborStarted) {
     return { type: "labor_started", date: baby.laborStarted };
   }
   return { type: "not_yet" };
