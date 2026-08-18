@@ -202,6 +202,19 @@ test("theme selector marks Baby Blue selected", async () => {
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
 });
 
+test("theme selector leaves canonical options unselected for an unknown theme", async () => {
+  await using view = renderResource(
+    <ThemeSelector
+      baby={{ ...baby, theme: "not-a-real-theme" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+});
+
 test("status editor confirms destructive deletion", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   const bornBaby = {
