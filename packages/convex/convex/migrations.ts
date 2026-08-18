@@ -14,8 +14,9 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { isActive } from "./softDelete";
+import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -334,10 +335,21 @@ function authUserId(user: unknown) {
   throw new Error("Better Auth user is missing _id");
 }
 
+function authUserEmail(user: unknown) {
+  if (user && typeof user === "object" && "email" in user && typeof user.email === "string") {
+    return user.email;
+  }
+  return null;
+}
+
 /**
  * Grandfathers every Better Auth user that existed when the guided tour
  * shipped: they skip the welcome carousel and checklist. New signups after
  * this migration completes still get the tour.
+ *
+ * The empty demo login (`test+newuser@example.com`) is left on the first-run
+ * tour so preview/local can exercise that flow. `seedDemoData` resets that
+ * account's progress and marks the main demo parent as complete.
  *
  * Idempotent: a sentinel `userOnboarding` row is written on the last page,
  * so later `runAll` deploys are a no-op.
@@ -365,11 +377,12 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
   });
 
   for (const user of page.page) {
-    await markUserOnboardingComplete(ctx, authUserId(user));
+    if (authUserEmail(user) === DEMO_EMPTY_USER.email) continue;
+    await skipUserOnboarding(ctx, authUserId(user));
   }
 
   if (page.isDone) {
-    await markUserOnboardingComplete(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
+    await skipUserOnboarding(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
     return {
       isDone: true,
       continueCursor: page.continueCursor,
