@@ -17,6 +17,7 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
   await markUserOnboardingComplete(ctx, userId);
 
   const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
+  await clearOnboardingForUser(ctx, emptyUserId);
 
   const existingBabies = await ctx.db
     .query("baby")
@@ -79,10 +80,21 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
   await ctx.db.patch(existing._id, { tokenIdentifier, isAdmin: true });
 }
 
+async function clearOnboardingForUser(ctx: MutationCtx, userId: string) {
+  const existing = await ctx.db
+    .query("userOnboarding")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+}
+
 /**
  * Idempotent seeder for local development and Vercel preview deployments.
  * Creates DEMO_USER (test@example.com / password) with babies in every status,
- * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies.
+ * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies
+ * and onboarding left unset so the first-run tour still appears.
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
