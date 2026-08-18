@@ -19,15 +19,6 @@ import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-function addBabySchema(t: TranslationFunction) {
-  return z
-    .object({
-      name: z.string().trim().min(2, t("Name is required")),
-      dueDate: htmlDate(t),
-    })
-    .transform((values): FunctionArgs<typeof api.baby.create> => values);
-}
-
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
 });
@@ -38,7 +29,14 @@ function AddBabyPage() {
   const createBaby = useMutation(api.baby.create);
 
   const form = useZodForm({
-    schema: addBabySchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z
+        .object({
+          name: z.string().trim().min(2, t("Name is required")),
+          dueDate: htmlDate(t),
+        })
+        .transform((values): FunctionArgs<typeof api.baby.create> => values);
+    })(t),
     defaultValues: {
       name: "",
       dueDate: "",

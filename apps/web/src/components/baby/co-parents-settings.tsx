@@ -24,17 +24,6 @@ type CoParentsSettingsProps = {
     | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
 };
 
-function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
-  return z
-    .object({
-      email: z.string().trim().email(t("Invalid email address")),
-    })
-    .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
-      babyId,
-      email: values.email,
-    }));
-}
-
 function InviteCoParentForm(props: {
   babyId: Id<"baby">;
   invite: (
@@ -43,7 +32,16 @@ function InviteCoParentForm(props: {
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: inviteCoParentSchema(t, props.babyId),
+    schema: (function (t: TranslationFunction, babyId: Id<"baby">) {
+      return z
+        .object({
+          email: z.string().trim().email(t("Invalid email address")),
+        })
+        .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
+          babyId,
+          email: values.email,
+        }));
+    })(t, props.babyId),
     defaultValues: { email: "" },
   });
   const email = form.watch("email");

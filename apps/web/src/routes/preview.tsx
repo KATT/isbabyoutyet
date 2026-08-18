@@ -11,26 +11,6 @@ import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function getDefaultBabyData(): BabyData {
-  const now = new Date();
-  const dueDate = new Date(now);
-  dueDate.setDate(dueDate.getDate() + 7);
-  const laborStarted = new Date(now);
-  laborStarted.setHours(laborStarted.getHours() - 2);
-
-  return {
-    name: "Baby",
-    dueDate: dueDate.toISOString(),
-    theme: null,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
-    laborStartedMessage: null,
-    photoId: null,
-  };
-}
 const searchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().optional(),
@@ -75,7 +55,26 @@ function PreviewPage() {
   const navigate = useNavigate({ from: Route.fullPath });
 
   const baby: BabyData = {
-    ...getDefaultBabyData(),
+    ...(function (): BabyData {
+      const now = new Date();
+      const dueDate = new Date(now);
+      dueDate.setDate(dueDate.getDate() + 7);
+      const laborStarted = new Date(now);
+      laborStarted.setHours(laborStarted.getHours() - 2);
+
+      return {
+        name: "Baby",
+        dueDate: dueDate.toISOString(),
+        theme: null,
+        laborStarted: null,
+        wentToHospital: null,
+        babyBorn: null,
+        hospitalMessage: null,
+        babyBornMessage: null,
+        laborStartedMessage: null,
+        photoId: null,
+      };
+    })(),
     ...search,
   };
   const currentStatus = getCurrentStatus(baby);

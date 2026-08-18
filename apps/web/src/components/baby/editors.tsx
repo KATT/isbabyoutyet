@@ -69,14 +69,6 @@ type DueDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-function dueDateSchema(t: TranslationFunction) {
-  return z
-    .object({
-      date: htmlDate(t),
-    })
-    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
-}
-
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
@@ -126,7 +118,13 @@ function DueDateForm(props: EditorFormProps) {
   const { t } = useI18n();
   const dateCodec = htmlDate(t);
   const form = useZodForm({
-    schema: dueDateSchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z
+        .object({
+          date: htmlDate(t),
+        })
+        .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+    })(t),
     defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
   });
 
@@ -172,19 +170,6 @@ type StatusDateEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-function statusDateSchema(t: TranslationFunction, status: Milestone) {
-  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
-    switch (status) {
-      case "labor_started":
-        return { laborStarted: values.dateTime };
-      case "gone_to_hospital":
-        return { wentToHospital: values.dateTime };
-      case "born":
-        return { babyBorn: values.dateTime };
-    }
-  });
-}
-
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
@@ -223,7 +208,18 @@ function StatusDateForm(props: {
   const [isDeleting, setIsDeleting] = useState(false);
   const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema(t, props.status),
+    schema: (function (t: TranslationFunction, status: Milestone) {
+      return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
+        switch (status) {
+          case "labor_started":
+            return { laborStarted: values.dateTime };
+          case "gone_to_hospital":
+            return { wentToHospital: values.dateTime };
+          case "born":
+            return { babyBorn: values.dateTime };
+        }
+      });
+    })(t, props.status),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -334,14 +330,6 @@ type NameEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
-function nameSchema(t: TranslationFunction) {
-  return z
-    .object({
-      name: z.string().trim().min(1, t("Name is required")),
-    })
-    .transform((values): Pick<BabyPatch, "name"> => values);
-}
-
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
@@ -365,7 +353,13 @@ export function NameEditor(props: NameEditorProps) {
 function NameForm(props: EditorFormProps) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: nameSchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z
+        .object({
+          name: z.string().trim().min(1, t("Name is required")),
+        })
+        .transform((values): Pick<BabyPatch, "name"> => values);
+    })(t),
     defaultValues: { name: props.baby.name },
   });
 

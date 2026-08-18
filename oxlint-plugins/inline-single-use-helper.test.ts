@@ -54,7 +54,7 @@ tester.run("inline-single-use-helper", plugin.rules["inline-single-use-helper"],
           suggestions: [
             {
               messageId: "inlineSuggestion",
-              output: `const result = (function (value: string) {
+              output: `      const result = (function (value: string) {
         return Number(value);
       })("1");`,
             },
@@ -71,7 +71,7 @@ tester.run("inline-single-use-helper", plugin.rules["inline-single-use-helper"],
           suggestions: [
             {
               messageId: "inlineSuggestion",
-              output: `const result = ((value: string) => Number(value))("1");`,
+              output: `      const result = ((value: string) => Number(value))("1");`,
             },
           ],
         },
@@ -104,6 +104,14 @@ tester.run("inline-single-use-helper", plugin.rules["inline-single-use-helper"],
           ],
         },
       ],
+    },
+    {
+      code: `// Parse the external value.
+      function parse(value: string) {
+        return Number(value);
+      }
+      const result = parse("1");`,
+      errors: [{ messageId: "inline", suggestions: null }],
     },
   ],
 });

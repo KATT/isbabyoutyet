@@ -26,14 +26,6 @@ type OnboardingHostProps = {
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
 };
 
-function scrollToTourTarget(targetId: string) {
-  const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement)) {
-    return;
-  }
-  el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
-}
-
 /**
  * Owns the first-run welcome carousel + floating checklist + one active coachmark.
  * Mount on the dashboard index (not /dashboard/add) and the first baby's owner page.
@@ -132,7 +124,13 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
     }
     const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
     if (step) {
-      scrollToTourTarget(step.targetId);
+      (function (targetId: string) {
+        const el = document.querySelector(`[data-tour-id="${targetId}"]`);
+        if (!(el instanceof HTMLElement)) {
+          return;
+        }
+        el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+      })(step.targetId);
     }
   }
 

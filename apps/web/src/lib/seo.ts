@@ -20,35 +20,6 @@ type BabySeoInput = {
   laborStarted: string | null | undefined;
 };
 
-function babyPageTitle(baby: BabySeoInput) {
-  const overdueDays = getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
-  const isBorn = !!baby.babyBorn;
-  const locale = baby.locale;
-
-  let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn) {
-    if (overdueDays > 0) {
-      title = translate(
-        locale,
-        overdueDays === 1
-          ? "{{count}} day overdue – Is {{name}} out yet?"
-          : "{{count}} days overdue – Is {{name}} out yet?",
-        { count: overdueDays, name: baby.name },
-      );
-    } else {
-      title = translate(
-        locale,
-        daysUntilDueDate === 1
-          ? "{{count}} day until due date – Is {{name}} out yet?"
-          : "{{count}} days until due date – Is {{name}} out yet?",
-        { count: daysUntilDueDate, name: baby.name },
-      );
-    }
-  }
-  return translate(locale, "{{title}} – Track Your Baby's Journey", { title });
-}
-
 export function babyPageDescription(baby: BabySeoInput) {
   const status = getCurrentStatus(baby);
   const locale = baby.locale;
@@ -124,10 +95,6 @@ export function babyStatusDetail(opts: {
   );
 }
 
-function babyOgImagePath(publicId: string) {
-  return `/og/baby/${publicId}`;
-}
-
 export function homepageOgImagePath() {
   return "/og";
 }
@@ -145,10 +112,41 @@ export function openGraphImageMeta(opts: { imageUrl: string; alt: string }) {
 }
 
 export function babySeoHead(baby: BabySeoInput) {
-  const title = babyPageTitle(baby);
+  const title = (function (baby: BabySeoInput) {
+    const overdueDays = getOverdueDays(baby.dueDate);
+    const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+    const isBorn = !!baby.babyBorn;
+    const locale = baby.locale;
+
+    let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
+    if (!isBorn) {
+      if (overdueDays > 0) {
+        title = translate(
+          locale,
+          overdueDays === 1
+            ? "{{count}} day overdue – Is {{name}} out yet?"
+            : "{{count}} days overdue – Is {{name}} out yet?",
+          { count: overdueDays, name: baby.name },
+        );
+      } else {
+        title = translate(
+          locale,
+          daysUntilDueDate === 1
+            ? "{{count}} day until due date – Is {{name}} out yet?"
+            : "{{count}} days until due date – Is {{name}} out yet?",
+          { count: daysUntilDueDate, name: baby.name },
+        );
+      }
+    }
+    return translate(locale, "{{title}} – Track Your Baby's Journey", { title });
+  })(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageUrl = absoluteUrl(babyOgImagePath(baby.publicId));
+  const imageUrl = absoluteUrl(
+    (function (publicId: string) {
+      return `/og/baby/${publicId}`;
+    })(baby.publicId),
+  );
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {

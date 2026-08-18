@@ -415,13 +415,6 @@ export function AdminDashboardPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
 
-  function setTab(tab: AdminTab) {
-    void navigate({
-      search: (prev) => ({ ...prev, tab }),
-      replace: true,
-    });
-  }
-
   function setHideDemo(hideDemo: boolean) {
     void navigate({
       search: (prev) => ({ ...prev, hideDemo }),
@@ -473,7 +466,12 @@ export function AdminDashboardPage() {
               className="flex w-full flex-col gap-4"
               onValueChange={(value) => {
                 if (value === "babies" || value === "languages") {
-                  setTab(value);
+                  (function (tab: AdminTab) {
+                    void navigate({
+                      search: (prev) => ({ ...prev, tab }),
+                      replace: true,
+                    });
+                  })(value);
                 }
               }}
             >

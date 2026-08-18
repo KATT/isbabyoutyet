@@ -31,23 +31,21 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
 
-function languageRequestSchema(t: TranslationFunction) {
-  return z
-    .object({
-      requestedLocale: z
-        .string()
-        .trim()
-        .min(2, t("Enter a language name or language code"))
-        .max(100),
-    })
-    .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
-}
-
 function LanguageRequestForm(props: { onSaved: () => void }) {
   const { t } = useI18n();
   const requestLanguage = useMutation(api.profile.requestLanguage);
   const form = useZodForm({
-    schema: languageRequestSchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z
+        .object({
+          requestedLocale: z
+            .string()
+            .trim()
+            .min(2, t("Enter a language name or language code"))
+            .max(100),
+        })
+        .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
+    })(t),
     defaultValues: { requestedLocale: "" },
   });
 

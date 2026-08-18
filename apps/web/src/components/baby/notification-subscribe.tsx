@@ -24,29 +24,6 @@ type NotificationSubscribeProps = {
   vapidPublicKey: string;
 };
 
-// Detect iOS Safari not running as PWA
-function getIOSStatus() {
-  if (typeof window === "undefined") return { isIOS: false, isStandalone: false };
-
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as unknown as { MSStream: unknown | undefined }).MSStream;
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
-
-  return { isIOS, isStandalone };
-}
-
-// Wait for service worker with timeout
-async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
-  const timeoutPromise = new Promise<null>((_resolve, reject) => {
-    setTimeout(() => reject(new Error("Service worker ready timeout")), timeoutMs);
-  });
-
-  return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
-}
-
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
   const { babyId, vapidPublicKey } = props;
@@ -54,7 +31,19 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   // Check iOS status (browser-only; not a Convex query)
   const iosStatusQuery = useQuery({
     queryKey: ["iosStatus"],
-    queryFn: () => getIOSStatus(),
+    queryFn: () =>
+      (function () {
+        if (typeof window === "undefined") return { isIOS: false, isStandalone: false };
+
+        const isIOS =
+          /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+          !(window as unknown as { MSStream: unknown | undefined }).MSStream;
+        const isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
+
+        return { isIOS, isStandalone };
+      })(),
   });
   const iosStatus = iosStatusQuery.data ?? { isIOS: false, isStandalone: false };
   const needsIOSInstall = iosStatus.isIOS && !iosStatus.isStandalone;
@@ -78,7 +67,13 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     queryKey: ["browserSubscription"],
     queryFn: async () => {
       try {
-        const registration = await waitForServiceWorkerWithTimeout(5000);
+        const registration = await (async function (timeoutMs: number) {
+          const timeoutPromise = new Promise<null>((_resolve, reject) => {
+            setTimeout(() => reject(new Error("Service worker ready timeout")), timeoutMs);
+          });
+
+          return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
+        })(5000);
         if (!registration) return null;
         return await registration.pushManager.getSubscription();
       } catch {
@@ -114,7 +109,18 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       const registration = await navigator.serviceWorker.ready;
 
       // Subscribe to push
-      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+      const applicationServerKey = (function (base64String: string): Uint8Array {
+        const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+        const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+          outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+      })(vapidPublicKey);
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey as BufferSource,
@@ -367,18 +373,4 @@ function NotificationSubscribeControls(props: {
       </TooltipContent>
     </Tooltip>
   );
-}
-
-// Convert VAPID key from base64 URL to Uint8Array
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }

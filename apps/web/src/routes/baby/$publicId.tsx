@@ -191,28 +191,6 @@ export const Route = createFileRoute("/baby/$publicId")({
   headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
 });
 
-/**
- * Convert Convex Doc to BabyData for use with shared components
- */
-function docToBabyData(
-  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
-): BabyData {
-  return {
-    name: doc.name,
-    dueDate: doc.dueDate,
-    theme: doc.theme ?? null,
-    locale: doc.locale ?? null,
-    laborStarted: doc.laborStarted ?? null,
-    wentToHospital: doc.wentToHospital ?? null,
-    babyBorn: doc.babyBorn ?? null,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
-    encouragementsDisabled: doc.encouragementsDisabled,
-    photoId: doc.photoId ?? null,
-  };
-}
-
 function BabyPage() {
   const { t, locale } = useI18n();
   const params = Route.useParams();
@@ -229,7 +207,25 @@ function BabyPage() {
   if (!babyDoc) {
     throw notFound();
   }
-  const baby = docToBabyData(babyDoc);
+  /** Convert the Convex document to `BabyData` for shared components. */
+  const baby = (function (
+    doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+  ): BabyData {
+    return {
+      name: doc.name,
+      dueDate: doc.dueDate,
+      theme: doc.theme ?? null,
+      locale: doc.locale ?? null,
+      laborStarted: doc.laborStarted ?? null,
+      wentToHospital: doc.wentToHospital ?? null,
+      babyBorn: doc.babyBorn ?? null,
+      hospitalMessage: doc.hospitalMessage ?? null,
+      babyBornMessage: doc.babyBornMessage ?? null,
+      laborStartedMessage: doc.laborStartedMessage ?? null,
+      encouragementsDisabled: doc.encouragementsDisabled,
+      photoId: doc.photoId ?? null,
+    };
+  })(babyDoc);
 
   const latestUpdateQuery = usePreloadedConvexQuery(
     api.timeline.latestUpdate,

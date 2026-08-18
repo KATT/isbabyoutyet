@@ -25,14 +25,6 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function signupSchema(t: TranslationFunction) {
-  return z.object({
-    name: z.string().min(2, t("Name must be at least 2 characters")),
-    email: z.string().email(t("Invalid email address")),
-    password: z.string().min(6, t("Password must be at least 6 characters")),
-  });
-}
-
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
   head: (opts) => ({
@@ -50,7 +42,13 @@ function SignupPage() {
   const router = useRouter();
 
   const form = useZodForm({
-    schema: signupSchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z.object({
+        name: z.string().min(2, t("Name must be at least 2 characters")),
+        email: z.string().email(t("Invalid email address")),
+        password: z.string().min(6, t("Password must be at least 6 characters")),
+      });
+    })(t),
     defaultValues: hasDemoLogin
       ? {
           name: DEMO_USER.name,

@@ -70,55 +70,7 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
-/**
- * A post's three fields are mutually inclusive: any combination works, as
- * long as at least one is present. The message is trimmed BEFORE validation,
- * so a whitespace-only message counts as no message (matching the backend).
- * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
- */
 type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
-
-function composerSchema(opts: {
-  t: TranslationFunction;
-  currentStatus: BabyStatus["type"];
-  babyId: Id<"baby">;
-}) {
-  return z
-    .object({
-      message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
-      milestone: z.union([
-        z.literal("none"),
-        z.literal("labor_started"),
-        z.literal("gone_to_hospital"),
-        z.literal("born"),
-      ]),
-      occurredAt: optionalHtmlDateTime(opts.t),
-      photo: z.custom<File>().nullable(),
-    })
-    .refine(
-      (draft) => draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
-      { error: opts.t("Add a message, a photo, or a milestone to post") },
-    )
-    .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
-      {
-        error: opts.t("That status has already been marked"),
-        path: ["milestone"],
-      },
-    )
-    .transform((draft): PostUpdateArgs & { photo: File | null } => {
-      const milestone = draft.milestone === "none" ? undefined : draft.milestone;
-      return {
-        babyId: opts.babyId,
-        message: draft.message || undefined,
-        milestone,
-        occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
-        photo: draft.photo,
-      };
-    });
-}
 
 const MILESTONE_META = {
   labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, icon: Heartbeat },
@@ -162,10 +114,6 @@ function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): stri
   });
 }
 
-function isWithinEditWindow(createdAt: number): boolean {
-  return Date.now() - createdAt < EDIT_WINDOW_MS;
-}
-
 // --- Owner composer ---
 
 type UpdateComposerProps = {
@@ -188,9 +136,56 @@ export function UpdateComposer(props: UpdateComposerProps) {
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
+  /**
+   * A post's three fields are mutually inclusive: any combination works, as
+   * long as at least one is present. The message is trimmed before validation,
+   * so a whitespace-only message counts as no message (matching the backend).
+   * `occurredAt` starts empty (= "now"); a filled value backdates the milestone.
+   */
   const schema = useMemo(
     () =>
-      composerSchema({
+      (function (opts: {
+        t: TranslationFunction;
+        currentStatus: BabyStatus["type"];
+        babyId: Id<"baby">;
+      }) {
+        return z
+          .object({
+            message: z.string().trim().max(MAX_UPDATE_MESSAGE_LENGTH),
+            milestone: z.union([
+              z.literal("none"),
+              z.literal("labor_started"),
+              z.literal("gone_to_hospital"),
+              z.literal("born"),
+            ]),
+            occurredAt: optionalHtmlDateTime(opts.t),
+            photo: z.custom<File>().nullable(),
+          })
+          .refine(
+            (draft) =>
+              draft.message.length > 0 || draft.milestone !== "none" || draft.photo != null,
+            { error: opts.t("Add a message, a photo, or a milestone to post") },
+          )
+          .refine(
+            (draft) =>
+              draft.milestone === "none" ||
+              STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
+            {
+              error: opts.t("That status has already been marked"),
+              path: ["milestone"],
+            },
+          )
+          .transform((draft): PostUpdateArgs & { photo: File | null } => {
+            const milestone = draft.milestone === "none" ? undefined : draft.milestone;
+            return {
+              babyId: opts.babyId,
+              message: draft.message || undefined,
+              milestone,
+              occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
+              photo: draft.photo,
+            };
+          });
+      })({
         t,
         currentStatus: currentStatus.type,
         babyId: props.babyId,
@@ -700,19 +695,6 @@ type EncouragementTimelineItemProps = {
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
 };
 
-function encouragementEditSchema(
-  t: TranslationFunction,
-  args: Pick<FunctionArgs<typeof api.encouragements.update>, "encouragementId" | "visitorId">,
-) {
-  return z
-    .object({
-      message: z.string().trim().min(1, t("Message cannot be empty")),
-    })
-    .transform((values): FunctionArgs<typeof api.encouragements.update> => ({
-      ...args,
-      message: values.message,
-    }));
-}
 /**
  * Mounted only while editing, so the form initializes from the current
  * message on every reveal — no reset bookkeeping.
@@ -726,7 +708,19 @@ function EncouragementEditForm(props: {
 }) {
   const { t } = useI18n();
   const form = useZodForm({
-    schema: encouragementEditSchema(t, {
+    schema: (function (
+      t: TranslationFunction,
+      args: Pick<FunctionArgs<typeof api.encouragements.update>, "encouragementId" | "visitorId">,
+    ) {
+      return z
+        .object({
+          message: z.string().trim().min(1, t("Message cannot be empty")),
+        })
+        .transform((values): FunctionArgs<typeof api.encouragements.update> => ({
+          ...args,
+          message: values.message,
+        }));
+    })(t, {
       encouragementId: props.encouragementId,
       visitorId: props.visitorId,
     }),
@@ -786,7 +780,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const isOwnPost = encouragement.isMine;
-  const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
+  const canEdit =
+    isOwnPost &&
+    (function (createdAt: number): boolean {
+      return Date.now() - createdAt < EDIT_WINDOW_MS;
+    })(encouragement.createdAt);
   const canDelete = props.isOwner || canEdit;
   const initial = encouragement.authorName.trim().charAt(0).toUpperCase() || "💛";
 

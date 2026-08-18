@@ -98,6 +98,16 @@ function declarationRemovalRange(sourceCode, declaration) {
   ];
 }
 
+function hasAttachedLeadingComment(sourceCode, declaration) {
+  const comments = sourceCode.getCommentsBefore(declaration);
+  const comment = comments.at(-1);
+  if (!comment) {
+    return false;
+  }
+  const gap = sourceCode.text.slice(comment.end, declaration.start);
+  return gap.trim() === "" && !gap.includes("\n\n");
+}
+
 const inlineSingleUseHelper = {
   meta: {
     type: "suggestion",
@@ -146,7 +156,9 @@ const inlineSingleUseHelper = {
         return;
       }
 
-      const removable = removableDeclaration(declaration);
+      const removable = hasAttachedLeadingComment(sourceCode, declaration)
+        ? null
+        : removableDeclaration(declaration);
       const suggest = removable
         ? [
             {

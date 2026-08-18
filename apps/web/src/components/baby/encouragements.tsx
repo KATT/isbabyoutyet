@@ -41,34 +41,37 @@ export function getVisitorId(): string {
 }
 
 // Trim before validating, so whitespace-only input doesn't pass "required"
-function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
-  return z
-    .object({
-      authorName: z
-        .string()
-        .trim()
-        .min(1, t("Name is required"))
-        .max(
-          MAX_NAME_LENGTH,
-          t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
-        ),
-      message: z.string().trim().min(1, t("Message is required")),
-    })
-    .transform((values): FunctionArgs<typeof api.encouragements.create> => ({
-      babyId,
-      authorName: values.authorName,
-      message: values.message,
-      visitorId: getVisitorId(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-      locale: typeof navigator !== "undefined" ? navigator.language : undefined,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }));
-}
 
 export function EncouragementForm(props: EncouragementFormProps) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
-  const schema = useMemo(() => encouragementSchema(t, props.babyId), [t, props.babyId]);
+  const schema = useMemo(
+    () =>
+      (function (t: TranslationFunction, babyId: Id<"baby">) {
+        return z
+          .object({
+            authorName: z
+              .string()
+              .trim()
+              .min(1, t("Name is required"))
+              .max(
+                MAX_NAME_LENGTH,
+                t("Name must be {{count}} characters or less", { count: MAX_NAME_LENGTH }),
+              ),
+            message: z.string().trim().min(1, t("Message is required")),
+          })
+          .transform((values): FunctionArgs<typeof api.encouragements.create> => ({
+            babyId,
+            authorName: values.authorName,
+            message: values.message,
+            visitorId: getVisitorId(),
+            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+            locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          }));
+      })(t, props.babyId),
+    [t, props.babyId],
+  );
 
   const form = useZodForm({
     schema,

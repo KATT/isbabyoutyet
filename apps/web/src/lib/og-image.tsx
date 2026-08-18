@@ -18,14 +18,6 @@ const SITE_HOST = new URL(CANONICAL_ORIGIN).host;
 
 type ThemeColors = readonly [string, string, string];
 
-function themeColors(theme: string | null | undefined): ThemeColors {
-  const match = THEME_OPTIONS.find((option) => option.value === (theme ?? null));
-  if (match) {
-    return match.colors;
-  }
-  return THEME_OPTIONS[0].colors;
-}
-
 const fontCache = new Map<string, ArrayBuffer>();
 
 /**
@@ -96,25 +88,14 @@ export type BabyOgImageInput = {
   photoUrl: string | null;
 };
 
-async function resolvePhotoDataUrl(photoUrl: string | null) {
-  if (!photoUrl) {
-    return null;
-  }
-  try {
-    const response = await fetch(photoUrl);
-    if (!response.ok) {
-      return null;
-    }
-    const contentType = response.headers.get("content-type") ?? "image/jpeg";
-    const bytes = Buffer.from(await response.arrayBuffer());
-    return `data:${contentType};base64,${bytes.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
 export async function createBabyOgImage(baby: BabyOgImageInput) {
-  const colors = themeColors(baby.theme);
+  const colors = (function (theme: string | null | undefined): ThemeColors {
+    const match = THEME_OPTIONS.find((option) => option.value === (theme ?? null));
+    if (match) {
+      return match.colors;
+    }
+    return THEME_OPTIONS[0].colors;
+  })(baby.theme);
   const primary = colors[0];
   const background = colors[1];
   const accent = colors[2];
@@ -136,7 +117,22 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
         });
   const brand = translate(baby.locale, "Is Baby Out Yet?");
   const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;
-  const photoDataUrl = await resolvePhotoDataUrl(baby.photoUrl);
+  const photoDataUrl = await (async function (photoUrl: string | null) {
+    if (!photoUrl) {
+      return null;
+    }
+    try {
+      const response = await fetch(photoUrl);
+      if (!response.ok) {
+        return null;
+      }
+      const contentType = response.headers.get("content-type") ?? "image/jpeg";
+      const bytes = Buffer.from(await response.arrayBuffer());
+      return `data:${contentType};base64,${bytes.toString("base64")}`;
+    } catch {
+      return null;
+    }
+  })(baby.photoUrl);
 
   const [bold, black] = await Promise.all([
     loadNunitoFont({ weight: 700, text: fontText }),

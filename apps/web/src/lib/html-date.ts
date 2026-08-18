@@ -8,13 +8,6 @@ function toDatetimeLocalValue(date: Date): string {
   return local.toISOString().slice(0, 16);
 }
 
-function utcCalendarDate(date: Date): string {
-  const year = String(date.getUTCFullYear()).padStart(4, "0");
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
 /**
  * `<input type="date">` (`YYYY-MM-DD`) ↔ ISO instant (UTC midnight).
  * Use `.encode` for defaultValues and let the resolver `.decode` on submit.
@@ -24,7 +17,12 @@ export function htmlDate(t: TranslationFunction) {
     decode: (ymd) => `${ymd}T00:00:00.000Z`,
     encode: (iso) => {
       if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-      return utcCalendarDate(parseISO(iso));
+      return (function (date: Date): string {
+        const year = String(date.getUTCFullYear()).padStart(4, "0");
+        const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+        const day = String(date.getUTCDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+      })(parseISO(iso));
     },
   });
 }

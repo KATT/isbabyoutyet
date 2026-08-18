@@ -25,13 +25,6 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function loginSchema(t: TranslationFunction) {
-  return z.object({
-    email: z.string().email(t("Invalid email address")),
-    password: z.string().min(6, t("Password must be at least 6 characters")),
-  });
-}
-
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
   head: (opts) => ({
@@ -49,7 +42,12 @@ function LoginPage() {
   const router = useRouter();
 
   const form = useZodForm({
-    schema: loginSchema(t),
+    schema: (function (t: TranslationFunction) {
+      return z.object({
+        email: z.string().email(t("Invalid email address")),
+        password: z.string().min(6, t("Password must be at least 6 characters")),
+      });
+    })(t),
     defaultValues: hasDemoLogin
       ? {
           email: DEMO_USER.email,
