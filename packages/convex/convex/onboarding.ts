@@ -8,16 +8,16 @@ import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { isActive } from "./softDelete";
 import { onboardingStepIdValidator } from "./onboardingValidators";
 
-const emptyState = {
+const emptyState: ReturnType<typeof toClientState> = {
   welcomeDismissed: false,
   checklistDismissed: false,
   minimized: false,
-  completedSteps: [] as string[],
+  completedSteps: [],
   hasBaby: false,
   hasUpdate: false,
-  effectiveSteps: [] as string[],
+  effectiveSteps: [],
   allDone: false,
-  tourBaby: null as null | { publicId: string; name: string },
+  tourBaby: null,
 };
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {

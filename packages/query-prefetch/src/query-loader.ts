@@ -1,12 +1,17 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type {
+  AnyQueryOptions,
   InitiatedInfiniteQuery,
   InitiatedQuery,
   PreloadedInfiniteQuery,
   PreloadedQuery,
+  QueryDataOf,
+  QueryInput,
   QueryInputArgs,
   QueryOptionsFactory,
 } from "./types.js";
+
+type AnyInfiniteQueryOptions = Parameters<QueryClient["ensureInfiniteQueryData"]>[0];
 
 interface OnErrorFnOptions {
   error: unknown;
@@ -15,6 +20,85 @@ interface OnErrorFnOptions {
 type OnError = (options: OnErrorFnOptions) => void;
 
 function noop(): void {}
+
+function invokeFactory<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInput<TFactory> | undefined,
+): ReturnType<TFactory>;
+function invokeFactory(factory: QueryOptionsFactory, input: unknown) {
+  return factory(input);
+}
+
+function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedQuery<TFactory>;
+function createInitiatedQuery(
+  _factory: QueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
+
+function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedInfiniteQuery<TFactory>;
+function createInitiatedInfiniteQuery(
+  _factory: QueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
+
+function createPreloadedQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  handle: {
+    input: QueryInputArgs<TFactory>;
+    initialData: QueryDataOf<ReturnType<TFactory>>;
+  },
+): PreloadedQuery<TFactory>;
+function createPreloadedQuery(
+  _factory: QueryOptionsFactory,
+  handle: { input: readonly unknown[]; initialData: unknown },
+): { input?: unknown; initialData: unknown } {
+  return { input: handle.input[0], initialData: handle.initialData };
+}
+
+function createPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  handle: {
+    input: QueryInputArgs<TFactory>;
+    initialData: QueryDataOf<ReturnType<TFactory>>;
+  },
+): PreloadedInfiniteQuery<TFactory>;
+function createPreloadedInfiniteQuery(
+  _factory: QueryOptionsFactory,
+  handle: { input: readonly unknown[]; initialData: unknown },
+): { input?: unknown; initialData: unknown } {
+  return { input: handle.input[0], initialData: handle.initialData };
+}
+
+function ensureFactoryQueryData<TFactory extends QueryOptionsFactory>(
+  queryClient: QueryClient,
+  options: ReturnType<TFactory>,
+): Promise<QueryDataOf<ReturnType<TFactory>>>;
+function ensureFactoryQueryData(queryClient: QueryClient, options: AnyQueryOptions) {
+  return queryClient.ensureQueryData(options);
+}
+
+function ensureFactoryInfiniteQueryData<
+  TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>,
+>(
+  queryClient: QueryClient,
+  options: ReturnType<TFactory>,
+): Promise<QueryDataOf<ReturnType<TFactory>>>;
+function ensureFactoryInfiniteQueryData(
+  queryClient: QueryClient,
+  options: AnyInfiniteQueryOptions,
+) {
+  return queryClient.ensureInfiniteQueryData(options);
+}
 
 /**
  * Starts loader queries without blocking navigation. Returned initiated handles
@@ -61,11 +145,11 @@ export function getQueryInitiator(
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): InitiatedQuery<TFactory> {
-      const options = factory(input[0] as never);
-      queryClient
-        .ensureQueryData(options as unknown as Parameters<QueryClient["ensureQueryData"]>[0])
-        .catch((error: unknown) => onError({ error }));
-      return { input: input[0] } as InitiatedQuery<TFactory>;
+      const options = invokeFactory(factory, input[0]);
+      ensureFactoryQueryData<TFactory>(queryClient, options).catch((error: unknown) =>
+        onError({ error }),
+      );
+      return createInitiatedQuery(factory, input);
     },
 
     /**
@@ -82,17 +166,15 @@ export function getQueryInitiator(
      *   return <Posts pages={postsQuery.data.pages} />;
      * }
      */
-    ensureInfiniteQueryData<TFactory extends QueryOptionsFactory>(
+    ensureInfiniteQueryData<TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>>(
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): InitiatedInfiniteQuery<TFactory> {
-      const options = factory(input[0] as never);
-      queryClient
-        .ensureInfiniteQueryData(
-          options as unknown as Parameters<QueryClient["ensureInfiniteQueryData"]>[0],
-        )
-        .catch((error: unknown) => onError({ error }));
-      return { input: input[0] } as InitiatedInfiniteQuery<TFactory>;
+      const options = invokeFactory(factory, input[0]);
+      ensureFactoryInfiniteQueryData<TFactory>(queryClient, options).catch((error: unknown) =>
+        onError({ error }),
+      );
+      return createInitiatedInfiniteQuery(factory, input);
     },
   };
 }
@@ -135,14 +217,12 @@ export function getQueryPreloader(queryClient: QueryClient) {
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): Promise<PreloadedQuery<TFactory>> {
-      const options = factory(input[0] as never);
-      const initialData = await queryClient.ensureQueryData(
-        options as unknown as Parameters<QueryClient["ensureQueryData"]>[0],
-      );
-      return {
-        input: input[0],
+      const options = invokeFactory(factory, input[0]);
+      const initialData = await ensureFactoryQueryData<TFactory>(queryClient, options);
+      return createPreloadedQuery(factory, {
+        input,
         initialData,
-      } as PreloadedQuery<TFactory>;
+      });
     },
 
     /**
@@ -159,18 +239,16 @@ export function getQueryPreloader(queryClient: QueryClient) {
      *   return <Posts pages={postsQuery.data.pages} />;
      * }
      */
-    async ensureInfiniteQueryData<TFactory extends QueryOptionsFactory>(
+    async ensureInfiniteQueryData<TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>>(
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): Promise<PreloadedInfiniteQuery<TFactory>> {
-      const options = factory(input[0] as never);
-      const initialData = await queryClient.ensureInfiniteQueryData(
-        options as unknown as Parameters<QueryClient["ensureInfiniteQueryData"]>[0],
-      );
-      return {
-        input: input[0],
+      const options = invokeFactory(factory, input[0]);
+      const initialData = await ensureFactoryInfiniteQueryData<TFactory>(queryClient, options);
+      return createPreloadedInfiniteQuery(factory, {
+        input,
         initialData,
-      } as PreloadedInfiniteQuery<TFactory>;
+      });
     },
   };
 }

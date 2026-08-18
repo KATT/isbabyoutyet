@@ -90,7 +90,11 @@ export const MILESTONE_FIELDS = {
   born: { date: "babyBorn", message: "babyBornMessage" },
 } as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
 
-export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
+function isMilestone(value: string): value is Milestone {
+  return value === "labor_started" || value === "gone_to_hospital" || value === "born";
+}
+
+export const MILESTONES = Object.keys(MILESTONE_FIELDS).filter(isMilestone);
 
 /**
  * Returns the latest marked milestone that must be removed before `milestone`

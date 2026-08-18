@@ -24,16 +24,26 @@ type NotificationSubscribeProps = {
   vapidPublicKey: string;
 };
 
+function hasLegacyMSStream(value: Window): value is Window & { MSStream: unknown } {
+  return "MSStream" in value;
+}
+
+function hasStandaloneFlag(
+  value: Navigator,
+): value is Navigator & { standalone: boolean | undefined } {
+  return "standalone" in value;
+}
+
 // Detect iOS Safari not running as PWA
 function getIOSStatus() {
   if (typeof window === "undefined") return { isIOS: false, isStandalone: false };
 
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as unknown as { MSStream: unknown | undefined }).MSStream;
+    (!hasLegacyMSStream(window) || !window.MSStream);
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
+    (hasStandaloneFlag(navigator) && navigator.standalone === true);
 
   return { isIOS, isStandalone };
 }
@@ -117,7 +127,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: applicationServerKey as BufferSource,
+        applicationServerKey,
       });
 
       // Save subscription to Convex
@@ -370,7 +380,7 @@ function NotificationSubscribeControls(props: {
 }
 
 // Convert VAPID key from base64 URL to Uint8Array
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 

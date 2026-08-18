@@ -34,6 +34,29 @@ type RemixInput<TFactory extends QueryOptionsFactory> = (
   input: QueryInput<TFactory>,
 ) => QueryInput<TFactory>;
 
+type RuntimeRemixInput = {
+  bivarianceHack(input: unknown): unknown;
+}["bivarianceHack"];
+
+function resolveInput<TFactory extends QueryOptionsFactory>(
+  preloadedQuery: { readonly input?: QueryInput<TFactory> },
+  remixInput: RemixInput<TFactory> | undefined,
+): QueryInput<TFactory> | undefined;
+function resolveInput(
+  preloadedQuery: { readonly input?: unknown },
+  remixInput: RuntimeRemixInput | undefined,
+) {
+  return remixInput ? remixInput(preloadedQuery.input) : preloadedQuery.input;
+}
+
+function invokeFactory<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInput<TFactory> | undefined,
+): ReturnType<TFactory>;
+function invokeFactory(factory: QueryOptionsFactory, input: unknown) {
+  return factory(input);
+}
+
 /**
  * Rebuilds query options from an initiated or preloaded handle.
  *
@@ -87,10 +110,8 @@ export function preloadedQueryOptions<TFactory extends QueryOptionsFactory>(
   preloadedQuery: NoInfer<InitiatedQuery<TFactory> | PreloadedQuery<TFactory>>,
   remixInput?: RemixInput<TFactory>,
 ): ReturnType<TFactory> | OptionsWithInitialData<TFactory> {
-  const input = remixInput
-    ? remixInput(preloadedQuery.input as QueryInput<TFactory>)
-    : preloadedQuery.input;
-  const options = factory(input as never) as ReturnType<typeof factory>;
+  const input = resolveInput(preloadedQuery, remixInput);
+  const options = invokeFactory(factory, input);
   if ("initialData" in preloadedQuery) {
     return {
       ...options,
@@ -134,10 +155,8 @@ export function preloadedInfiniteQueryOptions<TFactory extends QueryOptionsFacto
   preloadedQuery: NoInfer<InitiatedInfiniteQuery<TFactory> | PreloadedInfiniteQuery<TFactory>>,
   remixInput?: RemixInput<TFactory>,
 ): ReturnType<TFactory> | OptionsWithInitialData<TFactory> {
-  const input = remixInput
-    ? remixInput(preloadedQuery.input as QueryInput<TFactory>)
-    : preloadedQuery.input;
-  const options = factory(input as never) as ReturnType<typeof factory>;
+  const input = resolveInput(preloadedQuery, remixInput);
+  const options = invokeFactory(factory, input);
   if ("initialData" in preloadedQuery) {
     return {
       ...options,

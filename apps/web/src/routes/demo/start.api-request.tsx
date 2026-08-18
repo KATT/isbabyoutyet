@@ -2,8 +2,17 @@ import { useEffect, useState } from "react";
 
 import { createFileRoute } from "@tanstack/react-router";
 
-function getNames() {
-  return fetch("/demo/api/names").then((res) => res.json() as Promise<string[]>);
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+async function getNames() {
+  const response = await fetch("/demo/api/names");
+  const names: unknown = await response.json();
+  if (!isStringArray(names)) {
+    throw new Error("Names API returned an invalid response");
+  }
+  return names;
 }
 
 export const Route = createFileRoute("/demo/start/api-request")({

@@ -1,6 +1,6 @@
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { THEME_OPTIONS } from "@/components/baby/utils";
@@ -62,11 +62,11 @@ async function loadNunitoFont(opts: { weight: 700 | 900; text: string }) {
 }
 
 async function pngResponse(opts: {
-  element: ReactNode;
+  element: ReactElement;
   fonts: { name: string; data: ArrayBuffer; weight: 700 | 900; style: "normal" }[];
   cacheControl: string;
 }) {
-  const svg = await satori(opts.element as ReactElement, {
+  const svg = await satori(opts.element, {
     width: OG_IMAGE_WIDTH,
     height: OG_IMAGE_HEIGHT,
     fonts: opts.fonts,

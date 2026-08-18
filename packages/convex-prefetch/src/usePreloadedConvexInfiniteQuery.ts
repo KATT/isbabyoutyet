@@ -43,17 +43,15 @@ export function usePreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryRef
   const optionsWithInitialData =
     "initialData" in opts.handle ? { ...options, initialData: opts.handle.initialData } : options;
 
-  const result = useSuspenseInfiniteQuery(
-    optionsWithInitialData as never,
-  ) as UseSuspenseInfiniteQueryResult<
+  const result: UseSuspenseInfiniteQueryResult<
     InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>,
     Error
-  >;
+  > = useSuspenseInfiniteQuery(optionsWithInitialData);
 
   useLiveConvexInfinitePages({
     queryKey: options.queryKey,
     funcRef,
-    args: args as Record<string, unknown>,
+    args,
     pageParams: result.data.pageParams,
   });
 

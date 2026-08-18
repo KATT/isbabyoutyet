@@ -126,6 +126,12 @@ const MILESTONE_META = {
   born: { labelKey: MILESTONE_LABEL_KEYS.born, icon: Confetti },
 } as const satisfies Record<Milestone, { labelKey: TranslationKey; icon: typeof Heartbeat }>;
 
+const MILESTONES: Milestone[] = ["labor_started", "gone_to_hospital", "born"];
+
+const uploadResponseSchema = z.object({
+  storageId: z.custom<Id<"_storage">>((value) => typeof value === "string"),
+});
+
 function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {
   const now = Date.now();
   const diffInSeconds = Math.floor((timestamp - now) / 1000);
@@ -185,7 +191,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
   const currentStatus = getCurrentStatus(props.baby);
-  const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
+  const futureMilestones = MILESTONES.filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
   );
   const schema = useMemo(
@@ -270,7 +276,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
             if (!response.ok) {
               throw new Error(t("Failed to upload photo"));
             }
-            const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
+            const uploaded = uploadResponseSchema.parse(await response.json());
             photoId = uploaded.storageId;
           }
 

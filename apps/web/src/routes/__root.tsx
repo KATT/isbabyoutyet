@@ -35,6 +35,7 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
@@ -184,12 +185,49 @@ export const Route = createRootRouteWithContext<{
   notFoundComponent: NotFoundComponent,
 });
 
+function contextLocale(context: unknown): SupportedLocale | undefined {
+  if (
+    typeof context !== "object" ||
+    context === null ||
+    !("locale" in context) ||
+    typeof context.locale !== "string" ||
+    !isSupportedLocale(context.locale)
+  ) {
+    return undefined;
+  }
+  return context.locale;
+}
+
+function isAuthClient(value: unknown): value is AuthClient {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "useSession" in value &&
+    typeof value.useSession === "function" &&
+    "getSession" in value &&
+    typeof value.getSession === "function" &&
+    "convex" in value &&
+    typeof value.convex === "object" &&
+    value.convex !== null &&
+    "token" in value.convex &&
+    typeof value.convex.token === "function"
+  );
+}
+
+function requireAuthClient(value: unknown): AuthClient {
+  if (!isAuthClient(value)) {
+    throw new Error("Better Auth client is missing its Convex integration");
+  }
+  return value;
+}
+
+const convexAuthClient = requireAuthClient(authClient);
+
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
   const locale = matches.reduce((currentLocale, match) => {
-    const matchContext = match.context as { locale: SupportedLocale | undefined };
-    return matchContext.locale ?? currentLocale;
+    return contextLocale(match.context) ?? currentLocale;
   }, context.locale);
 
   useEffect(() => {
@@ -207,12 +245,9 @@ function RootComponent() {
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {/* Cast: better-auth >=1.6.18 broke assignability to @convex-dev/better-auth's
-          AuthClient type (upstream types against better-auth 1.6.15). Runtime is
-          compatible per the peer range (>=1.6.11 <1.7.0). */}
       <ConvexBetterAuthProvider
         client={context.convexQueryClient.convexClient}
-        authClient={authClient as unknown as AuthClient}
+        authClient={convexAuthClient}
         initialToken={context.token}
       >
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}

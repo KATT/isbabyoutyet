@@ -52,7 +52,7 @@ export function BabyNav(props: BabyNavProps) {
                 variant={props.settingsOpen ? "default" : "ghost"}
                 size="icon"
                 className="rounded-full"
-                render={<Link {...(props.settingsButton as any)} />}
+                render={<Link {...props.settingsButton} />}
                 nativeButton={false}
                 aria-label={props.settingsOpen ? t("Close settings") : t("Settings")}
                 data-tour-id="explore_settings"

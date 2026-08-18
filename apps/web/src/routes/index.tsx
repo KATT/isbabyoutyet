@@ -127,7 +127,10 @@ const NAME_ROTATE_INTERVAL_MS = 2400;
 
 function RotatingBabyName(props: { words: readonly string[] }) {
   const words = props.words;
-  const [indices, setIndices] = useState({ current: 0, previous: null as number | null });
+  const [indices, setIndices] = useState<{ current: number; previous: number | null }>({
+    current: 0,
+    previous: null,
+  });
   const [width, setWidth] = useState<number | null>(null);
   const sizerRefs = useRef<(HTMLSpanElement | null)[]>([]);
 

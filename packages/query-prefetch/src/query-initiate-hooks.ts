@@ -2,9 +2,42 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
   InitiatedInfiniteQuery,
   InitiatedQuery,
+  QueryInput,
   QueryInputArgs,
   QueryOptionsFactory,
 } from "./types.js";
+
+type AnyInfiniteQueryOptions = Parameters<typeof useInfiniteQuery>[0];
+
+function invokeFactory<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInput<TFactory> | undefined,
+): ReturnType<TFactory>;
+function invokeFactory(factory: QueryOptionsFactory, input: unknown) {
+  return factory(input);
+}
+
+function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedQuery<TFactory>;
+function createInitiatedQuery(
+  _factory: QueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
+
+function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedInfiniteQuery<TFactory>;
+function createInitiatedInfiniteQuery(
+  _factory: QueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
 
 /**
  * Starts a query during render and returns an {@link InitiatedQuery} handle, so
@@ -22,16 +55,16 @@ export function useInitiateQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   ...input: QueryInputArgs<TFactory>
 ): InitiatedQuery<TFactory> {
-  const options = factory(input[0] as never);
+  const options = invokeFactory(factory, input[0]);
 
   // Start the fetch on render without subscribing to updates; the read
   // downstream (via `preloadedQueryOptions`) is what surfaces data and errors.
   useQuery({
     ...options,
     notifyOnChangeProps: [],
-  } as unknown as Parameters<typeof useQuery>[0]);
+  });
 
-  return { input: input[0] } as InitiatedQuery<TFactory>;
+  return createInitiatedQuery(factory, input);
 }
 
 /**
@@ -39,16 +72,15 @@ export function useInitiateQuery<TFactory extends QueryOptionsFactory>(
  * query during render and returns an {@link InitiatedInfiniteQuery} handle.
  * Same component-side-waterfall caveats apply.
  */
-export function useInitiateInfiniteQuery<TFactory extends QueryOptionsFactory>(
-  factory: TFactory,
-  ...input: QueryInputArgs<TFactory>
-): InitiatedInfiniteQuery<TFactory> {
-  const options = factory(input[0] as never);
+export function useInitiateInfiniteQuery<
+  TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>,
+>(factory: TFactory, ...input: QueryInputArgs<TFactory>): InitiatedInfiniteQuery<TFactory> {
+  const options = invokeFactory(factory, input[0]);
 
   useInfiniteQuery({
     ...options,
     notifyOnChangeProps: [],
-  } as unknown as Parameters<typeof useInfiniteQuery>[0]);
+  });
 
-  return { input: input[0] } as InitiatedInfiniteQuery<TFactory>;
+  return createInitiatedInfiniteQuery(factory, input);
 }

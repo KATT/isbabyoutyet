@@ -38,11 +38,9 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
       funcRef: TQuery,
       args: FunctionArgs<TQuery>,
     ): Promise<PreloadedConvexQuery<TQuery>> {
-      const options = convexQuery(funcRef, args as never);
-      const initialData = await queryClient.ensureQueryData(
-        options as unknown as Parameters<QueryClient["ensureQueryData"]>[0],
-      );
-      return { input: args, initialData } as PreloadedConvexQuery<TQuery>;
+      const options = convexQuery(funcRef, args);
+      const initialData = await queryClient.ensureQueryData(options);
+      return { input: args, initialData };
     },
 
     /**
@@ -60,14 +58,12 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
         args: opts.args,
         initialNumItems: opts.numItems,
       });
-      const initialData = await queryClient.ensureInfiniteQueryData(
-        options as unknown as Parameters<QueryClient["ensureInfiniteQueryData"]>[0],
-      );
+      const initialData = await queryClient.ensureInfiniteQueryData(options);
       return {
         input: opts.args,
         numItems: opts.numItems,
         initialData,
-      } as PreloadedConvexInfiniteQuery<TQuery>;
+      };
     },
 
     /**
@@ -81,11 +77,9 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
       funcRef: TQuery,
       args: FunctionArgs<TQuery>,
     ): InitiatedConvexQuery<TQuery> {
-      const options = convexQuery(funcRef, args as never);
-      void queryClient.prefetchQuery(
-        options as unknown as Parameters<QueryClient["prefetchQuery"]>[0],
-      );
-      return { input: args } as InitiatedConvexQuery<TQuery>;
+      const options = convexQuery(funcRef, args);
+      void queryClient.prefetchQuery(options);
+      return { input: args };
     },
 
     /**
@@ -103,10 +97,8 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
         args: opts.args,
         initialNumItems: opts.numItems,
       });
-      void queryClient.prefetchInfiniteQuery(
-        options as unknown as Parameters<QueryClient["prefetchInfiniteQuery"]>[0],
-      );
-      return { input: opts.args, numItems: opts.numItems } as InitiatedConvexInfiniteQuery<TQuery>;
+      void queryClient.prefetchInfiniteQuery(options);
+      return { input: opts.args, numItems: opts.numItems };
     },
   };
 }

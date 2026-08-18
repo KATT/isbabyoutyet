@@ -93,10 +93,7 @@ export function DueDateEditor(props: DueDateEditorProps) {
           (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
         ) {
           const activeElement = document.activeElement;
-          if (
-            activeElement?.tagName === "INPUT" &&
-            (activeElement as HTMLInputElement).type === "date"
-          ) {
+          if (activeElement instanceof HTMLInputElement && activeElement.type === "date") {
             eventDetails.cancel();
             return;
           }

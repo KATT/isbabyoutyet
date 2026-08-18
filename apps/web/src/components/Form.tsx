@@ -26,12 +26,10 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
 ): UseZodForm<TInput, TContext, TOutput> {
   const form = useForm<TInput, TContext, TOutput>({
     ...props,
-    resolver: zodResolver(props.schema) as never,
-  }) as UseZodForm<TInput, TContext, TOutput>;
-
-  form.id = useId();
-
-  return form;
+    resolver: zodResolver<TInput, TContext, TOutput>(props.schema),
+  });
+  const id = useId();
+  return Object.assign(form, { id });
 }
 
 export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
