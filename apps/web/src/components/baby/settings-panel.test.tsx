@@ -16,6 +16,8 @@ vi.mock("sonner", () => ({
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01T00:00:00.000Z",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   theme: null,
   laborStarted: "2026-08-10T08:00:00.000Z",
   wentToHospital: null,
@@ -90,7 +92,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
 test("due date row previews optional public text", async () => {
   await using view = renderResource(
     <SettingsPanel
-      baby={{ ...baby, publicDueDateText: "Any day now" }}
+      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
       onOpenChange={vi.fn<(open: boolean) => void>()}

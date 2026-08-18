@@ -94,10 +94,16 @@ function dueDateSchema(t: TranslationFunction) {
         });
       }
     })
-    .transform((values): Pick<BabyPatch, "dueDate" | "publicDueDateText"> => ({
-      dueDate: values.date,
-      publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
-    }));
+    .transform(
+      (values): Pick<
+        BabyPatch,
+        "dueDate" | "dueDateDisplayMode" | "publicDueDateText"
+      > => ({
+        dueDate: values.date,
+        dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+      }),
+    );
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -152,7 +158,7 @@ function DueDateForm(props: EditorFormProps) {
     schema: dueDateSchema(t),
     defaultValues: {
       date: dateCodec.encode(props.baby.dueDate),
-      showExactDueDate: !props.baby.publicDueDateText,
+      showExactDueDate: props.baby.dueDateDisplayMode === "exact",
       publicDueDateText: props.baby.publicDueDateText ?? "",
     },
   });
@@ -218,7 +224,7 @@ function DueDateForm(props: EditorFormProps) {
               <FormLabel>{t("Public due date message")}</FormLabel>
               <FormControl>
                 <Input
-                  placeholder={t("Baby arriving soon")}
+                  placeholder={t("September baby")}
                   maxLength={80}
                   {...renderProps.field}
                 />

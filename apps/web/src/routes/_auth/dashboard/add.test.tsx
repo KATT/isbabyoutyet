@@ -70,6 +70,7 @@ test.each([
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
+      dueDateDisplayMode: "exact",
       publicDueDateText: null,
       birthJourney: testCase.birthJourney,
     });
@@ -93,7 +94,7 @@ test("requires and submits a custom public due date message", async () => {
   });
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("Baby arriving soon");
+  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
   await vi.waitFor(() => {
     expect(view.getByText("Enter a message for visitors")).toBeTruthy();
@@ -109,6 +110,7 @@ test("requires and submits a custom public due date message", async () => {
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-19"),
+      dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",
     });

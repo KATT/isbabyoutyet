@@ -15,6 +15,8 @@ function useFakeTimersResource(now: Date) {
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   milestoneVisibility: { showLabor: true, showHospital: true },
   laborStarted: null,
   wentToHospital: null,
@@ -123,7 +125,12 @@ test("custom public due date text replaces the exact date and countdown", async 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(
     <StatusDisplay
-      baby={{ ...baby, dueDate: "2026-09-19", publicDueDateText: "Any day now" }}
+      baby={{
+        ...baby,
+        dueDate: "2026-09-19",
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
       thumbnailUrl={null}

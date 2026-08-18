@@ -48,6 +48,7 @@ function addBabySchema(t: TranslationFunction) {
     .transform((values): FunctionArgs<typeof api.baby.create> => ({
       name: values.name,
       dueDate: values.dueDate,
+      dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
       publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
       birthJourney: values.birthJourney,
     }));
@@ -180,7 +181,7 @@ export function AddBabyPage() {
                         <FormLabel className="font-bold">{t("Public due date message")}</FormLabel>
                         <FormControl>
                           <Input
-                            placeholder={t("Baby arriving soon")}
+                            placeholder={t("September baby")}
                             maxLength={80}
                             {...renderProps.field}
                           />

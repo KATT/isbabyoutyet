@@ -29,6 +29,7 @@ function docToBabyData(doc: PublicBaby): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
+    dueDateDisplayMode: doc.dueDateDisplayMode,
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     laborStarted: doc.laborStarted ?? null,
@@ -110,6 +111,7 @@ test("renders optional public due date text without exposing the exact day", asy
   const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
     name: "Baby Smith",
     dueDate: "2026-09-19",
+    dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -128,6 +130,8 @@ test("renders the public baby status in the baby's Swedish override", async () =
   const baby: BabyData = {
     name: "Nova",
     dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
@@ -155,6 +159,8 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   const baby: BabyData = {
     name: "Nova",
     dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,

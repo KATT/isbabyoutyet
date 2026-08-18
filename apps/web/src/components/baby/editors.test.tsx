@@ -9,6 +9,8 @@ import { LocaleProvider } from "@/lib/i18n";
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -63,6 +65,7 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   await vi.waitFor(() =>
     expect(onUpdate).toHaveBeenCalledWith({
       dueDate: "2026-10-15T00:00:00.000Z",
+      dueDateDisplayMode: "exact",
       publicDueDateText: null,
     }),
   );
@@ -75,7 +78,7 @@ test("due date editor requires and saves a custom visitor message", async () => 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("Baby arriving soon");
+  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() => {
     expect(view.getByText("Enter a message for visitors")).toBeTruthy();
@@ -87,6 +90,7 @@ test("due date editor requires and saves a custom visitor message", async () => 
   await vi.waitFor(() =>
     expect(onUpdate).toHaveBeenCalledWith({
       dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
     }),
   );
@@ -95,7 +99,10 @@ test("due date editor requires and saves a custom visitor message", async () => 
 test("due date editor switches a custom message back to the exact date", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(
-    <DueDateEditor baby={{ ...baby, publicDueDateText: "Any day now" }} onUpdate={onUpdate} />,
+    <DueDateEditor
+      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
+      onUpdate={onUpdate}
+    />,
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
@@ -111,6 +118,7 @@ test("due date editor switches a custom message back to the exact date", async (
   await vi.waitFor(() =>
     expect(onUpdate).toHaveBeenCalledWith({
       dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "exact",
       publicDueDateText: null,
     }),
   );

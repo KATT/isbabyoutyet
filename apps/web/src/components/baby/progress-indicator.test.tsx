@@ -23,6 +23,8 @@ function renderResource(ui: ReactElement) {
 const waitingBaby: BabyData = {
   name: "Baby Smith",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,

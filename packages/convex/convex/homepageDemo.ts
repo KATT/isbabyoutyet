@@ -100,6 +100,7 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(opts.now),
+    dueDateDisplayMode: "exact" as const,
     publicDueDateText: null,
     lastActivityAt: opts.now,
   };

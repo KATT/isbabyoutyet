@@ -12,7 +12,8 @@ export const OG_IMAGE_HEIGHT = 630;
 type BabySeoInput = {
   name: string;
   dueDate: string;
-  publicDueDateText: string | null | undefined;
+  dueDateDisplayMode: "exact" | "message";
+  publicDueDateText: string | null;
   publicId: string;
   theme: string | null | undefined;
   locale: SupportedLocale;
@@ -22,14 +23,14 @@ type BabySeoInput = {
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
 function babyPageTitle(baby: BabySeoInput) {
-  const publicDueDateText = baby.publicDueDateText?.trim() || null;
-  const overdueDays = publicDueDateText ? 0 : getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = publicDueDateText ? 0 : getDaysUntilDueDate(baby.dueDate);
+  const isMessageMode = baby.dueDateDisplayMode === "message";
+  const overdueDays = isMessageMode ? 0 : getOverdueDays(baby.dueDate);
+  const daysUntilDueDate = isMessageMode ? 0 : getDaysUntilDueDate(baby.dueDate);
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn && !publicDueDateText) {
+  if (!isBorn && !isMessageMode) {
     if (overdueDays > 0) {
       title = translate(
         locale,
@@ -100,7 +101,10 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoInput, "dueDate" | "publicDueDateText" | "babyBorn" | "locale">;
+  baby: Pick<
+    BabySeoInput,
+    "dueDate" | "dueDateDisplayMode" | "publicDueDateText" | "babyBorn" | "locale"
+  >;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -110,9 +114,8 @@ export function babyStatusDetail(opts: {
   if (opts.status.type !== "not_yet") {
     return babyStatusLabel({ status: opts.status, locale });
   }
-  const publicDueDateText = opts.baby.publicDueDateText?.trim();
-  if (publicDueDateText) {
-    return publicDueDateText;
+  if (opts.baby.dueDateDisplayMode === "message") {
+    return opts.baby.publicDueDateText?.trim() ?? "";
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
   if (overdueDays > 0) {

@@ -36,6 +36,10 @@ const birthJourneyValidator = v.union(
   v.literal("planned_c_section"),
 );
 
+const dueDateDisplayModeValidator = v.union(v.literal("exact"), v.literal("message"));
+
+type DueDateDisplayMode = "exact" | "message";
+
 const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
 
 function normalizePublicDueDateText(value: string | null | undefined) {
@@ -44,6 +48,21 @@ function normalizePublicDueDateText(value: string | null | undefined) {
     throw new Error("Public due date message must be 80 characters or fewer");
   }
   return normalized || null;
+}
+
+function normalizeDueDateDisplay(opts: {
+  mode: DueDateDisplayMode | undefined;
+  text: string | null | undefined;
+}) {
+  const normalizedText = normalizePublicDueDateText(opts.text);
+  const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  if (mode === "message" && !normalizedText) {
+    throw new Error("A public due date message is required when the exact date is hidden");
+  }
+  return {
+    mode,
+    text: mode === "message" ? normalizedText : null,
+  };
 }
 
 export const listByUser = query({
@@ -96,13 +115,18 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
-    const publicDueDateText = normalizePublicDueDateText(baby.publicDueDateText);
-    const canSeeExactDueDate = !publicDueDateText || Boolean(await findBabyManager(ctx, baby._id));
+    const dueDateDisplay = normalizeDueDateDisplay({
+      mode: baby.dueDateDisplayMode,
+      text: baby.publicDueDateText,
+    });
+    const canSeeExactDueDate =
+      dueDateDisplay.mode === "exact" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...toBabyDto(baby),
       dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
-      publicDueDateText,
+      dueDateDisplayMode: dueDateDisplay.mode,
+      publicDueDateText: dueDateDisplay.text,
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
@@ -322,6 +346,7 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
     birthJourney: v.optional(birthJourneyValidator),
@@ -332,6 +357,10 @@ export const create = mutationWithTriggers({
       throw new Error("Not authenticated");
     }
     const caller = appIdentity(identity);
+    const dueDateDisplay = normalizeDueDateDisplay({
+      mode: args.dueDateDisplayMode,
+      text: args.publicDueDateText,
+    });
 
     const publicId = await generateUniquePublicId({
       db: ctx.db,
@@ -344,7 +373,8 @@ export const create = mutationWithTriggers({
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
       dueDate: args.dueDate,
-      publicDueDateText: normalizePublicDueDateText(args.publicDueDateText),
+      dueDateDisplayMode: dueDateDisplay.mode,
+      publicDueDateText: dueDateDisplay.text,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
       hospitalMessage: null,
@@ -633,6 +663,7 @@ export const update = mutationWithTriggers({
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
+    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
@@ -691,8 +722,13 @@ export const update = mutationWithTriggers({
     });
 
     const patch: Partial<typeof baby> = rest;
-    if (rest.publicDueDateText !== undefined) {
-      patch.publicDueDateText = normalizePublicDueDateText(rest.publicDueDateText);
+    if (rest.dueDateDisplayMode !== undefined || rest.publicDueDateText !== undefined) {
+      const dueDateDisplay = normalizeDueDateDisplay({
+        mode: rest.dueDateDisplayMode,
+        text: rest.publicDueDateText,
+      });
+      patch.dueDateDisplayMode = dueDateDisplay.mode;
+      patch.publicDueDateText = dueDateDisplay.text;
     }
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {

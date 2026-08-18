@@ -166,8 +166,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemTitle>{t("Due Date")}</ItemTitle>
               <ItemDescription>
                 {formatDueDate(props.baby.dueDate, locale)} ·{" "}
-                {props.baby.publicDueDateText
-                  ? t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText })
+                {props.baby.dueDateDisplayMode === "message"
+                  ? t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText ?? "" })
                   : t("Visitors see the exact date and countdown.")}
               </ItemDescription>
             </ItemContent>
