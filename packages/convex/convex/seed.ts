@@ -275,7 +275,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       name: spec.name,
       dueDate: dueDate.toISOString(),
       publicId: spec.publicId,
-      birthJourney: "labour",
+      birthJourney: "labor",
       laborStarted,
       wentToHospital,
       babyBorn,

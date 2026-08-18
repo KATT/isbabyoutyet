@@ -415,7 +415,7 @@ export const backfillBabyOwnerTokenIdentifier = migrations.define({
  */
 export async function backfillBabyBirthJourneyDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.birthJourney !== undefined) return;
-  await ctx.db.patch(baby._id, { birthJourney: "labour" });
+  await ctx.db.patch(baby._id, { birthJourney: "labor" });
 }
 
 export const backfillBabyBirthJourney = migrations.define({

@@ -29,7 +29,7 @@ test("create a baby and list it for the owner", async () => {
 
   expect(created.publicId).toBe("baby-smith");
   const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
-  expect(stored?.birthJourney).toBe("labour");
+  expect(stored?.birthJourney).toBe("labor");
 
   const babies = await asAlice.query(api.baby.listByUser, {});
   expect(babies).toMatchObject([
