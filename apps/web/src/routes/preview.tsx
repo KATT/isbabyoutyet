@@ -25,7 +25,7 @@ function getDefaultBabyData(): BabyData {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
-    milestoneVisibility: milestoneVisibilityForPreset("labour"),
+    milestoneVisibility: milestoneVisibilityForPreset("labor"),
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
@@ -43,7 +43,7 @@ const searchSchema = z.object({
   babyBornMessage: z.string().nullable().optional(),
   laborStartedMessage: z.string().nullable().optional(),
   birthJourney: z
-    .union([z.literal("labour"), z.literal("home_birth"), z.literal("planned_c_section")])
+    .union([z.literal("labor"), z.literal("home_birth"), z.literal("planned_c_section")])
     .optional(),
   settings: z.boolean().optional(),
 });
@@ -77,7 +77,7 @@ function PreviewPage() {
   const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const birthJourney = search.birthJourney ?? "labour";
+  const birthJourney = search.birthJourney ?? "labor";
 
   const baby: BabyData = {
     ...getDefaultBabyData(),

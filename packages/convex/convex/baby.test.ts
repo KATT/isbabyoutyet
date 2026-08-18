@@ -45,7 +45,7 @@ test("create a baby and list it for the owner", async () => {
   expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
   expect(babies[0]).not.toHaveProperty("lastActivityAt");
   expect(babies[0]).not.toHaveProperty("subscriptionCount");
-  expect(babies[0]?.birthJourney).toBe("labour");
+  expect(babies[0]?.birthJourney).toBe("labor");
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });

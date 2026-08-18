@@ -45,7 +45,7 @@ test("journey choices explain visible statuses and privacy", async () => {
 });
 
 test.each([
-  { label: "Labour", birthJourney: "labour" },
+  { label: "Labour", birthJourney: "labor" },
   { label: "Home birth", birthJourney: "home_birth" },
   { label: "Planned C-section", birthJourney: "planned_c_section" },
 ])("submits the $label selection", async (testCase) => {

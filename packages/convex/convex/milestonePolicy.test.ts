@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { getMilestonePolicy, milestoneVisibilityForPreset } from "../src/types";
 
 test("saved journey selections derive their available milestones", () => {
-  expect(milestoneVisibilityForPreset("labour")).toEqual({
+  expect(milestoneVisibilityForPreset("labor")).toEqual({
     showLabor: true,
     showHospital: true,
   });
@@ -18,7 +18,7 @@ test("saved journey selections derive their available milestones", () => {
 
 test("labour selection includes every milestone", () => {
   const policy = getMilestonePolicy({
-    birthJourney: "labour",
+    birthJourney: "labor",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: null,

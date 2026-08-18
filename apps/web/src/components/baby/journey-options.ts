@@ -3,7 +3,7 @@ import type { TranslationKey } from "@/lib/i18n";
 
 export const JOURNEY_OPTIONS = [
   {
-    value: "labour",
+    value: "labor",
     labelKey: "Labour",
     descriptionKey: "Visitors see: Labour started → At hospital → Baby born",
   },
@@ -24,7 +24,7 @@ export const JOURNEY_OPTIONS = [
 }>;
 
 export const JOURNEY_OPTION_BY_VALUE = {
-  labour: JOURNEY_OPTIONS[0],
+  labor: JOURNEY_OPTIONS[0],
   home_birth: JOURNEY_OPTIONS[1],
   planned_c_section: JOURNEY_OPTIONS[2],
 } as const satisfies Record<BirthJourney, (typeof JOURNEY_OPTIONS)[number]>;

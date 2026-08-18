@@ -27,7 +27,7 @@ function addBabySchema(t: TranslationFunction) {
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
       birthJourney: z.union([
-        z.literal("labour"),
+        z.literal("labor"),
         z.literal("home_birth"),
         z.literal("planned_c_section"),
       ]),
@@ -49,7 +49,7 @@ export function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
-      birthJourney: "labour" as const,
+      birthJourney: "labor" as const,
     },
   });
 

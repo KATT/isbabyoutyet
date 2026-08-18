@@ -21,7 +21,7 @@ const baby: BabyData = {
 };
 
 const absentSettingsProps = {
-  birthJourney: "labour" as const,
+  birthJourney: "labor" as const,
   profileLocale: "en-GB" as const,
   onDelete: null,
   coParents: null,
@@ -86,7 +86,7 @@ test("delete page control appears when onDelete is provided", async () => {
       baby={baby}
       onUpdate={onUpdate}
       onDelete={onDelete}
-      birthJourney="labour"
+      birthJourney="labor"
       open={true}
       onOpenChange={onOpenChange}
       profileLocale="en-GB"
@@ -199,7 +199,7 @@ test("theme constants render through the active translation catalog", async () =
     <LocaleProvider locale="sv">
       <SettingsPanel
         baby={baby}
-        birthJourney="labour"
+        birthJourney="labor"
         onUpdate={onUpdate}
         open
         onOpenChange={onOpenChange}

@@ -23,7 +23,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
       name: "Migration Baby",
       dueDate: "2026-09-01",
       publicId: "migration-baby",
-      birthJourney: "labour",
+      birthJourney: "labor",
       lastActivityAt: 1,
       subscriptionCount: 99,
     });
