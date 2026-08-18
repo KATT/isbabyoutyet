@@ -21,7 +21,7 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
-import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Switch } from "@workspace/ui/components/switch";
 import {
   Select,
@@ -57,6 +57,8 @@ import {
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTIONS } from "./journey-options";
+import { JourneySelector } from "./journey-selector";
+import { useState } from "react";
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -77,6 +79,42 @@ type SettingsPanelProps = {
   } | null;
 };
 
+function JourneyEditor(props: { birthJourney: BirthJourney; onUpdate: BabyUpdateHandler }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
+            {t("Edit")}
+          </Button>
+        }
+      />
+      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="font-bold">{t("Choose a journey")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("We save this choice for your settings, but we don't show it to anyone.")}
+            </p>
+          </div>
+          <JourneySelector
+            value={props.birthJourney}
+            onValueChange={(value) => {
+              void Promise.resolve(props.onUpdate({ birthJourney: value })).then(() => {
+                setOpen(false);
+              });
+            }}
+            idPrefix="settings-journey"
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /**
  * Owner settings: page metadata and corrections. Marking milestones and
  * posting photos happens through the "Post update" composer; milestone rows
@@ -88,6 +126,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
+  const journeyOption =
+    JOURNEY_OPTIONS.find((option) => option.value === props.birthJourney) ?? JOURNEY_OPTIONS[0];
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -126,51 +166,17 @@ export function SettingsPanel(props: SettingsPanelProps) {
           </Item>
 
           <ItemSeparator />
-          <Item variant="default" className="items-start">
+          <Item>
             <ItemMedia variant="icon">
               <Heartbeat className="w-4 h-4" />
             </ItemMedia>
-            <ItemContent className="gap-3">
-              <div>
-                <ItemTitle>{t("Choose a journey")}</ItemTitle>
-                <ItemDescription>
-                  {t("We save this choice for your settings, but we don't show it to anyone.")}
-                </ItemDescription>
-              </div>
-              <RadioGroup
-                value={props.birthJourney}
-                onValueChange={(value) => {
-                  const option = JOURNEY_OPTIONS.find((candidate) => candidate.value === value);
-                  if (option) {
-                    void props.onUpdate({ birthJourney: option.value });
-                  }
-                }}
-                className="grid w-full gap-2"
-              >
-                {JOURNEY_OPTIONS.map((option) => (
-                  <label
-                    key={option.value}
-                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
-                  >
-                    <RadioGroupItem
-                      value={option.value}
-                      aria-labelledby={`settings-journey-${option.value}`}
-                    />
-                    <span>
-                      <span
-                        id={`settings-journey-${option.value}`}
-                        className="block text-sm font-bold"
-                      >
-                        {t(option.labelKey)}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {t(option.descriptionKey)}
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </RadioGroup>
+            <ItemContent>
+              <ItemTitle>{t("Journey")}</ItemTitle>
+              <ItemDescription>{t(journeyOption.labelKey)}</ItemDescription>
             </ItemContent>
+            <ItemActions>
+              <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />
+            </ItemActions>
           </Item>
 
           {/* Marked milestones: correct their date here; mark new ones via

@@ -35,6 +35,9 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Planned C-section" })).toBeTruthy();
+  expect(view.getByRole("radiogroup", { name: "Choose a journey" }).className).not.toContain(
+    "grid-cols",
+  );
   expect(view.getByText("Visitors see: Labour started → Baby born")).toBeTruthy();
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),

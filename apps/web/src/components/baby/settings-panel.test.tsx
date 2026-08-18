@@ -132,9 +132,15 @@ test("journey selection saves the chosen option", async () => {
     />,
   );
 
+  expect(view.getByText("Journey")).toBeTruthy();
+  expect(view.getByText("Labour")).toBeTruthy();
+  expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
   expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
   fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
-  expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
+  });
 });
 
 test("journey selection stays changeable after milestone updates", async () => {
@@ -153,8 +159,12 @@ test("journey selection stays changeable after milestone updates", async () => {
   );
 
   expect(view.getByText("Gone to hospital")).toBeTruthy();
+  expect(view.getByText("Home birth")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
   fireEvent.click(view.getByRole("radio", { name: "Planned C-section" }));
-  expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
+  });
 });
 
 test("theme constants render through the active translation catalog", async () => {
@@ -178,5 +188,6 @@ test("theme constants render through the active translation catalog", async () =
 
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Standard")).toBeTruthy();
-  expect(view.getByText("Välj en resa")).toBeTruthy();
+  expect(view.getByText("Resa")).toBeTruthy();
+  expect(view.getByText("Förlossning")).toBeTruthy();
 });

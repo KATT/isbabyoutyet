@@ -6,7 +6,6 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardContent } from "@workspace/ui/components/card";
-import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import {
   FormControl,
   FormDescription,
@@ -16,7 +15,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { JOURNEY_OPTIONS } from "@/components/baby/journey-options";
+import { JourneySelector } from "@/components/baby/journey-selector";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -132,34 +131,11 @@ export function AddBabyPage() {
                     <FormItem>
                       <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
                       <FormControl>
-                        <RadioGroup
+                        <JourneySelector
                           value={renderProps.field.value}
                           onValueChange={renderProps.field.onChange}
-                          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
-                        >
-                          {JOURNEY_OPTIONS.map((option) => (
-                            <label
-                              key={option.value}
-                              className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
-                            >
-                              <RadioGroupItem
-                                value={option.value}
-                                aria-labelledby={`add-journey-${option.value}`}
-                              />
-                              <span>
-                                <span
-                                  id={`add-journey-${option.value}`}
-                                  className="block font-bold"
-                                >
-                                  {t(option.labelKey)}
-                                </span>
-                                <span className="block text-sm text-muted-foreground">
-                                  {t(option.descriptionKey)}
-                                </span>
-                              </span>
-                            </label>
-                          ))}
-                        </RadioGroup>
+                          idPrefix="add-journey"
+                        />
                       </FormControl>
                       <FormDescription>
                         {t(
