@@ -50,7 +50,11 @@ const session = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/auth-client", () => ({
-  authClient: { useSession: () => session.value },
+  authClient: {
+    useSession: () => session.value,
+    getSession: vi.fn(),
+    convex: { token: vi.fn() },
+  },
 }));
 
 vi.mock("@tanstack/react-start", () => ({
