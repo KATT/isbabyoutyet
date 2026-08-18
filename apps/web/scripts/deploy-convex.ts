@@ -79,6 +79,10 @@ function convexCliOutput(args: string[]) {
   });
 }
 
+if (isPreview) {
+  console.log("\nForcing a fresh Convex preview backend for the birth-journey schema reset.");
+}
+
 convexCli([
   "deploy",
   "--cmd-url-env-var-name",
