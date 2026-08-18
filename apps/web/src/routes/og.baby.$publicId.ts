@@ -26,6 +26,7 @@ export const Route = createFileRoute("/og/baby/$publicId")({
           dueDate: baby.dueDate,
           theme: baby.theme,
           locale: baby.resolvedLocale,
+          birthJourney: baby.birthJourney,
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,

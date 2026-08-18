@@ -5,6 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
+  isMilestoneInJourney,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
   STATUS_ORDER,
@@ -59,6 +60,9 @@ export const post = mutationWithTriggers({
     const statusBefore = getCurrentStatus(baby);
 
     if (milestone) {
+      if (!isMilestoneInJourney(baby, milestone)) {
+        throw new Error("Labour started is not part of a planned C-section journey");
+      }
       // The status only moves forward: once a later stage is reached, earlier
       // (or equal) stages can no longer be marked
       if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {

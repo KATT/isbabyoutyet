@@ -8,6 +8,7 @@ import type { Doc } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
 import { env, internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
+import type { BirthJourney } from "../src/types";
 import { supportedLocaleValidator } from "./i18n";
 import { requiredEnv } from "./requiredEnv";
 
@@ -74,12 +75,15 @@ export const sendNotification = internalAction({
     ),
     customMessage: v.optional(v.union(v.string(), v.null())),
     locale: supportedLocaleValidator,
+    // Optional so notifications scheduled by the previous deployment still run.
+    birthJourney: v.optional(v.union(v.literal("labour"), v.literal("planned_c_section"))),
   },
   handler: async (ctx, args) => {
     const message = getPushMessage({
       locale: args.locale,
       status: args.status,
       babyName: args.babyName,
+      birthJourney: (args.birthJourney ?? "labour") satisfies BirthJourney,
     });
     const body = args.customMessage || message.body;
 

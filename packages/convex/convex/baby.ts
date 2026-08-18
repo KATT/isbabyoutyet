@@ -5,8 +5,10 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import {
   getBlockingLaterMilestone,
+  getBirthJourney,
   getCurrentStatus,
   isStatusForward,
+  isMilestoneInJourney,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
   MILESTONES,
@@ -26,6 +28,8 @@ import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto } from "./babyDto";
+
+const birthJourneyValidator = v.union(v.literal("labour"), v.literal("planned_c_section"));
 
 export const listByUser = query({
   args: {},
@@ -144,6 +148,7 @@ export async function applyPhotoSideEffects(
         status: "photo_added",
         customMessage: null,
         locale: await resolveBabyLocale(ctx.db, baby),
+        birthJourney: getBirthJourney(baby),
       },
     );
 
@@ -263,6 +268,8 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    // Optional for stale-client compatibility; new clients always send it.
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -283,6 +290,7 @@ export const create = mutationWithTriggers({
       name: args.name,
       dueDate: args.dueDate,
       publicId,
+      birthJourney: args.birthJourney ?? "labour",
       hospitalMessage: null,
       babyBornMessage: null,
       laborStartedMessage: null,
@@ -474,6 +482,7 @@ export async function syncStatusNotifications(
       status: statusAfter.type,
       customMessage,
       locale: await resolveBabyLocale(ctx.db, updatedBaby),
+      birthJourney: getBirthJourney(updatedBaby),
     },
   );
 
@@ -557,6 +566,7 @@ export const update = mutationWithTriggers({
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
+    birthJourney: v.optional(birthJourneyValidator),
     encouragementsDisabled: v.optional(v.boolean()),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never
@@ -574,6 +584,21 @@ export const update = mutationWithTriggers({
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
+    const nextBirthJourney = rest.birthJourney ?? getBirthJourney(baby);
+
+    if (
+      nextBirthJourney === "planned_c_section" &&
+      baby.laborStarted &&
+      rest.laborStarted !== null
+    ) {
+      throw new Error("Remove the Labour started milestone before switching birth journey");
+    }
+    if (
+      typeof rest.laborStarted === "string" &&
+      !isMilestoneInJourney({ birthJourney: nextBirthJourney }, "labor_started")
+    ) {
+      throw new Error("Labour started is not part of a planned C-section journey");
+    }
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings

@@ -3,11 +3,14 @@ import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -23,6 +26,7 @@ function addBabySchema(t: TranslationFunction) {
   return z
     .object({
       name: z.string().trim().min(2, t("Name is required")),
+      birthJourney: z.union([z.literal("labour"), z.literal("planned_c_section")]),
       dueDate: htmlDate(t),
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => values);
@@ -41,9 +45,11 @@ function AddBabyPage() {
     schema: addBabySchema(t),
     defaultValues: {
       name: "",
+      birthJourney: "labour" as BirthJourney,
       dueDate: "",
     },
   });
+  const birthJourney = form.watch("birthJourney");
 
   return (
     <div className="min-h-screen bg-background bg-dots">
@@ -104,10 +110,52 @@ function AddBabyPage() {
 
                 <FormField
                   control={form.control}
+                  name="birthJourney"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">{t("Birth plan")}</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                        >
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="labour" />
+                            <span>
+                              <span className="block font-bold">{t("Labour")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("Follow labour, hospital and birth")}
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="planned_c_section" />
+                            <span>
+                              <span className="block font-bold">{t("Planned C-section")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("Skip labour and follow hospital and birth")}
+                              </span>
+                            </span>
+                          </label>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>
+                        {t("You can change this later in settings.")}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                      <FormLabel className="font-bold">
+                        {birthJourney === "planned_c_section" ? t("C-section date") : t("Due Date")}
+                      </FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>

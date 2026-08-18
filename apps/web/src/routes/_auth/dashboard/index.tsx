@@ -7,6 +7,7 @@ import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/con
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -166,6 +167,7 @@ type DashboardBaby = {
   laborStarted: string | null;
   wentToHospital: string | null;
   babyBorn: string | null;
+  birthJourney: BirthJourney | null;
 }>;
 
 export function DashboardBabyList(props: {

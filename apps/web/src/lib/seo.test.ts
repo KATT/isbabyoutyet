@@ -104,6 +104,44 @@ test("baby SEO descriptions cover labour and hospital stages", () => {
   ).toBe("Labour started");
 });
 
+test("planned C-section SEO skips labour language", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const waiting = babySeoHead({
+    name: "Nova",
+    dueDate: "2026-08-20",
+    publicId: "baby-nova",
+    theme: null,
+    locale: "en-GB",
+    birthJourney: "planned_c_section",
+    babyBorn: null,
+    wentToHospital: null,
+    laborStarted: null,
+  });
+  const atHospital = babySeoHead({
+    name: "Nova",
+    dueDate: "2026-08-20",
+    publicId: "baby-nova",
+    theme: null,
+    locale: "en-GB",
+    birthJourney: "planned_c_section",
+    babyBorn: null,
+    wentToHospital: "2026-08-20T07:00:00.000Z",
+    laborStarted: null,
+  });
+
+  expect(waiting.title).toContain("9 days until C-section");
+  expect(waiting.description).toContain("C-section is planned");
+  expect(waiting.description).not.toContain("labour");
+  expect(atHospital.description).toContain("planned C-section");
+  expect(
+    babyStatusLabel({
+      status: { type: "gone_to_hospital", date: "2026-08-20T07:00:00.000Z" },
+      locale: "en-GB",
+      birthJourney: "planned_c_section",
+    }),
+  ).toBe("At hospital");
+});
+
 test("overdue baby titles use the overdue copy", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
 

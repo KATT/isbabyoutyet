@@ -115,6 +115,31 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
+test("planned C-section settings show the relevant journey and date labels", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{
+        ...baby,
+        birthJourney: "planned_c_section",
+        laborStarted: null,
+        wentToHospital: "2026-08-10T09:00:00.000Z",
+      }}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("C-section date")).toBeTruthy();
+  expect(view.getByText("Planned C-section — skips the labour milestone")).toBeTruthy();
+  expect(view.getByText("At hospital")).toBeTruthy();
+  expect(view.queryByText("Gone to hospital")).toBeNull();
+});
+
 test("theme constants render through the active translation catalog", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);

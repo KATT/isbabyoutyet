@@ -205,6 +205,29 @@ test("the forward-only guard enforces order at every intermediate stage", async 
   await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
 });
 
+test("planned C-section updates skip labour and can mark hospital", async () => {
+  await using _timers = useFakeTimersResource();
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(api.baby.update, { babyId, birthJourney: "planned_c_section" });
+
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("Labour started is not part of a planned C-section journey");
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "gone_to_hospital",
+    message: "Checked in for the big day",
+  });
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([
+    {
+      kind: "update",
+      update: { milestone: "gone_to_hospital", message: "Checked in for the big day" },
+    },
+  ]);
+});
+
 test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () => {
   const { t, asAlice, babyId } = await setup();
 

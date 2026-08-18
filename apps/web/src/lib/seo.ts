@@ -1,5 +1,5 @@
-import type { BabyStatus } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { BabyStatus, BirthJourney } from "@workspace/convex/src/types";
+import { getBirthJourney, getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
 import { translate } from "@/lib/i18n";
@@ -18,17 +18,34 @@ type BabySeoInput = {
   babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
-};
+} & Partial<{ birthJourney: BirthJourney | null }>;
 
 function babyPageTitle(baby: BabySeoInput) {
   const overdueDays = getOverdueDays(baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
+  const birthJourney = getBirthJourney(baby);
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
   if (!isBorn) {
-    if (overdueDays > 0) {
+    if (birthJourney === "planned_c_section" && overdueDays > 0) {
+      title = translate(
+        locale,
+        overdueDays === 1
+          ? "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?"
+          : "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?",
+        { count: overdueDays, name: baby.name },
+      );
+    } else if (birthJourney === "planned_c_section") {
+      title = translate(
+        locale,
+        daysUntilDueDate === 1
+          ? "{{count}} day until C-section – Is {{name}} out yet?"
+          : "{{count}} days until C-section – Is {{name}} out yet?",
+        { count: daysUntilDueDate, name: baby.name },
+      );
+    } else if (overdueDays > 0) {
       title = translate(
         locale,
         overdueDays === 1
@@ -52,17 +69,24 @@ function babyPageTitle(baby: BabySeoInput) {
 export function babyPageDescription(baby: BabySeoInput) {
   const status = getCurrentStatus(baby);
   const locale = baby.locale;
+  const birthJourney = getBirthJourney(baby);
   switch (status.type) {
     case "born":
       return translate(locale, "{{name}} has arrived! See the announcement and follow along.", {
         name: baby.name,
       });
     case "gone_to_hospital":
-      return translate(
-        locale,
-        "{{name}}'s family has gone to hospital — follow live updates on the baby page.",
-        { name: baby.name },
-      );
+      return birthJourney === "planned_c_section"
+        ? translate(
+            locale,
+            "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.",
+            { name: baby.name },
+          )
+        : translate(
+            locale,
+            "{{name}}'s family has gone to hospital — follow live updates on the baby page.",
+            { name: baby.name },
+          );
     case "labor_started":
       return translate(
         locale,
@@ -70,9 +94,13 @@ export function babyPageDescription(baby: BabySeoInput) {
         { name: baby.name },
       );
     case "not_yet":
-      return translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
-        name: baby.name,
-      });
+      return birthJourney === "planned_c_section"
+        ? translate(locale, "{{name}}'s C-section is planned — follow the countdown and updates.", {
+            name: baby.name,
+          })
+        : translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
+            name: baby.name,
+          });
     default: {
       const _exhaustive: never = status;
       return _exhaustive;
@@ -80,16 +108,28 @@ export function babyPageDescription(baby: BabySeoInput) {
   }
 }
 
-export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLocale }) {
+export function babyStatusLabel(
+  opts: {
+    status: BabyStatus;
+    locale: SupportedLocale;
+  } & Partial<{ birthJourney: BirthJourney }>,
+) {
+  const birthJourney = opts.birthJourney ?? "labour";
   switch (opts.status.type) {
     case "born":
       return translate(opts.locale, "Yes! Baby is out");
     case "gone_to_hospital":
-      return translate(opts.locale, "Gone to hospital");
+      return translate(
+        opts.locale,
+        birthJourney === "planned_c_section" ? "At hospital" : "Gone to hospital",
+      );
     case "labor_started":
       return translate(opts.locale, "Labour started");
     case "not_yet":
-      return translate(opts.locale, "Not yet");
+      return translate(
+        opts.locale,
+        birthJourney === "planned_c_section" ? "C-section planned" : "Not yet",
+      );
     default: {
       const _exhaustive: never = opts.status;
       return _exhaustive;
@@ -98,17 +138,38 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoInput, "dueDate" | "babyBorn" | "locale">;
+  baby: Pick<BabySeoInput, "dueDate" | "babyBorn" | "locale" | "birthJourney">;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
+  const birthJourney = getBirthJourney(opts.baby);
   if (opts.status.type === "born") {
     return translate(locale, "Yes! Baby is out");
   }
   if (opts.status.type !== "not_yet") {
-    return babyStatusLabel({ status: opts.status, locale });
+    return babyStatusLabel({ status: opts.status, locale, birthJourney });
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
+  if (birthJourney === "planned_c_section" && overdueDays > 0) {
+    return translate(
+      locale,
+      overdueDays === 1
+        ? "Scheduled date was {{count}} day ago"
+        : "Scheduled date was {{count}} days ago",
+      { count: overdueDays },
+    );
+  }
+  const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
+  if (birthJourney === "planned_c_section") {
+    if (daysUntil === 0) {
+      return translate(locale, "C-section scheduled today!");
+    }
+    return translate(
+      locale,
+      daysUntil === 1 ? "{{count}} day until C-section" : "{{count}} days until C-section",
+      { count: daysUntil },
+    );
+  }
   if (overdueDays > 0) {
     return translate(
       locale,
@@ -116,7 +177,6 @@ export function babyStatusDetail(opts: {
       { count: overdueDays },
     );
   }
-  const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
   return translate(
     locale,
     daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",

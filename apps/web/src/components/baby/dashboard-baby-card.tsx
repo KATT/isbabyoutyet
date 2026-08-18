@@ -1,7 +1,8 @@
 import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@workspace/ui/components/badge";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { getBirthJourney, getCurrentStatus } from "@workspace/convex/src/types";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";
 import { useI18n } from "@/lib/i18n";
 
@@ -14,6 +15,7 @@ type DashboardBabyCardBaby = {
   laborStarted: string | null;
   wentToHospital: string | null;
   babyBorn: string | null;
+  birthJourney: BirthJourney | null;
 }>;
 
 type DashboardBabyCardProps = {
@@ -33,6 +35,7 @@ const STATUS_EMOJI = {
 function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
   const { t } = useI18n();
   const currentStatus = getCurrentStatus(props.baby);
+  const birthJourney = getBirthJourney(props.baby);
 
   switch (currentStatus.type) {
     case "born":
@@ -40,10 +43,46 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
     case "labor_started":
       return <Badge className="rounded-full font-bold">{t("Labour started")}</Badge>;
     case "gone_to_hospital":
-      return <Badge className="rounded-full font-bold">{t("Gone to hospital")}</Badge>;
+      return (
+        <Badge className="rounded-full font-bold">
+          {birthJourney === "planned_c_section" ? t("At hospital") : t("Gone to hospital")}
+        </Badge>
+      );
     case "not_yet": {
       const overdueDays = getOverdueDays(props.baby.dueDate);
       const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
+      if (birthJourney === "planned_c_section") {
+        if (overdueDays > 0) {
+          return (
+            <Badge className="rounded-full font-bold">
+              {t(
+                overdueDays === 1
+                  ? "Scheduled date was {{count}} day ago"
+                  : "Scheduled date was {{count}} days ago",
+                { count: overdueDays },
+              )}
+            </Badge>
+          );
+        }
+        if (daysUntilDueDate === 0) {
+          return (
+            <Badge className="rounded-full font-bold">{t("C-section scheduled today!")}</Badge>
+          );
+        }
+        return (
+          <Badge
+            variant="outline"
+            className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+          >
+            {t(
+              daysUntilDueDate === 1
+                ? "{{count}} day until C-section"
+                : "{{count}} days until C-section",
+              { count: daysUntilDueDate },
+            )}
+          </Badge>
+        );
+      }
       if (overdueDays > 0) {
         return (
           <Badge className="rounded-full font-bold">
@@ -77,10 +116,13 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = getCurrentStatus(baby);
+  const birthJourney = getBirthJourney(baby);
   const dateLine =
     currentStatus.type === "born"
       ? t("Born {{date}}", { date: formatDueDate(currentStatus.date, locale) })
-      : t("Due {{date}}", { date: formatDueDate(baby.dueDate, locale) });
+      : t(birthJourney === "planned_c_section" ? "Scheduled {{date}}" : "Due {{date}}", {
+          date: formatDueDate(baby.dueDate, locale),
+        });
 
   return (
     <Link

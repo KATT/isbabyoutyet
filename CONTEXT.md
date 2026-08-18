@@ -26,6 +26,12 @@ A message and/or photo the owner or a co-parent posts to the baby page feed,
 optionally marking a milestone.
 _Avoid_: Post (except as a verb), status update
 
+**Birth journey**:
+The milestone path a baby page follows. A labour journey includes labour,
+hospital, and birth; a planned C-section journey skips labour and counts down
+to the scheduled C-section date before hospital and birth.
+_Avoid_: Delivery mode, birth type
+
 **Encouragement**:
 A message a visitor leaves on a baby page.
 _Avoid_: Comment, well-wish

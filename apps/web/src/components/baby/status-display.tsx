@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getBirthJourney } from "@workspace/convex/src/types";
 import {
   formatDate,
   getOverdueDays,
@@ -163,7 +164,21 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
   const overdueDays = getOverdueDays(props.baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
-  const meta = STATUS_META[props.currentStatus.type];
+  const birthJourney = getBirthJourney(props.baby);
+  const meta =
+    birthJourney === "planned_c_section" && props.currentStatus.type === "not_yet"
+      ? {
+          emoji: "🗓️",
+          answerKey: "C-section planned" as const,
+          sublineKey: "Counting down to the big day" as const,
+        }
+      : birthJourney === "planned_c_section" && props.currentStatus.type === "gone_to_hospital"
+        ? {
+            emoji: "🏥",
+            answerKey: "At hospital!" as const,
+            sublineKey: "The big day is here" as const,
+          }
+        : STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
 
   return (
@@ -202,19 +217,40 @@ export function StatusDisplay(props: StatusDisplayProps) {
           <p
             className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
           >
-            {overdueDays > 0
-              ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
-                  count: overdueDays,
-                })
-              : t(
-                  daysUntilDueDate === 1
-                    ? "{{count}} day until due date"
-                    : "{{count}} days until due date",
-                  { count: daysUntilDueDate },
-                )}
+            {birthJourney === "planned_c_section"
+              ? overdueDays > 0
+                ? t(
+                    overdueDays === 1
+                      ? "Scheduled date was {{count}} day ago"
+                      : "Scheduled date was {{count}} days ago",
+                    { count: overdueDays },
+                  )
+                : daysUntilDueDate === 0
+                  ? t("C-section scheduled today!")
+                  : t(
+                      daysUntilDueDate === 1
+                        ? "{{count}} day until C-section"
+                        : "{{count}} days until C-section",
+                      { count: daysUntilDueDate },
+                    )
+              : overdueDays > 0
+                ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
+                    count: overdueDays,
+                  })
+                : t(
+                    daysUntilDueDate === 1
+                      ? "{{count}} day until due date"
+                      : "{{count}} days until due date",
+                    { count: daysUntilDueDate },
+                  )}
           </p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
+            {t(
+              birthJourney === "planned_c_section"
+                ? "C-section date: {{date}}"
+                : "Due date: {{date}}",
+              { date: formatDueDate(props.baby.dueDate, locale) },
+            )}
           </p>
         </div>
       )}

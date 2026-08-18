@@ -1,7 +1,9 @@
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getBirthJourney, getMilestonesForJourney } from "@workspace/convex/src/types";
+import { cn } from "@workspace/ui/lib/utils";
 import { getRelativeTime } from "./utils";
 import { useI18n } from "@/lib/i18n";
-import { MILESTONE_LABEL_KEYS } from "./translation-keys";
+import { getMilestoneLabelKey } from "./translation-keys";
 
 type ProgressIndicatorProps = {
   baby: BabyData;
@@ -12,33 +14,43 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = props.currentStatus;
+  const birthJourney = getBirthJourney(baby);
 
   // If a later status is set, earlier stages count as completed
-  const steps = [
+  const allSteps = [
     {
       key: "labor_started",
-      labelKey: MILESTONE_LABEL_KEYS.labor_started,
       emoji: "💫",
       date: baby.laborStarted,
       completed: !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn,
     },
     {
       key: "gone_to_hospital",
-      labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital,
       emoji: "🏥",
       date: baby.wentToHospital,
       completed: !!baby.wentToHospital || !!baby.babyBorn,
     },
     {
       key: "born",
-      labelKey: MILESTONE_LABEL_KEYS.born,
       emoji: "🎉",
       date: baby.babyBorn,
       completed: !!baby.babyBorn,
     },
   ] as const;
+  const journeyMilestones = getMilestonesForJourney(baby);
+  const steps = allSteps.filter((step) => journeyMilestones.includes(step.key));
 
   const progressValue = (() => {
+    if (birthJourney === "planned_c_section") {
+      switch (currentStatus.type) {
+        case "born":
+          return 100;
+        case "gone_to_hospital":
+          return 50;
+        default:
+          return 0;
+      }
+    }
     switch (currentStatus.type) {
       case "labor_started":
         return (1 / 3) * 100;
@@ -66,7 +78,9 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
         halves meet between columns, so the stroke reaches the rim and never
         crosses the badge face.
       */}
-      <ol className="grid grid-cols-3">
+      <ol
+        className={cn("grid", birthJourney === "planned_c_section" ? "grid-cols-2" : "grid-cols-3")}
+      >
         {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
           // Path into this milestone fills once the milestone itself is reached.
@@ -126,7 +140,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
                       : "text-muted-foreground"
                 }`}
               >
-                {t(step.labelKey)}
+                {t(getMilestoneLabelKey(step.key, birthJourney))}
               </p>
               {step.date && (
                 <p className="mt-1 max-w-full truncate rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">

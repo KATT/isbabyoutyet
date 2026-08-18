@@ -23,6 +23,7 @@ import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
 import {
   getBlockingLaterMilestone,
+  getBirthJourney,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
@@ -146,7 +147,11 @@ function DueDateForm(props: EditorFormProps) {
             <FormControl>
               <Input
                 type="date"
-                aria-label={t("Due Date")}
+                aria-label={
+                  getBirthJourney(props.baby) === "planned_c_section"
+                    ? t("C-section date")
+                    : t("Due Date")
+                }
                 onMouseDown={(e) => e.stopPropagation()}
                 onFocus={(e) => e.stopPropagation()}
                 {...field}

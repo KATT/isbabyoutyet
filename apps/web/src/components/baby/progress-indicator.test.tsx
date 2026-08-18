@@ -48,6 +48,25 @@ test("shows all three milestones without dates while waiting", async () => {
   expect(view.queryByText("yesterday")).toBeNull();
 });
 
+test("planned C-section journey skips labour and uses two relevant milestones", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  const plannedCSectionBaby: BabyData = {
+    ...waitingBaby,
+    birthJourney: "planned_c_section",
+  };
+  await using view = renderResource(
+    <ProgressIndicator
+      baby={plannedCSectionBaby}
+      currentStatus={getCurrentStatus(plannedCSectionBaby)}
+    />,
+  );
+
+  expect(view.queryByText("Labour started")).toBeNull();
+  expect(view.getByText("At hospital")).toBeTruthy();
+  expect(view.getByText("Baby born")).toBeTruthy();
+  expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
+});
+
 test("marks every stage complete with its relative time once born", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   await using view = renderResource(

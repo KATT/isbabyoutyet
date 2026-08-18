@@ -150,6 +150,18 @@ test("the status radio group is labelled and offers only future stages", async (
   expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
 });
 
+test("planned C-section composer skips labour and calls the hospital milestone At hospital", async () => {
+  await using composer = renderComposerResource({
+    ...notYetBaby,
+    birthJourney: "planned_c_section",
+  });
+  const view = composer.view;
+
+  expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
+  expect(view.getByRole("radio", { name: "At hospital" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
+});
+
 test("the milestone metadata resolves through the Swedish catalog", async () => {
   await using composer = renderComposerResource(notYetBaby, "sv");
   const view = composer.view;

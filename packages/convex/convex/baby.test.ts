@@ -61,6 +61,54 @@ test("create a baby and list it for the owner", async () => {
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
 });
 
+test("a planned C-section baby stores its journey and cannot mark labour", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby Nova",
+    dueDate: "2026-09-01",
+    birthJourney: "planned_c_section",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    birthJourney: "planned_c_section",
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      laborStarted: "2026-08-10T08:00:00.000Z",
+    }),
+  ).rejects.toThrow("Labour started is not part of a planned C-section journey");
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    wentToHospital: "2026-08-10T08:00:00.000Z",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    wentToHospital: "2026-08-10T08:00:00.000Z",
+  });
+});
+
+test("switching to a planned C-section journey preserves milestone integrity", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby Nova",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      birthJourney: "planned_c_section",
+    }),
+  ).rejects.toThrow("Remove the Labour started milestone before switching birth journey");
+});
+
 test("getByPublicId resolves by publicId and by document id", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

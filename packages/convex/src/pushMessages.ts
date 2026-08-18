@@ -1,4 +1,4 @@
-import type { NotifiableStatus } from "./types";
+import type { BirthJourney, NotifiableStatus } from "./types";
 import type { SupportedLocale } from "./i18n";
 
 type PushCopy = {
@@ -99,11 +99,38 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
   },
 };
 
+const plannedCSectionHospitalCopy: Record<SupportedLocale, PushCopy> = {
+  "en-GB": {
+    title: (name) => `${name}: The big day is here!`,
+    body: "They're at hospital for the planned C-section. Tap for the latest.",
+  },
+  "en-US": {
+    title: (name) => `${name}: The big day is here!`,
+    body: "They're at the hospital for the planned C-section. Tap for the latest.",
+  },
+  sv: {
+    title: (name) => `${name}: Den stora dagen är här!`,
+    body: "Familjen är på sjukhuset för det planerade kejsarsnittet. Kika in för senaste nytt!",
+  },
+  es: {
+    title: (name) => `¡${name}: llegó el gran día!`,
+    body: "La familia está en el hospital para la cesárea programada. Entra para ver las novedades.",
+  },
+  "pt-BR": {
+    title: (name) => `${name}: o grande dia chegou!`,
+    body: "A família está no hospital para a cesárea programada. Vem ver as novidades!",
+  },
+};
+
 export function getPushMessage(opts: {
   locale: SupportedLocale;
   status: NotifiableStatus;
   babyName: string;
+  birthJourney: BirthJourney;
 }) {
-  const message = copy[opts.locale][opts.status];
+  const message =
+    opts.birthJourney === "planned_c_section" && opts.status === "gone_to_hospital"
+      ? plannedCSectionHospitalCopy[opts.locale]
+      : copy[opts.locale][opts.status];
   return { title: message.title(opts.babyName), body: message.body };
 }

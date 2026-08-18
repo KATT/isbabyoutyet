@@ -2,6 +2,7 @@ import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
 import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { THEME_OPTIONS } from "@/components/baby/utils";
 import {
@@ -94,7 +95,7 @@ export type BabyOgImageInput = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
   photoUrl: string | null;
-};
+} & Partial<{ birthJourney: BirthJourney | null }>;
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -120,7 +121,11 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
   const accent = colors[2];
   const status = getCurrentStatus(baby);
   const headline = translate(baby.locale, "Is {{name}} out yet?", { name: baby.name });
-  const statusText = babyStatusLabel({ status, locale: baby.locale });
+  const statusText = babyStatusLabel({
+    status,
+    locale: baby.locale,
+    birthJourney: baby.birthJourney ?? "labour",
+  });
   const detail =
     status.type === "not_yet"
       ? babyStatusDetail({ baby, status })
@@ -130,6 +135,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,
+          birthJourney: baby.birthJourney,
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,

@@ -43,6 +43,7 @@ import {
   Users,
 } from "@phosphor-icons/react";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { getBirthJourney, isBirthJourney } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -55,6 +56,7 @@ import {
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
+import { getMilestoneLabelKey } from "./translation-keys";
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -85,6 +87,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
+  const birthJourney = getBirthJourney(props.baby);
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -114,11 +117,56 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <CalendarHeart className="w-4 h-4" />
             </ItemMedia>
             <ItemContent>
-              <ItemTitle>{t("Due Date")}</ItemTitle>
+              <ItemTitle>
+                {birthJourney === "planned_c_section" ? t("C-section date") : t("Due Date")}
+              </ItemTitle>
               <ItemDescription>{formatDueDate(props.baby.dueDate, locale)}</ItemDescription>
             </ItemContent>
             <ItemActions>
               <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
+            </ItemActions>
+          </Item>
+
+          <ItemSeparator />
+
+          <Item>
+            <ItemMedia variant="icon">
+              <CalendarHeart className="w-4 h-4" />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>{t("Birth plan")}</ItemTitle>
+              <ItemDescription>
+                {birthJourney === "planned_c_section"
+                  ? t("Planned C-section — skips the labour milestone")
+                  : t("Labour — follows labour, hospital and birth")}
+              </ItemDescription>
+              {props.baby.laborStarted && birthJourney === "labour" ? (
+                <ItemDescription>
+                  {t("Remove the Labour started milestone before switching.")}
+                </ItemDescription>
+              ) : null}
+            </ItemContent>
+            <ItemActions>
+              <Select
+                value={birthJourney}
+                onValueChange={(value) => {
+                  if (typeof value === "string" && isBirthJourney(value)) {
+                    void props.onUpdate({ birthJourney: value });
+                  }
+                }}
+              >
+                <SelectTrigger aria-label={t("Birth plan")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    <SelectItem value="labour">{t("Labour")}</SelectItem>
+                    <SelectItem value="planned_c_section" disabled={!!props.baby.laborStarted}>
+                      {t("Planned C-section")}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </ItemActions>
           </Item>
 
@@ -159,7 +207,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <Hospital className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>{t("Gone to hospital")}</ItemTitle>
+                  <ItemTitle>{t(getMilestoneLabelKey("gone_to_hospital", birthJourney))}</ItemTitle>
                   <ItemDescription>
                     {formatDate(props.baby.wentToHospital, locale)} (
                     {getRelativeTime(props.baby.wentToHospital, locale)})

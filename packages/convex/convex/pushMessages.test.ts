@@ -1,10 +1,15 @@
 import { expect, test } from "vitest";
 import { getPushMessage } from "../src/pushMessages";
 import type { SupportedLocale } from "../src/i18n";
-import type { NotifiableStatus } from "../src/types";
+import type { BirthJourney, NotifiableStatus } from "../src/types";
 
-function msg(opts: { locale: SupportedLocale; status: NotifiableStatus; babyName: string }) {
-  return getPushMessage(opts);
+function msg(opts: {
+  locale: SupportedLocale;
+  status: NotifiableStatus;
+  babyName: string;
+  birthJourney?: BirthJourney;
+}) {
+  return getPushMessage({ ...opts, birthJourney: opts.birthJourney ?? "labour" });
 }
 
 test("push copy follows the baby's locale and dialect", () => {
@@ -51,4 +56,18 @@ test("push copy follows the baby's locale and dialect", () => {
     "Nova chegou! 🎉",
     "Foto nova de Nova! 📸",
   ]);
+});
+
+test("planned C-section hospital notifications announce the big day", () => {
+  expect(
+    msg({
+      locale: "en-GB",
+      status: "gone_to_hospital",
+      babyName: "Nova",
+      birthJourney: "planned_c_section",
+    }),
+  ).toEqual({
+    title: "Nova: The big day is here!",
+    body: "They're at hospital for the planned C-section. Tap for the latest.",
+  });
 });

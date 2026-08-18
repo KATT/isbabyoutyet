@@ -1,5 +1,17 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
+export const BIRTH_JOURNEYS = ["labour", "planned_c_section"] as const;
+
+export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
+
+export function isBirthJourney(value: string): value is BirthJourney {
+  return BIRTH_JOURNEYS.some((journey) => journey === value);
+}
+
+export function getBirthJourney(baby: { birthJourney?: BirthJourney | null }): BirthJourney {
+  return baby.birthJourney ?? "labour";
+}
+
 /**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
@@ -66,6 +78,24 @@ export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "
  * Owner-postable milestone kinds — the status stages a feed update can mark.
  */
 export type Milestone = "labor_started" | "gone_to_hospital" | "born";
+
+const MILESTONES_BY_BIRTH_JOURNEY = {
+  labour: ["labor_started", "gone_to_hospital", "born"],
+  planned_c_section: ["gone_to_hospital", "born"],
+} as const satisfies Record<BirthJourney, readonly Milestone[]>;
+
+export function getMilestonesForJourney(baby: {
+  birthJourney?: BirthJourney | null;
+}): readonly Milestone[] {
+  return MILESTONES_BY_BIRTH_JOURNEY[getBirthJourney(baby)];
+}
+
+export function isMilestoneInJourney(
+  baby: { birthJourney?: BirthJourney | null },
+  milestone: Milestone,
+) {
+  return getMilestonesForJourney(baby).some((candidate) => candidate === milestone);
+}
 
 export const MILESTONE_LABELS = {
   labor_started: "Labour started",

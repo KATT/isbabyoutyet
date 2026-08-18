@@ -120,3 +120,21 @@ test("an unborn baby before the due date shows days remaining", async () => {
   expect(view.getByText("Shared with you")).toBeTruthy();
   expect(view.getByText("19 days until due date")).toBeTruthy();
 });
+
+test("planned C-section cards use scheduled-date language", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
+  const planned: DashboardBabyCardBaby = {
+    name: "Nova",
+    publicId: "baby-nova",
+    dueDate: "2026-09-01",
+    birthJourney: "planned_c_section",
+    role: "owner",
+  };
+  await using view = renderResource(
+    <DashboardBabyCard baby={planned} index={0} dataTourId={undefined} />,
+  );
+
+  expect(view.getByText("19 days until C-section")).toBeTruthy();
+  expect(view.getByText("Scheduled 1 September 2026")).toBeTruthy();
+  expect(view.queryByText(/due date/i)).toBeNull();
+});

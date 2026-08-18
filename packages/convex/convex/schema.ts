@@ -10,6 +10,8 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
+    // Existing rows without this field follow the default labour journey.
+    birthJourney: v.optional(v.union(v.literal("labour"), v.literal("planned_c_section"))),
     hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
     babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
     laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when labour started
