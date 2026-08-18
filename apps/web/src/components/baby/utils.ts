@@ -131,6 +131,13 @@ export function formatDueDate(dateString: string, locale: SupportedLocale): stri
   }).format(parseDate(dateString));
 }
 
+export function formatDueMonth(dateString: string, locale: SupportedLocale): string {
+  return new Intl.DateTimeFormat(locale, {
+    timeZone: TIMEZONE,
+    month: "long",
+  }).format(parseDate(dateString));
+}
+
 export function getDaysUntilDueDate(dueDate: string): number {
   const now = new Date();
   const due = parseDate(dueDate);

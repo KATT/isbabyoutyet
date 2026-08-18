@@ -36,6 +36,8 @@ const birthJourneyValidator = v.union(
   v.literal("planned_c_section"),
 );
 
+const dueDateVisibilityValidator = v.union(v.literal("exact"), v.literal("month"));
+
 export const listByUser = query({
   args: {},
   handler: async (ctx) => {
@@ -86,9 +88,13 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
+    const canSeeExactDueDate =
+      baby.dueDateVisibility !== "month" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...toBabyDto(baby),
+      dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
+      dueDateVisibility: baby.dueDateVisibility ?? "exact",
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
@@ -308,6 +314,7 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    dueDateVisibility: v.optional(dueDateVisibilityValidator),
     // Optional for stale clients; the document always stores a concrete selection.
     birthJourney: v.optional(birthJourneyValidator),
   },
@@ -329,6 +336,7 @@ export const create = mutationWithTriggers({
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
       dueDate: args.dueDate,
+      dueDateVisibility: args.dueDateVisibility ?? "exact",
       publicId,
       birthJourney: args.birthJourney ?? "labor",
       hospitalMessage: null,
@@ -617,6 +625,7 @@ export const update = mutationWithTriggers({
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
+    dueDateVisibility: v.optional(dueDateVisibilityValidator),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),

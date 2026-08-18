@@ -53,6 +53,31 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
   expect(seo.indexable).toBe(true);
 });
 
+test("month-only due date privacy removes the countdown from metadata", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const baby = {
+    name: "Juniper",
+    dueDate: "2026-09-19",
+    dueDateVisibility: "month" as const,
+    publicId: "juniper-hale",
+    theme: "sunny-days",
+    locale: "en-GB" as const,
+    babyBorn: null,
+    wentToHospital: null,
+    laborStarted: null,
+  };
+
+  const seo = babySeoHead(baby);
+  expect(seo.title).toContain("Is Juniper out yet?");
+  expect(seo.title).not.toContain("until due date");
+  expect(
+    babyStatusDetail({
+      baby,
+      status: { type: "not_yet" },
+    }),
+  ).toBe("September baby");
+});
+
 test("baby SEO description changes when the baby is born", () => {
   const seo = babySeoHead({
     name: "Milo",

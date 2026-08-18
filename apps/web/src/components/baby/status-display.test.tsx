@@ -119,6 +119,26 @@ test.each([
   expect(view.getByText(testCase.expected)).toBeTruthy();
 });
 
+test("month-only privacy replaces the exact date and countdown", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
+  const view = render(
+    <StatusDisplay
+      baby={{ ...baby, dueDate: "2026-09-19", dueDateVisibility: "month" }}
+      currentStatus={getCurrentStatus(baby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByText("September baby")).toBeTruthy();
+  expect(view.queryByText(/until due date/)).toBeNull();
+  expect(view.queryByText(/19 September/)).toBeNull();
+});
+
 test("uses the thumbnail inline and opens the full photo", () => {
   const view = render(
     <StatusDisplay

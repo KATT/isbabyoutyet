@@ -126,6 +126,38 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
+test("due date privacy switch changes the public display to month only", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Visitors see the full date and countdown.")).toBeTruthy();
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  expect(onUpdate).toHaveBeenCalledWith({ dueDateVisibility: "month" });
+});
+
+test("due date privacy setting previews the month-only wording", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, dueDateVisibility: "month" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Show exact due date" })).not.toBeChecked();
+});
+
 test("shows when visitor messages are disabled", async () => {
   await using view = renderResource(
     <SettingsPanel

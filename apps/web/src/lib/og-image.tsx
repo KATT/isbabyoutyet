@@ -3,7 +3,7 @@ import { Resvg } from "@resvg/resvg-js";
 import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import type { MilestoneVisibility } from "@workspace/convex/src/types";
+import type { DueDateVisibility, MilestoneVisibility } from "@workspace/convex/src/types";
 import { THEME_OPTIONS } from "@/components/baby/utils";
 import {
   OG_IMAGE_HEIGHT,
@@ -95,7 +95,10 @@ export type BabyOgImageInput = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
   photoUrl: string | null;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+} & Partial<{
+  dueDateVisibility: DueDateVisibility;
+  milestoneVisibility: MilestoneVisibility | null;
+}>;
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -128,6 +131,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       : babyPageDescription({
           name: baby.name,
           dueDate: baby.dueDate,
+          dueDateVisibility: baby.dueDateVisibility,
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,

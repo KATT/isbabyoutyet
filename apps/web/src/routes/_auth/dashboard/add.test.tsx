@@ -42,6 +42,8 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Show exact due date" })).toBeChecked();
+  expect(view.getByText("Turn this off to show only the due month.")).toBeTruthy();
 });
 
 test.each([
@@ -66,11 +68,36 @@ test.each([
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
+      dueDateVisibility: "exact",
       birthJourney: testCase.birthJourney,
     });
   });
   expect(mocks.navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+  });
+});
+
+test("can create a page that only shows the due month", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-19" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-19"),
+      dueDateVisibility: "month",
+      birthJourney: "labor",
+    });
   });
 });

@@ -36,6 +36,7 @@ import {
   CalendarHeart,
   ChatCircle,
   Confetti,
+  Eye,
   Heartbeat,
   Hospital,
   Palette,
@@ -49,7 +50,7 @@ import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/conv
 import { api } from "@workspace/convex/convex/_generated/api";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
-import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
+import { formatDate, formatDueDate, formatDueMonth, getRelativeTime, THEME_OPTIONS } from "./utils";
 import {
   SUPPORTED_LOCALES,
   isSupportedLocale,
@@ -172,6 +173,34 @@ export function SettingsPanel(props: SettingsPanelProps) {
           </Item>
 
           <ItemSeparator />
+
+          <Item>
+            <ItemMedia variant="icon">
+              <Eye />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>{t("Show exact due date")}</ItemTitle>
+              <ItemDescription>
+                {props.baby.dueDateVisibility === "month"
+                  ? t("Visitors see “{{month}} baby”.", {
+                      month: formatDueMonth(props.baby.dueDate, locale),
+                    })
+                  : t("Visitors see the full date and countdown.")}
+              </ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Switch
+                checked={props.baby.dueDateVisibility !== "month"}
+                onCheckedChange={(checked) =>
+                  props.onUpdate({ dueDateVisibility: checked ? "exact" : "month" })
+                }
+                aria-label={t("Show exact due date")}
+              />
+            </ItemActions>
+          </Item>
+
+          <ItemSeparator />
+
           <Item>
             <ItemMedia variant="icon">
               <Heartbeat className="w-4 h-4" />

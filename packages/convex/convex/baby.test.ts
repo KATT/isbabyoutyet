@@ -90,6 +90,42 @@ test("creation stores the selected journey and only exposes derived visibility p
   ).toBe("forbidden");
 });
 
+test("month privacy hides the exact due date from visitors but not managers", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "September Baby",
+    dueDate: "2026-09-19",
+    dueDateVisibility: "month",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09",
+    dueDateVisibility: "month",
+  });
+  expect(
+    await t
+      .withIdentity({ subject: "bob" })
+      .query(api.baby.getByPublicId, { id: created.publicId }),
+  ).toMatchObject({
+    dueDate: "2026-09",
+    dueDateVisibility: "month",
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateVisibility: "month",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    dueDateVisibility: "exact",
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateVisibility: "exact",
+  });
+});
+
 test("journey selection can change after milestone updates without deleting them", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

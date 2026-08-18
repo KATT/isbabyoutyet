@@ -5,6 +5,7 @@ import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { Switch } from "@workspace/ui/components/switch";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -26,6 +27,7 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
+      dueDateVisibility: z.union([z.literal("exact"), z.literal("month")]),
       birthJourney: z.union([
         z.literal("labor"),
         z.literal("home_birth"),
@@ -49,6 +51,7 @@ export function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
+      dueDateVisibility: "exact" as const,
       birthJourney: "labor" as const,
     },
   });
@@ -95,7 +98,7 @@ export function AddBabyPage() {
                 });
               }}
             >
-              <div className="space-y-5">
+              <div className="flex flex-col gap-5">
                 <FormField
                   control={form.control}
                   name="name"
@@ -106,6 +109,30 @@ export function AddBabyPage() {
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dueDateVisibility"
+                  render={(renderProps) => (
+                    <FormItem className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
+                      <div className="flex flex-col gap-1">
+                        <FormLabel className="font-bold">{t("Show exact due date")}</FormLabel>
+                        <FormDescription>
+                          {t("Turn this off to show only the due month.")}
+                        </FormDescription>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={renderProps.field.value === "exact"}
+                          onCheckedChange={(checked) =>
+                            renderProps.field.onChange(checked ? "exact" : "month")
+                          }
+                          aria-label={t("Show exact due date")}
+                        />
+                      </FormControl>
                     </FormItem>
                   )}
                 />

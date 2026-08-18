@@ -288,6 +288,7 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       ownerTokenIdentifier,
       name: spec.name,
       dueDate: dueDate.toISOString(),
+      dueDateVisibility: "exact",
       publicId: spec.publicId,
       birthJourney: "labor",
       laborStarted,

@@ -1,7 +1,16 @@
-import type { BabyStatus, MilestoneVisibility } from "@workspace/convex/src/types";
+import type {
+  BabyStatus,
+  DueDateVisibility,
+  MilestoneVisibility,
+} from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
+import {
+  formatDueMonth,
+  getDaysUntilDueDate,
+  getOverdueDays,
+  getThemePrimaryColor,
+} from "@/components/baby/utils";
 import { translate } from "@/lib/i18n";
 import { isIndexableBabyPublicId, searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
@@ -18,7 +27,10 @@ type BabySeoInput = {
   babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+} & Partial<{
+  dueDateVisibility: DueDateVisibility;
+  milestoneVisibility: MilestoneVisibility | null;
+}>;
 
 function babyPageTitle(baby: BabySeoInput) {
   const overdueDays = getOverdueDays(baby.dueDate);
@@ -27,7 +39,7 @@ function babyPageTitle(baby: BabySeoInput) {
   const locale = baby.locale;
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn) {
+  if (!isBorn && baby.dueDateVisibility !== "month") {
     if (overdueDays > 0) {
       title = translate(
         locale,
@@ -98,7 +110,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoInput, "dueDate" | "babyBorn" | "locale">;
+  baby: Pick<BabySeoInput, "dueDate" | "dueDateVisibility" | "babyBorn" | "locale">;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -107,6 +119,11 @@ export function babyStatusDetail(opts: {
   }
   if (opts.status.type !== "not_yet") {
     return babyStatusLabel({ status: opts.status, locale });
+  }
+  if (opts.baby.dueDateVisibility === "month") {
+    return translate(locale, "{{month}} baby", {
+      month: formatDueMonth(opts.baby.dueDate, locale),
+    });
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
   if (overdueDays > 0) {

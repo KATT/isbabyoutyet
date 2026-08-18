@@ -4,6 +4,10 @@ export const BIRTH_JOURNEYS = ["labor", "home_birth", "planned_c_section"] as co
 
 export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 
+export const DUE_DATE_VISIBILITIES = ["exact", "month"] as const;
+
+export type DueDateVisibility = (typeof DUE_DATE_VISIBILITIES)[number];
+
 /**
  * Sentinel returned by manager-only queries when the caller lacks access,
  * instead of throwing. Lets route loaders fetch the same set of queries for
