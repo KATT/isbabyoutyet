@@ -15,6 +15,8 @@ function useFakeTimersResource(now: Date) {
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   milestoneVisibility: { showLabor: true, showHospital: true },
   laborStarted: null,
   wentToHospital: null,
@@ -117,6 +119,50 @@ test.each([
   });
 
   expect(view.getByText(testCase.expected)).toBeTruthy();
+});
+
+test("custom public due date text replaces the exact date and countdown", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
+  const view = render(
+    <StatusDisplay
+      baby={{
+        ...baby,
+        dueDate: "2026-09-19",
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
+      currentStatus={getCurrentStatus(baby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByText("Any day now")).toBeTruthy();
+  expect(view.queryByText(/until due date/)).toBeNull();
+  expect(view.queryByText(/19 September/)).toBeNull();
+});
+
+test("blank public due date text keeps the exact date and countdown", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
+  const view = render(
+    <StatusDisplay
+      baby={{ ...baby, publicDueDateText: "   " }}
+      currentStatus={getCurrentStatus(baby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByText("14 days until due date")).toBeTruthy();
+  expect(view.getByText("Due date: 1 September 2026")).toBeTruthy();
 });
 
 test("uses the thumbnail inline and opens the full photo", () => {

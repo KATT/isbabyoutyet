@@ -42,6 +42,10 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
+  expect(
+    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
 test.each([
@@ -66,11 +70,49 @@ test.each([
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       birthJourney: testCase.birthJourney,
     });
   });
   expect(mocks.navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+  });
+});
+
+test("requires and submits a custom public due date message", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-19" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  expect(publicMessageInput.placeholder).toBe("September baby");
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
+  });
+  expect(mocks.createBaby).not.toHaveBeenCalled();
+
+  fireEvent.change(publicMessageInput, {
+    target: { value: "  Any day now  " },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-19"),
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
+      birthJourney: "labor",
+    });
   });
 });

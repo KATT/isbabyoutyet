@@ -10,9 +10,9 @@ export default defineSchema({
     ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
     dueDate: v.string(), // ISO date string
-    // Stack 1: optional until backfillBabyDueDateDisplay populates every baby.
-    dueDateDisplayMode: v.optional(v.union(v.literal("exact"), v.literal("message"))),
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
+    // Stack 2: required after backfillBabyDueDateDisplay populates every baby.
+    dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
+    publicDueDateText: v.union(v.string(), v.null()),
     publicId: v.string(), // Unique shareable ID
     // Stack 2: required after Stack 1 backfills every existing baby.
     birthJourney: v.union(
