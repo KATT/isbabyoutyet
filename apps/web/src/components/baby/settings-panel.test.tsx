@@ -155,7 +155,9 @@ test("due date privacy setting previews the month-only wording", async () => {
   );
 
   expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
-  expect(view.getByRole("switch", { name: "Show exact due date" })).not.toBeChecked();
+  expect(
+    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
+  ).toBe("false");
 });
 
 test("shows when visitor messages are disabled", async () => {
