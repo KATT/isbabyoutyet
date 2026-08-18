@@ -11,6 +11,7 @@ type ProgressIndicatorProps = {
 export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
+  const currentStatus = props.currentStatus;
 
   // If a later status is set, earlier stages count as completed
   const steps = [
@@ -38,7 +39,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   ] as const;
 
   const progressValue = (() => {
-    switch (props.currentStatus.type) {
+    switch (currentStatus.type) {
       case "labor_started":
         return (1 / 3) * 100;
       case "gone_to_hospital":
@@ -67,7 +68,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
       */}
       <ol className="grid grid-cols-3">
         {steps.map((step, index) => {
-          const isCurrent = props.currentStatus.type === step.key;
+          const isCurrent = currentStatus.type === step.key;
           // Path into this milestone fills once the milestone itself is reached.
           const leftFilled = index > 0 && step.completed;
           // Path onward fills once the next milestone is reached.

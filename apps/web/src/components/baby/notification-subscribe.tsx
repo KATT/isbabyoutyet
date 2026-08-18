@@ -49,7 +49,7 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
-  const babyId = props.babyId;
+  const { babyId } = props;
 
   // Check iOS status (browser-only; not a Convex query)
   const iosStatusQuery = useQuery({
