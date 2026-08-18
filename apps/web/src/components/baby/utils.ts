@@ -69,22 +69,25 @@ export const THEME_OPTIONS = [
   css: string | null;
 }>;
 
+export function getThemeOption(theme: string | null | undefined) {
+  const normalizedTheme = normalizeTheme(theme);
+  return THEME_OPTIONS.find((option) => option.value === (normalizedTheme ?? null));
+}
+
+export function getThemeColors(theme: string | null | undefined) {
+  return getThemeOption(theme)?.colors ?? THEME_OPTIONS[0].colors;
+}
+
 const TIMEZONE = "Europe/Stockholm";
 
 /** Raw CSS for a theme preset, or null for the default (app) theme. */
 export function getThemeCss(theme: string | null | undefined): string | null {
   if (!theme) return null;
-  const normalizedTheme = normalizeTheme(theme);
-  const option = THEME_OPTIONS.find((candidate) => candidate.value === normalizedTheme);
-  return option?.css ?? null;
+  return getThemeOption(theme)?.css ?? null;
 }
 
 export function getThemePrimaryColor(theme: string | null | undefined): string {
-  const defaultColor = "#ea580c"; // Default orange primary
-  if (!theme) return defaultColor;
-  const normalizedTheme = normalizeTheme(theme);
-  const option = THEME_OPTIONS.find((candidate) => candidate.value === normalizedTheme);
-  return option?.colors[0] ?? defaultColor;
+  return getThemeColors(theme)[0];
 }
 
 function parseDate(dateString: string): Date {

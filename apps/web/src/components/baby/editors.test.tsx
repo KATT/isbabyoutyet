@@ -1,8 +1,14 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { DueDateEditor, NameEditor, StatusDateEditor } from "@/components/baby/editors";
+import {
+  DueDateEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { LEGACY_BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
@@ -178,6 +184,18 @@ test("due date editor localizes its accessible label", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Editar" }));
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
+});
+
+test("theme selector marks Baby Blue selected for the legacy stored theme", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: LEGACY_BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  expect(view.getByRole("button", { name: "Baby Blue" }).getAttribute("aria-pressed")).toBe("true");
+  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
 });
 
 test("status editor confirms destructive deletion", async () => {

@@ -2,6 +2,7 @@ import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { LEGACY_BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
@@ -171,6 +172,20 @@ test("falls back to the default label for an unknown legacy theme", async () => 
   );
 
   expect(view.getByText("Default")).toBeTruthy();
+});
+
+test("shows Baby Blue for the legacy stored theme during migration", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, theme: LEGACY_BABY_BLUE_THEME }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Baby Blue")).toBeTruthy();
 });
 
 test("page language selection saves the locale override", async () => {
