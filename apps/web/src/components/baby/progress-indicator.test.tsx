@@ -52,7 +52,7 @@ test("planned C-section journey skips labour and uses two relevant milestones", 
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   const plannedCSectionBaby: BabyData = {
     ...waitingBaby,
-    birthJourney: "planned_c_section",
+    milestoneVisibility: { showLabor: false, showHospital: true },
     laborStarted: "2026-08-11T03:00:00.000Z",
   };
   await using view = renderResource(
@@ -72,7 +72,7 @@ test("home-birth journey skips hospital and treats labour as halfway", async () 
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   const homeBirthBaby: BabyData = {
     ...waitingBaby,
-    birthJourney: "home_birth",
+    milestoneVisibility: { showLabor: true, showHospital: false },
     laborStarted: "2026-08-11T03:00:00.000Z",
   };
   await using view = renderResource(

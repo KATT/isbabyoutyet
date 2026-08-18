@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
-import { getBirthJourney } from "@workspace/convex/src/types";
+import { isPlannedDateJourney } from "@workspace/convex/src/types";
 import {
   formatDate,
   getOverdueDays,
@@ -164,15 +164,15 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
   const overdueDays = getOverdueDays(props.baby.dueDate);
   const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
-  const birthJourney = getBirthJourney(props.baby);
+  const plannedDateJourney = isPlannedDateJourney(props.baby);
   const meta =
-    birthJourney === "planned_c_section" && props.currentStatus.type === "not_yet"
+    plannedDateJourney && props.currentStatus.type === "not_yet"
       ? {
           emoji: "🗓️",
           answerKey: "The big day is planned" as const,
           sublineKey: "Counting down to the big day" as const,
         }
-      : birthJourney === "planned_c_section" && props.currentStatus.type === "gone_to_hospital"
+      : plannedDateJourney && props.currentStatus.type === "gone_to_hospital"
         ? {
             emoji: "🏥",
             answerKey: "At hospital!" as const,
@@ -217,7 +217,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
           <p
             className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
           >
-            {birthJourney === "planned_c_section"
+            {plannedDateJourney
               ? overdueDays > 0
                 ? t(
                     overdueDays === 1
@@ -242,12 +242,9 @@ export function StatusDisplay(props: StatusDisplayProps) {
                   )}
           </p>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {t(
-              birthJourney === "planned_c_section"
-                ? "Planned date: {{date}}"
-                : "Due date: {{date}}",
-              { date: formatDueDate(props.baby.dueDate, locale) },
-            )}
+            {t(plannedDateJourney ? "Planned date: {{date}}" : "Due date: {{date}}", {
+              date: formatDueDate(props.baby.dueDate, locale),
+            })}
           </p>
         </div>
       )}

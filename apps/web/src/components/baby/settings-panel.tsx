@@ -220,7 +220,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <Hospital className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>{t(getMilestoneLabelKey("gone_to_hospital", birthJourney))}</ItemTitle>
+                  <ItemTitle>{t(getMilestoneLabelKey("gone_to_hospital", props.baby))}</ItemTitle>
                   <ItemDescription>
                     {formatDate(props.baby.wentToHospital, locale)} (
                     {getRelativeTime(props.baby.wentToHospital, locale)})

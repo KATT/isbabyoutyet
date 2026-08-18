@@ -3,6 +3,7 @@ import {
   getBirthJourney,
   getCurrentStatus,
   getMilestonesForJourney,
+  getPublicMilestoneVisibility,
   isBirthJourney,
   isMilestoneInJourney,
 } from "../src/types";
@@ -21,6 +22,15 @@ test("birth journey helpers preserve legacy defaults and planned C-section miles
     "labor_started",
     "born",
   ]);
+  expect(getPublicMilestoneVisibility({ birthJourney: "planned_c_section" })).toEqual({
+    showLabor: false,
+    showHospital: true,
+  });
+  expect(
+    getMilestonesForJourney({
+      milestoneVisibility: { showLabor: true, showHospital: false },
+    }),
+  ).toEqual(["labor_started", "born"]);
   expect(isMilestoneInJourney({ birthJourney: "planned_c_section" }, "labor_started")).toBe(false);
   expect(isMilestoneInJourney({ birthJourney: "planned_c_section" }, "gone_to_hospital")).toBe(
     true,

@@ -7,6 +7,7 @@ import {
   getBlockingLaterMilestone,
   getBirthJourney,
   getCurrentStatus,
+  getPublicMilestoneVisibility,
   isStatusForward,
   isMilestoneInJourney,
   MILESTONE_FIELDS,
@@ -23,11 +24,11 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
-import { requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { canManageBaby, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
-import { toBabyDto } from "./babyDto";
+import { toPublicBabyDto } from "./babyDto";
 
 const birthJourneyValidator = v.union(
   v.literal("labour"),
@@ -85,9 +86,15 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
+    const identity = await ctx.auth.getUserIdentity();
+    const canManage = identity
+      ? await canManageBaby(ctx, { baby, identity: appIdentity(identity) })
+      : false;
 
     return {
-      ...toBabyDto(baby),
+      ...toPublicBabyDto(baby),
+      milestoneVisibility: getPublicMilestoneVisibility(baby),
+      ...(canManage ? { birthJourney: getBirthJourney(baby) } : {}),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,

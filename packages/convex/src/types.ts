@@ -4,6 +4,11 @@ export const BIRTH_JOURNEYS = ["labour", "planned_c_section", "home_birth"] as c
 
 export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 
+export type MilestoneVisibility = {
+  showLabor: boolean;
+  showHospital: boolean;
+};
+
 export function isBirthJourney(value: string): value is BirthJourney {
   return BIRTH_JOURNEYS.some((journey) => journey === value);
 }
@@ -24,12 +29,13 @@ export type BabyData = Omit<
   | "publicId"
   | "_id"
   | "_creationTime"
->;
+> &
+  Partial<{ milestoneVisibility: MilestoneVisibility }>;
 
 /**
  * Partial update to baby data - used by editors
  */
-export type BabyUpdate = Partial<BabyData>;
+export type BabyUpdate = Partial<Omit<BabyData, "milestoneVisibility">>;
 
 /**
  * Handler for updating baby data - abstracts mutations vs query param updates
@@ -50,6 +56,7 @@ export type BabyStatus =
  */
 export function getCurrentStatus(baby: {
   birthJourney?: BirthJourney | null;
+  milestoneVisibility?: MilestoneVisibility | null;
   babyBorn?: string | null;
   wentToHospital?: string | null;
   laborStarted?: string | null;
@@ -88,15 +95,46 @@ const MILESTONES_BY_BIRTH_JOURNEY = {
 
 export function getMilestonesForJourney(baby: {
   birthJourney?: BirthJourney | null;
+  milestoneVisibility?: MilestoneVisibility | null;
 }): readonly Milestone[] {
+  if (baby.birthJourney == null && baby.milestoneVisibility) {
+    return MILESTONES_BY_BIRTH_JOURNEY.labour.filter(
+      (milestone) =>
+        milestone === "born" ||
+        (milestone === "labor_started"
+          ? baby.milestoneVisibility?.showLabor
+          : baby.milestoneVisibility?.showHospital),
+    );
+  }
   return MILESTONES_BY_BIRTH_JOURNEY[getBirthJourney(baby)];
 }
 
 export function isMilestoneInJourney(
-  baby: { birthJourney?: BirthJourney | null },
+  baby: {
+    birthJourney?: BirthJourney | null;
+    milestoneVisibility?: MilestoneVisibility | null;
+  },
   milestone: Milestone,
 ) {
   return getMilestonesForJourney(baby).some((candidate) => candidate === milestone);
+}
+
+export function getPublicMilestoneVisibility(baby: {
+  birthJourney?: BirthJourney | null;
+}): MilestoneVisibility {
+  const milestones = getMilestonesForJourney(baby);
+  return {
+    showLabor: milestones.includes("labor_started"),
+    showHospital: milestones.includes("gone_to_hospital"),
+  };
+}
+
+export function isPlannedDateJourney(baby: {
+  birthJourney?: BirthJourney | null;
+  milestoneVisibility?: MilestoneVisibility | null;
+}) {
+  const milestones = getMilestonesForJourney(baby);
+  return !milestones.includes("labor_started") && milestones.includes("gone_to_hospital");
 }
 
 export const MILESTONE_LABELS = {

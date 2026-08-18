@@ -345,7 +345,10 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 
 test("a preserved labour update becomes neutral when the journey switches", async () => {
   await using view = renderFeed({
-    baby: { ...laborStartedBaby, birthJourney: "planned_c_section" },
+    baby: {
+      ...laborStartedBaby,
+      milestoneVisibility: { showLabor: false, showHospital: true },
+    },
     isOwner: false,
     page: {
       page: [
@@ -376,7 +379,10 @@ test("a preserved labour update becomes neutral when the journey switches", asyn
 
 test("an empty preserved labour milestone stays stored but disappears from the public feed", async () => {
   await using view = renderFeed({
-    baby: { ...laborStartedBaby, birthJourney: "planned_c_section" },
+    baby: {
+      ...laborStartedBaby,
+      milestoneVisibility: { showLabor: false, showHospital: true },
+    },
     isOwner: false,
     page: {
       page: [

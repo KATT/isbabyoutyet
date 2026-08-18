@@ -2,7 +2,7 @@ import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
 import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
-import type { BirthJourney } from "@workspace/convex/src/types";
+import type { BirthJourney, MilestoneVisibility } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { THEME_OPTIONS } from "@/components/baby/utils";
 import {
@@ -95,7 +95,10 @@ export type BabyOgImageInput = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
   photoUrl: string | null;
-} & Partial<{ birthJourney: BirthJourney | null }>;
+} & Partial<{
+  birthJourney: BirthJourney | null;
+  milestoneVisibility: MilestoneVisibility | null;
+}>;
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -124,7 +127,8 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
   const statusText = babyStatusLabel({
     status,
     locale: baby.locale,
-    birthJourney: baby.birthJourney ?? "labour",
+    birthJourney: baby.birthJourney,
+    milestoneVisibility: baby.milestoneVisibility,
   });
   const detail =
     status.type === "not_yet"
@@ -136,6 +140,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
           theme: baby.theme,
           locale: baby.locale,
           birthJourney: baby.birthJourney,
+          milestoneVisibility: baby.milestoneVisibility,
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,

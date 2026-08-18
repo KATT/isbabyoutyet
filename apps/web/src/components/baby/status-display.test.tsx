@@ -15,7 +15,7 @@ function useFakeTimersResource(now: Date) {
 const plannedBaby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
-  birthJourney: "planned_c_section",
+  milestoneVisibility: { showLabor: false, showHospital: true },
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,

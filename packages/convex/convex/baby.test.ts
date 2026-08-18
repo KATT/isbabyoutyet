@@ -71,7 +71,12 @@ test("a planned C-section baby stores its journey and cannot mark labour", async
     birthJourney: "planned_c_section",
   });
 
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).not.toHaveProperty("birthJourney");
+  expect(publicBaby).toMatchObject({
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
     birthJourney: "planned_c_section",
   });
   await expect(
@@ -120,11 +125,16 @@ test("a home-birth journey skips the hospital milestone", async () => {
     babyBorn: "2026-08-10T10:00:00.000Z",
   });
 
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    birthJourney: "home_birth",
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).not.toHaveProperty("birthJourney");
+  expect(publicBaby).toMatchObject({
+    milestoneVisibility: { showLabor: true, showHospital: false },
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: "2026-08-10T10:00:00.000Z",
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    birthJourney: "home_birth",
   });
 });
 

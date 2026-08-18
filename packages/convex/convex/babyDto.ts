@@ -10,3 +10,8 @@ export function toBabyDto(baby: Doc<"baby">) {
   } = baby;
   return publicBaby;
 }
+
+export function toPublicBabyDto(baby: Doc<"baby">) {
+  const { birthJourney: _birthJourney, ...publicBaby } = toBabyDto(baby);
+  return publicBaby;
+}

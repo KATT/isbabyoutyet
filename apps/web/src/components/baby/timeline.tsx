@@ -44,9 +44,10 @@ import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
-  getBirthJourney,
   getCurrentStatus,
   getMilestonesForJourney,
+  isMilestoneInJourney,
+  isPlannedDateJourney,
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "@workspace/convex/src/types";
@@ -80,7 +81,7 @@ type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 function composerSchema(opts: {
   t: TranslationFunction;
   currentStatus: BabyStatus["type"];
-  birthJourney: ReturnType<typeof getBirthJourney>;
+  visibleMilestones: readonly Milestone[];
   babyId: Id<"baby">;
 }) {
   return z
@@ -100,9 +101,7 @@ function composerSchema(opts: {
       { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        getMilestonesForJourney({ birthJourney: opts.birthJourney }).includes(draft.milestone),
+      (draft) => draft.milestone === "none" || opts.visibleMilestones.includes(draft.milestone),
       {
         error: opts.t("That milestone is not part of this birth plan"),
         path: ["milestone"],
@@ -194,23 +193,27 @@ export function UpdateComposer(props: UpdateComposerProps) {
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
   const currentStatus = getCurrentStatus(props.baby);
-  const birthJourney = getBirthJourney(props.baby);
   const futureMilestones = useMemo(
     () =>
-      getMilestonesForJourney({ birthJourney }).filter(
+      getMilestonesForJourney(props.baby).filter(
         (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
       ),
-    [birthJourney, currentStatus.type],
+    [
+      props.baby.birthJourney,
+      props.baby.milestoneVisibility?.showLabor,
+      props.baby.milestoneVisibility?.showHospital,
+      currentStatus.type,
+    ],
   );
   const schema = useMemo(
     () =>
       composerSchema({
         t,
         currentStatus: currentStatus.type,
-        birthJourney,
+        visibleMilestones: futureMilestones,
         babyId: props.babyId,
       }),
-    [t, currentStatus.type, birthJourney, props.babyId],
+    [t, currentStatus.type, futureMilestones, props.babyId],
   );
 
   const form = useZodForm({
@@ -375,7 +378,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                         >
                           <RadioGroupItem value={candidate} />
                           <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                          {t(getMilestoneLabelKey(candidate, birthJourney))}
+                          {t(getMilestoneLabelKey(candidate, props.baby))}
                         </label>
                       );
                     })}
@@ -388,7 +391,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                     {t(
                       'This changes the page status to "{{status}}" and notifies everyone subscribed.',
                       {
-                        status: t(getMilestoneLabelKey(selectedMilestone, birthJourney)),
+                        status: t(getMilestoneLabelKey(selectedMilestone, props.baby)),
                       },
                     )}
                   </p>
@@ -462,7 +465,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                 ? t("Posting...")
                 : selectedMilestone
                   ? t('Post & mark "{{status}}"', {
-                      status: t(getMilestoneLabelKey(selectedMilestone, birthJourney)),
+                      status: t(getMilestoneLabelKey(selectedMilestone, props.baby)),
                     })
                   : t("Post update")}
             </Button>
@@ -499,9 +502,8 @@ const MILESTONE_EMOJI: Record<Milestone, string> = {
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const { locale, t } = useI18n();
   const update = props.item.update;
-  const birthJourney = getBirthJourney(props.baby);
   const visibleMilestone =
-    birthJourney === "planned_c_section" && update.milestone === "labor_started"
+    update.milestone && !isMilestoneInJourney(props.baby, update.milestone)
       ? null
       : update.milestone;
   const milestoneMeta = visibleMilestone ? MILESTONE_META[visibleMilestone] : null;
@@ -516,7 +518,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
     ? getBlockingLaterMilestone(props.baby, update.milestone)
     : null;
   const deleteBlockerLabel =
-    deleteBlocker && birthJourney === "planned_c_section" && deleteBlocker === "gone_to_hospital"
+    deleteBlocker && isPlannedDateJourney(props.baby) && deleteBlocker === "gone_to_hospital"
       ? t("At hospital")
       : deleteBlocker
         ? MILESTONE_LABELS[deleteBlocker]
@@ -556,7 +558,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
-                {visibleMilestone && t(getMilestoneLabelKey(visibleMilestone, birthJourney))}
+                {visibleMilestone && t(getMilestoneLabelKey(visibleMilestone, props.baby))}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
                     · {formatOccurredAtLocal(update.occurredAt, locale)}
@@ -949,14 +951,13 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const birthJourney = getBirthJourney(props.baby);
   const items = timelineQuery.data.pages
     .flatMap((page) => page.page)
     .filter(
       (item) =>
         item.kind !== "update" ||
-        birthJourney !== "planned_c_section" ||
-        item.update.milestone !== "labor_started" ||
+        item.update.milestone == null ||
+        isMilestoneInJourney(props.baby, item.update.milestone) ||
         !!item.update.message ||
         !!item.update.photoUrl,
     );

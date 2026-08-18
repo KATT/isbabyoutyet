@@ -1,5 +1,5 @@
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
-import { getBirthJourney, getMilestonesForJourney } from "@workspace/convex/src/types";
+import { getMilestonesForJourney } from "@workspace/convex/src/types";
 import { cn } from "@workspace/ui/lib/utils";
 import { getRelativeTime } from "./utils";
 import { useI18n } from "@/lib/i18n";
@@ -14,8 +14,6 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = props.currentStatus;
-  const birthJourney = getBirthJourney(baby);
-
   // If a later status is set, earlier stages count as completed
   const allSteps = [
     {
@@ -118,7 +116,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
                       : "text-muted-foreground"
                 }`}
               >
-                {t(getMilestoneLabelKey(step.key, birthJourney))}
+                {t(getMilestoneLabelKey(step.key, baby))}
               </p>
               {step.date && (
                 <p className="mt-1 max-w-full truncate rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
