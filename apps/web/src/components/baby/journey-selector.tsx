@@ -6,6 +6,7 @@ import { JOURNEY_OPTIONS } from "./journey-options";
 type JourneySelectorProps = {
   value: BirthJourney;
   onValueChange: (value: BirthJourney) => void;
+  /** Keeps radio labels unique when the shared selector appears in overlays. */
   idPrefix: string;
 };
 
