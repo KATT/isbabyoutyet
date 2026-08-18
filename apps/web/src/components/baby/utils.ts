@@ -1,5 +1,5 @@
 import { parseISO } from "date-fns";
-import { BABY_BLUE_THEME, normalizeTheme } from "@workspace/convex/src/theme";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 // Inline theme CSS (?raw) so we can inject via route `head.styles`.
 // External `head.links` stylesheets get React 19 `precedence` via TanStack's
 // Asset helper and can stay in the document after navigating away.
@@ -70,8 +70,7 @@ export const THEME_OPTIONS = [
 }>;
 
 export function getThemeOption(theme: string | null | undefined) {
-  const normalizedTheme = normalizeTheme(theme);
-  return THEME_OPTIONS.find((option) => option.value === (normalizedTheme ?? null));
+  return THEME_OPTIONS.find((option) => option.value === (theme ?? null));
 }
 
 export function getThemeColors(theme: string | null | undefined) {

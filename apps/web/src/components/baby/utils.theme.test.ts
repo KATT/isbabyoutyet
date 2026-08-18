@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { BABY_BLUE_THEME, LEGACY_BABY_BLUE_THEME } from "@workspace/convex/src/theme";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import {
   getThemeColors,
   getThemeCss,
@@ -32,13 +32,12 @@ test("getThemePrimaryColor matches known theme accents", () => {
   expect(getThemePrimaryColor(null)).toBe("#ea580c");
 });
 
-test("Baby Blue uses the canonical name while rendering legacy saved pages", () => {
+test("Baby Blue uses the canonical name", () => {
   const babyBlue = THEME_OPTIONS.find((option) => option.value === BABY_BLUE_THEME);
 
   expect(babyBlue).toMatchObject({ labelKey: "Baby Blue" });
-  expect(THEME_OPTIONS.map((option) => option.value)).not.toContain(LEGACY_BABY_BLUE_THEME);
-  expect(getThemeOption(LEGACY_BABY_BLUE_THEME)).toBe(babyBlue);
-  expect(getThemeColors(LEGACY_BABY_BLUE_THEME)).toEqual(["#1e9df1", "#ffffff", "#e3ecf6"]);
-  expect(getThemeCss(LEGACY_BABY_BLUE_THEME)).toBe(babyBlue?.css);
-  expect(getThemePrimaryColor(LEGACY_BABY_BLUE_THEME)).toBe("#1e9df1");
+  expect(getThemeOption(BABY_BLUE_THEME)).toBe(babyBlue);
+  expect(getThemeColors(BABY_BLUE_THEME)).toEqual(["#1e9df1", "#ffffff", "#e3ecf6"]);
+  expect(getThemeCss(BABY_BLUE_THEME)).toBe(babyBlue?.css);
+  expect(getThemePrimaryColor(BABY_BLUE_THEME)).toBe("#1e9df1");
 });

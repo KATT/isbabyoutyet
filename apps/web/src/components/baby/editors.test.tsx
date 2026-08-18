@@ -8,7 +8,7 @@ import {
 } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import { LEGACY_BABY_BLUE_THEME } from "@workspace/convex/src/theme";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
@@ -186,10 +186,10 @@ test("due date editor localizes its accessible label", async () => {
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
 });
 
-test("theme selector marks Baby Blue selected for the legacy stored theme", async () => {
+test("theme selector marks Baby Blue selected", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(
-    <ThemeSelector baby={{ ...baby, theme: LEGACY_BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
   fireEvent.click(view.getByRole("button", { name: "Change" }));

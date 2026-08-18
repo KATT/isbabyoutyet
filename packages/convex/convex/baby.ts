@@ -16,7 +16,6 @@ import {
 } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
-import { normalizeTheme } from "../src/theme";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
 import {
@@ -723,9 +722,6 @@ export const update = mutationWithTriggers({
     });
 
     const patch: Partial<typeof baby> = rest;
-    if (rest.theme !== undefined) {
-      patch.theme = normalizeTheme(rest.theme);
-    }
     if (rest.dueDateDisplayMode !== undefined || rest.publicDueDateText !== undefined) {
       const dueDateDisplay = normalizeDueDateDisplay({
         mode: rest.dueDateDisplayMode,
