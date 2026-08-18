@@ -29,6 +29,7 @@ function docToBabyData(doc: PublicBaby): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
+    publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
@@ -100,6 +101,26 @@ test("renders a baby detail page from local convex-test data", async () => {
   expect(view.getByText("Baby is still on the way")).toBeTruthy();
   expect(view.getByText("21 days until due date")).toBeTruthy();
   expect(view.getByText("Due date: 1 September 2026")).toBeTruthy();
+});
+
+test("renders optional public due date text without exposing the exact day", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
+    name: "Baby Smith",
+    dueDate: "2026-09-19",
+    publicDueDateText: "September-ish baby",
+  });
+  const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  if (!baby) {
+    throw new Error("expected baby from getByPublicId");
+  }
+
+  await using view = renderResource(<BabyDetailPage baby={baby} />);
+  expect(view.getByText("September-ish baby")).toBeTruthy();
+  expect(view.queryByText(/until due date/)).toBeNull();
+  expect(view.queryByText(/19 September/)).toBeNull();
 });
 
 test("renders the public baby status in the baby's Swedish override", async () => {

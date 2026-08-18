@@ -162,8 +162,9 @@ const STATUS_META = {
 
 export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
-  const overdueDays = getOverdueDays(props.baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
+  const publicDueDateText = props.baby.publicDueDateText?.trim() || null;
+  const overdueDays = publicDueDateText ? 0 : getOverdueDays(props.baby.dueDate);
+  const daysUntilDueDate = publicDueDateText ? 0 : getDaysUntilDueDate(props.baby.dueDate);
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
   const sublineKey =
@@ -202,13 +203,19 @@ export function StatusDisplay(props: StatusDisplayProps) {
       {props.currentStatus.type === "not_yet" && (
         <div
           className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
-            overdueDays > 0 ? "border-primary/40 bg-primary/10" : "border-border bg-card"
+            !publicDueDateText && overdueDays > 0
+              ? "border-primary/40 bg-primary/10"
+              : "border-border bg-card"
           }`}
         >
           <p
-            className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
+            className={`text-2xl font-black ${
+              !publicDueDateText && overdueDays > 0 ? "text-primary" : "text-foreground"
+            }`}
           >
-            {overdueDays > 0
+            {publicDueDateText
+              ? publicDueDateText
+              : overdueDays > 0
               ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
                   count: overdueDays,
                 })
@@ -219,9 +226,11 @@ export function StatusDisplay(props: StatusDisplayProps) {
                   { count: daysUntilDueDate },
                 )}
           </p>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
-          </p>
+          {!publicDueDateText ? (
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
+            </p>
+          ) : null}
         </div>
       )}
 

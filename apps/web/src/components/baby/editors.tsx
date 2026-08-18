@@ -11,7 +11,14 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
@@ -73,8 +80,18 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
+      publicDueDateText: z
+        .string()
+        .trim()
+        .max(80, t("Keep this under 80 characters"))
+        .transform((value) => value || null),
     })
-    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+    .transform(
+      (values): Pick<BabyPatch, "dueDate" | "publicDueDateText"> => ({
+        dueDate: values.date,
+        publicDueDateText: values.publicDueDateText,
+      }),
+    );
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -127,7 +144,10 @@ function DueDateForm(props: EditorFormProps) {
   const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
-    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
+    defaultValues: {
+      date: dateCodec.encode(props.baby.dueDate),
+      publicDueDateText: props.baby.publicDueDateText ?? "",
+    },
   });
 
   return (
@@ -152,6 +172,26 @@ function DueDateForm(props: EditorFormProps) {
                 {...field}
               />
             </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="publicDueDateText"
+        render={(renderProps) => (
+          <FormItem className="mb-3">
+            <FormLabel>{t("Public due date text (optional)")}</FormLabel>
+            <FormControl>
+              <Input
+                placeholder={t("September baby")}
+                maxLength={80}
+                {...renderProps.field}
+              />
+            </FormControl>
+            <FormDescription>
+              {t("Leave blank to show the exact date and countdown.")}
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}

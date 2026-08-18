@@ -26,6 +26,11 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
+      publicDueDateText: z
+        .string()
+        .trim()
+        .max(80, t("Keep this under 80 characters"))
+        .transform((value) => value || null),
       birthJourney: z.union([
         z.literal("labor"),
         z.literal("home_birth"),
@@ -49,6 +54,7 @@ export function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
+      publicDueDateText: "",
       birthJourney: "labor" as const,
     },
   });
@@ -95,7 +101,7 @@ export function AddBabyPage() {
                 });
               }}
             >
-              <div className="space-y-5">
+              <div className="flex flex-col gap-5">
                 <FormField
                   control={form.control}
                   name="name"
@@ -105,6 +111,29 @@ export function AddBabyPage() {
                       <FormControl>
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="publicDueDateText"
+                  render={(renderProps) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">
+                        {t("Public due date text (optional)")}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={t("September baby")}
+                          maxLength={80}
+                          {...renderProps.field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t("Leave blank to show the exact date and countdown.")}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

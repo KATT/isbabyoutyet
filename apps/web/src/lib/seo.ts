@@ -12,6 +12,7 @@ export const OG_IMAGE_HEIGHT = 630;
 type BabySeoInput = {
   name: string;
   dueDate: string;
+  publicDueDateText: string | null | undefined;
   publicId: string;
   theme: string | null | undefined;
   locale: SupportedLocale;
@@ -21,13 +22,14 @@ type BabySeoInput = {
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
 function babyPageTitle(baby: BabySeoInput) {
-  const overdueDays = getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const publicDueDateText = baby.publicDueDateText?.trim() || null;
+  const overdueDays = publicDueDateText ? 0 : getOverdueDays(baby.dueDate);
+  const daysUntilDueDate = publicDueDateText ? 0 : getDaysUntilDueDate(baby.dueDate);
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn) {
+  if (!isBorn && !publicDueDateText) {
     if (overdueDays > 0) {
       title = translate(
         locale,
@@ -98,7 +100,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoInput, "dueDate" | "babyBorn" | "locale">;
+  baby: Pick<BabySeoInput, "dueDate" | "publicDueDateText" | "babyBorn" | "locale">;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -107,6 +109,10 @@ export function babyStatusDetail(opts: {
   }
   if (opts.status.type !== "not_yet") {
     return babyStatusLabel({ status: opts.status, locale });
+  }
+  const publicDueDateText = opts.baby.publicDueDateText?.trim();
+  if (publicDueDateText) {
+    return publicDueDateText;
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
   if (overdueDays > 0) {

@@ -89,6 +89,7 @@ async function pngResponse(opts: {
 export type BabyOgImageInput = {
   name: string;
   dueDate: string;
+  publicDueDateText: string | null | undefined;
   theme: string | null | undefined;
   locale: SupportedLocale;
   babyBorn: string | null | undefined;
@@ -128,6 +129,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       : babyPageDescription({
           name: baby.name,
           dueDate: baby.dueDate,
+          publicDueDateText: baby.publicDueDateText,
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,

@@ -73,6 +73,9 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.getByText("Baby name")).toBeTruthy();
   expect(open.getByText("Nova")).toBeTruthy();
   expect(open.getByText("Due date")).toBeTruthy();
+  expect(
+    open.getByText("1 September 2026 · Visitors see the exact date and countdown."),
+  ).toBeTruthy();
   expect(open.getByText("Labour started")).toBeTruthy();
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByText("Messages")).toBeTruthy();
@@ -82,6 +85,22 @@ test("settings dialog shows page fields when open and stays closed when not", as
   fireEvent.click(open.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
   expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+});
+
+test("due date row previews optional public text", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, publicDueDateText: "September-ish baby" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(
+    view.getByText("1 September 2026 · Visitors see “September-ish baby”."),
+  ).toBeTruthy();
 });
 
 test("delete page control appears when onDelete is provided", async () => {

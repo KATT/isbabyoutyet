@@ -113,6 +113,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     const seo = babySeoHead({
       name: babyDoc.name,
       dueDate: babyDoc.dueDate,
+      publicDueDateText: babyDoc.publicDueDateText,
       publicId: babyDoc.publicId,
       theme: babyDoc.theme,
       locale: babyDoc.resolvedLocale,
@@ -204,6 +205,7 @@ function docToBabyData(
   return {
     name: doc.name,
     dueDate: doc.dueDate,
+    publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
     laborStarted: doc.laborStarted ?? null,

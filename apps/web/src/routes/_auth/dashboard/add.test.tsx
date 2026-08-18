@@ -42,6 +42,8 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
+  expect(view.getByPlaceholderText("September baby")).toBeTruthy();
+  expect(view.getByText("Leave blank to show the exact date and countdown.")).toBeTruthy();
 });
 
 test.each([
@@ -66,11 +68,38 @@ test.each([
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
+      publicDueDateText: null,
       birthJourney: testCase.birthJourney,
     });
   });
   expect(mocks.navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
+  });
+});
+
+test("submits optional public due date text", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-19" },
+  });
+  fireEvent.change(view.getByLabelText("Public due date text (optional)"), {
+    target: { value: "  September-ish baby  " },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-19"),
+      publicDueDateText: "September-ish baby",
+      birthJourney: "labor",
+    });
   });
 });
