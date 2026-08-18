@@ -4,7 +4,6 @@ import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -94,18 +93,16 @@ export function LanguageSettings(props: {
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
 
-  async function selectLocale(value: SupportedLocale) {
-    await updateLocale({ locale: value });
-    await setLocale(value);
-  }
-
   return (
     <div className="flex items-center gap-2">
       <LanguagePicker
         value={selectedLocale}
         disabled={!profile}
         label={t("Profile language")}
-        onValueChange={selectLocale}
+        onValueChange={async (value) => {
+          await updateLocale({ locale: value });
+          await setLocale(value);
+        }}
       />
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>

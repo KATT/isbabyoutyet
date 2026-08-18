@@ -279,12 +279,6 @@ export function HomePage() {
 
   const currentDate = useCurrentDate();
 
-  async function selectLocale(value: SupportedLocale) {
-    // Paraglide's configured cookie strategy persists explicit choices, then
-    // reloads so SSR and the hydrated page use the same locale.
-    await setLocale(value);
-  }
-
   // Helper to calculate dates with offsets for realistic demo scenarios
   const hoursAgo = (hours: number) => {
     const date = new Date(currentDate);
@@ -605,7 +599,11 @@ export function HomePage() {
             value={locale}
             disabled={false}
             label={t("Language")}
-            onValueChange={selectLocale}
+            onValueChange={async (value) => {
+              // Paraglide's configured cookie strategy persists explicit choices, then
+              // reloads so SSR and the hydrated page use the same locale.
+              await setLocale(value);
+            }}
           />
           <a
             href="https://github.com/KATT/isbabyoutyet"
