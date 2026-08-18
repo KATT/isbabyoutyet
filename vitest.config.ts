@@ -57,12 +57,12 @@ export default defineConfig({
         // Lowered alongside removing the signup test-account picker (deleting
         // covered submit/prefill code shrinks the ratio).
         // Lowered alongside deleting the redundant covered migration reset.
-        statements: 77.99,
+        statements: 78.27,
         // V8 reports one fewer covered branch on the GitHub runner than on
         // Linux locally; keep the ratchet at the reproducible CI value.
-        branches: 69.51,
-        functions: 78.31,
-        lines: 78.57,
+        branches: 70.28,
+        functions: 78.55,
+        lines: 78.86,
       },
     },
   },
