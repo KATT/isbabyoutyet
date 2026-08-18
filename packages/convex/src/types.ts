@@ -52,7 +52,7 @@ export const DEFAULT_MILESTONE_VISIBILITY = {
 } as const satisfies MilestoneVisibility;
 
 export const MILESTONE_VISIBILITY_PRESETS = {
-  labour: DEFAULT_MILESTONE_VISIBILITY,
+  labor: DEFAULT_MILESTONE_VISIBILITY,
   home_birth: { showLabor: true, showHospital: false },
   planned_c_section: { showLabor: false, showHospital: true },
 } as const satisfies Record<string, MilestoneVisibility>;
