@@ -94,18 +94,16 @@ export function LanguageSettings(props: {
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
 
-  async function selectLocale(value: SupportedLocale) {
-    await updateLocale({ locale: value });
-    await setLocale(value);
-  }
-
   return (
     <div className="flex items-center gap-2">
       <LanguagePicker
         value={selectedLocale}
         disabled={!profile}
         label={t("Profile language")}
-        onValueChange={selectLocale}
+        onValueChange={async (value: SupportedLocale) => {
+          await updateLocale({ locale: value });
+          await setLocale(value);
+        }}
       />
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>

@@ -33,12 +33,6 @@ tester.run("inline-jsx-callback", plugin.rules["inline-jsx-callback"], {
        const remove = (id: string) => deleteItem(id);
        return items.map((item) => <Row item={item} onRemove={remove} />);
      }`,
-    `function Page() {
-       return items.map((item) => {
-         const remove = () => deleteItem(item.id);
-         return <Row onRemove={remove} />;
-       });
-     }`,
     `export function save() {
        persist();
      }
@@ -59,7 +53,6 @@ tester.run("inline-jsx-callback", plugin.rules["inline-jsx-callback"], {
             {
               messageId: "inlineSuggestion",
               output: `function Page() {
-        
         return <Button onClick={() => persist()} />;
       }`,
             },
@@ -81,8 +74,7 @@ tester.run("inline-jsx-callback", plugin.rules["inline-jsx-callback"], {
             {
               messageId: "inlineSuggestion",
               output: `function Page() {
-        
-        return <Form onSubmit={async function (value: string) {
+        return <Form onSubmit={async (value: string) => {
           await persist(value);
         }} />;
       }`,
@@ -97,6 +89,29 @@ tester.run("inline-jsx-callback", plugin.rules["inline-jsx-callback"], {
         return <Button onClick={save} />;
       }`,
       errors: [{ messageId: "inline", suggestions: null }],
+    },
+    {
+      code: `function Page() {
+        return items.map((item) => {
+          const remove = () => deleteItem(item.id);
+          return <Row onRemove={remove} />;
+        });
+      }`,
+      errors: [
+        {
+          messageId: "inline",
+          suggestions: [
+            {
+              messageId: "inlineSuggestion",
+              output: `function Page() {
+        return items.map((item) => {
+          return <Row onRemove={() => deleteItem(item.id)} />;
+        });
+      }`,
+            },
+          ],
+        },
+      ],
     },
   ],
 });

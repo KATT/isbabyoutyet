@@ -7,7 +7,18 @@
  */
 
 const GENERATED_PATH_SEGMENT = /(?:^|[/\\])(?:_generated|paraglide)(?:[/\\]|$)|[.]gen[.]/;
-const REPEATED_METHODS = new Set(["every", "filter", "find", "findIndex", "flatMap", "forEach", "map", "reduce", "reduceRight", "some"]);
+const REPEATED_METHODS = new Set([
+  "every",
+  "filter",
+  "find",
+  "findIndex",
+  "flatMap",
+  "forEach",
+  "map",
+  "reduce",
+  "reduceRight",
+  "some",
+]);
 
 function isGeneratedFile(filename) {
   return GENERATED_PATH_SEGMENT.test(filename);
@@ -18,7 +29,10 @@ function isFunctionValue(node) {
 }
 
 function isExported(node) {
-  return node.parent?.type === "ExportDefaultDeclaration" || node.parent?.type === "ExportNamedDeclaration";
+  return (
+    node.parent?.type === "ExportDefaultDeclaration" ||
+    node.parent?.type === "ExportNamedDeclaration"
+  );
 }
 
 function jsxAttributeFor(identifier) {
@@ -57,6 +71,13 @@ function inlineExpression(sourceCode, declaration) {
     return sourceCode.getText(declaration.init);
   }
 
+  if (!declaration.generator && !declaration.typeParameters) {
+    const asyncPrefix = declaration.async ? "async " : "";
+    const params = declaration.params.map((param) => sourceCode.getText(param)).join(", ");
+    const returnType = declaration.returnType ? sourceCode.getText(declaration.returnType) : "";
+    return `${asyncPrefix}(${params})${returnType} => ${sourceCode.getText(declaration.body)}`;
+  }
+
   const text = sourceCode.getText(declaration);
   const relativeNameStart = declaration.id.start - declaration.start;
   const relativeNameEnd = declaration.id.end - declaration.start;
@@ -78,18 +99,28 @@ function removableDeclaration(declaration) {
   return null;
 }
 
+function declarationRemovalRange(sourceCode, declaration) {
+  const lineStart = sourceCode.text.lastIndexOf("\n", declaration.start - 1) + 1;
+  const nextLineBreak = sourceCode.text.indexOf("\n", declaration.end);
+  const lineEnd = nextLineBreak === -1 ? sourceCode.text.length : nextLineBreak + 1;
+  const onlyIndentBefore = sourceCode.text.slice(lineStart, declaration.start).trim() === "";
+  const onlyWhitespaceAfter = sourceCode.text.slice(declaration.end, lineEnd).trim() === "";
+  return [
+    onlyIndentBefore ? lineStart : declaration.start,
+    onlyWhitespaceAfter ? lineEnd : declaration.end,
+  ];
+}
+
 const inlineJsxCallback = {
   meta: {
     type: "suggestion",
     docs: {
-      description:
-        "Inline a locally declared callback when its only reference is a JSX attribute",
+      description: "Inline a locally declared callback when its only reference is a JSX attribute",
     },
     schema: [],
     hasSuggestions: true,
     messages: {
-      inline:
-        "`{{name}}` is only used by this JSX attribute. Define the callback at the use site.",
+      inline: "`{{name}}` is only used by this JSX attribute. Define the callback at the use site.",
       inlineSuggestion: "Inline `{{name}}` here",
     },
   },
@@ -135,7 +166,7 @@ const inlineJsxCallback = {
                     reference.identifier,
                     inlineExpression(sourceCode, declaration),
                   ),
-                  fixer.remove(removable),
+                  fixer.removeRange(declarationRemovalRange(sourceCode, removable)),
                 ];
               },
             },
