@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useConvex } from "convex/react";
 import type { FunctionReference, PaginationOptions } from "convex/server";
@@ -26,53 +26,47 @@ export function useLiveConvexInfinitePages(opts: {
   const pageParamsKey = JSON.stringify(opts.pageParams);
   const argsKey = JSON.stringify(opts.args);
   const queryKeyKey = JSON.stringify(opts.queryKey);
-  const args = useMemo(() => JSON.parse(argsKey) as Record<string, unknown>, [argsKey]);
-  const pageParams = useMemo(
-    () => JSON.parse(pageParamsKey) as PaginationOptions[],
-    [pageParamsKey],
-  );
-  const queryKey = useMemo(() => JSON.parse(queryKeyKey) as QueryKey, [queryKeyKey]);
+  const args = JSON.parse(argsKey) as Record<string, unknown>;
+  const pageParams = JSON.parse(pageParamsKey) as PaginationOptions[];
+  const queryKey = JSON.parse(queryKeyKey) as QueryKey;
 
-  const subscribe = useCallback(
-    (notify: () => void) => {
-      const unsubscribers = pageParams.map((pageParam, index) => {
-        const watch = convex.watchQuery(opts.funcRef, {
-          ...args,
-          paginationOpts: pageParam,
-        });
-        return watch.onUpdate(() => {
-          let value: LivePage | undefined;
-          try {
-            value = watch.localQueryResult() as LivePage | undefined;
-          } catch {
-            return;
-          }
-          if (value === undefined) {
-            return;
-          }
-          queryClient.setQueryData(
-            queryKey,
-            (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
-              if (!previous) {
-                return previous;
-              }
-              const pages = [...previous.pages];
-              pages[index] = value;
-              return { ...previous, pages };
-            },
-          );
-          notify();
-        });
+  function subscribe(notify: () => void) {
+    const unsubscribers = pageParams.map((pageParam, index) => {
+      const watch = convex.watchQuery(opts.funcRef, {
+        ...args,
+        paginationOpts: pageParam,
       });
-
-      return () => {
-        for (const unsubscribe of unsubscribers) {
-          unsubscribe();
+      return watch.onUpdate(() => {
+        let value: LivePage | undefined;
+        try {
+          value = watch.localQueryResult() as LivePage | undefined;
+        } catch {
+          return;
         }
-      };
-    },
-    [args, convex, opts.funcRef, pageParams, queryClient, queryKey],
-  );
+        if (value === undefined) {
+          return;
+        }
+        queryClient.setQueryData(
+          queryKey,
+          (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
+            if (!previous) {
+              return previous;
+            }
+            const pages = [...previous.pages];
+            pages[index] = value;
+            return { ...previous, pages };
+          },
+        );
+        notify();
+      });
+    });
+
+    return () => {
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
+    };
+  }
 
   useSyncExternalStore(
     subscribe,
