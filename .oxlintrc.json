@@ -1,6 +1,6 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -13,6 +13,10 @@
     {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
+    },
+    {
+      "name": "react-compiler",
+      "specifier": "./oxlint-plugins/react-compiler.mjs"
     }
   ],
   "settings": {
@@ -28,6 +32,7 @@
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
+    "react-compiler/no-manual-memoization": "error",
     "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [
@@ -63,7 +68,8 @@
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/components/**"],
       "rules": {
-        "eslint/max-params": "off"
+        "eslint/max-params": "off",
+        "react-compiler/no-manual-memoization": "off"
       }
     },
     {

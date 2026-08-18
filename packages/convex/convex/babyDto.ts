@@ -6,6 +6,7 @@ export function toBabyDto(baby: Doc<"baby">) {
     ownerTokenIdentifier: _ownerTokenIdentifier,
     lastActivityAt: _lastActivityAt,
     subscriptionCount: _subscriptionCount,
+    birthJourney: _birthJourney,
     ...publicBaby
   } = baby;
   return publicBaby;
