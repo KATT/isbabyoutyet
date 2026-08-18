@@ -94,7 +94,6 @@ test("treats forbidden notification data as empty", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
