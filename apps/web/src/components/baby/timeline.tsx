@@ -33,7 +33,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -197,28 +197,21 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-  const releasePhotoPreview = useCallback(
-    (node: HTMLImageElement | null) => {
-      if (!node || !photoPreviewUrl) return;
-      return () => URL.revokeObjectURL(photoPreviewUrl);
-    },
-    [photoPreviewUrl],
-  );
+  function releasePhotoPreview(node: HTMLImageElement | null) {
+    if (!node || !photoPreviewUrl) return;
+    return () => URL.revokeObjectURL(photoPreviewUrl);
+  }
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
   const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
     (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[props.currentStatus.type],
   );
-  const schema = useMemo(
-    () =>
-      composerSchema({
-        t,
-        currentStatus: props.currentStatus.type,
-        babyId: props.babyId,
-      }),
-    [t, props.currentStatus.type, props.babyId],
-  );
+  const schema = composerSchema({
+    t,
+    currentStatus: props.currentStatus.type,
+    babyId: props.babyId,
+  });
 
   const form = useZodForm({
     schema,
@@ -240,7 +233,6 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
     draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
       ? draft.milestone
       : null;
-
   const canPost = !isPosting && schema.safeParse(draft).success;
 
   return (

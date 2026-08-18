@@ -18,7 +18,7 @@ vi.mock("@workspace/ui/components/carousel", () => {
   }) {
     const indexRef = React.useRef(0);
     const listeners = React.useRef(new Set<() => void>());
-    const api = React.useMemo(() => {
+    const [api] = React.useState(() => {
       const notify = () => {
         for (const listener of listeners.current) listener();
       };
@@ -39,7 +39,7 @@ vi.mock("@workspace/ui/components/carousel", () => {
           listeners.current.delete(cb);
         },
       } satisfies Api;
-    }, []);
+    });
 
     return (
       <div

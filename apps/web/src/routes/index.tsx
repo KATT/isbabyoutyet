@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -128,7 +128,7 @@ const NAME_ROTATE_INTERVAL_MS = 2400;
 
 function useMeasuredWidth() {
   const [width, setWidth] = useState<number | null>(null);
-  const ref = useCallback((node: HTMLSpanElement | null) => {
+  function ref(node: HTMLSpanElement | null) {
     if (!node) return;
     let active = true;
     const measure = () => {
@@ -146,7 +146,7 @@ function useMeasuredWidth() {
       window.removeEventListener("resize", measure);
       observer?.disconnect();
     };
-  }, []);
+  }
   return [ref, width] as const;
 }
 
@@ -183,7 +183,7 @@ function RotatingBabyName(props: { words: readonly string[] }) {
 }
 
 function useCurrentDate() {
-  const clientDate = useMemo(() => new Date().toISOString(), []);
+  const [clientDate] = useState(() => new Date().toISOString());
   return useSyncExternalStore<string>(
     () => () => {}, // No-op subscribe for demo dates
     () => clientDate, // Client snapshot (cached)

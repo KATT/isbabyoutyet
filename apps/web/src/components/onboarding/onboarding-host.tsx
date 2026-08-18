@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
@@ -78,17 +78,17 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const [hiddenCoachmarkStep, setHiddenCoachmarkStep] = useState<OnboardingStepId | null>(null);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
-  const dismissSkippedWelcome = useCallback(() => {
+  function dismissSkippedWelcome() {
     void dismissWelcome({});
-  }, [dismissWelcome]);
+  }
   useDelayedAction({
     action: dismissSkippedWelcome,
     delayMs: 0,
     enabled: progress.hasBaby && !progress.welcomeDismissed,
   });
-  const dismissFinishedChecklist = useCallback(() => {
+  function dismissFinishedChecklist() {
     void dismissChecklist({});
-  }, [dismissChecklist]);
+  }
   useDelayedAction({
     action: dismissFinishedChecklist,
     delayMs: 4000,

@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@workspace/ui/components/dialog";
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useI18n } from "@/lib/i18n";
 import { WELCOME_SLIDES } from "./steps";
 
@@ -26,16 +26,13 @@ type WelcomeTourDialogProps = {
 export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
   const { t } = useI18n();
   const [api, setApi] = useState<CarouselApi>();
-  const subscribe = useCallback(
-    (notify: () => void) => {
-      if (!api) return () => undefined;
-      api.on("select", notify);
-      return () => {
-        api.off("select", notify);
-      };
-    },
-    [api],
-  );
+  function subscribe(notify: () => void) {
+    if (!api) return () => undefined;
+    api.on("select", notify);
+    return () => {
+      api.off("select", notify);
+    };
+  }
   const index = useSyncExternalStore(
     subscribe,
     () => api?.selectedScrollSnap() ?? 0,

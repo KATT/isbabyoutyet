@@ -1,6 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useMemo, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 
@@ -116,8 +116,12 @@ function createCoachmarkStore(targetId: string) {
  * Skippable; does not block the whole page (pointer-events only on the tip).
  */
 export function Coachmark(props: CoachmarkProps) {
+  return <CoachmarkTarget key={props.targetId} {...props} />;
+}
+
+function CoachmarkTarget(props: CoachmarkProps) {
   const { t } = useI18n();
-  const store = useMemo(() => createCoachmarkStore(props.targetId), [props.targetId]);
+  const [store] = useState(() => createCoachmarkStore(props.targetId));
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
 
   if (!snapshot || typeof document === "undefined") {

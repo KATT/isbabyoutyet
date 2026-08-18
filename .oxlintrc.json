@@ -1,6 +1,6 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
-  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -17,6 +17,10 @@
     {
       "name": "no-use-effect",
       "specifier": "./oxlint-plugins/no-use-effect.mjs"
+    },
+    {
+      "name": "react-compiler",
+      "specifier": "./oxlint-plugins/react-compiler.mjs"
     }
   ],
   "settings": {
@@ -32,6 +36,7 @@
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
+    "react-compiler/no-manual-memoization": "error",
     "query-prefetch/no-convex-query-hooks": "error",
     "no-use-effect/no-use-effect": "error"
   },
@@ -69,7 +74,8 @@
       "files": ["packages/ui/src/**"],
       "rules": {
         "eslint/max-params": "off",
-        "no-use-effect/no-use-effect": "off"
+        "no-use-effect/no-use-effect": "off",
+        "react-compiler/no-manual-memoization": "off"
       }
     },
     {

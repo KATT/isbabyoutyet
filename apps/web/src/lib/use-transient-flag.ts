@@ -1,6 +1,6 @@
-import { useMemo, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-function createTransientFlagStore(durationMs: number) {
+function createTransientFlagStore() {
   let active = false;
   let expiresAt = 0;
   let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -39,7 +39,7 @@ function createTransientFlagStore(durationMs: number) {
   }
 
   return {
-    activate: () => {
+    activate: (durationMs: number) => {
       active = true;
       expiresAt = Date.now() + durationMs;
       emit();
@@ -65,7 +65,10 @@ function createTransientFlagStore(durationMs: number) {
  * effect and inactive flags hold no running timer.
  */
 export function useTransientFlag(durationMs: number) {
-  const store = useMemo(() => createTransientFlagStore(durationMs), [durationMs]);
+  const [store] = useState(createTransientFlagStore);
   const active = useSyncExternalStore(store.subscribe, store.getSnapshot, () => false);
-  return [active, store.activate] as const;
+  function activate() {
+    store.activate(durationMs);
+  }
+  return [active, activate] as const;
 }
