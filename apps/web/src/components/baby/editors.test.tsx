@@ -57,7 +57,34 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
-    expect(onUpdate).toHaveBeenCalledWith({ dueDate: "2026-10-15T00:00:00.000Z" }),
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-10-15T00:00:00.000Z",
+      dueDateVisibility: "exact",
+    }),
+  );
+});
+
+test("due date editor saves privacy and previews the draft month", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const privacySwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(privacySwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(privacySwitch);
+  expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-10-15" },
+  });
+  expect(view.getByText("Visitors see “October baby”.")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-10-15T00:00:00.000Z",
+      dueDateVisibility: "month",
+    }),
   );
 });
 

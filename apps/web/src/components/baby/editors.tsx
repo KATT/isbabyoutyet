@@ -11,9 +11,17 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import { Switch } from "@workspace/ui/components/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
@@ -30,7 +38,7 @@ import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/s
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { THEME_OPTIONS } from "./utils";
+import { formatDueMonth, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
@@ -73,8 +81,14 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
+      showExact: z.boolean(),
     })
-    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+    .transform(
+      (values): Pick<BabyPatch, "dueDate" | "dueDateVisibility"> => ({
+        dueDate: values.date,
+        dueDateVisibility: values.showExact ? "exact" : "month",
+      }),
+    );
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -123,12 +137,19 @@ export function DueDateEditor(props: DueDateEditorProps) {
 }
 
 function DueDateForm(props: EditorFormProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
-    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
+    defaultValues: {
+      date: dateCodec.encode(props.baby.dueDate),
+      showExact: props.baby.dueDateVisibility !== "month",
+    },
   });
+  const draftDate = form.watch("date");
+  const dueDateForPreview = /^\d{4}-\d{2}-\d{2}$/.test(draftDate)
+    ? `${draftDate}T12:00:00.000Z`
+    : props.baby.dueDate;
 
   return (
     <Form
@@ -153,6 +174,30 @@ function DueDateForm(props: EditorFormProps) {
               />
             </FormControl>
             <FormMessage />
+          </FormItem>
+        )}
+      />
+      <FormField
+        control={form.control}
+        name="showExact"
+        render={(renderProps) => (
+          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
+            <div className="flex flex-col gap-1">
+              <FormLabel>{t("Show exact due date")}</FormLabel>
+              <FormDescription>
+                {renderProps.field.value
+                  ? t("Visitors see the full date and countdown.")
+                  : t("Visitors see “{{month}} baby”.", {
+                      month: formatDueMonth(dueDateForPreview, locale),
+                    })}
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={renderProps.field.value}
+                onCheckedChange={renderProps.field.onChange}
+              />
+            </FormControl>
           </FormItem>
         )}
       />

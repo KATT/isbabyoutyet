@@ -36,7 +36,6 @@ import {
   CalendarHeart,
   ChatCircle,
   Confetti,
-  Eye,
   Heartbeat,
   Hospital,
   Palette,
@@ -165,22 +164,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{t("Due Date")}</ItemTitle>
-              <ItemDescription>{formatDueDate(props.baby.dueDate, locale)}</ItemDescription>
-            </ItemContent>
-            <ItemActions>
-              <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
-            </ItemActions>
-          </Item>
-
-          <ItemSeparator />
-
-          <Item>
-            <ItemMedia variant="icon">
-              <Eye />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{t("Show exact due date")}</ItemTitle>
               <ItemDescription>
+                {formatDueDate(props.baby.dueDate, locale)} ·{" "}
                 {props.baby.dueDateVisibility === "month"
                   ? t("Visitors see “{{month}} baby”.", {
                       month: formatDueMonth(props.baby.dueDate, locale),
@@ -189,13 +174,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               </ItemDescription>
             </ItemContent>
             <ItemActions>
-              <Switch
-                checked={props.baby.dueDateVisibility !== "month"}
-                onCheckedChange={(checked) =>
-                  props.onUpdate({ dueDateVisibility: checked ? "exact" : "month" })
-                }
-                aria-label={t("Show exact due date")}
-              />
+              <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
             </ItemActions>
           </Item>
 

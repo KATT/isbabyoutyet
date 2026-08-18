@@ -115,6 +115,20 @@ export function AddBabyPage() {
 
                 <FormField
                   control={form.control}
+                  name="dueDate"
+                  render={(renderProps) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...renderProps.field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="dueDateVisibility"
                   render={(renderProps) => (
                     <FormItem className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
@@ -133,20 +147,6 @@ export function AddBabyPage() {
                           aria-label={t("Show exact due date")}
                         />
                       </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="dueDate"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...renderProps.field} />
-                      </FormControl>
-                      <FormMessage />
                     </FormItem>
                   )}
                 />

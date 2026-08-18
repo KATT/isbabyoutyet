@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -126,24 +126,29 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
-test("due date privacy switch changes the public display to month only", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+test("due date row summarizes the exact public display without an inline privacy switch", async () => {
   await using view = renderResource(
     <SettingsPanel
       baby={baby}
-      onUpdate={onUpdate}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
       onOpenChange={vi.fn<(open: boolean) => void>()}
       {...absentSettingsProps}
     />,
   );
 
-  expect(view.getByText("Visitors see the full date and countdown.")).toBeTruthy();
-  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  expect(onUpdate).toHaveBeenCalledWith({ dueDateVisibility: "month" });
+  expect(
+    view.getByText("1 September 2026 · Visitors see the full date and countdown."),
+  ).toBeTruthy();
+  expect(view.queryByRole("switch", { name: "Show exact due date" })).toBeNull();
+
+  const dueDateRow = view.getByText("Due date").closest('[data-slot="item"]');
+  if (!(dueDateRow instanceof HTMLElement)) throw new Error("Due date settings row missing");
+  fireEvent.click(within(dueDateRow).getByRole("button", { name: "Edit" }));
+  expect(view.getByRole("switch", { name: "Show exact due date" })).toBeTruthy();
 });
 
-test("due date privacy setting previews the month-only wording", async () => {
+test("due date row summarizes the month-only public display", async () => {
   await using view = renderResource(
     <SettingsPanel
       baby={{ ...baby, dueDateVisibility: "month" }}
@@ -154,10 +159,9 @@ test("due date privacy setting previews the month-only wording", async () => {
     />,
   );
 
-  expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
   expect(
-    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
-  ).toBe("false");
+    view.getByText("1 September 2026 · Visitors see “September baby”."),
+  ).toBeTruthy();
 });
 
 test("shows when visitor messages are disabled", async () => {
