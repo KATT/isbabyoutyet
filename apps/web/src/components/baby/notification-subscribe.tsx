@@ -132,6 +132,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           endpoint: subscriptionData.endpoint,
           p256dh: subscriptionData.keys.p256dh,
           auth: subscriptionData.keys.auth,
+          userAgent: navigator.userAgent,
         });
       }
 

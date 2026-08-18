@@ -9,6 +9,7 @@ import type { ActionCtx } from "./_generated/server";
 import { env, internalAction } from "./_generated/server";
 import { getPushMessage } from "../src/pushMessages";
 import { supportedLocaleValidator } from "./i18n";
+import { notifiableStatusValidator } from "./pushValidators";
 import { requiredEnv } from "./requiredEnv";
 
 async function sendNotificationToSubscription(
@@ -23,8 +24,9 @@ async function sendNotificationToSubscription(
       title: string;
       body: string;
       url: string;
-      icon?: string;
-      tag?: string;
+      icon: string | undefined;
+      image: string | undefined;
+      tag: string | undefined;
     };
   },
 ): Promise<boolean> {
@@ -66,13 +68,10 @@ export const sendNotification = internalAction({
     babyId: v.id("baby"),
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
-    status: v.union(
-      v.literal("labor_started"),
-      v.literal("gone_to_hospital"),
-      v.literal("born"),
-      v.literal("photo_added"),
-    ),
+    status: notifiableStatusValidator,
     customMessage: v.optional(v.union(v.string(), v.null())),
+    photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    updateId: v.optional(v.union(v.id("updates"), v.null())),
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
@@ -84,6 +83,13 @@ export const sendNotification = internalAction({
     const body = args.customMessage || message.body;
 
     const url = `/baby/${args.publicId}`;
+    const imageStorageId = await ctx.runQuery(internal.baby.resolveNotificationImage, {
+      updateId: args.updateId ?? null,
+      photoId: args.photoId ?? null,
+    });
+    const image = imageStorageId
+      ? ((await ctx.storage.getUrl(imageStorageId)) ?? undefined)
+      : undefined;
 
     let cursor: string | null = null;
     let successCount = 0;
@@ -109,7 +115,8 @@ export const sendNotification = internalAction({
               body,
               url,
               icon: "/logo192.png",
-              // Unique tag per baby to prevent notifications from different babies replacing each other
+              image,
+              // Unique tag per baby+type so a later generic update doesn't replace a birth notice
               tag: `baby-update-${args.publicId}-${args.status}`,
             },
           }),

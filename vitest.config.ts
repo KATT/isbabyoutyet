@@ -55,7 +55,7 @@ export default defineConfig({
         // hook with creation-time wiring in router.tsx (an untested-by-design
         // entry file); the ratchet snaps to exact values on the next run.
         statements: 74.05,
-        branches: 64.79,
+        branches: 65.92,
         functions: 73.91,
         lines: 74.57,
       },
