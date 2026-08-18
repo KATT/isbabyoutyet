@@ -329,6 +329,8 @@ export const create = mutationWithTriggers({
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
       dueDate: args.dueDate,
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
       hospitalMessage: null,
