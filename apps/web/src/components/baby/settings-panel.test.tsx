@@ -118,6 +118,20 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
+test("shows when visitor messages are disabled", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, encouragementsDisabled: true }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Form disabled")).toBeTruthy();
+});
+
 test("page language selection saves the locale override", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
