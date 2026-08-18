@@ -1,5 +1,5 @@
 import fs from "node:fs";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -56,11 +56,11 @@ function Home() {
 
   const [todo, setTodo] = useState("");
 
-  const submitTodo = useCallback(async () => {
+  const submitTodo = async () => {
     todos = await addTodo({ data: todo });
     setTodo("");
     router.invalidate();
-  }, [addTodo, todo]);
+  };
 
   return (
     <div
