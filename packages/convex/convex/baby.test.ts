@@ -237,6 +237,37 @@ test("moving the status forward schedules a push notification", async () => {
   ]);
 });
 
+test("the owner can cancel a pending status notification", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.updates.post, {
+    babyId: created.babyId,
+    milestone: "labor_started",
+  });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  if (!Array.isArray(notifications) || !notifications[0]) {
+    throw new Error("expected a pending notification");
+  }
+
+  await asAlice.mutation(api.baby.cancelScheduledNotification, {
+    notificationId: notifications[0]._id,
+  });
+
+  const after = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(after).toMatchObject([{ status: "cancelled", notificationType: "labor_started" }]);
+});
+
 test("owner can soft-delete a baby; it disappears from lists and public lookup", async () => {
   await using _timers = useFakeTimersResource();
   const t = await setup();

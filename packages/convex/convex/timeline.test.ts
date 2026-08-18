@@ -222,6 +222,22 @@ test("a legacy milestone without occurredAt infers its date from feed position",
   expect(publicBaby?.laborStarted).toBe("2026-08-10T08:00:00.000Z");
 });
 
+test("a milestone update without an event clock or feed row does not infer a date", async () => {
+  const { t, babyId } = await setup();
+
+  await t.run(async (ctx) => {
+    const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
+      milestone: "born",
+    });
+    await ctx.db.delete(timelineItemId);
+  });
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby?.babyBorn).toBeNull();
+});
+
 test("the forward-only guard enforces order at every intermediate stage", async () => {
   await using _timers = useFakeTimersResource();
   const { asAlice, babyId } = await setup();
