@@ -480,13 +480,14 @@ export const update = mutationWithTriggers({
   handler: async (ctx, args) => {
     const { babyId, ...patch } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
+    let publicId: string | undefined;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId({
+        publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
@@ -499,7 +500,7 @@ export const update = mutationWithTriggers({
     }
 
     if (Object.keys(patch).length > 0) {
-      await ctx.db.patch(babyId, patch);
+      await ctx.db.patch(babyId, { ...patch, ...(publicId ? { publicId } : {}) });
     }
   },
 });
