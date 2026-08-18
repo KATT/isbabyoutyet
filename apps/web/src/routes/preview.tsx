@@ -21,6 +21,8 @@ function getDefaultBabyData(): BabyData {
   return {
     name: "Baby",
     dueDate: dueDate.toISOString(),
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     theme: null,
     laborStarted: null,
     wentToHospital: null,
@@ -35,6 +37,8 @@ function getDefaultBabyData(): BabyData {
 const searchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().optional(),
+  dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
+  publicDueDateText: z.string().nullable().optional(),
   theme: z.string().nullable().optional(),
   laborStarted: z.string().nullable().optional(),
   wentToHospital: z.string().nullable().optional(),
