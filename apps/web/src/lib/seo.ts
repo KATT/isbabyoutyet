@@ -1,4 +1,4 @@
-import type { BabyStatus } from "@workspace/convex/src/types";
+import type { BabyStatus, MilestoneVisibility } from "@workspace/convex/src/types";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/components/baby/utils";
@@ -18,7 +18,7 @@ type BabySeoInput = {
   babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
-};
+} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
 function babyPageTitle(baby: BabySeoInput) {
   const overdueDays = getOverdueDays(baby.dueDate);

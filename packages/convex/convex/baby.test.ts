@@ -28,6 +28,8 @@ test("create a baby and list it for the owner", async () => {
   });
 
   expect(created.publicId).toBe("baby-smith");
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  expect(stored?.birthJourney).toBe("labor");
 
   const babies = await asAlice.query(api.baby.listByUser, {});
   expect(babies).toMatchObject([
@@ -43,6 +45,7 @@ test("create a baby and list it for the owner", async () => {
   expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
   expect(babies[0]).not.toHaveProperty("lastActivityAt");
   expect(babies[0]).not.toHaveProperty("subscriptionCount");
+  expect(babies[0]?.birthJourney).toBe("labor");
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
@@ -61,6 +64,67 @@ test("create a baby and list it for the owner", async () => {
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
 });
 
+test("creation stores the selected journey and only exposes derived visibility publicly", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Flexible Page",
+    dueDate: "2026-09-01",
+    birthJourney: "planned_c_section",
+  });
+
+  const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
+  expect(baby?.birthJourney).toBe("planned_c_section");
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+  expect(await asAlice.query(api.baby.getBirthJourney, { babyId: created.babyId })).toBe(
+    "planned_c_section",
+  );
+  expect(await t.query(api.baby.getBirthJourney, { babyId: created.babyId })).toBe("forbidden");
+  expect(
+    await t
+      .withIdentity({ subject: "bob" })
+      .query(api.baby.getBirthJourney, { babyId: created.babyId }),
+  ).toBe("forbidden");
+});
+
+test("journey selection can change after milestone updates without deleting them", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+    birthJourney: "home_birth",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    babyBorn: "2026-08-11T03:00:00.000Z",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    birthJourney: "planned_c_section",
+  });
+
+  const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
+  expect(baby).toMatchObject({
+    birthJourney: "planned_c_section",
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+    babyBorn: "2026-08-11T03:00:00.000Z",
+  });
+});
+
 test("getByPublicId resolves by publicId and by document id", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
@@ -76,6 +140,7 @@ test("getByPublicId resolves by publicId and by document id", async () => {
   expect(byPublicId).not.toHaveProperty("ownerTokenIdentifier");
   expect(byPublicId).not.toHaveProperty("lastActivityAt");
   expect(byPublicId).not.toHaveProperty("subscriptionCount");
+  expect(byPublicId).not.toHaveProperty("birthJourney");
 
   const byDocumentId = await t.query(api.baby.getByPublicId, { id: created.babyId });
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });

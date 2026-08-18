@@ -16,6 +16,12 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto } from "./babyDto";
 
+const birthJourneyValidator = v.union(
+  v.literal("labor"),
+  v.literal("home_birth"),
+  v.literal("planned_c_section"),
+);
+
 export const listByUser = query({
   args: {},
   handler: async (ctx) => {
@@ -73,6 +79,14 @@ export const getByPublicId = query({
       thumbnailUrl,
       resolvedLocale,
     };
+  },
+});
+
+export const getBirthJourney = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? access.baby.birthJourney : FORBIDDEN;
   },
 });
 
@@ -279,6 +293,8 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    // Optional for stale clients; the document always stores a concrete selection.
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -299,6 +315,7 @@ export const create = mutationWithTriggers({
       name: args.name,
       dueDate: args.dueDate,
       publicId,
+      birthJourney: args.birthJourney ?? "labor",
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -513,6 +530,7 @@ export const update = mutationWithTriggers({
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
     const { babyId, ...patch } = args;

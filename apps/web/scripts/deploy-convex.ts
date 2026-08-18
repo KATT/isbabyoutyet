@@ -125,7 +125,9 @@ async function waitForMigrations(statusFunction: string) {
 // updates. New migrations use independent runners because an older in-flight
 // chain's stored `next` list cannot include functions added by this deploy.
 await waitForMigrations("migrations:historicalDeploymentStatus");
+convexCli(["run", "migrations:runBirthJourneyBackfill", ...previewArgs]);
 convexCli(["run", "migrations:runPushImageBackfill", ...previewArgs]);
+await waitForMigrations("migrations:preCleanupDeploymentStatus");
 convexCli(["run", "migrations:runStoredStatusCleanup", ...previewArgs]);
 await waitForMigrations("migrations:deploymentStatus");
 

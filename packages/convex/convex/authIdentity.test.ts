@@ -1,6 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import {
+  backfillBabyBirthJourneyDoc,
   backfillBabyLastActivityAtDoc,
   backfillBabyOwnerTokenIdentifierDoc,
   backfillBabySubscriptionCountDoc,
@@ -22,6 +23,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
       name: "Migration Baby",
       dueDate: "2026-09-01",
       publicId: "migration-baby",
+      birthJourney: "labor",
       lastActivityAt: 1,
       subscriptionCount: 99,
     });
@@ -60,6 +62,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
     }
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyBirthJourneyDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
@@ -68,6 +71,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
     await sanitizeOnboardingStepsDoc(ctx, onboarding);
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyBirthJourneyDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
@@ -86,6 +90,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
   });
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.baby?.birthJourney).toBe("labor");
   expect(migrated.baby?.lastActivityAt).toBe(1);
   expect(migrated.baby?.subscriptionCount).toBe(0);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");

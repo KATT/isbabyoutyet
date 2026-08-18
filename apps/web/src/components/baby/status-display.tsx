@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getMilestonePolicy } from "@workspace/convex/src/types";
 import {
   formatDate,
   getOverdueDays,
@@ -165,6 +166,11 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
+  const sublineKey =
+    props.currentStatus.type === "labor_started" &&
+    !getMilestonePolicy(props.baby).visibility.showHospital
+      ? "Things are happening!"
+      : meta.sublineKey;
 
   return (
     <div className="flex flex-col items-center py-8">
@@ -179,7 +185,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
       <h2 className="text-4xl md:text-5xl font-black tracking-tight text-primary text-balance">
         {t(meta.answerKey)}
       </h2>
-      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(meta.sublineKey)}</p>
+      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(sublineKey)}</p>
 
       {props.currentStatus.type !== "not_yet" && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">

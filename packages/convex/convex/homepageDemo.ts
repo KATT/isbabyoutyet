@@ -95,6 +95,7 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale: opts.locale,
+    birthJourney: "labor" as const,
     demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(opts.now),

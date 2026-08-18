@@ -1,5 +1,6 @@
 import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
+import { milestoneVisibilityForPreset } from "../src/types";
 import { loadMilestoneDates } from "./timeline";
 
 export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
@@ -12,10 +13,16 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
     laborStarted: _laborStarted,
     wentToHospital: _wentToHospital,
     babyBorn: _babyBorn,
+    birthJourney: _birthJourney,
     ...publicBaby
   } = baby;
   return {
     ...publicBaby,
     ...milestoneDates,
+    milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
   };
+}
+
+export async function toManagerBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
+  return { ...(await toBabyDto(ctx, baby)), birthJourney: baby.birthJourney };
 }

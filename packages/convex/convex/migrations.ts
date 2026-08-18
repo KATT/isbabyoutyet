@@ -442,6 +442,21 @@ export const backfillBabyOwnerTokenIdentifier = migrations.define({
   migrateOne: backfillBabyOwnerTokenIdentifierDoc,
 });
 
+/**
+ * Gives every existing baby the pre-feature journey so the stacked feature PR
+ * can tighten `birthJourney` from optional to required without changing any
+ * currently visible milestones.
+ */
+export async function backfillBabyBirthJourneyDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.birthJourney !== undefined) return;
+  await ctx.db.patch(baby._id, { birthJourney: "labor" });
+}
+
+export const backfillBabyBirthJourney = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyBirthJourneyDoc,
+});
+
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -593,6 +608,9 @@ export const clearStoredStatusFields = migrations.define({
 export const runPushImageBackfill = migrations.runner(
   internal.migrations.generatePushImagesForExistingPhotos,
 );
+export const runBirthJourneyBackfill = migrations.runner(
+  internal.migrations.backfillBabyBirthJourney,
+);
 export const runStoredStatusCleanup = migrations.runner(
   internal.migrations.clearStoredStatusFields,
 );
@@ -629,9 +647,14 @@ const HISTORICAL_MIGRATION_NAMES = [
   "migrations:backfillUserProfileIsAdmin",
 ] as const;
 
-const TABLE_MIGRATION_NAMES = [
+const PRE_CLEANUP_MIGRATION_NAMES = [
   ...HISTORICAL_MIGRATION_NAMES,
+  "migrations:backfillBabyBirthJourney",
   "migrations:generatePushImagesForExistingPhotos",
+] as const;
+
+const TABLE_MIGRATION_NAMES = [
+  ...PRE_CLEANUP_MIGRATION_NAMES,
   "migrations:clearStoredStatusFields",
 ] as const;
 
@@ -651,6 +674,13 @@ export const historicalDeploymentStatus = internalQuery({
   args: {},
   handler: async (ctx) => {
     return await migrationDeploymentStatus(ctx, HISTORICAL_MIGRATION_NAMES);
+  },
+});
+
+export const preCleanupDeploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, PRE_CLEANUP_MIGRATION_NAMES);
   },
 });
 

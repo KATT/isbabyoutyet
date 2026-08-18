@@ -37,6 +37,7 @@ async function hydrateUpdate(
     currentPhotoId: Id<"_storage"> | null;
   },
 ) {
+  const milestone = opts.update.milestone ?? null;
   const photoUrl = opts.update.photoId ? await ctx.storage.getUrl(opts.update.photoId) : null;
   const thumbnailUrl = opts.update.thumbnailId
     ? await ctx.storage.getUrl(opts.update.thumbnailId)
@@ -48,7 +49,7 @@ async function hydrateUpdate(
     update: {
       _id: opts.update._id,
       message: opts.update.message ?? null,
-      milestone: opts.update.milestone ?? null,
+      milestone,
       occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
@@ -320,7 +321,9 @@ export async function loadMilestoneDates(
 }
 
 export async function loadCurrentStatus(ctx: QueryCtx, babyId: Id<"baby">) {
-  return getCurrentStatus(await loadMilestoneDates(ctx, babyId));
+  const dates = await loadMilestoneDates(ctx, babyId);
+  const baby = await ctx.db.get(babyId);
+  return getCurrentStatus({ ...dates, birthJourney: baby?.birthJourney });
 }
 
 /**

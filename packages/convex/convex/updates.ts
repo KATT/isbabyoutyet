@@ -58,11 +58,12 @@ export const post = mutationWithTriggers({
     }
 
     const datesBefore = await loadMilestoneDates(ctx, args.babyId);
-    const statusBefore = getCurrentStatus(datesBefore);
+    const statusBefore = getCurrentStatus({
+      ...datesBefore,
+      birthJourney: baby.birthJourney,
+    });
 
     if (milestone) {
-      // The status only moves forward: once a later stage is reached, earlier
-      // (or equal) stages can no longer be marked
       if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {
         throw new Error("Only a future status can be marked");
       }

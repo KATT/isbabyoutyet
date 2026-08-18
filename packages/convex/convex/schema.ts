@@ -11,6 +11,11 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
+    birthJourney: v.union(
+      v.literal("labor"),
+      v.literal("home_birth"),
+      v.literal("planned_c_section"),
+    ),
     // Leftover dual-write fields. Status and messages live on milestone
     // updates; `clearStoredStatusFields` unsets these so a follow-up can drop
     // them from the schema. Do not write them on new documents.

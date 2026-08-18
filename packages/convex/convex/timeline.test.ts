@@ -278,6 +278,95 @@ test("an invalid persisted milestone timestamp is ignored", async () => {
   expect(publicBaby?.laborStarted).toBeNull();
 });
 
+test("journey selection does not block backend milestone writes", async () => {
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
+  });
+
+  const baby = await getBaby(t, babyId);
+  expect(baby.laborStarted).toBeUndefined();
+  expect(baby.birthJourney).toBe("planned_c_section");
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([{ kind: "update", update: { milestone: "labor_started" } }]);
+});
+
+test("changing selection leaves existing updates and notifications untouched", async () => {
+  await using _timers = useFakeTimersResource();
+  const { t, asAlice, babyId } = await setup();
+  const photoId = await storeBlob(t);
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+    message: "A quiet update for everyone",
+    photoId,
+  });
+
+  const notificationsBefore = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(feed.page).toHaveLength(1);
+  expect(feed.page[0]).toMatchObject({
+    kind: "update",
+    update: {
+      message: "A quiet update for everyone",
+      milestone: "labor_started",
+    },
+  });
+  expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
+  const notificationsAfter = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notificationsAfter).toEqual(notificationsBefore);
+});
+
+test("changing selection then unmarking cancels the pending milestone push", async () => {
+  await using _timers = useFakeTimersResource();
+  const { asAlice, babyId } = await setup();
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
+  await asAlice.mutation(api.updates.unmarkMilestone, {
+    babyId,
+    milestone: "labor_started",
+  });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notifications).toMatchObject([{ notificationType: "labor_started", status: "cancelled" }]);
+});
+
+test("selection changes do not filter empty historical milestone rows", async () => {
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toMatchObject([{ kind: "update", update: { milestone: "labor_started" } }]);
+});
+
 test("a milestone with a photo is a single status push that carries the image", async () => {
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();

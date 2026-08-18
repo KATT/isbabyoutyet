@@ -16,6 +16,10 @@ test("deployment status waits for every required table migration", async () => {
     isDone: false,
     failed: [],
   });
+  expect(await t.query(internal.migrations.preCleanupDeploymentStatus, {})).toEqual({
+    isDone: false,
+    failed: [],
+  });
 });
 
 test("deployment migrations have separate historical and newly-added runners", async () => {
@@ -24,6 +28,11 @@ test("deployment migrations have separate historical and newly-added runners", a
 
   await expect(
     t.mutation(internal.migrations.runAll, {
+      oneBatchOnly: true,
+    }),
+  ).resolves.toBeTruthy();
+  await expect(
+    t.mutation(internal.migrations.runBirthJourneyBackfill, {
       oneBatchOnly: true,
     }),
   ).resolves.toBeTruthy();
