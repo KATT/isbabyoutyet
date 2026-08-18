@@ -39,6 +39,27 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
 });
 
 /**
+ * Generate 1350×675 push images for photo updates that predate the derivative.
+ */
+export async function generatePushImagesForExistingPhotosDoc(
+  ctx: MutationCtx,
+  update: Doc<"updates">,
+) {
+  if (!isActive(update)) return;
+  if (!update.photoId || update.pushImageId) return;
+  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
+    babyId: update.babyId,
+    photoId: update.photoId,
+    updateId: update._id,
+  });
+}
+
+export const generatePushImagesForExistingPhotos = migrations.define({
+  table: "updates",
+  migrateOne: generatePushImagesForExistingPhotosDoc,
+});
+
+/**
  * Best-effort "when this milestone was announced" timestamp: the notification
  * for this milestone whose `createdAt` is closest to `referenceMs` (usually the
  * update row's `_creationTime`). Preferring closest — not earliest — avoids
@@ -532,6 +553,7 @@ export const backfillUserProfileIsAdmin = migrations.define({
 
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
+  internal.migrations.generatePushImagesForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
@@ -549,6 +571,7 @@ export const runTableMigrations = migrations.runner([
 
 const TABLE_MIGRATION_NAMES = [
   "migrations:generateThumbnailsForExistingPhotos",
+  "migrations:generatePushImagesForExistingPhotos",
   "migrations:backfillBabyTimeline",
   "migrations:backfillEncouragementTimeline",
   "migrations:separateMilestoneOccurredAt",

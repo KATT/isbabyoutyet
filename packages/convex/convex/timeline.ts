@@ -208,6 +208,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
     thumbnailId?: Id<"_storage"> | null;
+    pushImageId?: Id<"_storage"> | null;
     postedByUserId?: string | null;
   },
 ) {
@@ -224,6 +225,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
     thumbnailId: opts.thumbnailId ?? null,
+    pushImageId: opts.pushImageId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
   });
   await advanceBabyActivity(ctx, {

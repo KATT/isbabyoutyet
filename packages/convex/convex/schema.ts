@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
 import { onboardingStepIdValidator } from "./onboardingValidators";
+import { notifiableStatusValidator } from "./pushValidators";
 
 export default defineSchema({
   baby: defineTable({
@@ -62,6 +63,8 @@ export default defineSchema({
     p256dh: v.string(), // Public key for encryption
     auth: v.string(), // Authentication secret
     createdAt: v.number(), // Timestamp
+    // Recorded at subscribe/resubscribe for future payload gating
+    userAgent: v.optional(v.union(v.string(), v.null())),
   })
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
@@ -71,13 +74,11 @@ export default defineSchema({
     scheduledId: v.optional(v.id("_scheduled_functions")), // The Convex scheduler job ID (set after scheduling)
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("cancelled")), // Current status
     scheduledFor: v.number(), // Timestamp when notification will be sent
-    notificationType: v.union(
-      v.literal("labor_started"),
-      v.literal("gone_to_hospital"),
-      v.literal("born"),
-      v.literal("photo_added"),
-    ), // Type of notification
+    notificationType: notifiableStatusValidator, // Type of notification
     customMessage: v.optional(v.union(v.string(), v.null())), // Optional custom message
+    // Original photo; send prefers the update's 1350×675 push image when ready
+    photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    updateId: v.optional(v.union(v.id("updates"), v.null())),
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])
@@ -130,6 +131,8 @@ export default defineSchema({
     occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+    // 1350×675 JPEG for Chromium Notification.image (Android / Windows)
+    pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
     // Who posted this update. Optional until backfill makes it required.
     postedByUserId: v.optional(v.union(v.string(), v.null())),
     // Soft delete: set to ms epoch when deleted; absent/null means active

@@ -58,7 +58,7 @@ export default defineConfig({
         // covered submit/prefill code shrinks the ratio).
         // Lowered alongside deleting the redundant covered migration reset.
         statements: 74.71,
-        branches: 65.3,
+        branches: 65.92,
         functions: 75.35,
         lines: 75.25,
       },

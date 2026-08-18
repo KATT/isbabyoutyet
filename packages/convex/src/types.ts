@@ -67,7 +67,12 @@ export const STATUS_ORDER = {
   born: 3,
 } as const;
 
-export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "photo_added";
+export type NotifiableStatus =
+  | "labor_started"
+  | "gone_to_hospital"
+  | "born"
+  | "photo_added"
+  | "update_posted";
 
 /**
  * Owner-postable milestone kinds — the status stages a feed update can mark.
@@ -118,8 +123,18 @@ export function getBlockingLaterMilestone(baby: BabyData, milestone: Milestone) 
 export function isStatusForward(
   before: BabyStatus,
   after: BabyStatus,
-): after is BabyStatus & { type: NotifiableStatus } {
+): after is BabyStatus & { type: Milestone } {
   return STATUS_ORDER[after.type] > STATUS_ORDER[before.type];
+}
+
+export function isMilestoneNotificationType(
+  notificationType: NotifiableStatus,
+): notificationType is Milestone {
+  return (
+    notificationType === "labor_started" ||
+    notificationType === "gone_to_hospital" ||
+    notificationType === "born"
+  );
 }
 
 export type Maybe<T> = T | null | undefined;
