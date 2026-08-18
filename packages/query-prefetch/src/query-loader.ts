@@ -11,7 +11,21 @@ import type {
   QueryOptionsFactory,
 } from "./types.js";
 
-type AnyInfiniteQueryOptions = Parameters<QueryClient["ensureInfiniteQueryData"]>[0];
+interface AnyInfiniteQueryOptions extends AnyQueryOptions {
+  initialPageParam: unknown;
+  getNextPageParam(
+    ...args: [
+      lastPage: unknown,
+      allPages: unknown[],
+      lastPageParam: unknown,
+      allPageParams: unknown[],
+    ]
+  ): unknown;
+}
+
+type RuntimeQueryOptionsFactory = {
+  bivarianceHack(input: unknown): AnyQueryOptions;
+}["bivarianceHack"];
 
 interface OnErrorFnOptions {
   error: unknown;
@@ -25,7 +39,7 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: QueryOptionsFactory, input: unknown) {
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
   return factory(input);
 }
 
@@ -34,7 +48,7 @@ function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
   input: QueryInputArgs<TFactory>,
 ): InitiatedQuery<TFactory>;
 function createInitiatedQuery(
-  _factory: QueryOptionsFactory,
+  _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
 ): { input?: unknown } {
   return { input: input[0] };
@@ -45,7 +59,7 @@ function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
   input: QueryInputArgs<TFactory>,
 ): InitiatedInfiniteQuery<TFactory>;
 function createInitiatedInfiniteQuery(
-  _factory: QueryOptionsFactory,
+  _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
 ): { input?: unknown } {
   return { input: input[0] };
@@ -59,7 +73,7 @@ function createPreloadedQuery<TFactory extends QueryOptionsFactory>(
   },
 ): PreloadedQuery<TFactory>;
 function createPreloadedQuery(
-  _factory: QueryOptionsFactory,
+  _factory: RuntimeQueryOptionsFactory,
   handle: { input: readonly unknown[]; initialData: unknown },
 ): { input?: unknown; initialData: unknown } {
   return { input: handle.input[0], initialData: handle.initialData };
@@ -73,7 +87,7 @@ function createPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>(
   },
 ): PreloadedInfiniteQuery<TFactory>;
 function createPreloadedInfiniteQuery(
-  _factory: QueryOptionsFactory,
+  _factory: RuntimeQueryOptionsFactory,
   handle: { input: readonly unknown[]; initialData: unknown },
 ): { input?: unknown; initialData: unknown } {
   return { input: handle.input[0], initialData: handle.initialData };
@@ -87,16 +101,27 @@ function ensureFactoryQueryData(queryClient: QueryClient, options: AnyQueryOptio
   return queryClient.ensureQueryData(options);
 }
 
-function ensureFactoryInfiniteQueryData<
-  TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>,
->(
+function isInfiniteQueryOptions(
+  options: AnyQueryOptions,
+): options is AnyInfiniteQueryOptions {
+  return (
+    "initialPageParam" in options &&
+    "getNextPageParam" in options &&
+    typeof options.getNextPageParam === "function"
+  );
+}
+
+function ensureFactoryInfiniteQueryData<TFactory extends QueryOptionsFactory>(
   queryClient: QueryClient,
   options: ReturnType<TFactory>,
 ): Promise<QueryDataOf<ReturnType<TFactory>>>;
 function ensureFactoryInfiniteQueryData(
   queryClient: QueryClient,
-  options: AnyInfiniteQueryOptions,
+  options: AnyQueryOptions,
 ) {
+  if (!isInfiniteQueryOptions(options)) {
+    throw new TypeError("Infinite query options require page parameters");
+  }
   return queryClient.ensureInfiniteQueryData(options);
 }
 
@@ -166,7 +191,7 @@ export function getQueryInitiator(
      *   return <Posts pages={postsQuery.data.pages} />;
      * }
      */
-    ensureInfiniteQueryData<TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>>(
+    ensureInfiniteQueryData<TFactory extends QueryOptionsFactory>(
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): InitiatedInfiniteQuery<TFactory> {
@@ -239,7 +264,7 @@ export function getQueryPreloader(queryClient: QueryClient) {
      *   return <Posts pages={postsQuery.data.pages} />;
      * }
      */
-    async ensureInfiniteQueryData<TFactory extends QueryOptionsFactory<AnyInfiniteQueryOptions>>(
+    async ensureInfiniteQueryData<TFactory extends QueryOptionsFactory>(
       factory: TFactory,
       ...input: QueryInputArgs<TFactory>
     ): Promise<PreloadedInfiniteQuery<TFactory>> {

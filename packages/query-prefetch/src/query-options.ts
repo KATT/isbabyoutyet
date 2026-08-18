@@ -1,4 +1,5 @@
 import type {
+  AnyQueryOptions,
   InitiatedInfiniteQuery,
   InitiatedQuery,
   PreloadedInfiniteQuery,
@@ -38,6 +39,10 @@ type RuntimeRemixInput = {
   bivarianceHack(input: unknown): unknown;
 }["bivarianceHack"];
 
+type RuntimeQueryOptionsFactory = {
+  bivarianceHack(input: unknown): AnyQueryOptions;
+}["bivarianceHack"];
+
 function resolveInput<TFactory extends QueryOptionsFactory>(
   preloadedQuery: { readonly input?: QueryInput<TFactory> },
   remixInput: RemixInput<TFactory> | undefined,
@@ -53,7 +58,7 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: QueryOptionsFactory, input: unknown) {
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
   return factory(input);
 }
 

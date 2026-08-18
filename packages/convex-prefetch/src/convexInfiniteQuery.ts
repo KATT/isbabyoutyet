@@ -37,6 +37,12 @@ export type PaginationArgs<TFunc extends PaginatedQueryReference> = Omit<
 type ConvexInfiniteQueryKey<TQuery extends PaginatedQueryReference = PaginatedQueryReference> =
   readonly [typeof CONVEX_INFINITE_QUERY_KEY, TQuery, PaginationArgs<TQuery>];
 
+type RuntimeConvexInfiniteQueryKey = readonly [
+  typeof CONVEX_INFINITE_QUERY_KEY,
+  FunctionReference<"query">,
+  Record<string, unknown>,
+];
+
 type ResolvedPaginatedQuery<TQuery extends PaginatedQueryReference> = [TQuery] extends [never]
   ? PaginatedQueryReference
   : TQuery;
@@ -50,19 +56,8 @@ export function registerConvexInfiniteQueryClient(client: ConvexQueryClient) {
 
 function isConvexInfiniteQueryKey(
   queryKey: readonly unknown[],
-): queryKey is ConvexInfiniteQueryKey {
+): queryKey is RuntimeConvexInfiniteQueryKey {
   return queryKey.length >= 2 && queryKey[0] === CONVEX_INFINITE_QUERY_KEY;
-}
-
-function isPaginationOptions(value: unknown): value is PaginationOptions {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "numItems" in value &&
-    typeof value.numItems === "number" &&
-    "cursor" in value &&
-    (typeof value.cursor === "string" || value.cursor === null)
-  );
 }
 
 function paginatedArgs<TQuery extends PaginatedQueryReference>(
@@ -94,8 +89,15 @@ async function fetchConvexInfinitePage<TQuery extends PaginatedQueryReference>(
 async function fetchConvexInfinitePage(
   convexQueryClient: ConvexQueryClient,
   opts: {
-    queryKey: ConvexInfiniteQueryKey;
-    pageParam: PaginationOptions;
+    queryKey: RuntimeConvexInfiniteQueryKey;
+    pageParam: unknown;
+  },
+): Promise<unknown>;
+async function fetchConvexInfinitePage(
+  convexQueryClient: ConvexQueryClient,
+  opts: {
+    queryKey: RuntimeConvexInfiniteQueryKey;
+    pageParam: unknown;
   },
 ) {
   const func = opts.queryKey[1];
@@ -123,7 +125,7 @@ export function convexInfiniteQueryFn(convexQueryClient: ConvexQueryClient) {
     if (!isConvexInfiniteQueryKey(context.queryKey)) {
       return fallback(context);
     }
-    if (!isPaginationOptions(context.pageParam)) {
+    if (!context.pageParam) {
       throw new Error("Convex infinite query requires an initialPageParam");
     }
     return fetchConvexInfinitePage(convexQueryClient, {
