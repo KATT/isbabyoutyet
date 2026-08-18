@@ -85,6 +85,7 @@ function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Preview/local accounts are seeded before this page is built. */}
             <DemoAccountPicker
               onPrefill={(account) => {
                 form.setValue("email", account.email);
