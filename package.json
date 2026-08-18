@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
+    "@tsconfig/strictest": "^2.0.8",
     "@types/node": "^26.2.0",
     "@vitest/coverage-v8": "^4.1.10",
     "knip": "^6.32.2",

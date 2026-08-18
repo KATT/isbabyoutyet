@@ -71,6 +71,9 @@ importers:
       '@rrazvan.dev/oxlint-plugin-i18n-literal':
         specifier: ^1.0.1
         version: 1.0.1(oxlint@1.78.0)
+      '@tsconfig/strictest':
+        specifier: ^2.0.8
+        version: 2.0.8
       '@types/node':
         specifier: ^26.2.0
         version: 26.2.0
@@ -2829,6 +2832,9 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  '@tsconfig/strictest@2.0.8':
+    resolution: {integrity: sha512-XnQ7vNz5HRN0r88GYf1J9JJjqtZPiHt2woGJOo2dYqyHGGcd6OLGqSlBB6p1j9mpzja6Oe5BoPqWmeDx6X9rLw==}
 
   '@turbo/darwin-64@2.10.9':
     resolution: {integrity: sha512-Jh+pTGXLNz8+1tkUU13TI/f+ZOI+OvC4YbHi1H+57iSpLt5DR3xgptd+4sA07RdjdRR/RX/01uQQu2OkbzIefA==}
@@ -7886,6 +7892,8 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.18
       '@types/react-dom': 19.2.4(@types/react@19.2.18)
+
+  '@tsconfig/strictest@2.0.8': {}
 
   '@turbo/darwin-64@2.10.9':
     optional: true
