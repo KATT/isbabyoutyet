@@ -1,5 +1,28 @@
+diff --git a/dist/auth-options.js b/dist/auth-options.js
+index 1b67f02ecc231be2054d30b5ce6fbf9e9e323724..d6eabd0f79ac0743adee46b98a1f3efaa9c97685 100644
+--- a/dist/auth-options.js
++++ b/dist/auth-options.js
+@@ -4,7 +4,6 @@ import { emailOTP } from "better-auth/plugins/email-otp";
+ import { genericOAuth } from "better-auth/plugins/generic-oauth";
+ import { jwt } from "better-auth/plugins/jwt";
+ import { magicLink } from "better-auth/plugins/magic-link";
+-import { oidcProvider } from "better-auth/plugins/oidc-provider";
+ import { oneTimeToken } from "better-auth/plugins/one-time-token";
+ import { phoneNumber } from "better-auth/plugins/phone-number";
+ import { twoFactor } from "better-auth/plugins/two-factor";
+@@ -33,10 +32,6 @@ export const options = {
+                 },
+             ],
+         }),
+-        oidcProvider({
+-            loginPage: "/login",
+-            __skipDeprecationWarning: true,
+-        }),
+         bearer(),
+         oneTimeToken(),
+         jwt(),
 diff --git a/dist/plugins/convex/index.js b/dist/plugins/convex/index.js
-index 549d21da3f8e8be44530aba44c892d7b20a26b7b..af1d39c7c91f7f86749c3d8819255d10fbcdc0b3 100644
+index 549d21da3f8e8be44530aba44c892d7b20a26b7b..cb96b9fb67b1fc791cd80d3077f239edada36cf9 100644
 --- a/dist/plugins/convex/index.js
 +++ b/dist/plugins/convex/index.js
 @@ -1,16 +1,9 @@
@@ -42,7 +65,7 @@ index 549d21da3f8e8be44530aba44c892d7b20a26b7b..af1d39c7c91f7f86749c3d8819255d10
                  {
                      matcher: (ctx) => {
                          return Boolean(ctx.path?.startsWith("/sign-in") ||
-@@ -231,14 +215,21 @@ export const convex = (opts) => {
+@@ -231,14 +215,13 @@ export const convex = (opts) => {
                      isAction: false,
                  },
                  // TODO: properly type this
@@ -60,14 +83,6 @@ index 549d21da3f8e8be44530aba44c892d7b20a26b7b..af1d39c7c91f7f86749c3d8819255d10
 +                return {
 +                    issuer,
 +                    jwks_uri: `${issuer}${basePath}/convex/jwks`,
-+                    authorization_endpoint: `${issuer}${basePath}/oauth2/authorize`,
-+                    token_endpoint: `${issuer}${basePath}/oauth2/token`,
-+                    userinfo_endpoint: `${issuer}${basePath}/oauth2/userinfo`,
-+                    response_types_supported: ["code"],
-+                    subject_types_supported: ["public"],
-+                    id_token_signing_alg_values_supported: [getJwksAlg(providerConfig)],
-+                    scopes_supported: ["openid", "profile", "email", "offline_access"],
-+                    grant_types_supported: ["authorization_code", "refresh_token"],
 +                };
              }),
              getJwks: createAuthEndpoint("/convex/jwks", {
@@ -85,8 +100,31 @@ index cdbd412dd572774f7b15f3dc8531435f9c28d332..378e9c5376eb596dcddef07dcc53c11d
      "convex": "^1.25.0",
      "react": "^18.3.1 || ^19.0.0"
    },
+diff --git a/src/auth-options.ts b/src/auth-options.ts
+index 6281482f77ba91e9fadea812d922f91a81d42e06..eda273f4fcd8f35bb6ffd13874b7cd10296e69b3 100644
+--- a/src/auth-options.ts
++++ b/src/auth-options.ts
+@@ -5,7 +5,6 @@ import { emailOTP } from "better-auth/plugins/email-otp";
+ import { genericOAuth } from "better-auth/plugins/generic-oauth";
+ import { jwt } from "better-auth/plugins/jwt";
+ import { magicLink } from "better-auth/plugins/magic-link";
+-import { oidcProvider } from "better-auth/plugins/oidc-provider";
+ import { oneTimeToken } from "better-auth/plugins/one-time-token";
+ import { phoneNumber } from "better-auth/plugins/phone-number";
+ import { twoFactor } from "better-auth/plugins/two-factor";
+@@ -35,10 +34,6 @@ export const options = {
+         },
+       ],
+     }),
+-    oidcProvider({
+-      loginPage: "/login",
+-      __skipDeprecationWarning: true,
+-    }),
+     bearer(),
+     oneTimeToken(),
+     jwt(),
 diff --git a/src/plugins/convex/index.ts b/src/plugins/convex/index.ts
-index db4cce2ce00c5df55f98a522f578f8e0e78a4c11..b35ca24f86805c28140fa9438c090efcddd83141 100644
+index db4cce2ce00c5df55f98a522f578f8e0e78a4c11..5c244034c337850a169bbc698c51d4f31953b737 100644
 --- a/src/plugins/convex/index.ts
 +++ b/src/plugins/convex/index.ts
 @@ -8,28 +8,12 @@ import {
@@ -148,7 +186,7 @@ index db4cce2ce00c5df55f98a522f578f8e0e78a4c11..b35ca24f86805c28140fa9438c090efc
          {
            matcher: (ctx) => {
              return Boolean(
-@@ -383,14 +358,23 @@ export const convex = (opts: {
+@@ -383,14 +358,13 @@ export const convex = (opts: {
            },
            // TODO: properly type this
          },
@@ -166,16 +204,6 @@ index db4cce2ce00c5df55f98a522f578f8e0e78a4c11..b35ca24f86805c28140fa9438c090efc
 +          return {
 +            issuer,
 +            jwks_uri: `${issuer}${basePath}/convex/jwks`,
-+            authorization_endpoint: `${issuer}${basePath}/oauth2/authorize`,
-+            token_endpoint: `${issuer}${basePath}/oauth2/token`,
-+            userinfo_endpoint: `${issuer}${basePath}/oauth2/userinfo`,
-+            response_types_supported: ["code"],
-+            subject_types_supported: ["public"],
-+            id_token_signing_alg_values_supported: [
-+              getJwksAlg(providerConfig),
-+            ],
-+            scopes_supported: ["openid", "profile", "email", "offline_access"],
-+            grant_types_supported: ["authorization_code", "refresh_token"],
 +          };
          }
        ),
