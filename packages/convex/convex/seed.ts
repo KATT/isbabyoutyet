@@ -7,14 +7,14 @@ import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials"
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { clearUserOnboarding, markUserOnboardingComplete } from "./onboarding";
+import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
   const userId = await ensureAuthUser(ctx, DEMO_USER);
   await ensureDemoProfile(ctx, userId);
 
   // Demo login is for exploring the product — skip the first-run tour.
-  await markUserOnboardingComplete(ctx, userId);
+  await skipUserOnboarding(ctx, userId);
 
   const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
   // Re-seeding restores the first-run state; skipTourForExistingUsers ignores

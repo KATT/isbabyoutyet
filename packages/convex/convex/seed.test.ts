@@ -5,7 +5,7 @@ import schema from "./schema";
 import { getCurrentStatus } from "../src/types";
 import { DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { seedBabiesForUser } from "./seed";
-import { markUserOnboardingComplete } from "./onboarding";
+import { skipUserOnboarding } from "./onboarding";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {
@@ -188,7 +188,7 @@ test("seedDemoData clears onboarding for the empty demo user", async () => {
   const first = await t.mutation(internal.seed.seedDemoData, {});
 
   await t.run(async (ctx) => {
-    await markUserOnboardingComplete(ctx, first.emptyUserId);
+    await skipUserOnboarding(ctx, first.emptyUserId);
   });
 
   await t.mutation(internal.seed.seedDemoData, {});

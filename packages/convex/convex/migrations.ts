@@ -14,7 +14,7 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
@@ -357,11 +357,11 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
 
   for (const user of page.page) {
     if (authUserEmail(user) === DEMO_EMPTY_USER.email) continue;
-    await markUserOnboardingComplete(ctx, authUserId(user));
+    await skipUserOnboarding(ctx, authUserId(user));
   }
 
   if (page.isDone) {
-    await markUserOnboardingComplete(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
+    await skipUserOnboarding(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
     return {
       isDone: true,
       continueCursor: page.continueCursor,

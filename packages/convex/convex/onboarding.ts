@@ -249,11 +249,8 @@ export async function clearUserOnboarding(ctx: MutationCtx, userId: string) {
   }
 }
 
-/**
- * Marks the demo user as fully onboarded so preview/local demos aren't
- * interrupted by the first-run tour.
- */
-export async function markUserOnboardingComplete(ctx: MutationCtx, userId: string) {
+/** Skips the first-run tour while preserving the normal per-step model. */
+export async function skipUserOnboarding(ctx: MutationCtx, userId: string) {
   const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userOnboarding")
