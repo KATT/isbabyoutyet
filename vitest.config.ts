@@ -57,10 +57,10 @@ export default defineConfig({
         // Lowered alongside removing the signup test-account picker (deleting
         // covered submit/prefill code shrinks the ratio).
         // Lowered alongside deleting the redundant covered migration reset.
-        statements: 75.91,
-        branches: 66.54,
-        functions: 76.02,
-        lines: 76.49,
+        statements: 76.06,
+        branches: 66.61,
+        functions: 76.05,
+        lines: 76.66,
       },
     },
   },

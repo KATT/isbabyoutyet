@@ -28,6 +28,8 @@ test("create a baby and list it for the owner", async () => {
   });
 
   expect(created.publicId).toBe("baby-smith");
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  expect(stored?.birthJourney).toBe("labor");
 
   const babies = await asAlice.query(api.baby.listByUser, {});
   expect(babies).toMatchObject([
@@ -43,6 +45,7 @@ test("create a baby and list it for the owner", async () => {
   expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
   expect(babies[0]).not.toHaveProperty("lastActivityAt");
   expect(babies[0]).not.toHaveProperty("subscriptionCount");
+  expect(babies[0]).not.toHaveProperty("birthJourney");
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
@@ -76,6 +79,7 @@ test("getByPublicId resolves by publicId and by document id", async () => {
   expect(byPublicId).not.toHaveProperty("ownerTokenIdentifier");
   expect(byPublicId).not.toHaveProperty("lastActivityAt");
   expect(byPublicId).not.toHaveProperty("subscriptionCount");
+  expect(byPublicId).not.toHaveProperty("birthJourney");
 
   const byDocumentId = await t.query(api.baby.getByPublicId, { id: created.babyId });
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });

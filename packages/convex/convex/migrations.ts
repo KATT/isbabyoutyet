@@ -442,6 +442,21 @@ export const backfillBabyOwnerTokenIdentifier = migrations.define({
   migrateOne: backfillBabyOwnerTokenIdentifierDoc,
 });
 
+/**
+ * Gives every existing baby the pre-feature journey so the stacked feature PR
+ * can tighten `birthJourney` from optional to required without changing any
+ * currently visible milestones.
+ */
+export async function backfillBabyBirthJourneyDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.birthJourney !== undefined) return;
+  await ctx.db.patch(baby._id, { birthJourney: "labor" });
+}
+
+export const backfillBabyBirthJourney = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyBirthJourneyDoc,
+});
+
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -560,6 +575,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
+  internal.migrations.backfillBabyBirthJourney,
   internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
@@ -578,6 +594,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:clearLegacyStageMessages",
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
+  "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyLastActivityAt",
   "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
