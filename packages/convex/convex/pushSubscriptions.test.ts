@@ -6,11 +6,8 @@ import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
 
-const TEST_PUSH_DEVICE = {
-  userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/120.0.0.0 Mobile Safari/537.36",
-  platform: "android" as const,
-  osVersion: "14",
-};
+const TEST_USER_AGENT =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/120.0.0.0 Mobile Safari/537.36";
 
 test("subscription secrets stay internal while managers see the exact count", async () => {
   const t = convexTest(schema, modules);
@@ -27,7 +24,7 @@ test("subscription secrets stay internal while managers see the exact count", as
     endpoint: "https://push.example/subscription",
     p256dh: "public-key",
     auth: "private-auth-secret",
-    ...TEST_PUSH_DEVICE,
+    userAgent: TEST_USER_AGENT,
   });
 
   expect(
@@ -57,9 +54,7 @@ test("subscription secrets stay internal while managers see the exact count", as
       endpoint: "https://push.example/subscription",
       p256dh: "public-key",
       auth: "private-auth-secret",
-      userAgent: TEST_PUSH_DEVICE.userAgent,
-      platform: "android",
-      osVersion: "14",
+      userAgent: TEST_USER_AGENT,
     },
   ]);
 
@@ -146,7 +141,7 @@ test("resubscribe rotates credentials and deleted babies reject new subscription
     endpoint: "https://push.example/rotating",
     p256dh: "first-key",
     auth: "first-secret",
-    ...TEST_PUSH_DEVICE,
+    userAgent: TEST_USER_AGENT,
   };
 
   const firstId = await t.mutation(api.pushSubscriptions.subscribe, args);
@@ -156,8 +151,6 @@ test("resubscribe rotates credentials and deleted babies reject new subscription
     auth: "rotated-secret",
     userAgent:
       "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
-    platform: "ios" as const,
-    osVersion: "18.2",
   });
   expect(secondId).toBe(firstId);
   const rotatedPage = await t.query(internal.pushSubscriptions.getSubscriptionsPage, {
@@ -168,8 +161,8 @@ test("resubscribe rotates credentials and deleted babies reject new subscription
     {
       p256dh: "rotated-key",
       auth: "rotated-secret",
-      platform: "ios",
-      osVersion: "18.2",
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Mobile/15E148 Safari/604.1",
     },
   ]);
   expect(

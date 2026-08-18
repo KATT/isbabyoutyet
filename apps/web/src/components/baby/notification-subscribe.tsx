@@ -18,7 +18,6 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useInitiateConvexQuery, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { parsePushDevice } from "@workspace/convex/src/pushDevice";
 
 type NotificationSubscribeProps = {
   babyId: Id<"baby">;
@@ -133,7 +132,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
           endpoint: subscriptionData.endpoint,
           p256dh: subscriptionData.keys.p256dh,
           auth: subscriptionData.keys.auth,
-          ...parsePushDevice(navigator.userAgent),
+          userAgent: navigator.userAgent,
         });
       }
 

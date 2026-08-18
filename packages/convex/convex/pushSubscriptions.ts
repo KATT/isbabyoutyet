@@ -8,7 +8,6 @@ import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
 import schema from "./schema";
 import { isActive } from "./softDelete";
-import { pushPlatformValidator } from "./pushValidators";
 
 async function deleteSubscription(ctx: MutationCtx, subscription: Doc<"pushSubscriptions">) {
   await ctx.db.delete(subscription._id);
@@ -35,8 +34,6 @@ export const subscribe = mutation({
     p256dh: v.string(),
     auth: v.string(),
     userAgent: v.string(),
-    platform: pushPlatformValidator,
-    osVersion: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -52,18 +49,12 @@ export const subscribe = mutation({
       )
       .first();
 
-    const device = {
-      userAgent: args.userAgent,
-      platform: args.platform,
-      osVersion: args.osVersion,
-    };
-
     if (existing) {
       // Update existing subscription
       await ctx.db.patch(existing._id, {
         p256dh: args.p256dh,
         auth: args.auth,
-        ...device,
+        userAgent: args.userAgent,
       });
       return existing._id;
     }
@@ -75,7 +66,7 @@ export const subscribe = mutation({
       p256dh: args.p256dh,
       auth: args.auth,
       createdAt: Date.now(),
-      ...device,
+      userAgent: args.userAgent,
     });
     await ctx.db.patch(args.babyId, {
       subscriptionCount: (baby.subscriptionCount ?? 0) + 1,
