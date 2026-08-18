@@ -132,6 +132,20 @@ test("shows when visitor messages are disabled", async () => {
   expect(view.getByText("Form disabled")).toBeTruthy();
 });
 
+test("falls back to the default label for an unknown legacy theme", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, theme: "legacy-theme" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Default")).toBeTruthy();
+});
+
 test("page language selection saves the locale override", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
