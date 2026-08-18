@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/component
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
@@ -155,7 +156,10 @@ function DueDateForm(props: EditorFormProps) {
       publicDueDateText: props.baby.publicDueDateText ?? "",
     },
   });
-  const showExactDueDate = form.watch("showExactDueDate");
+  const showExactDueDate = useWatch({
+    control: form.control,
+    name: "showExactDueDate",
+  });
 
   return (
     <Form

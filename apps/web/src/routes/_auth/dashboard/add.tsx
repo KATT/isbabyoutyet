@@ -2,6 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
+import { useWatch } from "react-hook-form";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -71,7 +72,10 @@ export function AddBabyPage() {
       birthJourney: "labor" as const,
     },
   });
-  const showExactDueDate = form.watch("showExactDueDate");
+  const showExactDueDate = useWatch({
+    control: form.control,
+    name: "showExactDueDate",
+  });
 
   return (
     <div className="min-h-screen bg-background bg-dots">
