@@ -99,17 +99,20 @@ test("journey selection can change after milestone updates without deleting them
     birthJourney: "home_birth",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    wentToHospital: "2026-08-10T12:00:00.000Z",
+    milestone: "gone_to_hospital",
+    occurredAt: Date.parse("2026-08-10T12:00:00.000Z"),
   });
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    babyBorn: "2026-08-11T03:00:00.000Z",
+    milestone: "born",
+    occurredAt: Date.parse("2026-08-11T03:00:00.000Z"),
   });
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
@@ -117,8 +120,10 @@ test("journey selection can change after milestone updates without deleting them
   });
 
   const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
-  expect(baby).toMatchObject({
-    birthJourney: "planned_c_section",
+  expect(baby?.birthJourney).toBe("planned_c_section");
+  expect(baby?.laborStarted).toBeUndefined();
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).toMatchObject({
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
