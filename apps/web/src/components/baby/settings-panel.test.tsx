@@ -17,9 +17,11 @@ const baby: BabyData = {
   laborStartedMessage: null,
   encouragementsDisabled: false,
   photoId: null,
+  milestoneVisibility: { showLabor: true, showHospital: true },
 };
 
 const absentSettingsProps = {
+  birthJourney: "labour" as const,
   profileLocale: "en-GB" as const,
   onDelete: null,
   coParents: null,
@@ -84,6 +86,7 @@ test("delete page control appears when onDelete is provided", async () => {
       baby={baby}
       onUpdate={onUpdate}
       onDelete={onDelete}
+      birthJourney="labour"
       open={true}
       onOpenChange={onOpenChange}
       profileLocale="en-GB"
@@ -115,7 +118,7 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
-test("milestone switches default on and save visibility without touching content", async () => {
+test("journey selection saves the chosen option", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
@@ -129,18 +132,12 @@ test("milestone switches default on and save visibility without touching content
     />,
   );
 
-  const labour = view.getByRole("switch", { name: "Show labour milestone" });
-  const hospital = view.getByRole("switch", { name: "Show hospital milestone" });
-  expect(labour.getAttribute("aria-checked")).toBe("true");
-  expect(hospital.getAttribute("aria-checked")).toBe("true");
-
-  fireEvent.click(labour);
-  expect(onUpdate).toHaveBeenCalledWith({
-    milestoneVisibility: { showLabor: false, showHospital: true },
-  });
+  expect(view.getByRole("radio", { name: /Labour Visitors see/i })).toBeTruthy();
+  fireEvent.click(view.getByRole("radio", { name: /Home birth Visitors see/i }));
+  expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
 });
 
-test("milestone switches lock once hospital is marked", async () => {
+test("journey selection stays changeable after milestone updates", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
@@ -151,13 +148,13 @@ test("milestone switches lock once hospital is marked", async () => {
       open
       onOpenChange={onOpenChange}
       {...absentSettingsProps}
+      birthJourney="home_birth"
     />,
   );
 
-  expect(view.getByText(/choices are locked/i)).toBeTruthy();
-  fireEvent.click(view.getByRole("switch", { name: "Show labour milestone" }));
-  fireEvent.click(view.getByRole("switch", { name: "Show hospital milestone" }));
-  expect(onUpdate).not.toHaveBeenCalled();
+  expect(view.getByText("Gone to hospital")).toBeTruthy();
+  fireEvent.click(view.getByRole("radio", { name: /Planned C-section Visitors see/i }));
+  expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
 });
 
 test("theme constants render through the active translation catalog", async () => {
@@ -168,6 +165,7 @@ test("theme constants render through the active translation catalog", async () =
     <LocaleProvider locale="sv">
       <SettingsPanel
         baby={baby}
+        birthJourney="labour"
         onUpdate={onUpdate}
         open
         onOpenChange={onOpenChange}

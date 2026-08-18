@@ -3,7 +3,6 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { getMilestonePolicy } from "../src/types";
 import type { Milestone } from "../src/types";
 import { isActive, softDeletePatch } from "./softDelete";
 
@@ -35,14 +34,9 @@ async function hydrateUpdate(
     item: Doc<"timelineItems">;
     update: Doc<"updates">;
     currentPhotoId: Id<"_storage"> | null;
-    visibleMilestones: readonly Milestone[];
   },
 ) {
   const milestone = opts.update.milestone ?? null;
-  const milestoneIsHidden = milestone !== null && !opts.visibleMilestones.includes(milestone);
-  if (milestoneIsHidden && !opts.update.message && !opts.update.photoId) {
-    return null;
-  }
   const photoUrl = opts.update.photoId ? await ctx.storage.getUrl(opts.update.photoId) : null;
   const thumbnailUrl = opts.update.thumbnailId
     ? await ctx.storage.getUrl(opts.update.thumbnailId)
@@ -54,8 +48,8 @@ async function hydrateUpdate(
     update: {
       _id: opts.update._id,
       message: opts.update.message ?? null,
-      milestone: milestoneIsHidden ? null : milestone,
-      occurredAt: milestoneIsHidden ? null : (opts.update.occurredAt ?? null),
+      milestone,
+      occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
       // Whether this update's photo is the baby's current page photo
@@ -86,7 +80,6 @@ async function hydrateTimelineItem(
     item: Doc<"timelineItems">;
     visitorId?: string;
     currentPhotoId: Id<"_storage"> | null;
-    visibleMilestones: readonly Milestone[];
   },
 ) {
   if (!isActive(opts.item)) return null;
@@ -99,7 +92,6 @@ async function hydrateTimelineItem(
         item: opts.item,
         update,
         currentPhotoId: opts.currentPhotoId,
-        visibleMilestones: opts.visibleMilestones,
       });
     }
     case "encouragement": {
@@ -130,7 +122,6 @@ export const listByBaby = query({
       return { page: [], isDone: true, continueCursor: "" };
     }
     const currentPhotoId = baby.photoId ?? null;
-    const visibleMilestones = getMilestonePolicy(baby).visibleMilestones;
 
     const result = await ctx.db
       .query("timelineItems")
@@ -144,7 +135,6 @@ export const listByBaby = query({
         item,
         visitorId: args.visitorId,
         currentPhotoId,
-        visibleMilestones,
       });
       if (hydrated) {
         page.push(hydrated);
@@ -188,7 +178,6 @@ export const latestUpdate = query({
       item: latest.item,
       update: latest.update,
       currentPhotoId: baby?.photoId ?? null,
-      visibleMilestones: baby ? getMilestonePolicy(baby).visibleMilestones : [],
     });
   },
 });

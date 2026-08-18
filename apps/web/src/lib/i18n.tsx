@@ -87,6 +87,8 @@ const enGB = {
   "Visitors see: At hospital → Baby born": "Visitors see: At hospital → Baby born",
   "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
     "This choice is not saved or shown publicly. It only sets which statuses visitors can see.",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "We save this choice for your settings, but we don't show it to anyone.",
   "Milestones visitors can see": "Milestones visitors can see",
   "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
     "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
@@ -402,6 +404,8 @@ const enGB = {
   "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
   "A name, a date, and a private journey — that's all it takes!":
     "A name, a date, and a private journey. That's it!",
+  "A name, a date, and a journey — that's all it takes!":
+    "A name, a date, and a journey. That's it!",
   "Add Baby 🍼": "Add Baby 🍼",
   "Welcome back!": "Welcome back!",
   "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
@@ -491,6 +495,8 @@ const enGB = {
     "Give them a name and due date. That creates a public page friends can open.",
   "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
     "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
   "Add a baby": "Add a baby",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "One link for everyone. Tap Share on the baby page to copy it. No group-chat spam.",
@@ -623,6 +629,8 @@ const sv: Record<TranslationKey, string> = {
   "Visitors see: At hospital → Baby born": "Besökare ser: På sjukhuset → Bäbisen är född",
   "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
     "Valet sparas inte och visas inte offentligt. Det bestämmer bara vilka statusar besökare kan se.",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Vi sparar valet i dina inställningar, men visar det inte för någon.",
   "Milestones visitors can see": "Milstolpar som besökare kan se",
   "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
     "Du kan ändra dem tills sjukhus- eller födelsemilstolpen har markerats. De påverkar bara vad besökare ser.",
@@ -940,6 +948,8 @@ const sv: Record<TranslationKey, string> = {
     "Ett namn och ett beräknat datum. Mer behövs inte!",
   "A name, a date, and a private journey — that's all it takes!":
     "Ett namn, ett datum och en privat resa. Mer behövs inte!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Ett namn, ett datum och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
@@ -1027,6 +1037,8 @@ const sv: Record<TranslationKey, string> = {
     "Lägg till ett namn och beräknat datum, så skapas en publik sida som vänner kan öppna.",
   "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
     "Lägg till namn och datum och välj sedan en privat resa. Den bestämmer bara vilka statusar besökare kan se.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Lägg till namn och datum och välj sedan en resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add a baby": "Lägg till bäbis",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "En länk räcker. Tryck på Dela på bäbissidan för att kopiera den, så slipper du spamma gruppchatten.",
@@ -1139,6 +1151,8 @@ const es: Record<TranslationKey, string> = {
   "Visitors see: At hospital → Baby born": "Los visitantes ven: En el hospital → Ya nació",
   "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
     "Esta elección no se guarda ni se muestra públicamente. Solo define qué estados pueden ver los visitantes.",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
   "Milestones visitors can see": "Hitos que pueden ver los visitantes",
   "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
     "Puedes cambiarlos hasta que se marque el hito del hospital o del nacimiento. Solo afectan a lo que ven los visitantes.",
@@ -1459,6 +1473,8 @@ const es: Record<TranslationKey, string> = {
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
   "A name, a date, and a private journey — that's all it takes!":
     "Solo necesitas un nombre, una fecha y un recorrido privado.",
+  "A name, a date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, una fecha y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -1548,6 +1564,8 @@ const es: Record<TranslationKey, string> = {
     "Ponle un nombre y una fecha prevista. Así crearás una página pública que podrán abrir tus amigos.",
   "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
     "Añade un nombre y una fecha y después elige un recorrido privado. Solo define qué estados pueden ver los visitantes.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Añade un nombre y una fecha y después elige un recorrido. Solo define qué estados pueden ver los visitantes.",
   "Add a baby": "Añadir un bebé",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Un enlace para todos. Toca Compartir en la página del bebé para copiarlo y olvídate del bombardeo en el chat de grupo.",
@@ -1662,6 +1680,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Visitors see: At hospital → Baby born": "Visitantes veem: No hospital → O bebê nasceu",
   "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
     "Esta escolha não é salva nem exibida publicamente. Ela só define quais status os visitantes podem ver.",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
   "Milestones visitors can see": "Etapas que os visitantes podem ver",
   "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
     "Você pode alterá-las até que a etapa do hospital ou do nascimento seja marcada. Elas afetam apenas o que os visitantes veem.",
@@ -1984,6 +2004,8 @@ const ptBR: Record<TranslationKey, string> = {
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
   "A name, a date, and a private journey — that's all it takes!":
     "Um nome, uma data e uma jornada privada. Só isso!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Um nome, uma data e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
   "Welcome back!": "Que bom te ver de novo!",
   "Sign in to keep everyone in the loop": "Entre para deixar todo mundo por dentro",
@@ -2073,6 +2095,8 @@ const ptBR: Record<TranslationKey, string> = {
     "Dê um nome e uma data prevista. Isso cria uma página pública que os amigos podem abrir.",
   "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
     "Adicione um nome e uma data e depois escolha uma jornada privada. Ela só define quais status os visitantes podem ver.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Adicione um nome e uma data e depois escolha uma jornada. Ela só define quais status os visitantes podem ver.",
   "Add a baby": "Adicionar um bebê",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Um link para todo mundo. Na página do bebê, toque em Compartilhar para copiar. Chega de spam no grupo.",

@@ -20,7 +20,7 @@ export const ONBOARDING_STEPS = [
     id: "add_baby",
     title: "Add your first baby",
     description:
-      "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
+      "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
     surface: "dashboard",
     targetId: "add_baby",
     icon: Baby,
@@ -81,7 +81,7 @@ export const WELCOME_SLIDES = [
   },
   {
     title: "Create a baby page",
-    body: "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
+    body: "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
     icon: ShareNetwork,
   },
   {

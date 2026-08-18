@@ -10,9 +10,10 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    // Optional during the backfill deployment; the stacked feature PR makes it required.
-    birthJourney: v.optional(
-      v.union(v.literal("labour"), v.literal("home_birth"), v.literal("planned_c_section")),
+    birthJourney: v.union(
+      v.literal("labour"),
+      v.literal("home_birth"),
+      v.literal("planned_c_section"),
     ),
     hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
     babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
@@ -20,13 +21,6 @@ export default defineSchema({
     laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    // Optional for backward compatibility. Missing means both optional milestones are visible.
-    milestoneVisibility: v.optional(
-      v.object({
-        showLabor: v.boolean(),
-        showHospital: v.boolean(),
-      }),
-    ),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)

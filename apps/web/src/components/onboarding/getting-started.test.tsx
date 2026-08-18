@@ -47,7 +47,7 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
   );
 
   expect(screen.getAllByText("Add your first baby").length).toBeGreaterThan(0);
-  expect(screen.getAllByText(/choose a private journey/i).length).toBeGreaterThan(0);
+  expect(screen.getAllByText(/choose a journey/i).length).toBeGreaterThan(0);
   expect(screen.getAllByRole("link", { name: /add a baby/i }).length).toBeGreaterThan(0);
 });
 

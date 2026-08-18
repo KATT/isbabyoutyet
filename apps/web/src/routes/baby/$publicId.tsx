@@ -11,7 +11,7 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -86,6 +86,9 @@ export const Route = createFileRoute("/baby/$publicId")({
           numItems: TIMELINE_PAGE_SIZE,
         }),
         profile: preloader.ensureQueryData(api.profile.get, {}),
+        birthJourney: preloader.ensureQueryData(api.baby.getBirthJourney, {
+          babyId: babyDoc._id,
+        }),
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
@@ -238,6 +241,10 @@ function BabyPage() {
     loaderData.latestUpdate,
   );
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const birthJourneyQuery = usePreloadedConvexQuery(
+    api.baby.getBirthJourney,
+    loaderData.birthJourney,
+  );
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const vapidQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getPublicKey,
@@ -256,6 +263,7 @@ function BabyPage() {
   const myAccess = myAccessQuery.data;
   const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
+  const birthJourney = birthJourneyQuery.data === FORBIDDEN ? null : birthJourneyQuery.data;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -269,7 +277,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage ? (
+      {canManage && birthJourney ? (
         <OnboardingHost
           surface="baby"
           onboarding={loaderData.onboarding}
@@ -298,6 +306,7 @@ function BabyPage() {
         <>
           <SettingsPanel
             baby={baby}
+            birthJourney={birthJourney}
             profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
               await updateBaby({

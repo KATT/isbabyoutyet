@@ -1,7 +1,7 @@
 import { expect, test } from "vitest";
 import { getMilestonePolicy, milestoneVisibilityForPreset } from "../src/types";
 
-test("private journey presets map to visibility without becoming stored plan labels", () => {
+test("saved journey selections derive their available milestones", () => {
   expect(milestoneVisibilityForPreset("labour")).toEqual({
     showLabor: true,
     showHospital: true,
@@ -16,8 +16,9 @@ test("private journey presets map to visibility without becoming stored plan lab
   });
 });
 
-test("legacy babies default to every milestone visible", () => {
+test("labour selection includes every milestone", () => {
   const policy = getMilestonePolicy({
+    birthJourney: "labour",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: null,
@@ -29,26 +30,25 @@ test("legacy babies default to every milestone visible", () => {
   expect(Math.round(policy.progressPercent)).toBe(33);
 });
 
-test("hidden milestones are not current or markable while birth remains visible", () => {
+test("planned C-section derives hospital and birth as available milestones", () => {
   const policy = getMilestonePolicy({
-    milestoneVisibility: { showLabor: false, showHospital: false },
+    birthJourney: "planned_c_section",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: null,
   });
 
-  expect(policy.visibleMilestones).toEqual(["born"]);
+  expect(policy.visibleMilestones).toEqual(["gone_to_hospital", "born"]);
   expect(policy.currentStatus.type).toBe("not_yet");
   expect(policy.canMark("labor_started")).toBe(false);
-  expect(policy.canMark("gone_to_hospital")).toBe(false);
+  expect(policy.canMark("gone_to_hospital")).toBe(true);
   expect(policy.canMark("born")).toBe(true);
   expect(policy.progressPercent).toBe(0);
-  expect(policy.visibilityLocked).toBe(false);
 });
 
-test("hospital data locks visibility even when that milestone is hidden", () => {
+test("home birth keeps hospital data out of the derived current status", () => {
   const policy = getMilestonePolicy({
-    milestoneVisibility: { showLabor: true, showHospital: false },
+    birthJourney: "home_birth",
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: null,
@@ -56,5 +56,4 @@ test("hospital data locks visibility even when that milestone is hidden", () => 
 
   expect(policy.currentStatus.type).toBe("labor_started");
   expect(policy.progressPercent).toBe(50);
-  expect(policy.visibilityLocked).toBe(true);
 });

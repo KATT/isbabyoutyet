@@ -17,6 +17,7 @@ async function setupWithBaby() {
       name: "Baby Smith",
       dueDate: "2026-09-01",
       publicId: "baby-smith",
+      birthJourney: "labour",
       lastActivityAt: 1,
       subscriptionCount: 0,
     });

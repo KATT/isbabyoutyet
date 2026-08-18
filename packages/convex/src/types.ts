@@ -23,12 +23,17 @@ export type BabyData = Omit<
   | "publicId"
   | "_id"
   | "_creationTime"
->;
+  | "birthJourney"
+> & {
+  milestoneVisibility: MilestoneVisibility;
+};
 
 /**
  * Partial update to baby data - used by editors
  */
-export type BabyUpdate = Partial<BabyData>;
+export type BabyUpdate = Partial<
+  Omit<BabyData, "milestoneVisibility"> & { birthJourney: BirthJourney }
+>;
 
 /**
  * Handler for updating baby data - abstracts mutations vs query param updates
@@ -99,6 +104,7 @@ type MilestonePolicyInput = {
   babyBorn?: string | null;
   wentToHospital?: string | null;
   laborStarted?: string | null;
+  birthJourney?: BirthJourney | null;
   milestoneVisibility?: MilestoneVisibility | null;
 };
 
@@ -106,7 +112,6 @@ export type MilestonePolicy = {
   visibility: MilestoneVisibility;
   visibleMilestones: readonly Milestone[];
   currentStatus: BabyStatus;
-  visibilityLocked: boolean;
   isVisible: (milestone: Milestone) => boolean;
   isReached: (milestone: Milestone) => boolean;
   canMark: (milestone: Milestone) => boolean;
@@ -115,10 +120,13 @@ export type MilestonePolicy = {
 
 /**
  * The single policy seam for milestone visibility and allowed transitions.
- * Missing visibility data is the legacy/default path: every milestone is shown.
+ * Stored selections derive visibility. Public projections can pass the neutral
+ * visibility object instead, without exposing the selection.
  */
 export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy {
-  const visibility = baby.milestoneVisibility ?? DEFAULT_MILESTONE_VISIBILITY;
+  const visibility = baby.birthJourney
+    ? milestoneVisibilityForPreset(baby.birthJourney)
+    : (baby.milestoneVisibility ?? DEFAULT_MILESTONE_VISIBILITY);
   const isVisible = (milestone: Milestone) =>
     milestone === "born" ||
     (milestone === "labor_started" ? visibility.showLabor : visibility.showHospital);
@@ -145,7 +153,6 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
     visibility,
     visibleMilestones,
     currentStatus,
-    visibilityLocked: Boolean(baby.wentToHospital || baby.babyBorn),
     isVisible,
     isReached,
     canMark: (milestone) =>

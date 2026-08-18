@@ -3,7 +3,6 @@ import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { milestoneVisibilityForPreset } from "@workspace/convex/src/types";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardContent } from "@workspace/ui/components/card";
@@ -17,6 +16,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
+import { JOURNEY_OPTIONS } from "@/components/baby/journey-options";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -27,21 +27,13 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
-      milestonePreset: z.union([
+      birthJourney: z.union([
         z.literal("labour"),
         z.literal("home_birth"),
         z.literal("planned_c_section"),
       ]),
     })
-    .transform((values): FunctionArgs<typeof api.baby.create> => {
-      const visibility = milestoneVisibilityForPreset(values.milestonePreset);
-      return {
-        name: values.name,
-        dueDate: values.dueDate,
-        showLaborMilestone: visibility.showLabor,
-        showHospitalMilestone: visibility.showHospital,
-      };
-    });
+    .transform((values): FunctionArgs<typeof api.baby.create> => values);
 }
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
@@ -58,7 +50,7 @@ function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
-      milestonePreset: "labour" as const,
+      birthJourney: "labour" as const,
     },
   });
 
@@ -87,7 +79,7 @@ function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name, a date, and a private journey — that's all it takes!")}
+            {t("A name, a date, and a journey — that's all it takes!")}
           </p>
         </div>
 
@@ -135,7 +127,7 @@ function AddBabyPage() {
 
                 <FormField
                   control={form.control}
-                  name="milestonePreset"
+                  name="birthJourney"
                   render={(renderProps) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
@@ -145,38 +137,25 @@ function AddBabyPage() {
                           onValueChange={renderProps.field.onChange}
                           className="grid grid-cols-1 gap-3 sm:grid-cols-3"
                         >
-                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
-                            <RadioGroupItem value="labour" />
-                            <span>
-                              <span className="block font-bold">{t("Labour")}</span>
-                              <span className="block text-sm text-muted-foreground">
-                                {t("Visitors see: Labour started → At hospital → Baby born")}
+                          {JOURNEY_OPTIONS.map((option) => (
+                            <label
+                              key={option.value}
+                              className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
+                            >
+                              <RadioGroupItem value={option.value} />
+                              <span>
+                                <span className="block font-bold">{t(option.labelKey)}</span>
+                                <span className="block text-sm text-muted-foreground">
+                                  {t(option.descriptionKey)}
+                                </span>
                               </span>
-                            </span>
-                          </label>
-                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
-                            <RadioGroupItem value="home_birth" />
-                            <span>
-                              <span className="block font-bold">{t("Home birth")}</span>
-                              <span className="block text-sm text-muted-foreground">
-                                {t("Visitors see: Labour started → Baby born")}
-                              </span>
-                            </span>
-                          </label>
-                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
-                            <RadioGroupItem value="planned_c_section" />
-                            <span>
-                              <span className="block font-bold">{t("Planned C-section")}</span>
-                              <span className="block text-sm text-muted-foreground">
-                                {t("Visitors see: At hospital → Baby born")}
-                              </span>
-                            </span>
-                          </label>
+                            </label>
+                          ))}
                         </RadioGroup>
                       </FormControl>
                       <FormDescription>
                         {t(
-                          "This choice is not saved or shown publicly. It only sets which statuses visitors can see.",
+                          "We save this choice for your settings, but we don't show it to anyone.",
                         )}
                       </FormDescription>
                       <FormMessage />

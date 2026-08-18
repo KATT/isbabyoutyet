@@ -372,7 +372,7 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
   expect(view.getByText("Nothing here yet")).toBeTruthy();
 });
 
-test("renders hidden milestone content as a neutral update", async () => {
+test("renders historical milestone badges regardless of current selection", async () => {
   await using view = renderFeed({
     baby: {
       ...notYetBaby,
@@ -389,8 +389,8 @@ test("renders hidden milestone content as a neutral update", async () => {
           update: {
             _id: "update-id" as Id<"updates">,
             message: "A family update",
-            milestone: null,
-            occurredAt: null,
+            milestone: "labor_started",
+            occurredAt: Date.now(),
             photoUrl: null,
             thumbnailUrl: null,
             isCurrentPagePhoto: false,
@@ -403,6 +403,5 @@ test("renders hidden milestone content as a neutral update", async () => {
   });
 
   expect(view.getByText("A family update")).toBeTruthy();
-  expect(view.getByText("Update")).toBeTruthy();
-  expect(view.queryByText("Labour started")).toBeNull();
+  expect(view.getByText("Labour started")).toBeTruthy();
 });

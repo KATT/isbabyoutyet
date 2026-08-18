@@ -4,7 +4,7 @@ import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { getCurrentStatus, milestoneVisibilityForPreset } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
@@ -25,10 +25,7 @@ function getDefaultBabyData(): BabyData {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
-    milestoneVisibility: {
-      showLabor: true,
-      showHospital: true,
-    },
+    milestoneVisibility: milestoneVisibilityForPreset("labour"),
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
@@ -45,8 +42,9 @@ const searchSchema = z.object({
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
   laborStartedMessage: z.string().nullable().optional(),
-  showLaborMilestone: z.boolean().optional(),
-  showHospitalMilestone: z.boolean().optional(),
+  birthJourney: z
+    .union([z.literal("labour"), z.literal("home_birth"), z.literal("planned_c_section")])
+    .optional(),
   settings: z.boolean().optional(),
 });
 
@@ -79,14 +77,12 @@ function PreviewPage() {
   const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const birthJourney = search.birthJourney ?? "labour";
 
   const baby: BabyData = {
     ...getDefaultBabyData(),
     ...search,
-    milestoneVisibility: {
-      showLabor: search.showLaborMilestone ?? true,
-      showHospital: search.showHospitalMilestone ?? true,
-    },
+    milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
   };
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
@@ -110,18 +106,8 @@ function PreviewPage() {
       {themeCss ? <style dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
       <SettingsPanel
         baby={baby}
+        birthJourney={birthJourney}
         onUpdate={(update) => {
-          if (update.milestoneVisibility) {
-            void navigate({
-              search: {
-                ...search,
-                showLaborMilestone: update.milestoneVisibility.showLabor,
-                showHospitalMilestone: update.milestoneVisibility.showHospital,
-              },
-              replace: true,
-            });
-            return;
-          }
           navigate({
             search: {
               ...search,

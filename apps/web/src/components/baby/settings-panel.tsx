@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
+import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Switch } from "@workspace/ui/components/switch";
 import {
   Select,
@@ -42,8 +43,7 @@ import {
   Trash,
   Users,
 } from "@phosphor-icons/react";
-import { getMilestonePolicy } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler, BirthJourney } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -56,9 +56,11 @@ import {
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
+import { JOURNEY_OPTIONS } from "./journey-options";
 
 type SettingsPanelProps = {
   baby: BabyData;
+  birthJourney: BirthJourney;
   onUpdate: BabyUpdateHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -86,8 +88,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
-  const milestonePolicy = getMilestonePolicy(props.baby);
-  const canEditMilestoneVisibility = coParents === null || coParents.isOwner;
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -125,74 +125,50 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </ItemActions>
           </Item>
 
-          {canEditMilestoneVisibility && (
-            <>
-              <ItemSeparator />
-              <Item variant="default" className="items-start">
-                <ItemMedia variant="icon">
-                  <Heartbeat className="w-4 h-4" />
-                </ItemMedia>
-                <ItemContent className="gap-3">
-                  <div>
-                    <ItemTitle>{t("Milestones visitors can see")}</ItemTitle>
-                    <ItemDescription>
-                      {milestonePolicy.visibilityLocked
-                        ? t(
-                            "These choices are locked because the hospital or birth milestone has been marked.",
-                          )
-                        : t(
-                            "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
-                          )}{" "}
-                      {t("Baby born is always shown.")}
-                    </ItemDescription>
-                  </div>
-                  <div className="w-full space-y-3">
-                    <div className="flex items-center justify-between gap-4">
-                      <label className="text-sm font-semibold" htmlFor="show-labour-milestone">
-                        {t("Show labour milestone")}
-                      </label>
-                      <Switch
-                        id="show-labour-milestone"
-                        checked={milestonePolicy.visibility.showLabor}
-                        disabled={milestonePolicy.visibilityLocked}
-                        onCheckedChange={(checked) =>
-                          props.onUpdate({
-                            milestoneVisibility: {
-                              showLabor: checked,
-                              showHospital: milestonePolicy.visibility.showHospital,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-4">
-                      <label className="text-sm font-semibold" htmlFor="show-hospital-milestone">
-                        {t("Show hospital milestone")}
-                      </label>
-                      <Switch
-                        id="show-hospital-milestone"
-                        checked={milestonePolicy.visibility.showHospital}
-                        disabled={milestonePolicy.visibilityLocked}
-                        onCheckedChange={(checked) =>
-                          props.onUpdate({
-                            milestoneVisibility: {
-                              showLabor: milestonePolicy.visibility.showLabor,
-                              showHospital: checked,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                  </div>
-                </ItemContent>
-              </Item>
-            </>
-          )}
+          <ItemSeparator />
+          <Item variant="default" className="items-start">
+            <ItemMedia variant="icon">
+              <Heartbeat className="w-4 h-4" />
+            </ItemMedia>
+            <ItemContent className="gap-3">
+              <div>
+                <ItemTitle>{t("Choose a journey")}</ItemTitle>
+                <ItemDescription>
+                  {t("We save this choice for your settings, but we don't show it to anyone.")}
+                </ItemDescription>
+              </div>
+              <RadioGroup
+                value={props.birthJourney}
+                onValueChange={(value) => {
+                  const option = JOURNEY_OPTIONS.find((candidate) => candidate.value === value);
+                  if (option) {
+                    void props.onUpdate({ birthJourney: option.value });
+                  }
+                }}
+                className="grid w-full gap-2"
+              >
+                {JOURNEY_OPTIONS.map((option) => (
+                  <label
+                    key={option.value}
+                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
+                  >
+                    <RadioGroupItem value={option.value} />
+                    <span>
+                      <span className="block text-sm font-bold">{t(option.labelKey)}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {t(option.descriptionKey)}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </RadioGroup>
+            </ItemContent>
+          </Item>
 
           {/* Marked milestones: correct their date here; mark new ones via
               the "Post update" composer, unmark by deleting the timeline
               update */}
-          {milestonePolicy.isVisible("labor_started") && props.baby.laborStarted && (
+          {props.baby.laborStarted && (
             <>
               <ItemSeparator />
               <Item>
@@ -218,7 +194,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </>
           )}
 
-          {milestonePolicy.isVisible("gone_to_hospital") && props.baby.wentToHospital && (
+          {props.baby.wentToHospital && (
             <>
               <ItemSeparator />
               <Item>

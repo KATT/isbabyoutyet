@@ -11,3 +11,7 @@ export function toBabyDto(baby: Doc<"baby">) {
   } = baby;
   return publicBaby;
 }
+
+export function toManagerBabyDto(baby: Doc<"baby">) {
+  return { ...toBabyDto(baby), birthJourney: baby.birthJourney };
+}
