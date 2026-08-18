@@ -216,15 +216,15 @@ export function StatusDisplay(props: StatusDisplayProps) {
             {publicDueDateText
               ? publicDueDateText
               : overdueDays > 0
-              ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
-                  count: overdueDays,
-                })
-              : t(
-                  daysUntilDueDate === 1
-                    ? "{{count}} day until due date"
-                    : "{{count}} days until due date",
-                  { count: daysUntilDueDate },
-                )}
+                ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
+                    count: overdueDays,
+                  })
+                : t(
+                    daysUntilDueDate === 1
+                      ? "{{count}} day until due date"
+                      : "{{count}} days until due date",
+                    { count: daysUntilDueDate },
+                  )}
           </p>
           {!publicDueDateText ? (
             <p className="mt-1 text-sm font-semibold text-muted-foreground">

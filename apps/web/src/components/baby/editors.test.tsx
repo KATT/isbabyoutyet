@@ -52,7 +52,9 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
-  const publicTextInput = view.getByLabelText("Public due date text (optional)") as HTMLInputElement;
+  const publicTextInput = view.getByLabelText(
+    "Public due date text (optional)",
+  ) as HTMLInputElement;
   expect(publicTextInput.placeholder).toBe("September baby");
 
   fireEvent.change(input, { target: { value: "2026-10-15" } });
@@ -70,10 +72,7 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
 test("due date editor clears custom public text back to the exact date", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(
-    <DueDateEditor
-      baby={{ ...baby, publicDueDateText: "September baby" }}
-      onUpdate={onUpdate}
-    />,
+    <DueDateEditor baby={{ ...baby, publicDueDateText: "September baby" }} onUpdate={onUpdate} />,
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));

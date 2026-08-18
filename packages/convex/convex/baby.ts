@@ -97,8 +97,7 @@ export const getByPublicId = query({
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
     const publicDueDateText = normalizePublicDueDateText(baby.publicDueDateText);
-    const canSeeExactDueDate =
-      !publicDueDateText || Boolean(await findBabyManager(ctx, baby._id));
+    const canSeeExactDueDate = !publicDueDateText || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...toBabyDto(baby),

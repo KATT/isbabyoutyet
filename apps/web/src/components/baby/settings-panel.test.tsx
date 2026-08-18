@@ -98,9 +98,7 @@ test("due date row previews optional public text", async () => {
     />,
   );
 
-  expect(
-    view.getByText("1 September 2026 · Visitors see “September-ish baby”."),
-  ).toBeTruthy();
+  expect(view.getByText("1 September 2026 · Visitors see “September-ish baby”.")).toBeTruthy();
 });
 
 test("delete page control appears when onDelete is provided", async () => {

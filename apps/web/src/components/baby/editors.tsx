@@ -86,12 +86,10 @@ function dueDateSchema(t: TranslationFunction) {
         .max(80, t("Keep this under 80 characters"))
         .transform((value) => value || null),
     })
-    .transform(
-      (values): Pick<BabyPatch, "dueDate" | "publicDueDateText"> => ({
-        dueDate: values.date,
-        publicDueDateText: values.publicDueDateText,
-      }),
-    );
+    .transform((values): Pick<BabyPatch, "dueDate" | "publicDueDateText"> => ({
+      dueDate: values.date,
+      publicDueDateText: values.publicDueDateText,
+    }));
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -183,11 +181,7 @@ function DueDateForm(props: EditorFormProps) {
           <FormItem className="mb-3">
             <FormLabel>{t("Public due date text (optional)")}</FormLabel>
             <FormControl>
-              <Input
-                placeholder={t("September baby")}
-                maxLength={80}
-                {...renderProps.field}
-              />
+              <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
             </FormControl>
             <FormDescription>
               {t("Leave blank to show the exact date and countdown.")}
