@@ -137,6 +137,14 @@ test("page language selection saves the locale override", async () => {
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
   expect(onUpdate).toHaveBeenCalledWith({ locale: "sv" });
+
+  fireEvent.click(view.getByRole("combobox", { name: "Language" }));
+  const inherited = view.getByRole("option", {
+    name: "Use my profile language (British English)",
+  });
+  fireEvent.pointerDown(inherited, { pointerType: "mouse" });
+  fireEvent.click(inherited);
+  expect(onUpdate).toHaveBeenCalledWith({ locale: null });
 });
 
 test("journey selection saves the chosen option", async () => {

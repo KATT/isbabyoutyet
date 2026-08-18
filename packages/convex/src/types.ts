@@ -137,9 +137,7 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
   const visibleMilestones = MILESTONES.filter(isVisible);
 
   let currentStatus: BabyStatus = { type: "not_yet" };
-  for (let index = visibleMilestones.length - 1; index >= 0; index -= 1) {
-    const milestone = visibleMilestones[index];
-    if (!milestone) continue;
+  for (const milestone of [...visibleMilestones].reverse()) {
     const date = baby[MILESTONE_FIELDS[milestone].date];
     if (typeof date === "string" && date) {
       currentStatus = { type: milestone, date };
@@ -161,8 +159,7 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
     isReached,
     canMark: (milestone) =>
       isVisible(milestone) && STATUS_ORDER[milestone] > STATUS_ORDER[currentStatus.type],
-    progressPercent:
-      visibleMilestones.length === 0 ? 0 : (reachedCount / visibleMilestones.length) * 100,
+    progressPercent: (reachedCount / visibleMilestones.length) * 100,
   };
 }
 
