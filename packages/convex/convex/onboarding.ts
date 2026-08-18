@@ -8,7 +8,15 @@ import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { isActive } from "./softDelete";
 import { onboardingStepIdValidator } from "./onboardingValidators";
 
-const emptyState: ReturnType<typeof toClientState> = {
+type OnboardingClientState = Omit<
+  ReturnType<typeof toClientState>,
+  "completedSteps" | "effectiveSteps"
+> & {
+  completedSteps: string[];
+  effectiveSteps: string[];
+};
+
+const emptyState: OnboardingClientState = {
   welcomeDismissed: false,
   checklistDismissed: false,
   minimized: false,

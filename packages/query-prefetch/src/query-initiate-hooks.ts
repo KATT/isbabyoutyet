@@ -54,9 +54,7 @@ function createInitiatedInfiniteQuery(
   return { input: input[0] };
 }
 
-function isInfiniteQueryOptions(
-  options: AnyQueryOptions,
-): options is AnyInfiniteQueryOptions {
+function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfiniteQueryOptions {
   return (
     "initialPageParam" in options &&
     "getNextPageParam" in options &&

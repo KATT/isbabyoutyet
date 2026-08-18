@@ -101,9 +101,7 @@ function ensureFactoryQueryData(queryClient: QueryClient, options: AnyQueryOptio
   return queryClient.ensureQueryData(options);
 }
 
-function isInfiniteQueryOptions(
-  options: AnyQueryOptions,
-): options is AnyInfiniteQueryOptions {
+function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfiniteQueryOptions {
   return (
     "initialPageParam" in options &&
     "getNextPageParam" in options &&
@@ -115,10 +113,7 @@ function ensureFactoryInfiniteQueryData<TFactory extends QueryOptionsFactory>(
   queryClient: QueryClient,
   options: ReturnType<TFactory>,
 ): Promise<QueryDataOf<ReturnType<TFactory>>>;
-function ensureFactoryInfiniteQueryData(
-  queryClient: QueryClient,
-  options: AnyQueryOptions,
-) {
+function ensureFactoryInfiniteQueryData(queryClient: QueryClient, options: AnyQueryOptions) {
   if (!isInfiniteQueryOptions(options)) {
     throw new TypeError("Infinite query options require page parameters");
   }
