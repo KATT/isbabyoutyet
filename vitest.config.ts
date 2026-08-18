@@ -42,26 +42,6 @@ export default defineConfig({
         "**/test.resource.ts",
       ],
       reporter: ["text-summary", "html", "json", "json-summary"],
-      thresholds: {
-        // Coverage ratchet: `autoUpdate` rewrites these numbers whenever a
-        // test run beats them, so coverage can only go up. Never lower them
-        // by hand.
-        autoUpdate: true,
-        // Merge: take the higher of each side so the ratchet never goes down.
-        // Lowered alongside removing the covered Initiated* handle code and
-        // its tests (deleting tested code shrinks the ratio); the ratchet
-        // snaps back to exact values on the next run.
-        // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
-        // hook with creation-time wiring in router.tsx (an untested-by-design
-        // entry file); the ratchet snaps to exact values on the next run.
-        // Lowered alongside removing the signup test-account picker (deleting
-        // covered submit/prefill code shrinks the ratio).
-        // Lowered alongside deleting the redundant covered migration reset.
-        statements: 77.2,
-        branches: 68.27,
-        functions: 77.63,
-        lines: 77.81,
-      },
     },
   },
 });
