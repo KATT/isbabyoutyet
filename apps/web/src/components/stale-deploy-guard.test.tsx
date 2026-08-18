@@ -5,8 +5,10 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 const mocks = vi.hoisted(() => ({
   gitSha: null as string | null | undefined,
   observe: vi.fn<(liveSha: string | null | undefined) => boolean>(() => false),
-  bindHardNavigation: vi.fn(() => () => {}),
-  bindStaleReloadTriggers: vi.fn(() => () => {}),
+  bindHardNavigation: vi.fn<(router: unknown, assign: (href: string) => void) => () => void>(
+    () => () => {},
+  ),
+  bindStaleReloadTriggers: vi.fn<() => () => void>(() => () => {}),
   router: {},
 }));
 

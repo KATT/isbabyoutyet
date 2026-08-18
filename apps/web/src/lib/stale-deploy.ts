@@ -1,4 +1,4 @@
-export type StaleDeployNavigateEvent = {
+type StaleDeployNavigateEvent = {
   hrefChanged: boolean;
   toLocation: {
     href: string;
@@ -44,7 +44,10 @@ export function createDeployShaWatch() {
   };
 }
 
-export function bindHardNavigation(router: StaleDeployRouter, assignLocation: (href: string) => void) {
+export function bindHardNavigation(
+  router: StaleDeployRouter,
+  assignLocation: (href: string) => void,
+) {
   return router.subscribe("onBeforeNavigate", (event) => {
     if (!event.hrefChanged) {
       return;

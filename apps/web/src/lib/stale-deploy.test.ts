@@ -1,5 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { bindHardNavigation, bindStaleReloadTriggers, createDeployShaWatch } from "./stale-deploy";
+import type { StaleDeployRouter } from "./stale-deploy";
 
 test("the first real deploy hash is remembered and not treated as stale", () => {
   const watch = createDeployShaWatch();
@@ -21,29 +22,27 @@ test("a later deploy hash marks the current document stale", () => {
 
 test("bindHardNavigation forces document reloads on href-changing navigations", () => {
   const assignLocation = vi.fn<(href: string) => void>();
-  let listener: ((event: { hrefChanged: boolean; toLocation: { href: string } }) => void) | null =
-    null;
+  const captured: { listener: Parameters<StaleDeployRouter["subscribe"]>[1] | null } = {
+    listener: null,
+  };
   const unsubscribe = vi.fn<() => void>();
   const router = {
-    subscribe: vi.fn(
-      (
-        _eventName: "onBeforeNavigate",
-        nextListener: (event: { hrefChanged: boolean; toLocation: { href: string } }) => void,
-      ) => {
-        listener = nextListener;
-        return unsubscribe;
-      },
-    ),
+    subscribe: vi.fn<StaleDeployRouter["subscribe"]>((_eventName, nextListener) => {
+      captured.listener = nextListener;
+      return unsubscribe;
+    }),
   };
 
   const stop = bindHardNavigation(router, assignLocation);
+  const listener = captured.listener;
+  if (!listener) {
+    throw new Error("expected onBeforeNavigate listener");
+  }
 
-  expect(listener).not.toBeNull();
-
-  listener?.({ hrefChanged: false, toLocation: { href: "/dashboard" } });
+  listener({ hrefChanged: false, toLocation: { href: "/dashboard" } });
   expect(assignLocation).not.toHaveBeenCalled();
 
-  listener?.({ hrefChanged: true, toLocation: { href: "/dashboard" } });
+  listener({ hrefChanged: true, toLocation: { href: "/dashboard" } });
   expect(assignLocation).toHaveBeenCalledWith("/dashboard");
 
   stop();
