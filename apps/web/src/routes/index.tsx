@@ -599,7 +599,7 @@ export function HomePage() {
             value={locale}
             disabled={false}
             label={t("Language")}
-            onValueChange={async (value: SupportedLocale) => {
+            onValueChange={async (value) => {
               // Paraglide's configured cookie strategy persists explicit choices, then
               // reloads so SSR and the hydrated page use the same locale.
               await setLocale(value);
