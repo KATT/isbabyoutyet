@@ -11,6 +11,8 @@ description: >-
 
 Open a sequence of dependent PRs. Each PR targets the previous PR's branch (except the first, which targets `main`). Keep commits and PRs small and sequential.
 
+Fill `.github/pull_request_template.md` for PR bodies. Stacked PRs add `## Stack` at the top; non-stack PRs omit that section entirely (never `n/a`). Summary is concise why / how / what bullets.
+
 ## When to use
 
 Do **not** create stacked PRs unless the user asked for a stack or the work is clearly a stack (dependent sequential slices, for example an additive backfill that must land before a required-schema change). Independent slices go onto `main` as separate PRs. If unsure, ask.
@@ -38,17 +40,16 @@ The suffix is `(1/2)` in parentheses, never a bare `1/2`.
 
 ## PR body
 
-Fill `.github/pull_request_template.md`. Do not omit sections. Order is **Stack**, **Summary**, **Schema changes**, **Test plan**.
+Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 
-- The stack table still goes first, under `## Stack`. Mark the current PR in the PR column as `**👉 …**` (bold plus emoji). Do not use `← this PR` in Description.
-- Non-stack PRs: write `n/a` or delete the Stack section.
+- **Stacked PRs:** `## Stack` first, with the full two-column table (PR | Description). Mark the current PR in the PR column as `**👉 …**` (bold plus emoji). Do not use `← this PR` in Description. Then Summary, Schema changes, Test plan.
+- **Non-stack PRs:** omit the Stack section entirely. Do not write `n/a`.
+- **Summary:** concise bullets covering why, how, and what.
 - **Schema changes** is required. If `packages/convex/convex/schema.ts` (or related schema files) did not change, write `None`. If it did, fill what changed, why, the migration story, and any follow-up that continues schema work (link the earlier PR; say what this slice does vs what already landed / what is still TODO).
-
-Do not copy the whole template here. Keep the rest of this skill focused on stacking.
 
 ## Stack table
 
-Put this table at the **top** of every PR description, under `## Stack`. Columns are only **PR** and **Description**.
+Put this table at the **top** of every stacked PR description, under `## Stack`. Columns are only **PR** and **Description**. Omit this section on non-stack PRs.
 
 ```markdown
 | PR | Description |
@@ -101,12 +102,17 @@ gh pr create --base <previous-branch> --head <this-branch> --title "{imperative 
 | (N/N) | … |
 
 ## Summary
-- …
+
+- Why: …
+- How: …
+- What: …
 
 ## Schema changes
+
 None
 
 ## Test plan
+
 - [ ] …
 EOF
 )"
@@ -127,12 +133,17 @@ gh pr edit <n> --body "$(cat <<'EOF'
 | [#125](https://github.com/KATT/isbabyoutyet/pull/125) 3/3 | Follow-up cleanup |
 
 ## Summary
-- …
+
+- Why: …
+- How: …
+- What: …
 
 ## Schema changes
+
 None
 
 ## Test plan
+
 - [ ] …
 EOF
 )"
