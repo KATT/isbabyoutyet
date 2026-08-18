@@ -478,17 +478,8 @@ export const update = mutationWithTriggers({
     encouragementsDisabled: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
-    const patch: Partial<typeof baby> = {
-      dueDate: args.dueDate,
-      name: args.name,
-      theme: args.theme,
-      locale: args.locale,
-      encouragementsDisabled: args.encouragementsDisabled,
-    };
-    for (const key of Object.keys(patch) as Array<keyof typeof patch>) {
-      if (patch[key] === undefined) delete patch[key];
-    }
+    const { babyId, ...patch } = args;
+    const { identity, baby } = await requireBabyManager(ctx, babyId);
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);
@@ -501,14 +492,14 @@ export const update = mutationWithTriggers({
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
         await ctx.db.insert("babyPublicIdHistory", {
-          babyId: args.babyId,
+          babyId,
           publicId: oldPublicId,
         });
       }
     }
 
     if (Object.keys(patch).length > 0) {
-      await ctx.db.patch(args.babyId, patch);
+      await ctx.db.patch(babyId, patch);
     }
   },
 });
