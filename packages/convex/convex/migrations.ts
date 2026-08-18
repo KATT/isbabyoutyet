@@ -1,7 +1,7 @@
 import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -587,9 +587,18 @@ export const clearStoredStatusFields = migrations.define({
   migrateOne: clearStoredStatusFieldsDoc,
 });
 
+// Keep newly added migrations outside the stable historical chain. If an
+// older deployment has that chain in progress, its stored `next` list cannot
+// know about migrations appended by this deployment.
+export const runPushImageBackfill = migrations.runner(
+  internal.migrations.generatePushImagesForExistingPhotos,
+);
+export const runStoredStatusCleanup = migrations.runner(
+  internal.migrations.clearStoredStatusFields,
+);
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
-  internal.migrations.generatePushImagesForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
@@ -602,12 +611,10 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillCoParentTokenIdentifier,
   internal.migrations.sanitizeOnboardingSteps,
   internal.migrations.backfillUserProfileIsAdmin,
-  internal.migrations.clearStoredStatusFields,
 ]);
 
-const TABLE_MIGRATION_NAMES = [
+const HISTORICAL_MIGRATION_NAMES = [
   "migrations:generateThumbnailsForExistingPhotos",
-  "migrations:generatePushImagesForExistingPhotos",
   "migrations:backfillBabyTimeline",
   "migrations:backfillEncouragementTimeline",
   "migrations:separateMilestoneOccurredAt",
@@ -620,23 +627,37 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillCoParentTokenIdentifier",
   "migrations:sanitizeOnboardingSteps",
   "migrations:backfillUserProfileIsAdmin",
+] as const;
+
+const TABLE_MIGRATION_NAMES = [
+  ...HISTORICAL_MIGRATION_NAMES,
+  "migrations:generatePushImagesForExistingPhotos",
   "migrations:clearStoredStatusFields",
 ] as const;
 
+async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
+  const statuses = await migrations.getStatus(ctx, {
+    migrations: [...names],
+  });
+  return {
+    isDone: statuses.length === names.length && statuses.every((status) => status.isDone),
+    failed: statuses
+      .filter((status) => status.error !== undefined)
+      .map((status) => `${status.name}: ${status.error}`),
+  };
+}
+
+export const historicalDeploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, HISTORICAL_MIGRATION_NAMES);
+  },
+});
+
 export const deploymentStatus = internalQuery({
   args: {},
-  handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
-    const statuses = await migrations.getStatus(ctx, {
-      migrations: [...TABLE_MIGRATION_NAMES],
-    });
-    return {
-      isDone:
-        statuses.length === TABLE_MIGRATION_NAMES.length &&
-        statuses.every((status) => status.isDone),
-      failed: statuses
-        .filter((status) => status.error !== undefined)
-        .map((status) => `${status.name}: ${status.error}`),
-    };
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, TABLE_MIGRATION_NAMES);
   },
 });
 
