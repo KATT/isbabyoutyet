@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import "@/lib/paraglide-setup";
 import { getLocale } from "@/paraglide/runtime";
@@ -2074,14 +2074,11 @@ export function translate<TKey extends TranslationKey>(
 
 export function useI18n() {
   const locale = useContext(LocaleContext);
-  return useMemo(
-    () => ({
-      locale,
-      t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
-        translate(locale, key, ...args)) satisfies TranslationFunction,
-    }),
-    [locale],
-  );
+  return {
+    locale,
+    t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
+      translate(locale, key, ...args)) satisfies TranslationFunction,
+  };
 }
 
 export function getLanguageName(locale: SupportedLocale, displayLocale: SupportedLocale = locale) {
