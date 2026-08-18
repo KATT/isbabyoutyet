@@ -116,8 +116,8 @@ export function babyStatusLabel(
     status: BabyStatus;
     locale: SupportedLocale;
   } & Partial<{
-    birthJourney: BirthJourney;
-    milestoneVisibility: MilestoneVisibility;
+    birthJourney: BirthJourney | null;
+    milestoneVisibility: MilestoneVisibility | null;
   }>,
 ) {
   const plannedDateCopy = isPlannedDateJourney(opts);
