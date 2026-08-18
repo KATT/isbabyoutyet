@@ -54,10 +54,10 @@ export default defineConfig({
         // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
         // hook with creation-time wiring in router.tsx (an untested-by-design
         // entry file); the ratchet snaps to exact values on the next run.
-        statements: 72.95,
-        branches: 65.2,
-        functions: 71.35,
-        lines: 73.35,
+        statements: 73.03,
+        branches: 65.27,
+        functions: 71.39,
+        lines: 73.42,
       },
     },
   },
