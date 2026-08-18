@@ -60,7 +60,7 @@ test("custom due date text replaces countdown metadata", async () => {
   const baby = {
     name: "Juniper",
     dueDate: "2026-09",
-    dueDateDisplayMode: "message",
+    dueDateDisplayMode: "message" as const,
     publicDueDateText: "Any day now",
     publicId: "juniper-hale",
     theme: "sunny-days",

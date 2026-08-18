@@ -95,10 +95,7 @@ function dueDateSchema(t: TranslationFunction) {
       }
     })
     .transform(
-      (values): Pick<
-        BabyPatch,
-        "dueDate" | "dueDateDisplayMode" | "publicDueDateText"
-      > => ({
+      (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
         dueDate: values.date,
         dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
         publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
@@ -223,11 +220,7 @@ function DueDateForm(props: EditorFormProps) {
             <FormItem className="mb-3">
               <FormLabel>{t("Public due date message")}</FormLabel>
               <FormControl>
-                <Input
-                  placeholder={t("September baby")}
-                  maxLength={80}
-                  {...renderProps.field}
-                />
+                <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
               </FormControl>
               <FormMessage />
             </FormItem>
