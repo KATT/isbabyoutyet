@@ -115,6 +115,7 @@ export const post = mutationWithTriggers({
         statusBefore,
         updatedBaby,
         photoId,
+        updateId,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
@@ -127,6 +128,7 @@ export const post = mutationWithTriggers({
         notificationType: photoId ? "photo_added" : "update_posted",
         customMessage: message,
         photoId,
+        updateId,
       });
     }
 
@@ -156,7 +158,7 @@ export const setAsCurrentPhoto = mutationWithTriggers({
       thumbnailId: update.thumbnailId ?? null,
     });
 
-    if (!update.thumbnailId) {
+    if (!update.thumbnailId || !update.pushImageId) {
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: update.photoId,
@@ -212,6 +214,7 @@ export const remove = mutationWithTriggers({
         statusBefore,
         updatedBaby,
         photoId: null,
+        updateId: null,
         customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
       });
     }

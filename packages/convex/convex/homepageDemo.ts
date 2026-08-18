@@ -21,13 +21,21 @@ const CLEAR_BATCH_SIZE = 32;
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
   thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+  pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
 });
 
 const photosValidator = v.record(v.string(), photoIdsValidator);
 
 const localeArg = v.optional(supportedLocaleValidator);
 
-type DemoPhotos = Record<string, { photoId: Id<"_storage">; thumbnailId?: Id<"_storage"> | null }>;
+type DemoPhotos = Record<
+  string,
+  {
+    photoId: Id<"_storage">;
+    thumbnailId?: Id<"_storage"> | null;
+    pushImageId?: Id<"_storage"> | null;
+  }
+>;
 
 function resolveDemoLocale(locale: SupportedLocale | undefined) {
   return locale ?? DEFAULT_LOCALE;
@@ -42,6 +50,7 @@ function storageIdsToKeep(photos: DemoPhotos) {
   for (const photo of Object.values(photos)) {
     keepStorageIds.add(photo.photoId);
     if (photo.thumbnailId) keepStorageIds.add(photo.thumbnailId);
+    if (photo.pushImageId) keepStorageIds.add(photo.pushImageId);
   }
   return keepStorageIds;
 }
@@ -143,6 +152,10 @@ async function deleteTimelineItem(
         });
         await deleteStorageIfExists(ctx, {
           storageId: update.thumbnailId,
+          keepStorageIds: opts.keepStorageIds,
+        });
+        await deleteStorageIfExists(ctx, {
+          storageId: update.pushImageId,
           keepStorageIds: opts.keepStorageIds,
         });
         await ctx.db.delete(update._id);
@@ -260,6 +273,7 @@ async function insertFeedDocs(
       occurredAt: item.milestone ? postedAt : null,
       photoId: photo?.photoId ?? null,
       thumbnailId: photo?.thumbnailId ?? null,
+      pushImageId: photo?.pushImageId ?? null,
     });
 
     if (item.milestone) {

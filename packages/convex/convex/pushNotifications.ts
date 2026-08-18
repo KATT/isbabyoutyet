@@ -71,6 +71,7 @@ export const sendNotification = internalAction({
     status: notifiableStatusValidator,
     customMessage: v.optional(v.union(v.string(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    updateId: v.optional(v.union(v.id("updates"), v.null())),
     locale: supportedLocaleValidator,
   },
   handler: async (ctx, args) => {
@@ -82,8 +83,12 @@ export const sendNotification = internalAction({
     const body = args.customMessage || message.body;
 
     const url = `/baby/${args.publicId}`;
-    const image = args.photoId
-      ? ((await ctx.storage.getUrl(args.photoId)) ?? undefined)
+    const imageStorageId = await ctx.runQuery(internal.baby.resolveNotificationImage, {
+      updateId: args.updateId ?? null,
+      photoId: args.photoId ?? null,
+    });
+    const image = imageStorageId
+      ? ((await ctx.storage.getUrl(imageStorageId)) ?? undefined)
       : undefined;
 
     let cursor: string | null = null;

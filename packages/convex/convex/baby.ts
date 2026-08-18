@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { env, internalMutation, mutation, query } from "./_generated/server";
+import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
@@ -137,6 +137,7 @@ export async function schedulePushNotification(
     notificationType: NotifiableStatus;
     customMessage: string | null;
     photoId: Id<"_storage"> | null;
+    updateId: Id<"updates"> | null;
   },
 ) {
   const baby = opts.baby;
@@ -149,6 +150,7 @@ export async function schedulePushNotification(
     notificationType: opts.notificationType,
     customMessage: opts.customMessage,
     photoId: opts.photoId,
+    updateId: opts.updateId,
     createdAt: Date.now(),
   });
 
@@ -163,6 +165,7 @@ export async function schedulePushNotification(
       status: opts.notificationType,
       customMessage: opts.customMessage,
       photoId: opts.photoId,
+      updateId: opts.updateId,
       locale: await resolveBabyLocale(ctx.db, baby),
     },
   );
@@ -199,6 +202,7 @@ export const updatePhoto = mutationWithTriggers({
       notificationType: "photo_added",
       customMessage: null,
       photoId: args.photoId,
+      updateId,
     });
   },
 });
@@ -411,12 +415,13 @@ export const markNotificationSent = internalMutation({
   },
 });
 
-// Internal mutation to update thumbnail ID (called from action)
+// Internal mutation to attach generated page/push images (called from action)
 export const updateThumbnail = internalMutation({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
-    photoId: v.optional(v.id("_storage")), // photo the thumbnail was generated from
+    pushImageId: v.union(v.id("_storage"), v.null()),
+    photoId: v.optional(v.id("_storage")), // photo the derivatives were generated from
     updateId: v.optional(v.id("updates")), // timeline update row to also patch
   },
   handler: async (ctx, args) => {
@@ -430,9 +435,33 @@ export const updateThumbnail = internalMutation({
     if (args.updateId) {
       const update = await ctx.db.get(args.updateId);
       if (update && (!args.photoId || update.photoId === args.photoId)) {
-        await ctx.db.patch(args.updateId, { thumbnailId: args.thumbnailId });
+        await ctx.db.patch(args.updateId, {
+          thumbnailId: args.thumbnailId,
+          pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+        });
       }
     }
+  },
+});
+
+/**
+ * Storage id to attach as Notification.image. Prefer the 1350×675 push
+ * derivative, then the page thumbnail, then the original photo.
+ */
+export const resolveNotificationImage = internalQuery({
+  args: {
+    updateId: v.union(v.id("updates"), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
+  },
+  returns: v.union(v.id("_storage"), v.null()),
+  handler: async (ctx, args) => {
+    if (args.updateId) {
+      const update = await ctx.db.get(args.updateId);
+      if (update) {
+        return update.pushImageId ?? update.thumbnailId ?? update.photoId ?? args.photoId;
+      }
+    }
+    return args.photoId;
   },
 });
 
@@ -450,6 +479,7 @@ export async function syncStatusNotifications(
     /** Message to attach to the push, per notifiable milestone. */
     customMessageByMilestone: Record<Milestone, string | null>;
     photoId: Id<"_storage"> | null;
+    updateId: Id<"updates"> | null;
   },
 ) {
   const updatedBaby = opts.updatedBaby;
@@ -490,6 +520,7 @@ export async function syncStatusNotifications(
     notificationType: statusAfter.type,
     customMessage: opts.customMessageByMilestone[statusAfter.type],
     photoId: opts.photoId,
+    updateId: opts.updateId,
   });
 }
 
@@ -647,6 +678,7 @@ export const update = mutationWithTriggers({
       statusBefore,
       updatedBaby,
       photoId: null,
+      updateId: null,
       customMessageByMilestone: {
         labor_started: legacyMessages.labor_started ?? null,
         gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
