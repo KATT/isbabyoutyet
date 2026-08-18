@@ -12,6 +12,7 @@ test("getThemeCss returns null for the default theme and unknown names", () => {
   expect(getThemeCss(null)).toBeNull();
   expect(getThemeCss(undefined)).toBeNull();
   expect(getThemeCss("not-a-real-theme")).toBeNull();
+  expect(getThemeColors("not-a-real-theme")).toBe(THEME_OPTIONS[0].colors);
 });
 
 test("default theme option has no css payload", () => {
