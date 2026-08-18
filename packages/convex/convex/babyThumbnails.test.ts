@@ -1,7 +1,8 @@
 import { convexTest } from "convex-test";
 import sharp from "sharp";
 import { expect, test } from "vitest";
-import { PAGE_THUMBNAIL, PUSH_IMAGE, renderPushImage } from "../src/photoDerivatives";
+import { PUSH_IMAGE, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
+import { generatePushImagesForExistingPhotosDoc } from "./migrations";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
@@ -19,65 +20,21 @@ async function jpegBytes(opts: { width: number; height: number }) {
     .toBuffer();
 }
 
-test("push images are 1350×675 JPEGs (Android big-picture at 3×)", async () => {
-  const rendered = await renderPushImage(await jpegBytes({ width: 2000, height: 3000 }));
+test("push images are 1350×675 JPEGs under 200KB (Android big-picture at 3×)", async () => {
+  const source = await jpegBytes({ width: 2000, height: 3000 });
+  const rendered = await renderPushImage(source);
   const meta = await sharp(rendered).metadata();
   expect(meta.format).toBe("jpeg");
   expect(meta.width).toBe(PUSH_IMAGE.width);
   expect(meta.height).toBe(PUSH_IMAGE.height);
   expect(rendered.byteLength).toBeLessThan(200_000);
+
+  const page = await sharp(await renderPageThumbnail(source)).metadata();
+  expect(page.width).toBe(900);
+  expect(page.height).toBe(900);
 });
 
-test("generateThumbnail stores page and push derivatives on the update", async () => {
-  const t = convexTest(schema, modules);
-  await registerComponents(t);
-  const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Photo Baby",
-    dueDate: "2026-09-01",
-  });
-
-  const photo = await t.run(async (ctx) => {
-    return await ctx.storage.store(
-      new Blob([await jpegBytes({ width: 2000, height: 3000 })], { type: "image/jpeg" }),
-    );
-  });
-
-  const updateId = await asAlice.mutation(api.updates.post, {
-    babyId: created.babyId,
-    photoId: photo,
-  });
-
-  await t.action(internal.babyThumbnails.generateThumbnail, {
-    babyId: created.babyId,
-    photoId: photo,
-    updateId,
-  });
-
-  const stored = await t.run(async (ctx) => {
-    const update = await ctx.db.get(updateId);
-    if (!update?.thumbnailId || !update.pushImageId) {
-      throw new Error("expected generated photo derivatives");
-    }
-    const thumbnail = await ctx.storage.get(update.thumbnailId);
-    const pushImage = await ctx.storage.get(update.pushImageId);
-    return {
-      thumbnail: thumbnail ? new Uint8Array(await thumbnail.arrayBuffer()) : null,
-      pushImage: pushImage ? new Uint8Array(await pushImage.arrayBuffer()) : null,
-    };
-  });
-
-  const thumbnailMeta = await sharp(stored.thumbnail).metadata();
-  expect(thumbnailMeta.width).toBe(PAGE_THUMBNAIL.width);
-  expect(thumbnailMeta.height).toBe(PAGE_THUMBNAIL.height);
-
-  const pushMeta = await sharp(stored.pushImage).metadata();
-  expect(pushMeta.format).toBe("jpeg");
-  expect(pushMeta.width).toBe(PUSH_IMAGE.width);
-  expect(pushMeta.height).toBe(PUSH_IMAGE.height);
-});
-
-test("send prefers the push image over the original photo", async () => {
+test("send prefers the push image, then the page thumbnail, then the original", async () => {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
@@ -88,6 +45,9 @@ test("send prefers the push image over the original photo", async () => {
 
   const original = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["original"], { type: "image/jpeg" }));
+  });
+  const thumbnail = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["thumb"], { type: "image/jpeg" }));
   });
   const pushImage = await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob(["push-image"], { type: "image/jpeg" }));
@@ -102,11 +62,38 @@ test("send prefers the push image over the original photo", async () => {
       babyId: created.babyId,
       timelineItemId,
       photoId: original,
-      pushImageId: pushImage,
       postedByUserId: "alice",
     });
   });
 
+  expect(
+    await t.query(internal.baby.resolveNotificationImage, {
+      updateId,
+      photoId: original,
+    }),
+  ).toBe(original);
+
+  await t.mutation(internal.baby.updateThumbnail, {
+    babyId: created.babyId,
+    thumbnailId: thumbnail,
+    pushImageId: null,
+    photoId: original,
+    updateId,
+  });
+  expect(
+    await t.query(internal.baby.resolveNotificationImage, {
+      updateId,
+      photoId: original,
+    }),
+  ).toBe(thumbnail);
+
+  await t.mutation(internal.baby.updateThumbnail, {
+    babyId: created.babyId,
+    thumbnailId: thumbnail,
+    pushImageId: pushImage,
+    photoId: original,
+    updateId,
+  });
   expect(
     await t.query(internal.baby.resolveNotificationImage, {
       updateId,
@@ -120,10 +107,33 @@ test("send prefers the push image over the original photo", async () => {
     }),
   ).toBe(original);
 
-  const thumbnail = await t.run(async (ctx) => {
-    return await ctx.storage.store(new Blob(["thumb"], { type: "image/jpeg" }));
+  await t.run(async (ctx) => {
+    await ctx.db.delete(updateId);
   });
-  const thumbnailOnlyUpdateId = await t.run(async (ctx) => {
+  expect(
+    await t.query(internal.baby.resolveNotificationImage, {
+      updateId,
+      photoId: original,
+    }),
+  ).toBe(original);
+});
+
+test("push image backfill only schedules photo updates that still need a derivative", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Backfill Baby",
+    dueDate: "2026-09-01",
+  });
+  const photo = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
+  });
+  const pushImage = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["push"], { type: "image/jpeg" }));
+  });
+
+  const alreadyDone = await t.run(async (ctx) => {
     const timelineItemId = await ctx.db.insert("timelineItems", {
       babyId: created.babyId,
       kind: "update",
@@ -132,14 +142,118 @@ test("send prefers the push image over the original photo", async () => {
     return await ctx.db.insert("updates", {
       babyId: created.babyId,
       timelineItemId,
-      photoId: original,
-      thumbnailId: thumbnail,
+      photoId: photo,
+      pushImageId: pushImage,
     });
   });
-  expect(
-    await t.query(internal.baby.resolveNotificationImage, {
-      updateId: thumbnailOnlyUpdateId,
-      photoId: original,
-    }),
-  ).toBe(thumbnail);
+  const deleted = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId: created.babyId,
+      kind: "update",
+      postedAt: Date.now(),
+    });
+    return await ctx.db.insert("updates", {
+      babyId: created.babyId,
+      timelineItemId,
+      photoId: photo,
+      deletedAt: Date.now(),
+    });
+  });
+  const messageOnly = await t.run(async (ctx) => {
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId: created.babyId,
+      kind: "update",
+      postedAt: Date.now(),
+    });
+    return await ctx.db.insert("updates", {
+      babyId: created.babyId,
+      timelineItemId,
+      message: "No photo",
+    });
+  });
+
+  await t.run(async (ctx) => {
+    const done = await ctx.db.get(alreadyDone);
+    const gone = await ctx.db.get(deleted);
+    const text = await ctx.db.get(messageOnly);
+    if (!done || !gone || !text) throw new Error("expected fixture updates");
+    await generatePushImagesForExistingPhotosDoc(ctx, done);
+    await generatePushImagesForExistingPhotosDoc(ctx, gone);
+    await generatePushImagesForExistingPhotosDoc(ctx, text);
+  });
+});
+
+test("updateThumbnail ignores stale generation after the photo changes", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Stale Thumb Baby",
+    dueDate: "2026-09-01",
+  });
+  const photoA = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["a"], { type: "image/jpeg" }));
+  });
+  const photoB = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["b"], { type: "image/jpeg" }));
+  });
+  const thumbA = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["ta"], { type: "image/jpeg" }));
+  });
+  const thumbB = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["tb"], { type: "image/jpeg" }));
+  });
+  const pushB = await t.run(async (ctx) => {
+    return await ctx.storage.store(new Blob(["pb"], { type: "image/jpeg" }));
+  });
+  const updateId = await t.run(async (ctx) => {
+    await ctx.db.patch(created.babyId, { photoId: photoB });
+    const timelineItemId = await ctx.db.insert("timelineItems", {
+      babyId: created.babyId,
+      kind: "update",
+      postedAt: Date.now(),
+    });
+    return await ctx.db.insert("updates", {
+      babyId: created.babyId,
+      timelineItemId,
+      photoId: photoB,
+    });
+  });
+
+  await t.mutation(internal.baby.updateThumbnail, {
+    babyId: created.babyId,
+    thumbnailId: thumbA,
+    pushImageId: null,
+    photoId: photoA,
+    updateId,
+  });
+  const ignored = await t.run(async (ctx) => {
+    const baby = await ctx.db.get(created.babyId);
+    const update = await ctx.db.get(updateId);
+    return { babyThumbnailId: baby?.thumbnailId, updateThumbnailId: update?.thumbnailId };
+  });
+  expect(ignored.babyThumbnailId ?? null).toBeNull();
+  expect(ignored.updateThumbnailId ?? null).toBeNull();
+
+  await t.mutation(internal.baby.updateThumbnail, {
+    babyId: created.babyId,
+    thumbnailId: thumbB,
+    pushImageId: pushB,
+    photoId: photoB,
+    updateId,
+  });
+  const applied = await t.run(async (ctx) => {
+    const baby = await ctx.db.get(created.babyId);
+    const update = await ctx.db.get(updateId);
+    return {
+      babyThumbnailId: baby?.thumbnailId,
+      updateThumbnailId: update?.thumbnailId,
+      pushImageId: update?.pushImageId,
+    };
+  });
+  expect(applied).toMatchObject({
+    babyThumbnailId: thumbB,
+    updateThumbnailId: thumbB,
+    pushImageId: pushB,
+  });
 });

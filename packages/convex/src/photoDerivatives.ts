@@ -14,7 +14,7 @@ export const PAGE_THUMBNAIL = { width: 900, height: 900 } as const;
  */
 export const PUSH_IMAGE = { width: 1350, height: 675 } as const;
 
-export async function renderPageThumbnail(bytes: Uint8Array) {
+export async function renderPageThumbnail(bytes: Buffer) {
   return await sharp(bytes)
     .rotate()
     .resize(PAGE_THUMBNAIL.width, PAGE_THUMBNAIL.height, {
@@ -25,7 +25,7 @@ export async function renderPageThumbnail(bytes: Uint8Array) {
     .toBuffer();
 }
 
-export async function renderPushImage(bytes: Uint8Array) {
+export async function renderPushImage(bytes: Buffer) {
   return await sharp(bytes)
     .rotate()
     .resize(PUSH_IMAGE.width, PUSH_IMAGE.height, {

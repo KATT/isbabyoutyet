@@ -131,6 +131,8 @@ export default defineSchema({
     occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+    // 1350×675 JPEG for Chromium Notification.image (Android / Windows)
+    pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
     // Who posted this update. Optional until backfill makes it required.
     postedByUserId: v.optional(v.union(v.string(), v.null())),
     // Soft delete: set to ms epoch when deleted; absent/null means active

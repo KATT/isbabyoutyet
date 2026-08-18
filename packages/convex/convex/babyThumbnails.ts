@@ -6,7 +6,7 @@ import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
 
-function jpegBlob(bytes: Uint8Array) {
+function jpegBlob(bytes: Buffer) {
   return new Blob([new Uint8Array(bytes)], { type: "image/jpeg" });
 }
 
@@ -23,10 +23,10 @@ export const generateThumbnail = internalAction({
       throw new Error("Photo not found in storage");
     }
 
-    const bytes = new Uint8Array(await imageBlob.arrayBuffer());
-    const thumbnailId = await ctx.storage.store(jpegBlob(await renderPageThumbnail(bytes)));
+    const buffer = Buffer.from(await imageBlob.arrayBuffer());
+    const thumbnailId = await ctx.storage.store(jpegBlob(await renderPageThumbnail(buffer)));
     const pushImageId = args.updateId
-      ? await ctx.storage.store(jpegBlob(await renderPushImage(bytes)))
+      ? await ctx.storage.store(jpegBlob(await renderPushImage(buffer)))
       : null;
 
     await ctx.runMutation(internal.baby.updateThumbnail, {
