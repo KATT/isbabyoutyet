@@ -9,6 +9,7 @@ import {
   getCurrentStatus,
   isMilestoneNotificationType,
   isStatusForward,
+  milestoneVisibilityForPreset,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
   MILESTONES,
@@ -88,10 +89,19 @@ export const getByPublicId = query({
 
     return {
       ...toBabyDto(baby),
+      milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
     };
+  },
+});
+
+export const getBirthJourney = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? access.baby.birthJourney : FORBIDDEN;
   },
 });
 
@@ -298,7 +308,7 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
-    // Optional for clients opened before this deployment; every write stores a value.
+    // Optional for stale clients; the document always stores a concrete selection.
     birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
@@ -611,6 +621,7 @@ export const update = mutationWithTriggers({
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
+    birthJourney: v.optional(birthJourneyValidator),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never
     // written to the baby doc. Remove in a later tidy-up once stale tabs are
@@ -627,6 +638,8 @@ export const update = mutationWithTriggers({
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
+    const birthJourneyChanged =
+      rest.birthJourney !== undefined && rest.birthJourney !== baby.birthJourney;
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings
@@ -652,6 +665,13 @@ export const update = mutationWithTriggers({
     }
 
     const statusBefore = getCurrentStatus(baby);
+    const milestoneMarkChanged = MILESTONES.some((milestone) => {
+      const dateField = MILESTONE_FIELDS[milestone].date;
+      const dateArg = rest[dateField];
+      return (
+        (typeof dateArg === "string" && !baby[dateField]) || (dateArg === null && !!baby[dateField])
+      );
+    });
 
     const patch: Partial<typeof baby> = rest;
     // If name changed and the slugified name would result in a different publicId
@@ -683,16 +703,18 @@ export const update = mutationWithTriggers({
 
     // Settings status changes don't carry a message (attach one by posting an
     // update); a stale client's legacy message arg still rides along
-    await syncStatusNotifications(ctx, {
-      statusBefore,
-      updatedBaby,
-      photoId: null,
-      updateId: null,
-      customMessageByMilestone: {
-        labor_started: legacyMessages.labor_started ?? null,
-        gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-        born: legacyMessages.born ?? null,
-      },
-    });
+    if (!birthJourneyChanged || milestoneMarkChanged) {
+      await syncStatusNotifications(ctx, {
+        statusBefore,
+        updatedBaby,
+        photoId: null,
+        updateId: null,
+        customMessageByMilestone: {
+          labor_started: legacyMessages.labor_started ?? null,
+          gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
+          born: legacyMessages.born ?? null,
+        },
+      });
+    }
   },
 });

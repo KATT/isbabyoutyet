@@ -11,9 +11,11 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    // Stack 1: optional while existing babies backfill; Stack 2 makes it required.
-    birthJourney: v.optional(
-      v.union(v.literal("labor"), v.literal("home_birth"), v.literal("planned_c_section")),
+    // Stack 2: required after Stack 1 backfills every existing baby.
+    birthJourney: v.union(
+      v.literal("labor"),
+      v.literal("home_birth"),
+      v.literal("planned_c_section"),
     ),
     hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
     babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born

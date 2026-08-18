@@ -23,17 +23,45 @@ export type BabyData = Omit<
   | "publicId"
   | "_id"
   | "_creationTime"
->;
+  | "birthJourney"
+> &
+  Partial<{ milestoneVisibility: MilestoneVisibility }>;
 
 /**
  * Partial update to baby data - used by editors
  */
-export type BabyUpdate = Partial<BabyData>;
+export type BabyUpdate = Partial<
+  Omit<BabyData, "milestoneVisibility"> & { birthJourney: BirthJourney }
+>;
 
 /**
  * Handler for updating baby data - abstracts mutations vs query param updates
  */
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
+
+export type Milestone = "labor_started" | "gone_to_hospital" | "born";
+
+export type MilestoneVisibility = {
+  showLabor: boolean;
+  showHospital: boolean;
+};
+
+export const DEFAULT_MILESTONE_VISIBILITY = {
+  showLabor: true,
+  showHospital: true,
+} as const satisfies MilestoneVisibility;
+
+export const MILESTONE_VISIBILITY_PRESETS = {
+  labor: DEFAULT_MILESTONE_VISIBILITY,
+  home_birth: { showLabor: true, showHospital: false },
+  planned_c_section: { showLabor: false, showHospital: true },
+} as const satisfies Record<string, MilestoneVisibility>;
+
+export type MilestoneVisibilityPreset = keyof typeof MILESTONE_VISIBILITY_PRESETS;
+
+export function milestoneVisibilityForPreset(preset: MilestoneVisibilityPreset) {
+  return MILESTONE_VISIBILITY_PRESETS[preset];
+}
 
 /**
  * Current status derived from baby data
@@ -43,26 +71,6 @@ export type BabyStatus =
   | { type: "labor_started"; date: string }
   | { type: "gone_to_hospital"; date: string }
   | { type: "born"; date: string };
-
-/**
- * Derive the current status from baby data
- */
-export function getCurrentStatus(baby: {
-  babyBorn?: string | null;
-  wentToHospital?: string | null;
-  laborStarted?: string | null;
-}): BabyStatus {
-  if (baby.babyBorn) {
-    return { type: "born", date: baby.babyBorn };
-  }
-  if (baby.wentToHospital) {
-    return { type: "gone_to_hospital", date: baby.wentToHospital };
-  }
-  if (baby.laborStarted) {
-    return { type: "labor_started", date: baby.laborStarted };
-  }
-  return { type: "not_yet" };
-}
 
 export const STATUS_ORDER = {
   not_yet: 0,
@@ -77,11 +85,6 @@ export type NotifiableStatus =
   | "born"
   | "photo_added"
   | "update_posted";
-
-/**
- * Owner-postable milestone kinds — the status stages a feed update can mark.
- */
-export type Milestone = "labor_started" | "gone_to_hospital" | "born";
 
 export const MILESTONE_LABELS = {
   labor_started: "Labour started",
@@ -101,12 +104,85 @@ export const MILESTONE_FIELDS = {
 
 export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
 
+type MilestonePolicyInput = {
+  babyBorn?: string | null;
+  wentToHospital?: string | null;
+  laborStarted?: string | null;
+  birthJourney?: BirthJourney | null;
+  milestoneVisibility?: MilestoneVisibility | null;
+};
+
+export type MilestonePolicy = {
+  visibility: MilestoneVisibility;
+  visibleMilestones: readonly Milestone[];
+  currentStatus: BabyStatus;
+  isVisible: (milestone: Milestone) => boolean;
+  isReached: (milestone: Milestone) => boolean;
+  canMark: (milestone: Milestone) => boolean;
+  progressPercent: number;
+};
+
+/**
+ * The single policy seam for milestone visibility and allowed transitions.
+ * Stored selections derive visibility. Public projections can pass the neutral
+ * visibility object instead, without exposing the selection.
+ */
+export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy {
+  const visibility = baby.birthJourney
+    ? milestoneVisibilityForPreset(baby.birthJourney)
+    : (baby.milestoneVisibility ?? DEFAULT_MILESTONE_VISIBILITY);
+  const isVisible = (milestone: Milestone) =>
+    milestone === "born" ||
+    (milestone === "labor_started" ? visibility.showLabor : visibility.showHospital);
+  const visibleMilestones = MILESTONES.filter(isVisible);
+
+  let currentStatus: BabyStatus = { type: "not_yet" };
+  for (const milestone of [...visibleMilestones].reverse()) {
+    const date = baby[MILESTONE_FIELDS[milestone].date];
+    if (typeof date === "string" && date) {
+      currentStatus = { type: milestone, date };
+      break;
+    }
+  }
+
+  const isReached = (milestone: Milestone) =>
+    isVisible(milestone) &&
+    currentStatus.type !== "not_yet" &&
+    STATUS_ORDER[currentStatus.type] >= STATUS_ORDER[milestone];
+  const reachedCount = visibleMilestones.filter(isReached).length;
+
+  return {
+    visibility,
+    visibleMilestones,
+    currentStatus,
+    isVisible,
+    isReached,
+    canMark: (milestone) =>
+      isVisible(milestone) && STATUS_ORDER[milestone] > STATUS_ORDER[currentStatus.type],
+    progressPercent: (reachedCount / visibleMilestones.length) * 100,
+  };
+}
+
+/**
+ * Derive the latest publicly visible status from baby data.
+ */
+export function getCurrentStatus(baby: MilestonePolicyInput): BabyStatus {
+  return getMilestonePolicy(baby).currentStatus;
+}
+
 /**
  * Returns the latest marked milestone that must be removed before `milestone`
  * can be removed. Milestones are unwound in reverse order so the canonical
  * status never contains gaps.
  */
-export function getBlockingLaterMilestone(baby: BabyData, milestone: Milestone) {
+export function getBlockingLaterMilestone(
+  baby: {
+    laborStarted?: string | null;
+    wentToHospital?: string | null;
+    babyBorn?: string | null;
+  },
+  milestone: Milestone,
+) {
   for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
     const candidate = MILESTONES[index];
     if (

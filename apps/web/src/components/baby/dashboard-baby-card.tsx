@@ -2,6 +2,7 @@ import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@workspace/ui/components/badge";
 import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";
 import { useI18n } from "@/lib/i18n";
 
@@ -14,6 +15,7 @@ type DashboardBabyCardBaby = {
   laborStarted: string | null;
   wentToHospital: string | null;
   babyBorn: string | null;
+  birthJourney: BirthJourney;
 }>;
 
 type DashboardBabyCardProps = {

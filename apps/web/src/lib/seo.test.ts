@@ -104,6 +104,24 @@ test("baby SEO descriptions cover labour and hospital stages", () => {
   ).toBe("Labour started");
 });
 
+test("hidden milestone data does not appear in public SEO copy", () => {
+  const seo = babySeoHead({
+    name: "River",
+    dueDate: "2026-08-20",
+    publicId: "river",
+    theme: null,
+    locale: "en-GB",
+    babyBorn: null,
+    wentToHospital: "2026-08-14T02:00:00.000Z",
+    laborStarted: "2026-08-14T01:00:00.000Z",
+    milestoneVisibility: { showLabor: false, showHospital: false },
+  });
+
+  expect(seo.description).not.toContain("labour");
+  expect(seo.description).not.toContain("hospital");
+  expect(seo.description).toContain("River");
+});
+
 test("overdue baby titles use the overdue copy", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-20T12:00:00.000Z"));
 

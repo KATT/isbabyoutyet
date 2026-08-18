@@ -44,12 +44,11 @@ import type {
   InitiatedConvexInfiniteQuery,
   PreloadedConvexInfiniteQuery,
 } from "@workspace/convex-prefetch";
-import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
+import type { BabyData, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
-  getCurrentStatus,
+  getMilestonePolicy,
   MILESTONE_LABELS,
-  STATUS_ORDER,
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
@@ -97,7 +96,7 @@ type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
 function composerSchema(opts: {
   t: TranslationFunction;
-  currentStatus: BabyStatus["type"];
+  allowedMilestones: readonly Milestone[];
   babyId: Id<"baby">;
 }) {
   return z
@@ -117,9 +116,7 @@ function composerSchema(opts: {
       { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
+      (draft) => draft.milestone === "none" || opts.allowedMilestones.includes(draft.milestone),
       {
         error: opts.t("That status has already been marked"),
         path: ["milestone"],
@@ -201,13 +198,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
-  const currentStatus = getCurrentStatus(props.baby);
-  const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
-    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
-  );
+  const milestonePolicy = getMilestonePolicy(props.baby);
+  const currentStatus = milestonePolicy.currentStatus;
+  const futureMilestones = milestonePolicy.visibleMilestones.filter(milestonePolicy.canMark);
   const schema = composerSchema({
     t,
-    currentStatus: currentStatus.type,
+    allowedMilestones: futureMilestones,
     babyId: props.babyId,
   });
 
@@ -237,11 +233,11 @@ export function UpdateComposer(props: UpdateComposerProps) {
       : null;
   useEffect(() => {
     const value = form.getValues("milestone");
-    if (value !== "none" && STATUS_ORDER[value] <= STATUS_ORDER[currentStatus.type]) {
+    if (value !== "none" && !futureMilestones.includes(value)) {
       form.setValue("milestone", "none");
       form.resetField("occurredAt");
     }
-  }, [form, currentStatus.type]);
+  }, [form, currentStatus.type, milestonePolicy.visibility]);
 
   const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
 

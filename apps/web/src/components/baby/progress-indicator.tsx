@@ -1,4 +1,5 @@
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getMilestonePolicy, MILESTONE_FIELDS } from "@workspace/convex/src/types";
 import { getRelativeTime } from "./utils";
 import { useI18n } from "@/lib/i18n";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
@@ -12,44 +13,19 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = props.currentStatus;
+  const milestonePolicy = getMilestonePolicy(baby);
 
-  // If a later status is set, earlier stages count as completed
-  const steps = [
-    {
-      key: "labor_started",
-      labelKey: MILESTONE_LABEL_KEYS.labor_started,
-      emoji: "💫",
-      date: baby.laborStarted,
-      completed: !!baby.laborStarted || !!baby.wentToHospital || !!baby.babyBorn,
-    },
-    {
-      key: "gone_to_hospital",
-      labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital,
-      emoji: "🏥",
-      date: baby.wentToHospital,
-      completed: !!baby.wentToHospital || !!baby.babyBorn,
-    },
-    {
-      key: "born",
-      labelKey: MILESTONE_LABEL_KEYS.born,
-      emoji: "🎉",
-      date: baby.babyBorn,
-      completed: !!baby.babyBorn,
-    },
-  ] as const;
-
-  const progressValue = (() => {
-    switch (currentStatus.type) {
-      case "labor_started":
-        return (1 / 3) * 100;
-      case "gone_to_hospital":
-        return (2 / 3) * 100;
-      case "born":
-        return 100;
-      default:
-        return 0;
-    }
-  })();
+  const stepMeta = {
+    labor_started: { labelKey: MILESTONE_LABEL_KEYS.labor_started, emoji: "💫" },
+    gone_to_hospital: { labelKey: MILESTONE_LABEL_KEYS.gone_to_hospital, emoji: "🏥" },
+    born: { labelKey: MILESTONE_LABEL_KEYS.born, emoji: "🎉" },
+  } as const;
+  const steps = milestonePolicy.visibleMilestones.map((milestone) => ({
+    key: milestone,
+    ...stepMeta[milestone],
+    date: baby[MILESTONE_FIELDS[milestone].date],
+    completed: milestonePolicy.isReached(milestone),
+  }));
 
   const lastIndex = steps.length - 1;
 
@@ -59,14 +35,17 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
-      aria-valuenow={Math.round(progressValue)}
+      aria-valuenow={Math.round(milestonePolicy.progressPercent)}
     >
       {/*
         Each column owns a left half-line + badge + right half-line. Adjacent
         halves meet between columns, so the stroke reaches the rim and never
         crosses the badge face.
       */}
-      <ol className="grid grid-cols-3">
+      <ol
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
+      >
         {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
           // Path into this milestone fills once the milestone itself is reached.
