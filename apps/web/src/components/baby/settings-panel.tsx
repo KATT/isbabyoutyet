@@ -152,9 +152,17 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     key={option.value}
                     className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
                   >
-                    <RadioGroupItem value={option.value} />
+                    <RadioGroupItem
+                      value={option.value}
+                      aria-labelledby={`settings-journey-${option.value}`}
+                    />
                     <span>
-                      <span className="block text-sm font-bold">{t(option.labelKey)}</span>
+                      <span
+                        id={`settings-journey-${option.value}`}
+                        className="block text-sm font-bold"
+                      >
+                        {t(option.labelKey)}
+                      </span>
                       <span className="block text-xs text-muted-foreground">
                         {t(option.descriptionKey)}
                       </span>

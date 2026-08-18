@@ -57,3 +57,15 @@ test("home birth keeps hospital data out of the derived current status", () => {
   expect(policy.currentStatus.type).toBe("labor_started");
   expect(policy.progressPercent).toBe(50);
 });
+
+test("public projections and defensive legacy inputs use neutral visibility", () => {
+  expect(
+    getMilestonePolicy({
+      milestoneVisibility: { showLabor: false, showHospital: false },
+    }).visibleMilestones,
+  ).toEqual(["born"]);
+  expect(getMilestonePolicy({}).visibility).toEqual({
+    showLabor: true,
+    showHospital: true,
+  });
+});

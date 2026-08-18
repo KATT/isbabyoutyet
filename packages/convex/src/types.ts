@@ -24,9 +24,8 @@ export type BabyData = Omit<
   | "_id"
   | "_creationTime"
   | "birthJourney"
-> & {
-  milestoneVisibility: MilestoneVisibility;
-};
+> &
+  Partial<{ milestoneVisibility: MilestoneVisibility }>;
 
 /**
  * Partial update to baby data - used by editors
@@ -174,7 +173,14 @@ export function getCurrentStatus(baby: MilestonePolicyInput): BabyStatus {
  * can be removed. Milestones are unwound in reverse order so the canonical
  * status never contains gaps.
  */
-export function getBlockingLaterMilestone(baby: BabyData, milestone: Milestone) {
+export function getBlockingLaterMilestone(
+  baby: {
+    laborStarted?: string | null;
+    wentToHospital?: string | null;
+    babyBorn?: string | null;
+  },
+  milestone: Milestone,
+) {
   for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
     const candidate = MILESTONES[index];
     if (

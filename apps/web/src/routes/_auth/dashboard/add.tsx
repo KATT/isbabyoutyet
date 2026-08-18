@@ -40,7 +40,7 @@ export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
 });
 
-function AddBabyPage() {
+export function AddBabyPage() {
   const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
@@ -142,9 +142,17 @@ function AddBabyPage() {
                               key={option.value}
                               className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5"
                             >
-                              <RadioGroupItem value={option.value} />
+                              <RadioGroupItem
+                                value={option.value}
+                                aria-labelledby={`add-journey-${option.value}`}
+                              />
                               <span>
-                                <span className="block font-bold">{t(option.labelKey)}</span>
+                                <span
+                                  id={`add-journey-${option.value}`}
+                                  className="block font-bold"
+                                >
+                                  {t(option.labelKey)}
+                                </span>
                                 <span className="block text-sm text-muted-foreground">
                                   {t(option.descriptionKey)}
                                 </span>

@@ -132,8 +132,8 @@ test("journey selection saves the chosen option", async () => {
     />,
   );
 
-  expect(view.getByRole("radio", { name: /Labour Visitors see/i })).toBeTruthy();
-  fireEvent.click(view.getByRole("radio", { name: /Home birth Visitors see/i }));
+  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
+  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
   expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
 });
 
@@ -153,7 +153,7 @@ test("journey selection stays changeable after milestone updates", async () => {
   );
 
   expect(view.getByText("Gone to hospital")).toBeTruthy();
-  fireEvent.click(view.getByRole("radio", { name: /Planned C-section Visitors see/i }));
+  fireEvent.click(view.getByRole("radio", { name: "Planned C-section" }));
   expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
 });
 
@@ -178,5 +178,5 @@ test("theme constants render through the active translation catalog", async () =
 
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Standard")).toBeTruthy();
-  expect(view.getByText("Milstolpar som besökare kan se")).toBeTruthy();
+  expect(view.getByText("Välj en resa")).toBeTruthy();
 });

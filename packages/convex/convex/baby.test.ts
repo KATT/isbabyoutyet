@@ -83,6 +83,11 @@ test("creation stores the selected journey and only exposes derived visibility p
     "planned_c_section",
   );
   expect(await t.query(api.baby.getBirthJourney, { babyId: created.babyId })).toBe("forbidden");
+  expect(
+    await t
+      .withIdentity({ subject: "bob" })
+      .query(api.baby.getBirthJourney, { babyId: created.babyId }),
+  ).toBe("forbidden");
 });
 
 test("journey selection can change after milestone updates without deleting them", async () => {

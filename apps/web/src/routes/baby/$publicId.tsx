@@ -302,7 +302,7 @@ function BabyPage() {
         />
       ) : null}
 
-      {canManage ? (
+      {canManage && birthJourney ? (
         <>
           <SettingsPanel
             baby={baby}
