@@ -82,8 +82,6 @@ type SettingsPanelProps = {
  */
 export function SettingsPanel(props: SettingsPanelProps) {
   const { locale, t } = useI18n();
-  const inheritedLocale = props.profileLocale;
-  const onDelete = props.onDelete;
   const coParents = props.coParents;
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
@@ -234,7 +232,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemTitle>{t("Language")}</ItemTitle>
               <ItemDescription>
                 {t("All visitors see this page in {{language}}.", {
-                  language: getLanguageName(props.baby.locale ?? inheritedLocale, locale),
+                  language: getLanguageName(props.baby.locale ?? props.profileLocale, locale),
                 })}
               </ItemDescription>
             </ItemContent>
@@ -256,7 +254,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <SelectGroup>
                     <SelectItem value="inherit">
                       {t("Use my profile language ({{language}})", {
-                        language: getLanguageName(inheritedLocale, locale),
+                        language: getLanguageName(props.profileLocale, locale),
                       })}
                     </SelectItem>
                     {SUPPORTED_LOCALES.map((supportedLocale) => (
@@ -319,7 +317,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </>
           )}
 
-          {onDelete && (
+          {props.onDelete && (
             <>
               <ItemSeparator />
               <Item>
@@ -355,7 +353,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                         <AlertDialogAction
                           variant="destructive"
                           onClick={() => {
-                            void onDelete();
+                            void props.onDelete?.();
                           }}
                         >
                           {t("Delete page")}

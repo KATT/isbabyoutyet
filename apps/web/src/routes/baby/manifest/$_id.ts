@@ -7,7 +7,7 @@ import { translate } from "@/lib/i18n";
 export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async (opts) => {
         const convexUrl = import.meta.env.VITE_CONVEX_URL;
         if (!convexUrl) {
           return new Response("VITE_CONVEX_URL not set", { status: 500 });
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
 
         const client = new ConvexHttpClient(convexUrl);
         const baby = await client.query(api.baby.getByPublicId, {
-          id: params._id,
+          id: opts.params._id,
         });
 
         if (!baby) {

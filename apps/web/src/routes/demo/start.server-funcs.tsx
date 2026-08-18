@@ -38,9 +38,9 @@ const getTodos = createServerFn({
 
 const addTodo = createServerFn({ method: "POST" })
   .inputValidator((d: string) => d)
-  .handler(async ({ data }) => {
+  .handler(async (opts) => {
     const todos = await readTodos();
-    todos.push({ id: todos.length + 1, name: data });
+    todos.push({ id: todos.length + 1, name: opts.data });
     await fs.promises.writeFile(TODOS_FILE, JSON.stringify(todos, null, 2));
     return todos;
   });

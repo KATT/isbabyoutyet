@@ -56,6 +56,13 @@ function readReferences(sourceCode, declaration, name) {
   return variable?.references.filter((reference) => reference.isRead()) ?? [];
 }
 
+function isJsxTagReference(reference) {
+  return (
+    reference.identifier.parent?.type === "JSXOpeningElement" ||
+    reference.identifier.parent?.type === "JSXClosingElement"
+  );
+}
+
 function removableDeclaration(declaration) {
   const variableDeclaration = declaration.parent;
   if (
@@ -88,7 +95,13 @@ function replacementFix(fixer, reference, name, replacement) {
 }
 
 function inlineSuggestion(opts) {
-  if (opts.allowSuggestion === false) {
+  const declarationFunction = containingFunction(opts.declaration);
+  if (
+    opts.allowSuggestion === false ||
+    opts.references.some(
+      (reference) => containingFunction(reference.identifier) !== declarationFunction,
+    )
+  ) {
     return null;
   }
   const removable = removableDeclaration(opts.declaration);
@@ -138,7 +151,10 @@ function destructuringSupportsSpread(sourceCode, fn, pattern) {
     (variable) =>
       names.has(variable.name) &&
       variable.references.some(
-        (reference) => reference.isRead() && reference.identifier.parent?.type === "SpreadElement",
+        (reference) =>
+          reference.isRead() &&
+          (reference.identifier.parent?.type === "SpreadElement" ||
+            reference.identifier.parent?.type === "JSXSpreadAttribute"),
       ),
   );
 }
@@ -169,7 +185,11 @@ const preferParamAccess = {
     const sourceCode = context.sourceCode;
 
     function reportAlias(opts) {
-      if (opts.references.length >= MINIMUM_ALIAS_READS) {
+      if (
+        opts.name.startsWith("_") ||
+        opts.references.length >= MINIMUM_ALIAS_READS ||
+        opts.references.some(isJsxTagReference)
+      ) {
         return;
       }
       context.report({

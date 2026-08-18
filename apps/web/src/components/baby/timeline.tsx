@@ -334,12 +334,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
               <FormField
                 control={form.control}
                 name="milestone"
-                render={({ field }) => (
+                render={(renderProps) => (
                   <RadioGroup
                     aria-labelledby="composer-status-label"
                     value={selectedMilestone ?? "none"}
                     onValueChange={(value) => {
-                      field.onChange(value);
+                      renderProps.field.onChange(value);
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}

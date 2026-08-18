@@ -114,5 +114,18 @@ tester.run("prefer-param-access", plugin.rules["prefer-param-access"], {
         },
       ],
     },
+    {
+      code: `function Card(props: Props) {
+        const onDelete = props.onDelete;
+        return onDelete ? <Button onClick={() => onDelete()} /> : null;
+      }`,
+      errors: [
+        {
+          messageId: "direct",
+          data: { name: "onDelete", count: 2, member: "props.onDelete" },
+          suggestions: null,
+        },
+      ],
+    },
   ],
 });
