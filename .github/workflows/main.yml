@@ -35,7 +35,7 @@ jobs:
 
       - name: Restore main coverage baseline
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .coverage-baseline
           key: coverage-main-${{ github.event.pull_request.base.sha }}
@@ -63,7 +63,7 @@ jobs:
 
       - name: Save main coverage baseline
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .coverage-baseline
           key: coverage-main-${{ github.sha }}
