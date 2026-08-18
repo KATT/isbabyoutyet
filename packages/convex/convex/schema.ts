@@ -10,7 +10,7 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    // Optional during the backfill deployment; the stacked feature PR makes it required.
+    // Stack 1: optional while existing babies backfill; Stack 2 makes it required.
     birthJourney: v.optional(
       v.union(v.literal("labour"), v.literal("home_birth"), v.literal("planned_c_section")),
     ),
