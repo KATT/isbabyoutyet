@@ -7,7 +7,7 @@ import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials"
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { markUserOnboardingComplete } from "./onboarding";
+import { clearUserOnboarding, markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
   const userId = await ensureAuthUser(ctx, DEMO_USER);
@@ -17,7 +17,9 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
   await markUserOnboardingComplete(ctx, userId);
 
   const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
-  await clearOnboardingForUser(ctx, emptyUserId);
+  // First-run tour must stay on: skipTourForExistingUsers also resets this
+  // account after it grandfathers everyone else.
+  await clearUserOnboarding(ctx, emptyUserId);
 
   const existingBabies = await ctx.db
     .query("baby")
@@ -78,16 +80,6 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
     return;
   }
   await ctx.db.patch(existing._id, { tokenIdentifier, isAdmin: true });
-}
-
-async function clearOnboardingForUser(ctx: MutationCtx, userId: string) {
-  const existing = await ctx.db
-    .query("userOnboarding")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .unique();
-  if (existing) {
-    await ctx.db.delete(existing._id);
-  }
 }
 
 /**

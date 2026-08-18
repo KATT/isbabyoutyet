@@ -14,7 +14,11 @@ import {
   insertUpdateWithTimelineItem,
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { markUserOnboardingComplete, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import {
+  clearUserOnboarding,
+  markUserOnboardingComplete,
+  SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL,
+} from "./onboarding";
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
@@ -328,10 +332,11 @@ function authUserEmail(user: unknown) {
  *
  * The empty demo login (`test+newuser@example.com`) is left on the first-run
  * tour so preview/local can exercise that flow. `seedDemoData` already marks
- * the main demo parent as complete.
+ * the main demo parent as complete. This migration also deletes any leftover
+ * `userOnboarding` row for that login (seed runs before `runAll` on preview).
  *
  * Idempotent: a sentinel `userOnboarding` row is written on the last page,
- * so later `runAll` deploys are a no-op.
+ * so later `runAll` deploys are a no-op (except the empty-demo reset).
  */
 export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: string | null) {
   const sentinel = await ctx.db
@@ -339,6 +344,7 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
     .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
     .unique();
   if (sentinel) {
+    await resetEmptyDemoUserOnboarding(ctx);
     return {
       isDone: true,
       continueCursor: "",
@@ -362,6 +368,7 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
 
   if (page.isDone) {
     await markUserOnboardingComplete(ctx, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL);
+    await resetEmptyDemoUserOnboarding(ctx);
     return {
       isDone: true,
       continueCursor: page.continueCursor,
@@ -376,6 +383,15 @@ export async function skipTourForExistingUsersPage(ctx: MutationCtx, cursor: str
     alreadyRan: false,
     processed: page.page.length,
   };
+}
+
+async function resetEmptyDemoUserOnboarding(ctx: MutationCtx) {
+  const user = await ctx.runQuery(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "email", value: DEMO_EMPTY_USER.email }],
+  });
+  if (!user) return;
+  await clearUserOnboarding(ctx, String(user._id));
 }
 
 export const skipTourForExistingUsers = internalMutation({
