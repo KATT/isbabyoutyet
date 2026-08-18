@@ -47,6 +47,7 @@ import {
   getBirthJourney,
   getCurrentStatus,
   getMilestonesForJourney,
+  MILESTONE_LABELS,
   STATUS_ORDER,
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
@@ -510,6 +511,12 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const deleteBlocker = update.milestone
     ? getBlockingLaterMilestone(props.baby, update.milestone)
     : null;
+  const deleteBlockerLabel =
+    deleteBlocker && birthJourney === "planned_c_section" && deleteBlocker === "gone_to_hospital"
+      ? t("At hospital")
+      : deleteBlocker
+        ? MILESTONE_LABELS[deleteBlocker]
+        : null;
 
   const deleteButton = (
     <Button
@@ -599,7 +606,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                       <span
                         className="inline-flex"
                         aria-label={t("Delete the {{status}} status first", {
-                          status: t(getMilestoneLabelKey(deleteBlocker, birthJourney)),
+                          status: deleteBlockerLabel ?? "",
                         })}
                       />
                     }
@@ -608,7 +615,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   </TooltipTrigger>
                   <TooltipContent>
                     {t("Delete the {{status}} status first", {
-                      status: t(getMilestoneLabelKey(deleteBlocker, birthJourney)),
+                      status: deleteBlockerLabel ?? "",
                     })}
                   </TooltipContent>
                 </Tooltip>
