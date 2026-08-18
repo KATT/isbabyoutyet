@@ -105,3 +105,24 @@ test("welcome tour finishes with Let's go on the last slide", async () => {
   expect(onFinished).toHaveBeenCalledOnce();
   expect(onOpenChange).toHaveBeenCalledWith(false);
 });
+
+test("reopening the welcome tour starts from the first slide", async () => {
+  const onFinished = vi.fn<() => void>();
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const view = render(
+    <WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />,
+  );
+  await using _view = makeResource(view, () => view.unmount());
+
+  fireEvent.click(screen.getByRole("button", { name: /go to slide 4/i }));
+  expect(screen.getByRole("button", { name: /let's go/i })).toBeTruthy();
+
+  view.rerender(
+    <WelcomeTourDialog open={false} onOpenChange={onOpenChange} onFinished={onFinished} />,
+  );
+  view.rerender(<WelcomeTourDialog open onOpenChange={onOpenChange} onFinished={onFinished} />);
+
+  await vi.waitFor(() => {
+    expect(screen.getByRole("button", { name: /^next$/i })).toBeTruthy();
+  });
+});

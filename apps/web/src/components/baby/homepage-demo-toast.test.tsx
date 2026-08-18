@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
@@ -26,5 +26,15 @@ test("does not render the notice on a real baby page", async () => {
 
 test("shows the demo toast on every locale homepage baby", async () => {
   await using view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
+  expect(view.getByRole("complementary")).toBeTruthy();
+});
+
+test("can dismiss the notice and shows it again for another demo baby", async () => {
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
+
+  fireEvent.click(view.getByRole("button", { name: "Hide tip" }));
+  expect(view.container.firstChild).toBeNull();
+
+  view.rerender(<HomepageDemoToast publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} />);
   expect(view.getByRole("complementary")).toBeTruthy();
 });

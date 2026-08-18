@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -136,4 +136,67 @@ test("renders on the tour baby page when babyPublicId matches", async () => {
   );
 
   expect(view.getByTestId("getting-started")).toBeTruthy();
+});
+
+test("dismisses a completed checklist after four seconds", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
+  mocks.dismissChecklist.mockClear();
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({
+    data: {
+      ...progress,
+      effectiveSteps: ["add_baby", "share_link", "post_update", "explore_settings"],
+      allDone: true,
+    },
+  });
+
+  await using _view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  act(() => vi.advanceTimersByTime(3999));
+  expect(mocks.dismissChecklist).not.toHaveBeenCalled();
+  act(() => vi.advanceTimersByTime(1));
+  expect(mocks.dismissChecklist).toHaveBeenCalledOnce();
+});
+
+test("persists a skipped welcome tour when the user already has a baby", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
+  mocks.dismissWelcome.mockClear();
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({
+    data: {
+      ...progress,
+      welcomeDismissed: false,
+    },
+  });
+
+  await using _view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  act(() => vi.advanceTimersByTime(0));
+  expect(mocks.dismissWelcome).toHaveBeenCalledOnce();
 });

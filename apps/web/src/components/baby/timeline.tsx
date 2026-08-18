@@ -59,6 +59,7 @@ import { getStoredVisitorId, subscribeToStoredVisitorId } from "./encouragements
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useIntersectionAction } from "@/lib/use-intersection-action";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -935,6 +936,13 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
+  const loadMoreRef = useIntersectionAction({
+    enabled: timelineQuery.hasNextPage && !timelineQuery.isFetchingNextPage,
+    onIntersect: () => {
+      void timelineQuery.fetchNextPage();
+    },
+    threshold: 0.1,
+  });
 
   const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
@@ -1036,7 +1044,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
         )}
 
         {timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage ? (
-          <div className="flex justify-center py-2">
+          <div ref={loadMoreRef} className="flex justify-center py-2">
             <Button
               variant="outline"
               disabled={timelineQuery.isFetchingNextPage}

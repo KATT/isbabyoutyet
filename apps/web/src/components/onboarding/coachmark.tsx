@@ -76,11 +76,13 @@ function createCoachmarkStore(targetId: string) {
       const resizeObserver =
         typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
       resizeObserver?.observe(target);
+      const interval = window.setInterval(measure, 500);
 
       return () => {
         window.removeEventListener("resize", measure);
         window.removeEventListener("scroll", measure, true);
         resizeObserver?.disconnect();
+        window.clearInterval(interval);
       };
     },
   };

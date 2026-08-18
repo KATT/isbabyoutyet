@@ -33,6 +33,7 @@ import {
 } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useIntersectionAction } from "@/lib/use-intersection-action";
 
 const ADMIN_PAGE_SIZE = 20;
 
@@ -148,6 +149,15 @@ export function nextSortSearch(opts: {
   return { sort: opts.clicked, order: "desc" as SortOrder };
 }
 
+function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
+  const sentinelRef = useIntersectionAction({
+    enabled: props.canLoadMore,
+    onIntersect: props.onLoadMore,
+    threshold: 0.1,
+  });
+  return <div ref={sentinelRef} className="h-1 w-full" aria-hidden="true" />;
+}
+
 function AdminTableCard(props: {
   children: ReactNode;
   canLoadMore: boolean;
@@ -159,6 +169,7 @@ function AdminTableCard(props: {
   return (
     <Card className="relative gap-0 py-0">
       <CardContent className="p-0">{props.children}</CardContent>
+      <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
       {props.canLoadMore || props.isLoadingMore ? (
         <div className="flex justify-center border-t py-3">
           <Button

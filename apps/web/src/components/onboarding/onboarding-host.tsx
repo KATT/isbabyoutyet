@@ -1,11 +1,12 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
+import { useDelayedAction } from "@/lib/use-delayed-action";
 import { GettingStartedCard } from "./getting-started";
 import { WelcomeTourDialog } from "./welcome-tour";
 import { Coachmark } from "./coachmark";
@@ -66,6 +67,22 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const [hiddenCoachmarkStep, setHiddenCoachmarkStep] = useState<OnboardingStepId | null>(null);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
+  const dismissSkippedWelcome = useCallback(() => {
+    void dismissWelcome({});
+  }, [dismissWelcome]);
+  useDelayedAction({
+    action: dismissSkippedWelcome,
+    delayMs: 0,
+    enabled: progress.hasBaby && !progress.welcomeDismissed,
+  });
+  const dismissFinishedChecklist = useCallback(() => {
+    void dismissChecklist({});
+  }, [dismissChecklist]);
+  useDelayedAction({
+    action: dismissFinishedChecklist,
+    delayMs: 4000,
+    enabled: progress.allDone && !progress.checklistDismissed,
+  });
 
   const isTourBabyPage =
     props.surface !== "baby" ||

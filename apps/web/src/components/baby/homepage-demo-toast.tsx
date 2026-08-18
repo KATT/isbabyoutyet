@@ -1,13 +1,16 @@
 import { useI18n } from "@/lib/i18n";
-import { Info } from "@phosphor-icons/react";
+import { Info, X } from "@phosphor-icons/react";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
+import { Button } from "@workspace/ui/components/button";
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
+import { useState } from "react";
 
 type HomepageDemoToastProps = {
   publicId: string;
@@ -19,7 +22,8 @@ type HomepageDemoToastProps = {
  */
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
   const { t } = useI18n();
-  if (!isHomepageDemoPublicId(props.publicId)) return null;
+  const [dismissedPublicId, setDismissedPublicId] = useState<string | null>(null);
+  if (!isHomepageDemoPublicId(props.publicId) || dismissedPublicId === props.publicId) return null;
 
   return (
     <aside className="fixed bottom-4 left-4 z-40 max-w-[calc(100vw-2rem)]" aria-live="polite">
@@ -36,6 +40,16 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
             {t("Feel free to post test messages — they get cleared on each deploy.")}
           </ItemDescription>
         </ItemContent>
+        <ItemActions>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("Hide tip")}
+            onClick={() => setDismissedPublicId(props.publicId)}
+          >
+            <X />
+          </Button>
+        </ItemActions>
       </Item>
     </aside>
   );

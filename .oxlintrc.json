@@ -73,6 +73,13 @@
       }
     },
     {
+      // Audited timing seam: callers provide an action and this hook owns cleanup.
+      "files": ["apps/web/src/lib/use-delayed-action.ts"],
+      "rules": {
+        "no-use-effect/no-use-effect": "off"
+      }
+    },
+    {
       // query-prefetch overloads use an optional third `remixInput` param (KATT gist API).
       "files": ["packages/query-prefetch/src/**"],
       "rules": {

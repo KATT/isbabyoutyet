@@ -263,6 +263,48 @@ test("requests another page through an explicit interaction", async () => {
   expect(onLoadMore).toHaveBeenCalledOnce();
 });
 
+test("requests another page automatically when the sentinel is visible", async () => {
+  const onLoadMore = vi.fn<() => void>();
+  const originalObserver = globalThis.IntersectionObserver;
+  class MockIntersectionObserver {
+    constructor(private readonly callback: IntersectionObserverCallback) {}
+    observe() {
+      this.callback(
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        this as unknown as IntersectionObserver,
+      );
+    }
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+    root = null;
+    rootMargin = "";
+    thresholds = [];
+  }
+  globalThis.IntersectionObserver =
+    MockIntersectionObserver as unknown as typeof IntersectionObserver;
+  await using _observer = makeResource({}, () => {
+    globalThis.IntersectionObserver = originalObserver;
+  });
+
+  await using _view = renderResource(
+    <BabiesSection
+      sort="updated"
+      order="desc"
+      tab="babies"
+      hideDemo={true}
+      hasNextPage={true}
+      isFetchingNextPage={false}
+      onLoadMore={onLoadMore}
+      babies={[sampleBaby]}
+    />,
+  );
+
+  expect(onLoadMore).toHaveBeenCalledOnce();
+});
+
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
   await using view = renderResource(<AdminDashboardPage />);
   expect(view.getByText("Admin dashboard")).toBeTruthy();

@@ -59,7 +59,12 @@ export function WelcomeTourDialog(props: WelcomeTourDialogProps) {
           <DialogDescription>{t("A short overview of how the app works")}</DialogDescription>
         </DialogHeader>
 
-        <Carousel setApi={setApi} className="w-full" opts={{ loop: false }}>
+        <Carousel
+          key={props.open ? "open" : "closed"}
+          setApi={setApi}
+          className="w-full"
+          opts={{ loop: false }}
+        >
           <CarouselContent>
             {WELCOME_SLIDES.map((slide) => {
               const Icon = slide.icon;
