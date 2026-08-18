@@ -31,22 +31,49 @@ tester.run("infer-callback-params", plugin.rules["infer-callback-params"], {
   invalid: [
     {
       code: `items.map((item: Item) => item.id);`,
-      output: `items.map((item) => item.id);`,
-      errors: [{ messageId: "infer" }],
+      errors: [
+        {
+          messageId: "infer",
+          suggestions: [
+            {
+              messageId: "inferSuggestion",
+              output: `items.map((item) => item.id);`,
+            },
+          ],
+        },
+      ],
     },
     {
       code: `const button = <Button onClick={(event: MouseEvent) => event.preventDefault()} />;`,
-      output: `const button = <Button onClick={(event) => event.preventDefault()} />;`,
-      errors: [{ messageId: "infer" }],
+      errors: [
+        {
+          messageId: "infer",
+          suggestions: [
+            {
+              messageId: "inferSuggestion",
+              output: `const button = <Button onClick={(event) => event.preventDefault()} />;`,
+            },
+          ],
+        },
+      ],
     },
     {
       code: `useMutation({
         mutationFn: async (value: Input) => save(value),
       });`,
-      output: `useMutation({
+      errors: [
+        {
+          messageId: "infer",
+          suggestions: [
+            {
+              messageId: "inferSuggestion",
+              output: `useMutation({
         mutationFn: async (value) => save(value),
       });`,
-      errors: [{ messageId: "infer" }],
+            },
+          ],
+        },
+      ],
     },
     {
       code: `router.use({
@@ -56,19 +83,37 @@ tester.run("infer-callback-params", plugin.rules["infer-callback-params"], {
           },
         },
       });`,
-      output: `router.use({
+      errors: [
+        {
+          messageId: "infer",
+          suggestions: [
+            {
+              messageId: "inferSuggestion",
+              output: `router.use({
         nested: {
           handler: function ({ request }) {
             return request.url;
           },
         },
       });`,
-      errors: [{ messageId: "infer" }],
+            },
+          ],
+        },
+      ],
     },
     {
       code: `promise.catch((error: unknown) => report(error));`,
-      output: `promise.catch((error) => report(error));`,
-      errors: [{ messageId: "infer" }],
+      errors: [
+        {
+          messageId: "infer",
+          suggestions: [
+            {
+              messageId: "inferSuggestion",
+              output: `promise.catch((error) => report(error));`,
+            },
+          ],
+        },
+      ],
     },
   ],
 });

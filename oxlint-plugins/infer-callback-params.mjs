@@ -62,8 +62,8 @@ function isContextualCallback(node) {
     }
 
     if (
-      (parent.type === "ArrayExpression" || parent.type === "SpreadElement") &&
-      (parent.type !== "ArrayExpression" || parent.elements.includes(candidate))
+      (parent.type === "ArrayExpression" && parent.elements.includes(candidate)) ||
+      (parent.type === "SpreadElement" && parent.argument === candidate)
     ) {
       candidate = parent;
       parent = candidate.parent;
@@ -90,12 +90,14 @@ const inferCallbackParams = {
   meta: {
     type: "suggestion",
     docs: {
-      description: "Disallow explicit callback parameter types when contextual typing is available",
+      description: "Disallow explicit parameter types in callback expressions",
     },
     schema: [],
-    fixable: "code",
+    hasSuggestions: true,
     messages: {
-      infer: "Remove this callback parameter type and rely on contextual inference.",
+      infer:
+        "Move this type to the callback's contextual boundary and rely on parameter inference here.",
+      inferSuggestion: "Remove the explicit callback parameter type",
     },
   },
 
@@ -117,9 +119,14 @@ const inferCallbackParams = {
         context.report({
           node: annotation,
           messageId: "infer",
-          fix(fixer) {
-            return fixer.remove(annotation);
-          },
+          suggest: [
+            {
+              messageId: "inferSuggestion",
+              fix(fixer) {
+                return fixer.remove(annotation);
+              },
+            },
+          ],
         });
       }
     }
