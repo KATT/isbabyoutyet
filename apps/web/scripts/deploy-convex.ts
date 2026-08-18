@@ -121,9 +121,24 @@ for (let attempt = 0; attempt < 300; attempt += 1) {
   await new Promise((resolve) => setTimeout(resolve, 1_000));
 }
 
-console.log("\n$ pnpm seed:homepage");
-execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
-  cwd: convexPackageDir,
-  stdio: "inherit",
-  env: process.env,
-});
+const HOMEPAGE_SEED_ATTEMPTS = 3;
+for (let attempt = 1; attempt <= HOMEPAGE_SEED_ATTEMPTS; attempt += 1) {
+  console.log("\n$ pnpm seed:homepage");
+  try {
+    execFileSync("pnpm", ["run", "seed:homepage", "--", ...previewArgs], {
+      cwd: convexPackageDir,
+      stdio: "inherit",
+      env: process.env,
+    });
+    break;
+  } catch (error) {
+    if (attempt === HOMEPAGE_SEED_ATTEMPTS) {
+      throw error;
+    }
+    const delayMs = 1000 * attempt;
+    console.warn(
+      `Homepage seed failed (attempt ${attempt}/${HOMEPAGE_SEED_ATTEMPTS}). Retrying in ${delayMs}ms`,
+    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+}

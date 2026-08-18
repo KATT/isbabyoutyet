@@ -90,9 +90,39 @@ async function jpegAndThumbnail(buffer: Buffer) {
   return { photo, thumbnail };
 }
 
+const UPLOAD_ATTEMPTS = 5;
+const UPLOAD_RETRY_DELAY_MS = 500;
+
 function isLoopbackUploadUrl(uploadUrl: string) {
   const hostname = new URL(uploadUrl).hostname;
   return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+function errorCode(error: unknown) {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return null;
+  }
+  return typeof error.code === "string" ? error.code : null;
+}
+
+function isTransientUploadError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  const codes = [errorCode(error), error.cause ? errorCode(error.cause) : null];
+  if (
+    codes.includes("ECONNRESET") ||
+    codes.includes("ETIMEDOUT") ||
+    codes.includes("EPIPE") ||
+    codes.includes("UND_ERR_SOCKET") ||
+    codes.includes("UND_ERR_CONNECT_TIMEOUT")
+  ) {
+    return true;
+  }
+  if (error.message.includes("fetch failed") || error.message.includes("ECONNRESET")) {
+    return true;
+  }
+  return /^Photo upload failed: (408|429|5\d\d)\b/.test(error.message);
 }
 
 /**
@@ -100,8 +130,11 @@ function isLoopbackUploadUrl(uploadUrl: string) {
  * when `convex run` exits, so the URL's 127.0.0.1:3210 is gone — store bytes
  * through `storePhoto` instead. That path cannot be used on Linux/Vercel:
  * resized JPEGs exceed Linux MAX_ARG_STRLEN (~128KiB) as a `convex run` argv.
+ *
+ * Vercel preview builds hit `TypeError: fetch failed` / `ECONNRESET` against
+ * Convex storage; mint a fresh upload URL and retry those transient failures.
  */
-async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
+async function uploadBytesOnce(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   const uploadUrl = convexRun({
     functionName: "homepageDemo:generateUploadUrl",
     args: {},
@@ -134,11 +167,32 @@ async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
   }
-  const payload = (await response.json()) as { storageId?: string };
+  const payload = (await response.json()) as { storageId: string | undefined };
   if (!payload.storageId) {
     throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
   }
   return payload.storageId;
+}
+
+async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= UPLOAD_ATTEMPTS; attempt += 1) {
+    try {
+      return await uploadBytesOnce(opts);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientUploadError(error) || attempt === UPLOAD_ATTEMPTS) {
+        throw error;
+      }
+      const delayMs = UPLOAD_RETRY_DELAY_MS * attempt;
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(
+        `Photo upload failed (attempt ${attempt}/${UPLOAD_ATTEMPTS}): ${message}. Retrying in ${delayMs}ms`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
 }
 
 export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
