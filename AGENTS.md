@@ -48,9 +48,10 @@ known.
 Locally the same seed is at `http://localhost:3000` after
 `pnpm --filter @workspace/convex seed` (also run by `setup-dev`). `pnpm reset-dev`
 wipes the local anonymous Convex DB; the next `pnpm dev` re-runs setup-dev.
-Login and signup forms autofill the demo credentials in local DEV and on
-Vercel preview builds (`VITE_HAS_DEMO_LOGIN`), and show a test-account select
-that prefills and signs in as either seeded user.
+The login form autofills the demo credentials in local DEV and on
+Vercel preview builds (`VITE_HAS_DEMO_LOGIN`), and shows a test-account select
+that prefills and signs in as either seeded user. Signup is left blank so
+those existing accounts are not submitted as new registrations.
 
 The homepage live demos (`/baby/juniper-hale`, `/baby/willow-brooks`,
 `/baby/ella-holm`, `/baby/lucia-navarro`, `/baby/helena-costa`) are also seeded

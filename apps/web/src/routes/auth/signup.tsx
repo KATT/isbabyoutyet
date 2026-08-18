@@ -19,9 +19,6 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
-import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
-import { DemoAccountPicker } from "@/components/demo-account-picker";
-import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
@@ -52,17 +49,11 @@ function SignupPage() {
 
   const form = useZodForm({
     schema: signupSchema(t),
-    defaultValues: hasDemoLogin
-      ? {
-          name: DEMO_USER.name,
-          email: DEMO_USER.email,
-          password: DEMO_USER.password,
-        }
-      : {
-          name: "",
-          email: "",
-          password: "",
-        },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
   });
 
   return (
@@ -88,14 +79,6 @@ function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <DemoAccountPicker
-              onPrefill={(account) => {
-                form.setValue("name", account.name);
-                form.setValue("email", account.email);
-                form.setValue("password", account.password);
-                form.formRef.current?.requestSubmit();
-              }}
-            />
             <Form
               form={form}
               handleSubmit={async (values) => {

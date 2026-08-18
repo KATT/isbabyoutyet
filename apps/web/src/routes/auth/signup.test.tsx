@@ -1,24 +1,16 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { DEMO_EMPTY_USER } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
-  hasDemoLogin: true,
   navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signUpEmail: vi.fn<
     (opts: { email: string; password: string; name: string }) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
-}));
-
-vi.mock("@/lib/has-demo-login", () => ({
-  get hasDemoLogin() {
-    return mocks.hasDemoLogin;
-  },
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -55,30 +47,11 @@ function renderSignup() {
   });
 }
 
-test("prefills and submits signup when a test account is chosen", async () => {
-  mocks.hasDemoLogin = true;
-  mocks.navigate.mockClear();
-  mocks.signUpEmail.mockClear();
-  mocks.signUpEmail.mockResolvedValueOnce({ error: null });
-
+test("signup has no test-account picker and starts empty", async () => {
   await using _view = renderSignup();
 
-  fireEvent.change(screen.getByLabelText("Test account"), {
-    target: { value: DEMO_EMPTY_USER.email },
-  });
-
-  expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe(DEMO_EMPTY_USER.name);
-  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(DEMO_EMPTY_USER.email);
-  expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe(
-    DEMO_EMPTY_USER.password,
-  );
-
-  await vi.waitFor(() => {
-    expect(mocks.signUpEmail).toHaveBeenCalledWith({
-      email: DEMO_EMPTY_USER.email,
-      password: DEMO_EMPTY_USER.password,
-      name: DEMO_EMPTY_USER.name,
-    });
-  });
-  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
+  expect(screen.queryByLabelText("Test account")).toBeNull();
+  expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("");
+  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
+  expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
 });
