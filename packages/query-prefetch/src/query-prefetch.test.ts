@@ -84,6 +84,23 @@ test("getQueryInitiator forwards ensureQueryData errors to onError", async () =>
   });
 });
 
+test("getQueryInitiator safely ignores background errors without an onError handler", async () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const failingFactory = () =>
+    queryOptions({
+      queryKey: ["posts", "ignored-failure"] as const,
+      queryFn: async () => {
+        throw new Error("ignored");
+      },
+    });
+
+  getQueryInitiator(queryClient).ensureQueryData(failingFactory);
+
+  await vi.waitFor(() => {
+    expect(queryClient.getQueryState(["posts", "ignored-failure"])?.status).toBe("error");
+  });
+});
+
 test("getQueryInitiator starts infinite queries in the background", async () => {
   const queryClient = new QueryClient();
   const initiator = getQueryInitiator(queryClient);
@@ -93,6 +110,14 @@ test("getQueryInitiator starts infinite queries in the background", async () => 
   const options = preloadedInfiniteQueryOptions(postsInfinite, handle);
   const data = await queryClient.ensureInfiniteQueryData(options);
   expect(data.pages[0]?.page[0]?.tag).toBe("news");
+});
+
+test("getQueryInitiator rejects factories without infinite-query page options", () => {
+  const initiator = getQueryInitiator(new QueryClient());
+
+  expect(() =>
+    initiator.ensureInfiniteQueryData(postById as never, { postId: "invalid" } as never),
+  ).toThrow("Infinite query options require page parameters");
 });
 
 test("getQueryPreloader awaits data and returns a preloaded handle with initialData", async () => {

@@ -12,11 +12,7 @@ export async function allKeyed(promises: Record<PropertyKey, unknown>) {
   const keys = Reflect.ownKeys(promises);
   const values = await Promise.all(keys.map((key) => promises[key]));
   const result: Record<PropertyKey, unknown> = Object.create(null);
-  for (let index = 0; index < keys.length; index += 1) {
-    const key = keys[index];
-    if (key === undefined) {
-      continue;
-    }
+  for (const [index, key] of keys.entries()) {
     result[key] = values[index];
   }
   return result;
