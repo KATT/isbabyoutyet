@@ -9,7 +9,7 @@
   ],
   "workspaces": {
     ".": {
-      "entry": ["scripts/compareCoverage.mjs!"]
+      "entry": ["scripts/compareCoverage.ts!"]
     },
     "apps/web": {
       "tanstack-router": {

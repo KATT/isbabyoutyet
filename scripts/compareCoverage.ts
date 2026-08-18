@@ -1,25 +1,31 @@
 import { readFile } from "node:fs/promises";
 
-const metrics = ["statements", "branches", "functions", "lines"];
+const metrics = ["statements", "branches", "functions", "lines"] as const;
+
+type CoverageMetric = (typeof metrics)[number];
+type JsonObject = Record<string, unknown>;
+
 const baselinePath = process.argv[2];
 const currentPath = process.argv[3];
 
 if (baselinePath === undefined || currentPath === undefined) {
   throw new Error(
-    "Usage: node scripts/compareCoverage.mjs <baseline-summary> <current-summary>",
+    "Usage: tsx scripts/compareCoverage.ts <baseline-summary> <current-summary>",
   );
 }
 
-async function readSummary(path) {
+function isJsonObject(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null;
+}
+
+async function readSummary(path: string) {
   const contents = await readFile(path, "utf8");
-  const summary = JSON.parse(contents);
+  const summary: unknown = JSON.parse(contents);
 
   if (
-    typeof summary !== "object" ||
-    summary === null ||
+    !isJsonObject(summary) ||
     !("total" in summary) ||
-    typeof summary.total !== "object" ||
-    summary.total === null
+    !isJsonObject(summary.total)
   ) {
     throw new Error(`Invalid coverage summary: ${path}`);
   }
@@ -27,12 +33,13 @@ async function readSummary(path) {
   return summary;
 }
 
-function getPercentage(summary, options) {
+function getPercentage(
+  summary: { total: JsonObject },
+  options: { metric: CoverageMetric; path: string },
+) {
   const metric = summary.total[options.metric];
   const percentage =
-    typeof metric === "object" && metric !== null && "pct" in metric
-      ? metric.pct
-      : undefined;
+    isJsonObject(metric) && "pct" in metric ? metric.pct : undefined;
 
   if (typeof percentage !== "number" || !Number.isFinite(percentage)) {
     throw new Error(
