@@ -74,7 +74,10 @@ test("due date editor saves privacy and previews the draft month", async () => {
 
   fireEvent.click(privacySwitch);
   expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
-  fireEvent.change(view.getByLabelText("Due date"), {
+  const dueDateInput = view.getByLabelText("Due date");
+  fireEvent.change(dueDateInput, { target: { value: "" } });
+  expect(view.getByText("Visitors see “September baby”.")).toBeTruthy();
+  fireEvent.change(dueDateInput, {
     target: { value: "2026-10-15" },
   });
   expect(view.getByText("Visitors see “October baby”.")).toBeTruthy();
