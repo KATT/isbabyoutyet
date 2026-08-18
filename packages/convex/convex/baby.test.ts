@@ -94,14 +94,14 @@ test("custom public due date text hides the exact day from visitors", async () =
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
   const created = await asAlice.mutation(api.baby.create, {
-    name: "September Baby",
+    name: "Waiting Baby",
     dueDate: "2026-09-19",
-    publicDueDateText: "  September-ish baby  ",
+    publicDueDateText: "  Any day now  ",
   });
 
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
     dueDate: "2026-09",
-    publicDueDateText: "September-ish baby",
+    publicDueDateText: "Any day now",
   });
   expect(
     await t
@@ -109,11 +109,11 @@ test("custom public due date text hides the exact day from visitors", async () =
       .query(api.baby.getByPublicId, { id: created.publicId }),
   ).toMatchObject({
     dueDate: "2026-09",
-    publicDueDateText: "September-ish baby",
+    publicDueDateText: "Any day now",
   });
   expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
     dueDate: "2026-09-19",
-    publicDueDateText: "September-ish baby",
+    publicDueDateText: "Any day now",
   });
 
   await asAlice.mutation(api.baby.update, {

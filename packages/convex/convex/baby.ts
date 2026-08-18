@@ -41,7 +41,7 @@ const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
 function normalizePublicDueDateText(value: string | null | undefined) {
   const normalized = value?.trim() ?? "";
   if (normalized.length > MAX_PUBLIC_DUE_DATE_TEXT_LENGTH) {
-    throw new Error("Public due date text must be 80 characters or fewer");
+    throw new Error("Public due date message must be 80 characters or fewer");
   }
   return normalized || null;
 }

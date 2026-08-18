@@ -110,7 +110,7 @@ test("renders optional public due date text without exposing the exact day", asy
   const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
     name: "Baby Smith",
     dueDate: "2026-09-19",
-    publicDueDateText: "September-ish baby",
+    publicDueDateText: "Any day now",
   });
   const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   if (!baby) {
@@ -118,7 +118,7 @@ test("renders optional public due date text without exposing the exact day", asy
   }
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
-  expect(view.getByText("September-ish baby")).toBeTruthy();
+  expect(view.getByText("Any day now")).toBeTruthy();
   expect(view.queryByText(/until due date/)).toBeNull();
   expect(view.queryByText(/19 September/)).toBeNull();
 });

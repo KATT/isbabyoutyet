@@ -59,7 +59,7 @@ test("custom due date text replaces countdown metadata", async () => {
   const baby = {
     name: "Juniper",
     dueDate: "2026-09",
-    publicDueDateText: "September baby",
+    publicDueDateText: "Any day now",
     publicId: "juniper-hale",
     theme: "sunny-days",
     locale: "en-GB" as const,
@@ -71,7 +71,7 @@ test("custom due date text replaces countdown metadata", async () => {
   const seo = babySeoHead(baby);
   expect(seo.title).toContain("Is Juniper out yet?");
   expect(seo.title).not.toContain("until due date");
-  expect(babyStatusDetail({ baby, status: { type: "not_yet" } })).toBe("September baby");
+  expect(babyStatusDetail({ baby, status: { type: "not_yet" } })).toBe("Any day now");
 
   const blankTextSeo = babySeoHead({
     ...baby,

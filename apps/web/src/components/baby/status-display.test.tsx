@@ -123,7 +123,7 @@ test("custom public due date text replaces the exact date and countdown", async 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(
     <StatusDisplay
-      baby={{ ...baby, dueDate: "2026-09-19", publicDueDateText: "September baby" }}
+      baby={{ ...baby, dueDate: "2026-09-19", publicDueDateText: "Any day now" }}
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
       thumbnailUrl={null}
@@ -134,7 +134,7 @@ test("custom public due date text replaces the exact date and countdown", async 
     view.unmount();
   });
 
-  expect(view.getByText("September baby")).toBeTruthy();
+  expect(view.getByText("Any day now")).toBeTruthy();
   expect(view.queryByText(/until due date/)).toBeNull();
   expect(view.queryByText(/19 September/)).toBeNull();
 });

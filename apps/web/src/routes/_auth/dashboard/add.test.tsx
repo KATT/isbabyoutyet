@@ -42,8 +42,10 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
-  expect(view.getByPlaceholderText("September baby")).toBeTruthy();
-  expect(view.getByText("Leave blank to show the exact date and countdown.")).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
 test.each([
@@ -78,7 +80,7 @@ test.each([
   });
 });
 
-test("submits optional public due date text", async () => {
+test("requires and submits a custom public due date message", async () => {
   mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
   mocks.navigate.mockReset().mockResolvedValue(undefined);
   await using view = renderResource(<AddBabyPage />);
@@ -89,8 +91,15 @@ test("submits optional public due date text", async () => {
   fireEvent.change(view.getByLabelText("Due date"), {
     target: { value: "2026-09-19" },
   });
-  fireEvent.change(view.getByLabelText("Public due date text (optional)"), {
-    target: { value: "  September-ish baby  " },
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  expect(publicMessageInput.placeholder).toBe("Baby arriving soon");
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  expect(view.getByText("Enter a message for visitors")).toBeTruthy();
+  expect(mocks.createBaby).not.toHaveBeenCalled();
+
+  fireEvent.change(publicMessageInput, {
+    target: { value: "  Any day now  " },
   });
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
@@ -98,7 +107,7 @@ test("submits optional public due date text", async () => {
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-19"),
-      publicDueDateText: "September-ish baby",
+      publicDueDateText: "Any day now",
       birthJourney: "labor",
     });
   });

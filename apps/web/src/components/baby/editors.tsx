@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import { Switch } from "@workspace/ui/components/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
@@ -80,15 +81,21 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
-      publicDueDateText: z
-        .string()
-        .trim()
-        .max(80, t("Keep this under 80 characters"))
-        .transform((value) => value || null),
+      showExactDueDate: z.boolean(),
+      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
+    })
+    .superRefine((values, ctx) => {
+      if (!values.showExactDueDate && !values.publicDueDateText) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["publicDueDateText"],
+          message: t("Enter a message for visitors"),
+        });
+      }
     })
     .transform((values): Pick<BabyPatch, "dueDate" | "publicDueDateText"> => ({
       dueDate: values.date,
-      publicDueDateText: values.publicDueDateText,
+      publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
     }));
 }
 
@@ -144,9 +151,11 @@ function DueDateForm(props: EditorFormProps) {
     schema: dueDateSchema(t),
     defaultValues: {
       date: dateCodec.encode(props.baby.dueDate),
+      showExactDueDate: !props.baby.publicDueDateText,
       publicDueDateText: props.baby.publicDueDateText ?? "",
     },
   });
+  const showExactDueDate = form.watch("showExactDueDate");
 
   return (
     <Form
@@ -176,20 +185,45 @@ function DueDateForm(props: EditorFormProps) {
       />
       <FormField
         control={form.control}
-        name="publicDueDateText"
+        name="showExactDueDate"
         render={(renderProps) => (
-          <FormItem className="mb-3">
-            <FormLabel>{t("Public due date text (optional)")}</FormLabel>
+          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
+            <div className="flex flex-col gap-1">
+              <FormLabel>{t("Show exact due date")}</FormLabel>
+              <FormDescription>
+                {renderProps.field.value
+                  ? t("Visitors see the exact date and countdown.")
+                  : t("Visitors see only your message.")}
+              </FormDescription>
+            </div>
             <FormControl>
-              <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
+              <Switch
+                checked={renderProps.field.value}
+                onCheckedChange={renderProps.field.onChange}
+              />
             </FormControl>
-            <FormDescription>
-              {t("Leave blank to show the exact date and countdown.")}
-            </FormDescription>
-            <FormMessage />
           </FormItem>
         )}
       />
+      {!showExactDueDate ? (
+        <FormField
+          control={form.control}
+          name="publicDueDateText"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormLabel>{t("Public due date message")}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={t("Baby arriving soon")}
+                  maxLength={80}
+                  {...renderProps.field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}

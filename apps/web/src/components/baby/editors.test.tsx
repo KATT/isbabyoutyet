@@ -52,33 +52,58 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
-  const publicTextInput = view.getByLabelText(
-    "Public due date text (optional)",
-  ) as HTMLInputElement;
-  expect(publicTextInput.placeholder).toBe("September baby");
+  expect(view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
 
   fireEvent.change(input, { target: { value: "2026-10-15" } });
-  fireEvent.change(publicTextInput, { target: { value: "  October baby  " } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
     expect(onUpdate).toHaveBeenCalledWith({
       dueDate: "2026-10-15T00:00:00.000Z",
-      publicDueDateText: "October baby",
+      publicDueDateText: null,
     }),
   );
 });
 
-test("due date editor clears custom public text back to the exact date", async () => {
+test("due date editor requires and saves a custom visitor message", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  expect(publicMessageInput.placeholder).toBe("Baby arriving soon");
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  expect(view.getByText("Enter a message for visitors")).toBeTruthy();
+  expect(onUpdate).not.toHaveBeenCalled();
+
+  fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      publicDueDateText: "Any day now",
+    }),
+  );
+});
+
+test("due date editor switches a custom message back to the exact date", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(
-    <DueDateEditor baby={{ ...baby, publicDueDateText: "September baby" }} onUpdate={onUpdate} />,
+    <DueDateEditor baby={{ ...baby, publicDueDateText: "Any day now" }} onUpdate={onUpdate} />,
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  fireEvent.change(view.getByLabelText("Public due date text (optional)"), {
-    target: { value: "" },
-  });
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
+    "Any day now",
+  );
+  fireEvent.click(exactSwitch);
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
