@@ -7,12 +7,13 @@ import {
   FORBIDDEN,
   getBlockingLaterMilestone,
   getCurrentStatus,
+  isMilestoneNotificationType,
   isStatusForward,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
   MILESTONES,
 } from "../src/types";
-import type { BabyStatus, Milestone } from "../src/types";
+import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
@@ -101,15 +102,15 @@ export const generateUploadUrl = mutation({
 
 /**
  * Applies the side effects of a new photo attached to an update row: points
- * the baby doc at it (current photo), schedules thumbnail generation for both
- * the baby and the update row, and pushes a notification for the first photo.
+ * the baby doc at it (current photo) and schedules thumbnail generation for
+ * both the baby and the update row. Push notifications are scheduled by the
+ * caller so a milestone+photo post is one notification, not two.
  */
 export async function applyPhotoSideEffects(
   ctx: MutationCtx,
   opts: { baby: Doc<"baby">; photoId: Id<"_storage">; updateId: Id<"updates"> },
 ) {
   const baby = opts.baby;
-  const hadPhotoBeforeUpdate = !!baby.photoId;
 
   // Update the current photo (retain old photos in storage + feed for history)
   await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null });
@@ -119,40 +120,57 @@ export async function applyPhotoSideEffects(
     photoId: opts.photoId,
     updateId: opts.updateId,
   });
-
-  // Send notification only if this is the first photo
-  if (!hadPhotoBeforeUpdate) {
-    const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
-    const scheduledFor = Date.now() + scheduleDelay;
-
-    const notificationId = await ctx.db.insert("scheduledNotifications", {
-      babyId: baby._id,
-      status: "pending",
-      scheduledFor,
-      notificationType: "photo_added",
-      customMessage: null,
-      createdAt: Date.now(),
-    });
-
-    const scheduledId = await ctx.scheduler.runAt(
-      scheduledFor,
-      internal.pushNotifications.sendNotification,
-      {
-        notificationId,
-        babyId: baby._id,
-        babyName: baby.name,
-        publicId: baby.publicId,
-        status: "photo_added",
-        customMessage: null,
-        locale: await resolveBabyLocale(ctx.db, baby),
-      },
-    );
-
-    await ctx.db.patch(notificationId, { scheduledId });
-  }
 }
 
-// Update baby photo and optionally send notification
+function notificationScheduleDelayMs() {
+  return env.NODE_ENV === "production" ? 60_000 : 3_000;
+}
+
+/**
+ * Schedules one delayed Web Push for this baby. Does not cancel other pending
+ * jobs — callers that replace a pending status notification do that first.
+ */
+export async function schedulePushNotification(
+  ctx: MutationCtx,
+  opts: {
+    baby: Doc<"baby">;
+    notificationType: NotifiableStatus;
+    customMessage: string | null;
+    photoId: Id<"_storage"> | null;
+  },
+) {
+  const baby = opts.baby;
+  const scheduledFor = Date.now() + notificationScheduleDelayMs();
+
+  const notificationId = await ctx.db.insert("scheduledNotifications", {
+    babyId: baby._id,
+    status: "pending",
+    scheduledFor,
+    notificationType: opts.notificationType,
+    customMessage: opts.customMessage,
+    photoId: opts.photoId,
+    createdAt: Date.now(),
+  });
+
+  const scheduledId = await ctx.scheduler.runAt(
+    scheduledFor,
+    internal.pushNotifications.sendNotification,
+    {
+      notificationId,
+      babyId: baby._id,
+      babyName: baby.name,
+      publicId: baby.publicId,
+      status: opts.notificationType,
+      customMessage: opts.customMessage,
+      photoId: opts.photoId,
+      locale: await resolveBabyLocale(ctx.db, baby),
+    },
+  );
+
+  await ctx.db.patch(notificationId, { scheduledId });
+}
+
+// Update baby photo and send a photo_added notification
 export const updatePhoto = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
@@ -176,6 +194,12 @@ export const updatePhoto = mutationWithTriggers({
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
+    await schedulePushNotification(ctx, {
+      baby,
+      notificationType: "photo_added",
+      customMessage: null,
+      photoId: args.photoId,
+    });
   },
 });
 
@@ -413,8 +437,10 @@ export const updateThumbnail = internalMutation({
 });
 
 /**
- * Cancels pending push notifications and schedules a new one when the derived
- * status moved forward. No-op when the status type is unchanged.
+ * Cancels pending status push notifications when the derived status changes,
+ * and schedules a new one when it moved forward. Generic/photo pending jobs
+ * are left alone on a forward move; a rollback still cancels every pending
+ * job (same as deleting the baby).
  */
 export async function syncStatusNotifications(
   ctx: MutationCtx,
@@ -423,6 +449,7 @@ export async function syncStatusNotifications(
     updatedBaby: Doc<"baby">;
     /** Message to attach to the push, per notifiable milestone. */
     customMessageByMilestone: Record<Milestone, string | null>;
+    photoId: Id<"_storage"> | null;
   },
 ) {
   const updatedBaby = opts.updatedBaby;
@@ -433,7 +460,8 @@ export async function syncStatusNotifications(
     return;
   }
 
-  // Cancel any existing pending notifications
+  const movedForward = isStatusForward(opts.statusBefore, statusAfter);
+
   const pendingNotifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId_and_status", (q) =>
@@ -442,6 +470,9 @@ export async function syncStatusNotifications(
     .take(100);
 
   for (const notification of pendingNotifications) {
+    if (movedForward && !isMilestoneNotificationType(notification.notificationType)) {
+      continue;
+    }
     if (notification.scheduledId) {
       try {
         await ctx.scheduler.cancel(notification.scheduledId);
@@ -452,38 +483,14 @@ export async function syncStatusNotifications(
     await ctx.db.patch(notification._id, { status: "cancelled" });
   }
 
-  // Only handle notifications if status moved forward
-  if (!isStatusForward(opts.statusBefore, statusAfter)) return;
+  if (!movedForward) return;
 
-  const customMessage = opts.customMessageByMilestone[statusAfter.type];
-
-  const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
-  const scheduledFor = Date.now() + scheduleDelay;
-
-  const notificationId = await ctx.db.insert("scheduledNotifications", {
-    babyId: updatedBaby._id,
-    status: "pending",
-    scheduledFor,
+  await schedulePushNotification(ctx, {
+    baby: updatedBaby,
     notificationType: statusAfter.type,
-    customMessage,
-    createdAt: Date.now(),
+    customMessage: opts.customMessageByMilestone[statusAfter.type],
+    photoId: opts.photoId,
   });
-
-  const scheduledId = await ctx.scheduler.runAt(
-    scheduledFor,
-    internal.pushNotifications.sendNotification,
-    {
-      notificationId,
-      babyId: updatedBaby._id,
-      babyName: updatedBaby.name,
-      publicId: updatedBaby.publicId,
-      status: statusAfter.type,
-      customMessage,
-      locale: await resolveBabyLocale(ctx.db, updatedBaby),
-    },
-  );
-
-  await ctx.db.patch(notificationId, { scheduledId });
 }
 
 /**
@@ -639,6 +646,7 @@ export const update = mutationWithTriggers({
     await syncStatusNotifications(ctx, {
       statusBefore,
       updatedBaby,
+      photoId: null,
       customMessageByMilestone: {
         labor_started: legacyMessages.labor_started ?? null,
         gone_to_hospital: legacyMessages.gone_to_hospital ?? null,

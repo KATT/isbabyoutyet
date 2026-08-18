@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
 import { onboardingStepIdValidator } from "./onboardingValidators";
+import { notifiableStatusValidator, pushPlatformValidator } from "./pushValidators";
 
 export default defineSchema({
   baby: defineTable({
@@ -62,6 +63,10 @@ export default defineSchema({
     p256dh: v.string(), // Public key for encryption
     auth: v.string(), // Authentication secret
     createdAt: v.number(), // Timestamp
+    // Recorded at subscribe/resubscribe for future payload gating (unused on send today)
+    userAgent: v.optional(v.union(v.string(), v.null())),
+    platform: v.optional(v.union(pushPlatformValidator, v.null())),
+    osVersion: v.optional(v.union(v.string(), v.null())),
   })
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
@@ -71,13 +76,10 @@ export default defineSchema({
     scheduledId: v.optional(v.id("_scheduled_functions")), // The Convex scheduler job ID (set after scheduling)
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("cancelled")), // Current status
     scheduledFor: v.number(), // Timestamp when notification will be sent
-    notificationType: v.union(
-      v.literal("labor_started"),
-      v.literal("gone_to_hospital"),
-      v.literal("born"),
-      v.literal("photo_added"),
-    ), // Type of notification
+    notificationType: notifiableStatusValidator, // Type of notification
     customMessage: v.optional(v.union(v.string(), v.null())), // Optional custom message
+    // Photo to attach as Notification.image when present (resolved to a URL at send)
+    photoId: v.optional(v.union(v.id("_storage"), v.null())),
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])

@@ -9,7 +9,7 @@ import {
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "../src/types";
-import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
+import { applyPhotoSideEffects, schedulePushNotification, syncStatusNotifications } from "./baby";
 import { requireBabyManager } from "./babyAccess";
 import {
   deleteUpdateWithTimelineItem,
@@ -29,8 +29,8 @@ export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 
 /**
  * Owner or co-parent posts an update to the timeline: a message and/or a photo,
- * optionally marking a milestone. Marking a milestone also sets the canonical
- * status timestamp on the baby doc and schedules the push notification.
+ * optionally marking a milestone. Every post schedules one delayed push;
+ * marking a milestone also sets the canonical status timestamp on the baby doc.
  */
 export const post = mutationWithTriggers({
   args: {
@@ -114,11 +114,19 @@ export const post = mutationWithTriggers({
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby,
+        photoId,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
           born: milestone === "born" ? message : null,
         },
+      });
+    } else {
+      await schedulePushNotification(ctx, {
+        baby,
+        notificationType: photoId ? "photo_added" : "update_posted",
+        customMessage: message,
+        photoId,
       });
     }
 
@@ -203,6 +211,7 @@ export const remove = mutationWithTriggers({
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby,
+        photoId: null,
         customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
       });
     }
