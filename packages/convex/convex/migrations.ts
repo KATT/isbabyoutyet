@@ -457,6 +457,28 @@ export const backfillBabyBirthJourney = migrations.define({
   migrateOne: backfillBabyBirthJourneyDoc,
 });
 
+/**
+ * Gives every baby an explicit public due-date display mode. Existing babies
+ * keep the pre-feature exact date/countdown behavior. The message branch also
+ * preserves any text written by an earlier preview deployment.
+ */
+export async function backfillBabyDueDateDisplayDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  const publicDueDateText = baby.publicDueDateText?.trim() || null;
+  const dueDateDisplayMode = publicDueDateText ? ("message" as const) : ("exact" as const);
+  if (
+    baby.dueDateDisplayMode === dueDateDisplayMode &&
+    baby.publicDueDateText === publicDueDateText
+  ) {
+    return;
+  }
+  await ctx.db.patch(baby._id, { dueDateDisplayMode, publicDueDateText });
+}
+
+export const backfillBabyDueDateDisplay = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyDueDateDisplayDoc,
+});
+
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -576,6 +598,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
   internal.migrations.backfillBabyBirthJourney,
+  internal.migrations.backfillBabyDueDateDisplay,
   internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
@@ -595,6 +618,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
   "migrations:backfillBabyBirthJourney",
+  "migrations:backfillBabyDueDateDisplay",
   "migrations:backfillBabyLastActivityAt",
   "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
