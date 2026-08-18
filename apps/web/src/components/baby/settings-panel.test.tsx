@@ -155,12 +155,9 @@ test("milestone switches lock once hospital is marked", async () => {
   );
 
   expect(view.getByText(/choices are locked/i)).toBeTruthy();
-  expect(
-    (view.getByRole("switch", { name: "Show labour milestone" }) as HTMLButtonElement).disabled,
-  ).toBe(true);
-  expect(
-    (view.getByRole("switch", { name: "Show hospital milestone" }) as HTMLButtonElement).disabled,
-  ).toBe(true);
+  fireEvent.click(view.getByRole("switch", { name: "Show labour milestone" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show hospital milestone" }));
+  expect(onUpdate).not.toHaveBeenCalled();
 });
 
 test("theme constants render through the active translation catalog", async () => {
