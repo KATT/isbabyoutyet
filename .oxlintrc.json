@@ -13,6 +13,10 @@
     {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
+    },
+    {
+      "name": "inline-single-use-helper",
+      "specifier": "./oxlint-plugins/inline-single-use-helper.mjs"
     }
   ],
   "settings": {
@@ -37,6 +41,7 @@
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
+        "inline-single-use-helper/inline-single-use-helper": "error",
         "no-optional/no-optional": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error"
@@ -55,6 +60,7 @@
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
         "i18n-literal/no-literal-template": "off",
+        "inline-single-use-helper/inline-single-use-helper": "off",
         "query-prefetch/require-preloaded-query-options": "off",
         "query-prefetch/use-loader-preloads": "off"
       }
