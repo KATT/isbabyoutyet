@@ -23,27 +23,6 @@ export type StaleReloadWindow = {
   removeEventListener: (type: string, listener: (event: Event) => void) => void;
 };
 
-/**
- * Remembers the first non-empty deploy hash seen in this JS context (a full
- * document load). Later hashes from Convex mean a new deploy is live.
- */
-export function createDeployShaWatch() {
-  let shaAtPageLoad: string | null = null;
-
-  return {
-    observe(liveSha: string | null | undefined) {
-      if (liveSha == null || liveSha === "") {
-        return false;
-      }
-      if (shaAtPageLoad == null) {
-        shaAtPageLoad = liveSha;
-        return false;
-      }
-      return liveSha !== shaAtPageLoad;
-    },
-  };
-}
-
 export function bindHardNavigation(
   router: StaleDeployRouter,
   assignLocation: (href: string) => void,

@@ -1,24 +1,6 @@
 import { expect, test, vi } from "vitest";
-import { bindHardNavigation, bindStaleReloadTriggers, createDeployShaWatch } from "./stale-deploy";
+import { bindHardNavigation, bindStaleReloadTriggers } from "./stale-deploy";
 import type { StaleDeployRouter } from "./stale-deploy";
-
-test("the first real deploy hash is remembered and not treated as stale", () => {
-  const watch = createDeployShaWatch();
-
-  expect(watch.observe(null)).toBe(false);
-  expect(watch.observe(undefined)).toBe(false);
-  expect(watch.observe("")).toBe(false);
-  expect(watch.observe("abc123")).toBe(false);
-  expect(watch.observe("abc123")).toBe(false);
-});
-
-test("a later deploy hash marks the current document stale", () => {
-  const watch = createDeployShaWatch();
-
-  expect(watch.observe("abc123")).toBe(false);
-  expect(watch.observe("def456")).toBe(true);
-  expect(watch.observe("def456")).toBe(true);
-});
 
 test("bindHardNavigation forces document reloads on href-changing navigations", () => {
   const assignLocation = vi.fn<(href: string) => void>();

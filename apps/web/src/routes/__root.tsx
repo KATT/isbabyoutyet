@@ -5,12 +5,14 @@ import {
   Outlet,
   Scripts,
   createRootRouteWithContext,
+  useLoaderData,
   useMatches,
   useRouteContext,
   useRouterState,
 } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
@@ -83,6 +85,12 @@ export const Route = createRootRouteWithContext<{
       locale: getDetectedLocale(),
       isAuthenticated: cachedProfile != null,
       token: null,
+    };
+  },
+  loader: async (opts) => {
+    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    return {
+      gitSha: await preloader.ensureQueryData(api.version.gitSha, {}),
     };
   },
   head: (opts) => {
@@ -187,6 +195,7 @@ export const Route = createRootRouteWithContext<{
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
+  const loaderData = useLoaderData({ from: Route.id });
   const matches = useMatches();
   const locale = matches.reduce((currentLocale, match) => {
     const matchContext = match.context as { locale: SupportedLocale | undefined };
@@ -222,6 +231,7 @@ function RootComponent() {
             <LocaleProvider locale={locale}>
               <RootDocument locale={locale}>
                 <Outlet />
+                <StaleDeployGuard gitSha={loaderData.gitSha} />
               </RootDocument>
             </LocaleProvider>
           </TooltipProvider>
@@ -328,7 +338,6 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
-        <StaleDeployGuard />
         <DevBar />
         <Toaster />
         <Analytics />

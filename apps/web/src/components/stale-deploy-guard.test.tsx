@@ -4,7 +4,6 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const mocks = vi.hoisted(() => ({
   gitSha: null as string | null | undefined,
-  observe: vi.fn<(liveSha: string | null | undefined) => boolean>(() => false),
   bindHardNavigation: vi.fn<(router: unknown, assign: (href: string) => void) => () => void>(
     () => () => {},
   ),
@@ -12,12 +11,8 @@ const mocks = vi.hoisted(() => ({
   router: {},
 }));
 
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: () => ({ data: mocks.gitSha }),
-}));
-
-vi.mock("@convex-dev/react-query", () => ({
-  convexQuery: () => ({ queryKey: ["gitSha"] }),
+vi.mock("@workspace/convex-prefetch", () => ({
+  usePreloadedConvexQuery: () => ({ data: mocks.gitSha }),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -25,15 +20,16 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/lib/stale-deploy", () => ({
-  createDeployShaWatch: () => ({ observe: mocks.observe }),
   bindHardNavigation: mocks.bindHardNavigation,
   bindStaleReloadTriggers: mocks.bindStaleReloadTriggers,
 }));
 
 const { StaleDeployGuard } = await import("./stale-deploy-guard");
 
+const gitShaHandle = { input: {}, initialData: "abc123" };
+
 function renderGuard() {
-  const view = render(<StaleDeployGuard />);
+  const view = render(<StaleDeployGuard gitSha={gitShaHandle as never} />);
   return makeResource(view, () => {
     view.unmount();
   });
@@ -41,26 +37,24 @@ function renderGuard() {
 
 test("a matching deploy hash does not force hard navigation", async () => {
   mocks.gitSha = "abc123";
-  mocks.observe.mockReset();
-  mocks.observe.mockReturnValue(false);
   mocks.bindHardNavigation.mockClear();
   mocks.bindStaleReloadTriggers.mockClear();
 
   await using _view = renderGuard();
 
-  expect(mocks.observe).toHaveBeenCalledWith("abc123");
   expect(mocks.bindHardNavigation).not.toHaveBeenCalled();
   expect(mocks.bindStaleReloadTriggers).not.toHaveBeenCalled();
 });
 
 test("a changed deploy hash forces hard navigation and visible reloads", async () => {
-  mocks.gitSha = "def456";
-  mocks.observe.mockReset();
-  mocks.observe.mockReturnValue(true);
+  mocks.gitSha = "abc123";
   mocks.bindHardNavigation.mockClear();
   mocks.bindStaleReloadTriggers.mockClear();
 
-  await using _view = renderGuard();
+  await using view = renderGuard();
+
+  mocks.gitSha = "def456";
+  view.rerender(<StaleDeployGuard gitSha={gitShaHandle as never} />);
 
   await waitFor(() => {
     expect(mocks.bindHardNavigation).toHaveBeenCalled();

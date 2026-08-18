@@ -1,44 +1,21 @@
-import { convexQuery } from "@convex-dev/react-query";
-import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { useEffect, useState, useSyncExternalStore } from "react";
-import {
-  bindHardNavigation,
-  bindStaleReloadTriggers,
-  createDeployShaWatch,
-} from "@/lib/stale-deploy";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { useEffect, useState } from "react";
+import { bindHardNavigation, bindStaleReloadTriggers } from "@/lib/stale-deploy";
 import type { StaleDeployRouter, StaleReloadDocument, StaleReloadWindow } from "@/lib/stale-deploy";
 
-function subscribeNever() {
-  return () => {};
-}
+type StaleDeployGuardProps = {
+  gitSha: PreloadedConvexQuery<typeof api.version.gitSha>;
+};
 
-function clientSnapshot() {
-  return true;
-}
-
-function serverSnapshot() {
-  return false;
-}
-
-export function StaleDeployGuard() {
+export function StaleDeployGuard(props: StaleDeployGuardProps) {
   const router = useRouter();
-  const isClient = useSyncExternalStore(subscribeNever, clientSnapshot, serverSnapshot);
-  const [watch] = useState(createDeployShaWatch);
-  const [isStale, setIsStale] = useState(false);
-
-  const gitShaQuery = useQuery({
-    ...convexQuery(api.version.gitSha, {}),
-    enabled: isClient,
-  });
-
-  useEffect(() => {
-    if (!watch.observe(gitShaQuery.data)) {
-      return;
-    }
-    setIsStale(true);
-  }, [gitShaQuery.data, watch]);
+  const gitShaQuery = usePreloadedConvexQuery(api.version.gitSha, props.gitSha);
+  const [gitShaAtPageLoad] = useState(gitShaQuery.data);
+  const isStale =
+    gitShaAtPageLoad != null && gitShaQuery.data != null && gitShaQuery.data !== gitShaAtPageLoad;
 
   useEffect(() => {
     if (!isStale) {

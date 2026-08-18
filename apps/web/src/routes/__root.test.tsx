@@ -5,6 +5,24 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const routerState = vi.hoisted(() => ({ isLoading: false }));
 const routeContext = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
+const loaderData = vi.hoisted(() => ({
+  value: { gitSha: { input: {}, initialData: "abc123" } },
+}));
+const versionPreload = vi.hoisted(() => ({
+  handle: { input: {}, initialData: "abc123" },
+  ensureQueryData: vi.fn<
+    (
+      _funcRef: unknown,
+      _args: unknown,
+    ) => Promise<{
+      input: Record<string, never>;
+      initialData: string;
+    }>
+  >(() => Promise.resolve({ input: {}, initialData: "abc123" })),
+}));
+const staleDeployGuard = vi.hoisted(() => ({
+  render: vi.fn<(_props: { gitSha: unknown }) => null>(() => null),
+}));
 
 vi.mock("@tanstack/react-router", () => ({
   HeadContent: () => null,
@@ -14,6 +32,7 @@ vi.mock("@tanstack/react-router", () => ({
   Outlet: () => null,
   Scripts: () => null,
   createRootRouteWithContext: () => (opts: unknown) => opts,
+  useLoaderData: () => loaderData.value,
   useMatches: () => [],
   useRouteContext: () => routeContext.value,
   useRouterState: (opts: { select: (state: typeof routerState) => unknown }) =>
@@ -30,7 +49,13 @@ vi.mock("@/components/dev-bar", () => ({
 }));
 
 vi.mock("@/components/stale-deploy-guard", () => ({
-  StaleDeployGuard: () => null,
+  StaleDeployGuard: staleDeployGuard.render,
+}));
+
+vi.mock("@workspace/convex-prefetch", () => ({
+  getConvexQueryPreloader: () => ({
+    ensureQueryData: versionPreload.ensureQueryData,
+  }),
 }));
 
 vi.mock("@tanstack/react-router-devtools", () => ({
@@ -101,6 +126,21 @@ test("beforeLoad resolves locale and auth locally on the client, without a serve
   expect(authed.isAuthenticated).toBe(true);
 });
 
+test("the root loader prefetches the deployed git hash", async () => {
+  const { api } = await import("@workspace/convex/convex/_generated/api");
+  const options = Route as unknown as {
+    loader: (ctx: { context: { queryClient: unknown } }) => Promise<{
+      gitSha: unknown;
+    }>;
+  };
+  versionPreload.ensureQueryData.mockClear();
+
+  const result = await options.loader({ context: { queryClient: {} } });
+
+  expect(versionPreload.ensureQueryData).toHaveBeenCalledWith(api.version.gitSha, {});
+  expect(result.gitSha).toEqual(versionPreload.handle);
+});
+
 test("the root component renders the document shell", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
   routeContext.value = {
@@ -110,11 +150,13 @@ test("the root component renders the document shell", async () => {
     token: null,
   };
   const RootComponent = (Route as unknown as { component: () => ReactElement }).component;
+  staleDeployGuard.render.mockClear();
 
   await using _view = renderResource(<RootComponent />);
 
   // React 19 hoists the <html> element onto the real document.
   expect(document.documentElement.getAttribute("lang")).toBe("en-GB");
+  expect(staleDeployGuard.render.mock.calls[0]?.[0].gitSha).toBe(loaderData.value.gitSha);
 });
 
 test("the error page offers reload and go-home recovery, with details in dev", async () => {
