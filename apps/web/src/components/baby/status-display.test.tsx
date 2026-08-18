@@ -114,4 +114,5 @@ test("uses the thumbnail inline and opens the full photo", () => {
   expect((view.getByAltText("Photo of Nova") as HTMLImageElement).src).toContain("thumb.jpg");
   fireEvent.click(avatar);
   expect(view.getAllByAltText("Photo of Nova")).toHaveLength(2);
+  fireEvent.click(view.getByRole("button", { name: "Close photo" }));
 });

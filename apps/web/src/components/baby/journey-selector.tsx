@@ -16,12 +16,7 @@ export function JourneySelector(props: JourneySelectorProps) {
   return (
     <RadioGroup
       value={props.value}
-      onValueChange={(value) => {
-        const option = JOURNEY_OPTIONS.find((candidate) => candidate.value === value);
-        if (option) {
-          props.onValueChange(option.value);
-        }
-      }}
+      onValueChange={(value) => props.onValueChange(value as BirthJourney)}
       aria-label={t("Choose a journey")}
       className="grid gap-3"
     >
