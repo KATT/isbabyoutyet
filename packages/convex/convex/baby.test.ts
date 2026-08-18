@@ -30,6 +30,8 @@ test("create a baby and list it for the owner", async () => {
   expect(created.publicId).toBe("baby-smith");
   const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
   expect(stored?.birthJourney).toBe("labor");
+  expect(stored?.dueDateDisplayMode).toBe("exact");
+  expect(stored?.publicDueDateText).toBeNull();
 
   const babies = await asAlice.query(api.baby.listByUser, {});
   expect(babies).toMatchObject([
@@ -88,6 +90,62 @@ test("creation stores the selected journey and only exposes derived visibility p
       .withIdentity({ subject: "bob" })
       .query(api.baby.getBirthJourney, { babyId: created.babyId }),
   ).toBe("forbidden");
+});
+
+test("custom public due date text hides the exact day from visitors", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Waiting Baby",
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "  Any day now  ",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
+  expect(
+    await t
+      .withIdentity({ subject: "bob" })
+      .query(api.baby.getByPublicId, { id: created.publicId }),
+  ).toMatchObject({
+    dueDate: "2026-09",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      dueDateDisplayMode: "message",
+      publicDueDateText: "   ",
+    }),
+  ).rejects.toThrow("message is required");
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      dueDateDisplayMode: "message",
+      publicDueDateText: "x".repeat(81),
+    }),
+  ).rejects.toThrow("80 characters or fewer");
 });
 
 test("journey selection can change after milestone updates without deleting them", async () => {

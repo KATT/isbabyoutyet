@@ -74,6 +74,8 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
 const notYetBaby: BabyData = {
   name: "Baby Smith",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,

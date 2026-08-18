@@ -16,6 +16,8 @@ vi.mock("sonner", () => ({
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01T00:00:00.000Z",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   theme: null,
   laborStarted: "2026-08-10T08:00:00.000Z",
   wentToHospital: null,
@@ -75,6 +77,9 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.getByText("Baby name")).toBeTruthy();
   expect(open.getByText("Nova")).toBeTruthy();
   expect(open.getByText("Due date")).toBeTruthy();
+  expect(
+    open.getByText("1 September 2026 · Visitors see the exact date and countdown."),
+  ).toBeTruthy();
   expect(open.getByText("Labour started")).toBeTruthy();
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByText("Messages")).toBeTruthy();
@@ -84,6 +89,20 @@ test("settings dialog shows page fields when open and stays closed when not", as
   fireEvent.click(open.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
   expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+});
+
+test("due date row previews optional public text", async () => {
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("1 September 2026 · Visitors see “Any day now”.")).toBeTruthy();
 });
 
 test("delete page control appears when onDelete is provided", async () => {

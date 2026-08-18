@@ -457,6 +457,28 @@ export const backfillBabyBirthJourney = migrations.define({
   migrateOne: backfillBabyBirthJourneyDoc,
 });
 
+/**
+ * Gives every baby an explicit public due-date display mode. Existing babies
+ * keep the pre-feature exact date/countdown behavior. The message branch also
+ * preserves any text written by an earlier preview deployment.
+ */
+export async function backfillBabyDueDateDisplayDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  const publicDueDateText = baby.publicDueDateText?.trim() || null;
+  const dueDateDisplayMode = publicDueDateText ? ("message" as const) : ("exact" as const);
+  if (
+    baby.dueDateDisplayMode === dueDateDisplayMode &&
+    baby.publicDueDateText === publicDueDateText
+  ) {
+    return;
+  }
+  await ctx.db.patch(baby._id, { dueDateDisplayMode, publicDueDateText });
+}
+
+export const backfillBabyDueDateDisplay = migrations.define({
+  table: "baby",
+  migrateOne: backfillBabyDueDateDisplayDoc,
+});
+
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -611,6 +633,9 @@ export const runPushImageBackfill = migrations.runner(
 export const runBirthJourneyBackfill = migrations.runner(
   internal.migrations.backfillBabyBirthJourney,
 );
+export const runDueDateDisplayBackfill = migrations.runner(
+  internal.migrations.backfillBabyDueDateDisplay,
+);
 export const runStoredStatusCleanup = migrations.runner(
   internal.migrations.clearStoredStatusFields,
 );
@@ -650,6 +675,7 @@ const HISTORICAL_MIGRATION_NAMES = [
 const PRE_CLEANUP_MIGRATION_NAMES = [
   ...HISTORICAL_MIGRATION_NAMES,
   "migrations:backfillBabyBirthJourney",
+  "migrations:backfillBabyDueDateDisplay",
   "migrations:generatePushImagesForExistingPhotos",
 ] as const;
 

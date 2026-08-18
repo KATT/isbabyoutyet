@@ -37,6 +37,11 @@ test("deployment migrations have separate historical and newly-added runners", a
     }),
   ).resolves.toBeTruthy();
   await expect(
+    t.mutation(internal.migrations.runDueDateDisplayBackfill, {
+      oneBatchOnly: true,
+    }),
+  ).resolves.toBeTruthy();
+  await expect(
     t.mutation(internal.migrations.runPushImageBackfill, {
       oneBatchOnly: true,
     }),

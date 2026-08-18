@@ -11,13 +11,22 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import { Switch } from "@workspace/ui/components/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
@@ -75,8 +84,25 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
+      showExactDueDate: z.boolean(),
+      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
     })
-    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+    .superRefine((values, ctx) => {
+      if (!values.showExactDueDate && !values.publicDueDateText) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["publicDueDateText"],
+          message: t("Enter a message for visitors"),
+        });
+      }
+    })
+    .transform(
+      (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
+        dueDate: values.date,
+        dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+      }),
+    );
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -129,7 +155,15 @@ function DueDateForm(props: EditorFormProps) {
   const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
-    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
+    defaultValues: {
+      date: dateCodec.encode(props.baby.dueDate),
+      showExactDueDate: props.baby.dueDateDisplayMode === "exact",
+      publicDueDateText: props.baby.publicDueDateText ?? "",
+    },
+  });
+  const showExactDueDate = useWatch({
+    control: form.control,
+    name: "showExactDueDate",
   });
 
   return (
@@ -158,6 +192,43 @@ function DueDateForm(props: EditorFormProps) {
           </FormItem>
         )}
       />
+      <FormField
+        control={form.control}
+        name="showExactDueDate"
+        render={(renderProps) => (
+          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
+            <div className="flex flex-col gap-1">
+              <FormLabel>{t("Show exact due date")}</FormLabel>
+              <FormDescription>
+                {renderProps.field.value
+                  ? t("Visitors see the exact date and countdown.")
+                  : t("Visitors see only your message.")}
+              </FormDescription>
+            </div>
+            <FormControl>
+              <Switch
+                checked={renderProps.field.value}
+                onCheckedChange={renderProps.field.onChange}
+              />
+            </FormControl>
+          </FormItem>
+        )}
+      />
+      {!showExactDueDate ? (
+        <FormField
+          control={form.control}
+          name="publicDueDateText"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormLabel>{t("Public due date message")}</FormLabel>
+              <FormControl>
+                <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
