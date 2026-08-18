@@ -25,14 +25,14 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
         const locale = baby.resolvedLocale;
         const name = translate(locale, "Is {{name}} out yet?", { name: baby.name });
         const themeColor = getThemePrimaryColor(baby.theme);
-        const startUrl = `/baby/${baby.publicId}`;
+        const permanentUrl = `/baby/${baby._id}`;
 
         const manifest = {
           name,
           short_name: name,
-          id: `/baby/${baby._id}`,
-          start_url: startUrl,
-          scope: `/baby/${baby.publicId}`,
+          id: permanentUrl,
+          start_url: permanentUrl,
+          scope: "/baby/",
           lang: locale,
           description: translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
             name: baby.name,
