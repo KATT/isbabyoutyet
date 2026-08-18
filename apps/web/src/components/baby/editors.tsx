@@ -83,12 +83,10 @@ function dueDateSchema(t: TranslationFunction) {
       date: htmlDate(t),
       showExact: z.boolean(),
     })
-    .transform(
-      (values): Pick<BabyPatch, "dueDate" | "dueDateVisibility"> => ({
-        dueDate: values.date,
-        dueDateVisibility: values.showExact ? "exact" : "month",
-      }),
-    );
+    .transform((values): Pick<BabyPatch, "dueDate" | "dueDateVisibility"> => ({
+      dueDate: values.date,
+      dueDateVisibility: values.showExact ? "exact" : "month",
+    }));
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {

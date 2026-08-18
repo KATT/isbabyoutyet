@@ -159,9 +159,7 @@ test("due date row summarizes the month-only public display", async () => {
     />,
   );
 
-  expect(
-    view.getByText("1 September 2026 · Visitors see “September baby”."),
-  ).toBeTruthy();
+  expect(view.getByText("1 September 2026 · Visitors see “September baby”.")).toBeTruthy();
 });
 
 test("shows when visitor messages are disabled", async () => {
