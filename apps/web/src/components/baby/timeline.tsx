@@ -499,11 +499,15 @@ const MILESTONE_EMOJI: Record<Milestone, string> = {
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const { locale, t } = useI18n();
   const update = props.item.update;
-  const milestoneMeta = update.milestone ? MILESTONE_META[update.milestone] : null;
   const birthJourney = getBirthJourney(props.baby);
+  const visibleMilestone =
+    birthJourney === "planned_c_section" && update.milestone === "labor_started"
+      ? null
+      : update.milestone;
+  const milestoneMeta = visibleMilestone ? MILESTONE_META[visibleMilestone] : null;
   const MilestoneIcon = milestoneMeta?.icon ?? Camera;
-  const bubbleEmoji = update.milestone
-    ? MILESTONE_EMOJI[update.milestone]
+  const bubbleEmoji = visibleMilestone
+    ? MILESTONE_EMOJI[visibleMilestone]
     : update.photoUrl
       ? "📸"
       : "💬";
@@ -552,7 +556,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
-                {update.milestone && t(getMilestoneLabelKey(update.milestone, birthJourney))}
+                {visibleMilestone && t(getMilestoneLabelKey(visibleMilestone, birthJourney))}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
                     · {formatOccurredAtLocal(update.occurredAt, locale)}
@@ -626,7 +630,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                     <AlertDialogHeader>
                       <AlertDialogTitle>{t("Delete update?")}</AlertDialogTitle>
                       <AlertDialogDescription>
-                        {update.milestone
+                        {visibleMilestone
                           ? t("This also unmarks the milestone on the status card.")
                           : t("This removes the update from the timeline.")}{" "}
                         {update.photoUrl
@@ -945,7 +949,17 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const items = timelineQuery.data.pages.flatMap((page) => page.page);
+  const birthJourney = getBirthJourney(props.baby);
+  const items = timelineQuery.data.pages
+    .flatMap((page) => page.page)
+    .filter(
+      (item) =>
+        item.kind !== "update" ||
+        birthJourney !== "planned_c_section" ||
+        item.update.milestone !== "labor_started" ||
+        !!item.update.message ||
+        !!item.update.photoUrl,
+    );
 
   // Get visitor ID on client side
   useEffect(() => {

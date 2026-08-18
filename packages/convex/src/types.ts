@@ -49,6 +49,7 @@ export type BabyStatus =
  * Derive the current status from baby data
  */
 export function getCurrentStatus(baby: {
+  birthJourney?: BirthJourney | null;
   babyBorn?: string | null;
   wentToHospital?: string | null;
   laborStarted?: string | null;
@@ -59,7 +60,7 @@ export function getCurrentStatus(baby: {
   if (baby.wentToHospital) {
     return { type: "gone_to_hospital", date: baby.wentToHospital };
   }
-  if (baby.laborStarted) {
+  if (getBirthJourney(baby) === "labour" && baby.laborStarted) {
     return { type: "labor_started", date: baby.laborStarted };
   }
   return { type: "not_yet" };

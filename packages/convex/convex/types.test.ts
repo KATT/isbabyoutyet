@@ -1,6 +1,7 @@
 import { expect, test } from "vitest";
 import {
   getBirthJourney,
+  getCurrentStatus,
   getMilestonesForJourney,
   isBirthJourney,
   isMilestoneInJourney,
@@ -19,4 +20,10 @@ test("birth journey helpers preserve legacy defaults and planned C-section miles
   expect(isMilestoneInJourney({ birthJourney: "planned_c_section" }, "gone_to_hospital")).toBe(
     true,
   );
+  expect(
+    getCurrentStatus({
+      birthJourney: "planned_c_section",
+      laborStarted: "2026-08-10T08:00:00.000Z",
+    }),
+  ).toEqual({ type: "not_yet" });
 });

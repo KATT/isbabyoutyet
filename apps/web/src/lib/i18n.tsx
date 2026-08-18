@@ -80,39 +80,42 @@ const enGB = {
   "Birth plan": "Birth plan",
   Labour: "Labour",
   "Planned C-section": "Planned C-section",
-  "Follow labour, hospital and birth": "Follow labour, hospital and birth",
-  "Skip labour and follow hospital and birth": "Skip labour and follow hospital and birth",
-  "You can change this later in settings.": "You can change this later in settings.",
+  "A journey with labour, hospital and birth milestones":
+    "A journey with labour, hospital and birth milestones",
+  "A journey with hospital and birth milestones": "A journey with hospital and birth milestones",
+  "Only page managers can see this choice. Visitors see neutral planned-date updates.":
+    "Only page managers can see this choice. Visitors see neutral planned-date updates.",
   "C-section date": "C-section date",
-  "Planned C-section — skips the labour milestone":
-    "Planned C-section — skips the labour milestone",
-  "Labour — follows labour, hospital and birth": "Labour — follows labour, hospital and birth",
-  "Remove the Labour started milestone before switching.":
-    "Remove the Labour started milestone before switching.",
+  "Planned C-section — hospital and birth milestones":
+    "Planned C-section — hospital and birth milestones",
+  "Labour — labour, hospital and birth milestones":
+    "Labour — labour, hospital and birth milestones",
+  "The birth plan cannot be changed after the hospital milestone.":
+    "The birth plan cannot be changed after the hospital milestone.",
+  "Saved and hidden from visitors while Planned C-section is selected.":
+    "Saved and hidden from visitors while Planned C-section is selected.",
   "That milestone is not part of this birth plan": "That milestone is not part of this birth plan",
-  "C-section planned": "C-section planned",
+  "The big day is planned": "The big day is planned",
   "Counting down to the big day": "Counting down to the big day",
   "At hospital!": "At hospital!",
   "The big day is here": "The big day is here",
   "Scheduled date was {{count}} day ago": "Scheduled date was {{count}} day ago",
   "Scheduled date was {{count}} days ago": "Scheduled date was {{count}} days ago",
-  "C-section scheduled today!": "C-section scheduled today!",
-  "{{count}} day until C-section": "{{count}} day until C-section",
-  "{{count}} days until C-section": "{{count}} days until C-section",
-  "C-section date: {{date}}": "C-section date: {{date}}",
+  "The big day is today!": "The big day is today!",
+  "{{count}} day to go": "{{count}} day to go",
+  "{{count}} days to go": "{{count}} days to go",
+  "Planned date: {{date}}": "Planned date: {{date}}",
   "Scheduled {{date}}": "Scheduled {{date}}",
-  "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?":
-    "Scheduled C-section was {{count}} day ago. Is {{name}} out yet?",
-  "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?":
-    "Scheduled C-section was {{count}} days ago. Is {{name}} out yet?",
-  "{{count}} day until C-section – Is {{name}} out yet?":
-    "{{count}} day until C-section. Is {{name}} out yet?",
-  "{{count}} days until C-section – Is {{name}} out yet?":
-    "{{count}} days until C-section. Is {{name}} out yet?",
-  "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.":
-    "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.",
-  "{{name}}'s C-section is planned — follow the countdown and updates.":
-    "{{name}}'s C-section is planned — follow the countdown and updates.",
+  "Planned date was {{count}} day ago – Is {{name}} out yet?":
+    "Planned date was {{count}} day ago. Is {{name}} out yet?",
+  "Planned date was {{count}} days ago – Is {{name}} out yet?":
+    "Planned date was {{count}} days ago. Is {{name}} out yet?",
+  "{{count}} day to go – Is {{name}} out yet?": "{{count}} day to go. Is {{name}} out yet?",
+  "{{count}} days to go – Is {{name}} out yet?": "{{count}} days to go. Is {{name}} out yet?",
+  "{{name}}'s family is at hospital — follow live updates on the baby page.":
+    "{{name}}'s family is at hospital — follow live updates on the baby page.",
+  "{{name}}'s big day is planned — follow the countdown and updates.":
+    "{{name}}'s big day is planned — follow the countdown and updates.",
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
@@ -623,40 +626,42 @@ const sv: Record<TranslationKey, string> = {
   "Birth plan": "Födelseplan",
   Labour: "Förlossning",
   "Planned C-section": "Planerat kejsarsnitt",
-  "Follow labour, hospital and birth": "Följ förlossning, sjukhus och födsel",
-  "Skip labour and follow hospital and birth": "Hoppa över värkarbetet och följ sjukhus och födsel",
-  "You can change this later in settings.": "Du kan ändra detta senare i inställningarna.",
+  "A journey with labour, hospital and birth milestones":
+    "En resa med milstolpar för värkarbete, sjukhus och födsel",
+  "A journey with hospital and birth milestones": "En resa med milstolpar för sjukhus och födsel",
+  "Only page managers can see this choice. Visitors see neutral planned-date updates.":
+    "Bara sidans administratörer ser valet. Besökare ser neutrala uppdateringar om det planerade datumet.",
   "C-section date": "Datum för kejsarsnitt",
-  "Planned C-section — skips the labour milestone":
-    "Planerat kejsarsnitt — hoppar över milstolpen för värkarbete",
-  "Labour — follows labour, hospital and birth":
-    "Förlossning — följer värkarbete, sjukhus och födsel",
-  "Remove the Labour started milestone before switching.":
-    "Ta bort milstolpen Förlossningen är igång innan du byter.",
+  "Planned C-section — hospital and birth milestones":
+    "Planerat kejsarsnitt — milstolpar för sjukhus och födsel",
+  "Labour — labour, hospital and birth milestones":
+    "Förlossning — milstolpar för värkarbete, sjukhus och födsel",
+  "The birth plan cannot be changed after the hospital milestone.":
+    "Födelseplanen kan inte ändras efter sjukhusmilstolpen.",
+  "Saved and hidden from visitors while Planned C-section is selected.":
+    "Sparad och dold för besökare medan Planerat kejsarsnitt är valt.",
   "That milestone is not part of this birth plan": "Den milstolpen ingår inte i födelseplanen",
-  "C-section planned": "Kejsarsnitt planerat",
+  "The big day is planned": "Den stora dagen är planerad",
   "Counting down to the big day": "Nedräkning till den stora dagen",
   "At hospital!": "På sjukhuset!",
   "The big day is here": "Den stora dagen är här",
   "Scheduled date was {{count}} day ago": "Det planerade datumet var för {{count}} dag sedan",
   "Scheduled date was {{count}} days ago": "Det planerade datumet var för {{count}} dagar sedan",
-  "C-section scheduled today!": "Kejsarsnittet är planerat till idag!",
-  "{{count}} day until C-section": "{{count}} dag till kejsarsnittet",
-  "{{count}} days until C-section": "{{count}} dagar till kejsarsnittet",
-  "C-section date: {{date}}": "Datum för kejsarsnitt: {{date}}",
+  "The big day is today!": "Den stora dagen är idag!",
+  "{{count}} day to go": "{{count}} dag kvar",
+  "{{count}} days to go": "{{count}} dagar kvar",
+  "Planned date: {{date}}": "Planerat datum: {{date}}",
   "Scheduled {{date}}": "Planerat {{date}}",
-  "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?":
-    "Kejsarsnittet var planerat för {{count}} dag sedan. Har {{name}} kommit?",
-  "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?":
-    "Kejsarsnittet var planerat för {{count}} dagar sedan. Har {{name}} kommit?",
-  "{{count}} day until C-section – Is {{name}} out yet?":
-    "{{count}} dag till kejsarsnittet. Har {{name}} kommit?",
-  "{{count}} days until C-section – Is {{name}} out yet?":
-    "{{count}} dagar till kejsarsnittet. Har {{name}} kommit?",
-  "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.":
-    "{{name}}s familj är på sjukhuset för det planerade kejsarsnittet — följ uppdateringarna på bäbissidan.",
-  "{{name}}'s C-section is planned — follow the countdown and updates.":
-    "{{name}}s kejsarsnitt är planerat — följ nedräkningen och uppdateringarna.",
+  "Planned date was {{count}} day ago – Is {{name}} out yet?":
+    "Det planerade datumet var för {{count}} dag sedan. Har {{name}} kommit?",
+  "Planned date was {{count}} days ago – Is {{name}} out yet?":
+    "Det planerade datumet var för {{count}} dagar sedan. Har {{name}} kommit?",
+  "{{count}} day to go – Is {{name}} out yet?": "{{count}} dag kvar. Har {{name}} kommit?",
+  "{{count}} days to go – Is {{name}} out yet?": "{{count}} dagar kvar. Har {{name}} kommit?",
+  "{{name}}'s family is at hospital — follow live updates on the baby page.":
+    "{{name}}s familj är på sjukhuset — följ uppdateringarna på bäbissidan.",
+  "{{name}}'s big day is planned — follow the countdown and updates.":
+    "{{name}}s stora dag är planerad — följ nedräkningen och uppdateringarna.",
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
@@ -1148,41 +1153,42 @@ const es: Record<TranslationKey, string> = {
   "Birth plan": "Plan de nacimiento",
   Labour: "Parto",
   "Planned C-section": "Cesárea programada",
-  "Follow labour, hospital and birth": "Sigue el parto, el hospital y el nacimiento",
-  "Skip labour and follow hospital and birth": "Omite el parto y sigue el hospital y el nacimiento",
-  "You can change this later in settings.": "Puedes cambiarlo más tarde en Configuración.",
+  "A journey with labour, hospital and birth milestones":
+    "Un recorrido con hitos de parto, hospital y nacimiento",
+  "A journey with hospital and birth milestones": "Un recorrido con hitos de hospital y nacimiento",
+  "Only page managers can see this choice. Visitors see neutral planned-date updates.":
+    "Solo quienes gestionan la página ven esta elección. Los visitantes ven actualizaciones neutrales sobre la fecha prevista.",
   "C-section date": "Fecha de la cesárea",
-  "Planned C-section — skips the labour milestone":
-    "Cesárea programada — omite el hito del inicio del parto",
-  "Labour — follows labour, hospital and birth":
-    "Parto — sigue el parto, el hospital y el nacimiento",
-  "Remove the Labour started milestone before switching.":
-    "Elimina el hito El parto ha empezado antes de cambiar.",
+  "Planned C-section — hospital and birth milestones":
+    "Cesárea programada — hitos de hospital y nacimiento",
+  "Labour — labour, hospital and birth milestones": "Parto — hitos de parto, hospital y nacimiento",
+  "The birth plan cannot be changed after the hospital milestone.":
+    "El plan de nacimiento no se puede cambiar después del hito del hospital.",
+  "Saved and hidden from visitors while Planned C-section is selected.":
+    "Guardado y oculto para los visitantes mientras esté seleccionada la Cesárea programada.",
   "That milestone is not part of this birth plan":
     "Ese hito no forma parte de este plan de nacimiento",
-  "C-section planned": "Cesárea programada",
+  "The big day is planned": "El gran día está planeado",
   "Counting down to the big day": "Cuenta atrás para el gran día",
   "At hospital!": "¡En el hospital!",
   "The big day is here": "El gran día ha llegado",
   "Scheduled date was {{count}} day ago": "La fecha programada fue hace {{count}} día",
   "Scheduled date was {{count}} days ago": "La fecha programada fue hace {{count}} días",
-  "C-section scheduled today!": "¡La cesárea está programada para hoy!",
-  "{{count}} day until C-section": "{{count}} día para la cesárea",
-  "{{count}} days until C-section": "{{count}} días para la cesárea",
-  "C-section date: {{date}}": "Fecha de la cesárea: {{date}}",
+  "The big day is today!": "¡El gran día es hoy!",
+  "{{count}} day to go": "Falta {{count}} día",
+  "{{count}} days to go": "Faltan {{count}} días",
+  "Planned date: {{date}}": "Fecha prevista: {{date}}",
   "Scheduled {{date}}": "Programada para el {{date}}",
-  "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?":
-    "La cesárea estaba programada para hace {{count}} día. ¿Ya nació {{name}}?",
-  "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?":
-    "La cesárea estaba programada para hace {{count}} días. ¿Ya nació {{name}}?",
-  "{{count}} day until C-section – Is {{name}} out yet?":
-    "{{count}} día para la cesárea. ¿Ya nació {{name}}?",
-  "{{count}} days until C-section – Is {{name}} out yet?":
-    "{{count}} días para la cesárea. ¿Ya nació {{name}}?",
-  "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.":
-    "La familia de {{name}} está en el hospital para la cesárea programada. Sigue las novedades en la página del bebé.",
-  "{{name}}'s C-section is planned — follow the countdown and updates.":
-    "La cesárea de {{name}} está programada. Sigue la cuenta atrás y las novedades.",
+  "Planned date was {{count}} day ago – Is {{name}} out yet?":
+    "La fecha prevista fue hace {{count}} día. ¿Ya nació {{name}}?",
+  "Planned date was {{count}} days ago – Is {{name}} out yet?":
+    "La fecha prevista fue hace {{count}} días. ¿Ya nació {{name}}?",
+  "{{count}} day to go – Is {{name}} out yet?": "Falta {{count}} día. ¿Ya nació {{name}}?",
+  "{{count}} days to go – Is {{name}} out yet?": "Faltan {{count}} días. ¿Ya nació {{name}}?",
+  "{{name}}'s family is at hospital — follow live updates on the baby page.":
+    "La familia de {{name}} está en el hospital. Sigue las novedades en la página del bebé.",
+  "{{name}}'s big day is planned — follow the countdown and updates.":
+    "El gran día de {{name}} está planeado. Sigue la cuenta atrás y las novedades.",
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
@@ -1680,42 +1686,43 @@ const ptBR: Record<TranslationKey, string> = {
   "Birth plan": "Plano de nascimento",
   Labour: "Trabalho de parto",
   "Planned C-section": "Cesárea programada",
-  "Follow labour, hospital and birth": "Acompanhe o trabalho de parto, hospital e nascimento",
-  "Skip labour and follow hospital and birth":
-    "Pule o trabalho de parto e acompanhe o hospital e o nascimento",
-  "You can change this later in settings.": "Você pode mudar isso depois nas configurações.",
+  "A journey with labour, hospital and birth milestones":
+    "Uma jornada com etapas de trabalho de parto, hospital e nascimento",
+  "A journey with hospital and birth milestones": "Uma jornada com etapas de hospital e nascimento",
+  "Only page managers can see this choice. Visitors see neutral planned-date updates.":
+    "Só quem gerencia a página vê esta escolha. Os visitantes veem atualizações neutras sobre a data prevista.",
   "C-section date": "Data da cesárea",
-  "Planned C-section — skips the labour milestone":
-    "Cesárea programada — pula a etapa do início do trabalho de parto",
-  "Labour — follows labour, hospital and birth":
-    "Trabalho de parto — acompanha trabalho de parto, hospital e nascimento",
-  "Remove the Labour started milestone before switching.":
-    "Remova a etapa O trabalho de parto começou antes de mudar.",
+  "Planned C-section — hospital and birth milestones":
+    "Cesárea programada — etapas de hospital e nascimento",
+  "Labour — labour, hospital and birth milestones":
+    "Trabalho de parto — etapas de trabalho de parto, hospital e nascimento",
+  "The birth plan cannot be changed after the hospital milestone.":
+    "O plano de nascimento não pode ser alterado depois da etapa do hospital.",
+  "Saved and hidden from visitors while Planned C-section is selected.":
+    "Salvo e oculto para visitantes enquanto Cesárea programada estiver selecionada.",
   "That milestone is not part of this birth plan":
     "Essa etapa não faz parte deste plano de nascimento",
-  "C-section planned": "Cesárea programada",
+  "The big day is planned": "O grande dia está planejado",
   "Counting down to the big day": "Contagem regressiva para o grande dia",
   "At hospital!": "No hospital!",
   "The big day is here": "O grande dia chegou",
   "Scheduled date was {{count}} day ago": "A data programada foi há {{count}} dia",
   "Scheduled date was {{count}} days ago": "A data programada foi há {{count}} dias",
-  "C-section scheduled today!": "A cesárea está programada para hoje!",
-  "{{count}} day until C-section": "{{count}} dia para a cesárea",
-  "{{count}} days until C-section": "{{count}} dias para a cesárea",
-  "C-section date: {{date}}": "Data da cesárea: {{date}}",
+  "The big day is today!": "O grande dia é hoje!",
+  "{{count}} day to go": "Falta {{count}} dia",
+  "{{count}} days to go": "Faltam {{count}} dias",
+  "Planned date: {{date}}": "Data prevista: {{date}}",
   "Scheduled {{date}}": "Programada para {{date}}",
-  "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?":
-    "A cesárea estava programada para há {{count}} dia. {{name}} já nasceu?",
-  "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?":
-    "A cesárea estava programada para há {{count}} dias. {{name}} já nasceu?",
-  "{{count}} day until C-section – Is {{name}} out yet?":
-    "{{count}} dia para a cesárea. {{name}} já nasceu?",
-  "{{count}} days until C-section – Is {{name}} out yet?":
-    "{{count}} dias para a cesárea. {{name}} já nasceu?",
-  "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.":
-    "A família de {{name}} está no hospital para a cesárea programada. Acompanhe as novidades na página do bebê.",
-  "{{name}}'s C-section is planned — follow the countdown and updates.":
-    "A cesárea de {{name}} está programada. Acompanhe a contagem regressiva e as novidades.",
+  "Planned date was {{count}} day ago – Is {{name}} out yet?":
+    "A data prevista foi há {{count}} dia. {{name}} já nasceu?",
+  "Planned date was {{count}} days ago – Is {{name}} out yet?":
+    "A data prevista foi há {{count}} dias. {{name}} já nasceu?",
+  "{{count}} day to go – Is {{name}} out yet?": "Falta {{count}} dia. {{name}} já nasceu?",
+  "{{count}} days to go – Is {{name}} out yet?": "Faltam {{count}} dias. {{name}} já nasceu?",
+  "{{name}}'s family is at hospital — follow live updates on the baby page.":
+    "A família de {{name}} está no hospital. Acompanhe as novidades na página do bebê.",
+  "{{name}}'s big day is planned — follow the countdown and updates.":
+    "O grande dia de {{name}} está planejado. Acompanhe a contagem regressiva e as novidades.",
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
@@ -2151,20 +2158,17 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
   Labour: "Labor",
-  "Follow labour, hospital and birth": "Follow labor, hospital and birth",
-  "Skip labour and follow hospital and birth": "Skip labor and follow hospital and birth",
-  "Planned C-section — skips the labour milestone": "Planned C-section — skips the labor milestone",
-  "Labour — follows labour, hospital and birth": "Labor — follows labor, hospital and birth",
-  "Remove the Labour started milestone before switching.":
-    "Remove the Labor started milestone before switching.",
+  "A journey with labour, hospital and birth milestones":
+    "A journey with labor, hospital and birth milestones",
+  "Labour — labour, hospital and birth milestones": "Labor — labor, hospital and birth milestones",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
     "{{name}}'s labor has started — follow live updates on the baby page.",
   "{{name}}'s family has gone to hospital — follow live updates on the baby page.":
     "{{name}}'s family has gone to the hospital — follow live updates on the baby page.",
-  "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.":
-    "{{name}}'s family is at the hospital for their planned C-section — follow live updates on the baby page.",
+  "{{name}}'s family is at hospital — follow live updates on the baby page.":
+    "{{name}}'s family is at the hospital — follow live updates on the baby page.",
   "Track the progress of labour and birth": "Follow labor and birth",
   "Not gone to hospital yet": "Not at the hospital yet",
   "Gone to hospital": "Gone to the hospital",

@@ -36,10 +36,11 @@ test("planned C-section status counts down without labour copy", async () => {
     view.unmount();
   });
 
-  expect(view.getByRole("heading", { name: "C-section planned" })).toBeTruthy();
+  expect(view.getByRole("heading", { name: "The big day is planned" })).toBeTruthy();
   expect(view.getByText("Counting down to the big day")).toBeTruthy();
-  expect(view.getByText("19 days until C-section")).toBeTruthy();
-  expect(view.getByText("C-section date: 1 September 2026")).toBeTruthy();
+  expect(view.getByText("19 days to go")).toBeTruthy();
+  expect(view.getByText("Planned date: 1 September 2026")).toBeTruthy();
+  expect(view.queryByText(/c-section/i)).toBeNull();
   expect(view.queryByText(/labour/i)).toBeNull();
 });
 

@@ -331,6 +331,67 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   expect(view.queryByRole("alertdialog")).toBeNull();
 });
 
+test("a preserved labour update becomes neutral when the journey switches", async () => {
+  await using view = renderFeed({
+    baby: { ...laborStartedBaby, birthJourney: "planned_c_section" },
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: "A little update from us",
+            milestone: "labor_started",
+            occurredAt: Date.now(),
+            photoUrl: null,
+            thumbnailUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  expect(view.getByText("A little update from us")).toBeTruthy();
+  expect(view.getByText("Update")).toBeTruthy();
+  expect(view.queryByText("Labour started")).toBeNull();
+});
+
+test("an empty preserved labour milestone stays stored but disappears from the public feed", async () => {
+  await using view = renderFeed({
+    baby: { ...laborStartedBaby, birthJourney: "planned_c_section" },
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: null,
+            milestone: "labor_started",
+            occurredAt: Date.now(),
+            photoUrl: null,
+            thumbnailUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  expect(view.getByText("Nothing here yet")).toBeTruthy();
+  expect(view.queryByText("Labour started")).toBeNull();
+});
+
 test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
   await using view = renderFeed({
     baby: notYetBaby,

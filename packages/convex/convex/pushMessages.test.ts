@@ -68,6 +68,6 @@ test("planned C-section hospital notifications announce the big day", () => {
     }),
   ).toEqual({
     title: "Nova: The big day is here!",
-    body: "They're at hospital for the planned C-section. Tap for the latest.",
+    body: "They're at hospital. Tap for the latest.",
   });
 });

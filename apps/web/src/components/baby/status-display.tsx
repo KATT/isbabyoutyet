@@ -169,7 +169,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
     birthJourney === "planned_c_section" && props.currentStatus.type === "not_yet"
       ? {
           emoji: "🗓️",
-          answerKey: "C-section planned" as const,
+          answerKey: "The big day is planned" as const,
           sublineKey: "Counting down to the big day" as const,
         }
       : birthJourney === "planned_c_section" && props.currentStatus.type === "gone_to_hospital"
@@ -226,13 +226,10 @@ export function StatusDisplay(props: StatusDisplayProps) {
                     { count: overdueDays },
                   )
                 : daysUntilDueDate === 0
-                  ? t("C-section scheduled today!")
-                  : t(
-                      daysUntilDueDate === 1
-                        ? "{{count}} day until C-section"
-                        : "{{count}} days until C-section",
-                      { count: daysUntilDueDate },
-                    )
+                  ? t("The big day is today!")
+                  : t(daysUntilDueDate === 1 ? "{{count}} day to go" : "{{count}} days to go", {
+                      count: daysUntilDueDate,
+                    })
               : overdueDays > 0
                 ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
                     count: overdueDays,
@@ -247,7 +244,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
             {t(
               birthJourney === "planned_c_section"
-                ? "C-section date: {{date}}"
+                ? "Planned date: {{date}}"
                 : "Due date: {{date}}",
               { date: formatDueDate(props.baby.dueDate, locale) },
             )}

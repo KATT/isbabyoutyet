@@ -129,10 +129,13 @@ test("planned C-section SEO skips labour language", async () => {
     laborStarted: null,
   });
 
-  expect(waiting.title).toContain("9 days until C-section");
-  expect(waiting.description).toContain("C-section is planned");
+  expect(waiting.title).toContain("9 days to go");
+  expect(waiting.description).toContain("big day is planned");
   expect(waiting.description).not.toContain("labour");
-  expect(atHospital.description).toContain("planned C-section");
+  expect(
+    `${waiting.title} ${waiting.description} ${atHospital.description}`.toLowerCase(),
+  ).not.toContain("c-section");
+  expect(atHospital.description).toContain("at hospital");
   expect(
     babyStatusLabel({
       status: { type: "gone_to_hospital", date: "2026-08-20T07:00:00.000Z" },

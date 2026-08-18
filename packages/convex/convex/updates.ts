@@ -118,6 +118,7 @@ export const post = mutationWithTriggers({
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby,
+        notifyForward: true,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
@@ -207,6 +208,7 @@ export const remove = mutationWithTriggers({
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby,
+        notifyForward: true,
         customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
       });
     }

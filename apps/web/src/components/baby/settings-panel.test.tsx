@@ -135,9 +135,20 @@ test("planned C-section settings show the relevant journey and date labels", asy
   );
 
   expect(view.getByText("C-section date")).toBeTruthy();
-  expect(view.getByText("Planned C-section — skips the labour milestone")).toBeTruthy();
+  expect(view.getByText("Planned C-section — hospital and birth milestones")).toBeTruthy();
+  expect(
+    view.getByText(
+      "Only page managers can see this choice. Visitors see neutral planned-date updates.",
+    ),
+  ).toBeTruthy();
   expect(view.getByText("At hospital")).toBeTruthy();
   expect(view.queryByText("Gone to hospital")).toBeNull();
+  expect((view.getByRole("combobox", { name: "Birth plan" }) as HTMLButtonElement).disabled).toBe(
+    true,
+  );
+  expect(
+    view.getByText("The birth plan cannot be changed after the hospital milestone."),
+  ).toBeTruthy();
 });
 
 test("theme constants render through the active translation catalog", async () => {

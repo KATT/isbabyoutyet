@@ -425,6 +425,7 @@ export async function syncStatusNotifications(
     updatedBaby: Doc<"baby">;
     /** Message to attach to the push, per notifiable milestone. */
     customMessageByMilestone: Record<Milestone, string | null>;
+    notifyForward: boolean;
   },
 ) {
   const updatedBaby = opts.updatedBaby;
@@ -455,7 +456,7 @@ export async function syncStatusNotifications(
   }
 
   // Only handle notifications if status moved forward
-  if (!isStatusForward(opts.statusBefore, statusAfter)) return;
+  if (!opts.notifyForward || !isStatusForward(opts.statusBefore, statusAfter)) return;
 
   const customMessage = opts.customMessageByMilestone[statusAfter.type];
 
@@ -585,13 +586,11 @@ export const update = mutationWithTriggers({
       born: babyBornMessage,
     };
     const nextBirthJourney = rest.birthJourney ?? getBirthJourney(baby);
+    const birthJourneyChanged =
+      rest.birthJourney !== undefined && rest.birthJourney !== getBirthJourney(baby);
 
-    if (
-      nextBirthJourney === "planned_c_section" &&
-      baby.laborStarted &&
-      rest.laborStarted !== null
-    ) {
-      throw new Error("Remove the Labour started milestone before switching birth journey");
+    if (birthJourneyChanged && (baby.wentToHospital || baby.babyBorn)) {
+      throw new Error("The birth plan cannot be changed after the hospital milestone");
     }
     if (
       typeof rest.laborStarted === "string" &&
@@ -658,6 +657,11 @@ export const update = mutationWithTriggers({
     await syncStatusNotifications(ctx, {
       statusBefore,
       updatedBaby,
+      // Switching journeys can reveal or hide a preserved labour milestone.
+      // That is a presentation change, not a new event to announce.
+      notifyForward:
+        !birthJourneyChanged ||
+        MILESTONES.some((milestone) => rest[MILESTONE_FIELDS[milestone].date] !== undefined),
       customMessageByMilestone: {
         labor_started: legacyMessages.labor_started ?? null,
         gone_to_hospital: legacyMessages.gone_to_hospital ?? null,

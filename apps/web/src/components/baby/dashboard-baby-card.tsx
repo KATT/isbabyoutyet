@@ -65,21 +65,16 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
           );
         }
         if (daysUntilDueDate === 0) {
-          return (
-            <Badge className="rounded-full font-bold">{t("C-section scheduled today!")}</Badge>
-          );
+          return <Badge className="rounded-full font-bold">{t("The big day is today!")}</Badge>;
         }
         return (
           <Badge
             variant="outline"
             className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
           >
-            {t(
-              daysUntilDueDate === 1
-                ? "{{count}} day until C-section"
-                : "{{count}} days until C-section",
-              { count: daysUntilDueDate },
-            )}
+            {t(daysUntilDueDate === 1 ? "{{count}} day to go" : "{{count}} days to go", {
+              count: daysUntilDueDate,
+            })}
           </Badge>
         );
       }

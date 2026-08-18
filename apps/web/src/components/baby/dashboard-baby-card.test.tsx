@@ -134,7 +134,8 @@ test("planned C-section cards use scheduled-date language", async () => {
     <DashboardBabyCard baby={planned} index={0} dataTourId={undefined} />,
   );
 
-  expect(view.getByText("19 days until C-section")).toBeTruthy();
+  expect(view.getByText("19 days to go")).toBeTruthy();
   expect(view.getByText("Scheduled 1 September 2026")).toBeTruthy();
+  expect(view.queryByText(/c-section/i)).toBeNull();
   expect(view.queryByText(/due date/i)).toBeNull();
 });

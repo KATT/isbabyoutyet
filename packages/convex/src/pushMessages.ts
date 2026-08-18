@@ -102,23 +102,23 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
 const plannedCSectionHospitalCopy: Record<SupportedLocale, PushCopy> = {
   "en-GB": {
     title: (name) => `${name}: The big day is here!`,
-    body: "They're at hospital for the planned C-section. Tap for the latest.",
+    body: "They're at hospital. Tap for the latest.",
   },
   "en-US": {
     title: (name) => `${name}: The big day is here!`,
-    body: "They're at the hospital for the planned C-section. Tap for the latest.",
+    body: "They're at the hospital. Tap for the latest.",
   },
   sv: {
     title: (name) => `${name}: Den stora dagen är här!`,
-    body: "Familjen är på sjukhuset för det planerade kejsarsnittet. Kika in för senaste nytt!",
+    body: "Familjen är på sjukhuset. Kika in för senaste nytt!",
   },
   es: {
     title: (name) => `¡${name}: llegó el gran día!`,
-    body: "La familia está en el hospital para la cesárea programada. Entra para ver las novedades.",
+    body: "La familia está en el hospital. Entra para ver las novedades.",
   },
   "pt-BR": {
     title: (name) => `${name}: o grande dia chegou!`,
-    body: "A família está no hospital para a cesárea programada. Vem ver as novidades!",
+    body: "A família está no hospital. Vem ver as novidades!",
   },
 };
 

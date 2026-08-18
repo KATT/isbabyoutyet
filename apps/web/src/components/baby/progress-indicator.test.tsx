@@ -53,6 +53,7 @@ test("planned C-section journey skips labour and uses two relevant milestones", 
   const plannedCSectionBaby: BabyData = {
     ...waitingBaby,
     birthJourney: "planned_c_section",
+    laborStarted: "2026-08-11T03:00:00.000Z",
   };
   await using view = renderResource(
     <ProgressIndicator

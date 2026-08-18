@@ -88,6 +88,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const onDelete = props.onDelete;
   const coParents = props.coParents;
   const birthJourney = getBirthJourney(props.baby);
+  const birthJourneyLocked = !!props.baby.wentToHospital || !!props.baby.babyBorn;
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -137,18 +138,24 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemTitle>{t("Birth plan")}</ItemTitle>
               <ItemDescription>
                 {birthJourney === "planned_c_section"
-                  ? t("Planned C-section — skips the labour milestone")
-                  : t("Labour — follows labour, hospital and birth")}
+                  ? t("Planned C-section — hospital and birth milestones")
+                  : t("Labour — labour, hospital and birth milestones")}
               </ItemDescription>
-              {props.baby.laborStarted && birthJourney === "labour" ? (
+              <ItemDescription>
+                {t(
+                  "Only page managers can see this choice. Visitors see neutral planned-date updates.",
+                )}
+              </ItemDescription>
+              {birthJourneyLocked ? (
                 <ItemDescription>
-                  {t("Remove the Labour started milestone before switching.")}
+                  {t("The birth plan cannot be changed after the hospital milestone.")}
                 </ItemDescription>
               ) : null}
             </ItemContent>
             <ItemActions>
               <Select
                 value={birthJourney}
+                disabled={birthJourneyLocked}
                 onValueChange={(value) => {
                   if (typeof value === "string" && isBirthJourney(value)) {
                     void props.onUpdate({ birthJourney: value });
@@ -161,9 +168,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <SelectContent alignItemWithTrigger={false}>
                   <SelectGroup>
                     <SelectItem value="labour">{t("Labour")}</SelectItem>
-                    <SelectItem value="planned_c_section" disabled={!!props.baby.laborStarted}>
-                      {t("Planned C-section")}
-                    </SelectItem>
+                    <SelectItem value="planned_c_section">{t("Planned C-section")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -186,6 +191,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     {formatDate(props.baby.laborStarted, locale)} (
                     {getRelativeTime(props.baby.laborStarted, locale)})
                   </ItemDescription>
+                  {birthJourney === "planned_c_section" ? (
+                    <ItemDescription>
+                      {t("Saved and hidden from visitors while Planned C-section is selected.")}
+                    </ItemDescription>
+                  ) : null}
                 </ItemContent>
                 <ItemActions>
                   <StatusDateEditor

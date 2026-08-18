@@ -33,16 +33,16 @@ function babyPageTitle(baby: BabySeoInput) {
       title = translate(
         locale,
         overdueDays === 1
-          ? "Scheduled C-section was {{count}} day ago – Is {{name}} out yet?"
-          : "Scheduled C-section was {{count}} days ago – Is {{name}} out yet?",
+          ? "Planned date was {{count}} day ago – Is {{name}} out yet?"
+          : "Planned date was {{count}} days ago – Is {{name}} out yet?",
         { count: overdueDays, name: baby.name },
       );
     } else if (birthJourney === "planned_c_section") {
       title = translate(
         locale,
         daysUntilDueDate === 1
-          ? "{{count}} day until C-section – Is {{name}} out yet?"
-          : "{{count}} days until C-section – Is {{name}} out yet?",
+          ? "{{count}} day to go – Is {{name}} out yet?"
+          : "{{count}} days to go – Is {{name}} out yet?",
         { count: daysUntilDueDate, name: baby.name },
       );
     } else if (overdueDays > 0) {
@@ -79,7 +79,7 @@ export function babyPageDescription(baby: BabySeoInput) {
       return birthJourney === "planned_c_section"
         ? translate(
             locale,
-            "{{name}}'s family is at hospital for their planned C-section — follow live updates on the baby page.",
+            "{{name}}'s family is at hospital — follow live updates on the baby page.",
             { name: baby.name },
           )
         : translate(
@@ -95,7 +95,7 @@ export function babyPageDescription(baby: BabySeoInput) {
       );
     case "not_yet":
       return birthJourney === "planned_c_section"
-        ? translate(locale, "{{name}}'s C-section is planned — follow the countdown and updates.", {
+        ? translate(locale, "{{name}}'s big day is planned — follow the countdown and updates.", {
             name: baby.name,
           })
         : translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
@@ -128,7 +128,7 @@ export function babyStatusLabel(
     case "not_yet":
       return translate(
         opts.locale,
-        birthJourney === "planned_c_section" ? "C-section planned" : "Not yet",
+        birthJourney === "planned_c_section" ? "The big day is planned" : "Not yet",
       );
     default: {
       const _exhaustive: never = opts.status;
@@ -162,13 +162,11 @@ export function babyStatusDetail(opts: {
   const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
   if (birthJourney === "planned_c_section") {
     if (daysUntil === 0) {
-      return translate(locale, "C-section scheduled today!");
+      return translate(locale, "The big day is today!");
     }
-    return translate(
-      locale,
-      daysUntil === 1 ? "{{count}} day until C-section" : "{{count}} days until C-section",
-      { count: daysUntil },
-    );
+    return translate(locale, daysUntil === 1 ? "{{count}} day to go" : "{{count}} days to go", {
+      count: daysUntil,
+    });
   }
   if (overdueDays > 0) {
     return translate(

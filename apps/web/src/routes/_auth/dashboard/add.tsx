@@ -125,7 +125,7 @@ function AddBabyPage() {
                             <span>
                               <span className="block font-bold">{t("Labour")}</span>
                               <span className="block text-sm text-muted-foreground">
-                                {t("Follow labour, hospital and birth")}
+                                {t("A journey with labour, hospital and birth milestones")}
                               </span>
                             </span>
                           </label>
@@ -134,14 +134,16 @@ function AddBabyPage() {
                             <span>
                               <span className="block font-bold">{t("Planned C-section")}</span>
                               <span className="block text-sm text-muted-foreground">
-                                {t("Skip labour and follow hospital and birth")}
+                                {t("A journey with hospital and birth milestones")}
                               </span>
                             </span>
                           </label>
                         </RadioGroup>
                       </FormControl>
                       <FormDescription>
-                        {t("You can change this later in settings.")}
+                        {t(
+                          "Only page managers can see this choice. Visitors see neutral planned-date updates.",
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

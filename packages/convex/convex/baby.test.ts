@@ -4,6 +4,7 @@ import { api } from "./_generated/api";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
+import { getCurrentStatus } from "../src/types";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -87,9 +88,15 @@ test("a planned C-section baby stores its journey and cannot mark labour", async
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
     wentToHospital: "2026-08-10T08:00:00.000Z",
   });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      birthJourney: "labour",
+    }),
+  ).rejects.toThrow("The birth plan cannot be changed after the hospital milestone");
 });
 
-test("switching to a planned C-section journey preserves milestone integrity", async () => {
+test("switching birth journeys preserves labour data without sending another notification", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
   const created = await asAlice.mutation(api.baby.create, {
@@ -101,12 +108,49 @@ test("switching to a planned C-section journey preserves milestone integrity", a
     laborStarted: "2026-08-10T08:00:00.000Z",
   });
 
-  await expect(
-    asAlice.mutation(api.baby.update, {
-      babyId: created.babyId,
-      birthJourney: "planned_c_section",
-    }),
-  ).rejects.toThrow("Remove the Labour started milestone before switching birth journey");
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    birthJourney: "planned_c_section",
+  });
+
+  let stored = await t.run(async (ctx) => {
+    const baby = await ctx.db.get(created.babyId);
+    if (!baby) throw new Error("Baby not found");
+    const updates = await ctx.db
+      .query("updates")
+      .withIndex("by_babyId_and_milestone", (q) =>
+        q.eq("babyId", created.babyId).eq("milestone", "labor_started"),
+      )
+      .collect();
+    return { baby, updates };
+  });
+  expect(stored.baby.laborStarted).toBe("2026-08-10T08:00:00.000Z");
+  expect(stored.updates).toHaveLength(1);
+  expect(getCurrentStatus(stored.baby)).toEqual({ type: "not_yet" });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    birthJourney: "labour",
+  });
+  stored = await t.run(async (ctx) => {
+    const baby = await ctx.db.get(created.babyId);
+    if (!baby) throw new Error("Baby not found");
+    const updates = await ctx.db
+      .query("updates")
+      .withIndex("by_babyId_and_milestone", (q) =>
+        q.eq("babyId", created.babyId).eq("milestone", "labor_started"),
+      )
+      .collect();
+    return { baby, updates };
+  });
+  expect(getCurrentStatus(stored.baby).type).toBe("labor_started");
+  expect(stored.updates).toHaveLength(1);
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(notifications).toHaveLength(1);
+  expect(notifications[0]?.status).toBe("cancelled");
 });
 
 test("getByPublicId resolves by publicId and by document id", async () => {
