@@ -56,10 +56,11 @@ export default defineConfig({
         // entry file); the ratchet snaps to exact values on the next run.
         // Lowered alongside removing the signup test-account picker (deleting
         // covered submit/prefill code shrinks the ratio).
-        statements: 74.76,
-        branches: 65.34,
-        functions: 75.39,
-        lines: 75.29,
+        // Lowered alongside deleting the redundant covered migration reset.
+        statements: 74.71,
+        branches: 65.3,
+        functions: 75.35,
+        lines: 75.25,
       },
     },
   },
