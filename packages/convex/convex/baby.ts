@@ -28,6 +28,12 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto } from "./babyDto";
 
+const birthJourneyValidator = v.union(
+  v.literal("labour"),
+  v.literal("home_birth"),
+  v.literal("planned_c_section"),
+);
+
 export const listByUser = query({
   args: {},
   handler: async (ctx) => {
@@ -264,6 +270,8 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    // Optional for clients opened before this deployment; every write stores a value.
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -284,6 +292,7 @@ export const create = mutationWithTriggers({
       name: args.name,
       dueDate: args.dueDate,
       publicId,
+      birthJourney: args.birthJourney ?? "labour",
       hospitalMessage: null,
       babyBornMessage: null,
       laborStartedMessage: null,

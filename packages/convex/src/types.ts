@@ -1,5 +1,9 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
+export const BIRTH_JOURNEYS = ["labour", "home_birth", "planned_c_section"] as const;
+
+export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
+
 /**
  * Sentinel returned by manager-only queries when the caller lacks access,
  * instead of throwing. Lets route loaders fetch the same set of queries for
