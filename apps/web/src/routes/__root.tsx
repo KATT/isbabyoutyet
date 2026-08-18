@@ -185,7 +185,7 @@ export const Route = createRootRouteWithContext<{
   notFoundComponent: NotFoundComponent,
 });
 
-function contextLocale(context: unknown): SupportedLocale | undefined {
+export function contextLocale(context: unknown): SupportedLocale | undefined {
   if (
     typeof context !== "object" ||
     context === null ||
@@ -214,7 +214,7 @@ function isAuthClient(value: unknown): value is AuthClient {
   );
 }
 
-function requireAuthClient(value: unknown): AuthClient {
+export function requireAuthClient(value: unknown): AuthClient {
   if (!isAuthClient(value)) {
     throw new Error("Better Auth client is missing its Convex integration");
   }

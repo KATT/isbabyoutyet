@@ -56,7 +56,7 @@ export default defineConfig({
         // entry file); the ratchet snaps to exact values on the next run.
         statements: 72.51,
         branches: 64.65,
-        functions: 71.17,
+        functions: 71.39,
         lines: 72.98,
       },
     },

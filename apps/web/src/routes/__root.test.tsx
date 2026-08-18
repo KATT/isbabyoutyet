@@ -65,8 +65,14 @@ vi.mock("@/lib/auth-server", () => ({
   authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
 }));
 
-const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route } =
-  await import("@/routes/__root");
+const {
+  NavigationProgress,
+  NotFoundComponent,
+  RootErrorComponent,
+  Route,
+  contextLocale,
+  requireAuthClient,
+} = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -74,6 +80,38 @@ function renderResource(ui: ReactElement) {
     view.unmount();
   });
 }
+
+test("route context locales are narrowed to supported values", () => {
+  expect(contextLocale({ locale: "sv" })).toBe("sv");
+  expect(contextLocale({ locale: "unsupported" })).toBeUndefined();
+  expect(contextLocale({ locale: 1 })).toBeUndefined();
+  expect(contextLocale({})).toBeUndefined();
+  expect(contextLocale(null)).toBeUndefined();
+});
+
+test("the Convex auth adapter validates its required client surface", () => {
+  const validClient = {
+    useSession: vi.fn(),
+    getSession: vi.fn(),
+    convex: { token: vi.fn() },
+  };
+  expect(requireAuthClient(validClient)).toBe(validClient);
+
+  const invalidClients = [
+    null,
+    {},
+    { useSession: "not a function" },
+    { useSession: vi.fn(), getSession: "not a function" },
+    { useSession: vi.fn(), getSession: vi.fn(), convex: null },
+    { useSession: vi.fn(), getSession: vi.fn(), convex: {} },
+    { useSession: vi.fn(), getSession: vi.fn(), convex: { token: "not a function" } },
+  ];
+  for (const invalidClient of invalidClients) {
+    expect(() => requireAuthClient(invalidClient)).toThrow(
+      "Better Auth client is missing its Convex integration",
+    );
+  }
+});
 
 test("beforeLoad resolves locale and auth locally on the client, without a server round-trip", async () => {
   const { QueryClient } = await import("@tanstack/react-query");
