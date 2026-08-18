@@ -5,6 +5,6 @@ export const gitSha = query({
   args: {},
   returns: v.union(v.string(), v.null()),
   handler: async () => {
-    return env.GIT_SHA ?? null;
+    return env.GIT_SHA ? env.GIT_SHA : null;
   },
 });
