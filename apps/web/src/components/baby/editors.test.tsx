@@ -194,8 +194,12 @@ test("theme selector marks Baby Blue selected", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Change" }));
 
-  expect(view.getByRole("button", { name: "Baby Blue" }).getAttribute("aria-pressed")).toBe("true");
+  const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
+  expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
   expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+
+  fireEvent.click(babyBlueButton);
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
 });
 
 test("status editor confirms destructive deletion", async () => {
