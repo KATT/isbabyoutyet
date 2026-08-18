@@ -665,9 +665,12 @@ export const update = mutationWithTriggers({
     }
 
     const statusBefore = getCurrentStatus(baby);
-    const newlyMarkedMilestone = MILESTONES.some((milestone) => {
+    const milestoneMarkChanged = MILESTONES.some((milestone) => {
       const dateField = MILESTONE_FIELDS[milestone].date;
-      return typeof rest[dateField] === "string" && !baby[dateField];
+      const dateArg = rest[dateField];
+      return (
+        (typeof dateArg === "string" && !baby[dateField]) || (dateArg === null && !!baby[dateField])
+      );
     });
 
     const patch: Partial<typeof baby> = rest;
@@ -700,7 +703,7 @@ export const update = mutationWithTriggers({
 
     // Settings status changes don't carry a message (attach one by posting an
     // update); a stale client's legacy message arg still rides along
-    if (!birthJourneyChanged || newlyMarkedMilestone) {
+    if (!birthJourneyChanged || milestoneMarkChanged) {
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby,

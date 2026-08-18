@@ -80,6 +80,7 @@ const enGB = {
   "Choose a journey": "Choose a journey",
   Journey: "Journey",
   "Edit journey": "Edit journey",
+  "Failed to update journey": "Failed to update journey",
   Labour: "Labour",
   "Home birth": "Home birth",
   "Planned C-section": "Planned C-section",
@@ -87,18 +88,8 @@ const enGB = {
     "Visitors see: Labour started → At hospital → Baby born",
   "Visitors see: Labour started → Baby born": "Visitors see: Labour started → Baby born",
   "Visitors see: At hospital → Baby born": "Visitors see: At hospital → Baby born",
-  "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
-    "This choice is not saved or shown publicly. It only sets which statuses visitors can see.",
   "We save this choice for your settings, but we don't show it to anyone.":
     "We save this choice for your settings, but we don't show it to anyone.",
-  "Milestones visitors can see": "Milestones visitors can see",
-  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
-    "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
-  "Show labour milestone": "Show labour milestone",
-  "Show hospital milestone": "Show hospital milestone",
-  "Baby born is always shown.": "Baby born is always shown.",
-  "These choices are locked because the hospital or birth milestone has been marked.":
-    "These choices are locked because the hospital or birth milestone has been marked.",
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
@@ -405,8 +396,6 @@ const enGB = {
   "Add a": "Add a",
   baby: "baby",
   "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
-  "A name, a date, and a private journey — that's all it takes!":
-    "A name, a date, and a private journey. That's it!",
   "A name, a date, and a journey — that's all it takes!":
     "A name, a date, and a journey. That's it!",
   "Add Baby 🍼": "Add Baby 🍼",
@@ -496,8 +485,6 @@ const enGB = {
   "Add your first baby": "Add your first baby",
   "Give them a name and due date — that creates a public page friends can open.":
     "Give them a name and due date. That creates a public page friends can open.",
-  "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
-    "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
   "Add a baby": "Add a baby",
@@ -624,6 +611,7 @@ const sv: Record<TranslationKey, string> = {
   "Choose a journey": "Välj en resa",
   Journey: "Resa",
   "Edit journey": "Redigera resa",
+  "Failed to update journey": "Det gick inte att uppdatera resan",
   Labour: "Förlossning",
   "Home birth": "Hemförlossning",
   "Planned C-section": "Planerat kejsarsnitt",
@@ -632,18 +620,8 @@ const sv: Record<TranslationKey, string> = {
   "Visitors see: Labour started → Baby born":
     "Besökare ser: Förlossningen är igång → Bäbisen är född",
   "Visitors see: At hospital → Baby born": "Besökare ser: På sjukhuset → Bäbisen är född",
-  "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
-    "Valet sparas inte och visas inte offentligt. Det bestämmer bara vilka statusar besökare kan se.",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Vi sparar valet i dina inställningar, men visar det inte för någon.",
-  "Milestones visitors can see": "Milstolpar som besökare kan se",
-  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
-    "Du kan ändra dem tills sjukhus- eller födelsemilstolpen har markerats. De påverkar bara vad besökare ser.",
-  "Show labour milestone": "Visa milstolpen för startad förlossning",
-  "Show hospital milestone": "Visa sjukhusmilstolpen",
-  "Baby born is always shown.": "Att bäbisen är född visas alltid.",
-  "These choices are locked because the hospital or birth milestone has been marked.":
-    "Valen är låsta eftersom sjukhus- eller födelsemilstolpen har markerats.",
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
@@ -952,8 +930,6 @@ const sv: Record<TranslationKey, string> = {
   baby: "bäbis",
   "A name and a due date — that's all it takes!":
     "Ett namn och ett beräknat datum. Mer behövs inte!",
-  "A name, a date, and a private journey — that's all it takes!":
-    "Ett namn, ett datum och en privat resa. Mer behövs inte!",
   "A name, a date, and a journey — that's all it takes!":
     "Ett namn, ett datum och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
@@ -1041,8 +1017,6 @@ const sv: Record<TranslationKey, string> = {
   "Add your first baby": "Lägg till din första bäbis",
   "Give them a name and due date — that creates a public page friends can open.":
     "Lägg till ett namn och beräknat datum, så skapas en publik sida som vänner kan öppna.",
-  "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
-    "Lägg till namn och datum och välj sedan en privat resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Lägg till namn och datum och välj sedan en resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add a baby": "Lägg till bäbis",
@@ -1150,6 +1124,7 @@ const es: Record<TranslationKey, string> = {
   "Choose a journey": "Elige un recorrido",
   Journey: "Recorrido",
   "Edit journey": "Editar recorrido",
+  "Failed to update journey": "No se pudo actualizar el recorrido",
   Labour: "Parto",
   "Home birth": "Parto en casa",
   "Planned C-section": "Cesárea programada",
@@ -1157,18 +1132,8 @@ const es: Record<TranslationKey, string> = {
     "Los visitantes ven: Comenzó el parto → En el hospital → Ya nació",
   "Visitors see: Labour started → Baby born": "Los visitantes ven: Comenzó el parto → Ya nació",
   "Visitors see: At hospital → Baby born": "Los visitantes ven: En el hospital → Ya nació",
-  "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
-    "Esta elección no se guarda ni se muestra públicamente. Solo define qué estados pueden ver los visitantes.",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
-  "Milestones visitors can see": "Hitos que pueden ver los visitantes",
-  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
-    "Puedes cambiarlos hasta que se marque el hito del hospital o del nacimiento. Solo afectan a lo que ven los visitantes.",
-  "Show labour milestone": "Mostrar el hito del inicio del parto",
-  "Show hospital milestone": "Mostrar el hito del hospital",
-  "Baby born is always shown.": "El nacimiento del bebé siempre se muestra.",
-  "These choices are locked because the hospital or birth milestone has been marked.":
-    "Estas opciones están bloqueadas porque se ha marcado el hito del hospital o del nacimiento.",
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
@@ -1480,8 +1445,6 @@ const es: Record<TranslationKey, string> = {
   "Add a": "Añadir un",
   baby: "bebé",
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
-  "A name, a date, and a private journey — that's all it takes!":
-    "Solo necesitas un nombre, una fecha y un recorrido privado.",
   "A name, a date, and a journey — that's all it takes!":
     "Solo necesitas un nombre, una fecha y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
@@ -1571,8 +1534,6 @@ const es: Record<TranslationKey, string> = {
   "Add your first baby": "Añade tu primer bebé",
   "Give them a name and due date — that creates a public page friends can open.":
     "Ponle un nombre y una fecha prevista. Así crearás una página pública que podrán abrir tus amigos.",
-  "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
-    "Añade un nombre y una fecha y después elige un recorrido privado. Solo define qué estados pueden ver los visitantes.",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Añade un nombre y una fecha y después elige un recorrido. Solo define qué estados pueden ver los visitantes.",
   "Add a baby": "Añadir un bebé",
@@ -1681,6 +1642,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Choose a journey": "Escolha uma jornada",
   Journey: "Jornada",
   "Edit journey": "Editar jornada",
+  "Failed to update journey": "Não foi possível atualizar a jornada",
   Labour: "Trabalho de parto",
   "Home birth": "Parto em casa",
   "Planned C-section": "Cesárea programada",
@@ -1689,18 +1651,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Visitors see: Labour started → Baby born":
     "Visitantes veem: Trabalho de parto começou → O bebê nasceu",
   "Visitors see: At hospital → Baby born": "Visitantes veem: No hospital → O bebê nasceu",
-  "This choice is not saved or shown publicly. It only sets which statuses visitors can see.":
-    "Esta escolha não é salva nem exibida publicamente. Ela só define quais status os visitantes podem ver.",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
-  "Milestones visitors can see": "Etapas que os visitantes podem ver",
-  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
-    "Você pode alterá-las até que a etapa do hospital ou do nascimento seja marcada. Elas afetam apenas o que os visitantes veem.",
-  "Show labour milestone": "Mostrar a etapa de início do trabalho de parto",
-  "Show hospital milestone": "Mostrar a etapa do hospital",
-  "Baby born is always shown.": "O nascimento do bebê é sempre exibido.",
-  "These choices are locked because the hospital or birth milestone has been marked.":
-    "Estas opções estão bloqueadas porque a etapa do hospital ou do nascimento foi marcada.",
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
@@ -2014,8 +1966,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a": "Adicionar um",
   baby: "bebê",
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
-  "A name, a date, and a private journey — that's all it takes!":
-    "Um nome, uma data e uma jornada privada. Só isso!",
   "A name, a date, and a journey — that's all it takes!":
     "Um nome, uma data e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
@@ -2105,8 +2055,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Add your first baby": "Adicione seu primeiro bebê",
   "Give them a name and due date — that creates a public page friends can open.":
     "Dê um nome e uma data prevista. Isso cria uma página pública que os amigos podem abrir.",
-  "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.":
-    "Adicione um nome e uma data e depois escolha uma jornada privada. Ela só define quais status os visitantes podem ver.",
   "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
     "Adicione um nome e uma data e depois escolha uma jornada. Ela só define quais status os visitantes podem ver.",
   "Add a baby": "Adicionar um bebê",
@@ -2156,7 +2104,6 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "Visitors see: Labour started → Baby born": "Visitors see: Labor started → Baby born",
   "Visitors see: At hospital → Baby born": "Visitors see: At the hospital → Baby born",
   "Labour started": "Labor started",
-  "Show labour milestone": "Show labor milestone",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
     "{{name}}'s labor has started — follow live updates on the baby page.",

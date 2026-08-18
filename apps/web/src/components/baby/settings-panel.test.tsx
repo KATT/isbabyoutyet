@@ -5,6 +5,14 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
+const mocks = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: mocks.toastError },
+}));
+
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01T00:00:00.000Z",
@@ -201,6 +209,30 @@ test("journey selection saves the chosen option", async () => {
   await vi.waitFor(() => {
     expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
   });
+});
+
+test("journey editor reports a failed save and remains open", async () => {
+  mocks.toastError.mockReset();
+  const onUpdate = vi
+    .fn<BabyUpdateHandler>()
+    .mockRejectedValue(new Error("Could not save journey"));
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
+  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.toastError).toHaveBeenCalledWith("Could not save journey");
+  });
+  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
 });
 
 test("journey selection stays changeable after milestone updates", async () => {

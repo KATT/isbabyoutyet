@@ -257,6 +257,24 @@ test("changing selection leaves existing updates and notifications untouched", a
   expect(notificationsAfter).toEqual(notificationsBefore);
 });
 
+test("changing selection while unmarking cancels the pending milestone push", async () => {
+  await using _timers = useFakeTimersResource();
+  const { asAlice, babyId } = await setup();
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+    laborStarted: null,
+  });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notifications).toMatchObject([{ notificationType: "labor_started", status: "cancelled" }]);
+});
+
 test("selection changes do not filter empty historical milestone rows", async () => {
   const { t, asAlice, babyId } = await setup();
   await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });

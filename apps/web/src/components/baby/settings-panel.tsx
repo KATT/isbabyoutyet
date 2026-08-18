@@ -59,6 +59,7 @@ import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import { JourneySelector } from "./journey-selector";
 import { useState } from "react";
+import { toast } from "sonner";
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -103,9 +104,15 @@ function JourneyEditor(props: { birthJourney: BirthJourney; onUpdate: BabyUpdate
           <JourneySelector
             value={props.birthJourney}
             onValueChange={(value) => {
-              void Promise.resolve(props.onUpdate({ birthJourney: value })).then(() => {
-                setOpen(false);
-              });
+              void Promise.resolve(props.onUpdate({ birthJourney: value }))
+                .then(() => {
+                  setOpen(false);
+                })
+                .catch((error) => {
+                  toast.error(
+                    error instanceof Error ? error.message : t("Failed to update journey"),
+                  );
+                });
             }}
             idPrefix="settings-journey"
           />

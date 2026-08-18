@@ -57,6 +57,29 @@ test.each([
   expect(view.getByText(testCase.subline)).toBeTruthy();
 });
 
+test("home-birth labour copy does not mention hospital", () => {
+  const homeBirthBaby: BabyData = {
+    ...baby,
+    milestoneVisibility: { showLabor: true, showHospital: false },
+    laborStarted: "2026-08-18T07:00:00.000Z",
+  };
+  const view = render(
+    <StatusDisplay
+      baby={homeBirthBaby}
+      currentStatus={getCurrentStatus(homeBirthBaby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByText("Things are happening!")).toBeTruthy();
+  expect(view.queryByText("Not at hospital yet")).toBeNull();
+});
+
 test("shows the latest family message when present", () => {
   const view = render(
     <StatusDisplay
