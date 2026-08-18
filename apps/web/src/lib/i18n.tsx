@@ -615,8 +615,7 @@ const sv: Record<TranslationKey, string> = {
   "Baby Name": "Bäbisens namn",
   "Due Date": "Beräknat datum",
   "Show exact due date": "Visa exakt beräknat datum",
-  "Visitors see the full date and countdown.":
-    "Besökare ser hela datumet och nedräkningen.",
+  "Visitors see the full date and countdown.": "Besökare ser hela datumet och nedräkningen.",
   "Visitors see “{{month}} baby”.": "Besökare ser ”Bäbis i {{month}}”.",
   "Turn this off to show only the due month.": "Stäng av för att bara visa månaden.",
   "Choose a journey": "Välj en resa",
