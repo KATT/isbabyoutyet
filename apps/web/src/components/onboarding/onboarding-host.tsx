@@ -143,7 +143,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
           }}
-          onGoToStep={(stepId: OnboardingStepId) => {
+          onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               props.onGoToStep?.(stepId);
               return;

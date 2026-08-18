@@ -4,7 +4,6 @@ import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -100,7 +99,7 @@ export function LanguageSettings(props: {
         value={selectedLocale}
         disabled={!profile}
         label={t("Profile language")}
-        onValueChange={async (value: SupportedLocale) => {
+        onValueChange={async (value) => {
           await updateLocale({ locale: value });
           await setLocale(value);
         }}
