@@ -7,7 +7,6 @@ import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Milestone } from "../src/types";
 import { MILESTONE_FIELDS, MILESTONES } from "../src/types";
-import { BABY_BLUE_THEME, LEGACY_BABY_BLUE_THEME } from "../src/theme";
 import { isOnboardingStepId } from "../src/onboardingSteps";
 import {
   findMilestoneUpdate,
@@ -480,17 +479,6 @@ export const backfillBabyDueDateDisplay = migrations.define({
   migrateOne: backfillBabyDueDateDisplayDoc,
 });
 
-/** Renames the stored theme identifier without changing its appearance. */
-export async function backfillBabyBlueThemeDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (baby.theme !== LEGACY_BABY_BLUE_THEME) return;
-  await ctx.db.patch(baby._id, { theme: BABY_BLUE_THEME });
-}
-
-export const backfillBabyBlueTheme = migrations.define({
-  table: "baby",
-  migrateOne: backfillBabyBlueThemeDoc,
-});
-
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -611,7 +599,6 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillBabyOwnerTokenIdentifier,
   internal.migrations.backfillBabyBirthJourney,
   internal.migrations.backfillBabyDueDateDisplay,
-  internal.migrations.backfillBabyBlueTheme,
   internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
@@ -632,7 +619,6 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillBabyOwnerTokenIdentifier",
   "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyDueDateDisplay",
-  "migrations:backfillBabyBlueTheme",
   "migrations:backfillBabyLastActivityAt",
   "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
