@@ -10,11 +10,12 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
-    babyBornMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
-    // Legacy stored dates. Status is inferred from milestone updates; these
-    // fields are no longer written and are omitted from public DTOs.
+    // Leftover dual-write fields. Status and messages live on milestone
+    // updates; `clearStoredStatusFields` unsets these so a follow-up can drop
+    // them from the schema. Do not write them on new documents.
+    hospitalMessage: v.optional(v.union(v.string(), v.null())),
+    babyBornMessage: v.optional(v.union(v.string(), v.null())),
+    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
     laborStarted: v.optional(v.union(v.string(), v.null())),
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),

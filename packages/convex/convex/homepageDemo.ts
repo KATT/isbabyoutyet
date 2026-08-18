@@ -263,10 +263,6 @@ async function insertFeedDocs(
   await ctx.db.patch(babyId, {
     photoId: pagePhotoId,
     thumbnailId: pageThumbnailId,
-    // Legacy per-stage message fields stay empty; copy lives on the timeline.
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
   });
 
   return { babyId, publicId: demo.publicId, locale };

@@ -517,6 +517,38 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
+/**
+ * Unsets leftover dual-write status/message fields on baby docs. Status is
+ * inferred from milestone updates; Convex schema removal rejects extra keys,
+ * so `null` is not enough — the fields must be absent.
+ *
+ * Idempotent: documents that already lack the keys are skipped.
+ */
+export const STORED_STATUS_FIELDS = [
+  "laborStarted",
+  "wentToHospital",
+  "babyBorn",
+  "laborStartedMessage",
+  "hospitalMessage",
+  "babyBornMessage",
+] as const;
+
+export async function clearStoredStatusFieldsDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  const patch: Partial<Record<(typeof STORED_STATUS_FIELDS)[number], undefined>> = {};
+  for (const field of STORED_STATUS_FIELDS) {
+    if (baby[field] !== undefined) {
+      patch[field] = undefined;
+    }
+  }
+  if (Object.keys(patch).length === 0) return;
+  await ctx.db.patch(baby._id, patch);
+}
+
+export const clearStoredStatusFields = migrations.define({
+  table: "baby",
+  migrateOne: clearStoredStatusFieldsDoc,
+});
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
@@ -532,6 +564,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillCoParentTokenIdentifier,
   internal.migrations.sanitizeOnboardingSteps,
   internal.migrations.backfillUserProfileIsAdmin,
+  internal.migrations.clearStoredStatusFields,
 ]);
 
 const TABLE_MIGRATION_NAMES = [
@@ -549,6 +582,7 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillCoParentTokenIdentifier",
   "migrations:sanitizeOnboardingSteps",
   "migrations:backfillUserProfileIsAdmin",
+  "migrations:clearStoredStatusFields",
 ] as const;
 
 export const deploymentStatus = internalQuery({

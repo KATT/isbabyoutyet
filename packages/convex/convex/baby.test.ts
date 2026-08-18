@@ -179,9 +179,12 @@ test("status is inferred from milestone updates, not stored baby fields", async 
   });
 
   const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
-  expect(stored?.laborStarted ?? null).toBeNull();
-  expect(stored?.wentToHospital ?? null).toBeNull();
-  expect(stored?.babyBorn ?? null).toBeNull();
+  expect(stored?.laborStarted).toBeUndefined();
+  expect(stored?.wentToHospital).toBeUndefined();
+  expect(stored?.babyBorn).toBeUndefined();
+  expect(stored?.laborStartedMessage).toBeUndefined();
+  expect(stored?.hospitalMessage).toBeUndefined();
+  expect(stored?.babyBornMessage).toBeUndefined();
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(publicBaby).toMatchObject({
