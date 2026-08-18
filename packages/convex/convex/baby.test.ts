@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
+import { BABY_BLUE_THEME, LEGACY_BABY_BLUE_THEME } from "../src/theme";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
@@ -64,6 +65,24 @@ test("create a baby and list it for the owner", async () => {
     }),
   ).rejects.toThrow("Not authorized");
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
+});
+
+test("theme updates canonicalize the legacy Baby Blue identifier", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Blue Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    theme: LEGACY_BABY_BLUE_THEME,
+  });
+
+  expect(await t.run(async (ctx) => await ctx.db.get(created.babyId))).toMatchObject({
+    theme: BABY_BLUE_THEME,
+  });
 });
 
 test("creation stores the selected journey and only exposes derived visibility publicly", async () => {
