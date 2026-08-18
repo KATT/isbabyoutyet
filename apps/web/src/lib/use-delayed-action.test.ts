@@ -34,6 +34,7 @@ test("runs an enabled action after the delay and cancels when disabled", async (
 test("reports only a live transition for the configured duration", async () => {
   vi.useFakeTimers();
   await using _timers = makeResource({}, () => vi.useRealTimers());
+  const initialProps: { value: "pending" | "sent" } = { value: "sent" };
   const hook = renderHook(
     (props: { value: "pending" | "sent" }) =>
       useTimedTransition({
@@ -42,7 +43,7 @@ test("reports only a live transition for the configured duration", async () => {
         to: "sent",
         value: props.value,
       }),
-    { initialProps: { value: "sent" as const } },
+    { initialProps },
   );
   await using _hook = makeResource({}, () => hook.unmount());
 
