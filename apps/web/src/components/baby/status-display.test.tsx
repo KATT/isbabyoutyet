@@ -139,6 +139,25 @@ test("custom public due date text replaces the exact date and countdown", async 
   expect(view.queryByText(/19 September/)).toBeNull();
 });
 
+test("blank public due date text keeps the exact date and countdown", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
+  const view = render(
+    <StatusDisplay
+      baby={{ ...baby, publicDueDateText: "   " }}
+      currentStatus={getCurrentStatus(baby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByText("14 days until due date")).toBeTruthy();
+  expect(view.getByText("Due date: 1 September 2026")).toBeTruthy();
+});
+
 test("uses the thumbnail inline and opens the full photo", () => {
   const view = render(
     <StatusDisplay
