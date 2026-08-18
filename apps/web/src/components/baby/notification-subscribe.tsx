@@ -49,7 +49,7 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
-  const { babyId, vapidPublicKey } = props;
+  const { babyId } = props;
 
   // Check iOS status (browser-only; not a Convex query)
   const iosStatusQuery = useQuery({
@@ -114,7 +114,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       const registration = await navigator.serviceWorker.ready;
 
       // Subscribe to push
-      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+      const applicationServerKey = urlBase64ToUint8Array(props.vapidPublicKey);
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: applicationServerKey as BufferSource,
