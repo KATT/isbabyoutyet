@@ -27,6 +27,17 @@ type OnboardingHostProps = {
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
 };
 
+function WelcomeTourController(props: { onFinished: () => void; visible: boolean }) {
+  const [open, setOpen] = useState(props.visible);
+  return (
+    <WelcomeTourDialog
+      open={props.visible && open}
+      onOpenChange={setOpen}
+      onFinished={props.onFinished}
+    />
+  );
+}
+
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
   if (!(el instanceof HTMLElement)) {
@@ -133,9 +144,9 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
 
   return (
     <>
-      <WelcomeTourDialog
-        open={showWelcome}
-        onOpenChange={() => undefined}
+      <WelcomeTourController
+        key={showWelcome ? "visible" : "hidden"}
+        visible={showWelcome}
         onFinished={() => {
           void dismissWelcome({});
         }}

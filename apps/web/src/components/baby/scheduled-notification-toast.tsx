@@ -10,7 +10,7 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
-import { useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
@@ -142,18 +142,21 @@ type NotificationToastContentProps = {
 
 function NotificationToastContent(props: NotificationToastContentProps) {
   const { t } = useI18n();
+  const [cancelled, setCancelled] = useState(false);
   const seconds = Math.max(0, Math.ceil((props.scheduledFor - props.currentTime) / 1000));
 
   const cancelMutation = useTanstackMutation({
     mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
     onSuccess: () => {
-      toast.dismiss(props.notificationId);
+      setCancelled(true);
       toast.success(t("Notification cancelled"));
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : t("Failed to cancel notification"));
     },
   });
+
+  if (cancelled) return null;
 
   return (
     <Item variant="outline" className="min-w-[300px] shadow-lg bg-background">

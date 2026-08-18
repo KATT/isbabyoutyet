@@ -39,3 +39,25 @@ export function useTimedTransition<$Value>(opts: {
 
   return active;
 }
+
+/** Keeps a current/previous index pair for animated rotating copy. */
+export function useRotatingIndex(opts: { intervalMs: number; itemCount: number }) {
+  const [indices, setIndices] = useState({ current: 0, previous: null as number | null });
+
+  useEffect(() => {
+    setIndices({ current: 0, previous: null });
+    const reducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || opts.itemCount < 2) return;
+    const interval = window.setInterval(() => {
+      setIndices((previous) => ({
+        current: (previous.current + 1) % opts.itemCount,
+        previous: previous.current,
+      }));
+    }, opts.intervalMs);
+    return () => window.clearInterval(interval);
+  }, [opts.intervalMs, opts.itemCount]);
+
+  return indices;
+}

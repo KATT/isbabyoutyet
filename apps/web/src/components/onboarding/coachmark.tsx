@@ -34,14 +34,37 @@ function createCoachmarkStore(targetId: string) {
   return {
     getSnapshot: () => snapshot,
     subscribe: (notify: () => void) => {
-      const element = document.querySelector(`[data-tour-id="${targetId}"]`);
-      if (!(element instanceof HTMLElement)) {
-        return () => undefined;
+      let target: HTMLElement | null = null;
+      let resizeObserver: ResizeObserver | null = null;
+      let scrolledTarget: HTMLElement | null = null;
+
+      function resolveTarget() {
+        const element = document.querySelector(`[data-tour-id="${targetId}"]`);
+        const nextTarget = element instanceof HTMLElement ? element : null;
+        if (target === nextTarget) return target;
+        resizeObserver?.disconnect();
+        target = nextTarget;
+        if (target && typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(measure);
+          resizeObserver.observe(target);
+        }
+        if (target && scrolledTarget !== target) {
+          scrolledTarget = target;
+          target.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+        }
+        return target;
       }
-      const target = element;
 
       function measure() {
-        const rect = target.getBoundingClientRect();
+        const currentTarget = resolveTarget();
+        if (!currentTarget) {
+          if (snapshot !== null) {
+            snapshot = null;
+            notify();
+          }
+          return;
+        }
+        const rect = currentTarget.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) {
           if (snapshot !== null) {
             snapshot = null;
@@ -69,19 +92,19 @@ function createCoachmarkStore(targetId: string) {
         notify();
       }
 
-      target.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
       measure();
       window.addEventListener("resize", measure);
       window.addEventListener("scroll", measure, true);
-      const resizeObserver =
-        typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-      resizeObserver?.observe(target);
       const interval = window.setInterval(measure, 500);
+      const mutationObserver =
+        typeof MutationObserver === "undefined" ? null : new MutationObserver(measure);
+      mutationObserver?.observe(document.body, { childList: true, subtree: true });
 
       return () => {
         window.removeEventListener("resize", measure);
         window.removeEventListener("scroll", measure, true);
         resizeObserver?.disconnect();
+        mutationObserver?.disconnect();
         window.clearInterval(interval);
       };
     },

@@ -45,7 +45,7 @@ function createTransientFlagStore(durationMs: number) {
       emit();
       scheduleExpiration();
     },
-    getSnapshot: () => active,
+    getSnapshot: () => active && Date.now() < expiresAt,
     subscribe: (listener: () => void) => {
       listeners.add(listener);
       scheduleExpiration();

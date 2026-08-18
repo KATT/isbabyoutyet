@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -40,7 +40,22 @@ vi.mock("convex/react", () => ({
 }));
 
 vi.mock("./welcome-tour", () => ({
-  WelcomeTourDialog: () => null,
+  WelcomeTourDialog: (props: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    onFinished: () => void;
+  }) =>
+    props.open ? (
+      <button
+        type="button"
+        onClick={() => {
+          props.onFinished();
+          props.onOpenChange(false);
+        }}
+      >
+        Finish welcome
+      </button>
+    ) : null,
 }));
 
 vi.mock("./getting-started", () => ({
@@ -198,5 +213,35 @@ test("persists a skipped welcome tour when the user already has a baby", async (
   );
 
   act(() => vi.advanceTimersByTime(0));
+  expect(mocks.dismissWelcome).toHaveBeenCalledOnce();
+});
+
+test("closes the welcome tour immediately while persisting dismissal", async () => {
+  mocks.dismissWelcome.mockClear();
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({
+    data: {
+      ...progress,
+      welcomeDismissed: false,
+      hasBaby: false,
+    },
+  });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Finish welcome" }));
+  expect(view.queryByRole("button", { name: "Finish welcome" })).toBeNull();
   expect(mocks.dismissWelcome).toHaveBeenCalledOnce();
 });

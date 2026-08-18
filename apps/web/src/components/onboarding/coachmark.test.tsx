@@ -69,3 +69,30 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
 
   target.remove();
 });
+
+test("appears when its target mounts after the coachmark", async () => {
+  await using _view = renderResource(
+    <Coachmark
+      targetId="late-target"
+      title="Late target"
+      description="Mounted after the coachmark."
+      onDismiss={() => undefined}
+      completeOnDismiss={undefined}
+      onComplete={undefined}
+    />,
+  );
+  expect(screen.queryByText("Late target")).toBeNull();
+
+  const target = document.createElement("button");
+  target.setAttribute("data-tour-id", "late-target");
+  target.scrollIntoView = vi.fn<() => void>();
+  Object.defineProperty(target, "getBoundingClientRect", {
+    value: () => ({ top: 40, left: 40, width: 80, height: 32, bottom: 72, right: 120 }),
+  });
+  document.body.appendChild(target);
+  await using _target = makeResource({}, () => target.remove());
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("Late target")).toBeTruthy();
+  });
+});

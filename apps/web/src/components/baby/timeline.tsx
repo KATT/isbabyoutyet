@@ -33,7 +33,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -197,6 +197,13 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const releasePhotoPreview = useCallback(
+    (node: HTMLImageElement | null) => {
+      if (!node || !photoPreviewUrl) return;
+      return () => URL.revokeObjectURL(photoPreviewUrl);
+    },
+    [photoPreviewUrl],
+  );
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
@@ -299,6 +306,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
           {photoPreviewUrl && (
             <div className="relative w-fit">
               <img
+                ref={releasePhotoPreview}
                 src={photoPreviewUrl}
                 alt={t("Photo to post")}
                 className="max-h-40 rounded-lg border border-border object-cover"
@@ -421,20 +429,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
                 return;
               }
               form.setValue("photo", file, { shouldDirty: true });
-              const reader = new FileReader();
-              reader.addEventListener(
-                "load",
-                () => {
-                  if (
-                    typeof reader.result === "string" &&
-                    fileInputRef.current?.files?.[0] === file
-                  ) {
-                    setPhotoPreviewUrl(reader.result);
-                  }
-                },
-                { once: true },
-              );
-              reader.readAsDataURL(file);
+              setPhotoPreviewUrl(URL.createObjectURL(file));
             }}
             className="hidden"
           />

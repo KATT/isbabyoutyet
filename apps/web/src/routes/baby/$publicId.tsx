@@ -61,6 +61,14 @@ export const Route = createFileRoute("/baby/$publicId")({
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
+    const token = opts.context.token;
+    if (token) {
+      if (typeof window === "undefined") {
+        opts.context.convexClient.setAuth(async () => token);
+      }
+      await opts.context.convexClient.mutation(api.coParents.claimPendingInvites, {});
+    }
+
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,

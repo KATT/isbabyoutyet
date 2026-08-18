@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useMemo, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -12,6 +12,7 @@ import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
 import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
+import { useRotatingIndex } from "@/lib/use-delayed-action";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -125,18 +126,58 @@ const HERO_HEADLINES = {
 
 const NAME_ROTATE_INTERVAL_MS = 2400;
 
+function useMeasuredWidth() {
+  const [width, setWidth] = useState<number | null>(null);
+  const ref = useCallback((node: HTMLSpanElement | null) => {
+    if (!node) return;
+    let active = true;
+    const measure = () => {
+      if (active) setWidth(node.offsetWidth);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(node);
+    if (document.fonts) {
+      void document.fonts.ready.then(measure);
+    }
+    return () => {
+      active = false;
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, []);
+  return [ref, width] as const;
+}
+
 function RotatingBabyName(props: { words: readonly string[] }) {
+  const indices = useRotatingIndex({
+    intervalMs: NAME_ROTATE_INTERVAL_MS,
+    itemCount: props.words.length,
+  });
+  const [measureCurrentWord, width] = useMeasuredWidth();
+
   return (
-    <span aria-hidden="true" className="inline-grid overflow-hidden whitespace-nowrap">
-      {props.words.map((word, wordIndex) => (
+    <span
+      aria-hidden="true"
+      className="relative inline-block overflow-hidden whitespace-nowrap transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+      style={width === null ? undefined : { width }}
+    >
+      {indices.previous !== null ? (
         <span
-          key={word}
-          className="hero-rotating-word col-start-1 row-start-1"
-          style={{ animationDelay: `${wordIndex * NAME_ROTATE_INTERVAL_MS}ms` }}
+          key={`out-${indices.previous}-${indices.current}`}
+          className="hero-word-out absolute left-0 top-0"
         >
-          {word}
+          {props.words[indices.previous]}
         </span>
-      ))}
+      ) : null}
+      <span
+        key={`in-${indices.current}`}
+        ref={measureCurrentWord}
+        className="hero-word-in inline-block"
+      >
+        {props.words[indices.current]}
+      </span>
     </span>
   );
 }

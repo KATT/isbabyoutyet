@@ -12,7 +12,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -61,6 +61,10 @@ function getStoredAuthorName() {
   return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
+function subscribeToHydration() {
+  return () => undefined;
+}
+
 // Trim before validating, so whitespace-only input doesn't pass "required"
 function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
@@ -87,6 +91,22 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
 }
 
 export function EncouragementForm(props: EncouragementFormProps) {
+  const hydrated = useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false,
+  );
+  return (
+    <EncouragementFormFields
+      key={hydrated ? "hydrated" : "server"}
+      babyId={props.babyId}
+      babyName={props.babyName}
+      initialAuthorName={hydrated ? getStoredAuthorName() : ""}
+    />
+  );
+}
+
+function EncouragementFormFields(props: EncouragementFormProps & { initialAuthorName: string }) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
   const schema = useMemo(() => encouragementSchema(t, props.babyId), [t, props.babyId]);
@@ -94,7 +114,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
   const form = useZodForm({
     schema,
     defaultValues: {
-      authorName: getStoredAuthorName(),
+      authorName: props.initialAuthorName,
       message: "",
     },
   });

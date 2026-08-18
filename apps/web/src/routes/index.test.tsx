@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -59,21 +59,27 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
 });
 
 test("hero headline cycles through baby names", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
   await using _view = renderResource(<HomePage />);
 
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
-  expect(screen.getByText("Juniper").classList.contains("hero-rotating-word")).toBe(true);
-  expect(screen.getByText("Alfie").getAttribute("style")).toContain("4800ms");
+  expect(screen.queryByText("Juniper")).toBeNull();
+  act(() => vi.advanceTimersByTime(2400));
+  expect(screen.getByText("Juniper").classList.contains("hero-word-in")).toBe(true);
 });
 
 test("Swedish homepage hero uses Swedish name pool", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
   await using _view = renderResource(
     <LocaleProvider locale="sv">
       <HomePage />
     </LocaleProvider>,
   );
 
-  expect(screen.getByText("Ella").classList.contains("hero-rotating-word")).toBe(true);
+  act(() => vi.advanceTimersByTime(2400));
+  expect(screen.getByText("Ella").classList.contains("hero-word-in")).toBe(true);
 });
 
 test("Swedish homepage links visitors to Ella Holm", async () => {

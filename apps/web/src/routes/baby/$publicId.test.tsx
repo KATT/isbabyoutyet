@@ -160,6 +160,10 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
 
 const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
 const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+const loaderMutation = vi
+  .fn<(_functionReference: unknown, _args: unknown) => Promise<null>>()
+  .mockResolvedValue(null);
+const loaderSetAuth = vi.fn<(_fetchToken: () => Promise<string>) => void>();
 
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
@@ -178,7 +182,9 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   });
 }
 
-async function runBabyLoader(handlers: Record<string, unknown>) {
+async function runBabyLoader(handlers: Record<string, unknown>, authenticated = false) {
+  loaderMutation.mockClear();
+  loaderSetAuth.mockClear();
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
@@ -187,11 +193,19 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
   } as never);
   const routeModule = await import("@/routes/baby/$publicId");
   const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: { queryClient: QueryClient };
+    context: {
+      queryClient: QueryClient;
+      convexClient: { mutation: typeof loaderMutation; setAuth: typeof loaderSetAuth };
+      token: string | null;
+    };
     params: { publicId: string };
   }) => Promise<Record<string, unknown>>;
   return await loader({
-    context: { queryClient: makeLoaderQueryClient(handlers) },
+    context: {
+      queryClient: makeLoaderQueryClient(handlers),
+      convexClient: { mutation: loaderMutation, setAuth: loaderSetAuth },
+      token: authenticated ? "token" : null,
+    },
     params: { publicId: "baby-smith" },
   });
 }
@@ -237,6 +251,22 @@ test("loader gives managers the same handles with real data", async () => {
     input: { babyId: "baby-1" },
     initialData: { coParents: [], invites: [] },
   });
+});
+
+test("authenticated baby-page deep links claim pending invitations", async () => {
+  await runBabyLoader(
+    {
+      "baby:getByPublicId": BABY_DOC,
+      "coParents:myAccess": { canManage: true, isOwner: false },
+      "timeline:listByBaby": EMPTY_PAGE,
+      "baby:getScheduledNotifications": [],
+      "pushSubscriptions:getSubscriptionCount": 1,
+      "coParents:listForBaby": { coParents: [], invites: [] },
+    },
+    true,
+  );
+
+  expect(loaderMutation).toHaveBeenCalledWith(api.coParents.claimPendingInvites, {});
 });
 
 test("loader 404s unknown babies", async () => {
