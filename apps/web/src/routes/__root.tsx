@@ -39,6 +39,7 @@ import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
+import { StaleDeployGuard } from "@/components/stale-deploy-guard";
 import { m } from "@/paraglide/messages";
 
 // Cookie-authenticated token for SSR (and client navigations via server fn)
@@ -327,6 +328,7 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
+        <StaleDeployGuard />
         <DevBar />
         <Toaster />
         <Analytics />

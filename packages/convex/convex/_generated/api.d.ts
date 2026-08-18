@@ -33,6 +33,7 @@ import type * as softDelete from "../softDelete.js";
 import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
+import type * as version from "../version.js";
 
 import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
@@ -62,6 +63,7 @@ declare const fullApi: ApiFromModules<{
   timeline: typeof timeline;
   triggers: typeof triggers;
   updates: typeof updates;
+  version: typeof version;
 }>;
 
 /**

@@ -30,6 +30,7 @@ import * as z from "zod";
 const vercelEnvSchema = z.object({
   VERCEL_ENV: z.enum(["production", "preview"]),
   VERCEL_GIT_COMMIT_REF: z.string().min(1), // The git branch of the commit
+  VERCEL_GIT_COMMIT_SHA: z.string().min(1), // The git commit of this deploy
   VERCEL_BRANCH_URL: z.string().min(1), // The domain name of the Git branch URL
   VERCEL_PROJECT_PRODUCTION_URL: z.string().min(1), // The domain name of the production project URL
 
@@ -46,7 +47,11 @@ const siteUrl = isPreview
   ? `https://${env.VERCEL_BRANCH_URL}`
   : `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
 
-const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
+const convexEnv = convexEnvSchema.parse({
+  ...env,
+  SITE_URL: siteUrl,
+  GIT_SHA: env.VERCEL_GIT_COMMIT_SHA,
+});
 
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
@@ -79,6 +84,13 @@ function convexCliOutput(args: string[]) {
   });
 }
 
+// Env vars are not reactive. Set GIT_SHA on the existing production
+// deployment *before* pushing functions so reconnecting clients read the
+// new hash from `version.gitSha` immediately after the code push.
+if (!isPreview) {
+  convexCli(["env", "set", "GIT_SHA", env.VERCEL_GIT_COMMIT_SHA]);
+}
+
 convexCli([
   "deploy",
   "--cmd-url-env-var-name",
@@ -91,10 +103,14 @@ convexCli([
 ]);
 
 // `convex deploy` infers the preview name from the git branch; the other
-// commands need it passed explicitly.
+// commands need it passed explicitly. Preview backends are created above, so
+// this is also when GIT_SHA lands on a freshly created preview.
 const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
 
 for (const [key, value] of Object.entries(convexEnv)) {
+  if (typeof value !== "string") {
+    continue;
+  }
   convexCli(["env", "set", key, value, ...previewArgs]);
 }
 

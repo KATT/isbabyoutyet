@@ -7,6 +7,7 @@ import tableHistory from "convex-table-history/convex.config";
 const app = defineApp({
   env: {
     BETTER_AUTH_SECRET: v.optional(v.string()),
+    GIT_SHA: v.optional(v.string()),
     NODE_ENV: v.optional(v.string()),
     SITE_URL: v.optional(v.string()),
     VAPID_PRIVATE_KEY: v.optional(v.string()),

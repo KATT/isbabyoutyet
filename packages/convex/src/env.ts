@@ -3,6 +3,7 @@ import { lazyGetter } from "./utils";
 
 export const convexEnvSchema = z.object({
   BETTER_AUTH_SECRET: z.string().min(1),
+  GIT_SHA: z.string().min(1).optional(),
   VAPID_PUBLIC_KEY: z.string().min(1),
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().optional().default("mailto:admin@isbabyoutyet.com"),

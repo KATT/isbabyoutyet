@@ -29,6 +29,10 @@ vi.mock("@/components/dev-bar", () => ({
   DevBar: () => null,
 }));
 
+vi.mock("@/components/stale-deploy-guard", () => ({
+  StaleDeployGuard: () => null,
+}));
+
 vi.mock("@tanstack/react-router-devtools", () => ({
   TanStackRouterDevtoolsPanel: () => null,
 }));
