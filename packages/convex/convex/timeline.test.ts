@@ -279,14 +279,15 @@ test("the forward-only guard enforces order at every intermediate stage", async 
   await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
 });
 
-test("baby.update applies milestone dates to the timeline: mark, redate, unmark", async () => {
+test("milestones are posted, redated, and unmarked through explicit update operations", async () => {
   const { t, asAlice, babyId } = await setup();
 
-  // Mark labour started with a historical event clock
+  const initialOccurredAt = Date.parse("2026-08-10T08:00:00.000Z");
   const beforeMark = Date.now();
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: initialOccurredAt,
   });
   const afterMark = Date.now();
 
@@ -299,14 +300,15 @@ test("baby.update applies milestone dates to the timeline: mark, redate, unmark"
   expect(marked.postedAt).toBeLessThanOrEqual(afterMark);
   expect(marked.update).toMatchObject({
     milestone: "labor_started",
-    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
+    occurredAt: initialOccurredAt,
   });
 
   // Redate updates the event clock only — feed position stays put
   const postedAtBeforeRedate = marked.postedAt;
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.redateMilestone, {
     babyId,
-    laborStarted: "2026-08-10T10:30:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T10:30:00.000Z"),
   });
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([
@@ -317,7 +319,10 @@ test("baby.update applies milestone dates to the timeline: mark, redate, unmark"
   ]);
 
   // Unmarking removes the milestone from the feed
-  await asAlice.mutation(api.baby.update, { babyId, laborStarted: null });
+  await asAlice.mutation(api.updates.unmarkMilestone, {
+    babyId,
+    milestone: "labor_started",
+  });
   feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toEqual([]);
 });
@@ -391,9 +396,12 @@ test("milestones must be deleted in reverse order", async () => {
     milestone: "born",
   });
 
-  await expect(asAlice.mutation(api.baby.update, { babyId, wentToHospital: null })).rejects.toThrow(
-    "Delete the Born status first",
-  );
+  await expect(
+    asAlice.mutation(api.updates.unmarkMilestone, {
+      babyId,
+      milestone: "gone_to_hospital",
+    }),
+  ).rejects.toThrow("Delete the Born status first");
   await expect(asAlice.mutation(api.updates.remove, { updateId: laborUpdateId })).rejects.toThrow(
     "Delete the Born status first",
   );
@@ -546,13 +554,13 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
     });
   });
 
-  // A settings write during the deploy window created the hospital row
-  // before backfill ran; backfill must still fill in the other milestone
-  // and the photo (per-item idempotency, not per-baby)
+  // A timeline post during the deploy window created the hospital row before
+  // backfill ran; backfill must still fill in the other milestone and photo.
   vi.advanceTimersByTime(1_000);
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId,
-    wentToHospital: wentToHospitalAt.toISOString(),
+    milestone: "gone_to_hospital",
+    occurredAt: wentToHospitalAt.getTime(),
   });
 
   const runBackfills = async () => {
@@ -631,8 +639,10 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
     { kind: "encouragement" },
   ]);
 
-  // Unmarking via settings removes the milestone update from the feed
-  await asAlice.mutation(api.baby.update, { babyId, wentToHospital: null });
+  await asAlice.mutation(api.updates.unmarkMilestone, {
+    babyId,
+    milestone: "gone_to_hospital",
+  });
   const after = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(after.page).toHaveLength(4);
 });
@@ -731,19 +741,34 @@ test("clearStoredStatusFields unsets leftover dates and messages, including null
   }
 });
 
-test("baby.update rejects invalid and future milestone dates", async () => {
+test("redating validates the timestamp and requires an existing milestone", async () => {
   const { asAlice, babyId } = await setup();
 
   await expect(
-    asAlice.mutation(api.baby.update, {
+    asAlice.mutation(api.updates.redateMilestone, {
       babyId,
-      laborStarted: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      milestone: "labor_started",
+      occurredAt: Date.now(),
     }),
-  ).rejects.toThrow("The event time cannot be in the future");
+  ).rejects.toThrow("Milestone update not found");
+
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
 
   await expect(
-    asAlice.mutation(api.baby.update, { babyId, laborStarted: "not-a-date" }),
+    asAlice.mutation(api.updates.redateMilestone, {
+      babyId,
+      milestone: "labor_started",
+      occurredAt: Number.MAX_VALUE,
+    }),
   ).rejects.toThrow("Invalid date");
+
+  await expect(
+    asAlice.mutation(api.updates.redateMilestone, {
+      babyId,
+      milestone: "labor_started",
+      occurredAt: Date.now() + 2 * 60 * 60 * 1000,
+    }),
+  ).rejects.toThrow("The event time cannot be in the future");
 });
 
 test("posting a milestone rejects non-finite and out-of-range timestamps", async () => {
@@ -758,24 +783,6 @@ test("posting a milestone rejects non-finite and out-of-range timestamps", async
       }),
     ).rejects.toThrow("Invalid date");
   }
-});
-
-test("stale-client legacy message args land on the timeline row, not the baby doc", async () => {
-  await using _timers = useFakeTimersResource();
-  const { t, asAlice, babyId } = await setup();
-
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
-
-  // A stale pre-cleanup tab edits the "labour message" via the old Settings arg
-  await asAlice.mutation(api.baby.update, { babyId, laborStartedMessage: "From a stale tab" });
-
-  const baby = await getBaby(t, babyId);
-  expect(baby.laborStartedMessage ?? null).toBeNull();
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([
-    { kind: "update", update: { milestone: "labor_started", message: "From a stale tab" } },
-  ]);
 });
 
 test("separateMilestoneOccurredAt moves backdated milestones to announce time", async () => {

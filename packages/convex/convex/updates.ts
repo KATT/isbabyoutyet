@@ -153,6 +153,60 @@ export const setAsCurrentPhoto = mutationWithTriggers({
 });
 
 /**
+ * Corrects when an existing milestone happened without moving its feed
+ * position. Creating a milestone remains exclusive to `post`.
+ */
+export const redateMilestone = mutationWithTriggers({
+  args: {
+    babyId: v.id("baby"),
+    milestone: milestoneValidator,
+    occurredAt: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireBabyManager(ctx, args.babyId);
+    if (!isValidDateTimestamp(args.occurredAt)) {
+      throw new Error("Invalid date");
+    }
+    if (args.occurredAt > Date.now() + 60_000) {
+      throw new Error("The event time cannot be in the future");
+    }
+
+    const update = await findMilestoneUpdate(ctx, {
+      babyId: args.babyId,
+      milestone: args.milestone,
+    });
+    if (!update) throw new Error("Milestone update not found");
+
+    await ctx.db.patch(update._id, { occurredAt: args.occurredAt });
+    return null;
+  },
+});
+
+/**
+ * Removes the update that marks a milestone. Callers identify the milestone;
+ * the backend resolves the source-of-truth update row.
+ */
+export const unmarkMilestone = mutationWithTriggers({
+  args: {
+    babyId: v.id("baby"),
+    milestone: milestoneValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { baby } = await requireBabyManager(ctx, args.babyId);
+    const update = await findMilestoneUpdate(ctx, {
+      babyId: args.babyId,
+      milestone: args.milestone,
+    });
+    if (!update) throw new Error("Milestone update not found");
+
+    await removeManagedUpdate(ctx, { baby, update });
+    return null;
+  },
+});
+
+/**
  * Removes an update from the timeline. Removing a milestone update infers
  * the status from remaining milestones; removing the update carrying the
  * current photo falls back to the most recent remaining photo update.
@@ -164,40 +218,48 @@ export const remove = mutationWithTriggers({
     if (!update || !isActive(update)) throw new Error("Update not found");
 
     const { baby } = await requireBabyManager(ctx, update.babyId);
-    const datesBefore = await loadMilestoneDates(ctx, update.babyId);
-
-    if (update.milestone) {
-      const blocker = getBlockingLaterMilestone(datesBefore, update.milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(datesBefore);
-
-    await deleteUpdateWithTimelineItem(ctx, update);
-
-    if (update.photoId && update.photoId === baby.photoId) {
-      const fallback = await findLatestRemainingPhotoUpdate(ctx, update);
-      await ctx.db.patch(baby._id, {
-        photoId: fallback?.photoId ?? null,
-        thumbnailId: fallback?.thumbnailId ?? null,
-      });
-    }
-
-    if (update.milestone) {
-      const updatedBaby = await ctx.db.get(baby._id);
-      if (!updatedBaby) throw new Error("Baby not found after update");
-
-      // Status can only move backward here: cancels pending notifications
-      await syncStatusNotifications(ctx, {
-        statusBefore,
-        updatedBaby,
-        customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
-      });
-    }
+    await removeManagedUpdate(ctx, { baby, update });
   },
 });
+
+async function removeManagedUpdate(
+  ctx: MutationCtx,
+  opts: { baby: Doc<"baby">; update: Doc<"updates"> },
+) {
+  const update = opts.update;
+  const datesBefore = await loadMilestoneDates(ctx, update.babyId);
+
+  if (update.milestone) {
+    const blocker = getBlockingLaterMilestone(datesBefore, update.milestone);
+    if (blocker) {
+      throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
+    }
+  }
+
+  const statusBefore = getCurrentStatus(datesBefore);
+
+  await deleteUpdateWithTimelineItem(ctx, update);
+
+  if (update.photoId && update.photoId === opts.baby.photoId) {
+    const fallback = await findLatestRemainingPhotoUpdate(ctx, update);
+    await ctx.db.patch(opts.baby._id, {
+      photoId: fallback?.photoId ?? null,
+      thumbnailId: fallback?.thumbnailId ?? null,
+    });
+  }
+
+  if (update.milestone) {
+    const updatedBaby = await ctx.db.get(opts.baby._id);
+    if (!updatedBaby) throw new Error("Baby not found after update");
+
+    // Status can only move backward here: cancels pending notifications
+    await syncStatusNotifications(ctx, {
+      statusBefore,
+      updatedBaby,
+      customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
+    });
+  }
+}
 
 async function findLatestRemainingPhotoUpdate(ctx: MutationCtx, removed: Doc<"updates">) {
   const photoUpdates = await ctx.db

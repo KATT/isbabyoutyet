@@ -4,7 +4,7 @@ import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { getCurrentStatus, MILESTONE_FIELDS } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
@@ -105,6 +105,24 @@ function PreviewPage() {
             search: {
               ...search,
               ...update,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRedate={(milestone, occurredAt) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: occurredAt,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRemove={(milestone) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
           });

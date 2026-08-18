@@ -22,14 +22,23 @@ export type BabyData = Omit<
 >;
 
 /**
- * Partial update to baby data - used by editors
+ * Persisted baby settings editable independently of timeline updates.
  */
-export type BabyUpdate = Partial<BabyData>;
+export type BabyUpdate = Partial<
+  Pick<BabyData, "name" | "dueDate" | "theme" | "locale" | "encouragementsDisabled">
+>;
 
 /**
  * Handler for updating baby data - abstracts mutations vs query param updates
  */
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
+
+export type MilestoneRedateHandler = (
+  milestone: Milestone,
+  occurredAt: string,
+) => void | Promise<void>;
+
+export type MilestoneRemoveHandler = (milestone: Milestone) => void | Promise<void>;
 
 /**
  * Current status derived from marked milestones

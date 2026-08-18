@@ -208,9 +208,10 @@ test("moving the status forward schedules a push notification", async () => {
     dueDate: "2026-09-01",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -225,9 +226,10 @@ test("moving the status forward schedules a push notification", async () => {
   ]);
 
   // Moving further forward cancels the pending one and schedules the next
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    babyBorn: "2026-08-11T03:00:00.000Z",
+    milestone: "born",
+    occurredAt: Date.parse("2026-08-11T03:00:00.000Z"),
   });
 
   const afterBirth = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -282,9 +284,10 @@ test("owner can soft-delete a baby; it disappears from lists and public lookup",
     dueDate: "2026-09-01",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
 
   await expect(asBob.mutation(api.baby.remove, { babyId: created.babyId })).rejects.toThrow(

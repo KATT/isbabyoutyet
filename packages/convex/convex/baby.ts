@@ -3,26 +3,12 @@ import { env, internalMutation, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import {
-  FORBIDDEN,
-  getBlockingLaterMilestone,
-  getCurrentStatus,
-  isStatusForward,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
-  MILESTONES,
-} from "../src/types";
+import { FORBIDDEN, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
-import {
-  deleteUpdateWithTimelineItem,
-  findMilestoneUpdate,
-  insertUpdateWithTimelineItem,
-  loadCurrentStatus,
-  loadMilestoneDates,
-} from "./timeline";
+import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
@@ -482,144 +468,27 @@ export async function syncStatusNotifications(
   await ctx.db.patch(notificationId, { scheduledId });
 }
 
-/**
- * Applies settings milestone date args to the timeline's milestone updates
- * (the source of truth for status):
- * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
- * - redating a milestone updates `occurredAt` only — feed position stays put
- * - unmarking a milestone deletes its update + timeline rows
- * - a legacy stage-message arg (stale-client compat) lands on the row's message
- */
-async function applyMilestoneDateArgs(
-  ctx: MutationCtx,
-  opts: {
-    baby: Doc<"baby">;
-    patch: {
-      laborStarted?: string | null;
-      wentToHospital?: string | null;
-      babyBorn?: string | null;
-    };
-    legacyMessages: Partial<Record<Milestone, string | null>>;
-    postedByUserId: string;
-  },
-) {
-  const baby = opts.baby;
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const dateArg = opts.patch[fields.date];
-    const messageArg = opts.legacyMessages[milestone];
-    if (dateArg === undefined && messageArg === undefined) continue;
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-
-    if (dateArg === null) {
-      // Unmarked: the milestone leaves the feed
-      if (existing) {
-        await deleteUpdateWithTimelineItem(ctx, existing);
-      }
-      continue;
-    }
-
-    if (typeof dateArg === "string") {
-      // Validated parseable by the update handler
-      const occurredAt = Date.parse(dateArg);
-      if (existing) {
-        // Redate: update the event clock only — do not reshuffle the feed
-        await ctx.db.patch(existing._id, {
-          occurredAt,
-          ...(messageArg !== undefined ? { message: messageArg } : {}),
-        });
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          // Announced now (settings mark), even if the event clock is historical
-          postedAt: Date.now(),
-          occurredAt,
-          milestone,
-          message: messageArg ?? null,
-          postedByUserId: opts.postedByUserId,
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: a stale client edited just the stage message
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
-    }
-  }
-}
-
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    // Settings redate / unmark: applied to the milestone update, not stored
-    // on the baby doc. Status is inferred from those updates.
-    laborStarted: v.optional(v.union(v.string(), v.null())),
-    wentToHospital: v.optional(v.union(v.string(), v.null())),
-    babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
-    // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
-    // during the deploy window): mapped onto the milestone update rows, never
-    // written to the baby doc. Remove in a later tidy-up once stale tabs are
-    // realistically gone.
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const {
-      babyId,
-      laborStarted,
-      wentToHospital,
-      babyBorn,
-      laborStartedMessage,
-      hospitalMessage,
-      babyBornMessage,
-      ...rest
-    } = args;
-    const { identity, baby } = await requireBabyManager(ctx, babyId);
-    const legacyMessages = {
-      labor_started: laborStartedMessage,
-      gone_to_hospital: hospitalMessage,
-      born: babyBornMessage,
+    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
+    const patch: Partial<typeof baby> = {
+      dueDate: args.dueDate,
+      name: args.name,
+      theme: args.theme,
+      locale: args.locale,
+      encouragementsDisabled: args.encouragementsDisabled,
     };
-    const milestonePatch = {
-      laborStarted,
-      wentToHospital,
-      babyBorn,
-    };
-
-    // Milestone dates are event clocks: they must parse and cannot be in the
-    // future (mirrors the `updates.post` occurredAt guard, so settings
-    // redating can't bypass it)
-    for (const milestone of MILESTONES) {
-      const dateArg = milestonePatch[MILESTONE_FIELDS[milestone].date];
-      if (typeof dateArg !== "string") continue;
-      const parsed = Date.parse(dateArg);
-      if (Number.isNaN(parsed)) {
-        throw new Error("Invalid date");
-      }
-      if (parsed > Date.now() + 60_000) {
-        throw new Error("The event time cannot be in the future");
-      }
+    for (const key of Object.keys(patch) as Array<keyof typeof patch>) {
+      if (patch[key] === undefined) delete patch[key];
     }
-
-    const datesBefore = await loadMilestoneDates(ctx, babyId);
-    for (const milestone of MILESTONES) {
-      if (milestonePatch[MILESTONE_FIELDS[milestone].date] !== null) continue;
-      const blocker = getBlockingLaterMilestone(datesBefore, milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(datesBefore);
-
-    const patch: Partial<typeof baby> = rest;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);
@@ -631,34 +500,15 @@ export const update = mutationWithTriggers({
           baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
-        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
+        await ctx.db.insert("babyPublicIdHistory", {
+          babyId: args.babyId,
+          publicId: oldPublicId,
+        });
       }
     }
 
     if (Object.keys(patch).length > 0) {
-      await ctx.db.patch(babyId, patch);
+      await ctx.db.patch(args.babyId, patch);
     }
-
-    await applyMilestoneDateArgs(ctx, {
-      baby,
-      patch: milestonePatch,
-      legacyMessages,
-      postedByUserId: identity.authUserId,
-    });
-
-    const updatedBaby = await ctx.db.get(babyId);
-    if (!updatedBaby) throw new Error("Baby not found after update");
-
-    // Settings status changes don't carry a message (attach one by posting an
-    // update); a stale client's legacy message arg still rides along
-    await syncStatusNotifications(ctx, {
-      statusBefore,
-      updatedBaby,
-      customMessageByMilestone: {
-        labor_started: legacyMessages.labor_started ?? null,
-        gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-        born: legacyMessages.born ?? null,
-      },
-    });
   },
 });

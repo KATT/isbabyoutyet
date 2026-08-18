@@ -245,6 +245,8 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
+  const redateMilestone = useMutation(api.updates.redateMilestone);
+  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -302,6 +304,18 @@ function BabyPage() {
                 babyId: babyDoc._id,
                 ...update,
               });
+              await router.invalidate();
+            }}
+            onMilestoneRedate={async (milestone, occurredAt) => {
+              await redateMilestone({
+                babyId: babyDoc._id,
+                milestone,
+                occurredAt: Date.parse(occurredAt),
+              });
+              await router.invalidate();
+            }}
+            onMilestoneRemove={async (milestone) => {
+              await unmarkMilestone({ babyId: babyDoc._id, milestone });
               await router.invalidate();
             }}
             onDelete={

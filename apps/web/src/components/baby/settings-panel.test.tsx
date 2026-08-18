@@ -23,6 +23,8 @@ const absentSettingsProps = {
   profileLocale: "en-GB" as const,
   onDelete: null,
   coParents: null,
+  onMilestoneRedate: () => undefined,
+  onMilestoneRemove: () => undefined,
 };
 
 function renderResource(ui: React.ReactElement) {
@@ -88,6 +90,8 @@ test("delete page control appears when onDelete is provided", async () => {
       onOpenChange={onOpenChange}
       profileLocale="en-GB"
       coParents={null}
+      onMilestoneRedate={() => undefined}
+      onMilestoneRemove={() => undefined}
     />,
   );
 
@@ -129,6 +133,8 @@ test("theme constants render through the active translation catalog", async () =
         profileLocale="sv"
         onDelete={null}
         coParents={null}
+        onMilestoneRedate={() => undefined}
+        onMilestoneRemove={() => undefined}
       />
     </LocaleProvider>,
   );
