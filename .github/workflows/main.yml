@@ -53,9 +53,7 @@ jobs:
             exit 0
           fi
 
-          node scripts/compareCoverage.mjs \
-            .coverage-baseline/coverage-summary.json \
-            coverage/coverage-summary.json
+          pnpm coverage:compare
 
       - name: Prepare main coverage baseline
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

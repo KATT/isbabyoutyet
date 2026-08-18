@@ -14,6 +14,7 @@
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "coverage:compare": "node scripts/compareCoverage.mjs .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
     "checks": "turbo run format lint-fix typecheck test:coverage knip"
