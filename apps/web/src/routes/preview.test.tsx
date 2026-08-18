@@ -10,12 +10,15 @@ import type {
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
-  navigate: vi.fn(),
+  navigate: vi.fn<(options: unknown) => void>(),
   search: {
     name: "Nova",
     dueDate: "2026-09-01T00:00:00.000Z",
     laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: null as string | null,
+    babyBorn: null as string | null,
     laborStartedMessage: "It has begun!",
+    babyBornMessage: null as string | null,
     settings: true,
   },
 }));
@@ -100,4 +103,19 @@ test("preview routes settings and milestone edits to separate search updates", a
     search: { ...mocks.search, laborStarted: null },
     replace: true,
   });
+});
+
+test("preview derives a born status from its search dates", async () => {
+  mocks.search.babyBorn = "2026-08-11T03:00:00.000Z";
+  mocks.search.babyBornMessage = "She's here!";
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <PreviewPage />
+    </LocaleProvider>,
+  );
+
+  expect(view.getByRole("heading", { name: "Is Nova out yet?" })).toBeTruthy();
+  mocks.search.babyBorn = null;
+  mocks.search.babyBornMessage = null;
 });
