@@ -10,6 +10,7 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
+    // Stack 2: required after Stack 1 backfills every existing baby.
     birthJourney: v.union(
       v.literal("labour"),
       v.literal("home_birth"),
