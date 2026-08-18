@@ -42,9 +42,9 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
-  expect(view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(
+    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
+  ).toBe("true");
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 

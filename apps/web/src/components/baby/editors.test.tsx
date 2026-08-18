@@ -52,9 +52,9 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
-  expect(view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(
+    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
+  ).toBe("true");
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 
   fireEvent.change(input, { target: { value: "2026-10-15" } });

@@ -44,14 +44,12 @@ function addBabySchema(t: TranslationFunction) {
         });
       }
     })
-    .transform(
-      (values): FunctionArgs<typeof api.baby.create> => ({
-        name: values.name,
-        dueDate: values.dueDate,
-        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
-        birthJourney: values.birthJourney,
-      }),
-    );
+    .transform((values): FunctionArgs<typeof api.baby.create> => ({
+      name: values.name,
+      dueDate: values.dueDate,
+      publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+      birthJourney: values.birthJourney,
+    }));
 }
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
@@ -175,9 +173,7 @@ export function AddBabyPage() {
                     name="publicDueDateText"
                     render={(renderProps) => (
                       <FormItem>
-                        <FormLabel className="font-bold">
-                          {t("Public due date message")}
-                        </FormLabel>
+                        <FormLabel className="font-bold">{t("Public due date message")}</FormLabel>
                         <FormControl>
                           <Input
                             placeholder={t("Baby arriving soon")}
