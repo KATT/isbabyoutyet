@@ -26,12 +26,12 @@ async function readSummary(path: string) {
   if (
     !isJsonObject(summary) ||
     !("total" in summary) ||
-    !isJsonObject(summary.total)
+    !isJsonObject(summary["total"])
   ) {
     throw new Error(`Invalid coverage summary: ${path}`);
   }
 
-  return { total: summary.total };
+  return { total: summary["total"] };
 }
 
 function getPercentage(
@@ -40,7 +40,7 @@ function getPercentage(
 ) {
   const metric = summary.total[options.metric];
   const percentage =
-    isJsonObject(metric) && "pct" in metric ? metric.pct : undefined;
+    isJsonObject(metric) && "pct" in metric ? metric["pct"] : undefined;
 
   if (typeof percentage !== "number" || !Number.isFinite(percentage)) {
     throw new Error(
