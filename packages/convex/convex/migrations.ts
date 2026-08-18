@@ -22,7 +22,12 @@ import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 export const migrations = new Migrations<DataModel>(components.migrations);
 
 type BetterAuthAccountIssuerMigrationApi = {
-  accountIssuerMigrationIsDone: FunctionReference<"query", "internal", Record<string, never>, boolean>;
+  accountIssuerMigrationIsDone: FunctionReference<
+    "query",
+    "internal",
+    Record<string, never>,
+    boolean
+  >;
   backfillAccountIssuers: FunctionReference<
     "mutation",
     "internal",
@@ -39,8 +44,8 @@ type BetterAuthAccountIssuerMigrationApi = {
   >;
 };
 
-const betterAuthAccountIssuerMigrationApi = components.betterAuth.adapter as typeof components.betterAuth.adapter &
-  BetterAuthAccountIssuerMigrationApi;
+const betterAuthAccountIssuerMigrationApi = components.betterAuth
+  .adapter as typeof components.betterAuth.adapter & BetterAuthAccountIssuerMigrationApi;
 
 // Runner to execute individual migrations via CLI
 export const run = migrations.runner();
