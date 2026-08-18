@@ -17,6 +17,10 @@ write n/a.
 
 -
 
+## Alternate approaches considered
+
+-
+
 ## Schema changes
 
 <!--

@@ -11,7 +11,7 @@ description: >-
 
 Open a sequence of dependent PRs. Each PR targets the previous PR's branch (except the first, which targets `main`). Keep commits and PRs small and sequential.
 
-Fill `.github/pull_request_template.md` for PR bodies. Stacked PRs add `## Stack` at the top; non-stack PRs omit that section entirely (never `n/a`). Bodies use `## Why`, `## How`, and `## What` as headings with concise bullets under each — not a single Summary with `Why:` / `How:` / `What:` bullets.
+Fill `.github/pull_request_template.md` for PR bodies. Stacked PRs add `## Stack` at the top; non-stack PRs omit that section entirely (never `n/a`). Bodies use titled `##` sections (`Why`, `How`, `What`, `Alternate approaches considered`, `Schema changes`, `Test plan`) with concise bullets — not a single Summary with labeled bullets.
 
 ## When to use
 
@@ -42,9 +42,9 @@ The suffix is `(1/2)` in parentheses, never a bare `1/2`.
 
 Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 
-- **Stacked PRs:** `## Stack` first, with the full two-column table (PR | Description). Mark the current PR in the PR column as `**👉 …**` (bold plus emoji). Do not use `← this PR` in Description. Then Why, How, What, Schema changes, Test plan.
+- **Stacked PRs:** `## Stack` first, with the full two-column table (PR | Description). Mark the current PR in the PR column as `**👉 …**` (bold plus emoji). Do not use `← this PR` in Description. Then follow the rest of `.github/pull_request_template.md`.
 - **Non-stack PRs:** omit the Stack section entirely. Do not write `n/a`.
-- **Why / How / What:** titled `##` sections with concise bullets under each. Do not use a single Summary with labeled `Why:` bullets. See `.github/pull_request_template.md`.
+- **Why / How / What / Alternate approaches considered:** titled `##` sections with concise bullets under each. Do not use a single Summary with labeled `Why:` bullets. See `.github/pull_request_template.md` (do not duplicate it here).
 - **Schema changes** is required. If `packages/convex/convex/schema.ts` (or related schema files) did not change, write `None`. If it did, fill what changed, why, the migration story, and any follow-up that continues schema work (link the earlier PR; say what this slice does vs what already landed / what is still TODO).
 
 ## Stack table
@@ -113,6 +113,10 @@ gh pr create --base <previous-branch> --head <this-branch> --title "{imperative 
 
 - …
 
+## Alternate approaches considered
+
+- …
+
 ## Schema changes
 
 None
@@ -150,6 +154,10 @@ gh pr edit <n> --body "$(cat <<'EOF'
 
 - …
 
+## Alternate approaches considered
+
+- …
+
 ## Schema changes
 
 None
@@ -161,7 +169,7 @@ EOF
 )"
 ```
 
-Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep Why, How, What, Schema changes, Test plan, and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` changed; otherwise `None`.
+Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep the template sections (Why, How, What, Alternate approaches considered, Schema changes, Test plan) and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` changed; otherwise `None`.
 
 ## Detect an existing stack
 
