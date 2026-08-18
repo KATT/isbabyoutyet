@@ -132,10 +132,16 @@ export function formatDueDate(dateString: string, locale: SupportedLocale): stri
 }
 
 export function formatDueMonth(dateString: string, locale: SupportedLocale): string {
+  // Public month-only dates are intentionally truncated to YYYY-MM. Parse a
+  // synthetic midday in the middle of that month so the visitor's local
+  // timezone cannot shift the instant into the previous month.
+  const monthDate = /^\d{4}-\d{2}$/.test(dateString)
+    ? parseISO(`${dateString}-15T12:00:00.000Z`)
+    : parseDate(dateString);
   return new Intl.DateTimeFormat(locale, {
     timeZone: TIMEZONE,
     month: "long",
-  }).format(parseDate(dateString));
+  }).format(monthDate);
 }
 
 export function getDaysUntilDueDate(dueDate: string): number {

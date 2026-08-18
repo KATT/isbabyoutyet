@@ -1,5 +1,6 @@
 import { expect, test } from "vitest";
-import { getThemeCss, getThemePrimaryColor, THEME_OPTIONS } from "./utils";
+import { makeResource } from "@workspace/convex/convex/test.resource";
+import { formatDueMonth, getThemeCss, getThemePrimaryColor, THEME_OPTIONS } from "./utils";
 
 test("getThemeCss returns null for the default theme and unknown names", () => {
   expect(getThemeCss(null)).toBeNull();
@@ -23,4 +24,18 @@ test("named themes expose a css string for head.styles injection", () => {
 test("getThemePrimaryColor matches known theme accents", () => {
   expect(getThemePrimaryColor("catppuccin")).toBe("#8839ef");
   expect(getThemePrimaryColor(null)).toBe("#ea580c");
+});
+
+test("formatDueMonth keeps a truncated public date in its intended month", () => {
+  const originalTimeZone = process.env.TZ;
+  using _timezone = makeResource({}, () => {
+    if (originalTimeZone === undefined) {
+      delete process.env.TZ;
+    } else {
+      process.env.TZ = originalTimeZone;
+    }
+  });
+  process.env.TZ = "Pacific/Auckland";
+
+  expect(formatDueMonth("2026-09", "en-GB")).toBe("September");
 });

@@ -33,13 +33,14 @@ type BabySeoInput = {
 }>;
 
 function babyPageTitle(baby: BabySeoInput) {
-  const overdueDays = getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(baby.dueDate);
+  const isDueMonthOnly = baby.dueDateVisibility === "month";
+  const overdueDays = isDueMonthOnly ? 0 : getOverdueDays(baby.dueDate);
+  const daysUntilDueDate = isDueMonthOnly ? 0 : getDaysUntilDueDate(baby.dueDate);
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn && baby.dueDateVisibility !== "month") {
+  if (!isBorn && !isDueMonthOnly) {
     if (overdueDays > 0) {
       title = translate(
         locale,

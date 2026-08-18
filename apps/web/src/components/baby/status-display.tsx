@@ -163,9 +163,9 @@ const STATUS_META = {
 
 export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
-  const overdueDays = getOverdueDays(props.baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
   const isDueMonthOnly = props.baby.dueDateVisibility === "month";
+  const overdueDays = isDueMonthOnly ? 0 : getOverdueDays(props.baby.dueDate);
+  const daysUntilDueDate = isDueMonthOnly ? 0 : getDaysUntilDueDate(props.baby.dueDate);
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
   const sublineKey =
