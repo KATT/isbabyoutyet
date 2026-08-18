@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -77,4 +77,47 @@ test("disables sharing when the share link is empty", async () => {
   const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
   expect(share.disabled).toBe(true);
   expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
+});
+
+test("shows copied feedback for two seconds after sharing", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
+  const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue();
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+  await using _clipboard = makeResource({}, () => {
+    if (clipboardDescriptor) {
+      Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+  const onShareCopied = vi.fn<() => void>();
+  await using view = renderResource(
+    <BabyNav
+      shareLink="https://example.com/baby/demo"
+      onPostUpdate={null}
+      onShareCopied={onShareCopied}
+      onSettingsOpened={null}
+      settingsButton={null}
+      settingsOpen={false}
+    />,
+  );
+
+  await act(async () => {
+    fireEvent.click(view.getByRole("button", { name: "Copy link to share" }));
+    await Promise.resolve();
+  });
+
+  expect(writeText).toHaveBeenCalledWith("https://example.com/baby/demo");
+  expect(onShareCopied).toHaveBeenCalledOnce();
+  expect(view.getByRole("button", { name: "Copied!" })).toBeTruthy();
+
+  act(() => vi.advanceTimersByTime(1999));
+  expect(view.getByRole("button", { name: "Copied!" })).toBeTruthy();
+  act(() => vi.advanceTimersByTime(1));
+  expect(view.getByRole("button", { name: "Copy link to share" })).toBeTruthy();
 });

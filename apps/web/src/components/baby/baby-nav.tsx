@@ -1,11 +1,12 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
+import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
+import { useTransientFlag } from "@/lib/use-transient-flag";
 
 type BabyNavProps = {
   shareLink: string;
@@ -21,6 +22,7 @@ type BabyNavProps = {
 
 export function BabyNav(props: BabyNavProps) {
   const { t } = useI18n();
+  const [copied, showCopied] = useTransientFlag(2000);
   const hasOwnerActions = !!(props.onPostUpdate || props.settingsButton);
 
   const ownerActions = hasOwnerActions ? (
@@ -76,6 +78,7 @@ export function BabyNav(props: BabyNavProps) {
                 if (!props.shareLink) return;
                 try {
                   await navigator.clipboard.writeText(props.shareLink);
+                  showCopied();
                   toast.success(t("Copied to clipboard"));
                   props.onShareCopied?.();
                 } catch {
@@ -88,6 +91,7 @@ export function BabyNav(props: BabyNavProps) {
                   textArea.select();
                   try {
                     document.execCommand("copy");
+                    showCopied();
                     toast.success(t("Copied to clipboard"));
                     props.onShareCopied?.();
                   } catch (cause) {
@@ -103,14 +107,14 @@ export function BabyNav(props: BabyNavProps) {
               size="icon"
               className="rounded-full"
               disabled={!props.shareLink}
-              aria-label={t("Copy link to share")}
+              aria-label={copied ? t("Copied!") : t("Copy link to share")}
               data-tour-id="share_link"
             >
-              <ShareNetwork />
+              {copied ? <CheckCircle /> : <ShareNetwork />}
             </Button>
           }
         />
-        <TooltipContent>{t("Copy link to share")}</TooltipContent>
+        <TooltipContent>{copied ? t("Copied!") : t("Copy link to share")}</TooltipContent>
       </Tooltip>
 
       <ModeToggle className="rounded-full" />
