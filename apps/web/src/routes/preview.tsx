@@ -69,7 +69,7 @@ export const Route = createFileRoute("/preview")({
   }),
 });
 
-function PreviewPage() {
+export function PreviewPage() {
   const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
