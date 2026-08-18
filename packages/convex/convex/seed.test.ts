@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { components, internal } from "./_generated/api";
 import schema from "./schema";
 import { getCurrentStatus } from "../src/types";
-import { DEMO_USER } from "../src/seedCredentials";
+import { DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { seedBabiesForUser } from "./seed";
 import { modules, registerComponents } from "./test.setup";
 
@@ -134,6 +134,52 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
     ).length;
   });
   expect(babyCount).toBe(4);
+});
+
+test("seedDemoData creates an empty demo user with no babies", async () => {
+  const t = await setup();
+
+  const first = await t.mutation(internal.seed.seedDemoData, {});
+  expect(first.emptyUserEmail).toBe(DEMO_EMPTY_USER.email);
+
+  const authUser = await t.query(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "email", value: DEMO_EMPTY_USER.email }],
+  });
+  expect(authUser).toMatchObject({
+    email: DEMO_EMPTY_USER.email,
+    name: DEMO_EMPTY_USER.name,
+  });
+
+  const babyCount = await t.run(async (ctx) => {
+    return (
+      await ctx.db
+        .query("baby")
+        .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+        .collect()
+    ).length;
+  });
+  expect(babyCount).toBe(0);
+
+  const profile = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+      .unique();
+  });
+  expect(profile).toBeNull();
+
+  const onboarding = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userOnboarding")
+      .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+      .unique();
+  });
+  expect(onboarding).toBeNull();
+
+  const second = await t.mutation(internal.seed.seedDemoData, {});
+  expect(second.emptyUserId).toBe(first.emptyUserId);
+  expect(second.emptyUserEmail).toBe(DEMO_EMPTY_USER.email);
 });
 
 test("seedDemoData restores missing fixture encouragements", async () => {

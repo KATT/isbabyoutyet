@@ -10,7 +10,8 @@ and [`packages/convex/convex/seed.ts`](packages/convex/convex/seed.ts)).
 **When creating or updating a PR, always include a "Demo seed" section** near
 the top of the description with:
 
-1. The demo login (`test@example.com` / `password`)
+1. The demo logins (`test@example.com` / `password` with babies, and
+   `test+newuser@example.com` / `password` with an empty dashboard)
 2. Absolute markdown links to each seeded baby on **this PR's Vercel preview**
 
 Resolve the preview base URL from the Vercel bot comment on the PR (the
@@ -24,7 +25,8 @@ not the ephemeral deployment-hash `*.vercel.app` URL. Baby paths are
 ```markdown
 ## Demo seed
 
-Login: `test@example.com` / `password`
+Login: `test@example.com` / `password` (babies in every status) or
+`test+newuser@example.com` / `password` (empty dashboard)
 
 | Status | Preview |
 | --- | --- |
@@ -47,7 +49,8 @@ Locally the same seed is at `http://localhost:3000` after
 `pnpm --filter @workspace/convex seed` (also run by `setup-dev`). `pnpm reset-dev`
 wipes the local anonymous Convex DB; the next `pnpm dev` re-runs setup-dev.
 Login and signup forms autofill the demo credentials in local DEV and on
-Vercel preview builds (`VITE_HAS_DEMO_LOGIN`).
+Vercel preview builds (`VITE_HAS_DEMO_LOGIN`), and show a test-account select
+that prefills and signs in as either seeded user.
 
 The homepage live demos (`/baby/juniper-hale`, `/baby/willow-brooks`,
 `/baby/ella-holm`, `/baby/lucia-navarro`, `/baby/helena-costa`) are also seeded

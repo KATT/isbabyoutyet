@@ -3,18 +3,20 @@ import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
-import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
+import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { markUserOnboardingComplete } from "./onboarding";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
-  const userId = await ensureDemoUser(ctx);
+  const userId = await ensureAuthUser(ctx, DEMO_USER);
   await ensureDemoProfile(ctx, userId);
 
   // Demo login is for exploring the product — skip the first-run tour.
   await markUserOnboardingComplete(ctx, userId);
+
+  const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
 
   const existingBabies = await ctx.db
     .query("baby")
@@ -39,6 +41,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
       userId,
       email: DEMO_USER.email,
       count: existingBabies.length,
+      emptyUserId,
+      emptyUserEmail: DEMO_EMPTY_USER.email,
     };
   }
 
@@ -50,6 +54,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     userId,
     email: DEMO_USER.email,
     babies,
+    emptyUserId,
+    emptyUserEmail: DEMO_EMPTY_USER.email,
   };
 }
 
@@ -75,7 +81,8 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
 
 /**
  * Idempotent seeder for local development and Vercel preview deployments.
- * Creates DEMO_USER (test@example.com / password) and babies in every status.
+ * Creates DEMO_USER (test@example.com / password) with babies in every status,
+ * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies.
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
@@ -90,10 +97,13 @@ export const seedPreviewData = internalMutation({
   handler: seedDemoDataHandler,
 });
 
-async function ensureDemoUser(ctx: MutationCtx) {
+async function ensureAuthUser(
+  ctx: MutationCtx,
+  user: { email: string; password: string; name: string },
+) {
   const existing = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
-    where: [{ field: "email", value: DEMO_USER.email }],
+    where: [{ field: "email", value: user.email }],
   });
 
   if (existing) {
@@ -103,9 +113,9 @@ async function ensureDemoUser(ctx: MutationCtx) {
   const auth = createAuth(ctx);
   const result = await auth.api.signUpEmail({
     body: {
-      email: DEMO_USER.email,
-      password: DEMO_USER.password,
-      name: DEMO_USER.name,
+      email: user.email,
+      password: user.password,
+      name: user.name,
     },
   });
 
