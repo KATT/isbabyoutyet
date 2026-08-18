@@ -1,7 +1,8 @@
 /**
  * Shared demo login + seeded babies used by the Convex seeder and the web auth forms.
  *
- * DEMO_USER / DEMO_BABIES: local development and Vercel preview only — never production.
+ * DEMO_USER / DEMO_EMPTY_USER / DEMO_BABIES: local development and Vercel
+ * preview only — never production.
  * HOMEPAGE_DEMO_BABIES: seeded in every environment, including production — one live
  * demo page per supported locale, sharing photos and timeline shape.
  *
@@ -15,6 +16,24 @@ export const DEMO_USER = {
   password: "password",
   name: "Demo Parent",
 } as const;
+
+/** Same password as DEMO_USER, but no babies — empty-dashboard / first-run flow. */
+export const DEMO_EMPTY_USER = {
+  email: "test+newuser@example.com",
+  password: "password",
+  name: "New Parent",
+} as const;
+
+export const DEMO_ACCOUNTS = [
+  {
+    ...DEMO_USER,
+    label: "test@example.com — with babies",
+  },
+  {
+    ...DEMO_EMPTY_USER,
+    label: "test+newuser@example.com — no babies",
+  },
+] as const;
 
 export const DEMO_BABIES = [
   {

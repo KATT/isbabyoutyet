@@ -54,10 +54,13 @@ export default defineConfig({
         // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
         // hook with creation-time wiring in router.tsx (an untested-by-design
         // entry file); the ratchet snaps to exact values on the next run.
-        statements: 75.19,
-        branches: 66.24,
-        functions: 75.48,
-        lines: 75.75,
+        // Lowered alongside removing the signup test-account picker (deleting
+        // covered submit/prefill code shrinks the ratio).
+        // Lowered alongside deleting the redundant covered migration reset.
+        statements: 77.13,
+        branches: 68.03,
+        functions: 77.51,
+        lines: 77.75,
       },
     },
   },

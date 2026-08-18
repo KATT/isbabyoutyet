@@ -33,6 +33,7 @@ export const subscribe = mutation({
     endpoint: v.string(),
     p256dh: v.string(),
     auth: v.string(),
+    userAgent: v.string(),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -53,6 +54,7 @@ export const subscribe = mutation({
       await ctx.db.patch(existing._id, {
         p256dh: args.p256dh,
         auth: args.auth,
+        userAgent: args.userAgent,
       });
       return existing._id;
     }
@@ -64,6 +66,7 @@ export const subscribe = mutation({
       p256dh: args.p256dh,
       auth: args.auth,
       createdAt: Date.now(),
+      userAgent: args.userAgent,
     });
     await ctx.db.patch(args.babyId, {
       subscriptionCount: (baby.subscriptionCount ?? 0) + 1,

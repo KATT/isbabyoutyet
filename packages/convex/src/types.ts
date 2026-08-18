@@ -79,7 +79,12 @@ export const STATUS_ORDER = {
   born: 3,
 } as const;
 
-export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "photo_added";
+export type NotifiableStatus =
+  | "labor_started"
+  | "gone_to_hospital"
+  | "born"
+  | "photo_added"
+  | "update_posted";
 
 export const MILESTONE_LABELS = {
   labor_started: "Labour started",
@@ -201,8 +206,18 @@ export function getBlockingLaterMilestone(
 export function isStatusForward(
   before: BabyStatus,
   after: BabyStatus,
-): after is BabyStatus & { type: NotifiableStatus } {
+): after is BabyStatus & { type: Milestone } {
   return STATUS_ORDER[after.type] > STATUS_ORDER[before.type];
+}
+
+export function isMilestoneNotificationType(
+  notificationType: NotifiableStatus,
+): notificationType is Milestone {
+  return (
+    notificationType === "labor_started" ||
+    notificationType === "gone_to_hospital" ||
+    notificationType === "born"
+  );
 }
 
 export type Maybe<T> = T | null | undefined;

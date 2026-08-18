@@ -15,6 +15,10 @@
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
     },
     {
+      "name": "no-overzealous-destructuring",
+      "specifier": "./oxlint-plugins/no-overzealous-destructuring.mjs"
+    },
+    {
       "name": "inline-jsx-callback",
       "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
     },
@@ -53,6 +57,7 @@
         "i18n-literal/no-literal-template": "error",
         "inline-jsx-callback/inline-jsx-callback": "error",
         "no-optional/no-optional": "error",
+        "no-overzealous-destructuring/no-overzealous-destructuring": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error"
       }
@@ -62,6 +67,7 @@
         "apps/web/src/routes/demo/**/*.{ts,tsx}",
         "apps/web/src/**/*.test.{ts,tsx}",
         "apps/web/src/components/dev-bar.tsx",
+        "apps/web/src/components/demo-account-picker.tsx",
         "apps/web/src/lib/robots.ts",
         "apps/web/src/routes/robots[.]txt.ts",
         "apps/web/src/routes/sitemap[.]xml.ts"
