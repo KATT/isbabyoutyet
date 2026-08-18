@@ -154,7 +154,7 @@ test("posting requires content and ownership", async () => {
   );
 });
 
-test("a milestone update infers the status and schedules a push", async () => {
+test("status is inferred from milestone updates, not stored baby fields", async () => {
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
@@ -185,6 +185,41 @@ test("a milestone update infers the status and schedules a push", async () => {
   await expect(
     asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
   ).rejects.toThrow("Only a future status can be marked");
+});
+
+test("stale stored baby dates are ignored when no milestone update exists", async () => {
+  const { t, babyId } = await setup();
+
+  await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, {
+      laborStarted: "2026-08-10T08:00:00.000Z",
+      wentToHospital: "2026-08-10T12:00:00.000Z",
+      babyBorn: "2026-08-11T03:00:00.000Z",
+    });
+  });
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby).toMatchObject({
+    laborStarted: null,
+    wentToHospital: null,
+    babyBorn: null,
+  });
+});
+
+test("a legacy milestone without occurredAt infers its date from feed position", async () => {
+  const { t, babyId } = await setup();
+  const postedAt = Date.parse("2026-08-10T08:00:00.000Z");
+
+  await t.run(async (ctx) => {
+    await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt,
+      milestone: "labor_started",
+    });
+  });
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby?.laborStarted).toBe("2026-08-10T08:00:00.000Z");
 });
 
 test("the forward-only guard enforces order at every intermediate stage", async () => {
