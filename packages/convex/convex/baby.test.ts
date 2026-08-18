@@ -90,6 +90,48 @@ test("creation stores the selected journey and only exposes derived visibility p
   ).toBe("forbidden");
 });
 
+test("custom public due date text hides the exact day from visitors", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "September Baby",
+    dueDate: "2026-09-19",
+    publicDueDateText: "  September-ish baby  ",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09",
+    publicDueDateText: "September-ish baby",
+  });
+  expect(
+    await t
+      .withIdentity({ subject: "bob" })
+      .query(api.baby.getByPublicId, { id: created.publicId }),
+  ).toMatchObject({
+    dueDate: "2026-09",
+    publicDueDateText: "September-ish baby",
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    publicDueDateText: "September-ish baby",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    publicDueDateText: null,
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    publicDueDateText: null,
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      publicDueDateText: "x".repeat(81),
+    }),
+  ).rejects.toThrow("80 characters or fewer");
+});
+
 test("journey selection can change after milestone updates without deleting them", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

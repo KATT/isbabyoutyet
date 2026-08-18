@@ -36,6 +36,16 @@ const birthJourneyValidator = v.union(
   v.literal("planned_c_section"),
 );
 
+const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
+
+function normalizePublicDueDateText(value: string | null | undefined) {
+  const normalized = value?.trim() ?? "";
+  if (normalized.length > MAX_PUBLIC_DUE_DATE_TEXT_LENGTH) {
+    throw new Error("Public due date text must be 80 characters or fewer");
+  }
+  return normalized || null;
+}
+
 export const listByUser = query({
   args: {},
   handler: async (ctx) => {
@@ -86,9 +96,14 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
+    const publicDueDateText = normalizePublicDueDateText(baby.publicDueDateText);
+    const canSeeExactDueDate =
+      !publicDueDateText || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...toBabyDto(baby),
+      dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
+      publicDueDateText,
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
@@ -308,6 +323,7 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
     birthJourney: v.optional(birthJourneyValidator),
   },
@@ -329,6 +345,7 @@ export const create = mutationWithTriggers({
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
       dueDate: args.dueDate,
+      publicDueDateText: normalizePublicDueDateText(args.publicDueDateText),
       publicId,
       birthJourney: args.birthJourney ?? "labor",
       hospitalMessage: null,
@@ -617,6 +634,7 @@ export const update = mutationWithTriggers({
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
@@ -674,6 +692,9 @@ export const update = mutationWithTriggers({
     });
 
     const patch: Partial<typeof baby> = rest;
+    if (rest.publicDueDateText !== undefined) {
+      patch.publicDueDateText = normalizePublicDueDateText(rest.publicDueDateText);
+    }
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);

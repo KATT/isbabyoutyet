@@ -10,6 +10,8 @@ export default defineSchema({
     ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
     dueDate: v.string(), // ISO date string
+    // Optional visitor-facing replacement for the exact due date and countdown.
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
     publicId: v.string(), // Unique shareable ID
     // Stack 2: required after Stack 1 backfills every existing baby.
     birthJourney: v.union(
