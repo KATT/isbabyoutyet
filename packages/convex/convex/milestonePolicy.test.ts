@@ -1,5 +1,20 @@
 import { expect, test } from "vitest";
-import { getMilestonePolicy } from "../src/types";
+import { getMilestonePolicy, milestoneVisibilityForPreset } from "../src/types";
+
+test("private journey presets map to visibility without becoming stored plan labels", () => {
+  expect(milestoneVisibilityForPreset("labour")).toEqual({
+    showLabor: true,
+    showHospital: true,
+  });
+  expect(milestoneVisibilityForPreset("home_birth")).toEqual({
+    showLabor: true,
+    showHospital: false,
+  });
+  expect(milestoneVisibilityForPreset("planned_c_section")).toEqual({
+    showLabor: false,
+    showHospital: true,
+  });
+});
 
 test("legacy babies default to every milestone visible", () => {
   const policy = getMilestonePolicy({

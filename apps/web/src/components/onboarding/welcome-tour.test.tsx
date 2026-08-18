@@ -74,6 +74,7 @@ test("welcome tour renders overview slides and can be skipped", async () => {
 
   expect(screen.getByText(/welcome! here's the idea/i)).toBeTruthy();
   expect(screen.getByText(/create a baby page/i)).toBeTruthy();
+  expect(screen.getByText(/choose a private journey/i)).toBeTruthy();
   expect(screen.getByRole("button", { name: /^next$/i })).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: /^skip$/i }));

@@ -3,12 +3,14 @@ import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { milestoneVisibilityForPreset } from "@workspace/convex/src/types";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardContent } from "@workspace/ui/components/card";
-import { Switch } from "@workspace/ui/components/switch";
+import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -25,10 +27,21 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
-      showLaborMilestone: z.boolean(),
-      showHospitalMilestone: z.boolean(),
+      milestonePreset: z.union([
+        z.literal("labour"),
+        z.literal("home_birth"),
+        z.literal("planned_c_section"),
+      ]),
     })
-    .transform((values): FunctionArgs<typeof api.baby.create> => values);
+    .transform((values): FunctionArgs<typeof api.baby.create> => {
+      const visibility = milestoneVisibilityForPreset(values.milestonePreset);
+      return {
+        name: values.name,
+        dueDate: values.dueDate,
+        showLaborMilestone: visibility.showLabor,
+        showHospitalMilestone: visibility.showHospital,
+      };
+    });
 }
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
@@ -45,8 +58,7 @@ function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
-      showLaborMilestone: true,
-      showHospitalMilestone: true,
+      milestonePreset: "labour" as const,
     },
   });
 
@@ -75,7 +87,7 @@ function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name and a due date — that's all it takes!")}
+            {t("A name, a date, and a private journey — that's all it takes!")}
           </p>
         </div>
 
@@ -96,11 +108,11 @@ function AddBabyPage() {
                 <FormField
                   control={form.control}
                   name="name"
-                  render={({ field }) => (
+                  render={(renderProps) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("Enter baby's name")} {...field} />
+                        <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -110,59 +122,67 @@ function AddBabyPage() {
                 <FormField
                   control={form.control}
                   name="dueDate"
-                  render={({ field }) => (
+                  render={(renderProps) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...renderProps.field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="space-y-3 rounded-2xl border-2 border-border bg-muted/30 p-4">
-                  <div>
-                    <p className="font-bold">{t("Milestones visitors can see")}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {t(
-                        "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
-                      )}
-                    </p>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="showLaborMilestone"
-                    render={(renderProps) => (
-                      <FormItem className="flex items-center justify-between gap-4">
-                        <FormLabel>{t("Show labour milestone")}</FormLabel>
-                        <FormControl>
-                          <Switch
-                            checked={renderProps.field.value}
-                            onCheckedChange={renderProps.field.onChange}
-                            aria-label={t("Show labour milestone")}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="showHospitalMilestone"
-                    render={(renderProps) => (
-                      <FormItem className="flex items-center justify-between gap-4">
-                        <FormLabel>{t("Show hospital milestone")}</FormLabel>
-                        <FormControl>
-                          <Switch
-                            checked={renderProps.field.value}
-                            onCheckedChange={renderProps.field.onChange}
-                            aria-label={t("Show hospital milestone")}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="milestonePreset"
+                  render={(renderProps) => (
+                    <FormItem>
+                      <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          value={renderProps.field.value}
+                          onValueChange={renderProps.field.onChange}
+                          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+                        >
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="labour" />
+                            <span>
+                              <span className="block font-bold">{t("Labour")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("Visitors see: Labour started → At hospital → Baby born")}
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="home_birth" />
+                            <span>
+                              <span className="block font-bold">{t("Home birth")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("Visitors see: Labour started → Baby born")}
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="planned_c_section" />
+                            <span>
+                              <span className="block font-bold">{t("Planned C-section")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("Visitors see: At hospital → Baby born")}
+                              </span>
+                            </span>
+                          </label>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormDescription>
+                        {t(
+                          "This choice is not saved or shown publicly. It only sets which statuses visitors can see.",
+                        )}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <Button
                   type="submit"

@@ -19,7 +19,8 @@ export const ONBOARDING_STEPS = [
   {
     id: "add_baby",
     title: "Add your first baby",
-    description: "Give them a name and due date — that creates a public page friends can open.",
+    description:
+      "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
     surface: "dashboard",
     targetId: "add_baby",
     icon: Baby,
@@ -39,7 +40,7 @@ export const ONBOARDING_STEPS = [
     id: "post_update",
     title: "Post an update",
     description:
-      "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).",
+      "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.",
     surface: "baby",
     targetId: "post_update",
     icon: ChatCircleText,
@@ -80,7 +81,7 @@ export const WELCOME_SLIDES = [
   },
   {
     title: "Create a baby page",
-    body: "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.",
+    body: "Add a name and date, then choose a private journey. It only sets which statuses visitors can see.",
     icon: ShareNetwork,
   },
   {
