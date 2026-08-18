@@ -101,6 +101,11 @@ function timelineHandle(page: TimelinePage) {
   });
 }
 
+type ComposerResourceValue = {
+  view: ReturnType<typeof render>;
+  setBaby: (currentBaby: BabyData) => void;
+};
+
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,
@@ -118,16 +123,14 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
-  return makeResource(
-    {
-      view,
-      setBaby: (currentBaby: BabyData) => view.rerender(withProvider(currentBaby)),
-    },
-    async () => {
-      view.unmount();
-      await client.close();
-    },
-  );
+  const value: ComposerResourceValue = {
+    view,
+    setBaby: (currentBaby) => view.rerender(withProvider(currentBaby)),
+  };
+  return makeResource(value, async () => {
+    view.unmount();
+    await client.close();
+  });
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {

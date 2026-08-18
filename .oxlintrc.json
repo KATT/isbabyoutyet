@@ -15,8 +15,16 @@
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
     },
     {
+      "name": "inline-jsx-callback",
+      "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
+    },
+    {
       "name": "react-compiler",
       "specifier": "./oxlint-plugins/react-compiler.mjs"
+    },
+    {
+      "name": "infer-callback-params",
+      "specifier": "./oxlint-plugins/infer-callback-params.mjs"
     }
   ],
   "settings": {
@@ -39,9 +47,11 @@
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
+        "infer-callback-params/infer-callback-params": "error",
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
+        "inline-jsx-callback/inline-jsx-callback": "error",
         "no-optional/no-optional": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error"

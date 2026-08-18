@@ -166,7 +166,7 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
     defaultOptions: {
       queries: {
         retry: false,
-        queryFn: (ctx: { queryKey: readonly unknown[] }) => {
+        queryFn: (ctx) => {
           const name = String(ctx.queryKey[1]);
           if (name in handlers) {
             return Promise.resolve(handlers[name]);
