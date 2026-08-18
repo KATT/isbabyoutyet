@@ -4,6 +4,7 @@ const metrics = ["statements", "branches", "functions", "lines"] as const;
 
 type CoverageMetric = (typeof metrics)[number];
 type JsonObject = Record<string, unknown>;
+type CoverageSummary = { total: JsonObject };
 
 const baselinePath = process.argv[2];
 const currentPath = process.argv[3];
@@ -30,11 +31,11 @@ async function readSummary(path: string) {
     throw new Error(`Invalid coverage summary: ${path}`);
   }
 
-  return summary;
+  return { total: summary.total };
 }
 
 function getPercentage(
-  summary: { total: JsonObject },
+  summary: CoverageSummary,
   options: { metric: CoverageMetric; path: string },
 ) {
   const metric = summary.total[options.metric];
