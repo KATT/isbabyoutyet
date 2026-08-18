@@ -212,7 +212,7 @@ test("planned C-section updates skip labour and can mark hospital", async () => 
 
   await expect(
     asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
-  ).rejects.toThrow("Labour started is not part of a planned C-section journey");
+  ).rejects.toThrow("That milestone is not part of the selected birth journey");
 
   await asAlice.mutation(api.updates.post, {
     babyId,

@@ -151,6 +151,30 @@ test("planned C-section settings show the relevant journey and date labels", asy
   ).toBeTruthy();
 });
 
+test("home-birth settings describe the two-step private journey", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{
+        ...baby,
+        birthJourney: "home_birth",
+        laborStarted: null,
+      }}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText("Home birth — labour and birth milestones")).toBeTruthy();
+  expect((view.getByRole("combobox", { name: "Birth plan" }) as HTMLButtonElement).disabled).toBe(
+    false,
+  );
+});
+
 test("theme constants render through the active translation catalog", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);

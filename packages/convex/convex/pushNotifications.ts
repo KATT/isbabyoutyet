@@ -76,7 +76,9 @@ export const sendNotification = internalAction({
     customMessage: v.optional(v.union(v.string(), v.null())),
     locale: supportedLocaleValidator,
     // Optional so notifications scheduled by the previous deployment still run.
-    birthJourney: v.optional(v.union(v.literal("labour"), v.literal("planned_c_section"))),
+    birthJourney: v.optional(
+      v.union(v.literal("labour"), v.literal("planned_c_section"), v.literal("home_birth")),
+    ),
   },
   handler: async (ctx, args) => {
     const message = getPushMessage({

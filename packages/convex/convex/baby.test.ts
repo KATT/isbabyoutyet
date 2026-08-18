@@ -79,7 +79,7 @@ test("a planned C-section baby stores its journey and cannot mark labour", async
       babyId: created.babyId,
       laborStarted: "2026-08-10T08:00:00.000Z",
     }),
-  ).rejects.toThrow("Labour started is not part of a planned C-section journey");
+  ).rejects.toThrow("That milestone is not part of the selected birth journey");
 
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
@@ -94,6 +94,38 @@ test("a planned C-section baby stores its journey and cannot mark labour", async
       birthJourney: "labour",
     }),
   ).rejects.toThrow("The birth plan cannot be changed after the hospital milestone");
+});
+
+test("a home-birth journey skips the hospital milestone", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby River",
+    dueDate: "2026-09-01",
+    birthJourney: "home_birth",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      wentToHospital: "2026-08-10T09:00:00.000Z",
+    }),
+  ).rejects.toThrow("That milestone is not part of the selected birth journey");
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    babyBorn: "2026-08-10T10:00:00.000Z",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    birthJourney: "home_birth",
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: null,
+    babyBorn: "2026-08-10T10:00:00.000Z",
+  });
 });
 
 test("switching birth journeys preserves labour data without sending another notification", async () => {

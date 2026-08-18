@@ -26,7 +26,11 @@ function addBabySchema(t: TranslationFunction) {
   return z
     .object({
       name: z.string().trim().min(2, t("Name is required")),
-      birthJourney: z.union([z.literal("labour"), z.literal("planned_c_section")]),
+      birthJourney: z.union([
+        z.literal("labour"),
+        z.literal("planned_c_section"),
+        z.literal("home_birth"),
+      ]),
       dueDate: htmlDate(t),
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => values);
@@ -118,7 +122,7 @@ function AddBabyPage() {
                         <RadioGroup
                           value={field.value}
                           onValueChange={field.onChange}
-                          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                          className="grid grid-cols-1 gap-3 sm:grid-cols-3"
                         >
                           <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
                             <RadioGroupItem value="labour" />
@@ -135,6 +139,15 @@ function AddBabyPage() {
                               <span className="block font-bold">{t("Planned C-section")}</span>
                               <span className="block text-sm text-muted-foreground">
                                 {t("A journey with hospital and birth milestones")}
+                              </span>
+                            </span>
+                          </label>
+                          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border-2 border-border p-4 has-[[aria-checked=true]]:border-primary has-[[aria-checked=true]]:bg-primary/5">
+                            <RadioGroupItem value="home_birth" />
+                            <span>
+                              <span className="block font-bold">{t("Home birth")}</span>
+                              <span className="block text-sm text-muted-foreground">
+                                {t("A journey with labour and birth milestones")}
                               </span>
                             </span>
                           </label>

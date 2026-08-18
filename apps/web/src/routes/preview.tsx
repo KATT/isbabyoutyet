@@ -35,7 +35,9 @@ function getDefaultBabyData(): BabyData {
 const searchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().optional(),
-  birthJourney: z.union([z.literal("labour"), z.literal("planned_c_section")]).optional(),
+  birthJourney: z
+    .union([z.literal("labour"), z.literal("planned_c_section"), z.literal("home_birth")])
+    .optional(),
   theme: z.string().nullable().optional(),
   laborStarted: z.string().nullable().optional(),
   wentToHospital: z.string().nullable().optional(),

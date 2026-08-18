@@ -29,7 +29,8 @@ _Avoid_: Post (except as a verb), status update
 **Birth journey**:
 The milestone path a baby page follows. A labour journey includes labour,
 hospital, and birth; a planned C-section journey skips labour and counts down
-to the scheduled C-section date before hospital and birth.
+to the scheduled C-section date before hospital and birth; a home-birth
+journey includes labour and birth without the hospital milestone.
 _Avoid_: Delivery mode, birth type
 
 **Encouragement**:

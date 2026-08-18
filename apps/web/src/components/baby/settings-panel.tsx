@@ -139,7 +139,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemDescription>
                 {birthJourney === "planned_c_section"
                   ? t("Planned C-section — hospital and birth milestones")
-                  : t("Labour — labour, hospital and birth milestones")}
+                  : birthJourney === "home_birth"
+                    ? t("Home birth — labour and birth milestones")
+                    : t("Labour — labour, hospital and birth milestones")}
               </ItemDescription>
               <ItemDescription>
                 {t(
@@ -169,6 +171,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <SelectGroup>
                     <SelectItem value="labour">{t("Labour")}</SelectItem>
                     <SelectItem value="planned_c_section">{t("Planned C-section")}</SelectItem>
+                    <SelectItem value="home_birth">{t("Home birth")}</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

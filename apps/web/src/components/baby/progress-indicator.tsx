@@ -40,28 +40,8 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
   const journeyMilestones = getMilestonesForJourney(baby);
   const steps = allSteps.filter((step) => journeyMilestones.includes(step.key));
 
-  const progressValue = (() => {
-    if (birthJourney === "planned_c_section") {
-      switch (currentStatus.type) {
-        case "born":
-          return 100;
-        case "gone_to_hospital":
-          return 50;
-        default:
-          return 0;
-      }
-    }
-    switch (currentStatus.type) {
-      case "labor_started":
-        return (1 / 3) * 100;
-      case "gone_to_hospital":
-        return (2 / 3) * 100;
-      case "born":
-        return 100;
-      default:
-        return 0;
-    }
-  })();
+  const currentStepIndex = steps.findIndex((step) => step.key === currentStatus.type);
+  const progressValue = currentStepIndex < 0 ? 0 : ((currentStepIndex + 1) / steps.length) * 100;
 
   const lastIndex = steps.length - 1;
 
@@ -78,9 +58,7 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
         halves meet between columns, so the stroke reaches the rim and never
         crosses the badge face.
       */}
-      <ol
-        className={cn("grid", birthJourney === "planned_c_section" ? "grid-cols-2" : "grid-cols-3")}
-      >
+      <ol className={cn("grid", steps.length === 2 ? "grid-cols-2" : "grid-cols-3")}>
         {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
           // Path into this milestone fills once the milestone itself is reached.

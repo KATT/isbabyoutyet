@@ -1,6 +1,6 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
-export const BIRTH_JOURNEYS = ["labour", "planned_c_section"] as const;
+export const BIRTH_JOURNEYS = ["labour", "planned_c_section", "home_birth"] as const;
 
 export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 
@@ -83,6 +83,7 @@ export type Milestone = "labor_started" | "gone_to_hospital" | "born";
 const MILESTONES_BY_BIRTH_JOURNEY = {
   labour: ["labor_started", "gone_to_hospital", "born"],
   planned_c_section: ["gone_to_hospital", "born"],
+  home_birth: ["labor_started", "born"],
 } as const satisfies Record<BirthJourney, readonly Milestone[]>;
 
 export function getMilestonesForJourney(baby: {

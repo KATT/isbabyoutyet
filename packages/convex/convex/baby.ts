@@ -29,7 +29,11 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto } from "./babyDto";
 
-const birthJourneyValidator = v.union(v.literal("labour"), v.literal("planned_c_section"));
+const birthJourneyValidator = v.union(
+  v.literal("labour"),
+  v.literal("planned_c_section"),
+  v.literal("home_birth"),
+);
 
 export const listByUser = query({
   args: {},
@@ -592,11 +596,13 @@ export const update = mutationWithTriggers({
     if (birthJourneyChanged && (baby.wentToHospital || baby.babyBorn)) {
       throw new Error("The birth plan cannot be changed after the hospital milestone");
     }
-    if (
-      typeof rest.laborStarted === "string" &&
-      !isMilestoneInJourney({ birthJourney: nextBirthJourney }, "labor_started")
-    ) {
-      throw new Error("Labour started is not part of a planned C-section journey");
+    for (const milestone of MILESTONES) {
+      if (
+        typeof rest[MILESTONE_FIELDS[milestone].date] === "string" &&
+        !isMilestoneInJourney({ birthJourney: nextBirthJourney }, milestone)
+      ) {
+        throw new Error("That milestone is not part of the selected birth journey");
+      }
     }
 
     // Milestone dates are event clocks: they must parse and cannot be in the

@@ -80,9 +80,11 @@ const enGB = {
   "Birth plan": "Birth plan",
   Labour: "Labour",
   "Planned C-section": "Planned C-section",
+  "Home birth": "Home birth",
   "A journey with labour, hospital and birth milestones":
     "A journey with labour, hospital and birth milestones",
   "A journey with hospital and birth milestones": "A journey with hospital and birth milestones",
+  "A journey with labour and birth milestones": "A journey with labour and birth milestones",
   "Only page managers can see this choice. Visitors see neutral planned-date updates.":
     "Only page managers can see this choice. Visitors see neutral planned-date updates.",
   "C-section date": "C-section date",
@@ -90,6 +92,7 @@ const enGB = {
     "Planned C-section — hospital and birth milestones",
   "Labour — labour, hospital and birth milestones":
     "Labour — labour, hospital and birth milestones",
+  "Home birth — labour and birth milestones": "Home birth — labour and birth milestones",
   "The birth plan cannot be changed after the hospital milestone.":
     "The birth plan cannot be changed after the hospital milestone.",
   "Saved and hidden from visitors while Planned C-section is selected.":
@@ -626,9 +629,11 @@ const sv: Record<TranslationKey, string> = {
   "Birth plan": "Födelseplan",
   Labour: "Förlossning",
   "Planned C-section": "Planerat kejsarsnitt",
+  "Home birth": "Hemförlossning",
   "A journey with labour, hospital and birth milestones":
     "En resa med milstolpar för värkarbete, sjukhus och födsel",
   "A journey with hospital and birth milestones": "En resa med milstolpar för sjukhus och födsel",
+  "A journey with labour and birth milestones": "En resa med milstolpar för värkarbete och födsel",
   "Only page managers can see this choice. Visitors see neutral planned-date updates.":
     "Bara sidans administratörer ser valet. Besökare ser neutrala uppdateringar om det planerade datumet.",
   "C-section date": "Datum för kejsarsnitt",
@@ -636,6 +641,8 @@ const sv: Record<TranslationKey, string> = {
     "Planerat kejsarsnitt — milstolpar för sjukhus och födsel",
   "Labour — labour, hospital and birth milestones":
     "Förlossning — milstolpar för värkarbete, sjukhus och födsel",
+  "Home birth — labour and birth milestones":
+    "Hemförlossning — milstolpar för värkarbete och födsel",
   "The birth plan cannot be changed after the hospital milestone.":
     "Födelseplanen kan inte ändras efter sjukhusmilstolpen.",
   "Saved and hidden from visitors while Planned C-section is selected.":
@@ -1153,15 +1160,18 @@ const es: Record<TranslationKey, string> = {
   "Birth plan": "Plan de nacimiento",
   Labour: "Parto",
   "Planned C-section": "Cesárea programada",
+  "Home birth": "Parto en casa",
   "A journey with labour, hospital and birth milestones":
     "Un recorrido con hitos de parto, hospital y nacimiento",
   "A journey with hospital and birth milestones": "Un recorrido con hitos de hospital y nacimiento",
+  "A journey with labour and birth milestones": "Un recorrido con hitos de parto y nacimiento",
   "Only page managers can see this choice. Visitors see neutral planned-date updates.":
     "Solo quienes gestionan la página ven esta elección. Los visitantes ven actualizaciones neutrales sobre la fecha prevista.",
   "C-section date": "Fecha de la cesárea",
   "Planned C-section — hospital and birth milestones":
     "Cesárea programada — hitos de hospital y nacimiento",
   "Labour — labour, hospital and birth milestones": "Parto — hitos de parto, hospital y nacimiento",
+  "Home birth — labour and birth milestones": "Parto en casa — hitos de parto y nacimiento",
   "The birth plan cannot be changed after the hospital milestone.":
     "El plan de nacimiento no se puede cambiar después del hito del hospital.",
   "Saved and hidden from visitors while Planned C-section is selected.":
@@ -1686,9 +1696,12 @@ const ptBR: Record<TranslationKey, string> = {
   "Birth plan": "Plano de nascimento",
   Labour: "Trabalho de parto",
   "Planned C-section": "Cesárea programada",
+  "Home birth": "Parto em casa",
   "A journey with labour, hospital and birth milestones":
     "Uma jornada com etapas de trabalho de parto, hospital e nascimento",
   "A journey with hospital and birth milestones": "Uma jornada com etapas de hospital e nascimento",
+  "A journey with labour and birth milestones":
+    "Uma jornada com etapas de trabalho de parto e nascimento",
   "Only page managers can see this choice. Visitors see neutral planned-date updates.":
     "Só quem gerencia a página vê esta escolha. Os visitantes veem atualizações neutras sobre a data prevista.",
   "C-section date": "Data da cesárea",
@@ -1696,6 +1709,8 @@ const ptBR: Record<TranslationKey, string> = {
     "Cesárea programada — etapas de hospital e nascimento",
   "Labour — labour, hospital and birth milestones":
     "Trabalho de parto — etapas de trabalho de parto, hospital e nascimento",
+  "Home birth — labour and birth milestones":
+    "Parto em casa — etapas de trabalho de parto e nascimento",
   "The birth plan cannot be changed after the hospital milestone.":
     "O plano de nascimento não pode ser alterado depois da etapa do hospital.",
   "Saved and hidden from visitors while Planned C-section is selected.":
@@ -2160,7 +2175,9 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   Labour: "Labor",
   "A journey with labour, hospital and birth milestones":
     "A journey with labor, hospital and birth milestones",
+  "A journey with labour and birth milestones": "A journey with labor and birth milestones",
   "Labour — labour, hospital and birth milestones": "Labor — labor, hospital and birth milestones",
+  "Home birth — labour and birth milestones": "Home birth — labor and birth milestones",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":

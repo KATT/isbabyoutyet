@@ -61,7 +61,7 @@ export const post = mutationWithTriggers({
 
     if (milestone) {
       if (!isMilestoneInJourney(baby, milestone)) {
-        throw new Error("Labour started is not part of a planned C-section journey");
+        throw new Error("That milestone is not part of the selected birth journey");
       }
       // The status only moves forward: once a later stage is reached, earlier
       // (or equal) stages can no longer be marked

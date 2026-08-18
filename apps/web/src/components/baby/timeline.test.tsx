@@ -162,6 +162,18 @@ test("planned C-section composer skips labour and calls the hospital milestone A
   expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
 });
 
+test("home-birth composer skips the hospital milestone", async () => {
+  await using composer = renderComposerResource({
+    ...notYetBaby,
+    birthJourney: "home_birth",
+  });
+  const view = composer.view;
+
+  expect(view.getByRole("radio", { name: "Labour started" })).toBeTruthy();
+  expect(view.queryByRole("radio", { name: "Gone to hospital" })).toBeNull();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
+});
+
 test("the milestone metadata resolves through the Swedish catalog", async () => {
   await using composer = renderComposerResource(notYetBaby, "sv");
   const view = composer.view;

@@ -68,6 +68,23 @@ test("planned C-section journey skips labour and uses two relevant milestones", 
   expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
 });
 
+test("home-birth journey skips hospital and treats labour as halfway", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  const homeBirthBaby: BabyData = {
+    ...waitingBaby,
+    birthJourney: "home_birth",
+    laborStarted: "2026-08-11T03:00:00.000Z",
+  };
+  await using view = renderResource(
+    <ProgressIndicator baby={homeBirthBaby} currentStatus={getCurrentStatus(homeBirthBaby)} />,
+  );
+
+  expect(view.getByText("Labour started")).toBeTruthy();
+  expect(view.queryByText("Gone to hospital")).toBeNull();
+  expect(view.getByText("Baby born")).toBeTruthy();
+  expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+});
+
 test("marks every stage complete with its relative time once born", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
   await using view = renderResource(
