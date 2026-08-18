@@ -89,6 +89,7 @@ function LoginPage() {
               onPrefill={(account) => {
                 form.setValue("email", account.email);
                 form.setValue("password", account.password);
+                form.formRef.current?.requestSubmit();
               }}
             />
             <Form

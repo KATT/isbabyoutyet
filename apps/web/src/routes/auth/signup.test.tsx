@@ -8,8 +8,8 @@ import { LocaleProvider } from "@/lib/i18n";
 const mocks = vi.hoisted(() => ({
   hasDemoLogin: true,
   navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
-  signInEmail: vi.fn<
-    (opts: { email: string; password: string; rememberMe: boolean }) => Promise<{
+  signUpEmail: vi.fn<
+    (opts: { email: string; password: string; name: string }) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
@@ -31,12 +31,8 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
-    signIn: {
-      email: (opts: { email: string; password: string; rememberMe: boolean }) =>
-        mocks.signInEmail(opts),
-    },
     signUp: {
-      email: vi.fn<() => Promise<unknown>>(),
+      email: (opts: { email: string; password: string; name: string }) => mocks.signUpEmail(opts),
     },
   },
 }));
@@ -59,11 +55,11 @@ function renderSignup() {
   });
 }
 
-test("prefills name and signs in when a test account is chosen", async () => {
+test("prefills and submits signup when a test account is chosen", async () => {
   mocks.hasDemoLogin = true;
   mocks.navigate.mockClear();
-  mocks.signInEmail.mockClear();
-  mocks.signInEmail.mockResolvedValueOnce({ error: null });
+  mocks.signUpEmail.mockClear();
+  mocks.signUpEmail.mockResolvedValueOnce({ error: null });
 
   await using _view = renderSignup();
 
@@ -78,10 +74,10 @@ test("prefills name and signs in when a test account is chosen", async () => {
   );
 
   await vi.waitFor(() => {
-    expect(mocks.signInEmail).toHaveBeenCalledWith({
+    expect(mocks.signUpEmail).toHaveBeenCalledWith({
       email: DEMO_EMPTY_USER.email,
       password: DEMO_EMPTY_USER.password,
-      rememberMe: true,
+      name: DEMO_EMPTY_USER.name,
     });
   });
   expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });

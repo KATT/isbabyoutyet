@@ -93,6 +93,7 @@ function SignupPage() {
                 form.setValue("name", account.name);
                 form.setValue("email", account.email);
                 form.setValue("password", account.password);
+                form.formRef.current?.requestSubmit();
               }}
             />
             <Form
