@@ -57,29 +57,32 @@ function Carousel({
   const [canScrollPrev, setCanScrollPrev] = React.useState(false);
   const [canScrollNext, setCanScrollNext] = React.useState(false);
 
-  const onSelect = (api: CarouselApi) => {
+  const onSelect = React.useCallback((api: CarouselApi) => {
     if (!api) return;
     setCanScrollPrev(api.canScrollPrev());
     setCanScrollNext(api.canScrollNext());
-  };
+  }, []);
 
-  const scrollPrev = () => {
+  const scrollPrev = React.useCallback(() => {
     api?.scrollPrev();
-  };
+  }, [api]);
 
-  const scrollNext = () => {
+  const scrollNext = React.useCallback(() => {
     api?.scrollNext();
-  };
+  }, [api]);
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      scrollPrev();
-    } else if (event.key === "ArrowRight") {
-      event.preventDefault();
-      scrollNext();
-    }
-  };
+  const handleKeyDown = React.useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        scrollPrev();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        scrollNext();
+      }
+    },
+    [scrollPrev, scrollNext],
+  );
 
   React.useEffect(() => {
     if (!api || !setApi) return;

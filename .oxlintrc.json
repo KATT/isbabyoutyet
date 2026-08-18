@@ -68,7 +68,8 @@
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/components/**"],
       "rules": {
-        "eslint/max-params": "off"
+        "eslint/max-params": "off",
+        "react-compiler/no-manual-memoization": "off"
       }
     },
     {
