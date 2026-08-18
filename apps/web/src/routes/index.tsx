@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -196,7 +196,7 @@ function RotatingBabyName(props: { words: readonly string[] }) {
 }
 
 function useCurrentDate() {
-  const clientDate = useMemo(() => new Date().toISOString(), []);
+  const [clientDate] = useState(() => new Date().toISOString());
   return useSyncExternalStore<string>(
     () => () => {}, // No-op subscribe for demo dates
     () => clientDate, // Client snapshot (cached)
@@ -278,12 +278,6 @@ export function HomePage() {
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();
-
-  async function selectLocale(value: SupportedLocale) {
-    // Paraglide's configured cookie strategy persists explicit choices, then
-    // reloads so SSR and the hydrated page use the same locale.
-    await setLocale(value);
-  }
 
   // Helper to calculate dates with offsets for realistic demo scenarios
   const hoursAgo = (hours: number) => {
@@ -605,7 +599,11 @@ export function HomePage() {
             value={locale}
             disabled={false}
             label={t("Language")}
-            onValueChange={selectLocale}
+            onValueChange={async (value) => {
+              // Paraglide's configured cookie strategy persists explicit choices, then
+              // reloads so SSR and the hydrated page use the same locale.
+              await setLocale(value);
+            }}
           />
           <a
             href="https://github.com/KATT/isbabyoutyet"

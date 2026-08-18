@@ -143,8 +143,8 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
 
   // Unsubscribe mutation (TanStack mutation wrapping Convex mutation)
-  const unsubscribeMutation = useMutation({
-    mutationFn: async (subscription: PushSubscription) => {
+  const unsubscribeMutation = useMutation<unknown, Error, PushSubscription>({
+    mutationFn: async (subscription) => {
       const subscriptionData = subscription.toJSON();
       if (
         !subscriptionData.endpoint ||
