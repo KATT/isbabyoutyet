@@ -22,3 +22,9 @@ export const JOURNEY_OPTIONS = [
   labelKey: TranslationKey;
   descriptionKey: TranslationKey;
 }>;
+
+export const JOURNEY_OPTION_BY_VALUE = {
+  labour: JOURNEY_OPTIONS[0],
+  home_birth: JOURNEY_OPTIONS[1],
+  planned_c_section: JOURNEY_OPTIONS[2],
+} as const satisfies Record<BirthJourney, (typeof JOURNEY_OPTIONS)[number]>;

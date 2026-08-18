@@ -118,6 +118,27 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
 });
 
+test("page language selection saves the locale override", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("combobox", { name: "Language" }));
+  const swedish = view.getByRole("option", { name: "Swedish" });
+  fireEvent.pointerDown(swedish, { pointerType: "mouse" });
+  fireEvent.click(swedish);
+  expect(onUpdate).toHaveBeenCalledWith({ locale: "sv" });
+});
+
 test("journey selection saves the chosen option", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
@@ -140,6 +161,9 @@ test("journey selection saves the chosen option", async () => {
   fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
+  });
+  await vi.waitFor(() => {
+    expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
   });
 });
 

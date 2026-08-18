@@ -56,7 +56,7 @@ import {
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
-import { JOURNEY_OPTIONS } from "./journey-options";
+import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import { JourneySelector } from "./journey-selector";
 import { useState } from "react";
 
@@ -126,8 +126,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
-  const journeyOption =
-    JOURNEY_OPTIONS.find((option) => option.value === props.birthJourney) ?? JOURNEY_OPTIONS[0];
+  const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
