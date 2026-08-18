@@ -493,7 +493,7 @@ export function AdminDashboardPage() {
                     <Switch
                       id="admin-hide-demo"
                       checked={search.hideDemo}
-                      onCheckedChange={(hideDemo: boolean) => {
+                      onCheckedChange={(hideDemo) => {
                         void navigate({
                           search: (prev) => ({ ...prev, hideDemo }),
                           replace: true,
