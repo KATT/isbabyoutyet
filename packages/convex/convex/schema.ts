@@ -19,9 +19,8 @@ export default defineSchema({
       v.literal("home_birth"),
       v.literal("planned_c_section"),
     ),
-    // Leftover dual-write fields. Status and messages live on milestone
-    // updates; `clearStoredStatusFields` unsets these so a follow-up can drop
-    // them from the schema. Do not write them on new documents.
+    // Transitional optional fields. Status and messages now live on milestone
+    // updates; a follow-up migration will unset these before schema removal.
     hospitalMessage: v.optional(v.union(v.string(), v.null())),
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
     laborStartedMessage: v.optional(v.union(v.string(), v.null())),

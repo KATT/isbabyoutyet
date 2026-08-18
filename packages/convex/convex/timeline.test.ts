@@ -6,9 +6,7 @@ import {
   backfillBabyTimelineDoc,
   backfillEncouragementTimelineDoc,
   clearLegacyStageMessagesDoc,
-  clearStoredStatusFieldsDoc,
   separateMilestoneOccurredAtDoc,
-  STORED_STATUS_FIELDS,
 } from "./migrations";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
@@ -189,7 +187,14 @@ test("status is inferred from milestone updates, not stored baby fields", async 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby?.babyBorn).toBeTruthy();
   const stored = await getBaby(t, babyId);
-  for (const field of STORED_STATUS_FIELDS) {
+  for (const field of [
+    "laborStarted",
+    "wentToHospital",
+    "babyBorn",
+    "laborStartedMessage",
+    "hospitalMessage",
+    "babyBornMessage",
+  ] as const) {
     expect(stored[field]).toBeUndefined();
   }
 
@@ -858,37 +863,6 @@ test("clearLegacyStageMessages only clears fields with a proven durable destinat
   expect(updates).toHaveLength(2);
   expect(updates.find((u) => u.milestone === "labor_started")?.message).toBe("Newer edit");
   expect(updates.find((u) => u.milestone === "gone_to_hospital")?.message).toBe("Checked in!");
-});
-
-test("clearStoredStatusFields unsets leftover dates and messages, including nulls", async () => {
-  const { t, babyId } = await setup();
-
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, {
-      laborStarted: "2026-08-10T08:00:00.000Z",
-      wentToHospital: null,
-      babyBorn: "2026-08-11T03:00:00.000Z",
-      laborStartedMessage: "It has begun!",
-      hospitalMessage: null,
-      babyBornMessage: "She's here!",
-    });
-  });
-
-  const runClear = async () => {
-    await t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await clearStoredStatusFieldsDoc(ctx, baby);
-    });
-  };
-  await runClear();
-  await runClear();
-
-  const baby = await getBaby(t, babyId);
-  for (const field of STORED_STATUS_FIELDS) {
-    expect(baby[field]).toBeUndefined();
-    expect(field in baby).toBe(false);
-  }
 });
 
 test("redating validates the timestamp and requires an existing milestone", async () => {

@@ -128,8 +128,6 @@ await waitForMigrations("migrations:historicalDeploymentStatus");
 convexCli(["run", "migrations:runBirthJourneyBackfill", ...previewArgs]);
 convexCli(["run", "migrations:runDueDateDisplayBackfill", ...previewArgs]);
 convexCli(["run", "migrations:runPushImageBackfill", ...previewArgs]);
-await waitForMigrations("migrations:preCleanupDeploymentStatus");
-convexCli(["run", "migrations:runStoredStatusCleanup", ...previewArgs]);
 await waitForMigrations("migrations:deploymentStatus");
 
 console.log("\n$ pnpm seed:homepage");

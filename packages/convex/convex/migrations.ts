@@ -588,42 +588,6 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
-/**
- * Unsets leftover dual-write status/message fields on baby docs. Status is
- * inferred from milestone updates; Convex schema removal rejects extra keys,
- * so `null` is not enough — the fields must be absent.
- *
- * `backfillBabyTimeline` has already copied marked-stage messages to updates.
- * Unmarked prewritten messages have no current product destination and are
- * intentionally discarded.
- *
- * Idempotent: documents that already lack the keys are skipped.
- */
-export const STORED_STATUS_FIELDS = [
-  "laborStarted",
-  "wentToHospital",
-  "babyBorn",
-  "laborStartedMessage",
-  "hospitalMessage",
-  "babyBornMessage",
-] as const;
-
-export async function clearStoredStatusFieldsDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  const patch: Partial<Record<(typeof STORED_STATUS_FIELDS)[number], undefined>> = {};
-  for (const field of STORED_STATUS_FIELDS) {
-    if (baby[field] !== undefined) {
-      patch[field] = undefined;
-    }
-  }
-  if (Object.keys(patch).length === 0) return;
-  await ctx.db.patch(baby._id, patch);
-}
-
-export const clearStoredStatusFields = migrations.define({
-  table: "baby",
-  migrateOne: clearStoredStatusFieldsDoc,
-});
-
 // Keep newly added migrations outside the stable historical chain. If an
 // older deployment has that chain in progress, its stored `next` list cannot
 // know about migrations appended by this deployment.
@@ -635,9 +599,6 @@ export const runBirthJourneyBackfill = migrations.runner(
 );
 export const runDueDateDisplayBackfill = migrations.runner(
   internal.migrations.backfillBabyDueDateDisplay,
-);
-export const runStoredStatusCleanup = migrations.runner(
-  internal.migrations.clearStoredStatusFields,
 );
 
 export const runTableMigrations = migrations.runner([
@@ -672,16 +633,11 @@ const HISTORICAL_MIGRATION_NAMES = [
   "migrations:backfillUserProfileIsAdmin",
 ] as const;
 
-const PRE_CLEANUP_MIGRATION_NAMES = [
+const TABLE_MIGRATION_NAMES = [
   ...HISTORICAL_MIGRATION_NAMES,
   "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyDueDateDisplay",
   "migrations:generatePushImagesForExistingPhotos",
-] as const;
-
-const TABLE_MIGRATION_NAMES = [
-  ...PRE_CLEANUP_MIGRATION_NAMES,
-  "migrations:clearStoredStatusFields",
 ] as const;
 
 async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
@@ -700,13 +656,6 @@ export const historicalDeploymentStatus = internalQuery({
   args: {},
   handler: async (ctx) => {
     return await migrationDeploymentStatus(ctx, HISTORICAL_MIGRATION_NAMES);
-  },
-});
-
-export const preCleanupDeploymentStatus = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    return await migrationDeploymentStatus(ctx, PRE_CLEANUP_MIGRATION_NAMES);
   },
 });
 
