@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { useDelayedAction } from "./use-delayed-action";
+import { useDelayedAction, useTimedTransition } from "./use-delayed-action";
 
 test("runs an enabled action after the delay and cancels when disabled", async () => {
   vi.useFakeTimers();
@@ -29,4 +29,31 @@ test("runs an enabled action after the delay and cancels when disabled", async (
   hook.rerender({ enabled: false });
   act(() => vi.advanceTimersByTime(4000));
   expect(action).not.toHaveBeenCalled();
+});
+
+test("reports only a live transition for the configured duration", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
+  const hook = renderHook(
+    (props: { value: "pending" | "sent" }) =>
+      useTimedTransition({
+        durationMs: 4000,
+        from: "pending",
+        to: "sent",
+        value: props.value,
+      }),
+    { initialProps: { value: "sent" as const } },
+  );
+  await using _hook = makeResource({}, () => hook.unmount());
+
+  expect(hook.result.current).toBe(false);
+  hook.rerender({ value: "pending" });
+  expect(hook.result.current).toBe(false);
+  hook.rerender({ value: "sent" });
+  expect(hook.result.current).toBe(true);
+
+  act(() => vi.advanceTimersByTime(3999));
+  expect(hook.result.current).toBe(true);
+  act(() => vi.advanceTimersByTime(1));
+  expect(hook.result.current).toBe(false);
 });

@@ -13,6 +13,7 @@ import { useConvexMutation } from "@convex-dev/react-query";
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
@@ -20,6 +21,7 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
+import { useTimedTransition } from "@/lib/use-delayed-action";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationToastProps = {
@@ -45,7 +47,6 @@ function useCurrentSecond() {
 }
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
-  const { t } = useI18n();
   const notificationsQuery = usePreloadedConvexQuery(
     api.baby.getScheduledNotifications,
     props.notifications,
@@ -64,52 +65,70 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   if (currentSecond === null || subscriptionCount === 0) return null;
 
   const currentTime = currentSecond * 1000;
-  const visibleNotifications = notifications.filter(
-    (notification) =>
-      notification.status === "pending" ||
-      (notification.status === "sent" &&
-        currentTime >= notification.scheduledFor &&
-        currentTime - notification.scheduledFor < 4000),
-  );
-  if (visibleNotifications.length === 0) return null;
 
   return (
     <aside
       className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col gap-2"
       aria-live="polite"
     >
-      {visibleNotifications.map((notification) =>
-        notification.status === "pending" ? (
-          <NotificationToastContent
-            key={notification._id}
-            notificationId={notification._id}
-            notificationType={notification.notificationType}
-            scheduledFor={notification.scheduledFor}
-            subscriptionCount={subscriptionCount}
-            currentTime={currentTime}
-          />
-        ) : (
-          <Item
-            key={notification._id}
-            variant="outline"
-            className="min-w-[300px] border-green-500/50 bg-background shadow-lg"
-          >
-            <ItemMedia className="size-10 rounded-full bg-green-500/10">
-              <Check className="size-5 text-green-500" />
-            </ItemMedia>
-            <ItemContent>
-              <ItemTitle>{t("Notification sent!")}</ItemTitle>
-              <ItemDescription>
-                {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])} ·{" "}
-                {t(subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-                  count: subscriptionCount,
-                })}
-              </ItemDescription>
-            </ItemContent>
-          </Item>
-        ),
-      )}
+      {notifications.map((notification) => (
+        <ScheduledNotificationItem
+          key={notification._id}
+          notification={notification}
+          subscriptionCount={subscriptionCount}
+          currentTime={currentTime}
+        />
+      ))}
     </aside>
+  );
+}
+
+type ScheduledNotification = Exclude<
+  FunctionReturnType<typeof api.baby.getScheduledNotifications>,
+  typeof FORBIDDEN
+>[number];
+
+function ScheduledNotificationItem(props: {
+  notification: ScheduledNotification;
+  subscriptionCount: number;
+  currentTime: number;
+}) {
+  const { t } = useI18n();
+  const sentRecently = useTimedTransition({
+    durationMs: 4000,
+    from: "pending",
+    to: "sent",
+    value: props.notification.status,
+  });
+
+  if (props.notification.status === "pending") {
+    return (
+      <NotificationToastContent
+        notificationId={props.notification._id}
+        notificationType={props.notification.notificationType}
+        scheduledFor={props.notification.scheduledFor}
+        subscriptionCount={props.subscriptionCount}
+        currentTime={props.currentTime}
+      />
+    );
+  }
+  if (!sentRecently) return null;
+
+  return (
+    <Item variant="outline" className="min-w-[300px] border-green-500/50 bg-background shadow-lg">
+      <ItemMedia className="size-10 rounded-full bg-green-500/10">
+        <Check className="size-5 text-green-500" />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{t("Notification sent!")}</ItemTitle>
+        <ItemDescription>
+          {t(NOTIFICATION_LABEL_KEYS[props.notification.notificationType])} ·{" "}
+          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+            count: props.subscriptionCount,
+          })}
+        </ItemDescription>
+      </ItemContent>
+    </Item>
   );
 }
 

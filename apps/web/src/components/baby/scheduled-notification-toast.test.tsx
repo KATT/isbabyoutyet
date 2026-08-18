@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { act, fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -112,24 +112,26 @@ test("shows the exact subscriber count in a pending notification toast", async (
   expect(mocks.mutate).toHaveBeenCalledWith({ notificationId });
 });
 
-test("shows recently sent notifications as query-derived success", async () => {
+test("shows a pending-to-sent transition for four seconds without replaying history", async () => {
+  vi.useFakeTimers({ now: new Date("2026-08-18T00:00:00.000Z") });
+  await using _timers = makeResource({}, () => vi.useRealTimers());
   const notificationId = "jd7sched0000000000000001" as Id<"scheduledNotifications">;
-  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
-    input: { babyId },
-    initialData: [
-      {
-        _id: notificationId,
-        _creationTime: Date.now(),
-        babyId,
-        createdAt: Date.now(),
-        status: "sent" as const,
-        notificationType: "born" as const,
-        scheduledFor: Date.now() - 1000,
-        customMessage: null,
-        scheduledId: "sched-2" as Id<"_scheduled_functions">,
-      },
-    ],
-  });
+  const scheduledFor = Date.now() - 10_000;
+  const notification = {
+    _id: notificationId,
+    _creationTime: Date.now(),
+    babyId,
+    createdAt: Date.now(),
+    notificationType: "born" as const,
+    scheduledFor,
+    customMessage: null,
+    scheduledId: "sched-2" as Id<"_scheduled_functions">,
+  };
+  const notificationHandle = (status: "pending" | "sent") =>
+    testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
+      input: { babyId },
+      initialData: [{ ...notification, status }],
+    });
   const subscriptionCount = testPreloadedConvexQuery<
     typeof api.pushSubscriptions.getSubscriptionCount
   >({
@@ -142,11 +144,31 @@ test("shows recently sent notifications as query-derived success", async () => {
 
   await using view = renderResource(
     <ScheduledNotificationToast
-      notifications={notifications}
+      notifications={notificationHandle("sent")}
       subscriptionCount={subscriptionCount}
     />,
   );
+  expect(view.queryByText("Notification sent!")).toBeNull();
 
+  view.rerender(
+    <ScheduledNotificationToast
+      notifications={notificationHandle("pending")}
+      subscriptionCount={subscriptionCount}
+    />,
+  );
+  expect(view.getByText("Sending notification...")).toBeTruthy();
+
+  view.rerender(
+    <ScheduledNotificationToast
+      notifications={notificationHandle("sent")}
+      subscriptionCount={subscriptionCount}
+    />,
+  );
   expect(view.getByText("Notification sent!")).toBeTruthy();
   expect(view.container.textContent).toContain("1 person");
+
+  act(() => vi.advanceTimersByTime(3999));
+  expect(view.getByText("Notification sent!")).toBeTruthy();
+  act(() => vi.advanceTimersByTime(1));
+  expect(view.queryByText("Notification sent!")).toBeNull();
 });
