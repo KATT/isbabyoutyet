@@ -20,6 +20,7 @@ import {
 import { Form, useZodForm } from "@/components/Form";
 import { Baby } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
+import { DemoAccountPicker } from "@/components/demo-account-picker";
 import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
@@ -84,6 +85,13 @@ function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <DemoAccountPicker
+              onPrefill={(account) => {
+                form.setValue("email", account.email);
+                form.setValue("password", account.password);
+                form.formRef.current?.requestSubmit();
+              }}
+            />
             <Form
               form={form}
               handleSubmit={async (values) => {
