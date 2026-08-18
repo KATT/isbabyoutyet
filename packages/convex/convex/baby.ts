@@ -30,7 +30,7 @@ import { appIdentity } from "./authIdentity";
 import { toBabyDto } from "./babyDto";
 
 const birthJourneyValidator = v.union(
-  v.literal("labour"),
+  v.literal("labor"),
   v.literal("home_birth"),
   v.literal("planned_c_section"),
 );
@@ -302,7 +302,7 @@ export const create = mutationWithTriggers({
       name: args.name,
       dueDate: args.dueDate,
       publicId,
-      birthJourney: args.birthJourney ?? "labour",
+      birthJourney: args.birthJourney ?? "labor",
       hospitalMessage: null,
       babyBornMessage: null,
       laborStartedMessage: null,

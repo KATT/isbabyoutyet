@@ -1,6 +1,6 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
-export const BIRTH_JOURNEYS = ["labour", "home_birth", "planned_c_section"] as const;
+export const BIRTH_JOURNEYS = ["labor", "home_birth", "planned_c_section"] as const;
 
 export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 

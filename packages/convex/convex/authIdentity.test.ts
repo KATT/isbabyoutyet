@@ -90,7 +90,7 @@ test("auth identity migrations remain idempotent after backfill", async () => {
   });
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
-  expect(migrated.baby?.birthJourney).toBe("labour");
+  expect(migrated.baby?.birthJourney).toBe("labor");
   expect(migrated.baby?.lastActivityAt).toBe(1);
   expect(migrated.baby?.subscriptionCount).toBe(0);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");

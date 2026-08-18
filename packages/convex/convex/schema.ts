@@ -12,7 +12,7 @@ export default defineSchema({
     publicId: v.string(), // Unique shareable ID
     // Stack 2: required after Stack 1 backfills every existing baby.
     birthJourney: v.union(
-      v.literal("labour"),
+      v.literal("labor"),
       v.literal("home_birth"),
       v.literal("planned_c_section"),
     ),
