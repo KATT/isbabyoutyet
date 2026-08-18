@@ -284,6 +284,12 @@ export async function findMilestoneUpdate(
   return updates.find(isActive) ?? null;
 }
 
+const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
+
+export function isValidDateTimestamp(value: number) {
+  return Number.isFinite(value) && Math.abs(value) <= MAX_DATE_TIMESTAMP;
+}
+
 /**
  * Event-clock dates inferred from the active milestone updates. Missing
  * `occurredAt` falls back to the feed `postedAt` so legacy rows still count.
@@ -305,7 +311,7 @@ export async function loadMilestoneDates(
       const item = await ctx.db.get(update.timelineItemId);
       occurredAt = item?.postedAt ?? null;
     }
-    if (occurredAt == null) continue;
+    if (occurredAt == null || !isValidDateTimestamp(occurredAt)) continue;
     dates[MILESTONE_FIELDS[milestone].date] = new Date(occurredAt).toISOString();
   }
   return dates;

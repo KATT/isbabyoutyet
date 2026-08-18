@@ -14,6 +14,7 @@ import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
+  isValidDateTimestamp,
   loadMilestoneDates,
 } from "./timeline";
 import { mutationWithTriggers } from "./triggers";
@@ -81,6 +82,9 @@ export const post = mutationWithTriggers({
     // Event clock: when the milestone actually happened. Defaults to the
     // announce time; a backdated value must be in the past.
     const occurredAt = milestone ? (args.occurredAt ?? postedAt) : null;
+    if (occurredAt != null && !isValidDateTimestamp(occurredAt)) {
+      throw new Error("Invalid date");
+    }
     if (occurredAt != null && occurredAt > postedAt + 60_000) {
       throw new Error("The event time cannot be in the future");
     }

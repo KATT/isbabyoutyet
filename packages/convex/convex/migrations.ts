@@ -522,6 +522,10 @@ export const backfillUserProfileIsAdmin = migrations.define({
  * inferred from milestone updates; Convex schema removal rejects extra keys,
  * so `null` is not enough — the fields must be absent.
  *
+ * `backfillBabyTimeline` has already copied marked-stage messages to updates.
+ * Unmarked prewritten messages have no current product destination and are
+ * intentionally discarded.
+ *
  * Idempotent: documents that already lack the keys are skipped.
  */
 export const STORED_STATUS_FIELDS = [
@@ -554,7 +558,6 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
-  internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
   internal.migrations.backfillBabyLastActivityAt,
@@ -572,7 +575,6 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillBabyTimeline",
   "migrations:backfillEncouragementTimeline",
   "migrations:separateMilestoneOccurredAt",
-  "migrations:clearLegacyStageMessages",
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
   "migrations:backfillBabyLastActivityAt",

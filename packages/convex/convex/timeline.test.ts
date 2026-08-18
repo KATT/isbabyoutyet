@@ -242,6 +242,22 @@ test("a milestone update without an event clock or feed row does not infer a dat
   expect(publicBaby?.babyBorn).toBeNull();
 });
 
+test("an invalid persisted milestone timestamp is ignored", async () => {
+  const { t, babyId } = await setup();
+
+  await t.run(async (ctx) => {
+    await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: Date.now(),
+      occurredAt: Number.MAX_VALUE,
+      milestone: "labor_started",
+    });
+  });
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby?.laborStarted).toBeNull();
+});
+
 test("the forward-only guard enforces order at every intermediate stage", async () => {
   await using _timers = useFakeTimersResource();
   const { asAlice, babyId } = await setup();
@@ -728,6 +744,20 @@ test("baby.update rejects invalid and future milestone dates", async () => {
   await expect(
     asAlice.mutation(api.baby.update, { babyId, laborStarted: "not-a-date" }),
   ).rejects.toThrow("Invalid date");
+});
+
+test("posting a milestone rejects non-finite and out-of-range timestamps", async () => {
+  const { asAlice, babyId } = await setup();
+
+  for (const occurredAt of [NaN, Infinity, -Infinity, Number.MAX_VALUE]) {
+    await expect(
+      asAlice.mutation(api.updates.post, {
+        babyId,
+        milestone: "labor_started",
+        occurredAt,
+      }),
+    ).rejects.toThrow("Invalid date");
+  }
 });
 
 test("stale-client legacy message args land on the timeline row, not the baby doc", async () => {
