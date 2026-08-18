@@ -161,6 +161,19 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
 });
 
+test("the composer only offers visible future milestones", async () => {
+  await using composer = renderComposerResource({
+    ...notYetBaby,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+    laborStarted: "2026-08-20T08:00:00.000Z",
+  });
+  const view = composer.view;
+
+  expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
+  expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
+});
+
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {
   await using composer = renderComposerResource(notYetBaby);
   const view = composer.view;
@@ -357,4 +370,39 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Nothing here yet")).toBeTruthy();
+});
+
+test("renders hidden milestone content as a neutral update", async () => {
+  await using view = renderFeed({
+    baby: {
+      ...notYetBaby,
+      milestoneVisibility: { showLabor: false, showHospital: true },
+      laborStarted: "2026-08-20T08:00:00.000Z",
+    },
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: "A family update",
+            milestone: null,
+            occurredAt: null,
+            photoUrl: null,
+            thumbnailUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  expect(view.getByText("A family update")).toBeTruthy();
+  expect(view.getByText("Update")).toBeTruthy();
+  expect(view.queryByText("Labour started")).toBeNull();
 });

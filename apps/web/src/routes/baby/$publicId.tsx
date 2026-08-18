@@ -116,6 +116,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       babyBorn: babyDoc.babyBorn,
       wentToHospital: babyDoc.wentToHospital,
       laborStarted: babyDoc.laborStarted,
+      milestoneVisibility: babyDoc.milestoneVisibility,
     });
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
@@ -205,6 +206,7 @@ function docToBabyData(
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
     hospitalMessage: doc.hospitalMessage ?? null,
     babyBornMessage: doc.babyBornMessage ?? null,
     laborStartedMessage: doc.laborStartedMessage ?? null,

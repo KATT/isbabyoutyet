@@ -25,6 +25,10 @@ function getDefaultBabyData(): BabyData {
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
+    milestoneVisibility: {
+      showLabor: true,
+      showHospital: true,
+    },
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
@@ -41,6 +45,8 @@ const searchSchema = z.object({
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
   laborStartedMessage: z.string().nullable().optional(),
+  showLaborMilestone: z.boolean().optional(),
+  showHospitalMilestone: z.boolean().optional(),
   settings: z.boolean().optional(),
 });
 
@@ -77,6 +83,10 @@ function PreviewPage() {
   const baby: BabyData = {
     ...getDefaultBabyData(),
     ...search,
+    milestoneVisibility: {
+      showLabor: search.showLaborMilestone ?? true,
+      showHospital: search.showHospitalMilestone ?? true,
+    },
   };
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
@@ -101,6 +111,17 @@ function PreviewPage() {
       <SettingsPanel
         baby={baby}
         onUpdate={(update) => {
+          if (update.milestoneVisibility) {
+            void navigate({
+              search: {
+                ...search,
+                showLaborMilestone: update.milestoneVisibility.showLabor,
+                showHospitalMilestone: update.milestoneVisibility.showHospital,
+              },
+              replace: true,
+            });
+            return;
+          }
           navigate({
             search: {
               ...search,

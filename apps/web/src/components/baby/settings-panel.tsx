@@ -42,6 +42,7 @@ import {
   Trash,
   Users,
 } from "@phosphor-icons/react";
+import { getMilestonePolicy } from "@workspace/convex/src/types";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -85,6 +86,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
+  const milestonePolicy = getMilestonePolicy(props.baby);
+  const canEditMilestoneVisibility = coParents === null || coParents.isOwner;
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -122,10 +125,74 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </ItemActions>
           </Item>
 
+          {canEditMilestoneVisibility && (
+            <>
+              <ItemSeparator />
+              <Item variant="default" className="items-start">
+                <ItemMedia variant="icon">
+                  <Heartbeat className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent className="gap-3">
+                  <div>
+                    <ItemTitle>{t("Milestones visitors can see")}</ItemTitle>
+                    <ItemDescription>
+                      {milestonePolicy.visibilityLocked
+                        ? t(
+                            "These choices are locked because the hospital or birth milestone has been marked.",
+                          )
+                        : t(
+                            "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
+                          )}{" "}
+                      {t("Baby born is always shown.")}
+                    </ItemDescription>
+                  </div>
+                  <div className="w-full space-y-3">
+                    <div className="flex items-center justify-between gap-4">
+                      <label className="text-sm font-semibold" htmlFor="show-labour-milestone">
+                        {t("Show labour milestone")}
+                      </label>
+                      <Switch
+                        id="show-labour-milestone"
+                        checked={milestonePolicy.visibility.showLabor}
+                        disabled={milestonePolicy.visibilityLocked}
+                        onCheckedChange={(checked) =>
+                          props.onUpdate({
+                            milestoneVisibility: {
+                              showLabor: checked,
+                              showHospital: milestonePolicy.visibility.showHospital,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <label className="text-sm font-semibold" htmlFor="show-hospital-milestone">
+                        {t("Show hospital milestone")}
+                      </label>
+                      <Switch
+                        id="show-hospital-milestone"
+                        checked={milestonePolicy.visibility.showHospital}
+                        disabled={milestonePolicy.visibilityLocked}
+                        onCheckedChange={(checked) =>
+                          props.onUpdate({
+                            milestoneVisibility: {
+                              showLabor: milestonePolicy.visibility.showLabor,
+                              showHospital: checked,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </ItemContent>
+              </Item>
+            </>
+          )}
+
           {/* Marked milestones: correct their date here; mark new ones via
               the "Post update" composer, unmark by deleting the timeline
               update */}
-          {props.baby.laborStarted && (
+          {milestonePolicy.isVisible("labor_started") && props.baby.laborStarted && (
             <>
               <ItemSeparator />
               <Item>
@@ -151,7 +218,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </>
           )}
 
-          {props.baby.wentToHospital && (
+          {milestonePolicy.isVisible("gone_to_hospital") && props.baby.wentToHospital && (
             <>
               <ItemSeparator />
               <Item>
@@ -289,6 +356,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <Switch
                 checked={!props.baby.encouragementsDisabled}
                 onCheckedChange={(checked) => props.onUpdate({ encouragementsDisabled: !checked })}
+                aria-label={t("Encouragements")}
               />
             </ItemActions>
           </Item>

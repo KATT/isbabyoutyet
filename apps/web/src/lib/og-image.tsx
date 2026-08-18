@@ -3,6 +3,7 @@ import { Resvg } from "@resvg/resvg-js";
 import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import type { MilestoneVisibility } from "@workspace/convex/src/types";
 import { THEME_OPTIONS } from "@/components/baby/utils";
 import {
   OG_IMAGE_HEIGHT,
@@ -94,7 +95,7 @@ export type BabyOgImageInput = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
   photoUrl: string | null;
-};
+} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -133,6 +134,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,
+          milestoneVisibility: baby.milestoneVisibility,
         });
   const brand = translate(baby.locale, "Is Baby Out Yet?");
   const fontText = `${headline}${statusText}${detail}${brand}${SITE_HOST}`;

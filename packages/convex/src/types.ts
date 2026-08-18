@@ -31,6 +31,18 @@ export type BabyUpdate = Partial<BabyData>;
  */
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
 
+export type Milestone = "labor_started" | "gone_to_hospital" | "born";
+
+export type MilestoneVisibility = {
+  showLabor: boolean;
+  showHospital: boolean;
+};
+
+export const DEFAULT_MILESTONE_VISIBILITY = {
+  showLabor: true,
+  showHospital: true,
+} as const satisfies MilestoneVisibility;
+
 /**
  * Current status derived from baby data
  */
@@ -40,26 +52,6 @@ export type BabyStatus =
   | { type: "gone_to_hospital"; date: string }
   | { type: "born"; date: string };
 
-/**
- * Derive the current status from baby data
- */
-export function getCurrentStatus(baby: {
-  babyBorn?: string | null;
-  wentToHospital?: string | null;
-  laborStarted?: string | null;
-}): BabyStatus {
-  if (baby.babyBorn) {
-    return { type: "born", date: baby.babyBorn };
-  }
-  if (baby.wentToHospital) {
-    return { type: "gone_to_hospital", date: baby.wentToHospital };
-  }
-  if (baby.laborStarted) {
-    return { type: "labor_started", date: baby.laborStarted };
-  }
-  return { type: "not_yet" };
-}
-
 export const STATUS_ORDER = {
   not_yet: 0,
   labor_started: 1,
@@ -68,11 +60,6 @@ export const STATUS_ORDER = {
 } as const;
 
 export type NotifiableStatus = "labor_started" | "gone_to_hospital" | "born" | "photo_added";
-
-/**
- * Owner-postable milestone kinds — the status stages a feed update can mark.
- */
-export type Milestone = "labor_started" | "gone_to_hospital" | "born";
 
 export const MILESTONE_LABELS = {
   labor_started: "Labour started",
@@ -91,6 +78,73 @@ export const MILESTONE_FIELDS = {
 } as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
 
 export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
+
+type MilestonePolicyInput = {
+  babyBorn?: string | null;
+  wentToHospital?: string | null;
+  laborStarted?: string | null;
+  milestoneVisibility?: MilestoneVisibility | null;
+};
+
+export type MilestonePolicy = {
+  visibility: MilestoneVisibility;
+  visibleMilestones: readonly Milestone[];
+  currentStatus: BabyStatus;
+  visibilityLocked: boolean;
+  isVisible: (milestone: Milestone) => boolean;
+  isReached: (milestone: Milestone) => boolean;
+  canMark: (milestone: Milestone) => boolean;
+  progressPercent: number;
+};
+
+/**
+ * The single policy seam for milestone visibility and allowed transitions.
+ * Missing visibility data is the legacy/default path: every milestone is shown.
+ */
+export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy {
+  const visibility = baby.milestoneVisibility ?? DEFAULT_MILESTONE_VISIBILITY;
+  const isVisible = (milestone: Milestone) =>
+    milestone === "born" ||
+    (milestone === "labor_started" ? visibility.showLabor : visibility.showHospital);
+  const visibleMilestones = MILESTONES.filter(isVisible);
+
+  let currentStatus: BabyStatus = { type: "not_yet" };
+  for (let index = visibleMilestones.length - 1; index >= 0; index -= 1) {
+    const milestone = visibleMilestones[index];
+    if (!milestone) continue;
+    const date = baby[MILESTONE_FIELDS[milestone].date];
+    if (typeof date === "string" && date) {
+      currentStatus = { type: milestone, date };
+      break;
+    }
+  }
+
+  const isReached = (milestone: Milestone) =>
+    isVisible(milestone) &&
+    currentStatus.type !== "not_yet" &&
+    STATUS_ORDER[currentStatus.type] >= STATUS_ORDER[milestone];
+  const reachedCount = visibleMilestones.filter(isReached).length;
+
+  return {
+    visibility,
+    visibleMilestones,
+    currentStatus,
+    visibilityLocked: Boolean(baby.wentToHospital || baby.babyBorn),
+    isVisible,
+    isReached,
+    canMark: (milestone) =>
+      isVisible(milestone) && STATUS_ORDER[milestone] > STATUS_ORDER[currentStatus.type],
+    progressPercent:
+      visibleMilestones.length === 0 ? 0 : (reachedCount / visibleMilestones.length) * 100,
+  };
+}
+
+/**
+ * Derive the latest publicly visible status from baby data.
+ */
+export function getCurrentStatus(baby: MilestonePolicyInput): BabyStatus {
+  return getMilestonePolicy(baby).currentStatus;
+}
 
 /**
  * Returns the latest marked milestone that must be removed before `milestone`

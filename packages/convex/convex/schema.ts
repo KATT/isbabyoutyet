@@ -16,6 +16,13 @@ export default defineSchema({
     laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
+    // Optional for backward compatibility. Missing means both optional milestones are visible.
+    milestoneVisibility: v.optional(
+      v.object({
+        showLabor: v.boolean(),
+        showHospital: v.boolean(),
+      }),
+    ),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)

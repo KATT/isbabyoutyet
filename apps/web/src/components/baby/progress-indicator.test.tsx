@@ -77,3 +77,37 @@ test("fills only the path into reached milestones while still in hospital", asyn
   expect(view.getAllByText("yesterday")).toHaveLength(2);
   expect(view.getByText("Baby born")).toBeTruthy();
 });
+
+test("recalculates progress when labour is hidden", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  const hospitalPage: BabyData = {
+    ...waitingBaby,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+    wentToHospital: "2026-08-11T08:00:00.000Z",
+  };
+  await using view = renderResource(
+    <ProgressIndicator baby={hospitalPage} currentStatus={getCurrentStatus(hospitalPage)} />,
+  );
+
+  expect(view.queryByText("Labour started")).toBeNull();
+  expect(view.getByText("Gone to hospital")).toBeTruthy();
+  expect(view.getByText("Baby born")).toBeTruthy();
+  expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+});
+
+test("recalculates progress when hospital is hidden", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-12T12:00:00.000Z"));
+  const labourPage: BabyData = {
+    ...waitingBaby,
+    milestoneVisibility: { showLabor: true, showHospital: false },
+    laborStarted: "2026-08-11T08:00:00.000Z",
+  };
+  await using view = renderResource(
+    <ProgressIndicator baby={labourPage} currentStatus={getCurrentStatus(labourPage)} />,
+  );
+
+  expect(view.getByText("Labour started")).toBeTruthy();
+  expect(view.queryByText("Gone to hospital")).toBeNull();
+  expect(view.getByText("Baby born")).toBeTruthy();
+  expect(view.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("50");
+});

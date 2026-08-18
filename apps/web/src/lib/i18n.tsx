@@ -77,6 +77,14 @@ const enGB = {
   "Page actions": "Page actions",
   "Baby Name": "Baby name",
   "Due Date": "Due date",
+  "Milestones visitors can see": "Milestones visitors can see",
+  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
+    "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
+  "Show labour milestone": "Show labour milestone",
+  "Show hospital milestone": "Show hospital milestone",
+  "Baby born is always shown.": "Baby born is always shown.",
+  "These choices are locked because the hospital or birth milestone has been marked.":
+    "These choices are locked because the hospital or birth milestone has been marked.",
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
@@ -588,6 +596,14 @@ const sv: Record<TranslationKey, string> = {
   "Page actions": "Åtgärder för sidan",
   "Baby Name": "Bäbisens namn",
   "Due Date": "Beräknat datum",
+  "Milestones visitors can see": "Milstolpar som besökare kan se",
+  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
+    "Du kan ändra dem tills sjukhus- eller födelsemilstolpen har markerats. De påverkar bara vad besökare ser.",
+  "Show labour milestone": "Visa milstolpen för startad förlossning",
+  "Show hospital milestone": "Visa sjukhusmilstolpen",
+  "Baby born is always shown.": "Att bäbisen är född visas alltid.",
+  "These choices are locked because the hospital or birth milestone has been marked.":
+    "Valen är låsta eftersom sjukhus- eller födelsemilstolpen har markerats.",
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
@@ -1080,6 +1096,14 @@ const es: Record<TranslationKey, string> = {
   "Page actions": "Acciones de la página",
   "Baby Name": "Nombre del bebé",
   "Due Date": "Fecha prevista",
+  "Milestones visitors can see": "Hitos que pueden ver los visitantes",
+  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
+    "Puedes cambiarlos hasta que se marque el hito del hospital o del nacimiento. Solo afectan a lo que ven los visitantes.",
+  "Show labour milestone": "Mostrar el hito del inicio del parto",
+  "Show hospital milestone": "Mostrar el hito del hospital",
+  "Baby born is always shown.": "El nacimiento del bebé siempre se muestra.",
+  "These choices are locked because the hospital or birth milestone has been marked.":
+    "Estas opciones están bloqueadas porque se ha marcado el hito del hospital o del nacimiento.",
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
@@ -1578,6 +1602,14 @@ const ptBR: Record<TranslationKey, string> = {
   "Page actions": "Ações da página",
   "Baby Name": "Nome do bebê",
   "Due Date": "Data prevista",
+  "Milestones visitors can see": "Etapas que os visitantes podem ver",
+  "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.":
+    "Você pode alterá-las até que a etapa do hospital ou do nascimento seja marcada. Elas afetam apenas o que os visitantes veem.",
+  "Show labour milestone": "Mostrar a etapa de início do trabalho de parto",
+  "Show hospital milestone": "Mostrar a etapa do hospital",
+  "Baby born is always shown.": "O nascimento do bebê é sempre exibido.",
+  "These choices are locked because the hospital or birth milestone has been marked.":
+    "Estas opções estão bloqueadas porque a etapa do hospital ou do nascimento foi marcada.",
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
@@ -2017,6 +2049,7 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
   "Labour started": "Labor started",
+  "Show labour milestone": "Show labor milestone",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
     "{{name}}'s labor has started — follow live updates on the baby page.",

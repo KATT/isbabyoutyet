@@ -111,8 +111,56 @@ test("encouragements switch toggles the disabled flag via onUpdate", async () =>
     />,
   );
 
-  fireEvent.click(view.getByRole("switch"));
+  fireEvent.click(view.getByRole("switch", { name: "Messages" }));
   expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
+});
+
+test("milestone switches default on and save visibility without touching content", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
+  );
+
+  const labour = view.getByRole("switch", { name: "Show labour milestone" });
+  const hospital = view.getByRole("switch", { name: "Show hospital milestone" });
+  expect(labour.getAttribute("aria-checked")).toBe("true");
+  expect(hospital.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(labour);
+  expect(onUpdate).toHaveBeenCalledWith({
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+});
+
+test("milestone switches lock once hospital is marked", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={{ ...baby, wentToHospital: "2026-08-10T12:00:00.000Z" }}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...absentSettingsProps}
+    />,
+  );
+
+  expect(view.getByText(/choices are locked/i)).toBeTruthy();
+  expect(
+    (view.getByRole("switch", { name: "Show labour milestone" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
+  expect(
+    (view.getByRole("switch", { name: "Show hospital milestone" }) as HTMLButtonElement).disabled,
+  ).toBe(true);
 });
 
 test("theme constants render through the active translation catalog", async () => {
@@ -135,4 +183,5 @@ test("theme constants render through the active translation catalog", async () =
 
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Standard")).toBeTruthy();
+  expect(view.getByText("Milstolpar som besökare kan se")).toBeTruthy();
 });

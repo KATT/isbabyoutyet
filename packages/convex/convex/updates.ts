@@ -5,9 +5,9 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
+  getMilestonePolicy,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
-  STATUS_ORDER,
 } from "../src/types";
 import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
 import { requireBabyManager } from "./babyAccess";
@@ -56,12 +56,16 @@ export const post = mutationWithTriggers({
       throw new Error(`Message must be ${MAX_UPDATE_MESSAGE_LENGTH} characters or less`);
     }
 
-    const statusBefore = getCurrentStatus(baby);
+    const milestonePolicy = getMilestonePolicy(baby);
+    const statusBefore = milestonePolicy.currentStatus;
 
     if (milestone) {
+      if (!milestonePolicy.isVisible(milestone)) {
+        throw new Error("This milestone is hidden on the public page");
+      }
       // The status only moves forward: once a later stage is reached, earlier
       // (or equal) stages can no longer be marked
-      if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {
+      if (!milestonePolicy.canMark(milestone)) {
         throw new Error("Only a future status can be marked");
       }
       const existing = await findMilestoneUpdate(ctx, {

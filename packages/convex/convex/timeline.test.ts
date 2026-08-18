@@ -184,6 +184,126 @@ test("a milestone update sets the canonical status and schedules a push", async 
   ).rejects.toThrow("Only a future status can be marked");
 });
 
+test("hidden milestones cannot be posted or set through the backend", async () => {
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+
+  await expect(
+    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+  ).rejects.toThrow("This milestone is hidden on the public page");
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId,
+      laborStarted: "2026-08-10T08:00:00.000Z",
+    }),
+  ).rejects.toThrow("This milestone is hidden on the public page");
+
+  const baby = await getBaby(t, babyId);
+  expect(baby.laborStarted).toBeNull();
+  expect(baby.milestoneVisibility).toEqual({ showLabor: false, showHospital: true });
+});
+
+test("hiding and restoring a milestone preserves content and notification history", async () => {
+  await using _timers = useFakeTimersResource();
+  const { t, asAlice, babyId } = await setup();
+  const photoId = await storeBlob(t);
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "labor_started",
+    message: "A quiet update for everyone",
+    photoId,
+  });
+
+  const notificationsBefore = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+
+  const hiddenFeed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(hiddenFeed.page).toHaveLength(1);
+  expect(hiddenFeed.page[0]).toMatchObject({
+    kind: "update",
+    update: {
+      message: "A quiet update for everyone",
+      milestone: null,
+      occurredAt: null,
+    },
+  });
+  expect(hiddenFeed.page[0]?.kind === "update" && hiddenFeed.page[0].update.photoUrl).toBeTruthy();
+
+  const storedWhileHidden = await t.run(async (ctx) => {
+    const baby = await ctx.db.get(babyId);
+    const updates = await ctx.db
+      .query("updates")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .take(10);
+    return { baby, update: updates[0] };
+  });
+  expect(storedWhileHidden.baby?.laborStarted).toBeTruthy();
+  expect(storedWhileHidden.update).toMatchObject({
+    message: "A quiet update for everyone",
+    milestone: "labor_started",
+    photoId,
+  });
+
+  const hiddenNotifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(hiddenNotifications).toHaveLength(notificationsBefore.length);
+  expect(
+    hiddenNotifications
+      .filter((notification) => notification.notificationType === "labor_started")
+      .every((notification) => notification.status === "cancelled"),
+  ).toBe(true);
+
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    milestoneVisibility: { showLabor: true, showHospital: true },
+  });
+
+  const restoredFeed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(restoredFeed.page[0]).toMatchObject({
+    kind: "update",
+    update: {
+      message: "A quiet update for everyone",
+      milestone: "labor_started",
+    },
+  });
+  const notificationsAfter = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notificationsAfter).toHaveLength(notificationsBefore.length);
+});
+
+test("an empty hidden milestone row disappears from the public feed without deletion", async () => {
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  expect(feed.page).toEqual([]);
+  const stored = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("updates")
+      .withIndex("by_babyId_and_milestone", (q) =>
+        q.eq("babyId", babyId).eq("milestone", "labor_started"),
+      )
+      .first();
+  });
+  expect(stored?.deletedAt ?? null).toBeNull();
+});
+
 test("the forward-only guard enforces order at every intermediate stage", async () => {
   await using _timers = useFakeTimersResource();
   const { asAlice, babyId } = await setup();

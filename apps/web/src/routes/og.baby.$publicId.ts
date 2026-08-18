@@ -29,6 +29,7 @@ export const Route = createFileRoute("/og/baby/$publicId")({
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,
+          milestoneVisibility: baby.milestoneVisibility,
           photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
         });
       },

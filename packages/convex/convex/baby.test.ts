@@ -43,6 +43,7 @@ test("create a baby and list it for the owner", async () => {
   expect(babies[0]).not.toHaveProperty("ownerTokenIdentifier");
   expect(babies[0]).not.toHaveProperty("lastActivityAt");
   expect(babies[0]).not.toHaveProperty("subscriptionCount");
+  expect(babies[0]?.milestoneVisibility).toEqual({ showLabor: true, showHospital: true });
 
   // Other users (and anonymous visitors) don't see it in their list
   const asBob = t.withIdentity({ subject: "bob" });
@@ -59,6 +60,67 @@ test("create a baby and list it for the owner", async () => {
     }),
   ).rejects.toThrow("Not authorized");
   expect(await t.query(api.baby.listByUser, {})).toEqual([]);
+});
+
+test("creation stores the selected milestone visibility", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Flexible Page",
+    dueDate: "2026-09-01",
+    showLaborMilestone: false,
+    showHospitalMilestone: true,
+  });
+
+  const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
+  expect(baby?.milestoneVisibility).toEqual({ showLabor: false, showHospital: true });
+});
+
+test("visibility can change before hospital and locks at hospital or birth", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    laborStarted: "2026-08-10T08:00:00.000Z",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      milestoneVisibility: { showLabor: true, showHospital: true },
+    }),
+  ).rejects.toThrow("Milestone visibility cannot change after going to hospital or birth");
+
+  const birthOnly = await asAlice.mutation(api.baby.create, {
+    name: "Birth Only",
+    dueDate: "2026-09-01",
+    showLaborMilestone: false,
+    showHospitalMilestone: false,
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: birthOnly.babyId,
+    babyBorn: "2026-08-11T03:00:00.000Z",
+  });
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: birthOnly.babyId,
+      milestoneVisibility: { showLabor: true, showHospital: false },
+    }),
+  ).rejects.toThrow("Milestone visibility cannot change after going to hospital or birth");
 });
 
 test("getByPublicId resolves by publicId and by document id", async () => {

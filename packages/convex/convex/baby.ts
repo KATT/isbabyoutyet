@@ -7,6 +7,7 @@ import {
   FORBIDDEN,
   getBlockingLaterMilestone,
   getCurrentStatus,
+  getMilestonePolicy,
   isStatusForward,
   MILESTONE_FIELDS,
   MILESTONE_LABELS,
@@ -264,6 +265,8 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.string(),
+    showLaborMilestone: v.optional(v.boolean()),
+    showHospitalMilestone: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -290,6 +293,10 @@ export const create = mutationWithTriggers({
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
+      milestoneVisibility: {
+        showLabor: args.showLaborMilestone ?? true,
+        showHospital: args.showHospitalMilestone ?? true,
+      },
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -486,6 +493,34 @@ export async function syncStatusNotifications(
   await ctx.db.patch(notificationId, { scheduledId });
 }
 
+async function cancelHiddenMilestoneNotifications(
+  ctx: MutationCtx,
+  opts: { babyId: Id<"baby">; visibleMilestones: readonly Milestone[] },
+) {
+  const visibleMilestones = new Set(opts.visibleMilestones);
+  const pendingNotifications = await ctx.db
+    .query("scheduledNotifications")
+    .withIndex("by_babyId_and_status", (q) => q.eq("babyId", opts.babyId).eq("status", "pending"))
+    .take(100);
+
+  for (const notification of pendingNotifications) {
+    if (
+      notification.notificationType === "photo_added" ||
+      visibleMilestones.has(notification.notificationType)
+    ) {
+      continue;
+    }
+    if (notification.scheduledId) {
+      try {
+        await ctx.scheduler.cancel(notification.scheduledId);
+      } catch (_error) {
+        // Already sent or missing — still mark the stale record cancelled
+      }
+    }
+    await ctx.db.patch(notification._id, { status: "cancelled" });
+  }
+}
+
 /**
  * Keeps the timeline's milestone update rows in sync with the canonical
  * status fields on the baby doc:
@@ -564,6 +599,12 @@ export const update = mutationWithTriggers({
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
+    milestoneVisibility: v.optional(
+      v.object({
+        showLabor: v.boolean(),
+        showHospital: v.boolean(),
+      }),
+    ),
     // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
     // during the deploy window): mapped onto the milestone update rows, never
     // written to the baby doc. Remove in a later tidy-up once stale tabs are
@@ -574,12 +615,30 @@ export const update = mutationWithTriggers({
   },
   handler: async (ctx, args) => {
     const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
-    const { identity, baby } = await requireBabyManager(ctx, babyId);
+    const { identity, baby, isOwner } = await requireBabyManager(ctx, babyId);
     const legacyMessages = {
       labor_started: laborStartedMessage,
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
+    const policyBefore = getMilestonePolicy(baby);
+    const requestedVisibility = rest.milestoneVisibility;
+    const visibilityChanged =
+      requestedVisibility !== undefined &&
+      (requestedVisibility.showLabor !== policyBefore.visibility.showLabor ||
+        requestedVisibility.showHospital !== policyBefore.visibility.showHospital);
+
+    if (visibilityChanged && !isOwner) {
+      throw new Error("Only the owner can change milestone visibility");
+    }
+    if (visibilityChanged && policyBefore.visibilityLocked) {
+      throw new Error("Milestone visibility cannot change after going to hospital or birth");
+    }
+
+    const policyForUpdate = getMilestonePolicy({
+      ...baby,
+      milestoneVisibility: requestedVisibility ?? baby.milestoneVisibility,
+    });
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings
@@ -587,6 +646,9 @@ export const update = mutationWithTriggers({
     for (const milestone of MILESTONES) {
       const dateArg = rest[MILESTONE_FIELDS[milestone].date];
       if (typeof dateArg !== "string") continue;
+      if (!policyForUpdate.isVisible(milestone)) {
+        throw new Error("This milestone is hidden on the public page");
+      }
       const parsed = Date.parse(dateArg);
       if (Number.isNaN(parsed)) {
         throw new Error("Invalid date");
@@ -605,6 +667,10 @@ export const update = mutationWithTriggers({
     }
 
     const statusBefore = getCurrentStatus(baby);
+    const newlyMarkedMilestone = MILESTONES.some((milestone) => {
+      const dateField = MILESTONE_FIELDS[milestone].date;
+      return typeof rest[dateField] === "string" && !baby[dateField];
+    });
 
     const patch: Partial<typeof baby> = rest;
     // If name changed and the slugified name would result in a different publicId
@@ -636,14 +702,21 @@ export const update = mutationWithTriggers({
 
     // Settings status changes don't carry a message (attach one by posting an
     // update); a stale client's legacy message arg still rides along
-    await syncStatusNotifications(ctx, {
-      statusBefore,
-      updatedBaby,
-      customMessageByMilestone: {
-        labor_started: legacyMessages.labor_started ?? null,
-        gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-        born: legacyMessages.born ?? null,
-      },
-    });
+    if (visibilityChanged && !newlyMarkedMilestone) {
+      await cancelHiddenMilestoneNotifications(ctx, {
+        babyId,
+        visibleMilestones: getMilestonePolicy(updatedBaby).visibleMilestones,
+      });
+    } else {
+      await syncStatusNotifications(ctx, {
+        statusBefore,
+        updatedBaby,
+        customMessageByMilestone: {
+          labor_started: legacyMessages.labor_started ?? null,
+          gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
+          born: legacyMessages.born ?? null,
+        },
+      });
+    }
   },
 });

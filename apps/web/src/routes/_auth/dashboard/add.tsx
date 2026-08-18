@@ -6,6 +6,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Card, CardContent } from "@workspace/ui/components/card";
+import { Switch } from "@workspace/ui/components/switch";
 import {
   FormControl,
   FormField,
@@ -24,6 +25,8 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
+      showLaborMilestone: z.boolean(),
+      showHospitalMilestone: z.boolean(),
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => values);
 }
@@ -42,6 +45,8 @@ function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
+      showLaborMilestone: true,
+      showHospitalMilestone: true,
     },
   });
 
@@ -115,6 +120,49 @@ function AddBabyPage() {
                     </FormItem>
                   )}
                 />
+
+                <div className="space-y-3 rounded-2xl border-2 border-border bg-muted/30 p-4">
+                  <div>
+                    <p className="font-bold">{t("Milestones visitors can see")}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t(
+                        "You can change these until the hospital or birth milestone is marked. They only affect what visitors see.",
+                      )}
+                    </p>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="showLaborMilestone"
+                    render={(renderProps) => (
+                      <FormItem className="flex items-center justify-between gap-4">
+                        <FormLabel>{t("Show labour milestone")}</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={renderProps.field.value}
+                            onCheckedChange={renderProps.field.onChange}
+                            aria-label={t("Show labour milestone")}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="showHospitalMilestone"
+                    render={(renderProps) => (
+                      <FormItem className="flex items-center justify-between gap-4">
+                        <FormLabel>{t("Show hospital milestone")}</FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={renderProps.field.value}
+                            onCheckedChange={renderProps.field.onChange}
+                            aria-label={t("Show hospital milestone")}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <Button
                   type="submit"
