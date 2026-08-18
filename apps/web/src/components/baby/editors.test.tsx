@@ -12,6 +12,14 @@ import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
+const mocks = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: mocks.toastError },
+}));
+
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
@@ -213,6 +221,19 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
   fireEvent.click(view.getByRole("button", { name: "Change" }));
 
   expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+});
+
+test("theme selector reports a failed update and remains open", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue(new Error("Theme update failed"));
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
+
+  await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Theme update failed"));
+  expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
 });
 
 test("status editor confirms destructive deletion", async () => {
