@@ -30,7 +30,7 @@ test("Baby Blue uses the canonical name while rendering legacy saved pages", () 
   const babyBlue = THEME_OPTIONS.find((option) => option.value === BABY_BLUE_THEME);
 
   expect(babyBlue).toMatchObject({ labelKey: "Baby Blue" });
-  expect(THEME_OPTIONS.some((option) => option.value === LEGACY_BABY_BLUE_THEME)).toBe(false);
+  expect(THEME_OPTIONS.map((option) => option.value)).not.toContain(LEGACY_BABY_BLUE_THEME);
   expect(getThemeCss(LEGACY_BABY_BLUE_THEME)).toBe(babyBlue?.css);
   expect(getThemePrimaryColor(LEGACY_BABY_BLUE_THEME)).toBe("#1e9df1");
 });
