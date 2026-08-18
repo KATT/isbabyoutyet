@@ -20,6 +20,8 @@ import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
+  loadCurrentStatus,
+  loadMilestoneDates,
 } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
@@ -80,7 +82,7 @@ export const getByPublicId = query({
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
-      ...toBabyDto(baby),
+      ...(await toBabyDto(ctx, baby)),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
@@ -287,9 +289,6 @@ export const create = mutationWithTriggers({
       hospitalMessage: null,
       babyBornMessage: null,
       laborStartedMessage: null,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -426,7 +425,7 @@ export async function syncStatusNotifications(
   },
 ) {
   const updatedBaby = opts.updatedBaby;
-  const statusAfter = getCurrentStatus(updatedBaby);
+  const statusAfter = await loadCurrentStatus(ctx, updatedBaby._id);
 
   if (opts.statusBefore.type === statusAfter.type) {
     // no notification change as status didn't change
@@ -487,14 +486,14 @@ export async function syncStatusNotifications(
 }
 
 /**
- * Keeps the timeline's milestone update rows in sync with the canonical
- * status fields on the baby doc:
+ * Applies settings milestone date args to the timeline's milestone updates
+ * (the source of truth for status):
  * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
  * - redating a milestone updates `occurredAt` only — feed position stays put
  * - unmarking a milestone deletes its update + timeline rows
  * - a legacy stage-message arg (stale-client compat) lands on the row's message
  */
-async function syncMilestoneUpdates(
+async function applyMilestoneDateArgs(
   ctx: MutationCtx,
   opts: {
     baby: Doc<"baby">;
@@ -556,6 +555,8 @@ async function syncMilestoneUpdates(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
+    // Settings redate / unmark: applied to the milestone update, not stored
+    // on the baby doc. Status is inferred from those updates.
     laborStarted: v.optional(v.union(v.string(), v.null())),
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
@@ -573,19 +574,33 @@ export const update = mutationWithTriggers({
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const {
+      babyId,
+      laborStarted,
+      wentToHospital,
+      babyBorn,
+      laborStartedMessage,
+      hospitalMessage,
+      babyBornMessage,
+      ...rest
+    } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
     const legacyMessages = {
       labor_started: laborStartedMessage,
       gone_to_hospital: hospitalMessage,
       born: babyBornMessage,
     };
+    const milestonePatch = {
+      laborStarted,
+      wentToHospital,
+      babyBorn,
+    };
 
     // Milestone dates are event clocks: they must parse and cannot be in the
     // future (mirrors the `updates.post` occurredAt guard, so settings
     // redating can't bypass it)
     for (const milestone of MILESTONES) {
-      const dateArg = rest[MILESTONE_FIELDS[milestone].date];
+      const dateArg = milestonePatch[MILESTONE_FIELDS[milestone].date];
       if (typeof dateArg !== "string") continue;
       const parsed = Date.parse(dateArg);
       if (Number.isNaN(parsed)) {
@@ -596,15 +611,16 @@ export const update = mutationWithTriggers({
       }
     }
 
+    const datesBefore = await loadMilestoneDates(ctx, babyId);
     for (const milestone of MILESTONES) {
-      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
-      const blocker = getBlockingLaterMilestone(baby, milestone);
+      if (milestonePatch[MILESTONE_FIELDS[milestone].date] !== null) continue;
+      const blocker = getBlockingLaterMilestone(datesBefore, milestone);
       if (blocker) {
         throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
       }
     }
 
-    const statusBefore = getCurrentStatus(baby);
+    const statusBefore = getCurrentStatus(datesBefore);
 
     const patch: Partial<typeof baby> = rest;
     // If name changed and the slugified name would result in a different publicId
@@ -622,11 +638,13 @@ export const update = mutationWithTriggers({
       }
     }
 
-    await ctx.db.patch(babyId, patch);
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(babyId, patch);
+    }
 
-    await syncMilestoneUpdates(ctx, {
+    await applyMilestoneDateArgs(ctx, {
       baby,
-      patch: rest,
+      patch: milestonePatch,
       legacyMessages,
       postedByUserId: identity.authUserId,
     });

@@ -74,8 +74,9 @@ test("a text-only update tops the feed without changing the status", async () =>
   });
 
   // Status untouched: no milestone was marked and no notification scheduled
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
   const baby = await getBaby(t, babyId);
-  expect(baby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
   expect(baby.lastActivityAt).toBe(feed.page[0]?.postedAt);
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toEqual([]);
@@ -153,7 +154,7 @@ test("posting requires content and ownership", async () => {
   );
 });
 
-test("a milestone update sets the canonical status and schedules a push", async () => {
+test("a milestone update infers the status and schedules a push", async () => {
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
@@ -163,8 +164,10 @@ test("a milestone update sets the canonical status and schedules a push", async 
     message: "She's here!",
   });
 
-  const baby = await getBaby(t, babyId);
-  expect(baby.babyBorn).toBeTruthy();
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby?.babyBorn).toBeTruthy();
+  const stored = await getBaby(t, babyId);
+  expect(stored.babyBorn ?? null).toBeNull();
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([
@@ -205,7 +208,7 @@ test("the forward-only guard enforces order at every intermediate stage", async 
   await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
 });
 
-test("baby.update keeps milestone rows in sync: mark, redate, unmark", async () => {
+test("baby.update applies milestone dates to the timeline: mark, redate, unmark", async () => {
   const { t, asAlice, babyId } = await setup();
 
   // Mark labour started with a historical event clock
@@ -290,8 +293,8 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
 
   await asAlice.mutation(api.updates.remove, { updateId });
 
-  const baby = await getBaby(t, babyId);
-  expect(baby.laborStarted).toBeNull();
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([{ status: "cancelled", notificationType: "labor_started" }]);
@@ -331,8 +334,8 @@ test("milestones must be deleted in reverse order", async () => {
   await asAlice.mutation(api.updates.remove, { updateId: hospitalUpdateId });
   await asAlice.mutation(api.updates.remove, { updateId: laborUpdateId });
 
-  const baby = await getBaby(t, babyId);
-  expect(baby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
 });
 
 test("photo updates keep old photos; removing one falls back to the previous", async () => {
@@ -472,9 +475,9 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
     });
   });
 
-  // Simulate the deploy window where dual-writes go live BEFORE the backfill
-  // runs: one milestone row already exists; the backfill must still fill in
-  // the other milestone and the photo (per-item idempotency, not per-baby)
+  // A settings write during the deploy window created the hospital row
+  // before backfill ran; backfill must still fill in the other milestone
+  // and the photo (per-item idempotency, not per-baby)
   vi.advanceTimersByTime(1_000);
   await asAlice.mutation(api.baby.update, {
     babyId,
@@ -557,8 +560,7 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
     { kind: "encouragement" },
   ]);
 
-  // Dual-writes stay consistent post-backfill: unmarking removes the
-  // dual-written milestone row too
+  // Unmarking via settings removes the milestone update from the feed
   await asAlice.mutation(api.baby.update, { babyId, wentToHospital: null });
   const after = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(after.page).toHaveLength(4);
@@ -825,9 +827,11 @@ test("posting a milestone can backdate the event clock without moving the feed",
   expect(item.postedAt).toBeLessThanOrEqual(after);
   expect(item.update.occurredAt).toBe(occurredAt);
 
-  // The canonical status timestamp on the baby doc is the event clock
-  const baby = await getBaby(t, babyId);
-  expect(baby.laborStarted).toBe(new Date(occurredAt).toISOString());
+  // Inferred status uses the event clock, not the announce time
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  expect(publicBaby?.laborStarted).toBe(new Date(occurredAt).toISOString());
+  const stored = await getBaby(t, babyId);
+  expect(stored.laborStarted ?? null).toBeNull();
 });
 
 test("a backdated event time is rejected when in the future or without a milestone", async () => {

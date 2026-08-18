@@ -162,6 +162,38 @@ test("homepage demo publicIds are reserved and never assigned to real babies", a
   expect(created.publicId).toBe("juniper-hale-1");
 });
 
+test("status is inferred from milestone updates, not stored baby fields", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.updates.post, {
+    babyId: created.babyId,
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  expect(stored?.laborStarted ?? null).toBeNull();
+  expect(stored?.wentToHospital ?? null).toBeNull();
+  expect(stored?.babyBorn ?? null).toBeNull();
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).toMatchObject({
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: null,
+    babyBorn: null,
+  });
+
+  const listed = await asAlice.query(api.baby.listByUser, {});
+  expect(listed).toMatchObject([{ laborStarted: "2026-08-10T08:00:00.000Z" }]);
+});
+
 test("moving the status forward schedules a push notification", async () => {
   await using _timers = useFakeTimersResource();
 

@@ -5,7 +5,6 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
-  MILESTONE_FIELDS,
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "../src/types";
@@ -15,6 +14,7 @@ import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
+  loadMilestoneDates,
 } from "./timeline";
 import { mutationWithTriggers } from "./triggers";
 import { isActive } from "./softDelete";
@@ -29,8 +29,8 @@ export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 
 /**
  * Owner or co-parent posts an update to the timeline: a message and/or a photo,
- * optionally marking a milestone. Marking a milestone also sets the canonical
- * status timestamp on the baby doc and schedules the push notification.
+ * optionally marking a milestone. Marking a milestone infers the baby's status
+ * from that update and schedules the push notification.
  */
 export const post = mutationWithTriggers({
   args: {
@@ -56,7 +56,8 @@ export const post = mutationWithTriggers({
       throw new Error(`Message must be ${MAX_UPDATE_MESSAGE_LENGTH} characters or less`);
     }
 
-    const statusBefore = getCurrentStatus(baby);
+    const datesBefore = await loadMilestoneDates(ctx, args.babyId);
+    const statusBefore = getCurrentStatus(datesBefore);
 
     if (milestone) {
       // The status only moves forward: once a later stage is reached, earlier
@@ -100,20 +101,9 @@ export const post = mutationWithTriggers({
     }
 
     if (milestone) {
-      // The canonical status timestamp is the event clock, not the announce time
-      const dateField = MILESTONE_FIELDS[milestone].date;
-      if (!baby[dateField]) {
-        await ctx.db.patch(args.babyId, {
-          [dateField]: new Date(occurredAt ?? postedAt).toISOString(),
-        });
-      }
-
-      const updatedBaby = await ctx.db.get(args.babyId);
-      if (!updatedBaby) throw new Error("Baby not found after update");
-
       await syncStatusNotifications(ctx, {
         statusBefore,
-        updatedBaby,
+        updatedBaby: baby,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
@@ -159,8 +149,8 @@ export const setAsCurrentPhoto = mutationWithTriggers({
 });
 
 /**
- * Removes an update from the timeline. Removing a milestone update also
- * unmarks the milestone on the baby doc; removing the update carrying the
+ * Removes an update from the timeline. Removing a milestone update infers
+ * the status from remaining milestones; removing the update carrying the
  * current photo falls back to the most recent remaining photo update.
  */
 export const remove = mutationWithTriggers({
@@ -170,15 +160,16 @@ export const remove = mutationWithTriggers({
     if (!update || !isActive(update)) throw new Error("Update not found");
 
     const { baby } = await requireBabyManager(ctx, update.babyId);
+    const datesBefore = await loadMilestoneDates(ctx, update.babyId);
 
     if (update.milestone) {
-      const blocker = getBlockingLaterMilestone(baby, update.milestone);
+      const blocker = getBlockingLaterMilestone(datesBefore, update.milestone);
       if (blocker) {
         throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
       }
     }
 
-    const statusBefore = getCurrentStatus(baby);
+    const statusBefore = getCurrentStatus(datesBefore);
 
     await deleteUpdateWithTimelineItem(ctx, update);
 
@@ -191,11 +182,6 @@ export const remove = mutationWithTriggers({
     }
 
     if (update.milestone) {
-      const dateField = MILESTONE_FIELDS[update.milestone].date;
-      if (baby[dateField]) {
-        await ctx.db.patch(baby._id, { [dateField]: null });
-      }
-
       const updatedBaby = await ctx.db.get(baby._id);
       if (!updatedBaby) throw new Error("Baby not found after update");
 

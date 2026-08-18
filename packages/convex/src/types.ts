@@ -32,7 +32,7 @@ export type BabyUpdate = Partial<BabyData>;
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
 
 /**
- * Current status derived from baby data
+ * Current status derived from marked milestones
  */
 export type BabyStatus =
   | { type: "not_yet" }
@@ -41,13 +41,21 @@ export type BabyStatus =
   | { type: "born"; date: string };
 
 /**
- * Derive the current status from baby data
+ * Event-clock dates for the three milestones. On the server these are inferred
+ * from the latest active milestone updates; the preview page supplies them as
+ * query params.
  */
-export function getCurrentStatus(baby: {
-  babyBorn?: string | null;
-  wentToHospital?: string | null;
-  laborStarted?: string | null;
-}): BabyStatus {
+export type MilestoneDates = {
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+};
+
+/**
+ * Derive the current status from milestone dates. Later stages win, so a born
+ * date implies the current status is born even if earlier dates are also set.
+ */
+export function getCurrentStatus(baby: Partial<MilestoneDates>): BabyStatus {
   if (baby.babyBorn) {
     return { type: "born", date: baby.babyBorn };
   }
@@ -81,8 +89,8 @@ export const MILESTONE_LABELS = {
 } as const satisfies Record<Milestone, string>;
 
 /**
- * Maps a milestone to the baby fields that hold its canonical timestamp and
- * its legacy per-stage message.
+ * Maps a milestone to the settings date arg / DTO field and the legacy
+ * per-stage message field.
  */
 export const MILESTONE_FIELDS = {
   labor_started: { date: "laborStarted", message: "laborStartedMessage" },
@@ -94,10 +102,10 @@ export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
 
 /**
  * Returns the latest marked milestone that must be removed before `milestone`
- * can be removed. Milestones are unwound in reverse order so the canonical
- * status never contains gaps.
+ * can be removed. Milestones are unwound in reverse order so inferred status
+ * never contains gaps.
  */
-export function getBlockingLaterMilestone(baby: BabyData, milestone: Milestone) {
+export function getBlockingLaterMilestone(baby: Partial<MilestoneDates>, milestone: Milestone) {
   for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
     const candidate = MILESTONES[index];
     if (

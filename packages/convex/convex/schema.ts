@@ -10,12 +10,14 @@ export default defineSchema({
     name: v.string(),
     dueDate: v.string(), // ISO date string
     publicId: v.string(), // Unique shareable ID
-    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
-    babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when labour started
-    laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
+    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
+    babyBornMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
+    laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Legacy; messages live on milestone updates
+    // Legacy stored dates. Status is inferred from milestone updates; these
+    // fields are no longer written and are omitted from public DTOs.
+    laborStarted: v.optional(v.union(v.string(), v.null())),
+    wentToHospital: v.optional(v.union(v.string(), v.null())),
+    babyBorn: v.optional(v.union(v.string(), v.null())),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)

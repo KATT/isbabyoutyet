@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { Milestone } from "../src/types";
+import type { Milestone, MilestoneDates } from "../src/types";
+import { getCurrentStatus, MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import { isActive, softDeletePatch } from "./softDelete";
 
 /**
@@ -281,6 +282,37 @@ export async function findMilestoneUpdate(
     .order("desc")
     .take(32);
   return updates.find(isActive) ?? null;
+}
+
+/**
+ * Event-clock dates inferred from the active milestone updates. Missing
+ * `occurredAt` falls back to the feed `postedAt` so legacy rows still count.
+ */
+export async function loadMilestoneDates(
+  ctx: QueryCtx,
+  babyId: Id<"baby">,
+): Promise<MilestoneDates> {
+  const dates: MilestoneDates = {
+    laborStarted: null,
+    wentToHospital: null,
+    babyBorn: null,
+  };
+  for (const milestone of MILESTONES) {
+    const update = await findMilestoneUpdate(ctx, { babyId, milestone });
+    if (!update) continue;
+    let occurredAt = update.occurredAt ?? null;
+    if (occurredAt == null) {
+      const item = await ctx.db.get(update.timelineItemId);
+      occurredAt = item?.postedAt ?? null;
+    }
+    if (occurredAt == null) continue;
+    dates[MILESTONE_FIELDS[milestone].date] = new Date(occurredAt).toISOString();
+  }
+  return dates;
+}
+
+export async function loadCurrentStatus(ctx: QueryCtx, babyId: Id<"baby">) {
+  return getCurrentStatus(await loadMilestoneDates(ctx, babyId));
 }
 
 /**
