@@ -10,4 +10,5 @@ export const MILESTONE_LABEL_KEYS = {
 export const NOTIFICATION_LABEL_KEYS = {
   ...MILESTONE_LABEL_KEYS,
   photo_added: "Photo added",
+  update_posted: "Update posted",
 } as const satisfies Record<NotifiableStatus, TranslationKey>;

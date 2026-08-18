@@ -4,8 +4,8 @@ import { authServer } from "@/lib/auth-server";
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
-      GET: ({ request }) => authServer.handler(request),
-      POST: ({ request }) => authServer.handler(request),
+      GET: (opts) => authServer.handler(opts.request),
+      POST: (opts) => authServer.handler(opts.request),
     },
   },
 });

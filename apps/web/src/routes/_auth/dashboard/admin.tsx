@@ -422,13 +422,6 @@ export function AdminDashboardPage() {
     });
   }
 
-  function setHideDemo(hideDemo: boolean) {
-    void navigate({
-      search: (prev) => ({ ...prev, hideDemo }),
-      replace: true,
-    });
-  }
-
   const tabSearch = (tab: AdminTab): AdminSearch => ({
     tab,
     sort: search.sort,
@@ -500,7 +493,12 @@ export function AdminDashboardPage() {
                     <Switch
                       id="admin-hide-demo"
                       checked={search.hideDemo}
-                      onCheckedChange={setHideDemo}
+                      onCheckedChange={(hideDemo) => {
+                        void navigate({
+                          search: (prev) => ({ ...prev, hideDemo }),
+                          replace: true,
+                        });
+                      }}
                     />
                     <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
                       {t("Hide demo babies")}

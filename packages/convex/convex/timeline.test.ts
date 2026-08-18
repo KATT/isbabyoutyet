@@ -50,6 +50,7 @@ async function storeBlob(t: Awaited<ReturnType<typeof setup>>["t"]) {
 }
 
 test("a text-only update tops the feed without changing the status", async () => {
+  await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
   await t.mutation(api.encouragements.create, {
@@ -75,13 +76,20 @@ test("a text-only update tops the feed without changing the status", async () =>
     update: { message: "Long walk today. Still comfy in there" },
   });
 
-  // Status untouched: no milestone was marked and no notification scheduled
+  // Status stays untouched, but every owner update schedules a push.
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
   const baby = await getBaby(t, babyId);
   expect(baby.lastActivityAt).toBe(feed.page[0]?.postedAt);
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
-  expect(notifications).toEqual([]);
+  expect(notifications).toMatchObject([
+    {
+      status: "pending",
+      notificationType: "update_posted",
+      customMessage: "Long walk today. Still comfy in there",
+      photoId: null,
+    },
+  ]);
 });
 
 test("the public feed never leaks visitor credentials or metadata", async () => {
@@ -121,6 +129,7 @@ test("the public feed never leaks visitor credentials or metadata", async () => 
 });
 
 test("a photo-only update does not blank the latest message", async () => {
+  await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
   const photo = await storeBlob(t);
 
@@ -129,6 +138,17 @@ test("a photo-only update does not blank the latest message", async () => {
 
   const latest = await t.query(api.timeline.latestUpdate, { babyId });
   expect(latest).toMatchObject({ update: { message: "Still waiting!" } });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notifications).toMatchObject([
+    { status: "pending", notificationType: "photo_added", customMessage: null, photoId: photo },
+    {
+      status: "pending",
+      notificationType: "update_posted",
+      customMessage: "Still waiting!",
+      photoId: null,
+    },
+  ]);
 });
 
 test("posting requires content and ownership", async () => {
@@ -175,7 +195,7 @@ test("status is inferred from milestone updates, not stored baby fields", async 
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([
-    { status: "pending", notificationType: "born", customMessage: "She's here!" },
+    { status: "pending", notificationType: "born", customMessage: "She's here!", photoId: null },
   ]);
 
   // The status only moves forward: re-marking the same milestone — or any
@@ -256,6 +276,47 @@ test("an invalid persisted milestone timestamp is ignored", async () => {
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby?.laborStarted).toBeNull();
+});
+
+test("a milestone with a photo is a single status push that carries the image", async () => {
+  await using _timers = useFakeTimersResource();
+  const { t, asAlice, babyId } = await setup();
+  const photo = await storeBlob(t);
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    milestone: "born",
+    message: "She's here!",
+    photoId: photo,
+  });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notifications).toMatchObject([
+    {
+      status: "pending",
+      notificationType: "born",
+      customMessage: "She's here!",
+      photoId: photo,
+    },
+  ]);
+});
+
+test("a later generic update does not cancel a pending status push", async () => {
+  await using _timers = useFakeTimersResource();
+  const { asAlice, babyId } = await setup();
+
+  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await asAlice.mutation(api.updates.post, { babyId, message: "Breathing through it" });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
+  expect(notifications).toMatchObject([
+    {
+      status: "pending",
+      notificationType: "update_posted",
+      customMessage: "Breathing through it",
+    },
+    { status: "pending", notificationType: "labor_started" },
+  ]);
 });
 
 test("the forward-only guard enforces order at every intermediate stage", async () => {

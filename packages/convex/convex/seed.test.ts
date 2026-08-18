@@ -3,8 +3,9 @@ import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { getCurrentStatus } from "../src/types";
-import { DEMO_USER } from "../src/seedCredentials";
+import { DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { seedBabiesForUser } from "./seed";
+import { skipUserOnboarding } from "./onboarding";
 import { modules, registerComponents } from "./test.setup";
 
 async function setup() {
@@ -138,6 +139,91 @@ test("seedDemoData creates the demo user and is idempotent", async () => {
     ).length;
   });
   expect(babyCount).toBe(4);
+});
+
+test("seedDemoData creates an empty demo user with no babies", async () => {
+  const t = await setup();
+
+  const first = await t.mutation(internal.seed.seedDemoData, {});
+  expect(first.emptyUserEmail).toBe(DEMO_EMPTY_USER.email);
+
+  const authUser = await t.query(components.betterAuth.adapter.findOne, {
+    model: "user",
+    where: [{ field: "email", value: DEMO_EMPTY_USER.email }],
+  });
+  expect(authUser).toMatchObject({
+    email: DEMO_EMPTY_USER.email,
+    name: DEMO_EMPTY_USER.name,
+  });
+
+  const babyCount = await t.run(async (ctx) => {
+    return (
+      await ctx.db
+        .query("baby")
+        .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+        .collect()
+    ).length;
+  });
+  expect(babyCount).toBe(0);
+
+  const profile = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userProfiles")
+      .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+      .unique();
+  });
+  expect(profile).toBeNull();
+
+  const onboarding = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userOnboarding")
+      .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+      .unique();
+  });
+  expect(onboarding).toBeNull();
+
+  const second = await t.mutation(internal.seed.seedDemoData, {});
+  expect(second.emptyUserId).toBe(first.emptyUserId);
+  expect(second.emptyUserEmail).toBe(DEMO_EMPTY_USER.email);
+});
+
+test("seedDemoData clears onboarding for the empty demo user", async () => {
+  const t = await setup();
+  const first = await t.mutation(internal.seed.seedDemoData, {});
+
+  await t.run(async (ctx) => {
+    await skipUserOnboarding(ctx, first.emptyUserId);
+  });
+
+  await t.mutation(internal.seed.seedDemoData, {});
+
+  const onboarding = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("userOnboarding")
+      .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
+      .unique();
+  });
+  expect(onboarding).toBeNull();
+});
+
+test("empty demo user stays on the first-run tour after seed and skipTour", async () => {
+  const t = await setup();
+  const seeded = await t.mutation(internal.seed.seedDemoData, {});
+  await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+
+  const asEmpty = t.withIdentity({ subject: seeded.emptyUserId });
+  expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: false,
+    checklistDismissed: false,
+    allDone: false,
+    completedSteps: [],
+  });
+
+  const asDemo = t.withIdentity({ subject: seeded.userId });
+  expect(await asDemo.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: true,
+    checklistDismissed: true,
+  });
 });
 
 test("seedDemoData restores missing fixture encouragements", async () => {

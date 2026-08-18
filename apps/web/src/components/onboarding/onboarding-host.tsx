@@ -120,22 +120,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
       ? t(nextStep.description)
       : "";
 
-  function handleGoToStep(stepId: OnboardingStepId) {
-    if (stepId === "post_update") {
-      props.onGoToStep?.(stepId);
-      return;
-    }
-    if (stepId === "explore_settings") {
-      props.onGoToStep?.(stepId);
-      void completeStep({ stepId });
-      return;
-    }
-    const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
-    if (step) {
-      scrollToTourTarget(step.targetId);
-    }
-  }
-
   return (
     <>
       <WelcomeTourDialog
@@ -159,7 +143,21 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
           }}
-          onGoToStep={handleGoToStep}
+          onGoToStep={(stepId) => {
+            if (stepId === "post_update") {
+              props.onGoToStep?.(stepId);
+              return;
+            }
+            if (stepId === "explore_settings") {
+              props.onGoToStep?.(stepId);
+              void completeStep({ stepId });
+              return;
+            }
+            const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
+            if (step) {
+              scrollToTourTarget(step.targetId);
+            }
+          }}
           surface={props.surface}
           tourBaby={progress.tourBaby}
           className={undefined}

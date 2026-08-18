@@ -8,7 +8,7 @@ import {
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "../src/types";
-import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
+import { applyPhotoSideEffects, schedulePushNotification, syncStatusNotifications } from "./baby";
 import { requireBabyManager } from "./babyAccess";
 import {
   deleteUpdateWithTimelineItem,
@@ -30,8 +30,8 @@ export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 
 /**
  * Owner or co-parent posts an update to the timeline: a message and/or a photo,
- * optionally marking a milestone. Marking a milestone infers the baby's status
- * from that update and schedules the push notification.
+ * optionally marking a milestone. Every post schedules one delayed push;
+ * milestone status is inferred from the source update.
  */
 export const post = mutationWithTriggers({
   args: {
@@ -108,11 +108,21 @@ export const post = mutationWithTriggers({
       await syncStatusNotifications(ctx, {
         statusBefore,
         updatedBaby: baby,
+        photoId,
+        updateId,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
           born: milestone === "born" ? message : null,
         },
+      });
+    } else {
+      await schedulePushNotification(ctx, {
+        baby,
+        notificationType: photoId ? "photo_added" : "update_posted",
+        customMessage: message,
+        photoId,
+        updateId,
       });
     }
 
@@ -142,7 +152,7 @@ export const setAsCurrentPhoto = mutationWithTriggers({
       thumbnailId: update.thumbnailId ?? null,
     });
 
-    if (!update.thumbnailId) {
+    if (!update.thumbnailId || !update.pushImageId) {
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: update.photoId,
@@ -256,6 +266,8 @@ async function removeManagedUpdate(
     await syncStatusNotifications(ctx, {
       statusBefore,
       updatedBaby,
+      photoId: null,
+      updateId: null,
       customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
     });
   }
