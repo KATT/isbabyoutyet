@@ -1,5 +1,3 @@
-"use client";
-
 import * as ResizablePrimitive from "react-resizable-panels";
 
 import { cn } from "@workspace/ui/lib/utils";

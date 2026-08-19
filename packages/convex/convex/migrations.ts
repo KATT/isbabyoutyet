@@ -1,5 +1,4 @@
 import { Migrations } from "@convex-dev/migrations";
-import type { FunctionReference } from "convex/server";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -20,32 +19,6 @@ import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
-
-type BetterAuthAccountIssuerMigrationApi = {
-  accountIssuerMigrationIsDone: FunctionReference<
-    "query",
-    "internal",
-    Record<string, never>,
-    boolean
-  >;
-  backfillAccountIssuers: FunctionReference<
-    "mutation",
-    "internal",
-    {
-      paginationOpts: {
-        cursor: string | null;
-        numItems: number;
-      };
-    },
-    {
-      continueCursor: string;
-      isDone: boolean;
-    }
-  >;
-};
-
-const betterAuthAccountIssuerMigrationApi = components.betterAuth
-  .adapter as typeof components.betterAuth.adapter & BetterAuthAccountIssuerMigrationApi;
 
 // Runner to execute individual migrations via CLI
 export const run = migrations.runner();
@@ -615,27 +588,6 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
-export const backfillBetterAuthAccountIssuers = internalMutation({
-  args: {
-    cursor: v.union(v.string(), v.null()),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const page = await ctx.runMutation(betterAuthAccountIssuerMigrationApi.backfillAccountIssuers, {
-      paginationOpts: {
-        cursor: args.cursor,
-        numItems: 100,
-      },
-    });
-    if (!page.isDone) {
-      await ctx.scheduler.runAfter(0, internal.migrations.backfillBetterAuthAccountIssuers, {
-        cursor: page.continueCursor,
-      });
-    }
-    return null;
-  },
-});
-
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.generatePushImagesForExistingPhotos,
@@ -679,15 +631,11 @@ const TABLE_MIGRATION_NAMES = [
 export const deploymentStatus = internalQuery({
   args: {},
   handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
-    const [statuses, accountIssuerMigrationIsDone] = await Promise.all([
-      migrations.getStatus(ctx, {
-        migrations: [...TABLE_MIGRATION_NAMES],
-      }),
-      ctx.runQuery(betterAuthAccountIssuerMigrationApi.accountIssuerMigrationIsDone, {}),
-    ]);
+    const statuses = await migrations.getStatus(ctx, {
+      migrations: [...TABLE_MIGRATION_NAMES],
+    });
     return {
       isDone:
-        accountIssuerMigrationIsDone &&
         statuses.length === TABLE_MIGRATION_NAMES.length &&
         statuses.every((status) => status.isDone),
       failed: statuses
@@ -711,9 +659,6 @@ export const runAll = internalMutation({
     oneBatchOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<unknown> => {
-    await ctx.scheduler.runAfter(0, internal.migrations.backfillBetterAuthAccountIssuers, {
-      cursor: null,
-    });
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
       cursor: null,
     });
