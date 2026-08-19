@@ -74,6 +74,9 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
   expect(
+    view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
+  ).toHaveLength(1);
+  expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
   ).toBe("true");
   expect(view.queryByLabelText("Public due date message")).toBeNull();
@@ -90,20 +93,29 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   );
 });
 
-test("due date editor requires and saves a custom visitor message", async () => {
+test("due date editor saves message mode without public text", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+    }),
+  );
+});
+
+test("due date editor saves a custom visitor message when provided", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("September baby");
-  fireEvent.click(view.getByRole("button", { name: "Save" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
-  });
-  expect(onUpdate).not.toHaveBeenCalled();
-
   fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() =>
@@ -113,6 +125,21 @@ test("due date editor requires and saves a custom visitor message", async () => 
       publicDueDateText: "Any day now",
     }),
   );
+});
+
+test("due date editor toggles exact mode when clicking the row label", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(view.getByText("Visitors see the exact date and countdown."));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+
+  fireEvent.click(view.getByText("Show exact due date"));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
 });
 
 test("due date editor toggles modes without losing either field value", async () => {
@@ -222,7 +249,7 @@ test("theme selector marks Baby Blue selected", async () => {
 
   const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
   expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
-  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
 
   fireEvent.click(babyBlueButton);
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
@@ -238,7 +265,7 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
 
   fireEvent.click(view.getByRole("button", { name: "Change" }));
 
-  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
 });
 
 test("theme selector reports a failed update and remains open", async () => {

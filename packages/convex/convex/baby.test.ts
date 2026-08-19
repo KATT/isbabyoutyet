@@ -158,13 +158,19 @@ test("custom public due date text hides the exact day from visitors", async () =
     publicDueDateText: "Any day now",
   });
   expect(publicMessageAgain).not.toHaveProperty("dueDate");
-  await expect(
-    asAlice.mutation(api.baby.update, {
-      babyId: created.babyId,
-      dueDateDisplayMode: "message",
-      publicDueDateText: "   ",
-    }),
-  ).rejects.toThrow("message is required");
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    dueDateDisplayMode: "message",
+    publicDueDateText: "   ",
+  });
+  const publicBlankMessage = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBlankMessage).toMatchObject({
+    dueDateDisplayMode: "message",
+  });
+  if (publicBlankMessage && "publicDueDateText" in publicBlankMessage) {
+    expect(publicBlankMessage.publicDueDateText ?? "").toBe("");
+  }
+  expect(publicBlankMessage).not.toHaveProperty("dueDate");
   await expect(
     asAlice.mutation(api.baby.update, {
       babyId: created.babyId,
@@ -182,7 +188,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   ).rejects.toThrow("due date is required");
 });
 
-test("public DTO rejects invalid due date display combinations", async () => {
+test("public DTO rejects exact mode without a due date", async () => {
   const t = await setup();
   await t.run(async (ctx) => {
     await ctx.db.insert("baby", {
@@ -200,11 +206,11 @@ test("public DTO rejects invalid due date display combinations", async () => {
     await ctx.db.insert("baby", {
       userId: "alice",
       ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Missing Message",
-      dueDate: null,
+      name: "Blank Message",
+      dueDate: "2026-09-01",
       dueDateDisplayMode: "message",
       publicDueDateText: null,
-      publicId: "missing-message",
+      publicId: "blank-message",
       birthJourney: "labor",
       subscriptionCount: 0,
       lastActivityAt: 1,
@@ -214,9 +220,12 @@ test("public DTO rejects invalid due date display combinations", async () => {
   await expect(t.query(api.baby.getByPublicId, { id: "missing-date" })).rejects.toThrow(
     "Exact due date display requires a due date",
   );
-  await expect(t.query(api.baby.getByPublicId, { id: "missing-message" })).rejects.toThrow(
-    "Message due date display requires public text",
-  );
+  const blankMessage = await t.query(api.baby.getByPublicId, { id: "blank-message" });
+  expect(blankMessage).toMatchObject({ dueDateDisplayMode: "message" });
+  if (blankMessage && "publicDueDateText" in blankMessage) {
+    expect(blankMessage.publicDueDateText).toBeUndefined();
+  }
+  expect(blankMessage).not.toHaveProperty("dueDate");
 });
 
 test("journey selection can change after milestone updates without deleting them", async () => {

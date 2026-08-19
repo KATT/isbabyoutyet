@@ -304,6 +304,21 @@ export const backfillBabySubscriptionCount = migrations.define({
   migrateOne: backfillBabySubscriptionCountDoc,
 });
 
+/**
+ * Removes the retired `encouragementsDisabled` flag so visitor messages are
+ * always allowed. Idempotent: no-op when the field is already absent.
+ */
+export async function removeBabyEncouragementsDisabledDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  if (baby.encouragementsDisabled === undefined) return;
+  const { encouragementsDisabled: _removed, ...rest } = baby;
+  await ctx.db.replace("baby", baby._id, rest);
+}
+
+export const removeBabyEncouragementsDisabled = migrations.define({
+  table: "baby",
+  migrateOne: removeBabyEncouragementsDisabledDoc,
+});
+
 export async function backfillProfileTokenIdentifierDoc(
   ctx: MutationCtx,
   profile: Doc<"userProfiles">,
@@ -406,6 +421,7 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillCoParentTokenIdentifier,
   internal.migrations.sanitizeOnboardingSteps,
   internal.migrations.backfillUserProfileIsAdmin,
+  internal.migrations.removeBabyEncouragementsDisabled,
 ]);
 
 const HISTORICAL_MIGRATION_NAMES = [
@@ -420,6 +436,7 @@ const HISTORICAL_MIGRATION_NAMES = [
   "migrations:backfillCoParentTokenIdentifier",
   "migrations:sanitizeOnboardingSteps",
   "migrations:backfillUserProfileIsAdmin",
+  "migrations:removeBabyEncouragementsDisabled",
 ] as const;
 
 const TABLE_MIGRATION_NAMES = [

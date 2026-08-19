@@ -99,14 +99,6 @@ function getStepAction(opts: {
         onClick: () => opts.onAcknowledge(step.id),
       };
     }
-    if (step.id === "learn_encouragements") {
-      return {
-        kind: "link",
-        link: babyPageLink({ publicId, settings: undefined }),
-        label: t("See {{name}}'s page", { name }),
-        onClick: undefined,
-      };
-    }
     return null;
   }
 
@@ -129,13 +121,6 @@ function getStepAction(opts: {
       kind: "button",
       onClick: () => opts.onGoToStep?.(step.id),
       label: t("Show Share"),
-    };
-  }
-  if (step.id === "learn_encouragements") {
-    return {
-      kind: "button",
-      onClick: () => opts.onAcknowledge(step.id),
-      label: t("Got it"),
     };
   }
   return null;

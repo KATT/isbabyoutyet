@@ -23,11 +23,10 @@ type BabyDueDateDisplay =
   | { dueDateDisplayMode: "exact"; dueDate: string }
   | { dueDateDisplayMode: "message"; publicDueDateText: string };
 
-type BabySeoInput = BabySeoBase & BabyDueDateDisplay;
+type BabySeoInput = BabySeoBase & Partial<BabyDueDateDisplay>;
 
 function babyPageTitle(baby: BabySeoInput) {
-  const isMessageMode = baby.dueDateDisplayMode === "message";
-  const exactDueDate = isMessageMode ? null : baby.dueDate;
+  const exactDueDate = baby.dueDateDisplayMode === "exact" && baby.dueDate ? baby.dueDate : null;
   const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
   const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
   const isBorn = !!baby.babyBorn;
@@ -105,7 +104,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoBase, "babyBorn" | "locale"> & BabyDueDateDisplay;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale"> & Partial<BabyDueDateDisplay>;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -116,22 +115,29 @@ export function babyStatusDetail(opts: {
     return babyStatusLabel({ status: opts.status, locale });
   }
   if (opts.baby.dueDateDisplayMode === "message") {
-    return opts.baby.publicDueDateText.trim();
+    const message = opts.baby.publicDueDateText?.trim() ?? "";
+    if (message) {
+      return message;
+    }
+    return babyStatusLabel({ status: opts.status, locale });
   }
-  const overdueDays = getOverdueDays(opts.baby.dueDate);
-  if (overdueDays > 0) {
+  if (opts.baby.dueDateDisplayMode === "exact" && opts.baby.dueDate) {
+    const overdueDays = getOverdueDays(opts.baby.dueDate);
+    if (overdueDays > 0) {
+      return translate(
+        locale,
+        overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue",
+        { count: overdueDays },
+      );
+    }
+    const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
     return translate(
       locale,
-      overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue",
-      { count: overdueDays },
+      daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",
+      { count: daysUntil },
     );
   }
-  const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
-  return translate(
-    locale,
-    daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",
-    { count: daysUntil },
-  );
+  return babyStatusLabel({ status: opts.status, locale });
 }
 
 function babyOgImagePath(publicId: string) {

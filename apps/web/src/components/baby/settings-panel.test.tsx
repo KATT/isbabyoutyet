@@ -22,7 +22,6 @@ const baby: BabyData = {
   laborStarted: "2026-08-10T08:00:00.000Z",
   wentToHospital: null,
   babyBorn: null,
-  encouragementsDisabled: false,
   photoId: null,
   milestoneVisibility: { showLabor: true, showHospital: true },
 };
@@ -79,8 +78,9 @@ test("settings dialog shows page fields when open and stays closed when not", as
   ).toBeTruthy();
   expect(open.getByText("Labour started")).toBeTruthy();
   expect(open.getByText("Theme")).toBeTruthy();
-  expect(open.getByText("Messages")).toBeTruthy();
-  expect(open.getByText("Visitors can send messages")).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
   expect(open.queryByText("Delete page")).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
@@ -128,43 +128,12 @@ test("delete page control appears when onDelete is provided", async () => {
   );
 
   expect(view.getByText("Delete page")).toBeTruthy();
+  expect(view.getByRole("heading", { level: 3, name: "Danger zone" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete" }));
   expect(view.getByRole("heading", { name: "Delete Nova's page?" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete page" }));
   expect(onDelete).toHaveBeenCalled();
 });
-test("encouragements switch toggles the disabled flag via onUpdate", async () => {
-  const onOpenChange = vi.fn<(open: boolean) => void>();
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-
-  await using view = renderResource(
-    <SettingsPanel
-      baby={baby}
-      onUpdate={onUpdate}
-      open={true}
-      onOpenChange={onOpenChange}
-      {...absentSettingsProps}
-    />,
-  );
-
-  fireEvent.click(view.getByRole("switch", { name: "Messages" }));
-  expect(onUpdate).toHaveBeenCalledWith({ encouragementsDisabled: true });
-});
-
-test("shows when visitor messages are disabled", async () => {
-  await using view = renderResource(
-    <SettingsPanel
-      baby={{ ...baby, encouragementsDisabled: true }}
-      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
-      open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
-      {...absentSettingsProps}
-    />,
-  );
-
-  expect(view.getByText("Form disabled")).toBeTruthy();
-});
-
 test("falls back to the default label for an unknown legacy theme", async () => {
   await using view = renderResource(
     <SettingsPanel
@@ -176,7 +145,7 @@ test("falls back to the default label for an unknown legacy theme", async () => 
     />,
   );
 
-  expect(view.getByText("Default")).toBeTruthy();
+  expect(view.getByText("Mango")).toBeTruthy();
 });
 
 test("page language selection saves the locale override", async () => {
@@ -306,7 +275,7 @@ test("theme constants render through the active translation catalog", async () =
   );
 
   expect(view.getByText("Tema")).toBeTruthy();
-  expect(view.getByText("Standard")).toBeTruthy();
+  expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
   expect(view.getByText("Förlossning")).toBeTruthy();
 });

@@ -5,7 +5,6 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 const mocks = vi.hoisted(() => ({
   useSuspenseQuery: vi.fn<() => { data: unknown }>(),
   useSession: vi.fn<() => { data: { user: { id: string } } | null; isPending: boolean }>(),
-  dismissWelcome: vi.fn<() => void>(),
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
@@ -31,16 +30,11 @@ vi.mock("convex/react", () => ({
     return () => {
       const index = call;
       call += 1;
-      if (index % 4 === 0) return mocks.dismissWelcome;
-      if (index % 4 === 1) return mocks.setMinimized;
-      if (index % 4 === 2) return mocks.dismissChecklist;
+      if (index % 3 === 0) return mocks.setMinimized;
+      if (index % 3 === 1) return mocks.dismissChecklist;
       return mocks.completeStep;
     };
   })(),
-}));
-
-vi.mock("./welcome-tour", () => ({
-  WelcomeTourDialog: () => null,
 }));
 
 vi.mock("./getting-started", () => ({
@@ -94,6 +88,38 @@ test("returns null for anonymous visitors", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
+});
+
+test("shows the checklist on first run without a welcome dialog", async () => {
+  const firstRun = {
+    ...progress,
+    welcomeDismissed: false,
+    hasBaby: false,
+    effectiveSteps: [] as string[],
+    tourBaby: null,
+  };
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: firstRun });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={testPreloadedConvexQuery<typeof api.onboarding.getMine>({
+        input: {},
+        initialData: firstRun,
+      })}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  expect(view.getByTestId("getting-started")).toBeTruthy();
+  expect(view.queryByRole("dialog")).toBeNull();
 });
 
 test("mounts authed onboarding host when progress is loaded", async () => {

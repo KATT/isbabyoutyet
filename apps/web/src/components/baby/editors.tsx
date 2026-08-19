@@ -11,22 +11,14 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import {
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { Switch } from "@workspace/ui/components/switch";
+import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
-import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
@@ -95,13 +87,6 @@ function dueDateSchema(t: TranslationFunction) {
           message: t("Pick a date"),
         });
       }
-      if (!values.showExactDueDate && !values.publicDueDateText) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["publicDueDateText"],
-          message: t("Enter a message for visitors"),
-        });
-      }
     })
     .transform(
       (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
@@ -168,11 +153,6 @@ function DueDateForm(props: EditorFormProps) {
       publicDueDateText: props.baby.publicDueDateText ?? "",
     },
   });
-  const showExactDueDate = useWatch({
-    control: form.control,
-    name: "showExactDueDate",
-  });
-
   return (
     <Form
       form={form}
@@ -181,63 +161,13 @@ function DueDateForm(props: EditorFormProps) {
         props.onClose();
       }}
     >
-      <FormField
+      <DueDateDisplayFields
         control={form.control}
-        name="showExactDueDate"
-        render={(renderProps) => (
-          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
-            <div className="flex flex-col gap-1">
-              <FormLabel>{t("Show exact due date")}</FormLabel>
-              <FormDescription>
-                {renderProps.field.value
-                  ? t("Visitors see the exact date and countdown.")
-                  : t("Visitors see only your message.")}
-              </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={renderProps.field.value}
-                onCheckedChange={renderProps.field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
+        dateFieldName="date"
+        className="mb-3"
+        sectionLabelClassName={undefined}
+        stopPopoverPropagation={true}
       />
-      {showExactDueDate ? (
-        <FormField
-          control={form.control}
-          name="date"
-          render={(renderProps) => (
-            <FormItem className="mb-3">
-              <FormControl>
-                <Input
-                  type="date"
-                  aria-label={t("Due Date")}
-                  onMouseDown={(event) => event.stopPropagation()}
-                  onFocus={(event) => event.stopPropagation()}
-                  {...renderProps.field}
-                  value={renderProps.field.value ?? ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      ) : (
-        <FormField
-          control={form.control}
-          name="publicDueDateText"
-          render={(renderProps) => (
-            <FormItem className="mb-3">
-              <FormLabel>{t("Public due date message")}</FormLabel>
-              <FormControl>
-                <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      )}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}

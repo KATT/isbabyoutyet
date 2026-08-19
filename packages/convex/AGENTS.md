@@ -19,7 +19,10 @@ status, plus `test+newuser@example.com` with no babies) plus
 `homepageDemo:refresh` once per locale (the public live-demo pages
 linked from the homepage). Those babies are stored with `demo: true`; the
 refresh mutation refuses to wipe any baby missing that flag (except grandfathering
-the existing sentinel-owned Juniper Hale row). Production deploys refresh every
-locale demo on each build: dates shift to now and visitor comments are wiped.
+the existing sentinel-owned Juniper Hale row). Local `setup-dev` seeds fixture
+text first (`seed:data`); sharp resize + photo uploads run in the background
+after `pnpm dev` starts (`dev:seed-photos-deferred`). Production/preview
+deploys still run the full synchronous `seed:homepage`: dates shift to now and
+visitor comments are wiped on each build.
 When opening PRs, follow the root
 [`AGENTS.md`](../../AGENTS.md) and link each seeded baby on the Vercel preview.

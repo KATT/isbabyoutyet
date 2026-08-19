@@ -133,23 +133,6 @@ test("restart with a baby skips the welcome carousel", async () => {
   });
 });
 
-test("disabling encouragements on the first baby auto-completes that tip", async () => {
-  const t = await setup();
-  const asAlice = t.withIdentity({ subject: "alice" });
-
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Quiet",
-    dueDate: "2026-09-01",
-  });
-  await asAlice.mutation(api.baby.update, {
-    babyId: created.babyId,
-    encouragementsDisabled: true,
-  });
-
-  const progress = await asAlice.query(api.onboarding.getMine, {});
-  expect(progress.effectiveSteps).toContain("learn_encouragements");
-});
-
 test("completeStep rejects unknown step ids", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

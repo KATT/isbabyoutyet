@@ -1,6 +1,6 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { Icon } from "@phosphor-icons/react";
-import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
+import { Baby, ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import type { TranslationKey } from "@/lib/i18n";
 
 export type OnboardingStepCopy = {
@@ -49,49 +49,10 @@ export const ONBOARDING_STEPS = [
   {
     id: "explore_settings",
     title: "Peek at settings",
-    description: "Themes, names, and whether visitors can leave encouragements — all in Settings.",
+    description: "Themes, names, and language — all in Settings.",
     surface: "baby",
     targetId: "explore_settings",
     icon: GearSix,
     ctaLabel: undefined,
   },
-  {
-    id: "learn_encouragements",
-    title: "Encouragements from visitors",
-    description:
-      "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.",
-    surface: "baby",
-    targetId: "learn_encouragements",
-    icon: Heart,
-    ctaLabel: undefined,
-  },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;
-
-export type WelcomeSlide = {
-  title: TranslationKey;
-  body: TranslationKey;
-  icon: Icon;
-};
-
-export const WELCOME_SLIDES = [
-  {
-    title: "Welcome — here's the idea",
-    body: "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.",
-    icon: Baby,
-  },
-  {
-    title: "Create a baby page",
-    body: "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
-    icon: ShareNetwork,
-  },
-  {
-    title: "Share once, update as you go",
-    body: "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
-    icon: ChatCircleText,
-  },
-  {
-    title: "Skip anytime",
-    body: "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
-    icon: Heart,
-  },
-] as const satisfies ReadonlyArray<WelcomeSlide>;

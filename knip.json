@@ -24,7 +24,7 @@
       ]
     },
     "packages/convex": {
-      "entry": ["scripts/seedHomepageDemo.ts!"]
+      "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
     },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},

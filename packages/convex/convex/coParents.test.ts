@@ -115,8 +115,8 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   });
   const asNewbie = t.withIdentity({ subject: newbieId });
 
-  const claimed = await asNewbie.mutation(api.coParents.claimPendingInvites, {});
-  expect(claimed).toEqual({ claimed: 1 });
+  const claimed = await asNewbie.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  expect(claimed).toEqual({ locale: "en-GB", isAdmin: false });
 
   const after = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
   if (after === "forbidden") {
@@ -250,4 +250,39 @@ test("manager-only listings return forbidden for visitors instead of throwing", 
   expect(await t.query(api.baby.getScheduledNotifications, { babyId: created.babyId })).toBe(
     "forbidden",
   );
+});
+
+test("profile ensure clears pending invites addressed to the page owner", async () => {
+  const t = await setup();
+  const aliceId = await signUp(t, {
+    email: "owner-invite@example.com",
+    password: "password123",
+    name: "Alice",
+  });
+  const asAlice = t.withIdentity({ subject: aliceId });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Owned Baby",
+    dueDate: "2026-09-01",
+  });
+
+  const inviteId = await t.run(async (ctx) => {
+    return await ctx.db.insert("babyCoParentInvites", {
+      babyId: created.babyId,
+      email: "owner-invite@example.com",
+      invitedByUserId: "someone-else",
+      createdAt: Date.now(),
+    });
+  });
+
+  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+
+  const invite = await t.run(async (ctx) => ctx.db.get(inviteId));
+  expect(invite?.deletedAt).toEqual(expect.any(Number));
+  const coParents = await t.run(async (ctx) =>
+    ctx.db
+      .query("babyCoParents")
+      .withIndex("by_babyId", (q) => q.eq("babyId", created.babyId))
+      .collect(),
+  );
+  expect(coParents).toHaveLength(0);
 });

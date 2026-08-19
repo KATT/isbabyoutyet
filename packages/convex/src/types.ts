@@ -45,6 +45,7 @@ export type BabyData = Omit<
   | "_id"
   | "_creationTime"
   | "birthJourney"
+  | "encouragementsDisabled"
 > &
   MilestoneDates &
   Partial<{ milestoneVisibility: MilestoneVisibility }>;
@@ -55,7 +56,7 @@ export type PreviewBabyData = BabyData & BabyPreviewMessages;
  * Partial update to baby data - used by editors
  */
 export type BabyUpdate = Partial<
-  Pick<BabyData, "name" | "dueDate" | "theme" | "locale" | "encouragementsDisabled"> & {
+  Pick<BabyData, "name" | "dueDate" | "theme" | "locale"> & {
     birthJourney: BirthJourney;
   }
 >;

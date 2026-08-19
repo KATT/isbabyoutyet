@@ -45,6 +45,12 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
   ).toBe("true");
+  const dueDateSectionLabel = view.container.querySelector("[data-slot='label']");
+  expect(dueDateSectionLabel?.textContent).toBe("Due date");
+  expect(dueDateSectionLabel?.className).toContain("font-bold");
+  expect(
+    view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
+  ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
@@ -82,7 +88,7 @@ test.each([
   });
 });
 
-test("requires and submits a custom public due date message", async () => {
+test("allows a hidden public due date when message mode has no text", async () => {
   mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
   mocks.navigate.mockReset().mockResolvedValue(undefined);
   await using view = renderResource(<AddBabyPage />);
@@ -90,22 +96,30 @@ test("requires and submits a custom public due date message", async () => {
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
   });
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Pick a date")).toBeTruthy();
-  });
-  expect(mocks.createBaby).not.toHaveBeenCalled();
-
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  expect(view.queryByLabelText("Due date")).toBeNull();
-  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
-  });
-  expect(mocks.createBaby).not.toHaveBeenCalled();
 
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+      birthJourney: "labor",
+    });
+  });
+});
+
+test("submits a custom public due date message when provided", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });
@@ -120,6 +134,19 @@ test("requires and submits a custom public due date message", async () => {
       birthJourney: "labor",
     });
   });
+});
+
+test("toggles exact due date mode when clicking the row label", async () => {
+  await using view = renderResource(<AddBabyPage />);
+
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(view.getByText("Visitors see the exact date and countdown."));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+
+  fireEvent.click(view.getByText("Show exact due date"));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
 });
 
 test("keeps entered date and message values while toggling fields", async () => {

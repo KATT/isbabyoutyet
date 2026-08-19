@@ -2,11 +2,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
-import { useWatch } from "react-hook-form";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { Switch } from "@workspace/ui/components/switch";
+import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -44,13 +43,6 @@ function addBabySchema(t: TranslationFunction) {
           message: t("Pick a date"),
         });
       }
-      if (!values.showExactDueDate && !values.publicDueDateText) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["publicDueDateText"],
-          message: t("Enter a message for visitors"),
-        });
-      }
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => ({
       name: values.name,
@@ -79,10 +71,6 @@ export function AddBabyPage() {
       publicDueDateText: "",
       birthJourney: "labor" as const,
     },
-  });
-  const showExactDueDate = useWatch({
-    control: form.control,
-    name: "showExactDueDate",
   });
 
   return (
@@ -142,66 +130,13 @@ export function AddBabyPage() {
                   )}
                 />
 
-                <FormField
+                <DueDateDisplayFields
                   control={form.control}
-                  name="showExactDueDate"
-                  render={(renderProps) => (
-                    <FormItem className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
-                      <div className="flex flex-col gap-1">
-                        <FormLabel className="font-bold">{t("Show exact due date")}</FormLabel>
-                        <FormDescription>
-                          {renderProps.field.value
-                            ? t("Visitors see the exact date and countdown.")
-                            : t("Visitors see only your message.")}
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={renderProps.field.value}
-                          onCheckedChange={renderProps.field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
+                  dateFieldName="dueDate"
+                  className={undefined}
+                  sectionLabelClassName="font-bold"
+                  stopPopoverPropagation={false}
                 />
-
-                {showExactDueDate ? (
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={(renderProps) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="date"
-                            {...renderProps.field}
-                            value={renderProps.field.value ?? ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                ) : (
-                  <FormField
-                    control={form.control}
-                    name="publicDueDateText"
-                    render={(renderProps) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">{t("Public due date message")}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t("September baby")}
-                            maxLength={80}
-                            {...renderProps.field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
 
                 <FormField
                   control={form.control}

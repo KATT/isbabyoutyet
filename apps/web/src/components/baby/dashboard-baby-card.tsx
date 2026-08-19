@@ -91,11 +91,12 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = getCurrentStatus(baby);
+  const publicDueDateText = baby.publicDueDateText?.trim() ?? "";
   const dateLine =
     currentStatus.type === "born"
       ? t("Born {{date}}", { date: formatDueDate(currentStatus.date, locale) })
       : baby.dueDateDisplayMode === "message"
-        ? (baby.publicDueDateText ?? "")
+        ? publicDueDateText || t("Due date hidden")
         : t("Due {{date}}", {
             date: baby.dueDate ? formatDueDate(baby.dueDate, locale) : "",
           });

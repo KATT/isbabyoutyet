@@ -170,6 +170,9 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const isMessageMode = props.baby.dueDateDisplayMode === "message";
   const publicDueDateText = props.baby.publicDueDateText?.trim() ?? "";
   const exactDueDate = isMessageMode ? null : props.baby.dueDate;
+  const showDueDateBox =
+    props.currentStatus.type === "not_yet" &&
+    (publicDueDateText.length > 0 || exactDueDate !== null);
   const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
   const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
   const meta = STATUS_META[props.currentStatus.type];
@@ -208,7 +211,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
         </p>
       )}
 
-      {props.currentStatus.type === "not_yet" && (
+      {showDueDateBox ? (
         <div
           className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
             !isMessageMode && overdueDays > 0
@@ -242,7 +245,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
             </p>
           ) : null}
         </div>
-      )}
+      ) : null}
 
       <LatestUpdateBox latestUpdate={props.latestUpdate} />
     </div>

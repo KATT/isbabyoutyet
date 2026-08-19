@@ -43,9 +43,13 @@ function makeGuardCtx() {
   return { ctx, queryClient, beforeLoad: options.beforeLoad };
 }
 
-test("client navigations with a cached profile skip the token round-trip", async () => {
+test("client navigations with a cached profile still sync the session", async () => {
   getToken.mockReset();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "sv", isAdmin: false }),
+  );
   const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { mutation };
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
     isAdmin: false,
@@ -55,6 +59,7 @@ test("client navigations with a cached profile skip the token round-trip", async
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(getToken).not.toHaveBeenCalled();
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
 });
 
 test("regression: a fresh login authenticates the websocket before ensuring the profile", async () => {
@@ -97,4 +102,67 @@ test("client navigations without a session redirect home after one token check",
     to: "/",
   });
   expect(getToken).toHaveBeenCalledTimes(1);
+});
+
+test("client navigations skip cache writes when ensure returns the cached profile", async () => {
+  getToken.mockReset();
+  const cachedProfile = { locale: "sv", isAdmin: false };
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve(cachedProfile));
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { mutation };
+  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
+
+  const result = await guard.beforeLoad(guard.ctx);
+
+  expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
+  expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
+    cachedProfile,
+  );
+});
+
+function withoutBrowserWindow(run: () => Promise<void>) {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
+  return run().finally(() => {
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, "window", windowDescriptor);
+    }
+  });
+}
+
+test("server render redirects home when no auth token is available", async () => {
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce(null);
+  const guard = makeGuardCtx();
+
+  await withoutBrowserWindow(async () => {
+    await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+      isRedirect: true,
+      to: "/",
+    });
+    expect(getToken).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("server render reuses the layout token without calling getAuthToken", async () => {
+  getToken.mockReset();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "en-GB", isAdmin: false }),
+  );
+  const guard = makeGuardCtx();
+  guard.ctx.context.token = "ssr-token";
+  guard.ctx.context.convexClient = { setAuth, mutation };
+
+  await withoutBrowserWindow(async () => {
+    const result = await guard.beforeLoad(guard.ctx);
+
+    expect(result).toMatchObject({
+      locale: "en-GB",
+      token: "ssr-token",
+      isAuthenticated: true,
+    });
+    expect(getToken).not.toHaveBeenCalled();
+    expect(setAuth).toHaveBeenCalledTimes(1);
+  });
 });
