@@ -123,18 +123,19 @@ async function assertExistingMilestoneHasUsableDate(ctx: MutationCtx, update: Do
 export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone });
+    if (existing) {
+      await assertExistingMilestoneHasUsableDate(ctx, existing);
+    }
+
     const isoDate = baby[fields.date];
-    if (!isoDate) continue;
+    if (isoDate == null) continue;
     const occurredAt = parseIsoMs(isoDate);
     if (occurredAt == null) {
       throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
     }
 
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-    if (existing) {
-      await assertExistingMilestoneHasUsableDate(ctx, existing);
-      continue;
-    }
+    if (existing) continue;
 
     const now = Date.now();
     const postedAt = await resolveMilestoneAnnounceAt(ctx, {
@@ -229,7 +230,9 @@ export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: D
   if (!baby) return;
 
   const item = await ctx.db.get(update.timelineItemId);
-  if (!item) return;
+  if (!item || !isActive(item)) {
+    throw new Error(`Milestone update ${update._id} has no active timeline item`);
+  }
 
   const fields = MILESTONE_FIELDS[update.milestone];
   const legacyDate = baby[fields.date];
@@ -239,8 +242,14 @@ export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: D
   }
   const occurredAt = update.occurredAt ?? legacyOccurredAt;
   if (occurredAt == null) {
+    if (!isValidDateTimestamp(item.postedAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+    }
     await ctx.db.patch(update._id, { occurredAt: item.postedAt });
     return;
+  }
+  if (!isValidDateTimestamp(occurredAt)) {
+    throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
   }
 
   if (update.occurredAt == null) {

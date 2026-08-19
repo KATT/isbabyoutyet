@@ -309,12 +309,14 @@ export async function loadMilestoneDates(
   for (const milestone of MILESTONES) {
     const update = await findMilestoneUpdate(ctx, { babyId, milestone });
     if (!update) continue;
-    let occurredAt = update.occurredAt ?? null;
-    if (occurredAt == null) {
-      const item = await ctx.db.get(update.timelineItemId);
-      occurredAt = item?.postedAt ?? null;
+    const item = await ctx.db.get(update.timelineItemId);
+    if (!item || !isActive(item)) {
+      throw new Error(`Milestone update ${update._id} has no active timeline item`);
     }
-    if (occurredAt == null || !isValidDateTimestamp(occurredAt)) continue;
+    const occurredAt = update.occurredAt ?? item.postedAt;
+    if (!isValidDateTimestamp(occurredAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+    }
     dates[MILESTONE_FIELDS[milestone].date] = new Date(occurredAt).toISOString();
   }
   return dates;

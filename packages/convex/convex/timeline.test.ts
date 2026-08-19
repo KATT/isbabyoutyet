@@ -251,7 +251,7 @@ test("a legacy milestone without occurredAt infers its date from feed position",
   expect(publicBaby?.laborStarted).toBe("2026-08-10T08:00:00.000Z");
 });
 
-test("a milestone update without an event clock or feed row does not infer a date", async () => {
+test("a milestone update without an active feed row fails closed", async () => {
   const { t, babyId } = await setup();
 
   await t.run(async (ctx) => {
@@ -263,11 +263,12 @@ test("a milestone update without an event clock or feed row does not infer a dat
     await ctx.db.delete(timelineItemId);
   });
 
-  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
-  expect(publicBaby?.babyBorn).toBeNull();
+  await expect(t.query(api.baby.getByPublicId, { id: babyId })).rejects.toThrow(
+    "has no active timeline item",
+  );
 });
 
-test("an invalid persisted milestone timestamp is ignored", async () => {
+test("an invalid persisted milestone timestamp fails closed", async () => {
   const { t, babyId } = await setup();
 
   await t.run(async (ctx) => {
@@ -279,8 +280,9 @@ test("an invalid persisted milestone timestamp is ignored", async () => {
     });
   });
 
-  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
-  expect(publicBaby?.laborStarted).toBeNull();
+  await expect(t.query(api.baby.getByPublicId, { id: babyId })).rejects.toThrow(
+    "has an invalid event timestamp",
+  );
 });
 
 test("journey selection does not block backend milestone writes", async () => {
@@ -826,10 +828,24 @@ test("backfill rejects an invalid legacy milestone date", async () => {
   ).rejects.toThrow("has an invalid laborStarted");
 });
 
+test("backfill rejects an empty legacy milestone date", async () => {
+  const { t, babyId } = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { laborStarted: "" });
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      const baby = await ctx.db.get(babyId);
+      if (!baby) throw new Error("Baby not found");
+      await backfillBabyTimelineDoc(ctx, baby);
+    }),
+  ).rejects.toThrow("has an invalid laborStarted");
+});
+
 test("backfill rejects a milestone update without a usable timestamp", async () => {
   const { t, babyId } = await setup();
   await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { laborStarted: "2026-08-10T08:00:00.000Z" });
     const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
       babyId,
       postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
@@ -845,6 +861,46 @@ test("backfill rejects a milestone update without a usable timestamp", async () 
       await backfillBabyTimelineDoc(ctx, baby);
     }),
   ).rejects.toThrow("has no active timeline item");
+});
+
+test("backfill rejects a soft-deleted milestone timeline item", async () => {
+  const { t, babyId } = await setup();
+  await t.run(async (ctx) => {
+    const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
+      milestone: "labor_started",
+    });
+    await ctx.db.patch(timelineItemId, { deletedAt: Date.now() });
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      const baby = await ctx.db.get(babyId);
+      if (!baby) throw new Error("Baby not found");
+      await backfillBabyTimelineDoc(ctx, baby);
+    }),
+  ).rejects.toThrow("has no active timeline item");
+});
+
+test("backfill rejects an invalid update timestamp without a legacy date", async () => {
+  const { t, babyId } = await setup();
+  await t.run(async (ctx) => {
+    await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: Date.now(),
+      occurredAt: Number.MAX_VALUE,
+      milestone: "labor_started",
+    });
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      const baby = await ctx.db.get(babyId);
+      if (!baby) throw new Error("Baby not found");
+      await backfillBabyTimelineDoc(ctx, baby);
+    }),
+  ).rejects.toThrow("has an invalid event timestamp");
 });
 
 test("clearLegacyStageMessages only clears fields with a proven durable destination", async () => {
