@@ -12,6 +12,27 @@ export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 export const FORBIDDEN = "forbidden" as const;
 
 /**
+ * Event-clock dates for the three milestones. On the server these are inferred
+ * from the latest active milestone updates; the preview page supplies them as
+ * query params.
+ */
+export type MilestoneDates = {
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+};
+
+/**
+ * Preview-only per-stage messages. Live pages keep copy on timeline updates;
+ * the homepage preview still passes these as query params.
+ */
+export type BabyPreviewMessages = {
+  laborStartedMessage: string | null;
+  hospitalMessage: string | null;
+  babyBornMessage: string | null;
+};
+
+/**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
 export type BabyData = Omit<
@@ -25,13 +46,18 @@ export type BabyData = Omit<
   | "_creationTime"
   | "birthJourney"
 > &
+  MilestoneDates &
   Partial<{ milestoneVisibility: MilestoneVisibility }>;
+
+export type PreviewBabyData = BabyData & BabyPreviewMessages;
 
 /**
  * Partial update to baby data - used by editors
  */
 export type BabyUpdate = Partial<
-  Omit<BabyData, "milestoneVisibility"> & { birthJourney: BirthJourney }
+  Pick<BabyData, "name" | "dueDate" | "theme" | "locale" | "encouragementsDisabled"> & {
+    birthJourney: BirthJourney;
+  }
 >;
 
 /**
@@ -40,6 +66,13 @@ export type BabyUpdate = Partial<
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
 
 export type Milestone = "labor_started" | "gone_to_hospital" | "born";
+
+export type MilestoneRedateHandler = (
+  milestone: Milestone,
+  occurredAt: string,
+) => void | Promise<void>;
+
+export type MilestoneRemoveHandler = (milestone: Milestone) => void | Promise<void>;
 
 export type MilestoneVisibility = {
   showLabor: boolean;
@@ -100,7 +133,10 @@ export const MILESTONE_FIELDS = {
   labor_started: { date: "laborStarted", message: "laborStartedMessage" },
   gone_to_hospital: { date: "wentToHospital", message: "hospitalMessage" },
   born: { date: "babyBorn", message: "babyBornMessage" },
-} as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
+} as const satisfies Record<
+  Milestone,
+  { date: keyof MilestoneDates; message: keyof BabyPreviewMessages }
+>;
 
 export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
 
@@ -175,14 +211,7 @@ export function getCurrentStatus(baby: MilestonePolicyInput): BabyStatus {
  * can be removed. Milestones are unwound in reverse order so the canonical
  * status never contains gaps.
  */
-export function getBlockingLaterMilestone(
-  baby: {
-    laborStarted?: string | null;
-    wentToHospital?: string | null;
-    babyBorn?: string | null;
-  },
-  milestone: Milestone,
-) {
+export function getBlockingLaterMilestone(baby: Partial<MilestoneDates>, milestone: Milestone) {
   for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
     const candidate = MILESTONES[index];
     if (
