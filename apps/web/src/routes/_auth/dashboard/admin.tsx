@@ -34,7 +34,7 @@ import {
 } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { usePersistedWindowScroll } from "@/lib/use-persisted-window-scroll";
+import { preserveScroll } from "@/lib/scroll-restoration";
 
 const ADMIN_PAGE_SIZE = 20;
 
@@ -221,6 +221,7 @@ function SortableHeaderLink(props: {
           hideDemo: props.hideDemo,
         }}
         replace
+        {...preserveScroll}
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
           active ? "text-foreground" : "text-muted-foreground",
@@ -415,12 +416,11 @@ export function AdminDashboardPage() {
   const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
-  usePersistedWindowScroll(search.tab);
-
   function setTab(tab: AdminTab) {
     void navigate({
       search: (prev) => ({ ...prev, tab }),
       replace: true,
+      ...preserveScroll,
     });
   }
 
@@ -477,14 +477,28 @@ export function AdminDashboardPage() {
                   <TabsTrigger
                     value="babies"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("babies")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("babies")}
+                        replace
+                        {...preserveScroll}
+                      />
+                    }
                   >
                     {t("All babies")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="languages"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("languages")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("languages")}
+                        replace
+                        {...preserveScroll}
+                      />
+                    }
                   >
                     {t("Requested languages")}
                   </TabsTrigger>
@@ -499,6 +513,7 @@ export function AdminDashboardPage() {
                         void navigate({
                           search: (prev) => ({ ...prev, hideDemo }),
                           replace: true,
+                          ...preserveScroll,
                         });
                       }}
                     />
@@ -509,12 +524,12 @@ export function AdminDashboardPage() {
                 ) : null}
               </div>
 
-              <TabsContent value="babies" keepMounted className="mt-0">
-                <AdminBabiesTab />
+              <TabsContent value="babies" className="mt-0">
+                {search.tab === "babies" ? <AdminBabiesTab /> : null}
               </TabsContent>
 
-              <TabsContent value="languages" keepMounted className="mt-0">
-                <AdminLanguagesTab />
+              <TabsContent value="languages" className="mt-0">
+                {search.tab === "languages" ? <AdminLanguagesTab /> : null}
               </TabsContent>
             </Tabs>
           </CardContent>

@@ -13,6 +13,7 @@ import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
+import { preserveScroll } from "@/lib/scroll-restoration";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
 function getDefaultBabyData(): PreviewBabyData {
@@ -122,6 +123,7 @@ export function PreviewPage() {
               ...update,
             },
             replace: true,
+            ...preserveScroll,
           });
         }}
         onMilestoneRedate={(milestone, occurredAt) => {
@@ -131,6 +133,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: occurredAt,
             },
             replace: true,
+            ...preserveScroll,
           });
         }}
         onMilestoneRemove={(milestone) => {
@@ -140,6 +143,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
+            ...preserveScroll,
           });
         }}
         open={!!search.settings}
@@ -150,6 +154,7 @@ export function PreviewPage() {
               settings: open || undefined,
             },
             replace: true,
+            ...preserveScroll,
           });
         }}
         profileLocale={locale}
@@ -180,6 +185,8 @@ export function PreviewPage() {
                   ...search,
                   settings: search.settings ? undefined : true,
                 },
+                replace: true,
+                ...preserveScroll,
               }}
               settingsOpen={!!search.settings}
             />

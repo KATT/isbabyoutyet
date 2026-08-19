@@ -11,6 +11,7 @@ import {
 import { RootErrorComponent } from "./routes/__root";
 import { setupClientConvexAuth } from "./lib/convex-auth";
 import { getDetectedLocale } from "./lib/i18n";
+import { getScrollRestorationKey } from "./lib/scroll-restoration";
 
 export function getRouter() {
   const convexUrl = import.meta.env.VITE_CONVEX_URL!;
@@ -59,6 +60,7 @@ export function getRouter() {
       token: null,
     },
     scrollRestoration: true,
+    getScrollRestorationKey,
     Wrap: (props) => (
       <ConvexProvider client={convexQueryClient.convexClient}>{props.children}</ConvexProvider>
     ),

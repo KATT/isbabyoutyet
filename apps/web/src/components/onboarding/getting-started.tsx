@@ -7,6 +7,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { preserveScroll } from "@/lib/scroll-restoration";
 import { ONBOARDING_STEPS } from "./steps";
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
@@ -40,6 +41,7 @@ function babyPageLink(opts: { publicId: string; settings: boolean | undefined })
     to: "/baby/$publicId",
     params: { publicId: opts.publicId },
     search: opts.settings ? { settings: true } : undefined,
+    ...preserveScroll,
   };
 }
 

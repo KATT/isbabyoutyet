@@ -101,6 +101,7 @@ test("preview routes settings and milestone edits to separate search updates", a
   expect(mocks.navigate).toHaveBeenNthCalledWith(1, {
     search: { ...mocks.search, name: "Nova Rae" },
     replace: true,
+    resetScroll: false,
   });
   expect(mocks.navigate).toHaveBeenNthCalledWith(2, {
     search: {
@@ -108,10 +109,12 @@ test("preview routes settings and milestone edits to separate search updates", a
       wentToHospital: "2026-08-10T12:00:00.000Z",
     },
     replace: true,
+    resetScroll: false,
   });
   expect(mocks.navigate).toHaveBeenNthCalledWith(3, {
     search: { ...mocks.search, laborStarted: null },
     replace: true,
+    resetScroll: false,
   });
 });
 
