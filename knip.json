@@ -26,6 +26,9 @@
     "products/baby-outlet/backend": {
       "entry": ["scripts/seedHomepageDemo.ts!"]
     },
+    "products/rhythm-game/web": {
+      "entry": ["src/main.tsx!", "vite.config.ts!"]
+    },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
     "packages/ui": {}

@@ -17,6 +17,7 @@ export default defineConfig({
   test: {
     projects: [
       "products/baby-outlet/backend",
+      "products/rhythm-game/web",
       "packages/query-prefetch",
       "packages/convex-prefetch",
       webUnitProject,
@@ -31,6 +32,7 @@ export default defineConfig({
         "products/baby-outlet/web/src/**/*.{ts,tsx}",
         "products/baby-outlet/backend/convex/**/*.ts",
         "products/baby-outlet/backend/src/**/*.ts",
+        "products/rhythm-game/web/src/**/*.{ts,tsx}",
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
       ],
