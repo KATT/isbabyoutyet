@@ -1,6 +1,6 @@
 export const laneCount = 4;
 export const approachSeconds = 2.15;
-export const perfectWindowSeconds = 0.07;
+const perfectWindowSeconds = 0.07;
 export const goodWindowSeconds = 0.15;
 
 export type ChartNote = {

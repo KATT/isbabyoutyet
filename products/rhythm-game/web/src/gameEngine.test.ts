@@ -8,13 +8,12 @@ import {
   goodWindowSeconds,
   judgeTiming,
   laneCount,
-  perfectWindowSeconds,
 } from "@/gameEngine";
 
 describe("timing judgments", () => {
   test("uses perfect, good, and miss windows", () => {
-    expect(judgeTiming(perfectWindowSeconds)).toBe("perfect");
-    expect(judgeTiming(-perfectWindowSeconds)).toBe("perfect");
+    expect(judgeTiming(0.07)).toBe("perfect");
+    expect(judgeTiming(-0.07)).toBe("perfect");
     expect(judgeTiming(goodWindowSeconds)).toBe("good");
     expect(judgeTiming(goodWindowSeconds + 0.001)).toBe("miss");
   });

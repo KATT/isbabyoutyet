@@ -3,6 +3,7 @@
   "ignore": [
     "**/_generated/**",
     "**/routeTree.gen.ts",
+    "**/test.resource.ts",
     "coverage/**",
     "**/paraglide/**",
     "oxlint-plugins/**"
