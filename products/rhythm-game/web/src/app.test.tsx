@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 import { App } from "@/app";
@@ -16,13 +16,8 @@ function syntheticTrack() {
   return { sampleRate, samples };
 }
 
-test("generates a chart, starts a run, accepts input, and shows credits", async () => {
-  await using _resource = makeAsyncResource({}, async () => {
-    cleanup();
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
-  });
-
+function installAudioMocks(options: { responseOk: boolean }) {
+  const animationCallbacks: FrameRequestCallback[] = [];
   const track = syntheticTrack();
   class FakeAudioContext {
     async decodeAudioData(_encodedAudio: ArrayBuffer) {
@@ -41,19 +36,44 @@ test("generates a chart, starts a run, accepts input, and shows credits", async 
   vi.stubGlobal("AudioContext", FakeAudioContext);
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(new Uint8Array([1]))),
+    vi.fn(async () =>
+      options.responseOk ? new Response(new Uint8Array([1])) : new Response(null, { status: 503 }),
+    ),
   );
   vi.stubGlobal(
     "requestAnimationFrame",
-    vi.fn(() => 1),
+    vi.fn((callback: FrameRequestCallback) => {
+      animationCallbacks.push(callback);
+      return animationCallbacks.length;
+    }),
   );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
-  vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+  const pause = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+
+  return { animationCallbacks, pause, play };
+}
+
+function testCleanupResource() {
+  return makeAsyncResource({}, async () => {
+    cleanup();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+}
+
+test("plays a generated chart through input, pause, results, and replay", async () => {
+  await using _resource = testCleanupResource();
+  const mocks = installAudioMocks({ responseOk: true });
 
   render(<App />);
 
   expect(screen.getByRole("heading", { name: "Rhythm Lab" })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Music credits" }));
+  expect(await screen.findByText(/recompressed for the prototype/)).toBeTruthy();
+  expect(screen.getAllByRole("link", { name: "CC BY 3.0" })).toHaveLength(3);
+  fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
   const generateButtons = screen.getAllByRole("button", { name: "Generate chart" });
   expect(generateButtons).toHaveLength(3);
   const firstGenerateButton = generateButtons.at(0);
@@ -66,17 +86,63 @@ test("generates a chart, starts a run, accepts input, and shows credits", async 
   expect(screen.getByText(/beats detected/)).toBeTruthy();
 
   fireEvent.click(startButton);
-  expect(play).toHaveBeenCalledOnce();
-  const firstLane = screen.getByRole<HTMLButtonElement>("button", { name: "D" });
+  expect(mocks.play).toHaveBeenCalledOnce();
+  const audio = document.querySelector("audio");
+  if (!audio) {
+    throw new Error("Audio element not found");
+  }
+  const laneButtons = ["D", "F", "J", "K"].map((name) =>
+    screen.getByRole<HTMLButtonElement>("button", { name }),
+  );
   await vi.waitFor(() => {
-    expect(firstLane.disabled).toBe(false);
+    expect(laneButtons.every((button) => !button.disabled)).toBe(true);
   });
 
-  fireEvent.click(firstLane);
-  expect(await screen.findByText("Miss")).toBeTruthy();
-  expect(screen.getByText("0 / 1")).toBeTruthy();
+  audio.currentTime = 0.9;
+  fireEvent.keyDown(window, { key: "d" });
+  for (const laneButton of laneButtons) {
+    fireEvent.click(laneButton);
+  }
+  const scoreText = screen.getByLabelText("Score value").textContent ?? "0";
+  expect(Number(scoreText.replaceAll(",", ""))).toBeGreaterThan(0);
 
-  fireEvent.click(screen.getByRole("button", { name: "Music credits" }));
-  expect(await screen.findByText(/recompressed for the prototype/)).toBeTruthy();
-  expect(screen.getAllByRole("link", { name: "CC BY 3.0" })).toHaveLength(3);
+  fireEvent.click(screen.getByRole("button", { name: "Pause" }));
+  expect(mocks.pause).toHaveBeenCalled();
+  const resumeButton = screen.getByRole("button", { name: "Resume" });
+  fireEvent.click(resumeButton);
+  expect(mocks.play).toHaveBeenCalledTimes(2);
+
+  audio.currentTime = 3;
+  const animationCallback = mocks.animationCallbacks.at(0);
+  if (!animationCallback) {
+    throw new Error("Animation callback not registered");
+  }
+  act(() => {
+    animationCallback(0);
+  });
+
+  fireEvent.ended(audio);
+  expect(await screen.findByText("Run complete")).toBeTruthy();
+  expect(screen.getByText(/accuracy/)).toBeTruthy();
+
+  fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+  expect(mocks.play).toHaveBeenCalledTimes(3);
+  fireEvent.ended(audio);
+  fireEvent.click(await screen.findByRole("button", { name: "Pick another song" }));
+  expect(screen.getByText(/Choose a track below/)).toBeTruthy();
+});
+
+test("reports an audio request failure and returns to the library", async () => {
+  await using _resource = testCleanupResource();
+  installAudioMocks({ responseOk: false });
+
+  render(<App />);
+  const generateButtons = screen.getAllByRole("button", { name: "Generate chart" });
+  const secondGenerateButton = generateButtons.at(1);
+  if (!secondGenerateButton) {
+    throw new Error("Generate chart button not found");
+  }
+  fireEvent.click(secondGenerateButton);
+  expect(await screen.findByText(/status 503/)).toBeTruthy();
+  expect(screen.getByText(/Choose a track below/)).toBeTruthy();
 });

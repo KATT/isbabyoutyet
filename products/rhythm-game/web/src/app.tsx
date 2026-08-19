@@ -516,11 +516,15 @@ export function App() {
             <CardContent className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Score</p>
-                <p className="text-2xl font-black tabular-nums">{stats.score.toLocaleString()}</p>
+                <p className="text-2xl font-black tabular-nums" aria-label="Score value">
+                  {stats.score.toLocaleString()}
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Combo</p>
-                <p className="text-2xl font-black tabular-nums">{stats.combo}×</p>
+                <p className="text-2xl font-black tabular-nums" aria-label="Combo value">
+                  {stats.combo}×
+                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Perfect</p>
