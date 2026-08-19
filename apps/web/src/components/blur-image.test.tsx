@@ -30,7 +30,15 @@ test("paints a blurred SVG background until the image decodes", async () => {
 
 test("keeps the placeholder until decode completes", async () => {
   let finishDecode = () => {};
-  const onLoad = vi.fn<NonNullable<ImgHTMLAttributes<HTMLImageElement>["onLoad"]>>();
+  const onLoad = vi.fn<NonNullable<ImgHTMLAttributes<HTMLImageElement>["onLoad"]>>((event) => {
+    expect(event.isDefaultPrevented()).toBe(false);
+    expect(event.isPropagationStopped()).toBe(false);
+    event.preventDefault();
+    event.stopPropagation();
+    event.persist();
+    expect(event.isDefaultPrevented()).toBe(true);
+    expect(event.isPropagationStopped()).toBe(true);
+  });
   const view = render(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} onLoad={onLoad} />,
   );
