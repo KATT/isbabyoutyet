@@ -14,6 +14,7 @@ async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
     dueDate: _dueDate,
     dueDateDisplayMode: _dueDateDisplayMode,
     publicDueDateText: _publicDueDateText,
+    encouragementsDisabled: _encouragementsDisabled,
     ...publicBaby
   } = baby;
   return {
@@ -38,13 +39,10 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
       };
     }
     case "message": {
-      if (!baby.publicDueDateText) {
-        throw new Error("Message due date display requires public text");
-      }
       return {
         ...publicBaby,
         dueDateDisplayMode: "message" as const,
-        publicDueDateText: baby.publicDueDateText,
+        publicDueDateText: baby.publicDueDateText?.trim(),
       };
     }
   }
