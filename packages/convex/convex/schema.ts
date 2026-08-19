@@ -20,7 +20,7 @@ export default defineSchema({
       v.literal("planned_c_section"),
     ),
     // Transitional optional fields. Status and messages now live on milestone
-    // updates; a follow-up migration will unset these before schema removal.
+    // updates; `clearStoredStatusFields` unsets these before schema removal.
     hospitalMessage: v.optional(v.union(v.string(), v.null())),
     babyBornMessage: v.optional(v.union(v.string(), v.null())),
     laborStartedMessage: v.optional(v.union(v.string(), v.null())),
