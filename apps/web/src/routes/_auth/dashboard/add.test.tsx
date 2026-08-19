@@ -45,6 +45,12 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
   ).toBe("true");
+  const dueDateSectionLabel = view.container.querySelector("[data-slot='label']");
+  expect(dueDateSectionLabel?.textContent).toBe("Due date");
+  expect(dueDateSectionLabel?.className).toContain("font-bold");
+  expect(
+    view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
+  ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
