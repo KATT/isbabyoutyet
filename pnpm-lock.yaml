@@ -22,7 +22,7 @@ catalogs:
       specifier: ^19.2.4
       version: 19.2.4
     better-auth:
-      specifier: ~1.6.28
+      specifier: ~1.6.30
       version: 1.6.30
     convex:
       specifier: ^1.44.0
