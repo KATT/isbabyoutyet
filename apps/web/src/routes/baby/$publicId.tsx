@@ -4,6 +4,7 @@ import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
+import { prefetchBrowserPushCapability } from "@/components/baby/browser-push-capability";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
@@ -85,11 +86,13 @@ export const Route = createFileRoute("/baby/$publicId")({
         browserLocale: opts.context.locale,
       });
     }
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
 
     // One homogeneous set for every visitor: manager-only queries return a
     // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
+      browserPush,
       ...(await allKeyed({
         myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
         vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
@@ -482,7 +485,11 @@ function BabyPage() {
               }
             />
             <div className="flex justify-center">
-              <NotificationSubscribe babyId={babyDoc._id} vapidPublicKey={vapidQuery.data} />
+              <NotificationSubscribe
+                babyId={babyDoc._id}
+                vapidPublicKey={vapidQuery.data}
+                browserPush={loaderData.browserPush}
+              />
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />
