@@ -4,6 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
+import { claimPendingInvitesForCaller } from "./coParents";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -54,6 +55,7 @@ export const ensure = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const caller = appIdentity(identity);
+    await claimPendingInvitesForCaller(ctx, caller);
     const existing = await getProfileHandler(ctx, caller.tokenIdentifier);
     if (existing) {
       return toProfileResult(existing);

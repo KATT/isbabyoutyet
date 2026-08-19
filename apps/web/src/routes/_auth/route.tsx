@@ -32,13 +32,10 @@ export const Route = createFileRoute("/_auth")({
       opts.context.convexClient.setAuth(async () => token);
 
       const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-      const existingProfile = profileHandle.initialData;
-      const profile =
-        existingProfile ??
-        (await opts.context.convexClient.mutation(api.profile.ensure, {
-          browserLocale: opts.context.locale,
-        }));
-      if (!existingProfile) {
+      const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
+        browserLocale: opts.context.locale,
+      });
+      if (profileHandle.initialData !== profile) {
         opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
       }
       return { locale: profile.locale, token, isAuthenticated: true };
@@ -55,24 +52,28 @@ export const Route = createFileRoute("/_auth")({
     // the profile row exists.
     const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
     const existingProfile = profileHandle.initialData;
-    if (existingProfile) {
-      return { locale: existingProfile.locale, token: opts.context.token, isAuthenticated: true };
+    if (!existingProfile) {
+      const token = await getAuthToken();
+      if (!token) {
+        throw redirect({ to: "/" });
+      }
+      // Right after login the auth provider may not have re-authenticated the
+      // websocket yet, so ensure (and the route loaders after it) would throw
+      // "Not authenticated". Authenticate it with the fresh token; the
+      // provider's own setAuth supersedes this once its session effect runs.
+      opts.context.convexClient.setAuth(async () => token);
     }
-
-    const token = await getAuthToken();
-    if (!token) {
-      throw redirect({ to: "/" });
-    }
-    // Right after login the auth provider may not have re-authenticated the
-    // websocket yet, so ensure (and the route loaders after it) would throw
-    // "Not authenticated". Authenticate it with the fresh token; the
-    // provider's own setAuth supersedes this once its session effect runs.
-    opts.context.convexClient.setAuth(async () => token);
     const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
       browserLocale: opts.context.locale,
     });
-    opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
-    return { locale: profile.locale, token, isAuthenticated: true };
+    if (existingProfile !== profile) {
+      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+    }
+    return {
+      locale: profile.locale,
+      token: opts.context.token,
+      isAuthenticated: true,
+    };
   },
   component: AuthLayout,
 });

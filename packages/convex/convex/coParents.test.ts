@@ -115,8 +115,8 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   });
   const asNewbie = t.withIdentity({ subject: newbieId });
 
-  const claimed = await asNewbie.mutation(api.coParents.claimPendingInvites, {});
-  expect(claimed).toEqual({ claimed: 1 });
+  const claimed = await asNewbie.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  expect(claimed).toEqual({ locale: "en-GB", isAdmin: false });
 
   const after = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
   if (after === "forbidden") {

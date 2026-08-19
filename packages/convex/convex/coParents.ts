@@ -254,10 +254,69 @@ export const leave = mutation({
 
 /**
  * Turns pending email invites for the signed-in user into co-parent rows.
- * Safe to call repeatedly from the authenticated layout.
+ * Idempotent — safe to call on every authenticated session sync.
+ */
+export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: AppIdentity) {
+  const profile = await resolveCallerProfile(ctx, caller.authUserId);
+  if (!profile) {
+    return 0;
+  }
+
+  const email = profile.email;
+  const name = profile.name;
+
+  const invites = await ctx.db
+    .query("babyCoParentInvites")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .order("desc")
+    .take(100);
+
+  let claimed = 0;
+  for (const invite of invites) {
+    if (!isActive(invite)) continue;
+
+    const baby = await ctx.db.get(invite.babyId);
+    if (!baby || !isActive(baby)) {
+      await ctx.db.patch(invite._id, softDeletePatch());
+      continue;
+    }
+
+    // Never make the owner a co-parent of their own page
+    const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
+    if (isOwner) {
+      await ctx.db.patch(invite._id, softDeletePatch());
+      continue;
+    }
+
+    const existing = await findActiveCoParent(ctx, {
+      babyId: invite.babyId,
+      identity: caller,
+    });
+    if (!existing) {
+      await ctx.db.insert("babyCoParents", {
+        babyId: invite.babyId,
+        userId: caller.authUserId,
+        tokenIdentifier: caller.tokenIdentifier,
+        email,
+        name,
+        addedByUserId: invite.invitedByUserId,
+        addedAt: Date.now(),
+      });
+      claimed += 1;
+    }
+    await ctx.db.patch(invite._id, softDeletePatch());
+  }
+
+  return claimed;
+}
+
+/**
+ * Explicit invite claim — prefer profile.ensure, which runs automatically
+ * on authenticated session sync.
  */
 export const claimPendingInvites = mutation({
   args: {},
+  returns: v.object({ claimed: v.number() }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     // After signup the first dashboard load can race the session cookie —
@@ -265,58 +324,7 @@ export const claimPendingInvites = mutation({
     if (!identity) {
       return { claimed: 0 };
     }
-    const caller = appIdentity(identity);
-
-    const profile = await resolveCallerProfile(ctx, caller.authUserId);
-    if (!profile) {
-      return { claimed: 0 };
-    }
-
-    const email = profile.email;
-    const name = profile.name;
-
-    const invites = await ctx.db
-      .query("babyCoParentInvites")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .order("desc")
-      .take(100);
-
-    let claimed = 0;
-    for (const invite of invites) {
-      if (!isActive(invite)) continue;
-
-      const baby = await ctx.db.get(invite.babyId);
-      if (!baby || !isActive(baby)) {
-        await ctx.db.patch(invite._id, softDeletePatch());
-        continue;
-      }
-
-      // Never make the owner a co-parent of their own page
-      const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
-      if (isOwner) {
-        await ctx.db.patch(invite._id, softDeletePatch());
-        continue;
-      }
-
-      const existing = await findActiveCoParent(ctx, {
-        babyId: invite.babyId,
-        identity: caller,
-      });
-      if (!existing) {
-        await ctx.db.insert("babyCoParents", {
-          babyId: invite.babyId,
-          userId: caller.authUserId,
-          tokenIdentifier: caller.tokenIdentifier,
-          email,
-          name,
-          addedByUserId: invite.invitedByUserId,
-          addedAt: Date.now(),
-        });
-        claimed += 1;
-      }
-      await ctx.db.patch(invite._id, softDeletePatch());
-    }
-
+    const claimed = await claimPendingInvitesForCaller(ctx, appIdentity(identity));
     return { claimed };
   },
 });
