@@ -43,9 +43,13 @@ function makeGuardCtx() {
   return { ctx, queryClient, beforeLoad: options.beforeLoad };
 }
 
-test("client navigations with a cached profile skip the token round-trip", async () => {
+test("client navigations with a cached profile still sync the session", async () => {
   getToken.mockReset();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "sv", isAdmin: false }),
+  );
   const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { mutation };
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
     isAdmin: false,
@@ -55,6 +59,7 @@ test("client navigations with a cached profile skip the token round-trip", async
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(getToken).not.toHaveBeenCalled();
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
 });
 
 test("regression: a fresh login authenticates the websocket before ensuring the profile", async () => {

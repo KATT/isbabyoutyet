@@ -13,7 +13,6 @@ import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboardi
 import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import { authClient } from "@/lib/auth-client";
 import {
   createFileRoute,
   Link,
@@ -24,17 +23,23 @@ import {
 } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
+import { authServer } from "@/lib/auth-server";
 
 const TIMELINE_PAGE_SIZE = 20;
+
+const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
+  return await authServer.getToken();
+});
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -69,6 +74,16 @@ export const Route = createFileRoute("/baby/$publicId")({
     const babyDoc = babyHandle.initialData;
     if (!babyDoc) {
       throw notFound();
+    }
+
+    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    const token =
+      opts.context.token ?? (profileHandle.initialData != null ? await getAuthToken() : null);
+    if (token) {
+      opts.context.convexClient.setAuth(async () => token);
+      await opts.context.convexClient.mutation(api.profile.ensure, {
+        browserLocale: opts.context.locale,
+      });
     }
 
     // One homogeneous set for every visitor: manager-only queries return a
@@ -279,12 +294,10 @@ function BabyPage() {
     loaderData.vapidPublicKey,
   );
 
-  const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
   const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
-  const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
 
@@ -296,12 +309,6 @@ function BabyPage() {
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
   const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
   const birthJourney = managerBabyDoc?.birthJourney ?? null;
-
-  // Claim pending email invites when a signed-in user lands on a baby page
-  useEffect(() => {
-    if (!sessionResult.data?.user) return;
-    void claimInvites({});
-  }, [sessionResult.data?.user, claimInvites]);
 
   const currentStatus = getCurrentStatus(baby);
 
