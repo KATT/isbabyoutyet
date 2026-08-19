@@ -3,15 +3,19 @@ import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
-import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus, milestoneVisibilityForPreset } from "@workspace/convex/src/types";
+import type { PreviewBabyData } from "@workspace/convex/src/types";
+import {
+  getCurrentStatus,
+  milestoneVisibilityForPreset,
+  MILESTONE_FIELDS,
+} from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function getDefaultBabyData(): BabyData {
+function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 7);
@@ -77,13 +81,13 @@ export const Route = createFileRoute("/preview")({
   }),
 });
 
-function PreviewPage() {
+export function PreviewPage() {
   const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
   const birthJourney = search.birthJourney ?? "labor";
 
-  const baby: BabyData = {
+  const baby: PreviewBabyData = {
     ...getDefaultBabyData(),
     ...search,
     milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
@@ -116,6 +120,24 @@ function PreviewPage() {
             search: {
               ...search,
               ...update,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRedate={(milestone, occurredAt) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: occurredAt,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRemove={(milestone) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
           });

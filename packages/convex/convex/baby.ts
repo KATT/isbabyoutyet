@@ -3,26 +3,12 @@ import { env, internalMutation, internalQuery, mutation, query } from "./_genera
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import {
-  FORBIDDEN,
-  getBlockingLaterMilestone,
-  getCurrentStatus,
-  isMilestoneNotificationType,
-  isStatusForward,
-  milestoneVisibilityForPreset,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
-  MILESTONES,
-} from "../src/types";
+import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
-import {
-  deleteUpdateWithTimelineItem,
-  findMilestoneUpdate,
-  insertUpdateWithTimelineItem,
-} from "./timeline";
+import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
@@ -123,11 +109,10 @@ export const getByPublicId = query({
       dueDateDisplay.mode === "exact" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
-      ...toBabyDto(baby),
+      ...(await toBabyDto(ctx, baby)),
       dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
-      milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
@@ -377,12 +362,6 @@ export const create = mutationWithTriggers({
       publicDueDateText: dueDateDisplay.text,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
-      hospitalMessage: null,
-      babyBornMessage: null,
-      laborStartedMessage: null,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -548,7 +527,7 @@ export async function syncStatusNotifications(
   },
 ) {
   const updatedBaby = opts.updatedBaby;
-  const statusAfter = getCurrentStatus(updatedBaby);
+  const statusAfter = await loadCurrentStatus(ctx, updatedBaby._id);
 
   if (opts.statusBefore.type === statusAfter.type) {
     // no notification change as status didn't change
@@ -589,79 +568,9 @@ export async function syncStatusNotifications(
   });
 }
 
-/**
- * Keeps the timeline's milestone update rows in sync with the canonical
- * status fields on the baby doc:
- * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
- * - redating a milestone updates `occurredAt` only — feed position stays put
- * - unmarking a milestone deletes its update + timeline rows
- * - a legacy stage-message arg (stale-client compat) lands on the row's message
- */
-async function syncMilestoneUpdates(
-  ctx: MutationCtx,
-  opts: {
-    baby: Doc<"baby">;
-    patch: {
-      laborStarted?: string | null;
-      wentToHospital?: string | null;
-      babyBorn?: string | null;
-    };
-    legacyMessages: Partial<Record<Milestone, string | null>>;
-    postedByUserId: string;
-  },
-) {
-  const baby = opts.baby;
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const dateArg = opts.patch[fields.date];
-    const messageArg = opts.legacyMessages[milestone];
-    if (dateArg === undefined && messageArg === undefined) continue;
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-
-    if (dateArg === null) {
-      // Unmarked: the milestone leaves the feed
-      if (existing) {
-        await deleteUpdateWithTimelineItem(ctx, existing);
-      }
-      continue;
-    }
-
-    if (typeof dateArg === "string") {
-      // Validated parseable by the update handler
-      const occurredAt = Date.parse(dateArg);
-      if (existing) {
-        // Redate: update the event clock only — do not reshuffle the feed
-        await ctx.db.patch(existing._id, {
-          occurredAt,
-          ...(messageArg !== undefined ? { message: messageArg } : {}),
-        });
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          // Announced now (settings mark), even if the event clock is historical
-          postedAt: Date.now(),
-          occurredAt,
-          milestone,
-          message: messageArg ?? null,
-          postedByUserId: opts.postedByUserId,
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: a stale client edited just the stage message
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
-    }
-  }
-}
-
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    laborStarted: v.optional(v.union(v.string(), v.null())),
-    wentToHospital: v.optional(v.union(v.string(), v.null())),
-    babyBorn: v.optional(v.union(v.string(), v.null())),
     dueDate: v.optional(v.string()),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
@@ -670,62 +579,15 @@ export const update = mutationWithTriggers({
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
     birthJourney: v.optional(birthJourneyValidator),
-    // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
-    // during the deploy window): mapped onto the milestone update rows, never
-    // written to the baby doc. Remove in a later tidy-up once stale tabs are
-    // realistically gone.
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const { babyId, ...patch } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
-    const legacyMessages = {
-      labor_started: laborStartedMessage,
-      gone_to_hospital: hospitalMessage,
-      born: babyBornMessage,
-    };
-    const birthJourneyChanged =
-      rest.birthJourney !== undefined && rest.birthJourney !== baby.birthJourney;
-
-    // Milestone dates are event clocks: they must parse and cannot be in the
-    // future (mirrors the `updates.post` occurredAt guard, so settings
-    // redating can't bypass it)
-    for (const milestone of MILESTONES) {
-      const dateArg = rest[MILESTONE_FIELDS[milestone].date];
-      if (typeof dateArg !== "string") continue;
-      const parsed = Date.parse(dateArg);
-      if (Number.isNaN(parsed)) {
-        throw new Error("Invalid date");
-      }
-      if (parsed > Date.now() + 60_000) {
-        throw new Error("The event time cannot be in the future");
-      }
-    }
-
-    for (const milestone of MILESTONES) {
-      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
-      const blocker = getBlockingLaterMilestone(baby, milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(baby);
-    const milestoneMarkChanged = MILESTONES.some((milestone) => {
-      const dateField = MILESTONE_FIELDS[milestone].date;
-      const dateArg = rest[dateField];
-      return (
-        (typeof dateArg === "string" && !baby[dateField]) || (dateArg === null && !!baby[dateField])
-      );
-    });
-
-    const patch: Partial<typeof baby> = rest;
-    if (rest.dueDateDisplayMode !== undefined || rest.publicDueDateText !== undefined) {
+    let publicId: string | undefined;
+    if (patch.dueDateDisplayMode !== undefined || patch.publicDueDateText !== undefined) {
       const dueDateDisplay = normalizeDueDateDisplay({
-        mode: rest.dueDateDisplayMode,
-        text: rest.publicDueDateText,
+        mode: patch.dueDateDisplayMode,
+        text: patch.publicDueDateText,
       });
       patch.dueDateDisplayMode = dueDateDisplay.mode;
       patch.publicDueDateText = dueDateDisplay.text;
@@ -736,41 +598,20 @@ export const update = mutationWithTriggers({
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId({
+        publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
-        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
+        await ctx.db.insert("babyPublicIdHistory", {
+          babyId,
+          publicId: oldPublicId,
+        });
       }
     }
 
-    await ctx.db.patch(babyId, patch);
-
-    await syncMilestoneUpdates(ctx, {
-      baby,
-      patch: rest,
-      legacyMessages,
-      postedByUserId: identity.authUserId,
-    });
-
-    const updatedBaby = await ctx.db.get(babyId);
-    if (!updatedBaby) throw new Error("Baby not found after update");
-
-    // Settings status changes don't carry a message (attach one by posting an
-    // update); a stale client's legacy message arg still rides along
-    if (!birthJourneyChanged || milestoneMarkChanged) {
-      await syncStatusNotifications(ctx, {
-        statusBefore,
-        updatedBaby,
-        photoId: null,
-        updateId: null,
-        customMessageByMilestone: {
-          labor_started: legacyMessages.labor_started ?? null,
-          gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-          born: legacyMessages.born ?? null,
-        },
-      });
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(babyId, { ...patch, ...(publicId ? { publicId } : {}) });
     }
   },
 });
