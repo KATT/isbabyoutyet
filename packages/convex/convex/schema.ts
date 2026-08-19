@@ -21,8 +21,6 @@ export default defineSchema({
     ),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
-    /** @deprecated Visitor messages are always allowed; stripped by removeBabyEncouragementsDisabled. */
-    encouragementsDisabled: v.optional(v.boolean()),
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
     // Tiny JPEG data URL shown while the page photo loads (Next.js blurDataURL)
