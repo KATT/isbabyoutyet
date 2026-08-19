@@ -81,9 +81,6 @@ async function resolveBrowserPushCapability(): Promise<BrowserPushCapability> {
 
   try {
     const registration = await waitForServiceWorkerWithTimeout(SERVICE_WORKER_READY_TIMEOUT_MS);
-    if (!registration) {
-      return { kind: "unsubscribed" };
-    }
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       return { kind: "subscribed", subscription };
