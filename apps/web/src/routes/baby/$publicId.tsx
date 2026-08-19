@@ -203,7 +203,7 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(
+export function docToBabyData(
   doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
 ): BabyData {
   const common = {
@@ -234,7 +234,7 @@ function docToBabyData(
 
 type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
 
-function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
+export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,

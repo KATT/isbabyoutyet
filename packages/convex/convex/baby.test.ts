@@ -182,6 +182,43 @@ test("custom public due date text hides the exact day from visitors", async () =
   ).rejects.toThrow("due date is required");
 });
 
+test("public DTO rejects invalid due date display combinations", async () => {
+  const t = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Missing Date",
+      dueDate: null,
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      publicId: "missing-date",
+      birthJourney: "labor",
+      subscriptionCount: 0,
+      lastActivityAt: 1,
+    });
+    await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Missing Message",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+      publicId: "missing-message",
+      birthJourney: "labor",
+      subscriptionCount: 0,
+      lastActivityAt: 1,
+    });
+  });
+
+  await expect(t.query(api.baby.getByPublicId, { id: "missing-date" })).rejects.toThrow(
+    "Exact due date display requires a due date",
+  );
+  await expect(t.query(api.baby.getByPublicId, { id: "missing-message" })).rejects.toThrow(
+    "Message due date display requires public text",
+  );
+});
+
 test("journey selection can change after milestone updates without deleting them", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

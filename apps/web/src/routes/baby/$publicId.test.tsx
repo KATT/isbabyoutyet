@@ -6,12 +6,16 @@ import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+
+const routeModule = await import("@/routes/baby/$publicId");
+const { docToBabyData, managerDocToBabyData } = routeModule;
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -20,35 +24,7 @@ function useFakeTimersResource(now: Date) {
   });
 }
 
-/**
- * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
- */
 type PublicBaby = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
-
-function docToBabyData(doc: PublicBaby): BabyData {
-  const common = {
-    name: doc.name,
-    theme: doc.theme ?? null,
-    laborStarted: doc.laborStarted ?? null,
-    wentToHospital: doc.wentToHospital ?? null,
-    babyBorn: doc.babyBorn ?? null,
-    encouragementsDisabled: doc.encouragementsDisabled,
-    photoId: doc.photoId ?? null,
-  };
-  return doc.dueDateDisplayMode === "exact"
-    ? {
-        ...common,
-        dueDate: doc.dueDate,
-        dueDateDisplayMode: "exact",
-        publicDueDateText: null,
-      }
-    : {
-        ...common,
-        dueDate: null,
-        dueDateDisplayMode: "message",
-        publicDueDateText: doc.publicDueDateText,
-      };
-}
 
 /**
  * Happy-path stand-in for the baby detail page: heading + status from
@@ -102,6 +78,51 @@ test("renders a baby detail page from local convex-test data", async () => {
     throw new Error("expected baby from getByPublicId");
   }
   expect(baby).not.toHaveProperty("publicDueDateText");
+  const managerDoc = await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId });
+  if (managerDoc === FORBIDDEN) {
+    throw new Error("expected manager baby");
+  }
+  expect(managerDocToBabyData(managerDoc)).toMatchObject({
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
+  });
+  expect(
+    docToBabyData({
+      ...baby,
+      theme: "baby-blue",
+      locale: "sv",
+      laborStarted: "2026-08-10T08:00:00.000Z",
+      wentToHospital: "2026-08-10T12:00:00.000Z",
+      babyBorn: "2026-08-11T03:00:00.000Z",
+      encouragementsDisabled: true,
+      photoId: "photo-id" as Id<"_storage">,
+    }),
+  ).toMatchObject({
+    theme: "baby-blue",
+    locale: "sv",
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+    babyBorn: "2026-08-11T03:00:00.000Z",
+    encouragementsDisabled: true,
+    photoId: "photo-id",
+  });
+  expect(
+    managerDocToBabyData({
+      ...managerDoc,
+      theme: "baby-blue",
+      locale: "sv",
+      publicDueDateText: "Retained message",
+      encouragementsDisabled: true,
+      photoId: "photo-id" as Id<"_storage">,
+    }),
+  ).toMatchObject({
+    theme: "baby-blue",
+    locale: "sv",
+    publicDueDateText: "Retained message",
+    encouragementsDisabled: true,
+    photoId: "photo-id",
+  });
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
 
@@ -127,6 +148,17 @@ test("renders optional public due date text without exposing the exact day", asy
     throw new Error("expected baby from getByPublicId");
   }
   expect(baby).not.toHaveProperty("dueDate");
+  const managerDoc = await t
+    .withIdentity({ subject: "alice" })
+    .query(api.baby.getManagerBaby, { babyId: created.babyId });
+  if (managerDoc === FORBIDDEN) {
+    throw new Error("expected manager baby");
+  }
+  expect(managerDocToBabyData(managerDoc)).toMatchObject({
+    dueDate: null,
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
   expect(view.getByText("Any day now")).toBeTruthy();
@@ -221,7 +253,6 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
     convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
     serverHttpClient: undefined,
   } as never);
-  const routeModule = await import("@/routes/baby/$publicId");
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: { queryClient: QueryClient };
     params: { publicId: string };
