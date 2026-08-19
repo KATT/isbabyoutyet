@@ -339,12 +339,14 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     .order("desc")
     .take(100);
 
-  const shared: Array<ReturnType<typeof toManagerBabyDto> & { role: "owner" | "coParent" }> = [];
+  const shared: Array<
+    Awaited<ReturnType<typeof toManagerBabyDto>> & { role: "owner" | "coParent" }
+  > = [];
   const seen = new Set<string>();
 
   for (const baby of owned.filter(isActive)) {
     seen.add(baby._id);
-    shared.push({ ...toManagerBabyDto(baby), role: "owner" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "owner" });
   }
 
   for (const membership of memberships.filter(isActive)) {
@@ -352,7 +354,7 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     const baby = await ctx.db.get(membership.babyId);
     if (!baby || !isActive(baby)) continue;
     seen.add(baby._id);
-    shared.push({ ...toManagerBabyDto(baby), role: "coParent" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "coParent" });
   }
 
   // Newest first across both sources

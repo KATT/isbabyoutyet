@@ -11,11 +11,7 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
-import {
-  FORBIDDEN,
-  getCurrentStatus,
-  milestoneVisibilityForPreset,
-} from "@workspace/convex/src/types";
+import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -218,9 +214,6 @@ function docToBabyData(
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
     milestoneVisibility: doc.milestoneVisibility,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
@@ -252,10 +245,7 @@ function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
-    milestoneVisibility: milestoneVisibilityForPreset(doc.birthJourney),
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
@@ -294,6 +284,8 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
+  const redateMilestone = useMutation(api.updates.redateMilestone);
+  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -355,6 +347,18 @@ function BabyPage() {
                 babyId: babyDoc._id,
                 ...update,
               });
+              await router.invalidate();
+            }}
+            onMilestoneRedate={async (milestone, occurredAt) => {
+              await redateMilestone({
+                babyId: babyDoc._id,
+                milestone,
+                occurredAt: Date.parse(occurredAt),
+              });
+              await router.invalidate();
+            }}
+            onMilestoneRemove={async (milestone) => {
+              await unmarkMilestone({ babyId: babyDoc._id, milestone });
               await router.invalidate();
             }}
             onDelete={

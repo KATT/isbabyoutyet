@@ -30,12 +30,14 @@ import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
-import {
-  getBlockingLaterMilestone,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
+import { getBlockingLaterMilestone, MILESTONE_LABELS } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  Milestone,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -247,22 +249,14 @@ function DueDateForm(props: EditorFormProps) {
 
 type StatusDateEditorProps = {
   baby: BabyData;
-  status: "labor_started" | "gone_to_hospital" | "born";
+  status: Milestone;
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
 };
 
-function statusDateSchema(t: TranslationFunction, status: Milestone) {
-  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
-    switch (status) {
-      case "labor_started":
-        return { laborStarted: values.dateTime };
-      case "gone_to_hospital":
-        return { wentToHospital: values.dateTime };
-      case "born":
-        return { babyBorn: values.dateTime };
-    }
-  });
+function statusDateSchema(t: TranslationFunction) {
+  return z.object({ dateTime: htmlDateTime(t) });
 }
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
@@ -284,7 +278,8 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
           baby={props.baby}
           status={props.status}
           currentDate={props.currentDate}
-          onUpdate={props.onUpdate}
+          onRedate={props.onRedate}
+          onRemove={props.onRemove}
           onClose={() => setIsEditing(false)}
         />
       </PopoverContent>
@@ -296,14 +291,15 @@ function StatusDateForm(props: {
   baby: BabyData;
   status: StatusDateEditorProps["status"];
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
   const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema(t, props.status),
+    schema: statusDateSchema(t),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -320,7 +316,7 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate(values);
+        await props.onRedate(props.status, values.dateTime);
         props.onClose();
       }}
     >
@@ -382,7 +378,7 @@ function StatusDateForm(props: {
                   onClick={async () => {
                     setIsDeleting(true);
                     try {
-                      await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
+                      await props.onRemove(props.status);
                       props.onClose();
                     } catch {
                       toast.error(

@@ -4,10 +4,10 @@ import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
+import { loadCurrentStatus } from "./timeline";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
@@ -148,7 +148,7 @@ export const listBabies = query({
         dueDate: baby.dueDate,
         dueDateDisplayMode: baby.dueDateDisplayMode,
         publicDueDateText: baby.publicDueDateText,
-        status: getCurrentStatus(baby).type,
+        status: (await loadCurrentStatus(ctx, baby._id)).type,
         demo: baby.demo === true,
         createdAt,
         updatedAt: Math.max(createdAt, baby.lastActivityAt ?? createdAt),
