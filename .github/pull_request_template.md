@@ -37,6 +37,22 @@ Otherwise bullets for:
 
 None
 
+## Screenshots / video
+
+<!--
+Required for every PR.
+- User-visible UI changes: attach the smallest useful set of screenshots from
+  the final tested preview. Include before/after only when the final state does
+  not make the difference clear.
+- Interactions, animations, or multi-step flows: also attach a short, focused
+  video of the successful flow.
+- Do not include failed runs, setup steps, stale UI, redundant captures, or
+  sensitive data.
+- Non-visual changes: write `None — <brief reason>`.
+-->
+
+None
+
 ## Test plan
 
 - [ ]
