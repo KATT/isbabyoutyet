@@ -88,13 +88,11 @@ export const Route = createFileRoute("/baby/$publicId")({
         browserLocale: opts.context.locale,
       });
     }
-    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
-
     // One homogeneous set for every visitor: manager-only queries return a
     // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
-      browserPush,
+      browserPush: prefetchBrowserPushCapability(opts.context.queryClient),
       ...(await allKeyed({
         myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
         vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
