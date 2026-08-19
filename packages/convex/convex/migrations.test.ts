@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
+import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
   backfillBabyBirthJourneyDoc,
@@ -9,12 +10,14 @@ import {
   backfillUpdatePostedByUserIdDoc,
 } from "./migrations";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import { modules, registerMigrationsComponent } from "./test.setup";
 
 test("retained migrations skip linked rows and backfill update metadata and counts", async () => {
   const t = convexTest(schema, modules);
+  await registerMigrationsComponent(t);
 
   const ids = await t.run(async (ctx) => {
+    const photoId = await ctx.storage.store(new Blob(["photo"], { type: "image/jpeg" }));
     const babyId = await ctx.db.insert("baby", {
       userId: "alice",
       ownerTokenIdentifier: "https://convex.test|alice",
@@ -24,6 +27,7 @@ test("retained migrations skip linked rows and backfill update metadata and coun
       birthJourney: "labor",
       dueDateDisplayMode: "exact",
       publicDueDateText: null,
+      photoId,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -97,4 +101,10 @@ test("retained migrations skip linked rows and backfill update metadata and coun
   expect(result.update?.postedByUserId).toBe("alice");
   expect(result.baby?.lastActivityAt).toBe(result.baby?._creationTime);
   expect(result.baby?.subscriptionCount).toBe(1);
+
+  await expect(
+    t.mutation(internal.migrations.runTableMigrations, {
+      oneBatchOnly: true,
+    }),
+  ).resolves.toBeTruthy();
 });
