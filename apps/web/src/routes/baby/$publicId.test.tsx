@@ -14,6 +14,14 @@ import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
+vi.mock("@tanstack/react-start", () => ({
+  createServerFn: () => ({ handler: (fn: unknown) => fn }),
+}));
+
+vi.mock("@/lib/auth-server", () => ({
+  authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
+}));
+
 const routeModule = await import("@/routes/baby/$publicId");
 const { docToBabyData, managerDocToBabyData } = routeModule;
 
