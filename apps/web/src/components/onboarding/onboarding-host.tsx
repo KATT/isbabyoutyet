@@ -148,7 +148,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           targetId={coachmarkTargetId}
           title={coachmarkTitle}
           description={coachmarkDescription}
-          completeOnDismiss={undefined}
+          completeOnDismiss={nextStep.id === "learn_encouragements"}
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}

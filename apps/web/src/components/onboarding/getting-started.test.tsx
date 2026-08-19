@@ -86,7 +86,7 @@ test("minimized chip shows progress count", async () => {
     />,
   );
 
-  expect(screen.getByRole("button", { name: /2 of 4 done/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /2 of 5 done/i })).toBeTruthy();
 });
 
 test("dashboard settings CTA marks the step done while opening the page", async () => {
@@ -136,7 +136,13 @@ test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = renderResource(
     <GettingStartedCard
-      effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
+      effectiveSteps={[
+        "add_baby",
+        "share_link",
+        "post_update",
+        "explore_settings",
+        "learn_encouragements",
+      ]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
@@ -151,4 +157,44 @@ test("all-done state offers close checklist", async () => {
   expect(screen.getByText(/you're all set/i)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: /close checklist/i }));
   expect(onDismiss).toHaveBeenCalledOnce();
+});
+
+test("dashboard learn encouragements step links to the first baby's page", async () => {
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const links = screen.getAllByRole("link", { name: /see ada's page/i });
+  expect(links.length).toBeGreaterThan(0);
+  expect(links[0]?.getAttribute("href")).toContain("baby-waiting");
+});
+
+test("baby-page learn encouragements acknowledges with Got it", async () => {
+  const onAcknowledge = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={onAcknowledge}
+      surface="baby"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  fireEvent.click(screen.getAllByRole("button", { name: /got it/i })[0]!);
+  expect(onAcknowledge).toHaveBeenCalledWith("learn_encouragements");
 });

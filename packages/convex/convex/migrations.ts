@@ -308,7 +308,14 @@ export const backfillBabySubscriptionCount = migrations.define({
  * Removes the retired `encouragementsDisabled` flag so visitor messages are
  * always allowed. Idempotent: no-op when the field is already absent.
  */
-export async function removeBabyEncouragementsDisabledDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+type LegacyBabyWithEncouragementsDisabled = Doc<"baby"> & {
+  encouragementsDisabled?: boolean;
+};
+
+export async function removeBabyEncouragementsDisabledDoc(
+  ctx: MutationCtx,
+  baby: LegacyBabyWithEncouragementsDisabled,
+) {
   if (baby.encouragementsDisabled === undefined) return;
   const { encouragementsDisabled: _removed, ...rest } = baby;
   await ctx.db.replace("baby", baby._id, rest);
@@ -364,9 +371,13 @@ export const backfillCoParentTokenIdentifier = migrations.define({
   migrateOne: backfillCoParentTokenIdentifierDoc,
 });
 
+type LegacyUserOnboardingWithRetiredSteps = Omit<Doc<"userOnboarding">, "completedSteps"> & {
+  completedSteps: string[];
+};
+
 export async function sanitizeOnboardingStepsDoc(
   ctx: MutationCtx,
-  onboarding: Doc<"userOnboarding">,
+  onboarding: LegacyUserOnboardingWithRetiredSteps,
 ) {
   const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
   if (completedSteps.length === onboarding.completedSteps.length) return;

@@ -7,6 +7,7 @@ export const ONBOARDING_STEP_IDS = [
   "share_link",
   "post_update",
   "explore_settings",
+  "learn_encouragements",
 ] as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];

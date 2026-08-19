@@ -1,6 +1,6 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { Icon } from "@phosphor-icons/react";
-import { Baby, ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
+import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
 import type { TranslationKey } from "@/lib/i18n";
 
 export type OnboardingStepCopy = {
@@ -53,6 +53,16 @@ export const ONBOARDING_STEPS = [
     surface: "baby",
     targetId: "explore_settings",
     icon: GearSix,
+    ctaLabel: undefined,
+  },
+  {
+    id: "learn_encouragements",
+    title: "Encouragements from visitors",
+    description:
+      "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.",
+    surface: "baby",
+    targetId: "learn_encouragements",
+    icon: Heart,
     ctaLabel: undefined,
   },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;

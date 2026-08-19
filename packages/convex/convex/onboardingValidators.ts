@@ -5,4 +5,5 @@ export const onboardingStepIdValidator = v.union(
   v.literal("share_link"),
   v.literal("post_update"),
   v.literal("explore_settings"),
+  v.literal("learn_encouragements"),
 );
