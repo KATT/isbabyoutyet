@@ -9,7 +9,7 @@ export default defineSchema({
     userId: v.string(), // Better-auth user ID
     ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
-    dueDate: v.string(), // ISO date string
+    dueDate: v.union(v.string(), v.null()), // ISO date string in exact mode; null in message mode
     // Stack 2: required after backfillBabyDueDateDisplay populates every baby.
     dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
     publicDueDateText: v.union(v.string(), v.null()),

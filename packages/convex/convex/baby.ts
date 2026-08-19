@@ -51,15 +51,20 @@ function normalizePublicDueDateText(value: string | null | undefined) {
 }
 
 function normalizeDueDateDisplay(opts: {
+  dueDate: string | null | undefined;
   mode: DueDateDisplayMode | undefined;
   text: string | null | undefined;
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
   const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  if (mode === "exact" && !opts.dueDate) {
+    throw new Error("A due date is required when the exact date is shown");
+  }
   if (mode === "message" && !normalizedText) {
     throw new Error("A public due date message is required when the exact date is hidden");
   }
   return {
+    dueDate: mode === "exact" ? opts.dueDate : null,
     mode,
     text: mode === "message" ? normalizedText : null,
   };
@@ -116,15 +121,14 @@ export const getByPublicId = query({
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
     const dueDateDisplay = normalizeDueDateDisplay({
+      dueDate: baby.dueDate,
       mode: baby.dueDateDisplayMode,
       text: baby.publicDueDateText,
     });
-    const canSeeExactDueDate =
-      dueDateDisplay.mode === "exact" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...toBabyDto(baby),
-      dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
+      dueDate: dueDateDisplay.dueDate,
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
@@ -345,7 +349,7 @@ async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
 export const create = mutationWithTriggers({
   args: {
     name: v.string(),
-    dueDate: v.string(),
+    dueDate: v.union(v.string(), v.null()),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
@@ -358,6 +362,7 @@ export const create = mutationWithTriggers({
     }
     const caller = appIdentity(identity);
     const dueDateDisplay = normalizeDueDateDisplay({
+      dueDate: args.dueDate,
       mode: args.dueDateDisplayMode,
       text: args.publicDueDateText,
     });
@@ -372,7 +377,7 @@ export const create = mutationWithTriggers({
       userId: caller.authUserId,
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
-      dueDate: args.dueDate,
+      dueDate: dueDateDisplay.dueDate,
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       publicId,
@@ -662,7 +667,7 @@ export const update = mutationWithTriggers({
     laborStarted: v.optional(v.union(v.string(), v.null())),
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
-    dueDate: v.optional(v.string()),
+    dueDate: v.optional(v.union(v.string(), v.null())),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
@@ -722,11 +727,18 @@ export const update = mutationWithTriggers({
     });
 
     const patch: Partial<typeof baby> = rest;
-    if (rest.dueDateDisplayMode !== undefined || rest.publicDueDateText !== undefined) {
+    if (
+      rest.dueDate !== undefined ||
+      rest.dueDateDisplayMode !== undefined ||
+      rest.publicDueDateText !== undefined
+    ) {
       const dueDateDisplay = normalizeDueDateDisplay({
-        mode: rest.dueDateDisplayMode,
-        text: rest.publicDueDateText,
+        dueDate: rest.dueDate !== undefined ? rest.dueDate : baby.dueDate,
+        mode: rest.dueDateDisplayMode ?? baby.dueDateDisplayMode,
+        text:
+          rest.publicDueDateText !== undefined ? rest.publicDueDateText : baby.publicDueDateText,
       });
+      patch.dueDate = dueDateDisplay.dueDate;
       patch.dueDateDisplayMode = dueDateDisplay.mode;
       patch.publicDueDateText = dueDateDisplay.text;
     }

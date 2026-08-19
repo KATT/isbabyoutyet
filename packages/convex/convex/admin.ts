@@ -24,7 +24,7 @@ const babyRowValidator = v.object({
   _id: v.id("baby"),
   name: v.string(),
   publicId: v.string(),
-  dueDate: v.string(),
+  dueDate: v.union(v.string(), v.null()),
   status: v.union(
     v.literal("not_yet"),
     v.literal("labor_started"),

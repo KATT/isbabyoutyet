@@ -9,6 +9,7 @@ import {
   backfillCoParentTokenIdentifierDoc,
   backfillOnboardingTokenIdentifierDoc,
   backfillProfileTokenIdentifierDoc,
+  clearHiddenBabyDueDateDoc,
   sanitizeOnboardingStepsDoc,
 } from "./migrations";
 import schema from "./schema";
@@ -129,10 +130,15 @@ test("due date display migration preserves and normalizes existing messages", as
     await backfillBabyDueDateDisplayDoc(ctx, baby);
     const migrated = await ctx.db.get(babyId);
     if (!migrated) throw new Error("Migrated baby missing");
+    await clearHiddenBabyDueDateDoc(ctx, migrated);
+    const cleared = await ctx.db.get(babyId);
+    if (!cleared) throw new Error("Cleared baby missing");
     await backfillBabyDueDateDisplayDoc(ctx, migrated);
+    await clearHiddenBabyDueDateDoc(ctx, cleared);
   });
 
   expect(await t.run(async (ctx) => await ctx.db.get(babyId))).toMatchObject({
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });

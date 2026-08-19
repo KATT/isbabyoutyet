@@ -97,13 +97,13 @@ test("custom public due date text hides the exact day from visitors", async () =
   const asAlice = t.withIdentity({ subject: "alice" });
   const created = await asAlice.mutation(api.baby.create, {
     name: "Waiting Baby",
-    dueDate: "2026-09-19",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "  Any day now  ",
   });
 
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    dueDate: "2026-09",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
@@ -112,18 +112,19 @@ test("custom public due date text hides the exact day from visitors", async () =
       .withIdentity({ subject: "bob" })
       .query(api.baby.getByPublicId, { id: created.publicId }),
   ).toMatchObject({
-    dueDate: "2026-09",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
   expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    dueDate: "2026-09-19",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
 
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
+    dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
   });
@@ -146,6 +147,14 @@ test("custom public due date text hides the exact day from visitors", async () =
       publicDueDateText: "x".repeat(81),
     }),
   ).rejects.toThrow("80 characters or fewer");
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      dueDate: null,
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+    }),
+  ).rejects.toThrow("due date is required");
 });
 
 test("journey selection can change after milestone updates without deleting them", async () => {
