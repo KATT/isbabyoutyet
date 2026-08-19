@@ -81,6 +81,10 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByText("Messages")).toBeTruthy();
   expect(open.getByText("Visitors can send messages")).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
+  expect(open.getByRole("heading", { level: 3, name: "Visitors" })).toBeTruthy();
   expect(open.queryByText("Delete page")).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
@@ -128,6 +132,7 @@ test("delete page control appears when onDelete is provided", async () => {
   );
 
   expect(view.getByText("Delete page")).toBeTruthy();
+  expect(view.getByRole("heading", { level: 3, name: "Danger zone" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete" }));
   expect(view.getByRole("heading", { name: "Delete Nova's page?" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete page" }));
