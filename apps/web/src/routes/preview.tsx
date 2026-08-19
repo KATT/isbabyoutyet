@@ -176,6 +176,7 @@ function PreviewPage() {
               latestUpdate={latestUpdate}
               photoUrl={null}
               thumbnailUrl={null}
+              blurDataUrl={null}
             />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />

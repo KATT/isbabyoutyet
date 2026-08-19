@@ -11,11 +11,13 @@ import {
   formatDueDate,
 } from "./utils";
 import { useI18n } from "@/lib/i18n";
+import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
   babyName: string;
   photoUrl: string | null;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
   fallbackEmoji: string;
   variant: "default" | "born";
 };
@@ -70,11 +72,12 @@ function PhotoAvatar(props: PhotoAvatarProps) {
             className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
           >
             {avatarImageUrl && (
-              <img
+              <BlurImage
                 src={avatarImageUrl}
                 alt={t("Photo of {{name}}", { name: props.babyName })}
                 width={160}
                 height={160}
+                blurDataUrl={props.blurDataUrl}
                 className="w-full h-full object-cover"
               />
             )}
@@ -90,9 +93,10 @@ function PhotoAvatar(props: PhotoAvatarProps) {
           >
             <X className="w-6 h-6" />
           </button>
-          <img
+          <BlurImage
             src={props.photoUrl}
             alt={t("Photo of {{name}}", { name: props.babyName })}
+            blurDataUrl={props.blurDataUrl}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
           />
         </DialogContent>
@@ -115,6 +119,7 @@ type StatusDisplayProps = {
   currentStatus: BabyStatus;
   photoUrl: string | null;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
   latestUpdate: LatestUpdateMessage | null;
 };
 
@@ -180,6 +185,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
         babyName={props.baby.name}
         photoUrl={props.photoUrl}
         thumbnailUrl={props.thumbnailUrl}
+        blurDataUrl={props.blurDataUrl}
         fallbackEmoji={meta.emoji}
         variant={isBorn ? "born" : "default"}
       />

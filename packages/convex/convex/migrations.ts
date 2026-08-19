@@ -60,6 +60,48 @@ export const generatePushImagesForExistingPhotos = migrations.define({
 });
 
 /**
+ * Inline Next.js-style blur placeholders for photo updates that predate the field.
+ */
+export async function generateBlurDataUrlsForExistingPhotosDoc(
+  ctx: MutationCtx,
+  update: Doc<"updates">,
+) {
+  if (!isActive(update)) return;
+  if (!update.photoId || update.blurDataUrl) return;
+  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
+    babyId: update.babyId,
+    photoId: update.photoId,
+    updateId: update._id,
+  });
+}
+
+export const generateBlurDataUrlsForExistingPhotos = migrations.define({
+  table: "updates",
+  migrateOne: generateBlurDataUrlsForExistingPhotosDoc,
+});
+
+/**
+ * Same placeholder for a baby's current page photo when no matching update
+ * row carried it (or the update backfill has not landed yet).
+ */
+export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
+  ctx: MutationCtx,
+  baby: Doc<"baby">,
+) {
+  if (!isActive(baby)) return;
+  if (!baby.photoId || baby.blurDataUrl) return;
+  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
+    babyId: baby._id,
+    photoId: baby.photoId,
+  });
+}
+
+export const generateBlurDataUrlsForExistingBabyPhotos = migrations.define({
+  table: "baby",
+  migrateOne: generateBlurDataUrlsForExistingBabyPhotosDoc,
+});
+
+/**
  * Best-effort "when this milestone was announced" timestamp: the notification
  * for this milestone whose `createdAt` is closest to `referenceMs` (usually the
  * update row's `_creationTime`). Preferring closest — not earliest — avoids
@@ -156,6 +198,7 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
         postedAt: fileMetadata?._creationTime ?? Date.now(),
         photoId: baby.photoId,
         thumbnailId: baby.thumbnailId ?? null,
+        blurDataUrl: baby.blurDataUrl ?? null,
       });
       if (!baby.thumbnailId) {
         await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
@@ -591,6 +634,8 @@ export const backfillUserProfileIsAdmin = migrations.define({
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
   internal.migrations.generatePushImagesForExistingPhotos,
+  internal.migrations.generateBlurDataUrlsForExistingPhotos,
+  internal.migrations.generateBlurDataUrlsForExistingBabyPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
@@ -611,6 +656,8 @@ export const runTableMigrations = migrations.runner([
 const TABLE_MIGRATION_NAMES = [
   "migrations:generateThumbnailsForExistingPhotos",
   "migrations:generatePushImagesForExistingPhotos",
+  "migrations:generateBlurDataUrlsForExistingPhotos",
+  "migrations:generateBlurDataUrlsForExistingBabyPhotos",
   "migrations:backfillBabyTimeline",
   "migrations:backfillEncouragementTimeline",
   "migrations:separateMilestoneOccurredAt",

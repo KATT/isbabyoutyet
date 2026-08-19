@@ -58,6 +58,7 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -635,7 +636,11 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         {/* Photo first when present; the caption/message sits last so long
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
-          <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
+          <TimelinePhoto
+            photoUrl={update.photoUrl}
+            thumbnailUrl={update.thumbnailUrl}
+            blurDataUrl={update.blurDataUrl}
+          />
         )}
 
         {update.message && (
@@ -651,6 +656,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 type TimelinePhotoProps = {
   photoUrl: string;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
 };
 
 function TimelinePhoto(props: TimelinePhotoProps) {
@@ -666,10 +672,11 @@ function TimelinePhoto(props: TimelinePhotoProps) {
             aria-label={t("View photo full size")}
             className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <img
+            <BlurImage
               src={inlineUrl}
               alt={t("Baby update")}
-              className="max-h-64 w-full object-cover"
+              blurDataUrl={props.blurDataUrl}
+              className="aspect-square max-h-64 w-full object-cover"
               loading="lazy"
             />
           </button>
@@ -683,9 +690,10 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         >
           <X className="w-6 h-6" />
         </button>
-        <img
+        <BlurImage
           src={props.photoUrl}
           alt={t("Baby update")}
+          blurDataUrl={props.blurDataUrl}
           className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
         />
       </DialogContent>

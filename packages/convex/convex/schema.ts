@@ -31,6 +31,8 @@ export default defineSchema({
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
+    // Tiny JPEG data URL shown while the page photo loads (Next.js blurDataURL)
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
     // Denormalized exact Web Push subscriber count, maintained with subscription writes.
@@ -140,6 +142,8 @@ export default defineSchema({
     occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+    // Tiny JPEG data URL shown while the update photo loads
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
     // 1350×675 JPEG for Chromium Notification.image (Android / Windows)
     pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
     // Who posted this update. Optional until backfill makes it required.
