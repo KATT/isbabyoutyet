@@ -18,7 +18,7 @@ import {
   getCurrentStatus,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
-import { browserPushCapability } from "@/components/baby/notification-subscribe";
+import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 
 const routeModule = await import("@/routes/baby/$publicId");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -279,6 +279,7 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 
 type LoaderOptions = {
   token: string | null | undefined;
+  isAuthenticated: boolean | undefined;
   locale: string | undefined;
   convexClient:
     | {
@@ -288,13 +289,21 @@ type LoaderOptions = {
     | undefined;
 };
 
+const defaultLoaderOptions: LoaderOptions = {
+  token: null,
+  isAuthenticated: false,
+  locale: "en-GB",
+  convexClient: undefined,
+};
+
 async function setupBabyLoader(
   handlers: Record<string, unknown>,
   options: LoaderOptions | undefined = undefined,
 ) {
-  const setAuth = options?.convexClient?.setAuth ?? vi.fn();
+  const resolved = options ?? defaultLoaderOptions;
+  const setAuth = resolved.convexClient?.setAuth ?? vi.fn<() => void>();
   const mutation =
-    options?.convexClient?.mutation ??
+    resolved.convexClient?.mutation ??
     vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
@@ -308,6 +317,7 @@ async function setupBabyLoader(
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
       token: string | null;
+      isAuthenticated: boolean;
       locale: string;
     };
     params: { publicId: string };
@@ -318,8 +328,9 @@ async function setupBabyLoader(
       queryClient,
       convexPreloader: getConvexQueryPreloader(queryClient),
       convexClient: { setAuth, mutation },
-      token: options?.token ?? null,
-      locale: options?.locale ?? "en-GB",
+      token: resolved.token ?? null,
+      isAuthenticated: resolved.isAuthenticated ?? false,
+      locale: resolved.locale ?? "en-GB",
     },
     params: { publicId: "baby-smith" },
   });
@@ -406,8 +417,8 @@ test("beforeLoad 404s unknown babies", async () => {
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });
 
-test("loader prefetches manager data without blocking on profile.ensure", async () => {
-  const mutation = vi.fn<() => Promise<unknown>>();
+test("loader does not call profile.ensure for authenticated visitors", async () => {
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,
@@ -419,7 +430,15 @@ test("loader prefetches manager data without blocking on profile.ensure", async 
       "pushSubscriptions:getSubscriptionCount": 0,
       "coParents:listForBaby": { coParents: [], invites: [] },
     },
-    { token: "layout-token", locale: "en-GB", convexClient: { setAuth: vi.fn(), mutation } },
+    {
+      token: "layout-token",
+      isAuthenticated: true,
+      locale: "en-GB",
+      convexClient: {
+        setAuth: vi.fn<() => void>(),
+        mutation,
+      },
+    },
   );
 
   expect(mutation).not.toHaveBeenCalled();
@@ -432,9 +451,11 @@ test("loader prefetches browser push capability on the client", async () => {
     "timeline:listByBaby": EMPTY_PAGE,
   });
 
-  expect(result.browserPush).toMatchObject({ input: undefined });
+  expect(result.browserPush).toMatchObject({ input: "baby-smith" });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(browserPushCapability().queryKey)).toEqual({
+    expect(
+      queryClient.getQueryData(browserPushQueryOptions(queryClient, "baby-smith").queryKey),
+    ).toEqual({
       kind: "unsupported",
     });
   });

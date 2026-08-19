@@ -1,6 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { convexQuery } from "@convex-dev/react-query";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -9,17 +8,19 @@ import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
-import { browserPushCapability, prefetchBrowserPushCapability } from "./notification-subscribe";
+import { browserPushQueryOptions, prefetchBrowserPushCapability } from "./notification-subscribe";
 
 const IPHONE_SAFARI_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+
+const babyRef = "baby-smith";
 
 type BrowserPushCapability =
   | { kind: "unsupported" }
   | { kind: "needsIosInstall" }
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
-  | { kind: "subscribed"; subscription: PushSubscription };
+  | { kind: "subscribed"; subscription: PushSubscription; isSubscribed: boolean };
 
 type BrowserPushStub = {
   userAgent: string;
@@ -37,14 +38,6 @@ vi.mock("@convex-dev/react-query", async (importOriginal) => {
   return {
     ...actual,
     useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
-  };
-});
-
-vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
-  return {
-    ...actual,
-    useInitiateConvexQuery: (_funcRef: unknown, args: unknown) => ({ input: args }),
   };
 });
 
@@ -151,9 +144,20 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
   });
 }
 
-function queryClientResource() {
+function queryClientResource(isSubscribedInConvex = true) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: (ctx) => {
+          const name = String(ctx.queryKey[1]);
+          if (name === "pushSubscriptions:isSubscribed") {
+            return Promise.resolve(isSubscribedInConvex);
+          }
+          return Promise.reject(new Error(`unexpected query ${name}`));
+        },
+      },
+    },
   });
   return makeResource(queryClient, () => {
     queryClient.clear();
@@ -169,15 +173,6 @@ function renderSubscribe(capability: BrowserPushCapability) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
-  if (capability.kind === "subscribed") {
-    queryClient.setQueryData(
-      convexQuery(api.pushSubscriptions.isSubscribed, {
-        babyId,
-        endpoint: capability.subscription.endpoint,
-      }).queryKey,
-      true,
-    );
-  }
   const view = render(
     <QueryClientProvider client={queryClient}>
       <LocaleProvider locale="en-GB">
@@ -185,7 +180,11 @@ function renderSubscribe(capability: BrowserPushCapability) {
           <NotificationSubscribe
             babyId={babyId}
             vapidPublicKey={vapidPublicKey}
-            browserPush={testPreloadedQuery(browserPushCapability, capability)}
+            browserPush={testPreloadedQuery(
+              (ref) => browserPushQueryOptions(queryClient, ref),
+              capability,
+              babyRef,
+            )}
           />
         </TooltipProvider>
       </LocaleProvider>
@@ -200,7 +199,7 @@ function renderSubscribe(capability: BrowserPushCapability) {
 test("reports unsupported when the browser has no push APIs", async () => {
   await using queryClient = queryClientResource();
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "unsupported" });
 });
@@ -216,7 +215,7 @@ test("asks iOS Safari to install as a PWA before offering push", async () => {
     hasServiceWorker: true,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "needsIosInstall" });
 });
@@ -229,7 +228,7 @@ test("reports unsupported when PushManager is missing", async () => {
     hasServiceWorker: true,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "unsupported" });
 });
@@ -243,13 +242,13 @@ test("treats a ready browser with no push subscription as unsubscribed", async (
     subscription: null,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "unsubscribed" });
 });
 
-test("returns the existing browser push subscription", async () => {
-  await using queryClient = queryClientResource();
+test("returns the existing browser push subscription and Convex isSubscribed", async () => {
+  await using queryClient = queryClientResource(true);
   const subscription = {
     endpoint: "https://push.example/subscription",
   } as PushSubscription;
@@ -260,9 +259,9 @@ test("returns the existing browser push subscription", async () => {
     subscription,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
-  expect(capability).toEqual({ kind: "subscribed", subscription });
+  expect(capability).toEqual({ kind: "subscribed", subscription, isSubscribed: true });
 });
 
 test("lets an installed iOS PWA subscribe instead of showing the install guide", async () => {
@@ -276,7 +275,7 @@ test("lets an installed iOS PWA subscribe instead of showing the install guide",
     subscription: null,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "unsubscribed" });
 });
@@ -294,7 +293,7 @@ test("times out if the service worker is not ready in 5 seconds", async () => {
     serviceWorkerReady: new Promise<ServiceWorkerRegistration>(() => {}),
   });
 
-  const pending = queryClient.fetchQuery(browserPushCapability());
+  const pending = queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
   await vi.advanceTimersByTimeAsync(5000);
 
   expect(await pending).toEqual({ kind: "serviceWorkerTimeout" });
@@ -311,25 +310,41 @@ test("treats a service worker failure as unsubscribed", async () => {
     serviceWorkerReady,
   });
 
-  const capability = await queryClient.fetchQuery(browserPushCapability());
+  const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
   expect(capability).toEqual({ kind: "unsubscribed" });
 });
 
-test("keeps a stable query key for loader prefetch and useQuery", () => {
-  expect(browserPushCapability().queryKey).toEqual(["browserPushCapability"]);
-  expect(browserPushCapability().queryKey).toEqual(browserPushCapability().queryKey);
+test("keeps a stable query key scoped by baby for loader prefetch and useQuery", () => {
+  const queryClient = new QueryClient();
+  expect(browserPushQueryOptions(queryClient, babyRef).queryKey).toEqual([
+    "browserPushCapability",
+    babyRef,
+  ]);
+  expect(browserPushQueryOptions(queryClient, babyRef).queryKey).toEqual(
+    browserPushQueryOptions(queryClient, babyRef).queryKey,
+  );
 });
 
-test("prefetches the capability into the query cache in the browser", async () => {
-  await using queryClient = queryClientResource();
+test("prefetches capability and isSubscribed into the query cache in the browser", async () => {
+  await using queryClient = queryClientResource(true);
+  await using _env = stubBrowserPush({
+    hasPushManager: true,
+    hasNotification: true,
+    hasServiceWorker: true,
+    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+  });
 
-  const handle = prefetchBrowserPushCapability(queryClient);
+  const handle = prefetchBrowserPushCapability(queryClient, babyRef);
 
-  expect(handle).toMatchObject({ input: undefined });
+  expect(handle).toMatchObject({ input: babyRef });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(browserPushCapability().queryKey)).toEqual({
-      kind: "unsupported",
+    expect(
+      queryClient.getQueryData(browserPushQueryOptions(queryClient, babyRef).queryKey),
+    ).toEqual({
+      kind: "subscribed",
+      subscription: { endpoint: "https://push.example/sub" },
+      isSubscribed: true,
     });
   });
 });
@@ -344,11 +359,13 @@ test("does not touch PushManager while prefetching on the server", async () => {
   });
 
   const ensureSpy = vi.spyOn(queryClient, "ensureQueryData");
-  const handle = prefetchBrowserPushCapability(queryClient);
+  const handle = prefetchBrowserPushCapability(queryClient, babyRef);
 
-  expect(handle).toMatchObject({ input: undefined });
+  expect(handle).toMatchObject({ input: babyRef });
   expect(ensureSpy).not.toHaveBeenCalled();
-  expect(queryClient.getQueryData(browserPushCapability().queryKey)).toBeUndefined();
+  expect(
+    queryClient.getQueryData(browserPushQueryOptions(queryClient, babyRef).queryKey),
+  ).toBeUndefined();
 });
 
 test("shows iOS Home Screen instructions when the PWA is not installed", async () => {
@@ -380,11 +397,22 @@ test("offers subscribe when push is unsupported", async () => {
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });
 
-test("shows unsubscribe when the browser already has a push subscription", async () => {
+test("shows unsubscribe when Convex reports an active subscription", async () => {
   await using view = renderSubscribe({
     kind: "subscribed",
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+    isSubscribed: true,
   });
 
   expect(view.getByRole("button", { name: "Unsubscribe" })).toBeTruthy();
+});
+
+test("offers subscribe when the browser is subscribed but Convex is not", async () => {
+  await using view = renderSubscribe({
+    kind: "subscribed",
+    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+    isSubscribed: false,
+  });
+
+  expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });

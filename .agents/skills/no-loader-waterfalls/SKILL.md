@@ -96,7 +96,7 @@ Reference: [`notification-subscribe.tsx`](../../../apps/web/src/components/baby/
 Auth token wiring belongs on the root / layout. Do not duplicate in every page loader:
 
 - `convexClient.setAuth(...)` + waiting for token
-- `profile.ensure` (side-effect mutations belong on `/_auth` routes, not public pages)
+- `profile.ensure` on `/_auth` routes only — returns the profile created on sign-up / sign-in; creates one as fallback when missing
 
 Gated manager queries should return a **sentinel** (`FORBIDDEN`) for anonymous callers so the same loader runs for everyone.
 

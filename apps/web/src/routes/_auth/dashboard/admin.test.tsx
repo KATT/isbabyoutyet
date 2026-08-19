@@ -381,11 +381,15 @@ test("loader prefetches babies and language requests in parallel for admins", as
   expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
 });
 
-test("loader redirects non-admins after parallel prefetch", async () => {
+test("loader redirects non-admins without prefetching admin queries", async () => {
   const pending = runAdminLoader(
     {
-      "admin:listBabies": ADMIN_EMPTY_PAGE,
-      "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
+      "admin:listBabies": () => {
+        throw new Error("admin:listBabies should not run for non-admins");
+      },
+      "admin:listLanguageRequests": () => {
+        throw new Error("admin:listLanguageRequests should not run for non-admins");
+      },
     },
     { locale: "en-GB", isAdmin: false },
   );

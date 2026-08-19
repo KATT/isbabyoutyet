@@ -66,16 +66,11 @@ const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
 ## Client-only inputs
 
-When the input only exists in the browser (e.g. a push endpoint), initiate at
-render and read through the same handle shape:
-
-```tsx
-const handle = useInitiateConvexQuery(api.pushSubscriptions.isSubscribed, {
-  babyId,
-  endpoint,
-});
-const isSubscribedQuery = usePreloadedConvexQuery(api.pushSubscriptions.isSubscribed, handle);
-```
+When browser-only state must be combined with Convex (e.g. push endpoint +
+`isSubscribed`), resolve both in one TanStack query factory and prefetch it from
+the route loader on the client. See `browserPushQueryOptions(queryClient, babyRef)` in
+`notification-subscribe.tsx` — the loader calls `prefetchBrowserPushCapability`
+without blocking SSR.
 
 ## Testing
 

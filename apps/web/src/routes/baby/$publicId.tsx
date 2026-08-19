@@ -65,8 +65,8 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   loader: async (opts) => {
     const preloader = opts.context.convexPreloader;
-    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
     const publicId = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
 
     const loaderData = await allKeyed({
       baby: preloader.ensureQueryData(api.baby.getByPublicId, {

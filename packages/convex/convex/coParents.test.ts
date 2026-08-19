@@ -28,6 +28,22 @@ async function signUp(
   });
 }
 
+async function signIn(
+  t: Awaited<ReturnType<typeof setup>>,
+  opts: { email: string; password: string },
+) {
+  return await t.run(async (ctx) => {
+    const auth = createAuth(ctx);
+    const result = await auth.api.signInEmail({
+      body: {
+        email: opts.email,
+        password: opts.password,
+      },
+    });
+    return result.user.id;
+  });
+}
+
 test("owner can add an existing user as co-parent; co-parent can post updates", async () => {
   const t = await setup();
   const aliceId = await signUp(t, {
@@ -81,7 +97,7 @@ test("owner can add an existing user as co-parent; co-parent can post updates", 
   expect(access).toEqual({ isOwner: false, isCoParent: true, canManage: true });
 });
 
-test("inviting an unknown email creates a pending invite claimed on sign-in", async () => {
+test("inviting an unknown email creates a pending invite claimed on sign-up", async () => {
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner@example.com",
@@ -115,9 +131,6 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   });
   const asNewbie = t.withIdentity({ subject: newbieId });
 
-  const claimed = await asNewbie.mutation(api.profile.ensure, { browserLocale: "en-GB" });
-  expect(claimed).toEqual({ locale: "en-GB", isAdmin: false });
-
   const after = await asAlice.query(api.coParents.listForBaby, { babyId: created.babyId });
   if (after === "forbidden") {
     throw new Error("expected manager access");
@@ -127,6 +140,41 @@ test("inviting an unknown email creates a pending invite claimed on sign-in", as
   expect(after.coParents[0]).not.toHaveProperty("userId");
 
   expect(await asNewbie.query(api.baby.listByUser, {})).toMatchObject([
+    { _id: created.babyId, role: "coParent" },
+  ]);
+});
+
+test("pending invite is claimed when an existing user signs in", async () => {
+  const t = await setup();
+  const newbieId = await signUp(t, {
+    email: "returning@example.com",
+    password: "password123",
+    name: "Returning",
+  });
+  const aliceId = await signUp(t, {
+    email: "owner2@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  const asAlice = t.withIdentity({ subject: aliceId });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Sign-in Claim Baby",
+    dueDate: "2026-10-15",
+  });
+
+  await asAlice.mutation(api.coParents.invite, {
+    babyId: created.babyId,
+    email: "returning@example.com",
+  });
+
+  await signIn(t, {
+    email: "returning@example.com",
+    password: "password123",
+  });
+
+  const asReturning = t.withIdentity({ subject: newbieId });
+  expect(await asReturning.query(api.baby.listByUser, {})).toMatchObject([
     { _id: created.babyId, role: "coParent" },
   ]);
 });
@@ -252,7 +300,7 @@ test("manager-only listings return forbidden for visitors instead of throwing", 
   );
 });
 
-test("profile ensure clears pending invites addressed to the page owner", async () => {
+test("claimPendingInvites clears pending invites addressed to the page owner", async () => {
   const t = await setup();
   const aliceId = await signUp(t, {
     email: "owner-invite@example.com",
@@ -274,7 +322,7 @@ test("profile ensure clears pending invites addressed to the page owner", async 
     });
   });
 
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asAlice.mutation(api.coParents.claimPendingInvites, {});
 
   const invite = await t.run(async (ctx) => ctx.db.get(inviteId));
   expect(invite?.deletedAt).toEqual(expect.any(Number));
