@@ -1,6 +1,6 @@
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { Icon } from "@phosphor-icons/react";
-import { Baby, ChatCircleText, GearSix, Heart, ShareNetwork } from "@phosphor-icons/react";
+import { Baby, ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import type { TranslationKey } from "@/lib/i18n";
 
 export type OnboardingStepCopy = {
