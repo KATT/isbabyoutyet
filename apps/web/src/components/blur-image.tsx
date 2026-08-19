@@ -15,7 +15,7 @@ function imageSrcKey(src: BlurImageProps["src"]) {
  * Browser cache check: `new Image(); img.src = url` sets `complete` synchronously
  * when that URL is already decoded. Used as the client snapshot so a cached
  * photo skips the blur on first mount (SPA navigation), while the server
- * snapshot stays `false` for hydration.
+ * snapshot stays `false` so SSR HTML still includes the placeholder.
  */
 function isDecodedImageSrc(src: string) {
   if (src === "") return false;
@@ -46,39 +46,56 @@ function useDecodedImageSrc(src: BlurImageProps["src"]) {
   );
 }
 
+function imgPropsWithoutBlur(props: BlurImageProps) {
+  const { blurDataUrl: _blurDataUrl, ...imgProps } = props;
+  return imgProps;
+}
+
 /**
- * Drop-in `<img>` with a Next.js-style `blurDataURL` placeholder: the tiny
- * JPEG is the element's CSS background and is CSS-blurred until the real
- * `src` loads. TanStack Start/Router has no Image component of its own.
+ * Drop-in `<img>` with a Next.js-style `blurDataURL` placeholder. The real
+ * `src` is always on the `<img>` (including SSR HTML) so the browser starts
+ * fetching on first paint. The tiny JPEG lives on a sibling behind that img
+ * and is CSS-blurred; because the real img is never filtered, a decoded
+ * bitmap paints sharp before hydration. TanStack Start/Router has no Image
+ * component of its own.
  */
 export function BlurImage(props: BlurImageProps) {
-  const { alt, blurDataUrl, className, onLoad, src, style, ...imgProps } = props;
-  const srcKey = imageSrcKey(src);
-  const alreadyDecoded = useDecodedImageSrc(src);
+  const srcKey = imageSrcKey(props.src);
+  const alreadyDecoded = useDecodedImageSrc(props.src);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const loaded = alreadyDecoded || loadedSrc === srcKey;
 
-  return (
+  const image = (
     <img
-      {...imgProps}
-      alt={alt}
-      src={src}
-      className={cn(
-        "transition-[filter,transform] duration-500",
-        blurDataUrl && !loaded && "scale-105 blur-xl",
-        className,
-      )}
-      style={{
-        ...style,
-        backgroundImage: blurDataUrl ? `url("${blurDataUrl}")` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
+      {...imgPropsWithoutBlur(props)}
+      alt={props.alt}
+      src={props.src}
+      className={
+        props.blurDataUrl === null ? props.className : cn("relative z-10", props.className)
+      }
       onLoad={(event) => {
         setLoadedSrc(srcKey);
-        onLoad?.(event);
+        props.onLoad?.(event);
       }}
     />
+  );
+
+  if (props.blurDataUrl === null) {
+    return image;
+  }
+
+  return (
+    <span className={cn("relative inline-grid overflow-hidden", props.className)}>
+      <span
+        aria-hidden="true"
+        suppressHydrationWarning
+        className={cn(
+          "pointer-events-none absolute inset-0 z-0 scale-105 bg-cover bg-center blur-xl transition-opacity duration-500",
+          loaded && "opacity-0",
+        )}
+        style={{ backgroundImage: `url("${props.blurDataUrl}")` }}
+      />
+      {image}
+    </span>
   );
 }
