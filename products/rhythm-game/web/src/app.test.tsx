@@ -98,8 +98,8 @@ test("plays a generated chart through input, pause, results, and replay", async 
     expect(laneButtons.every((button) => !button.disabled)).toBe(true);
   });
 
-  audio.currentTime = 0.9;
-  fireEvent.keyDown(window, { key: "d" });
+  audio.currentTime = 1.792;
+  fireEvent.keyDown(window, { key: "j" });
   for (const laneButton of laneButtons) {
     fireEvent.click(laneButton);
   }
