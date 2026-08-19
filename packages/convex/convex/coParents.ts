@@ -6,8 +6,9 @@ import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
-import { findActiveCoParent, requireBabyManager, requireBabyOwner } from "./babyAccess";
-import { toBabyDto } from "./babyDto";
+import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
+import { FORBIDDEN } from "../src/types";
+import { toManagerBabyDto } from "./babyDto";
 import { isActive, softDeletePatch } from "./softDelete";
 
 function normalizeEmail(email: string) {
@@ -106,7 +107,12 @@ export const myAccess = query({
 export const listForBaby = query({
   args: { babyId: v.id("baby") },
   handler: async (ctx, args) => {
-    await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
 
     const [coParents, invites] = await Promise.all([
       listActiveCoParents(ctx, args.babyId),
@@ -333,12 +339,14 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     .order("desc")
     .take(100);
 
-  const shared: Array<ReturnType<typeof toBabyDto> & { role: "owner" | "coParent" }> = [];
+  const shared: Array<
+    Awaited<ReturnType<typeof toManagerBabyDto>> & { role: "owner" | "coParent" }
+  > = [];
   const seen = new Set<string>();
 
   for (const baby of owned.filter(isActive)) {
     seen.add(baby._id);
-    shared.push({ ...toBabyDto(baby), role: "owner" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "owner" });
   }
 
   for (const membership of memberships.filter(isActive)) {
@@ -346,7 +354,7 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     const baby = await ctx.db.get(membership.babyId);
     if (!baby || !isActive(baby)) continue;
     seen.add(baby._id);
-    shared.push({ ...toBabyDto(baby), role: "coParent" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "coParent" });
   }
 
   // Newest first across both sources

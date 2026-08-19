@@ -6,7 +6,7 @@ import { createBabyOgImage } from "@/lib/og-image";
 export const Route = createFileRoute("/og/baby/$publicId")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async (opts) => {
         const convexUrl = import.meta.env.VITE_CONVEX_URL;
         if (!convexUrl) {
           return new Response("VITE_CONVEX_URL not set", { status: 500 });
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/og/baby/$publicId")({
 
         const client = new ConvexHttpClient(convexUrl);
         const baby = await client.query(api.baby.getByPublicId, {
-          id: params.publicId,
+          id: opts.params.publicId,
         });
 
         if (!baby) {
@@ -23,12 +23,18 @@ export const Route = createFileRoute("/og/baby/$publicId")({
 
         return createBabyOgImage({
           name: baby.name,
-          dueDate: baby.dueDate,
+          ...(baby.dueDateDisplayMode === "exact"
+            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+            : {
+                dueDateDisplayMode: "message" as const,
+                publicDueDateText: baby.publicDueDateText,
+              }),
           theme: baby.theme,
           locale: baby.resolvedLocale,
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,
+          milestoneVisibility: baby.milestoneVisibility,
           photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
         });
       },

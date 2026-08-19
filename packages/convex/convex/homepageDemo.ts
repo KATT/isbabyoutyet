@@ -9,7 +9,6 @@ import {
   isHomepageDemoPublicId,
 } from "../src/seedCredentials";
 import { HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO, homepageDemoFeedFor } from "../src/homepageDemoFeed";
-import type { Milestone } from "../src/types";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
@@ -21,13 +20,23 @@ const CLEAR_BATCH_SIZE = 32;
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
   thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+  pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
+  blurDataUrl: v.optional(v.union(v.string(), v.null())),
 });
 
 const photosValidator = v.record(v.string(), photoIdsValidator);
 
 const localeArg = v.optional(supportedLocaleValidator);
 
-type DemoPhotos = Record<string, { photoId: Id<"_storage">; thumbnailId?: Id<"_storage"> | null }>;
+type DemoPhotos = Record<
+  string,
+  {
+    photoId: Id<"_storage">;
+    thumbnailId?: Id<"_storage"> | null;
+    pushImageId?: Id<"_storage"> | null;
+    blurDataUrl?: string | null;
+  }
+>;
 
 function resolveDemoLocale(locale: SupportedLocale | undefined) {
   return locale ?? DEFAULT_LOCALE;
@@ -42,6 +51,7 @@ function storageIdsToKeep(photos: DemoPhotos) {
   for (const photo of Object.values(photos)) {
     keepStorageIds.add(photo.photoId);
     if (photo.thumbnailId) keepStorageIds.add(photo.thumbnailId);
+    if (photo.pushImageId) keepStorageIds.add(photo.pushImageId);
   }
   return keepStorageIds;
 }
@@ -87,9 +97,12 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     name: demo.name,
     theme: HOMEPAGE_DEMO_THEME,
     locale: opts.locale,
+    birthJourney: "labor" as const,
     demo: true as const,
     encouragementsDisabled: false,
     dueDate: dueDateIso(opts.now),
+    dueDateDisplayMode: "exact" as const,
+    publicDueDateText: null,
     lastActivityAt: opts.now,
   };
   if (existing) {
@@ -103,9 +116,6 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
   return await ctx.db.insert("baby", {
     ...fields,
     publicId: demo.publicId,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
     photoId: null,
     thumbnailId: null,
     subscriptionCount: 0,
@@ -143,6 +153,10 @@ async function deleteTimelineItem(
         });
         await deleteStorageIfExists(ctx, {
           storageId: update.thumbnailId,
+          keepStorageIds: opts.keepStorageIds,
+        });
+        await deleteStorageIfExists(ctx, {
+          storageId: update.pushImageId,
           keepStorageIds: opts.keepStorageIds,
         });
         await ctx.db.delete(update._id);
@@ -203,9 +217,7 @@ async function clearAllFeed(
   await ctx.db.patch(opts.babyId, {
     photoId: null,
     thumbnailId: null,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
+    blurDataUrl: null,
   });
 }
 
@@ -224,9 +236,9 @@ async function insertFeedDocs(
   const now = opts.now;
   const locale = opts.locale;
   const demo = HOMEPAGE_DEMO_BABIES[locale];
-  const milestoneIso: Partial<Record<Milestone, string>> = {};
   let pagePhotoId: Id<"_storage"> | null = null;
   let pageThumbnailId: Id<"_storage"> | null = null;
+  let pageBlurDataUrl: string | null = null;
 
   // Oldest first so the last photo we see is the newest (page photo).
   const chronological = [...homepageDemoFeedFor(locale)].sort(
@@ -260,27 +272,21 @@ async function insertFeedDocs(
       occurredAt: item.milestone ? postedAt : null,
       photoId: photo?.photoId ?? null,
       thumbnailId: photo?.thumbnailId ?? null,
+      pushImageId: photo?.pushImageId ?? null,
+      blurDataUrl: photo?.blurDataUrl ?? null,
     });
 
-    if (item.milestone) {
-      milestoneIso[item.milestone] = new Date(postedAt).toISOString();
-    }
     if (photo) {
       pagePhotoId = photo.photoId;
       pageThumbnailId = photo.thumbnailId ?? null;
+      pageBlurDataUrl = photo.blurDataUrl ?? null;
     }
   }
 
   await ctx.db.patch(babyId, {
-    laborStarted: milestoneIso.labor_started ?? null,
-    wentToHospital: milestoneIso.gone_to_hospital ?? null,
-    babyBorn: milestoneIso.born ?? null,
     photoId: pagePhotoId,
     thumbnailId: pageThumbnailId,
-    // Legacy per-stage message fields stay empty; copy lives on the timeline.
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
+    blurDataUrl: pageBlurDataUrl,
   });
 
   return { babyId, publicId: demo.publicId, locale };

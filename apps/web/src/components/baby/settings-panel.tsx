@@ -21,6 +21,7 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { Switch } from "@workspace/ui/components/switch";
 import {
   Select,
@@ -42,23 +43,36 @@ import {
   Trash,
   Users,
 } from "@phosphor-icons/react";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  BirthJourney,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
-import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
+import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
   SUPPORTED_LOCALES,
   isSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
+import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
+import { JourneySelector } from "./journey-selector";
+import { useState } from "react";
+import { toast } from "sonner";
 
 type SettingsPanelProps = {
   baby: BabyData;
+  birthJourney: BirthJourney;
   onUpdate: BabyUpdateHandler;
+  onMilestoneRedate: MilestoneRedateHandler;
+  onMilestoneRemove: MilestoneRemoveHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profileLocale: SupportedLocale;
@@ -74,6 +88,48 @@ type SettingsPanelProps = {
   } | null;
 };
 
+function JourneyEditor(props: { birthJourney: BirthJourney; onUpdate: BabyUpdateHandler }) {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
+            {t("Edit")}
+          </Button>
+        }
+      />
+      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
+        <div className="flex flex-col gap-3">
+          <div>
+            <p className="font-bold">{t("Choose a journey")}</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("We save this choice for your settings, but we don't show it to anyone.")}
+            </p>
+          </div>
+          <JourneySelector
+            value={props.birthJourney}
+            onValueChange={(value) => {
+              void Promise.resolve(props.onUpdate({ birthJourney: value }))
+                .then(() => {
+                  setOpen(false);
+                })
+                .catch((error) => {
+                  toast.error(
+                    error instanceof Error ? error.message : t("Failed to update journey"),
+                  );
+                });
+            }}
+            idPrefix="settings-journey"
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 /**
  * Owner settings: page metadata and corrections. Marking milestones and
  * posting photos happens through the "Post update" composer; milestone rows
@@ -85,6 +141,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const inheritedLocale = props.profileLocale;
   const onDelete = props.onDelete;
   const coParents = props.coParents;
+  const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
@@ -115,10 +172,33 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </ItemMedia>
             <ItemContent>
               <ItemTitle>{t("Due Date")}</ItemTitle>
-              <ItemDescription>{formatDueDate(props.baby.dueDate, locale)}</ItemDescription>
+              <ItemDescription>
+                {props.baby.dueDateDisplayMode === "message" ? (
+                  t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText ?? "" })
+                ) : (
+                  <>
+                    {props.baby.dueDate ? formatDueDate(props.baby.dueDate, locale) : ""} ·{" "}
+                    {t("Visitors see the exact date and countdown.")}
+                  </>
+                )}
+              </ItemDescription>
             </ItemContent>
             <ItemActions>
               <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
+            </ItemActions>
+          </Item>
+
+          <ItemSeparator />
+          <Item>
+            <ItemMedia variant="icon">
+              <Heartbeat className="w-4 h-4" />
+            </ItemMedia>
+            <ItemContent>
+              <ItemTitle>{t("Journey")}</ItemTitle>
+              <ItemDescription>{t(journeyOption.labelKey)}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />
             </ItemActions>
           </Item>
 
@@ -144,7 +224,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="labor_started"
                     currentDate={props.baby.laborStarted}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -170,7 +251,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="gone_to_hospital"
                     currentDate={props.baby.wentToHospital}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -196,7 +278,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="born"
                     currentDate={props.baby.babyBorn}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -213,10 +296,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemContent>
               <ItemTitle>{t("Theme")}</ItemTitle>
               <ItemDescription>
-                {t(
-                  THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.labelKey ??
-                    "Default",
-                )}
+                {t(getThemeOption(props.baby.theme)?.labelKey ?? "Default")}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
@@ -289,6 +369,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <Switch
                 checked={!props.baby.encouragementsDisabled}
                 onCheckedChange={(checked) => props.onUpdate({ encouragementsDisabled: !checked })}
+                aria-label={t("Encouragements")}
               />
             </ItemActions>
           </Item>

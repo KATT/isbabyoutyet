@@ -3,15 +3,19 @@ import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
-import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { PreviewBabyData } from "@workspace/convex/src/types";
+import {
+  getCurrentStatus,
+  milestoneVisibilityForPreset,
+  MILESTONE_FIELDS,
+} from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function getDefaultBabyData(): BabyData {
+function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 7);
@@ -21,10 +25,13 @@ function getDefaultBabyData(): BabyData {
   return {
     name: "Baby",
     dueDate: dueDate.toISOString(),
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     theme: null,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
+    milestoneVisibility: milestoneVisibilityForPreset("labor"),
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
@@ -33,7 +40,9 @@ function getDefaultBabyData(): BabyData {
 }
 const searchSchema = z.object({
   name: z.string().default("Baby"),
-  dueDate: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
+  dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
+  publicDueDateText: z.string().nullable().optional(),
   theme: z.string().nullable().optional(),
   laborStarted: z.string().nullable().optional(),
   wentToHospital: z.string().nullable().optional(),
@@ -41,6 +50,9 @@ const searchSchema = z.object({
   hospitalMessage: z.string().nullable().optional(),
   babyBornMessage: z.string().nullable().optional(),
   laborStartedMessage: z.string().nullable().optional(),
+  birthJourney: z
+    .union([z.literal("labor"), z.literal("home_birth"), z.literal("planned_c_section")])
+    .optional(),
   settings: z.boolean().optional(),
 });
 
@@ -69,14 +81,16 @@ export const Route = createFileRoute("/preview")({
   }),
 });
 
-function PreviewPage() {
+export function PreviewPage() {
   const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const birthJourney = search.birthJourney ?? "labor";
 
-  const baby: BabyData = {
+  const baby: PreviewBabyData = {
     ...getDefaultBabyData(),
     ...search,
+    milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
   };
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
@@ -100,11 +114,30 @@ function PreviewPage() {
       {themeCss ? <style dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
       <SettingsPanel
         baby={baby}
+        birthJourney={birthJourney}
         onUpdate={(update) => {
           navigate({
             search: {
               ...search,
               ...update,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRedate={(milestone, occurredAt) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: occurredAt,
+            },
+            replace: true,
+          });
+        }}
+        onMilestoneRemove={(milestone) => {
+          void navigate({
+            search: {
+              ...search,
+              [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
           });
@@ -165,6 +198,7 @@ function PreviewPage() {
               latestUpdate={latestUpdate}
               photoUrl={null}
               thumbnailUrl={null}
+              blurDataUrl={null}
             />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />

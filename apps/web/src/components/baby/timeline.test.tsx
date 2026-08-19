@@ -74,6 +74,8 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
 const notYetBaby: BabyData = {
   name: "Baby Smith",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -101,6 +103,11 @@ function timelineHandle(page: TimelinePage) {
   });
 }
 
+type ComposerResourceValue = {
+  view: ReturnType<typeof render>;
+  setBaby: (currentBaby: BabyData) => void;
+};
+
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,
@@ -118,16 +125,14 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
-  return makeResource(
-    {
-      view,
-      setBaby: (currentBaby: BabyData) => view.rerender(withProvider(currentBaby)),
-    },
-    async () => {
-      view.unmount();
-      await client.close();
-    },
-  );
+  const value: ComposerResourceValue = {
+    view,
+    setBaby: (currentBaby) => view.rerender(withProvider(currentBaby)),
+  };
+  return makeResource(value, async () => {
+    view.unmount();
+    await client.close();
+  });
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {
@@ -159,6 +164,19 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   expect(view.getByRole("radio", { name: "Förlossningen är igång" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Åkt in till förlossningen" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
+});
+
+test("the composer only offers visible future milestones", async () => {
+  await using composer = renderComposerResource({
+    ...notYetBaby,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+    laborStarted: "2026-08-20T08:00:00.000Z",
+  });
+  const view = composer.view;
+
+  expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
+  expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {
@@ -302,6 +320,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
             occurredAt: Date.now(),
             photoUrl: null,
             thumbnailUrl: null,
+            blurDataUrl: null,
             isCurrentPagePhoto: false,
           },
         },
@@ -357,4 +376,39 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Nothing here yet")).toBeTruthy();
+});
+
+test("renders historical milestone badges regardless of current selection", async () => {
+  await using view = renderFeed({
+    baby: {
+      ...notYetBaby,
+      milestoneVisibility: { showLabor: false, showHospital: true },
+      laborStarted: "2026-08-20T08:00:00.000Z",
+    },
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: "A family update",
+            milestone: "labor_started",
+            occurredAt: Date.now(),
+            photoUrl: null,
+            thumbnailUrl: null,
+            blurDataUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  expect(view.getByText("A family update")).toBeTruthy();
+  expect(view.getByText("Labour started")).toBeTruthy();
 });

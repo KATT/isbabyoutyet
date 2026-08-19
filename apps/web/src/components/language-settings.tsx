@@ -4,7 +4,6 @@ import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -25,7 +24,7 @@ import {
 import { Input } from "@workspace/ui/components/input";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
-import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -82,7 +81,11 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
-export function LanguageSettings(props: { profile: PreloadedConvexQuery<typeof api.profile.get> }) {
+export function LanguageSettings(props: {
+  profile:
+    | PreloadedConvexQuery<typeof api.profile.get>
+    | InitiatedConvexQuery<typeof api.profile.get>;
+}) {
   const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const profile = profileQuery.data;
@@ -90,18 +93,16 @@ export function LanguageSettings(props: { profile: PreloadedConvexQuery<typeof a
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
 
-  async function selectLocale(value: SupportedLocale) {
-    await updateLocale({ locale: value });
-    await setLocale(value);
-  }
-
   return (
     <div className="flex items-center gap-2">
       <LanguagePicker
         value={selectedLocale}
         disabled={!profile}
         label={t("Profile language")}
-        onValueChange={selectLocale}
+        onValueChange={async (value) => {
+          await updateLocale({ locale: value });
+          await setLocale(value);
+        }}
       />
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>

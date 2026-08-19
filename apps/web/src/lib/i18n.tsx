@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import "@/lib/paraglide-setup";
 import { getLocale } from "@/paraglide/runtime";
@@ -77,6 +77,27 @@ const enGB = {
   "Page actions": "Page actions",
   "Baby Name": "Baby name",
   "Due Date": "Due date",
+  "Show exact due date": "Show exact due date",
+  "Visitors see only your message.": "Visitors see only your message.",
+  "Public due date message": "Public due date message",
+  "September baby": "September baby",
+  "Enter a message for visitors": "Enter a message for visitors",
+  "Visitors see “{{text}}”.": "Visitors see “{{text}}”.",
+  "Visitors see the exact date and countdown.": "Visitors see the exact date and countdown.",
+  "Keep this under 80 characters": "Keep this under 80 characters",
+  "Choose a journey": "Choose a journey",
+  Journey: "Journey",
+  "Edit journey": "Edit journey",
+  "Failed to update journey": "Failed to update journey",
+  Labour: "Labour",
+  "Home birth": "Home birth",
+  "Planned C-section": "Planned C-section",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitors see: Labour started → At hospital → Baby born",
+  "Visitors see: Labour started → Baby born": "Visitors see: Labour started → Baby born",
+  "Visitors see: At hospital → Baby born": "Visitors see: At hospital → Baby born",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "We save this choice for your settings, but we don't show it to anyone.",
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
@@ -87,7 +108,7 @@ const enGB = {
   "All visitors see this page in {{language}}.": "All visitors see this page in {{language}}.",
   Default: "Default",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -115,6 +136,7 @@ const enGB = {
   Update: "Update",
   "Page photo": "Page photo",
   "Photo added": "Photo added",
+  "Update posted": "Update posted",
   "Get Notifications": "Get Notifications",
   Unsubscribe: "Unsubscribe",
   "Get notified when the baby's status changes": "Get notified when the baby's status changes",
@@ -382,6 +404,10 @@ const enGB = {
   "Add a": "Add a",
   baby: "baby",
   "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
+  "A name, a date, and a journey — that's all it takes!":
+    "A name, a date, and a journey. That's it!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "A name, how to display the due date, and a journey. That's it!",
   "Add Baby 🍼": "Add Baby 🍼",
   "Welcome back!": "Welcome back!",
   "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
@@ -469,11 +495,15 @@ const enGB = {
   "Add your first baby": "Add your first baby",
   "Give them a name and due date — that creates a public page friends can open.":
     "Give them a name and due date. That creates a public page friends can open.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
   "Add a baby": "Add a baby",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "One link for everyone. Tap Share on the baby page to copy it. No group-chat spam.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Post milestones and everyday notes from the menu. Only status updates notify subscribers.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Post milestones and everyday notes from the menu. Only enabled status updates notify subscribers.",
   "Peek at settings": "Peek at settings",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Change the name, theme and visitor messages in Settings.",
@@ -499,6 +529,10 @@ const enGB = {
   "Let's go": "Let's go",
   Next: "Next",
   "Go Home": "Go Home",
+  "Something went wrong": "Something went wrong",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "An unexpected error occurred. Reloading usually fixes it.",
+  "Reload page": "Reload page",
 } as const;
 
 export type TranslationKey = keyof typeof enGB;
@@ -584,6 +618,28 @@ const sv: Record<TranslationKey, string> = {
   "Page actions": "Åtgärder för sidan",
   "Baby Name": "Bäbisens namn",
   "Due Date": "Beräknat datum",
+  "Show exact due date": "Visa exakt beräknat datum",
+  "Visitors see only your message.": "Besökare ser bara ditt meddelande.",
+  "Public due date message": "Offentligt meddelande om beräknat datum",
+  "September baby": "Septemberbäbis",
+  "Enter a message for visitors": "Skriv ett meddelande till besökarna",
+  "Visitors see “{{text}}”.": "Besökare ser ”{{text}}”.",
+  "Visitors see the exact date and countdown.": "Besökare ser exakt datum och nedräkning.",
+  "Keep this under 80 characters": "Håll texten under 80 tecken",
+  "Choose a journey": "Välj en resa",
+  Journey: "Resa",
+  "Edit journey": "Redigera resa",
+  "Failed to update journey": "Det gick inte att uppdatera resan",
+  Labour: "Förlossning",
+  "Home birth": "Hemförlossning",
+  "Planned C-section": "Planerat kejsarsnitt",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Besökare ser: Förlossningen är igång → På sjukhuset → Bäbisen är född",
+  "Visitors see: Labour started → Baby born":
+    "Besökare ser: Förlossningen är igång → Bäbisen är född",
+  "Visitors see: At hospital → Baby born": "Besökare ser: På sjukhuset → Bäbisen är född",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Vi sparar valet i dina inställningar, men visar det inte för någon.",
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
@@ -594,7 +650,7 @@ const sv: Record<TranslationKey, string> = {
   "All visitors see this page in {{language}}.": "Alla besökare ser sidan på {{language}}.",
   Default: "Standard",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -622,6 +678,7 @@ const sv: Record<TranslationKey, string> = {
   Update: "Uppdatering",
   "Page photo": "Sidfoto",
   "Photo added": "Foto tillagt",
+  "Update posted": "Uppdatering publicerad",
   "Get Notifications": "Få notiser",
   Unsubscribe: "Stäng av notiser",
   "Get notified when the baby's status changes": "Få en notis när bäbisens status ändras",
@@ -891,6 +948,10 @@ const sv: Record<TranslationKey, string> = {
   baby: "bäbis",
   "A name and a due date — that's all it takes!":
     "Ett namn och ett beräknat datum. Mer behövs inte!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Ett namn, ett datum och en resa. Mer behövs inte!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Ett namn, hur det beräknade datumet ska visas och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
@@ -976,11 +1037,15 @@ const sv: Record<TranslationKey, string> = {
   "Add your first baby": "Lägg till din första bäbis",
   "Give them a name and due date — that creates a public page friends can open.":
     "Lägg till ett namn och beräknat datum, så skapas en publik sida som vänner kan öppna.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Lägg till namn och datum och välj sedan en resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add a baby": "Lägg till bäbis",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "En länk räcker. Tryck på Dela på bäbissidan för att kopiera den, så slipper du spamma gruppchatten.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Lägg upp milstolpar och små vardagsnotiser från menyn. Bara prenumeranter får pushnotiser, och bara när du markerar att förlossningen är igång, att ni åkt in eller att bäbisen är född.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Lägg upp milstolpar och små vardagsnotiser från menyn. Bara aktiverade statusuppdateringar aviserar prenumeranter.",
   "Peek at settings": "Titta i inställningarna",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Teman, namn och om besökare får lämna hälsningar. Allt finns under Inställningar.",
@@ -1006,6 +1071,10 @@ const sv: Record<TranslationKey, string> = {
   "Let's go": "Nu kör vi",
   Next: "Nästa",
   "Go Home": "Gå hem",
+  "Something went wrong": "Något gick fel",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ett oväntat fel inträffade. Att ladda om sidan brukar hjälpa.",
+  "Reload page": "Ladda om sidan",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -1072,6 +1141,28 @@ const es: Record<TranslationKey, string> = {
   "Page actions": "Acciones de la página",
   "Baby Name": "Nombre del bebé",
   "Due Date": "Fecha prevista",
+  "Show exact due date": "Mostrar la fecha prevista exacta",
+  "Visitors see only your message.": "Los visitantes solo ven tu mensaje.",
+  "Public due date message": "Mensaje público sobre la fecha prevista",
+  "September baby": "Bebé de septiembre",
+  "Enter a message for visitors": "Escribe un mensaje para los visitantes",
+  "Visitors see “{{text}}”.": "Los visitantes ven «{{text}}».",
+  "Visitors see the exact date and countdown.":
+    "Los visitantes ven la fecha exacta y la cuenta atrás.",
+  "Keep this under 80 characters": "Usa menos de 80 caracteres",
+  "Choose a journey": "Elige un recorrido",
+  Journey: "Recorrido",
+  "Edit journey": "Editar recorrido",
+  "Failed to update journey": "No se pudo actualizar el recorrido",
+  Labour: "Parto",
+  "Home birth": "Parto en casa",
+  "Planned C-section": "Cesárea programada",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Los visitantes ven: Comenzó el parto → En el hospital → Ya nació",
+  "Visitors see: Labour started → Baby born": "Los visitantes ven: Comenzó el parto → Ya nació",
+  "Visitors see: At hospital → Baby born": "Los visitantes ven: En el hospital → Ya nació",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
@@ -1083,7 +1174,7 @@ const es: Record<TranslationKey, string> = {
     "Todos los visitantes ven esta página en {{language}}.",
   Default: "Predeterminado",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -1112,6 +1203,7 @@ const es: Record<TranslationKey, string> = {
   Update: "Novedad",
   "Page photo": "Foto de la página",
   "Photo added": "Foto añadida",
+  "Update posted": "Novedad publicada",
   "Get Notifications": "Recibir notificaciones",
   Unsubscribe: "Cancelar suscripción",
   "Get notified when the baby's status changes": "Recibe una notificación cuando cambie el estado",
@@ -1382,6 +1474,10 @@ const es: Record<TranslationKey, string> = {
   "Add a": "Añadir un",
   baby: "bebé",
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
+  "A name, a date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, una fecha y un recorrido.",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, cómo mostrar la fecha prevista y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -1469,11 +1565,15 @@ const es: Record<TranslationKey, string> = {
   "Add your first baby": "Añade tu primer bebé",
   "Give them a name and due date — that creates a public page friends can open.":
     "Ponle un nombre y una fecha prevista. Así crearás una página pública que podrán abrir tus amigos.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Añade un nombre y una fecha y después elige un recorrido. Solo define qué estados pueden ver los visitantes.",
   "Add a baby": "Añadir un bebé",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Un enlace para todos. Toca Compartir en la página del bebé para copiarlo y olvídate del bombardeo en el chat de grupo.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Publica hitos y notas desde el menú. Solo quienes se hayan suscrito recibirán notificaciones push, y únicamente cuando marques un cambio de estado: parto, hospital o nacimiento.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Publica hitos y notas desde el menú. Solo los estados activados avisan a quienes se suscribieron.",
   "Peek at settings": "Echa un vistazo a Configuración",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Temas, nombres y mensajes de los visitantes: todo está en Configuración.",
@@ -1499,6 +1599,10 @@ const es: Record<TranslationKey, string> = {
   "Let's go": "Empecemos",
   Next: "Siguiente",
   "Go Home": "Ir al inicio",
+  "Something went wrong": "Algo salió mal",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ocurrió un error inesperado. Recargar la página suele solucionarlo.",
+  "Reload page": "Recargar la página",
 };
 
 const ptBR: Record<TranslationKey, string> = {
@@ -1566,6 +1670,29 @@ const ptBR: Record<TranslationKey, string> = {
   "Page actions": "Ações da página",
   "Baby Name": "Nome do bebê",
   "Due Date": "Data prevista",
+  "Show exact due date": "Mostrar a data prevista exata",
+  "Visitors see only your message.": "Visitantes veem apenas a sua mensagem.",
+  "Public due date message": "Mensagem pública sobre a data prevista",
+  "September baby": "Bebê de setembro",
+  "Enter a message for visitors": "Digite uma mensagem para os visitantes",
+  "Visitors see “{{text}}”.": "Visitantes veem “{{text}}”.",
+  "Visitors see the exact date and countdown.":
+    "Visitantes veem a data exata e a contagem regressiva.",
+  "Keep this under 80 characters": "Use menos de 80 caracteres",
+  "Choose a journey": "Escolha uma jornada",
+  Journey: "Jornada",
+  "Edit journey": "Editar jornada",
+  "Failed to update journey": "Não foi possível atualizar a jornada",
+  Labour: "Trabalho de parto",
+  "Home birth": "Parto em casa",
+  "Planned C-section": "Cesárea programada",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitantes veem: Trabalho de parto começou → No hospital → O bebê nasceu",
+  "Visitors see: Labour started → Baby born":
+    "Visitantes veem: Trabalho de parto começou → O bebê nasceu",
+  "Visitors see: At hospital → Baby born": "Visitantes veem: No hospital → O bebê nasceu",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
@@ -1577,7 +1704,7 @@ const ptBR: Record<TranslationKey, string> = {
     "Todos os visitantes veem esta página em {{language}}.",
   Default: "Padrão",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -1606,6 +1733,7 @@ const ptBR: Record<TranslationKey, string> = {
   Update: "Novidade",
   "Page photo": "Foto da página",
   "Photo added": "Foto adicionada",
+  "Update posted": "Novidade publicada",
   "Get Notifications": "Ativar notificações",
   Unsubscribe: "Desativar notificações",
   "Get notified when the baby's status changes":
@@ -1878,6 +2006,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a": "Adicionar um",
   baby: "bebê",
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Um nome, uma data e uma jornada. Só isso!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Um nome, como mostrar a data prevista e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
   "Welcome back!": "Que bom te ver de novo!",
   "Sign in to keep everyone in the loop": "Entre para deixar todo mundo por dentro",
@@ -1965,11 +2097,15 @@ const ptBR: Record<TranslationKey, string> = {
   "Add your first baby": "Adicione seu primeiro bebê",
   "Give them a name and due date — that creates a public page friends can open.":
     "Dê um nome e uma data prevista. Isso cria uma página pública que os amigos podem abrir.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Adicione um nome e uma data e depois escolha uma jornada. Ela só define quais status os visitantes podem ver.",
   "Add a baby": "Adicionar um bebê",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Um link para todo mundo. Na página do bebê, toque em Compartilhar para copiar. Chega de spam no grupo.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Publique etapas e recados do dia a dia pelo menu. As notificações vão só para quem ativou e somente quando você marcar uma mudança de status: trabalho de parto, hospital ou nascimento.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Publique etapas e recados do dia a dia pelo menu. Só os status ativados avisam quem acompanha.",
   "Peek at settings": "Dê uma olhada nas configurações",
   "Themes, names, and whether visitors can leave encouragements — all in Settings.":
     "Temas, nomes e permissão para visitantes deixarem mensagens de carinho: tudo nas Configurações.",
@@ -1995,11 +2131,20 @@ const ptBR: Record<TranslationKey, string> = {
   "Let's go": "Vamos lá",
   Next: "Próximo",
   "Go Home": "Ir para o início",
+  "Something went wrong": "Algo deu errado",
+  "An unexpected error occurred. Reloading usually fixes it.":
+    "Ocorreu um erro inesperado. Recarregar a página costuma resolver.",
+  "Reload page": "Recarregar a página",
 };
 
 const enUS: Partial<Record<TranslationKey, string>> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
+  Labour: "Labor",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitors see: Labor started → At the hospital → Baby born",
+  "Visitors see: Labour started → Baby born": "Visitors see: Labor started → Baby born",
+  "Visitors see: At hospital → Baby born": "Visitors see: At the hospital → Baby born",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
@@ -2058,14 +2203,11 @@ export function translate<TKey extends TranslationKey>(
 
 export function useI18n() {
   const locale = useContext(LocaleContext);
-  return useMemo(
-    () => ({
-      locale,
-      t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
-        translate(locale, key, ...args)) satisfies TranslationFunction,
-    }),
-    [locale],
-  );
+  return {
+    locale,
+    t: (<TKey extends TranslationKey>(key: TKey, ...args: TranslationArguments<TKey>) =>
+      translate(locale, key, ...args)) satisfies TranslationFunction,
+  };
 }
 
 export function getLanguageName(locale: SupportedLocale, displayLocale: SupportedLocale = locale) {

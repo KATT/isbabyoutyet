@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { renderBlurDataUrl, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
 import {
   HOMEPAGE_DEMO_PHOTO_FILES,
   HOMEPAGE_DEMO_PHOTO_KEYS,
@@ -76,18 +77,16 @@ function readPhotoBuffer(filename: string) {
   return { filePath, buffer: fs.readFileSync(filePath) };
 }
 
-async function jpegAndThumbnail(buffer: Buffer) {
+async function jpegAndDerivatives(buffer: Buffer) {
   const photo = await sharp(buffer)
     .rotate()
     .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 85 })
     .toBuffer();
-  const thumbnail = await sharp(buffer)
-    .rotate()
-    .resize(900, 900, { fit: "cover", position: "center" })
-    .jpeg({ quality: 85 })
-    .toBuffer();
-  return { photo, thumbnail };
+  const thumbnail = await renderPageThumbnail(buffer);
+  const pushImage = await renderPushImage(buffer);
+  const blurDataUrl = await renderBlurDataUrl(buffer);
+  return { photo, thumbnail, pushImage, blurDataUrl };
 }
 
 function isLoopbackUploadUrl(uploadUrl: string) {
@@ -163,11 +162,16 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
     );
   }
 
-  const photos: Record<HomepageDemoPhotoKey, { photoId: string; thumbnailId: string }> =
-    {} as Record<HomepageDemoPhotoKey, { photoId: string; thumbnailId: string }>;
+  const photos: Record<
+    HomepageDemoPhotoKey,
+    { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
+  > = {} as Record<
+    HomepageDemoPhotoKey,
+    { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
+  >;
 
   for (const photo of photosOnDisk) {
-    const prepared = await jpegAndThumbnail(photo.buffer);
+    const prepared = await jpegAndDerivatives(photo.buffer);
     const photoId = await uploadBytes({
       bytes: prepared.photo,
       extraConvexArgs,
@@ -176,7 +180,11 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
       bytes: prepared.thumbnail,
       extraConvexArgs,
     });
-    photos[photo.key] = { photoId, thumbnailId };
+    const pushImageId = await uploadBytes({
+      bytes: prepared.pushImage,
+      extraConvexArgs,
+    });
+    photos[photo.key] = { photoId, thumbnailId, pushImageId, blurDataUrl: prepared.blurDataUrl };
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 

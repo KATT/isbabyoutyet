@@ -11,26 +11,37 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import {
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
+import { Switch } from "@workspace/ui/components/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
+import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
-import {
-  getBlockingLaterMilestone,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
+import { getBlockingLaterMilestone, MILESTONE_LABELS } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  Milestone,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { THEME_OPTIONS } from "./utils";
+import { getThemeOption, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
@@ -73,8 +84,32 @@ function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
       date: htmlDate(t),
+      showExactDueDate: z.boolean(),
+      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
     })
-    .transform((values): Pick<BabyPatch, "dueDate"> => ({ dueDate: values.date }));
+    .superRefine((values, ctx) => {
+      if (values.showExactDueDate && !values.date) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["date"],
+          message: t("Pick a date"),
+        });
+      }
+      if (!values.showExactDueDate && !values.publicDueDateText) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["publicDueDateText"],
+          message: t("Enter a message for visitors"),
+        });
+      }
+    })
+    .transform(
+      (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
+        dueDate: values.date,
+        dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+        publicDueDateText: values.publicDueDateText || null,
+      }),
+    );
 }
 
 export function DueDateEditor(props: DueDateEditorProps) {
@@ -127,7 +162,15 @@ function DueDateForm(props: EditorFormProps) {
   const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
-    defaultValues: { date: dateCodec.encode(props.baby.dueDate) },
+    defaultValues: {
+      date: dateCodec.encode(props.baby.dueDate),
+      showExactDueDate: props.baby.dueDateDisplayMode === "exact",
+      publicDueDateText: props.baby.publicDueDateText ?? "",
+    },
+  });
+  const showExactDueDate = useWatch({
+    control: form.control,
+    name: "showExactDueDate",
   });
 
   return (
@@ -140,22 +183,61 @@ function DueDateForm(props: EditorFormProps) {
     >
       <FormField
         control={form.control}
-        name="date"
-        render={({ field }) => (
-          <FormItem className="mb-3">
+        name="showExactDueDate"
+        render={(renderProps) => (
+          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
+            <div className="flex flex-col gap-1">
+              <FormLabel>{t("Show exact due date")}</FormLabel>
+              <FormDescription>
+                {renderProps.field.value
+                  ? t("Visitors see the exact date and countdown.")
+                  : t("Visitors see only your message.")}
+              </FormDescription>
+            </div>
             <FormControl>
-              <Input
-                type="date"
-                aria-label={t("Due Date")}
-                onMouseDown={(e) => e.stopPropagation()}
-                onFocus={(e) => e.stopPropagation()}
-                {...field}
+              <Switch
+                checked={renderProps.field.value}
+                onCheckedChange={renderProps.field.onChange}
               />
             </FormControl>
-            <FormMessage />
           </FormItem>
         )}
       />
+      {showExactDueDate ? (
+        <FormField
+          control={form.control}
+          name="date"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormControl>
+                <Input
+                  type="date"
+                  aria-label={t("Due Date")}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onFocus={(event) => event.stopPropagation()}
+                  {...renderProps.field}
+                  value={renderProps.field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : (
+        <FormField
+          control={form.control}
+          name="publicDueDateText"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormLabel>{t("Public due date message")}</FormLabel>
+              <FormControl>
+                <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
@@ -167,22 +249,14 @@ function DueDateForm(props: EditorFormProps) {
 
 type StatusDateEditorProps = {
   baby: BabyData;
-  status: "labor_started" | "gone_to_hospital" | "born";
+  status: Milestone;
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
 };
 
-function statusDateSchema(t: TranslationFunction, status: Milestone) {
-  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
-    switch (status) {
-      case "labor_started":
-        return { laborStarted: values.dateTime };
-      case "gone_to_hospital":
-        return { wentToHospital: values.dateTime };
-      case "born":
-        return { babyBorn: values.dateTime };
-    }
-  });
+function statusDateSchema(t: TranslationFunction) {
+  return z.object({ dateTime: htmlDateTime(t) });
 }
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
@@ -204,7 +278,8 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
           baby={props.baby}
           status={props.status}
           currentDate={props.currentDate}
-          onUpdate={props.onUpdate}
+          onRedate={props.onRedate}
+          onRemove={props.onRemove}
           onClose={() => setIsEditing(false)}
         />
       </PopoverContent>
@@ -216,14 +291,15 @@ function StatusDateForm(props: {
   baby: BabyData;
   status: StatusDateEditorProps["status"];
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
   const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema(t, props.status),
+    schema: statusDateSchema(t),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -240,7 +316,7 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate(values);
+        await props.onRedate(props.status, values.dateTime);
         props.onClose();
       }}
     >
@@ -302,7 +378,7 @@ function StatusDateForm(props: {
                   onClick={async () => {
                     setIsDeleting(true);
                     try {
-                      await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
+                      await props.onRemove(props.status);
                       props.onClose();
                     } catch {
                       toast.error(
@@ -412,6 +488,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const selectedTheme = getThemeOption(props.baby.theme);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -427,7 +504,8 @@ export function ThemeSelector(props: ThemeSelectorProps) {
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
-              variant={props.baby.theme === option.value ? "default" : "ghost"}
+              variant={selectedTheme?.value === option.value ? "default" : "ghost"}
+              aria-pressed={selectedTheme?.value === option.value}
               size="sm"
               className="justify-start gap-2"
               disabled={isLoading}

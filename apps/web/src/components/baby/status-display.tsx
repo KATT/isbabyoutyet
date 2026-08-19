@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/d
 import { X } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
+import { getMilestonePolicy } from "@workspace/convex/src/types";
 import {
   formatDate,
   getOverdueDays,
@@ -10,11 +11,13 @@ import {
   formatDueDate,
 } from "./utils";
 import { useI18n } from "@/lib/i18n";
+import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
   babyName: string;
   photoUrl: string | null;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
   fallbackEmoji: string;
   variant: "default" | "born";
 };
@@ -69,11 +72,12 @@ function PhotoAvatar(props: PhotoAvatarProps) {
             className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
           >
             {avatarImageUrl && (
-              <img
+              <BlurImage
                 src={avatarImageUrl}
                 alt={t("Photo of {{name}}", { name: props.babyName })}
                 width={160}
                 height={160}
+                blurDataUrl={props.blurDataUrl}
                 className="w-full h-full object-cover"
               />
             )}
@@ -89,9 +93,10 @@ function PhotoAvatar(props: PhotoAvatarProps) {
           >
             <X className="w-6 h-6" />
           </button>
-          <img
+          <BlurImage
             src={props.photoUrl}
             alt={t("Photo of {{name}}", { name: props.babyName })}
+            blurDataUrl={props.blurDataUrl}
             className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
           />
         </DialogContent>
@@ -114,6 +119,7 @@ type StatusDisplayProps = {
   currentStatus: BabyStatus;
   photoUrl: string | null;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
   latestUpdate: LatestUpdateMessage | null;
 };
 
@@ -161,10 +167,18 @@ const STATUS_META = {
 
 export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
-  const overdueDays = getOverdueDays(props.baby.dueDate);
-  const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
+  const isMessageMode = props.baby.dueDateDisplayMode === "message";
+  const publicDueDateText = props.baby.publicDueDateText?.trim() ?? "";
+  const exactDueDate = isMessageMode ? null : props.baby.dueDate;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
+  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
+  const sublineKey =
+    props.currentStatus.type === "labor_started" &&
+    !getMilestonePolicy(props.baby).visibility.showHospital
+      ? "Things are happening!"
+      : meta.sublineKey;
 
   return (
     <div className="flex flex-col items-center py-8">
@@ -172,6 +186,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
         babyName={props.baby.name}
         photoUrl={props.photoUrl}
         thumbnailUrl={props.thumbnailUrl}
+        blurDataUrl={props.blurDataUrl}
         fallbackEmoji={meta.emoji}
         variant={isBorn ? "born" : "default"}
       />
@@ -179,7 +194,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
       <h2 className="text-4xl md:text-5xl font-black tracking-tight text-primary text-balance">
         {t(meta.answerKey)}
       </h2>
-      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(meta.sublineKey)}</p>
+      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(sublineKey)}</p>
 
       {props.currentStatus.type !== "not_yet" && (
         <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">
@@ -196,26 +211,36 @@ export function StatusDisplay(props: StatusDisplayProps) {
       {props.currentStatus.type === "not_yet" && (
         <div
           className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
-            overdueDays > 0 ? "border-primary/40 bg-primary/10" : "border-border bg-card"
+            !isMessageMode && overdueDays > 0
+              ? "border-primary/40 bg-primary/10"
+              : "border-border bg-card"
           }`}
         >
           <p
-            className={`text-2xl font-black ${overdueDays > 0 ? "text-primary" : "text-foreground"}`}
+            className={`text-2xl font-black ${
+              !isMessageMode && overdueDays > 0 ? "text-primary" : "text-foreground"
+            }`}
           >
-            {overdueDays > 0
-              ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
-                  count: overdueDays,
-                })
-              : t(
-                  daysUntilDueDate === 1
-                    ? "{{count}} day until due date"
-                    : "{{count}} days until due date",
-                  { count: daysUntilDueDate },
-                )}
+            {isMessageMode
+              ? publicDueDateText
+              : overdueDays > 0
+                ? t(overdueDays === 1 ? "{{count}} day overdue" : "{{count}} days overdue", {
+                    count: overdueDays,
+                  })
+                : t(
+                    daysUntilDueDate === 1
+                      ? "{{count}} day until due date"
+                      : "{{count}} days until due date",
+                    { count: daysUntilDueDate },
+                  )}
           </p>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
-          </p>
+          {!isMessageMode ? (
+            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+              {t("Due date: {{date}}", {
+                date: exactDueDate ? formatDueDate(exactDueDate, locale) : "",
+              })}
+            </p>
+          ) : null}
         </div>
       )}
 

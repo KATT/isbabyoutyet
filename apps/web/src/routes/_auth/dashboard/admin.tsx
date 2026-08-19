@@ -90,6 +90,8 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const search = opts.deps;
+    // Infinite queries stay blocking on the client too: the react-query cache
+    // makes revisits free, and suspense churn on paginated tables isn't worth it.
     return await allKeyed({
       babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
         args: {
@@ -420,13 +422,6 @@ export function AdminDashboardPage() {
     });
   }
 
-  function setHideDemo(hideDemo: boolean) {
-    void navigate({
-      search: (prev) => ({ ...prev, hideDemo }),
-      replace: true,
-    });
-  }
-
   const tabSearch = (tab: AdminTab): AdminSearch => ({
     tab,
     sort: search.sort,
@@ -498,7 +493,12 @@ export function AdminDashboardPage() {
                     <Switch
                       id="admin-hide-demo"
                       checked={search.hideDemo}
-                      onCheckedChange={setHideDemo}
+                      onCheckedChange={(hideDemo) => {
+                        void navigate({
+                          search: (prev) => ({ ...prev, hideDemo }),
+                          replace: true,
+                        });
+                      }}
                     />
                     <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
                       {t("Hide demo babies")}

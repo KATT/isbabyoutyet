@@ -33,5 +33,37 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Restore main coverage baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v6
+        with:
+          path: .coverage-baseline
+          key: coverage-main-${{ github.event.pull_request.base.sha }}
+          restore-keys: |
+            coverage-main-
+
       - name: Run checks
         run: pnpm checks
+
+      - name: Compare coverage with main
+        if: github.event_name == 'pull_request'
+        run: |
+          if [[ ! -f .coverage-baseline/coverage-summary.json ]]; then
+            echo "::notice::No main coverage baseline is cached yet; the first green main run will create one."
+            exit 0
+          fi
+
+          pnpm coverage:compare
+
+      - name: Prepare main coverage baseline
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p .coverage-baseline
+          cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
+
+      - name: Save main coverage baseline
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v6
+        with:
+          path: .coverage-baseline
+          key: coverage-main-${{ github.sha }}

@@ -340,7 +340,7 @@ function NextStepHint(props: {
     surface: props.surface,
     tourBaby: props.tourBaby,
     onGoToStep: props.onGoToStep,
-    onAcknowledge: (stepId: OnboardingStepId) => {
+    onAcknowledge: (stepId) => {
       if (stepId === props.step.id) {
         props.onAcknowledge();
       }

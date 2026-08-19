@@ -9,24 +9,29 @@
     "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "typecheck:scripts": "tsc --noEmit -p scripts",
     "format": "turbo format",
     "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "turbo run format lint-fix typecheck test:coverage knip"
+    "checks": "pnpm typecheck:scripts && turbo run format lint-fix typecheck test:coverage knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "^4.1.11",
     "knip": "^6.32.2",
     "npm-run-all": "^4.1.5",
     "oxlint": "catalog:",
-    "turbo": "^2.10.9",
+    "tsx": "^4.23.12",
+    "turbo": "^2.10.11",
     "typescript": "catalog:",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": "^24.0.0"

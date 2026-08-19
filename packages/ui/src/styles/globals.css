@@ -255,6 +255,20 @@ code {
   --shadow-2xl: var(--shadow-2xl);
 }
 
+@theme {
+  /* Indeterminate sweep used by the app's NavigationProgress composition */
+  --animate-progress-indeterminate: progress-indeterminate 1s ease-in-out infinite;
+
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+}
+
 @layer base {
   body {
     letter-spacing: var(--tracking-normal);

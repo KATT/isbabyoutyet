@@ -11,7 +11,7 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -71,32 +71,24 @@ export const Route = createFileRoute("/baby/$publicId")({
       throw notFound();
     }
 
-    const shared = await allKeyed({
-      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, { babyId: babyDoc._id }),
-      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-        args: { babyId: babyDoc._id },
-        numItems: TIMELINE_PAGE_SIZE,
-      }),
-      profile: preloader.ensureQueryData(api.profile.get, {}),
-    });
-
-    if (!shared.myAccess.initialData.canManage) {
-      return {
-        baby: babyHandle,
-        ...shared,
-        scheduledNotifications: null,
-        subscriptionCount: null,
-        onboarding: null,
-        coParentsList: null,
-      };
-    }
-
+    // One homogeneous set for every visitor: manager-only queries return a
+    // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
-      ...shared,
       ...(await allKeyed({
+        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
+        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+          babyId: babyDoc._id,
+        }),
+        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+          args: { babyId: babyDoc._id },
+          numItems: TIMELINE_PAGE_SIZE,
+        }),
+        profile: preloader.ensureQueryData(api.profile.get, {}),
+        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
+          babyId: babyDoc._id,
+        }),
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
           babyId: babyDoc._id,
         }),
@@ -120,13 +112,19 @@ export const Route = createFileRoute("/baby/$publicId")({
 
     const seo = babySeoHead({
       name: babyDoc.name,
-      dueDate: babyDoc.dueDate,
+      ...(babyDoc.dueDateDisplayMode === "exact"
+        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
+        : {
+            dueDateDisplayMode: "message" as const,
+            publicDueDateText: babyDoc.publicDueDateText,
+          }),
       publicId: babyDoc.publicId,
       theme: babyDoc.theme,
       locale: babyDoc.resolvedLocale,
       babyBorn: babyDoc.babyBorn,
       wentToHospital: babyDoc.wentToHospital,
       laborStarted: babyDoc.laborStarted,
+      milestoneVisibility: babyDoc.milestoneVisibility,
     });
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
@@ -205,20 +203,49 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(
+export function docToBabyData(
   doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
 ): BabyData {
-  return {
+  const common = {
     name: doc.name,
-    dueDate: doc.dueDate,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    encouragementsDisabled: doc.encouragementsDisabled,
+    photoId: doc.photoId ?? null,
+  };
+  return doc.dueDateDisplayMode === "exact"
+    ? {
+        ...common,
+        dueDate: doc.dueDate,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+      }
+    : {
+        ...common,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: doc.publicDueDateText,
+      };
+}
+
+type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
+
+export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
+  return {
+    name: doc.name,
+    dueDate: doc.dueDate,
+    dueDateDisplayMode: doc.dueDateDisplayMode,
+    publicDueDateText: doc.publicDueDateText,
+    theme: doc.theme ?? null,
+    locale: doc.locale ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
@@ -247,6 +274,7 @@ function BabyPage() {
     loaderData.latestUpdate,
   );
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const vapidQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getPublicKey,
@@ -256,6 +284,8 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
+  const redateMilestone = useMutation(api.updates.redateMilestone);
+  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -265,6 +295,9 @@ function BabyPage() {
   const myAccess = myAccessQuery.data;
   const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
+  const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
+  const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
+  const birthJourney = managerBabyDoc?.birthJourney ?? null;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -278,7 +311,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && loaderData.onboarding ? (
+      {canManage && birthJourney && managerBaby ? (
         <OnboardingHost
           surface="baby"
           onboarding={loaderData.onboarding}
@@ -303,16 +336,29 @@ function BabyPage() {
         />
       ) : null}
 
-      {canManage ? (
+      {canManage && birthJourney && managerBaby ? (
         <>
           <SettingsPanel
-            baby={baby}
+            baby={managerBaby}
+            birthJourney={birthJourney}
             profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
               await updateBaby({
                 babyId: babyDoc._id,
                 ...update,
               });
+              await router.invalidate();
+            }}
+            onMilestoneRedate={async (milestone, occurredAt) => {
+              await redateMilestone({
+                babyId: babyDoc._id,
+                milestone,
+                occurredAt: Date.parse(occurredAt),
+              });
+              await router.invalidate();
+            }}
+            onMilestoneRemove={async (milestone) => {
+              await unmarkMilestone({ babyId: babyDoc._id, milestone });
               await router.invalidate();
             }}
             onDelete={
@@ -323,15 +369,11 @@ function BabyPage() {
                   }
                 : null
             }
-            coParents={
-              loaderData.coParentsList
-                ? {
-                    babyId: babyDoc._id,
-                    isOwner,
-                    listing: loaderData.coParentsList,
-                  }
-                : null
-            }
+            coParents={{
+              babyId: babyDoc._id,
+              isOwner,
+              listing: loaderData.coParentsList,
+            }}
             open={!!search.settings}
             onOpenChange={(open) => {
               void navigate({
@@ -343,12 +385,10 @@ function BabyPage() {
               });
             }}
           />
-          {loaderData.scheduledNotifications && loaderData.subscriptionCount ? (
-            <ScheduledNotificationToast
-              notifications={loaderData.scheduledNotifications}
-              subscriptionCount={loaderData.subscriptionCount}
-            />
-          ) : null}
+          <ScheduledNotificationToast
+            notifications={loaderData.scheduledNotifications}
+            subscriptionCount={loaderData.subscriptionCount}
+          />
           <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
             <DialogContent className="sm:max-w-lg">
               <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
@@ -426,6 +466,7 @@ function BabyPage() {
               currentStatus={currentStatus}
               photoUrl={babyDoc.photoUrl}
               thumbnailUrl={babyDoc.thumbnailUrl}
+              blurDataUrl={babyDoc.blurDataUrl ?? null}
               latestUpdate={
                 latestUpdate
                   ? {
