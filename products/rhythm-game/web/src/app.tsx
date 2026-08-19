@@ -119,6 +119,7 @@ export function App() {
   const judgedNoteIdsRef = useRef(new Set<number>());
   const missedNoteCursorRef = useRef(0);
   const analysisRequestRef = useRef(0);
+  const playRequestRef = useRef(0);
   const [phase, setPhase] = useState<GamePhase>("library");
   const [selectedTrack, setSelectedTrack] = useState<Track>(initialTrack);
   const [chart, setChart] = useState<ChartNote[]>([]);
@@ -204,6 +205,7 @@ export function App() {
   async function analyzeTrack(track: Track) {
     const requestId = analysisRequestRef.current + 1;
     analysisRequestRef.current = requestId;
+    playRequestRef.current += 1;
     audioRef.current?.pause();
     setSelectedTrack(track);
     setPhase("analyzing");
@@ -251,6 +253,8 @@ export function App() {
     if (!audio || chart.length === 0) {
       return;
     }
+    const requestId = playRequestRef.current + 1;
+    playRequestRef.current = requestId;
     judgedNoteIdsRef.current = new Set();
     setJudgedNoteIds(new Set());
     missedNoteCursorRef.current = 0;
@@ -259,6 +263,9 @@ export function App() {
     setLastJudgment(null);
     audio.currentTime = 0;
     await audio.play();
+    if (requestId !== playRequestRef.current) {
+      return;
+    }
     setPhase("playing");
   }
 
@@ -268,11 +275,17 @@ export function App() {
       return;
     }
     if (phase === "playing") {
+      playRequestRef.current += 1;
       audio.pause();
       setPhase("paused");
       return;
     }
+    const requestId = playRequestRef.current + 1;
+    playRequestRef.current = requestId;
     await audio.play();
+    if (requestId !== playRequestRef.current) {
+      return;
+    }
     setPhase("playing");
   }
 
@@ -300,11 +313,13 @@ export function App() {
   }
 
   function finishGame() {
+    playRequestRef.current += 1;
     setCurrentTime(duration);
     setPhase("finished");
   }
 
   function returnToLibrary() {
+    playRequestRef.current += 1;
     audioRef.current?.pause();
     setPhase("library");
     setChart([]);
