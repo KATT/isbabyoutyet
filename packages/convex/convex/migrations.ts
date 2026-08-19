@@ -619,6 +619,51 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
+export const STORED_STATUS_FIELDS = [
+  "laborStarted",
+  "wentToHospital",
+  "babyBorn",
+  "laborStartedMessage",
+  "hospitalMessage",
+  "babyBornMessage",
+] as const;
+
+/**
+ * Revalidates and reconciles one baby in the same transaction before removing
+ * retired dual-write keys. This does not trust the completion state of older,
+ * already-released migration names.
+ */
+export async function clearStoredStatusFieldsDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+  await backfillBabyTimelineDoc(ctx, baby);
+  await clearLegacyStageMessagesDoc(ctx, baby);
+  const current = await ctx.db.get(baby._id);
+  if (!current) return;
+
+  const unresolvedMessages = MILESTONES.map(
+    (milestone) => MILESTONE_FIELDS[milestone].message,
+  ).filter((field) => current[field] != null);
+  if (unresolvedMessages.length > 0) {
+    throw new Error(
+      `Baby ${baby._id} has unresolved legacy messages: ${unresolvedMessages.join(", ")}`,
+    );
+  }
+
+  const patch: Partial<Record<(typeof STORED_STATUS_FIELDS)[number], undefined>> = {};
+  for (const field of STORED_STATUS_FIELDS) {
+    if (current[field] !== undefined) {
+      patch[field] = undefined;
+    }
+  }
+  if (Object.keys(patch).length === 0) return;
+  await ctx.db.patch(baby._id, patch);
+}
+
+export const clearStoredStatusFields = migrations.define({
+  table: "baby",
+  batchSize: 10,
+  migrateOne: clearStoredStatusFieldsDoc,
+});
+
 // Keep newly added migrations outside the stable historical chain. If an
 // older deployment has that chain in progress, its stored `next` list cannot
 // know about migrations appended by this deployment.
@@ -630,6 +675,9 @@ export const runBirthJourneyBackfill = migrations.runner(
 );
 export const runDueDateDisplayBackfill = migrations.runner(
   internal.migrations.backfillBabyDueDateDisplay,
+);
+export const runStoredStatusCleanup = migrations.runner(
+  internal.migrations.clearStoredStatusFields,
 );
 
 export const runTableMigrations = migrations.runner([
@@ -664,14 +712,19 @@ const HISTORICAL_MIGRATION_NAMES = [
   "migrations:backfillUserProfileIsAdmin",
 ] as const;
 
-const TABLE_MIGRATION_NAMES = [
+const PRE_CLEANUP_MIGRATION_NAMES = [
   ...HISTORICAL_MIGRATION_NAMES,
   "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyDueDateDisplay",
   "migrations:generatePushImagesForExistingPhotos",
 ] as const;
 
-async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
+const TABLE_MIGRATION_NAMES = [
+  ...PRE_CLEANUP_MIGRATION_NAMES,
+  "migrations:clearStoredStatusFields",
+] as const;
+
+async function migrationDeploymentStatus(ctx: QueryCtx | MutationCtx, names: readonly string[]) {
   const statuses = await migrations.getStatus(ctx, {
     migrations: [...names],
   });
@@ -690,10 +743,32 @@ export const historicalDeploymentStatus = internalQuery({
   },
 });
 
+export const preCleanupDeploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, PRE_CLEANUP_MIGRATION_NAMES);
+  },
+});
+
 export const deploymentStatus = internalQuery({
   args: {},
   handler: async (ctx) => {
     return await migrationDeploymentStatus(ctx, TABLE_MIGRATION_NAMES);
+  },
+});
+
+export const runStoredStatusCleanupWhenReady = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const prerequisites = await migrationDeploymentStatus(ctx, PRE_CLEANUP_MIGRATION_NAMES);
+    if (prerequisites.failed.length > 0) {
+      throw new Error(`Migration failed: ${prerequisites.failed.join("; ")}`);
+    }
+    if (!prerequisites.isDone) {
+      await ctx.scheduler.runAfter(1_000, internal.migrations.runStoredStatusCleanupWhenReady, {});
+      return;
+    }
+    await ctx.runMutation(internal.migrations.runStoredStatusCleanup, {});
   },
 });
 
@@ -718,6 +793,7 @@ export const runAll = internalMutation({
     await ctx.runMutation(internal.migrations.runBirthJourneyBackfill, {});
     await ctx.runMutation(internal.migrations.runDueDateDisplayBackfill, {});
     await ctx.runMutation(internal.migrations.runPushImageBackfill, {});
+    await ctx.scheduler.runAfter(0, internal.migrations.runStoredStatusCleanupWhenReady, {});
     return historical;
   },
 });
