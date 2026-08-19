@@ -22,6 +22,31 @@ test("paints the blur data URL until the image loads", () => {
   expect(img.className).not.toContain("blur-xl");
 });
 
+test("skips the blur on first client mount when the image is already decoded", () => {
+  const OriginalImage = window.Image;
+  window.Image = class DecodedImage {
+    complete = true;
+    naturalWidth = 160;
+    naturalHeight = 160;
+    src = "";
+    addEventListener() {}
+    removeEventListener() {}
+  } as unknown as typeof Image;
+  using _restoreImage = makeResource({}, () => {
+    window.Image = OriginalImage;
+  });
+
+  const view = render(
+    <BlurImage src="https://example.com/cached.jpg" alt="Nova" blurDataUrl={BLUR} />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  expect(img.className).not.toContain("blur-xl");
+});
+
 test("skips the placeholder when no blur data URL is provided", () => {
   const view = render(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={null} />,

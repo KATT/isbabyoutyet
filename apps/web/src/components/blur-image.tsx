@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { ImgHTMLAttributes } from "react";
 import { cn } from "@workspace/ui/lib/utils";
 
@@ -7,8 +7,43 @@ type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   blurDataUrl: string | null;
 };
 
-function imageAlreadyLoaded(img: HTMLImageElement | null) {
-  return Boolean(img && img.complete && img.naturalWidth > 0);
+function imageSrcKey(src: BlurImageProps["src"]) {
+  return typeof src === "string" ? src : "";
+}
+
+/**
+ * Browser cache check: `new Image(); img.src = url` sets `complete` synchronously
+ * when that URL is already decoded. Used as the client snapshot so a cached
+ * photo skips the blur on first mount (SPA navigation), while the server
+ * snapshot stays `false` for hydration.
+ */
+function isDecodedImageSrc(src: string) {
+  if (src === "") return false;
+  const img = new Image();
+  img.src = src;
+  return img.complete && img.naturalWidth > 0;
+}
+
+function subscribeDecodedImageSrc(src: string, onStoreChange: () => void) {
+  if (src === "") return () => {};
+  const img = new Image();
+  img.src = src;
+  if (img.complete) return () => {};
+  img.addEventListener("load", onStoreChange);
+  img.addEventListener("error", onStoreChange);
+  return () => {
+    img.removeEventListener("load", onStoreChange);
+    img.removeEventListener("error", onStoreChange);
+  };
+}
+
+function useDecodedImageSrc(src: BlurImageProps["src"]) {
+  const srcKey = imageSrcKey(src);
+  return useSyncExternalStore(
+    (onStoreChange) => subscribeDecodedImageSrc(srcKey, onStoreChange),
+    () => isDecodedImageSrc(srcKey),
+    () => false,
+  );
 }
 
 /**
@@ -18,17 +53,14 @@ function imageAlreadyLoaded(img: HTMLImageElement | null) {
  */
 export function BlurImage(props: BlurImageProps) {
   const { alt, blurDataUrl, className, onLoad, src, style, ...imgProps } = props;
-  const imgRef = useRef<HTMLImageElement>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useLayoutEffect(() => {
-    setLoaded(imageAlreadyLoaded(imgRef.current));
-  }, [src]);
+  const srcKey = imageSrcKey(src);
+  const alreadyDecoded = useDecodedImageSrc(src);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const loaded = alreadyDecoded || loadedSrc === srcKey;
 
   return (
     <img
       {...imgProps}
-      ref={imgRef}
       alt={alt}
       src={src}
       className={cn(
@@ -44,7 +76,7 @@ export function BlurImage(props: BlurImageProps) {
         backgroundRepeat: "no-repeat",
       }}
       onLoad={(event) => {
-        setLoaded(true);
+        setLoadedSrc(srcKey);
         onLoad?.(event);
       }}
     />
