@@ -38,7 +38,11 @@ function makeGuardCtx() {
     context: { queryClient, convexClient: {}, token: null, locale: "en-GB" },
   };
   const options = Route as unknown as {
-    beforeLoad: (opts: GuardCtx) => Promise<{ locale: string; isAuthenticated: boolean }>;
+    beforeLoad: (opts: GuardCtx) => Promise<{
+      locale: string;
+      isAuthenticated: boolean;
+      profile: { input: Record<string, never>; initialData: unknown };
+    }>;
   };
   return { ctx, queryClient, beforeLoad: options.beforeLoad };
 }

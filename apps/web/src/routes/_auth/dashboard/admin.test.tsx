@@ -1,4 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -51,7 +52,9 @@ vi.mock("@tanstack/react-router", () => ({
       }),
     }),
   }),
-  redirect: vi.fn<() => never>(),
+  redirect: (opts: unknown) => {
+    throw { isRedirect: true, ...(opts as object) };
+  },
   useNavigate: () => mocks.navigate,
 }));
 
@@ -72,6 +75,7 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
 });
 
 const {
+  Route: AdminRoute,
   AdminDashboardPage,
   BabiesSection,
   LanguageRequestsSection,
@@ -309,4 +313,78 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
 
   fireEvent.click(languagesTab);
   expect(mocks.navigate).toHaveBeenCalled();
+});
+
+const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
+
+function makeAdminLoaderQueryClient(handlers: Record<string, unknown>) {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: (ctx) => {
+          const name = String(ctx.queryKey[1]);
+          if (name in handlers) {
+            return Promise.resolve(handlers[name]);
+          }
+          return Promise.resolve(null);
+        },
+      },
+    },
+  });
+}
+
+async function runAdminLoader(
+  handlers: Record<string, unknown>,
+  profile: { locale: string; isAdmin: boolean },
+) {
+  const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
+  registerConvexInfiniteQueryClient({
+    convexClient: { query: () => Promise.resolve(ADMIN_EMPTY_PAGE) },
+    serverHttpClient: undefined,
+  } as never);
+  const route = AdminRoute as unknown as {
+    loader: (opts: {
+      context: {
+        queryClient: QueryClient;
+        profile: { input: Record<string, never>; initialData: typeof profile };
+      };
+      deps: { tab: string; sort: string; order: string; hideDemo: boolean };
+    }) => Promise<Record<string, unknown>>;
+  };
+  return await route.loader({
+    context: {
+      queryClient: makeAdminLoaderQueryClient(handlers),
+      profile: { input: {}, initialData: profile },
+    },
+    deps: { tab: "babies", sort: "updated", order: "desc", hideDemo: true },
+  });
+}
+
+test("loader prefetches babies and language requests in parallel for admins", async () => {
+  const result = await runAdminLoader(
+    {
+      "admin:listBabies": ADMIN_EMPTY_PAGE,
+      "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
+    },
+    { locale: "en-GB", isAdmin: true },
+  );
+
+  expect(result.babies).toMatchObject({
+    input: { sortBy: "updated", sortOrder: "desc", hideDemo: true },
+    numItems: 20,
+  });
+  expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
+});
+
+test("loader redirects non-admins after parallel prefetch", async () => {
+  const pending = runAdminLoader(
+    {
+      "admin:listBabies": ADMIN_EMPTY_PAGE,
+      "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
+    },
+    { locale: "en-GB", isAdmin: false },
+  );
+
+  await expect(pending).rejects.toMatchObject({ isRedirect: true, to: "/dashboard" });
 });
