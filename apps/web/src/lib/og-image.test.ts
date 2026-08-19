@@ -15,7 +15,6 @@ test("baby OG image includes status-aware card as PNG", async () => {
     name: "Juniper",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
     theme: "sunny-days",
     locale: "en-GB",
     babyBorn: null,

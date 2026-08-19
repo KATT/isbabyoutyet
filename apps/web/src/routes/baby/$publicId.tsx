@@ -11,7 +11,11 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
-import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
+import {
+  FORBIDDEN,
+  getCurrentStatus,
+  milestoneVisibilityForPreset,
+} from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { authClient } from "@/lib/auth-client";
 import {
@@ -86,7 +90,7 @@ export const Route = createFileRoute("/baby/$publicId")({
           numItems: TIMELINE_PAGE_SIZE,
         }),
         profile: preloader.ensureQueryData(api.profile.get, {}),
-        birthJourney: preloader.ensureQueryData(api.baby.getBirthJourney, {
+        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
           babyId: babyDoc._id,
         }),
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
@@ -112,9 +116,12 @@ export const Route = createFileRoute("/baby/$publicId")({
 
     const seo = babySeoHead({
       name: babyDoc.name,
-      dueDate: babyDoc.dueDate,
-      dueDateDisplayMode: babyDoc.dueDateDisplayMode,
-      publicDueDateText: babyDoc.publicDueDateText,
+      ...(babyDoc.dueDateDisplayMode === "exact"
+        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
+        : {
+            dueDateDisplayMode: "message" as const,
+            publicDueDateText: babyDoc.publicDueDateText,
+          }),
       publicId: babyDoc.publicId,
       theme: babyDoc.theme,
       locale: babyDoc.resolvedLocale,
@@ -203,6 +210,41 @@ export const Route = createFileRoute("/baby/$publicId")({
 function docToBabyData(
   doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
 ): BabyData {
+  const common = {
+    name: doc.name,
+    theme: doc.theme ?? null,
+    locale: doc.locale ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    hospitalMessage: doc.hospitalMessage ?? null,
+    babyBornMessage: doc.babyBornMessage ?? null,
+    laborStartedMessage: doc.laborStartedMessage ?? null,
+    encouragementsDisabled: doc.encouragementsDisabled,
+    photoId: doc.photoId ?? null,
+  };
+  return doc.dueDateDisplayMode === "exact"
+    ? {
+        ...common,
+        dueDate: doc.dueDate,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+      }
+    : {
+        ...common,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: doc.publicDueDateText,
+      };
+}
+
+type ManagerBabyDoc = Exclude<
+  FunctionReturnType<typeof api.baby.getManagerBaby>,
+  typeof FORBIDDEN
+>;
+
+function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -213,7 +255,7 @@ function docToBabyData(
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
-    milestoneVisibility: doc.milestoneVisibility,
+    milestoneVisibility: milestoneVisibilityForPreset(doc.birthJourney),
     hospitalMessage: doc.hospitalMessage ?? null,
     babyBornMessage: doc.babyBornMessage ?? null,
     laborStartedMessage: doc.laborStartedMessage ?? null,
@@ -245,9 +287,9 @@ function BabyPage() {
     loaderData.latestUpdate,
   );
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
-  const birthJourneyQuery = usePreloadedConvexQuery(
-    api.baby.getBirthJourney,
-    loaderData.birthJourney,
+  const managerBabyQuery = usePreloadedConvexQuery(
+    api.baby.getManagerBaby,
+    loaderData.managerBaby,
   );
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const vapidQuery = usePreloadedConvexQuery(
@@ -267,7 +309,9 @@ function BabyPage() {
   const myAccess = myAccessQuery.data;
   const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
-  const birthJourney = birthJourneyQuery.data === FORBIDDEN ? null : birthJourneyQuery.data;
+  const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
+  const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
+  const birthJourney = managerBabyDoc?.birthJourney ?? null;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -281,7 +325,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && birthJourney ? (
+      {canManage && birthJourney && managerBaby ? (
         <OnboardingHost
           surface="baby"
           onboarding={loaderData.onboarding}
@@ -306,10 +350,10 @@ function BabyPage() {
         />
       ) : null}
 
-      {canManage && birthJourney ? (
+      {canManage && birthJourney && managerBaby ? (
         <>
           <SettingsPanel
-            baby={baby}
+            baby={managerBaby}
             birthJourney={birthJourney}
             profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {

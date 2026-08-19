@@ -9,11 +9,8 @@ import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
-type BabySeoInput = {
+type BabySeoBase = {
   name: string;
-  dueDate: string | null;
-  dueDateDisplayMode: "exact" | "message";
-  publicDueDateText: string | null;
   publicId: string;
   theme: string | null | undefined;
   locale: SupportedLocale;
@@ -21,6 +18,12 @@ type BabySeoInput = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+
+type BabyDueDateDisplay =
+  | { dueDateDisplayMode: "exact"; dueDate: string }
+  | { dueDateDisplayMode: "message"; publicDueDateText: string };
+
+type BabySeoInput = BabySeoBase & BabyDueDateDisplay;
 
 function babyPageTitle(baby: BabySeoInput) {
   const isMessageMode = baby.dueDateDisplayMode === "message";
@@ -102,10 +105,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<
-    BabySeoInput,
-    "dueDate" | "dueDateDisplayMode" | "publicDueDateText" | "babyBorn" | "locale"
-  >;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale"> & BabyDueDateDisplay;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -116,10 +116,7 @@ export function babyStatusDetail(opts: {
     return babyStatusLabel({ status: opts.status, locale });
   }
   if (opts.baby.dueDateDisplayMode === "message") {
-    return opts.baby.publicDueDateText?.trim() ?? "";
-  }
-  if (!opts.baby.dueDate) {
-    return babyStatusLabel({ status: opts.status, locale });
+    return opts.baby.publicDueDateText.trim();
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
   if (overdueDays > 0) {

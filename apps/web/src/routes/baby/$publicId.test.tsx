@@ -26,11 +26,8 @@ function useFakeTimersResource(now: Date) {
 type PublicBaby = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
 
 function docToBabyData(doc: PublicBaby): BabyData {
-  return {
+  const common = {
     name: doc.name,
-    dueDate: doc.dueDate,
-    dueDateDisplayMode: doc.dueDateDisplayMode,
-    publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
@@ -41,6 +38,19 @@ function docToBabyData(doc: PublicBaby): BabyData {
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
+  return doc.dueDateDisplayMode === "exact"
+    ? {
+        ...common,
+        dueDate: doc.dueDate,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+      }
+    : {
+        ...common,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: doc.publicDueDateText,
+      };
 }
 
 /**
@@ -94,6 +104,7 @@ test("renders a baby detail page from local convex-test data", async () => {
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
   }
+  expect(baby).not.toHaveProperty("publicDueDateText");
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
 
@@ -118,6 +129,7 @@ test("renders optional public due date text without exposing the exact day", asy
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
   }
+  expect(baby).not.toHaveProperty("dueDate");
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
   expect(view.getByText("Any day now")).toBeTruthy();
@@ -227,6 +239,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: false, isOwner: false },
+    "baby:getManagerBaby": "forbidden",
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": "forbidden",
     "pushSubscriptions:getSubscriptionCount": "forbidden",
@@ -235,6 +248,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
+  expect(result.managerBaby).toMatchObject({ initialData: "forbidden" });
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
@@ -245,6 +259,7 @@ test("loader gives managers the same handles with real data", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: true, isOwner: true },
+    "baby:getManagerBaby": { ...BABY_DOC, birthJourney: "labor" },
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
     "pushSubscriptions:getSubscriptionCount": 2,
@@ -260,6 +275,9 @@ test("loader gives managers the same handles with real data", async () => {
     initialData: 2,
   });
   expect(result.onboarding).toMatchObject({ input: {} });
+  expect(result.managerBaby).toMatchObject({
+    initialData: { birthJourney: "labor" },
+  });
   expect(result.coParentsList).toMatchObject({
     input: { babyId: "baby-1" },
     initialData: { coParents: [], invites: [] },
