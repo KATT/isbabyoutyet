@@ -521,8 +521,17 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
     milestone: "labor_started",
     message: "It's starting",
   });
+  await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { laborStarted: "2026-08-10T08:00:00.000Z" });
+  });
 
   await asAlice.mutation(api.updates.remove, { updateId });
+  await t.run(async (ctx) => {
+    const baby = await ctx.db.get(babyId);
+    if (!baby) throw new Error("Baby not found");
+    expect(baby.laborStarted).toBeUndefined();
+    await backfillBabyTimelineDoc(ctx, baby);
+  });
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
@@ -1040,11 +1049,11 @@ test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurr
   const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
 
   const updateId = await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { babyBorn: new Date(redatedEventAt).toISOString() });
+    await ctx.db.patch(babyId, { babyBorn: new Date(originalEventAt).toISOString() });
     const { updateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
       babyId,
       postedAt: originalEventAt,
-      occurredAt: redatedEventAt, // redate during deploy set this already
+      occurredAt: redatedEventAt, // a concurrent redate already won
       milestone: "born",
     });
     await ctx.db.insert("scheduledNotifications", {

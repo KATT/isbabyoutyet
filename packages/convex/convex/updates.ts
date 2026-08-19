@@ -5,6 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
+  MILESTONE_FIELDS,
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "../src/types";
@@ -250,6 +251,12 @@ async function removeManagedUpdate(
   const statusBefore = getCurrentStatus(datesBefore);
 
   await deleteUpdateWithTimelineItem(ctx, update);
+  if (update.milestone) {
+    const legacyDateField = MILESTONE_FIELDS[update.milestone].date;
+    if (opts.baby[legacyDateField] !== undefined) {
+      await ctx.db.patch(opts.baby._id, { [legacyDateField]: undefined });
+    }
+  }
 
   if (update.photoId && update.photoId === opts.baby.photoId) {
     const fallback = await findLatestRemainingPhotoUpdate(ctx, update);

@@ -102,16 +102,12 @@ function parseIsoMs(iso: string | null | undefined) {
 }
 
 async function assertExistingMilestoneHasUsableDate(ctx: MutationCtx, update: Doc<"updates">) {
-  if (update.occurredAt != null) {
-    if (!isValidDateTimestamp(update.occurredAt)) {
-      throw new Error(`Milestone update ${update._id} has an invalid occurredAt`);
-    }
-    return;
-  }
-
   const item = await ctx.db.get(update.timelineItemId);
-  if (!item || !isActive(item) || !isValidDateTimestamp(item.postedAt)) {
-    throw new Error(`Milestone update ${update._id} has no usable timeline timestamp`);
+  if (!item || !isActive(item)) {
+    throw new Error(`Milestone update ${update._id} has no active timeline item`);
+  }
+  if (!isValidDateTimestamp(update.occurredAt ?? item.postedAt)) {
+    throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
   }
 }
 
@@ -223,9 +219,8 @@ export const backfillEncouragementTimeline = migrations.define({
  * - `postedAt` ← announce time when the row still looks backdated
  *
  * Idempotent: once `postedAt` matches announce time (or no longer looks like
- * the event clock), re-runs are a no-op. Having `occurredAt` already set does
- * NOT skip the feed repair — a redate during the deploy window can set
- * `occurredAt` while leaving a legacy event-clock `postedAt`.
+ * the event clock), re-runs are a no-op. A non-null `occurredAt` wins over the
+ * legacy baby field so a concurrent redate is never reversed.
  */
 export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: Doc<"updates">) {
   if (!update.milestone) return;
@@ -237,15 +232,18 @@ export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: D
   if (!item) return;
 
   const fields = MILESTONE_FIELDS[update.milestone];
-  const occurredAt = parseIsoMs(baby[fields.date]);
+  const legacyDate = baby[fields.date];
+  const legacyOccurredAt = parseIsoMs(legacyDate);
+  if (legacyDate && legacyOccurredAt == null) {
+    throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+  }
+  const occurredAt = update.occurredAt ?? legacyOccurredAt;
   if (occurredAt == null) {
-    if (update.occurredAt == null) {
-      await ctx.db.patch(update._id, { occurredAt: item.postedAt });
-    }
+    await ctx.db.patch(update._id, { occurredAt: item.postedAt });
     return;
   }
 
-  if (update.occurredAt !== occurredAt) {
+  if (update.occurredAt == null) {
     await ctx.db.patch(update._id, { occurredAt });
   }
 
