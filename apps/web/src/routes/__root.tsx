@@ -33,6 +33,7 @@ import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
@@ -313,7 +314,11 @@ export function NavigationProgress() {
     <Progress
       value={null}
       aria-label={t("Loading")}
-      className="pointer-events-none fixed inset-x-0 top-0 z-50"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 top-0 z-50",
+        "[&_[data-slot=progress-indicator]]:w-1/4 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:animate-progress-indeterminate",
+        "motion-reduce:[&_[data-slot=progress-indicator]]:w-full motion-reduce:[&_[data-slot=progress-indicator]]:animate-none",
+      )}
     />
   );
 }
