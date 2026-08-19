@@ -1,6 +1,7 @@
 import { fireEvent, render } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { expect, test, vi } from "vitest";
+import type { ImgHTMLAttributes } from "react";
 import { BlurImage } from "./blur-image";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -29,7 +30,7 @@ test("paints a blurred SVG background until the image decodes", async () => {
 
 test("keeps the placeholder until decode completes", async () => {
   let finishDecode = () => {};
-  const onLoad = vi.fn();
+  const onLoad = vi.fn<NonNullable<ImgHTMLAttributes<HTMLImageElement>["onLoad"]>>();
   const view = render(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} onLoad={onLoad} />,
   );
@@ -114,7 +115,7 @@ test("restores a caller background after the placeholder clears", async () => {
 });
 
 test("removes the placeholder and reveals alt text when loading fails", () => {
-  const onError = vi.fn();
+  const onError = vi.fn<NonNullable<ImgHTMLAttributes<HTMLImageElement>["onError"]>>();
   const view = render(
     <BlurImage
       src="https://example.com/missing.jpg"
