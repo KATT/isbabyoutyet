@@ -35,8 +35,16 @@ body {
   min-height: 100vh;
   margin: 0;
   background:
-    radial-gradient(circle at 15% 15%, color-mix(in oklch, var(--primary) 20%, transparent), transparent 32rem),
-    radial-gradient(circle at 85% 5%, color-mix(in oklch, var(--secondary) 18%, transparent), transparent 28rem),
+    radial-gradient(
+      circle at 15% 15%,
+      color-mix(in oklch, var(--primary) 20%, transparent),
+      transparent 32rem
+    ),
+    radial-gradient(
+      circle at 85% 5%,
+      color-mix(in oklch, var(--secondary) 18%, transparent),
+      transparent 28rem
+    ),
     var(--background);
 }
 
@@ -52,7 +60,11 @@ button:not(:disabled),
   border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
   border-radius: calc(var(--radius) * 1.25);
   background:
-    linear-gradient(to bottom, color-mix(in oklch, var(--card) 75%, transparent), var(--background)),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklch, var(--card) 75%, transparent),
+      var(--background)
+    ),
     repeating-linear-gradient(
       to bottom,
       transparent 0,

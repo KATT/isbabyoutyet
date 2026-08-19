@@ -16,8 +16,7 @@ export const tracks = [
     title: "Monkeys Spinning Monkeys",
     artist: "Kevin MacLeod",
     audioUrl: "/audio/monkeys-spinning-monkeys.mp3",
-    sourceUrl:
-      "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400011",
+    sourceUrl: "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1400011",
     licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
     bpm: 144,
     durationLabel: "2:05",
@@ -28,8 +27,7 @@ export const tracks = [
     title: "Sneaky Snitch",
     artist: "Kevin MacLeod",
     audioUrl: "/audio/sneaky-snitch.mp3",
-    sourceUrl:
-      "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100772",
+    sourceUrl: "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100772",
     licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
     bpm: 87,
     durationLabel: "2:17",
@@ -40,8 +38,7 @@ export const tracks = [
     title: "Local Forecast",
     artist: "Kevin MacLeod",
     audioUrl: "/audio/local-forecast.mp3",
-    sourceUrl:
-      "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300010",
+    sourceUrl: "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300010",
     licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
     bpm: 93,
     durationLabel: "2:45",

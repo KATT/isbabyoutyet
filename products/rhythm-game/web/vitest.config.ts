@@ -1,9 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineProject } from "vitest/config";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 
 export default defineProject({
-  plugins: [viteTsConfigPaths(), react()],
+  plugins: [react()],
+  resolve: {
+    tsconfigPaths: true,
+  },
   test: {
     name: "rhythm-game",
     environment: "jsdom",

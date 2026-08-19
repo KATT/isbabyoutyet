@@ -1,10 +1,7 @@
 /**
  * Explicit resource management helper for tests.
  */
-export function makeAsyncResource<T>(
-  thing: T,
-  dispose: () => Promise<void>,
-): T & AsyncDisposable {
+export function makeAsyncResource<T>(thing: T, dispose: () => Promise<void>): T & AsyncDisposable {
   const resource = thing as T & Partial<AsyncDisposable>;
 
   // eslint-disable-next-line no-restricted-syntax -- dedicated resource helper

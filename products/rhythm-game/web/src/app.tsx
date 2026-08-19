@@ -30,11 +30,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import {
-  Progress,
-  ProgressLabel,
-  ProgressValue,
-} from "@workspace/ui/components/progress";
+import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
 import {
   approachSeconds,
   applyJudgment,
@@ -52,10 +48,16 @@ import type { Track } from "@/tracks";
 type GamePhase = "library" | "analyzing" | "ready" | "playing" | "paused" | "finished";
 
 const laneKeys = ["D", "F", "J", "K"] as const;
-const initialTrack = tracks.at(0);
-if (!initialTrack) {
-  throw new Error("At least one track is required");
+
+function getInitialTrack(): Track {
+  const track = tracks.at(0);
+  if (!track) {
+    throw new Error("At least one track is required");
+  }
+  return track;
 }
+
+const initialTrack = getInitialTrack();
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds)) {
@@ -120,6 +122,7 @@ export function App() {
   const [phase, setPhase] = useState<GamePhase>("library");
   const [selectedTrack, setSelectedTrack] = useState<Track>(initialTrack);
   const [chart, setChart] = useState<ChartNote[]>([]);
+  const [judgedNoteIds, setJudgedNoteIds] = useState<ReadonlySet<number>>(new Set());
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [stats, setStats] = useState(emptyGameStats);
@@ -154,6 +157,7 @@ export function App() {
         }
       }
       if (missedNotes > 0) {
+        setJudgedNoteIds(new Set(judgedNoteIdsRef.current));
         setStats((currentStats) => {
           let nextStats = currentStats;
           for (let missIndex = 0; missIndex < missedNotes; missIndex += 1) {
@@ -205,6 +209,7 @@ export function App() {
     setPhase("analyzing");
     setAnalysisError(null);
     setChart([]);
+    setJudgedNoteIds(new Set());
     setCurrentTime(0);
     setStats(emptyGameStats());
     setLastJudgment(null);
@@ -247,6 +252,7 @@ export function App() {
       return;
     }
     judgedNoteIdsRef.current = new Set();
+    setJudgedNoteIds(new Set());
     missedNoteCursorRef.current = 0;
     setStats(emptyGameStats());
     setCurrentTime(0);
@@ -287,6 +293,7 @@ export function App() {
       return;
     }
     judgedNoteIdsRef.current.add(note.id);
+    setJudgedNoteIds(new Set(judgedNoteIdsRef.current));
     const judgment = judgeTiming(note.time - audio.currentTime);
     setStats((currentStats) => applyJudgment(currentStats, judgment));
     setLastJudgment(judgment);
@@ -301,6 +308,7 @@ export function App() {
     audioRef.current?.pause();
     setPhase("library");
     setChart([]);
+    setJudgedNoteIds(new Set());
     setCurrentTime(0);
     setLastJudgment(null);
   }
@@ -309,7 +317,7 @@ export function App() {
     phase === "playing" || phase === "paused"
       ? chart.filter(
           (note) =>
-            !judgedNoteIdsRef.current.has(note.id) &&
+            !judgedNoteIds.has(note.id) &&
             note.time >= currentTime - goodWindowSeconds &&
             note.time <= currentTime + approachSeconds,
         )
@@ -330,7 +338,9 @@ export function App() {
               <h1 className="text-2xl font-black tracking-tight">Rhythm Lab</h1>
               <Badge variant="secondary">Prototype</Badge>
             </div>
-            <p className="text-sm text-muted-foreground">Every chart is generated from the audio.</p>
+            <p className="text-sm text-muted-foreground">
+              Every chart is generated from the audio.
+            </p>
           </div>
         </div>
 
@@ -386,7 +396,9 @@ export function App() {
                 : `${selectedTrack.artist} · ${selectedTrack.mood}`}
             </CardDescription>
             <CardAction>
-              <Badge variant="outline">{chart.length > 0 ? `${chart.length} notes` : "4 lanes"}</Badge>
+              <Badge variant="outline">
+                {chart.length > 0 ? `${chart.length} notes` : "4 lanes"}
+              </Badge>
             </CardAction>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -474,7 +486,7 @@ export function App() {
 
             <Progress value={progress}>
               <ProgressLabel>{formatTime(currentTime)}</ProgressLabel>
-              <ProgressValue>{formatTime(duration)}</ProgressValue>
+              <ProgressValue>{() => formatTime(duration)}</ProgressValue>
             </Progress>
           </CardContent>
           <CardFooter className="justify-between gap-3">
@@ -515,7 +527,9 @@ export function App() {
                 <p className="text-xl font-bold tabular-nums">{stats.perfects}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Good / miss</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Good / miss
+                </p>
                 <p className="text-xl font-bold tabular-nums">
                   {stats.goods} / {stats.misses}
                 </p>
@@ -567,7 +581,9 @@ export function App() {
               <CardFooter className="justify-between gap-3">
                 <span className="text-xs text-muted-foreground">CC BY 3.0</span>
                 <Button
-                  variant={selectedTrack.id === track.id && phase !== "library" ? "secondary" : "default"}
+                  variant={
+                    selectedTrack.id === track.id && phase !== "library" ? "secondary" : "default"
+                  }
                   disabled={phase === "analyzing"}
                   onClick={() => void analyzeTrack(track)}
                 >

@@ -39,8 +39,14 @@ test("generates a chart, starts a run, accepts input, and shows credits", async 
   }
 
   vi.stubGlobal("AudioContext", FakeAudioContext);
-  vi.stubGlobal("fetch", vi.fn(async () => new Response(new Uint8Array([1]))));
-  vi.stubGlobal("requestAnimationFrame", vi.fn(() => 1));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response(new Uint8Array([1]))),
+  );
+  vi.stubGlobal(
+    "requestAnimationFrame",
+    vi.fn(() => 1),
+  );
   vi.stubGlobal("cancelAnimationFrame", vi.fn());
   const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
@@ -62,7 +68,9 @@ test("generates a chart, starts a run, accepts input, and shows credits", async 
   fireEvent.click(startButton);
   expect(play).toHaveBeenCalledOnce();
   const firstLane = screen.getByRole<HTMLButtonElement>("button", { name: "D" });
-  expect(firstLane.disabled).toBe(false);
+  await vi.waitFor(() => {
+    expect(firstLane.disabled).toBe(false);
+  });
 
   fireEvent.click(firstLane);
   expect(await screen.findByText("Miss")).toBeTruthy();

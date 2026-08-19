@@ -134,7 +134,11 @@ function onsetCandidates(options: AnalyzeSignalOptions) {
   const flux = new Float32Array(measurements.energies.length);
   const lookbackFrames = 12;
 
-  for (let frameIndex = lookbackFrames; frameIndex < measurements.energies.length; frameIndex += 1) {
+  for (
+    let frameIndex = lookbackFrames;
+    frameIndex < measurements.energies.length;
+    frameIndex += 1
+  ) {
     let baseline = 0;
     for (
       let previousIndex = frameIndex - lookbackFrames;
