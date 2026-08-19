@@ -214,7 +214,6 @@ export function docToBabyData(
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
     milestoneVisibility: doc.milestoneVisibility,
-    encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
   return doc.dueDateDisplayMode === "exact"
@@ -246,7 +245,6 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
     milestoneVisibility: doc.milestoneVisibility,
-    encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
 }
@@ -489,14 +487,9 @@ function BabyPage() {
               to scroll past every message to post; the owner posts via the
               "Post update" button in the dock. */}
           <div className="space-y-8">
-            {!baby.encouragementsDisabled && (
-              <section
-                className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
-                data-tour-id="learn_encouragements"
-              >
-                <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
-              </section>
-            )}
+            <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+              <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
+            </section>
 
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed

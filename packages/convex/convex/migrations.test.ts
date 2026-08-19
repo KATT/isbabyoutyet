@@ -8,6 +8,7 @@ import {
   backfillBabySubscriptionCountDoc,
   backfillEncouragementTimelineDoc,
   backfillUpdatePostedByUserIdDoc,
+  removeBabyEncouragementsDisabledDoc,
 } from "./migrations";
 import schema from "./schema";
 import { modules, registerMigrationsComponent } from "./test.setup";
@@ -107,4 +108,35 @@ test("retained migrations skip linked rows and backfill update metadata and coun
       oneBatchOnly: true,
     }),
   ).resolves.toBeTruthy();
+});
+
+test("removeBabyEncouragementsDisabled strips the retired flag from baby docs", async () => {
+  const t = convexTest(schema, modules);
+  await registerMigrationsComponent(t);
+
+  const babyId = await t.run(async (ctx) => {
+    return await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Legacy Baby",
+      dueDate: "2026-09-01",
+      publicId: "legacy-baby",
+      birthJourney: "labor",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      encouragementsDisabled: true,
+      lastActivityAt: 1,
+      subscriptionCount: 0,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    const baby = await ctx.db.get(babyId);
+    if (!baby) throw new Error("Fixture missing");
+    await removeBabyEncouragementsDisabledDoc(ctx, baby);
+    await removeBabyEncouragementsDisabledDoc(ctx, baby);
+  });
+
+  const baby = await t.run(async (ctx) => ctx.db.get(babyId));
+  expect(baby).not.toHaveProperty("encouragementsDisabled");
 });

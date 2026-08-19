@@ -107,8 +107,6 @@ const enGB = {
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
-  "Visitors can send messages": "Visitors can send messages",
-  "Form disabled": "Form disabled",
   Language: "Language",
   "Use my profile language ({{language}})": "Use my profile language ({{language}})",
   "All visitors see this page in {{language}}.": "All visitors see this page in {{language}}.",
@@ -511,11 +509,8 @@ const enGB = {
   "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
     "Post milestones and everyday notes from the menu. Only enabled status updates notify subscribers.",
   "Peek at settings": "Peek at settings",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Change the name, theme and visitor messages in Settings.",
-  "Encouragements from visitors": "Messages from visitors",
-  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
-    "Anyone with the link can leave a short message without an account. It appears in your timeline.",
+  "Themes, names, and language — all in Settings.":
+    "Change the name, theme, and language in Settings.",
   "Welcome — here's the idea": "Welcome! Here's the idea",
   "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
     "One page for labour updates, so friends and family stop texting you for news.",
@@ -655,8 +650,6 @@ const sv: Record<TranslationKey, string> = {
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
-  "Visitors can send messages": "Besökare kan lämna hälsningar",
-  "Form disabled": "Formuläret är avstängt",
   Language: "Språk",
   "Use my profile language ({{language}})": "Använd språket i min profil ({{language}})",
   "All visitors see this page in {{language}}.": "Alla besökare ser sidan på {{language}}.",
@@ -1059,11 +1052,8 @@ const sv: Record<TranslationKey, string> = {
   "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
     "Lägg upp milstolpar och små vardagsnotiser från menyn. Bara aktiverade statusuppdateringar aviserar prenumeranter.",
   "Peek at settings": "Titta i inställningarna",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Teman, namn och om besökare får lämna hälsningar. Allt finns under Inställningar.",
-  "Encouragements from visitors": "Hälsningar från besökare",
-  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
-    "Alla med länken kan lämna en kort pepphälsning utan konto. Den dyker upp i tidslinjen.",
+  "Themes, names, and language — all in Settings.":
+    "Teman, namn och språk. Allt finns under Inställningar.",
   "Welcome — here's the idea": "Välkommen! Så här funkar det",
   "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
     "Appen samlar alla förlossningsuppdateringar på en lugn sida, så familj och vänner slipper skriva och fråga.",
@@ -1184,8 +1174,6 @@ const es: Record<TranslationKey, string> = {
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
-  "Visitors can send messages": "Los visitantes pueden enviar mensajes",
-  "Form disabled": "Formulario desactivado",
   Language: "Idioma",
   "Use my profile language ({{language}})": "Usar el idioma de mi perfil ({{language}})",
   "All visitors see this page in {{language}}.":
@@ -1593,11 +1581,8 @@ const es: Record<TranslationKey, string> = {
   "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
     "Publica hitos y notas desde el menú. Solo los estados activados avisan a quienes se suscribieron.",
   "Peek at settings": "Echa un vistazo a Configuración",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Temas, nombres y mensajes de los visitantes: todo está en Configuración.",
-  "Encouragements from visitors": "Mensajes de los visitantes",
-  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
-    "Cualquiera con el enlace puede dejar un mensaje breve de apoyo, sin crear una cuenta. Los mensajes aparecerán en el historial.",
+  "Themes, names, and language — all in Settings.":
+    "Temas, nombres e idioma: todo está en Configuración.",
   "Welcome — here's the idea": "Te damos la bienvenida. Así funciona.",
   "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
     "Con ¿Ya nació el bebé? tienes una página tranquila para compartir las novedades del parto y evitar que familiares y amigos te escriban a cada rato.",
@@ -1720,8 +1705,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
-  "Visitors can send messages": "Visitantes podem enviar mensagens",
-  "Form disabled": "Formulário desativado",
   Language: "Idioma",
   "Use my profile language ({{language}})": "Usar o idioma do meu perfil ({{language}})",
   "All visitors see this page in {{language}}.":
@@ -2131,11 +2114,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
     "Publique etapas e recados do dia a dia pelo menu. Só os status ativados avisam quem acompanha.",
   "Peek at settings": "Dê uma olhada nas configurações",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Temas, nomes e permissão para visitantes deixarem mensagens de carinho: tudo nas Configurações.",
-  "Encouragements from visitors": "Mensagens de carinho dos visitantes",
-  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
-    "Qualquer pessoa com o link pode deixar um recadinho de apoio, sem precisar de conta. O recado aparece na sua linha do tempo.",
+  "Themes, names, and language — all in Settings.":
+    "Temas, nomes e idioma: tudo nas Configurações.",
   "Welcome — here's the idea": "Boas-vindas! É assim que funciona:",
   "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
     '"O bebê já nasceu?" reúne as novidades do parto numa página tranquila. Assim, amigos e familiares param de perguntar toda hora.',

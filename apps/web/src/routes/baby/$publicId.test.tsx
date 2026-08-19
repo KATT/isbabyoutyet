@@ -96,7 +96,6 @@ test("renders a baby detail page from local convex-test data", async () => {
       laborStarted: "2026-08-10T08:00:00.000Z",
       wentToHospital: "2026-08-10T12:00:00.000Z",
       babyBorn: "2026-08-11T03:00:00.000Z",
-      encouragementsDisabled: true,
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
@@ -105,7 +104,6 @@ test("renders a baby detail page from local convex-test data", async () => {
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
-    encouragementsDisabled: true,
     photoId: "photo-id",
   });
   expect(
@@ -114,14 +112,12 @@ test("renders a baby detail page from local convex-test data", async () => {
       theme: "baby-blue",
       locale: "sv",
       publicDueDateText: "Retained message",
-      encouragementsDisabled: true,
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
     theme: "baby-blue",
     locale: "sv",
     publicDueDateText: "Retained message",
-    encouragementsDisabled: true,
     photoId: "photo-id",
   });
 

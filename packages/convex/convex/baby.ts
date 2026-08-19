@@ -617,7 +617,6 @@ export const update = mutationWithTriggers({
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    encouragementsDisabled: v.optional(v.boolean()),
     birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {

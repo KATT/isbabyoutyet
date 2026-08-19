@@ -291,7 +291,6 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       publicId: spec.publicId,
       birthJourney: "labor",
       theme: null,
-      encouragementsDisabled: false,
       demo: true,
       subscriptionCount: 0,
       lastActivityAt: now.getTime(),

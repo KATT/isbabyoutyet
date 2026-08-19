@@ -49,20 +49,10 @@ export const ONBOARDING_STEPS = [
   {
     id: "explore_settings",
     title: "Peek at settings",
-    description: "Themes, names, and whether visitors can leave encouragements — all in Settings.",
+    description: "Themes, names, and language — all in Settings.",
     surface: "baby",
     targetId: "explore_settings",
     icon: GearSix,
-    ctaLabel: undefined,
-  },
-  {
-    id: "learn_encouragements",
-    title: "Encouragements from visitors",
-    description:
-      "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.",
-    surface: "baby",
-    targetId: "learn_encouragements",
-    icon: Heart,
     ctaLabel: undefined,
   },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;

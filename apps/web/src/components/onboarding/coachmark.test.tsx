@@ -45,7 +45,7 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
   const onDismiss = vi.fn<() => void>();
   const onComplete = vi.fn<() => void>();
   const target = document.createElement("button");
-  target.setAttribute("data-tour-id", "learn_encouragements");
+  target.setAttribute("data-tour-id", "explore_settings");
   target.scrollIntoView = vi.fn<() => void>();
   Object.defineProperty(target, "getBoundingClientRect", {
     value: () => ({ top: 40, left: 40, width: 80, height: 32, bottom: 72, right: 120 }),
@@ -54,9 +54,9 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
 
   await using _view = renderResource(
     <Coachmark
-      targetId="learn_encouragements"
-      title="Encouragements"
-      description="Visitors can leave notes."
+      targetId="explore_settings"
+      title="Peek at settings"
+      description="Themes, names, and language — all in Settings."
       onDismiss={onDismiss}
       completeOnDismiss
       onComplete={onComplete}

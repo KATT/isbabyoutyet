@@ -22,7 +22,6 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { Switch } from "@workspace/ui/components/switch";
 import {
   Select,
   SelectContent,
@@ -34,7 +33,6 @@ import {
 import {
   Baby,
   CalendarHeart,
-  ChatCircle,
   Confetti,
   Heartbeat,
   Hospital,
@@ -359,31 +357,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     </SelectGroup>
                   </SelectContent>
                 </Select>
-              </ItemActions>
-            </Item>
-          </SettingsSection>
-
-          <SettingsSection title={t("Visitors")}>
-            <Item>
-              <ItemMedia variant="icon">
-                <ChatCircle className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Encouragements")}</ItemTitle>
-                <ItemDescription>
-                  {props.baby.encouragementsDisabled
-                    ? t("Form disabled")
-                    : t("Visitors can send messages")}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <Switch
-                  checked={!props.baby.encouragementsDisabled}
-                  onCheckedChange={(checked) =>
-                    props.onUpdate({ encouragementsDisabled: !checked })
-                  }
-                  aria-label={t("Encouragements")}
-                />
               </ItemActions>
             </Item>
           </SettingsSection>
