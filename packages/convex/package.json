@@ -9,13 +9,13 @@
     "./src/*": "./src/*.ts"
   },
   "scripts": {
-    "predev:kill": "lsof -ti:3210 | xargs kill -9 2>/dev/null || true",
+    "predev:kill": "lsof -ti:3210 -ti:3211 | xargs kill -9 2>/dev/null || true",
     "predev:setup-if-needed": "[ -f .env.local ] || pnpm setup-dev",
     "predev": "run-s predev:*",
     "dev": "CONVEX_AGENT_MODE=anonymous convex dev",
     "reset-dev": "run-s predev:kill reset-dev:wipe && echo '✅ Reset complete, you can now run `pnpm dev` (which will set up + seed)'",
     "reset-dev:wipe": "sh scripts/wipe-local-backend.sh",
-    "setup-dev": "CONVEX_AGENT_MODE=anonymous run-s setup-dev:provision setup-dev:env setup-dev:vapid seed && echo '✅ Setup complete, you can now run `pnpm dev`'",
+    "setup-dev": "CI=true CONVEX_AGENT_MODE=anonymous run-s setup-dev:provision setup-dev:env setup-dev:vapid seed && echo '✅ Setup complete, you can now run `pnpm dev`'",
     "setup-dev:provision": "convex dev --once",
     "setup-dev:env": "convex env set BETTER_AUTH_SECRET localhost && convex env set SITE_URL http://localhost:3000",
     "setup-dev:vapid": "web-push generate-vapid-keys --json | jq -r '\"npx convex env set VAPID_PUBLIC_KEY \" + .publicKey + \"\\nnpx convex env set VAPID_PRIVATE_KEY \" + .privateKey' | sh",
