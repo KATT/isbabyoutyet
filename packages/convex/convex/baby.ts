@@ -65,9 +65,9 @@ function normalizeDueDateDisplay(opts: {
     throw new Error("A public due date message is required when the exact date is hidden");
   }
   return {
-    dueDate: mode === "exact" ? dueDate : null,
+    dueDate,
     mode,
-    text: mode === "message" ? normalizedText : null,
+    text: normalizedText,
   };
 }
 
@@ -126,12 +126,15 @@ export const getByPublicId = query({
       mode: baby.dueDateDisplayMode,
       text: baby.publicDueDateText,
     });
+    const canManage = Boolean(await findBabyManager(ctx, baby._id));
+    const canSeeDueDate = dueDateDisplay.mode === "exact" || canManage;
+    const canSeeMessage = dueDateDisplay.mode === "message" || canManage;
 
     return {
       ...toBabyDto(baby),
-      dueDate: dueDateDisplay.dueDate,
+      dueDate: canSeeDueDate ? dueDateDisplay.dueDate : null,
       dueDateDisplayMode: dueDateDisplay.mode,
-      publicDueDateText: dueDateDisplay.text,
+      publicDueDateText: canSeeMessage ? dueDateDisplay.text : null,
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,

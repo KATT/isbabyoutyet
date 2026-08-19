@@ -479,17 +479,6 @@ export const backfillBabyDueDateDisplay = migrations.define({
   migrateOne: backfillBabyDueDateDisplayDoc,
 });
 
-/** Removes private due dates from babies whose public page uses a message. */
-export async function clearHiddenBabyDueDateDoc(ctx: MutationCtx, baby: Doc<"baby">) {
-  if (baby.dueDateDisplayMode !== "message" || baby.dueDate === null) return;
-  await ctx.db.patch(baby._id, { dueDate: null });
-}
-
-export const clearHiddenBabyDueDates = migrations.define({
-  table: "baby",
-  migrateOne: clearHiddenBabyDueDateDoc,
-});
-
 export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
@@ -610,7 +599,6 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillBabyOwnerTokenIdentifier,
   internal.migrations.backfillBabyBirthJourney,
   internal.migrations.backfillBabyDueDateDisplay,
-  internal.migrations.clearHiddenBabyDueDates,
   internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
@@ -631,7 +619,6 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillBabyOwnerTokenIdentifier",
   "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyDueDateDisplay",
-  "migrations:clearHiddenBabyDueDates",
   "migrations:backfillBabyLastActivityAt",
   "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
