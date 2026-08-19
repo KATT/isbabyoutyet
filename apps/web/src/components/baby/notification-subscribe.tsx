@@ -17,85 +17,33 @@ import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useInitiateConvexQuery, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { InitiatedQuery } from "@workspace/query-prefetch";
+import { preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useI18n } from "@/lib/i18n";
+import type { TranslationFunction } from "@/lib/i18n";
+import { browserPushCapability } from "./browser-push-capability";
 
 type NotificationSubscribeProps = {
   babyId: Id<"baby">;
   vapidPublicKey: string;
+  browserPush: InitiatedQuery<typeof browserPushCapability>;
 };
-
-// Detect iOS Safari not running as PWA
-function getIOSStatus() {
-  if (typeof window === "undefined") return { isIOS: false, isStandalone: false };
-
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as unknown as { MSStream: unknown | undefined }).MSStream;
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
-
-  return { isIOS, isStandalone };
-}
-
-// Wait for service worker with timeout
-async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
-  const timeoutPromise = new Promise<null>((_resolve, reject) => {
-    setTimeout(() => reject(new Error("Service worker ready timeout")), timeoutMs);
-  });
-
-  return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
-}
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
-  const { babyId } = props;
-
-  // Check iOS status (browser-only; not a Convex query)
-  const iosStatusQuery = useQuery({
-    queryKey: ["iosStatus"],
-    queryFn: () => getIOSStatus(),
-  });
-  const iosStatus = iosStatusQuery.data ?? { isIOS: false, isStandalone: false };
-  const needsIOSInstall = iosStatus.isIOS && !iosStatus.isStandalone;
-
-  // Check basic push notification support (browser-only)
-  const isSupportedQuery = useQuery({
-    queryKey: ["isSupported"],
-    queryFn: async () => {
-      return (
-        typeof window !== "undefined" &&
-        "serviceWorker" in navigator &&
-        "PushManager" in window &&
-        "Notification" in window
-      );
-    },
-  });
-  const isSupported = isSupportedQuery.data ?? false;
-
-  // Get browser subscription endpoint with timeout (browser-only)
-  const pushSubscriptionQuery = useQuery({
-    queryKey: ["browserSubscription"],
-    queryFn: async () => {
-      try {
-        const registration = await waitForServiceWorkerWithTimeout(5000);
-        if (!registration) return null;
-        return await registration.pushManager.getSubscription();
-      } catch {
-        // Service worker not ready (common on iOS Safari non-PWA)
-        return null;
-      }
-    },
-    enabled: isSupported && !needsIOSInstall,
-  });
+  const capabilityQuery = useQuery(preloadedQueryOptions(browserPushCapability, props.browserPush));
+  const capability = capabilityQuery.data;
 
   const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
   const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
 
-  // Subscribe mutation (TanStack mutation that handles browser permission + Convex)
   const subscribeMutation = useMutation({
     mutationFn: async () => {
-      if (!isSupported) {
+      if (
+        !capability ||
+        capability.kind === "unsupported" ||
+        capability.kind === "needsIosInstall"
+      ) {
         throw new Error(t("Push notifications are not supported in this browser."));
       }
 
@@ -128,7 +76,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         subscriptionData.keys?.auth
       ) {
         return await subscribeMutationFn({
-          babyId,
+          babyId: props.babyId,
           endpoint: subscriptionData.endpoint,
           p256dh: subscriptionData.keys.p256dh,
           auth: subscriptionData.keys.auth,
@@ -139,11 +87,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       throw new Error(t("Failed to get subscription data"));
     },
     onSuccess: () => {
-      void pushSubscriptionQuery.refetch();
+      void capabilityQuery.refetch();
     },
   });
 
-  // Unsubscribe mutation (TanStack mutation wrapping Convex mutation)
   const unsubscribeMutation = useMutation<unknown, Error, PushSubscription>({
     mutationFn: async (subscription) => {
       const subscriptionData = subscription.toJSON();
@@ -155,117 +102,162 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         throw new Error(t("Failed to get subscription data"));
       }
       return await unsubscribeMutationFn({
-        babyId,
+        babyId: props.babyId,
         endpoint: subscriptionData.endpoint,
         p256dh: subscriptionData.keys.p256dh,
         auth: subscriptionData.keys.auth,
       });
     },
     onSuccess: () => {
-      void pushSubscriptionQuery.refetch();
+      void capabilityQuery.refetch();
     },
   });
 
   const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
 
-  // Show iOS installation guide
-  if (needsIOSInstall) {
-    return (
-      <Dialog>
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <DialogTrigger
-                render={
-                  <Button variant="default" size="lg">
-                    <Bell className="w-5 h-5" />
-                    {t("Get Notifications")}
-                  </Button>
-                }
-              />
-            }
-          />
-          <TooltipContent className="max-w-xs">
-            <p>
-              {t(
-                "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.",
-              )}
-            </p>
-          </TooltipContent>
-        </Tooltip>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Get Notifications on iOS")}</DialogTitle>
-            <DialogDescription>
-              {t("Install this app on your Home Screen before enabling push notifications on iOS.")}
-            </DialogDescription>
-          </DialogHeader>
-          <ol className="list-decimal list-inside space-y-3 text-sm">
-            <li className="flex items-start gap-2">
-              <span className="font-medium min-w-5">1.</span>
-              <span>
-                {t("Tap the Share button in Safari")} <Export className="inline w-4 h-4 mx-1" />
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-medium min-w-5">2.</span>
-              <span>{t('Scroll down and tap "Add to Home Screen"')}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-medium min-w-5">3.</span>
-              <span>{t("Open the app from your Home Screen")}</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-medium min-w-5">4.</span>
-              <span>{t('Come back here and tap "Get Notifications"')}</span>
-            </li>
-          </ol>
-        </DialogContent>
-      </Dialog>
-    );
+  if (!capability) {
+    return <GetNotificationsBusy />;
   }
 
-  const endpoint = pushSubscriptionQuery.data?.endpoint;
-
-  return (
-    <Suspense
-      fallback={
-        <Button variant="default" size="lg" disabled>
-          <Spinner className="w-5 h-5" />
-          {t("Get Notifications")}
-        </Button>
-      }
-    >
-      <NotificationSubscribeButton
-        babyId={babyId}
-        endpoint={endpoint ?? null}
-        isLoading={isLoading}
-        onSubscribe={() => {
-          toast.promise(subscribeMutation.mutateAsync(), {
-            loading: t("Subscribing to notifications..."),
-            success: t("Subscribed to notifications!"),
-            error: (error) =>
-              error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
-          });
-        }}
-        onUnsubscribe={() => {
-          const subscription = pushSubscriptionQuery.data;
-          if (!subscription) {
+  switch (capability.kind) {
+    case "needsIosInstall":
+      return <IosPwaInstallPrompt />;
+    case "unsupported":
+    case "serviceWorkerTimeout":
+    case "unsubscribed":
+      return (
+        <NotificationSubscribeReady
+          babyId={props.babyId}
+          endpoint={null}
+          isLoading={isLoading}
+          onSubscribe={() => {
+            toastSubscribe(subscribeMutation.mutateAsync, t);
+          }}
+          onUnsubscribe={() => {
             toast.error(t("No subscription endpoint found"));
-            return;
-          }
-          toast.promise(unsubscribeMutation.mutateAsync(subscription), {
-            loading: t("Unsubscribing from notifications..."),
-            success: t("Unsubscribed from notifications!"),
-            error: (error) =>
-              error instanceof Error
-                ? error.message
-                : t("Failed to unsubscribe from notifications"),
-          });
-          void pushSubscriptionQuery.refetch();
-        }}
+          }}
+        />
+      );
+    case "subscribed":
+      return (
+        <NotificationSubscribeReady
+          babyId={props.babyId}
+          endpoint={capability.subscription.endpoint}
+          isLoading={isLoading}
+          onSubscribe={() => {
+            toastSubscribe(subscribeMutation.mutateAsync, t);
+          }}
+          onUnsubscribe={() => {
+            const subscription = capability.subscription;
+            toast.promise(unsubscribeMutation.mutateAsync(subscription), {
+              loading: t("Unsubscribing from notifications..."),
+              success: t("Unsubscribed from notifications!"),
+              error: (error) =>
+                error instanceof Error
+                  ? error.message
+                  : t("Failed to unsubscribe from notifications"),
+            });
+            void capabilityQuery.refetch();
+          }}
+        />
+      );
+  }
+}
+
+function toastSubscribe(mutateAsync: () => Promise<unknown>, t: TranslationFunction) {
+  toast.promise(mutateAsync(), {
+    loading: t("Subscribing to notifications..."),
+    success: t("Subscribed to notifications!"),
+    error: (error) =>
+      error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
+  });
+}
+
+function GetNotificationsBusy() {
+  const { t } = useI18n();
+  return (
+    <Button variant="default" size="lg" disabled>
+      <Spinner className="w-5 h-5" />
+      {t("Get Notifications")}
+    </Button>
+  );
+}
+
+function NotificationSubscribeReady(props: {
+  babyId: Id<"baby">;
+  endpoint: string | null;
+  isLoading: boolean;
+  onSubscribe: () => void;
+  onUnsubscribe: () => void;
+}) {
+  return (
+    <Suspense fallback={<GetNotificationsBusy />}>
+      <NotificationSubscribeButton
+        babyId={props.babyId}
+        endpoint={props.endpoint}
+        isLoading={props.isLoading}
+        onSubscribe={props.onSubscribe}
+        onUnsubscribe={props.onUnsubscribe}
       />
     </Suspense>
+  );
+}
+
+function IosPwaInstallPrompt() {
+  const { t } = useI18n();
+
+  return (
+    <Dialog>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <DialogTrigger
+              render={
+                <Button variant="default" size="lg">
+                  <Bell className="w-5 h-5" />
+                  {t("Get Notifications")}
+                </Button>
+              }
+            />
+          }
+        />
+        <TooltipContent className="max-w-xs">
+          <p>
+            {t(
+              "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.",
+            )}
+          </p>
+        </TooltipContent>
+      </Tooltip>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("Get Notifications on iOS")}</DialogTitle>
+          <DialogDescription>
+            {t("Install this app on your Home Screen before enabling push notifications on iOS.")}
+          </DialogDescription>
+        </DialogHeader>
+        <ol className="list-decimal list-inside space-y-3 text-sm">
+          <li className="flex items-start gap-2">
+            <span className="font-medium min-w-5">1.</span>
+            <span>
+              {t("Tap the Share button in Safari")} <Export className="inline w-4 h-4 mx-1" />
+            </span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium min-w-5">2.</span>
+            <span>{t('Scroll down and tap "Add to Home Screen"')}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium min-w-5">3.</span>
+            <span>{t("Open the app from your Home Screen")}</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-medium min-w-5">4.</span>
+            <span>{t('Come back here and tap "Get Notifications"')}</span>
+          </li>
+        </ol>
+      </DialogContent>
+    </Dialog>
   );
 }
 
