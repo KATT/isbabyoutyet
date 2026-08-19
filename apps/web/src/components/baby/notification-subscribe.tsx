@@ -22,6 +22,7 @@ import { preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useI18n } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
 import { browserPushCapability } from "./browser-push-capability";
+import type { BrowserPushCapability } from "./browser-push-capability";
 
 type NotificationSubscribeProps = {
   babyId: Id<"baby">;
@@ -32,7 +33,7 @@ type NotificationSubscribeProps = {
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
   const capabilityQuery = useQuery(preloadedQueryOptions(browserPushCapability, props.browserPush));
-  const capability = capabilityQuery.data;
+  const capability: BrowserPushCapability | undefined = capabilityQuery.data;
 
   const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
   const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
