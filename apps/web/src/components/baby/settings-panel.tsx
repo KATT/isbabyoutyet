@@ -43,13 +43,19 @@ import {
   Trash,
   Users,
 } from "@phosphor-icons/react";
-import type { BabyData, BabyUpdateHandler, BirthJourney } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  BirthJourney,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
-import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
+import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
   SUPPORTED_LOCALES,
   isSupportedLocale,
@@ -65,6 +71,8 @@ type SettingsPanelProps = {
   baby: BabyData;
   birthJourney: BirthJourney;
   onUpdate: BabyUpdateHandler;
+  onMilestoneRedate: MilestoneRedateHandler;
+  onMilestoneRemove: MilestoneRemoveHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   profileLocale: SupportedLocale;
@@ -165,10 +173,14 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemContent>
               <ItemTitle>{t("Due Date")}</ItemTitle>
               <ItemDescription>
-                {formatDueDate(props.baby.dueDate, locale)} ·{" "}
-                {props.baby.dueDateDisplayMode === "message"
-                  ? t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText ?? "" })
-                  : t("Visitors see the exact date and countdown.")}
+                {props.baby.dueDateDisplayMode === "message" ? (
+                  t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText ?? "" })
+                ) : (
+                  <>
+                    {props.baby.dueDate ? formatDueDate(props.baby.dueDate, locale) : ""} ·{" "}
+                    {t("Visitors see the exact date and countdown.")}
+                  </>
+                )}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
@@ -212,7 +224,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="labor_started"
                     currentDate={props.baby.laborStarted}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -238,7 +251,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="gone_to_hospital"
                     currentDate={props.baby.wentToHospital}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -264,7 +278,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     baby={props.baby}
                     status="born"
                     currentDate={props.baby.babyBorn}
-                    onUpdate={props.onUpdate}
+                    onRedate={props.onMilestoneRedate}
+                    onRemove={props.onMilestoneRemove}
                   />
                 </ItemActions>
               </Item>
@@ -281,10 +296,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemContent>
               <ItemTitle>{t("Theme")}</ItemTitle>
               <ItemDescription>
-                {t(
-                  THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.labelKey ??
-                    "Default",
-                )}
+                {t(getThemeOption(props.baby.theme)?.labelKey ?? "Default")}
               </ItemDescription>
             </ItemContent>
             <ItemActions>

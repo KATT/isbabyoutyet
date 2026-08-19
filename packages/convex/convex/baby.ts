@@ -3,32 +3,18 @@ import { env, internalMutation, internalQuery, mutation, query } from "./_genera
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import {
-  FORBIDDEN,
-  getBlockingLaterMilestone,
-  getCurrentStatus,
-  isMilestoneNotificationType,
-  isStatusForward,
-  milestoneVisibilityForPreset,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
-  MILESTONES,
-} from "../src/types";
+import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
-import {
-  deleteUpdateWithTimelineItem,
-  findMilestoneUpdate,
-  insertUpdateWithTimelineItem,
-} from "./timeline";
+import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
-import { toBabyDto } from "./babyDto";
+import { toBabyDto, toManagerBabyDto } from "./babyDto";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -51,17 +37,23 @@ function normalizePublicDueDateText(value: string | null | undefined) {
 }
 
 function normalizeDueDateDisplay(opts: {
+  dueDate: string | null | undefined;
   mode: DueDateDisplayMode | undefined;
   text: string | null | undefined;
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
   const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  const dueDate = opts.dueDate ?? null;
+  if (mode === "exact" && !dueDate) {
+    throw new Error("A due date is required when the exact date is shown");
+  }
   if (mode === "message" && !normalizedText) {
     throw new Error("A public due date message is required when the exact date is hidden");
   }
   return {
+    dueDate,
     mode,
-    text: mode === "message" ? normalizedText : null,
+    text: normalizedText,
   };
 }
 
@@ -114,24 +106,24 @@ export const getByPublicId = query({
 
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+    const blurDataUrl = baby.blurDataUrl ?? null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
-    const dueDateDisplay = normalizeDueDateDisplay({
-      mode: baby.dueDateDisplayMode,
-      text: baby.publicDueDateText,
-    });
-    const canSeeExactDueDate =
-      dueDateDisplay.mode === "exact" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
-      ...toBabyDto(baby),
-      dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
-      dueDateDisplayMode: dueDateDisplay.mode,
-      publicDueDateText: dueDateDisplay.text,
-      milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
+      ...(await toBabyDto(ctx, baby)),
       photoUrl,
       thumbnailUrl,
+      blurDataUrl,
       resolvedLocale,
     };
+  },
+});
+
+export const getManagerBaby = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? await toManagerBabyDto(ctx, access.baby) : FORBIDDEN;
   },
 });
 
@@ -167,7 +159,7 @@ export async function applyPhotoSideEffects(
   const baby = opts.baby;
 
   // Update the current photo (retain old photos in storage + feed for history)
-  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null });
+  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null, blurDataUrl: null });
 
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
     babyId: baby._id,
@@ -239,7 +231,7 @@ export const updatePhoto = mutationWithTriggers({
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
       // already posted to the timeline keep their own copies.
-      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null });
+      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null, blurDataUrl: null });
       return;
     }
 
@@ -345,7 +337,7 @@ async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
 export const create = mutationWithTriggers({
   args: {
     name: v.string(),
-    dueDate: v.string(),
+    dueDate: v.union(v.string(), v.null()),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
@@ -358,6 +350,7 @@ export const create = mutationWithTriggers({
     }
     const caller = appIdentity(identity);
     const dueDateDisplay = normalizeDueDateDisplay({
+      dueDate: args.dueDate,
       mode: args.dueDateDisplayMode,
       text: args.publicDueDateText,
     });
@@ -372,17 +365,11 @@ export const create = mutationWithTriggers({
       userId: caller.authUserId,
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
-      dueDate: args.dueDate,
+      dueDate: dueDateDisplay.dueDate,
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
-      hospitalMessage: null,
-      babyBornMessage: null,
-      laborStartedMessage: null,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -488,13 +475,18 @@ export const updateThumbnail = internalMutation({
     pushImageId: v.union(v.id("_storage"), v.null()),
     photoId: v.optional(v.id("_storage")), // photo the derivatives were generated from
     updateId: v.optional(v.id("updates")), // timeline update row to also patch
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
     // Skip the baby doc if its current photo changed while the thumbnail was
     // generating — a newer generation owns the field now.
+    const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
+      await ctx.db.patch(args.babyId, {
+        thumbnailId: args.thumbnailId,
+        ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
+      });
     }
 
     if (args.updateId) {
@@ -503,7 +495,34 @@ export const updateThumbnail = internalMutation({
         await ctx.db.patch(args.updateId, {
           thumbnailId: args.thumbnailId,
           pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
         });
+      }
+    }
+  },
+});
+
+/**
+ * Backfill-only write for the inline blur placeholder. Same stale-photo
+ * guard as `updateThumbnail`.
+ */
+export const updateBlurDataUrl = internalMutation({
+  args: {
+    babyId: v.id("baby"),
+    photoId: v.id("_storage"),
+    blurDataUrl: v.string(),
+    updateId: v.optional(v.id("updates")),
+  },
+  handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (baby && baby.photoId === args.photoId) {
+      await ctx.db.patch(args.babyId, { blurDataUrl: args.blurDataUrl });
+    }
+
+    if (args.updateId) {
+      const update = await ctx.db.get(args.updateId);
+      if (update && update.photoId === args.photoId) {
+        await ctx.db.patch(args.updateId, { blurDataUrl: args.blurDataUrl });
       }
     }
   },
@@ -548,7 +567,7 @@ export async function syncStatusNotifications(
   },
 ) {
   const updatedBaby = opts.updatedBaby;
-  const statusAfter = getCurrentStatus(updatedBaby);
+  const statusAfter = await loadCurrentStatus(ctx, updatedBaby._id);
 
   if (opts.statusBefore.type === statusAfter.type) {
     // no notification change as status didn't change
@@ -589,80 +608,10 @@ export async function syncStatusNotifications(
   });
 }
 
-/**
- * Keeps the timeline's milestone update rows in sync with the canonical
- * status fields on the baby doc:
- * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
- * - redating a milestone updates `occurredAt` only — feed position stays put
- * - unmarking a milestone deletes its update + timeline rows
- * - a legacy stage-message arg (stale-client compat) lands on the row's message
- */
-async function syncMilestoneUpdates(
-  ctx: MutationCtx,
-  opts: {
-    baby: Doc<"baby">;
-    patch: {
-      laborStarted?: string | null;
-      wentToHospital?: string | null;
-      babyBorn?: string | null;
-    };
-    legacyMessages: Partial<Record<Milestone, string | null>>;
-    postedByUserId: string;
-  },
-) {
-  const baby = opts.baby;
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const dateArg = opts.patch[fields.date];
-    const messageArg = opts.legacyMessages[milestone];
-    if (dateArg === undefined && messageArg === undefined) continue;
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-
-    if (dateArg === null) {
-      // Unmarked: the milestone leaves the feed
-      if (existing) {
-        await deleteUpdateWithTimelineItem(ctx, existing);
-      }
-      continue;
-    }
-
-    if (typeof dateArg === "string") {
-      // Validated parseable by the update handler
-      const occurredAt = Date.parse(dateArg);
-      if (existing) {
-        // Redate: update the event clock only — do not reshuffle the feed
-        await ctx.db.patch(existing._id, {
-          occurredAt,
-          ...(messageArg !== undefined ? { message: messageArg } : {}),
-        });
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          // Announced now (settings mark), even if the event clock is historical
-          postedAt: Date.now(),
-          occurredAt,
-          milestone,
-          message: messageArg ?? null,
-          postedByUserId: opts.postedByUserId,
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: a stale client edited just the stage message
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
-    }
-  }
-}
-
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    laborStarted: v.optional(v.union(v.string(), v.null())),
-    wentToHospital: v.optional(v.union(v.string(), v.null())),
-    babyBorn: v.optional(v.union(v.string(), v.null())),
-    dueDate: v.optional(v.string()),
+    dueDate: v.optional(v.union(v.string(), v.null())),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
@@ -670,107 +619,47 @@ export const update = mutationWithTriggers({
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     encouragementsDisabled: v.optional(v.boolean()),
     birthJourney: v.optional(birthJourneyValidator),
-    // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
-    // during the deploy window): mapped onto the milestone update rows, never
-    // written to the baby doc. Remove in a later tidy-up once stale tabs are
-    // realistically gone.
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
-    const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const { babyId, ...patch } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
-    const legacyMessages = {
-      labor_started: laborStartedMessage,
-      gone_to_hospital: hospitalMessage,
-      born: babyBornMessage,
-    };
-    const birthJourneyChanged =
-      rest.birthJourney !== undefined && rest.birthJourney !== baby.birthJourney;
-
-    // Milestone dates are event clocks: they must parse and cannot be in the
-    // future (mirrors the `updates.post` occurredAt guard, so settings
-    // redating can't bypass it)
-    for (const milestone of MILESTONES) {
-      const dateArg = rest[MILESTONE_FIELDS[milestone].date];
-      if (typeof dateArg !== "string") continue;
-      const parsed = Date.parse(dateArg);
-      if (Number.isNaN(parsed)) {
-        throw new Error("Invalid date");
-      }
-      if (parsed > Date.now() + 60_000) {
-        throw new Error("The event time cannot be in the future");
-      }
-    }
-
-    for (const milestone of MILESTONES) {
-      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
-      const blocker = getBlockingLaterMilestone(baby, milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(baby);
-    const milestoneMarkChanged = MILESTONES.some((milestone) => {
-      const dateField = MILESTONE_FIELDS[milestone].date;
-      const dateArg = rest[dateField];
-      return (
-        (typeof dateArg === "string" && !baby[dateField]) || (dateArg === null && !!baby[dateField])
-      );
-    });
-
-    const patch: Partial<typeof baby> = rest;
-    if (rest.dueDateDisplayMode !== undefined || rest.publicDueDateText !== undefined) {
+    if (
+      patch.dueDate !== undefined ||
+      patch.dueDateDisplayMode !== undefined ||
+      patch.publicDueDateText !== undefined
+    ) {
       const dueDateDisplay = normalizeDueDateDisplay({
-        mode: rest.dueDateDisplayMode,
-        text: rest.publicDueDateText,
+        dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+        mode: patch.dueDateDisplayMode ?? baby.dueDateDisplayMode,
+        text:
+          patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
       });
+      patch.dueDate = dueDateDisplay.dueDate;
       patch.dueDateDisplayMode = dueDateDisplay.mode;
       patch.publicDueDateText = dueDateDisplay.text;
     }
+
+    let publicId: string | undefined;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId({
+        publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
-        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
+        await ctx.db.insert("babyPublicIdHistory", {
+          babyId,
+          publicId: oldPublicId,
+        });
       }
     }
 
-    await ctx.db.patch(babyId, patch);
-
-    await syncMilestoneUpdates(ctx, {
-      baby,
-      patch: rest,
-      legacyMessages,
-      postedByUserId: identity.authUserId,
-    });
-
-    const updatedBaby = await ctx.db.get(babyId);
-    if (!updatedBaby) throw new Error("Baby not found after update");
-
-    // Settings status changes don't carry a message (attach one by posting an
-    // update); a stale client's legacy message arg still rides along
-    if (!birthJourneyChanged || milestoneMarkChanged) {
-      await syncStatusNotifications(ctx, {
-        statusBefore,
-        updatedBaby,
-        photoId: null,
-        updateId: null,
-        customMessageByMilestone: {
-          labor_started: legacyMessages.labor_started ?? null,
-          gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-          born: legacyMessages.born ?? null,
-        },
-      });
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(babyId, { ...patch, ...(publicId ? { publicId } : {}) });
     }
   },
 });

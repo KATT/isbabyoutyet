@@ -202,4 +202,5 @@ test("an indeterminate progress bar renders while the router loads the next page
 
   const progressbar = view.getByRole("progressbar", { name: "Loading" });
   expect(progressbar.dataset.indeterminate).toBeDefined();
+  expect(progressbar.className).toContain("animate-progress-indeterminate");
 });

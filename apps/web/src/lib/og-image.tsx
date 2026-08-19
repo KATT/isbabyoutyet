@@ -4,7 +4,7 @@ import type { ReactElement, ReactNode } from "react";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { MilestoneVisibility } from "@workspace/convex/src/types";
-import { THEME_OPTIONS } from "@/components/baby/utils";
+import { getThemeColors } from "@/components/baby/utils";
 import {
   OG_IMAGE_HEIGHT,
   OG_IMAGE_WIDTH,
@@ -16,16 +16,6 @@ import { translate } from "@/lib/i18n";
 import { CANONICAL_ORIGIN } from "@/lib/site-url";
 
 const SITE_HOST = new URL(CANONICAL_ORIGIN).host;
-
-type ThemeColors = readonly [string, string, string];
-
-function themeColors(theme: string | null | undefined): ThemeColors {
-  const match = THEME_OPTIONS.find((option) => option.value === (theme ?? null));
-  if (match) {
-    return match.colors;
-  }
-  return THEME_OPTIONS[0].colors;
-}
 
 const fontCache = new Map<string, ArrayBuffer>();
 
@@ -86,11 +76,8 @@ async function pngResponse(opts: {
   });
 }
 
-export type BabyOgImageInput = {
+type BabyOgImageBase = {
   name: string;
-  dueDate: string;
-  dueDateDisplayMode: "exact" | "message";
-  publicDueDateText: string | null;
   theme: string | null | undefined;
   locale: SupportedLocale;
   babyBorn: string | null | undefined;
@@ -98,6 +85,12 @@ export type BabyOgImageInput = {
   laborStarted: string | null | undefined;
   photoUrl: string | null;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+
+export type BabyOgImageInput = BabyOgImageBase &
+  (
+    | { dueDateDisplayMode: "exact"; dueDate: string }
+    | { dueDateDisplayMode: "message"; publicDueDateText: string }
+  );
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -117,7 +110,7 @@ async function resolvePhotoDataUrl(photoUrl: string | null) {
 }
 
 export async function createBabyOgImage(baby: BabyOgImageInput) {
-  const colors = themeColors(baby.theme);
+  const colors = getThemeColors(baby.theme);
   const primary = colors[0];
   const background = colors[1];
   const accent = colors[2];
@@ -129,9 +122,12 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       ? babyStatusDetail({ baby, status })
       : babyPageDescription({
           name: baby.name,
-          dueDate: baby.dueDate,
-          dueDateDisplayMode: baby.dueDateDisplayMode,
-          publicDueDateText: baby.publicDueDateText,
+          ...(baby.dueDateDisplayMode === "exact"
+            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+            : {
+                dueDateDisplayMode: "message" as const,
+                publicDueDateText: baby.publicDueDateText,
+              }),
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,

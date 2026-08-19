@@ -102,36 +102,62 @@ test("custom public due date text hides the exact day from visitors", async () =
     publicDueDateText: "  Any day now  ",
   });
 
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    dueDate: "2026-09",
+  const publicMessageBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicMessageBaby).toMatchObject({
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
+  expect(publicMessageBaby).not.toHaveProperty("dueDate");
   expect(
     await t
       .withIdentity({ subject: "bob" })
       .query(api.baby.getByPublicId, { id: created.publicId }),
   ).toMatchObject({
-    dueDate: "2026-09",
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
-  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).not.toHaveProperty(
+    "dueDate",
+  );
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
+  expect(await t.query(api.baby.getManagerBaby, { babyId: created.babyId })).toBe("forbidden");
 
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
   });
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+  const publicExactBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicExactBaby).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
   });
+  expect(publicExactBaby).not.toHaveProperty("publicDueDateText");
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "exact",
+  });
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).not.toHaveProperty(
+    "publicDueDateText",
+  );
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: "Any day now",
+  });
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    dueDateDisplayMode: "message",
+  });
+  const publicMessageAgain = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicMessageAgain).toMatchObject({
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
+  expect(publicMessageAgain).not.toHaveProperty("dueDate");
   await expect(
     asAlice.mutation(api.baby.update, {
       babyId: created.babyId,
@@ -146,6 +172,51 @@ test("custom public due date text hides the exact day from visitors", async () =
       publicDueDateText: "x".repeat(81),
     }),
   ).rejects.toThrow("80 characters or fewer");
+  await expect(
+    asAlice.mutation(api.baby.update, {
+      babyId: created.babyId,
+      dueDate: null,
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+    }),
+  ).rejects.toThrow("due date is required");
+});
+
+test("public DTO rejects invalid due date display combinations", async () => {
+  const t = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Missing Date",
+      dueDate: null,
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      publicId: "missing-date",
+      birthJourney: "labor",
+      subscriptionCount: 0,
+      lastActivityAt: 1,
+    });
+    await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Missing Message",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+      publicId: "missing-message",
+      birthJourney: "labor",
+      subscriptionCount: 0,
+      lastActivityAt: 1,
+    });
+  });
+
+  await expect(t.query(api.baby.getByPublicId, { id: "missing-date" })).rejects.toThrow(
+    "Exact due date display requires a due date",
+  );
+  await expect(t.query(api.baby.getByPublicId, { id: "missing-message" })).rejects.toThrow(
+    "Message due date display requires public text",
+  );
 });
 
 test("journey selection can change after milestone updates without deleting them", async () => {
@@ -157,17 +228,20 @@ test("journey selection can change after milestone updates without deleting them
     birthJourney: "home_birth",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    wentToHospital: "2026-08-10T12:00:00.000Z",
+    milestone: "gone_to_hospital",
+    occurredAt: Date.parse("2026-08-10T12:00:00.000Z"),
   });
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    babyBorn: "2026-08-11T03:00:00.000Z",
+    milestone: "born",
+    occurredAt: Date.parse("2026-08-11T03:00:00.000Z"),
   });
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
@@ -175,8 +249,10 @@ test("journey selection can change after milestone updates without deleting them
   });
 
   const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
-  expect(baby).toMatchObject({
-    birthJourney: "planned_c_section",
+  expect(baby?.birthJourney).toBe("planned_c_section");
+  expect(baby).not.toHaveProperty("laborStarted");
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).toMatchObject({
     laborStarted: "2026-08-10T08:00:00.000Z",
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
@@ -285,6 +361,45 @@ test("homepage demo publicIds are reserved and never assigned to real babies", a
   expect(created.publicId).toBe("juniper-hale-1");
 });
 
+test("status is inferred from milestone updates, not stored baby fields", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
+
+  await asAlice.mutation(api.updates.post, {
+    babyId: created.babyId,
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
+  });
+
+  const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
+  for (const field of [
+    "laborStarted",
+    "wentToHospital",
+    "babyBorn",
+    "laborStartedMessage",
+    "hospitalMessage",
+    "babyBornMessage",
+  ] as const) {
+    expect(stored).not.toHaveProperty(field);
+  }
+
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicBaby).toMatchObject({
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: null,
+    babyBorn: null,
+  });
+
+  const listed = await asAlice.query(api.baby.listByUser, {});
+  expect(listed).toMatchObject([{ laborStarted: "2026-08-10T08:00:00.000Z" }]);
+});
+
 test("moving the status forward schedules a push notification", async () => {
   await using _timers = useFakeTimersResource();
 
@@ -296,9 +411,10 @@ test("moving the status forward schedules a push notification", async () => {
     dueDate: "2026-09-01",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -313,9 +429,10 @@ test("moving the status forward schedules a push notification", async () => {
   ]);
 
   // Moving further forward cancels the pending one and schedules the next
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    babyBorn: "2026-08-11T03:00:00.000Z",
+    milestone: "born",
+    occurredAt: Date.parse("2026-08-11T03:00:00.000Z"),
   });
 
   const afterBirth = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -328,12 +445,41 @@ test("moving the status forward schedules a push notification", async () => {
   ]);
 });
 
-test("status forward does not cancel a pending generic update push", async () => {
+test("the owner can cancel a pending status notification", async () => {
   await using _timers = useFakeTimersResource();
-
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Baby",
+    dueDate: "2026-09-01",
+  });
 
+  await asAlice.mutation(api.updates.post, {
+    babyId: created.babyId,
+    milestone: "labor_started",
+  });
+
+  const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  if (!Array.isArray(notifications) || !notifications[0]) {
+    throw new Error("expected a pending notification");
+  }
+
+  await asAlice.mutation(api.baby.cancelScheduledNotification, {
+    notificationId: notifications[0]._id,
+  });
+
+  const after = await asAlice.query(api.baby.getScheduledNotifications, {
+    babyId: created.babyId,
+  });
+  expect(after).toMatchObject([{ status: "cancelled", notificationType: "labor_started" }]);
+});
+
+test("status forward does not cancel a pending generic update push", async () => {
+  await using _timers = useFakeTimersResource();
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
   const created = await asAlice.mutation(api.baby.create, {
     name: "Baby",
     dueDate: "2026-09-01",
@@ -343,9 +489,10 @@ test("status forward does not cancel a pending generic update push", async () =>
     babyId: created.babyId,
     message: "Packing the bag",
   });
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, {
@@ -372,9 +519,10 @@ test("owner can soft-delete a baby; it disappears from lists and public lookup",
     dueDate: "2026-09-01",
   });
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(api.updates.post, {
     babyId: created.babyId,
-    laborStarted: "2026-08-10T08:00:00.000Z",
+    milestone: "labor_started",
+    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
   });
 
   await expect(asBob.mutation(api.baby.remove, { babyId: created.babyId })).rejects.toThrow(

@@ -48,6 +48,7 @@ test.each([
       currentStatus={getCurrentStatus(currentBaby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={null}
     />,
   );
@@ -71,6 +72,7 @@ test("home-birth labour copy does not mention hospital", () => {
       currentStatus={getCurrentStatus(homeBirthBaby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={null}
     />,
   );
@@ -89,6 +91,7 @@ test("shows the latest family message when present", () => {
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={{ message: "Everything is calm", postedAt: Date.now() }}
     />,
   );
@@ -111,6 +114,7 @@ test.each([
       currentStatus={getCurrentStatus(currentBaby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={null}
     />,
   );
@@ -127,13 +131,14 @@ test("custom public due date text replaces the exact date and countdown", async 
     <StatusDisplay
       baby={{
         ...baby,
-        dueDate: "2026-09-19",
+        dueDate: null,
         dueDateDisplayMode: "message",
         publicDueDateText: "Any day now",
       }}
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={null}
     />,
   );
@@ -154,6 +159,7 @@ test("blank public due date text keeps the exact date and countdown", async () =
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
       thumbnailUrl={null}
+      blurDataUrl={null}
       latestUpdate={null}
     />,
   );
@@ -172,6 +178,7 @@ test("uses the thumbnail inline and opens the full photo", () => {
       currentStatus={getCurrentStatus(baby)}
       photoUrl="https://example.com/full.jpg"
       thumbnailUrl="https://example.com/thumb.jpg"
+      blurDataUrl="data:image/jpeg;base64,abc"
       latestUpdate={null}
     />,
   );
@@ -180,7 +187,9 @@ test("uses the thumbnail inline and opens the full photo", () => {
   });
 
   const avatar = view.getByRole("button", { name: "Photo of Nova" });
-  expect((view.getByAltText("Photo of Nova") as HTMLImageElement).src).toContain("thumb.jpg");
+  const inline = view.getByAltText("Photo of Nova") as HTMLImageElement;
+  expect(inline.src).toContain("thumb.jpg");
+  expect(inline.style.backgroundImage).toContain("data:image/jpeg;base64,abc");
   fireEvent.click(avatar);
   expect(view.getAllByAltText("Photo of Nova")).toHaveLength(2);
   fireEvent.click(view.getByRole("button", { name: "Close photo" }));

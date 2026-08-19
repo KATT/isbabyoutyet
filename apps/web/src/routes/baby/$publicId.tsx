@@ -86,7 +86,7 @@ export const Route = createFileRoute("/baby/$publicId")({
           numItems: TIMELINE_PAGE_SIZE,
         }),
         profile: preloader.ensureQueryData(api.profile.get, {}),
-        birthJourney: preloader.ensureQueryData(api.baby.getBirthJourney, {
+        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
           babyId: babyDoc._id,
         }),
         scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
@@ -112,9 +112,12 @@ export const Route = createFileRoute("/baby/$publicId")({
 
     const seo = babySeoHead({
       name: babyDoc.name,
-      dueDate: babyDoc.dueDate,
-      dueDateDisplayMode: babyDoc.dueDateDisplayMode,
-      publicDueDateText: babyDoc.publicDueDateText,
+      ...(babyDoc.dueDateDisplayMode === "exact"
+        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
+        : {
+            dueDateDisplayMode: "message" as const,
+            publicDueDateText: babyDoc.publicDueDateText,
+          }),
       publicId: babyDoc.publicId,
       theme: babyDoc.theme,
       locale: babyDoc.resolvedLocale,
@@ -200,9 +203,38 @@ export const Route = createFileRoute("/baby/$publicId")({
 /**
  * Convert Convex Doc to BabyData for use with shared components
  */
-function docToBabyData(
+export function docToBabyData(
   doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
 ): BabyData {
+  const common = {
+    name: doc.name,
+    theme: doc.theme ?? null,
+    locale: doc.locale ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    encouragementsDisabled: doc.encouragementsDisabled,
+    photoId: doc.photoId ?? null,
+  };
+  return doc.dueDateDisplayMode === "exact"
+    ? {
+        ...common,
+        dueDate: doc.dueDate,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+      }
+    : {
+        ...common,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: doc.publicDueDateText,
+      };
+}
+
+type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
+
+export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -214,9 +246,6 @@ function docToBabyData(
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
     milestoneVisibility: doc.milestoneVisibility,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };
@@ -245,10 +274,7 @@ function BabyPage() {
     loaderData.latestUpdate,
   );
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
-  const birthJourneyQuery = usePreloadedConvexQuery(
-    api.baby.getBirthJourney,
-    loaderData.birthJourney,
-  );
+  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const vapidQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getPublicKey,
@@ -258,6 +284,8 @@ function BabyPage() {
   const sessionResult = authClient.useSession();
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
+  const redateMilestone = useMutation(api.updates.redateMilestone);
+  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const claimInvites = useMutation(api.coParents.claimPendingInvites);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -267,7 +295,9 @@ function BabyPage() {
   const myAccess = myAccessQuery.data;
   const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
-  const birthJourney = birthJourneyQuery.data === FORBIDDEN ? null : birthJourneyQuery.data;
+  const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
+  const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
+  const birthJourney = managerBabyDoc?.birthJourney ?? null;
 
   // Claim pending email invites when a signed-in user lands on a baby page
   useEffect(() => {
@@ -281,7 +311,7 @@ function BabyPage() {
     <div className="min-h-screen bg-background bg-dots">
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
-      {canManage && birthJourney ? (
+      {canManage && birthJourney && managerBaby ? (
         <OnboardingHost
           surface="baby"
           onboarding={loaderData.onboarding}
@@ -306,10 +336,10 @@ function BabyPage() {
         />
       ) : null}
 
-      {canManage && birthJourney ? (
+      {canManage && birthJourney && managerBaby ? (
         <>
           <SettingsPanel
-            baby={baby}
+            baby={managerBaby}
             birthJourney={birthJourney}
             profileLocale={profile?.locale ?? locale}
             onUpdate={async (update) => {
@@ -317,6 +347,18 @@ function BabyPage() {
                 babyId: babyDoc._id,
                 ...update,
               });
+              await router.invalidate();
+            }}
+            onMilestoneRedate={async (milestone, occurredAt) => {
+              await redateMilestone({
+                babyId: babyDoc._id,
+                milestone,
+                occurredAt: Date.parse(occurredAt),
+              });
+              await router.invalidate();
+            }}
+            onMilestoneRemove={async (milestone) => {
+              await unmarkMilestone({ babyId: babyDoc._id, milestone });
               await router.invalidate();
             }}
             onDelete={
@@ -424,6 +466,7 @@ function BabyPage() {
               currentStatus={currentStatus}
               photoUrl={babyDoc.photoUrl}
               thumbnailUrl={babyDoc.thumbnailUrl}
+              blurDataUrl={babyDoc.blurDataUrl ?? null}
               latestUpdate={
                 latestUpdate
                   ? {

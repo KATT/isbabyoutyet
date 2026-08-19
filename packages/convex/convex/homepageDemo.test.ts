@@ -142,11 +142,15 @@ test("refresh is idempotent and wipes visitor encouragements", async () => {
 test("refresh attaches photos to the matching updates and pins the newborn as the page photo", async () => {
   const t = await setup();
 
-  const photos: Record<string, { photoId: Id<"_storage">; thumbnailId: Id<"_storage"> }> = {};
+  const photos: Record<
+    string,
+    { photoId: Id<"_storage">; thumbnailId: Id<"_storage">; blurDataUrl: string }
+  > = {};
   for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
     photos[key] = {
       photoId: await storeBlob(t, `${key}-photo`),
       thumbnailId: await storeBlob(t, `${key}-thumb`),
+      blurDataUrl: `data:image/jpeg;base64,${key}`,
     };
   }
 
@@ -154,6 +158,7 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
   const baby = await t.query(api.baby.getByPublicId, { id: result.publicId });
   expect(baby?.photoUrl).toBeTruthy();
   expect(baby?.photoId).toBe(photos.born?.photoId);
+  expect(baby?.blurDataUrl).toBe(photos.born?.blurDataUrl);
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: result.babyId,
@@ -166,6 +171,9 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
     (item) => item.kind === "update" && item.update.milestone === "born",
   );
   expect(bornUpdate?.kind === "update" && bornUpdate.update.isCurrentPagePhoto).toBe(true);
+  expect(bornUpdate?.kind === "update" && bornUpdate.update.blurDataUrl).toBe(
+    photos.born?.blurDataUrl,
+  );
 });
 
 test("generateUploadUrl returns a storage upload URL", async () => {
@@ -296,9 +304,6 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
       publicDueDateText: null,
       publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       birthJourney: "labor",
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -341,9 +346,6 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       publicId: HOMEPAGE_DEMO_BABY.publicId,
       birthJourney: "labor",
       theme: HOMEPAGE_DEMO_BABY.theme,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -369,9 +371,6 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
       publicDueDateText: null,
       publicId: "someone-else",
       birthJourney: "labor",
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });

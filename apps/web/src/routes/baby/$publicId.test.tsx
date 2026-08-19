@@ -6,12 +6,16 @@ import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
-import { getCurrentStatus } from "@workspace/convex/src/types";
+import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+
+const routeModule = await import("@/routes/baby/$publicId");
+const { docToBabyData, managerDocToBabyData } = routeModule;
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -20,28 +24,7 @@ function useFakeTimersResource(now: Date) {
   });
 }
 
-/**
- * Convert Convex Doc to BabyData — mirrors the baby detail route helper.
- */
 type PublicBaby = NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>;
-
-function docToBabyData(doc: PublicBaby): BabyData {
-  return {
-    name: doc.name,
-    dueDate: doc.dueDate,
-    dueDateDisplayMode: doc.dueDateDisplayMode,
-    publicDueDateText: doc.publicDueDateText,
-    theme: doc.theme ?? null,
-    laborStarted: doc.laborStarted ?? null,
-    wentToHospital: doc.wentToHospital ?? null,
-    babyBorn: doc.babyBorn ?? null,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
-    encouragementsDisabled: doc.encouragementsDisabled,
-    photoId: doc.photoId ?? null,
-  };
-}
 
 /**
  * Happy-path stand-in for the baby detail page: heading + status from
@@ -59,6 +42,7 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
         currentStatus={currentStatus}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </div>
@@ -94,6 +78,52 @@ test("renders a baby detail page from local convex-test data", async () => {
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
   }
+  expect(baby).not.toHaveProperty("publicDueDateText");
+  const managerDoc = await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId });
+  if (managerDoc === FORBIDDEN) {
+    throw new Error("expected manager baby");
+  }
+  expect(managerDocToBabyData(managerDoc)).toMatchObject({
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
+  });
+  expect(
+    docToBabyData({
+      ...baby,
+      theme: "baby-blue",
+      locale: "sv",
+      laborStarted: "2026-08-10T08:00:00.000Z",
+      wentToHospital: "2026-08-10T12:00:00.000Z",
+      babyBorn: "2026-08-11T03:00:00.000Z",
+      encouragementsDisabled: true,
+      photoId: "photo-id" as Id<"_storage">,
+    }),
+  ).toMatchObject({
+    theme: "baby-blue",
+    locale: "sv",
+    laborStarted: "2026-08-10T08:00:00.000Z",
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+    babyBorn: "2026-08-11T03:00:00.000Z",
+    encouragementsDisabled: true,
+    photoId: "photo-id",
+  });
+  expect(
+    managerDocToBabyData({
+      ...managerDoc,
+      theme: "baby-blue",
+      locale: "sv",
+      publicDueDateText: "Retained message",
+      encouragementsDisabled: true,
+      photoId: "photo-id" as Id<"_storage">,
+    }),
+  ).toMatchObject({
+    theme: "baby-blue",
+    locale: "sv",
+    publicDueDateText: "Retained message",
+    encouragementsDisabled: true,
+    photoId: "photo-id",
+  });
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
 
@@ -110,7 +140,7 @@ test("renders optional public due date text without exposing the exact day", asy
   await registerComponents(t);
   const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
     name: "Baby Smith",
-    dueDate: "2026-09-19",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
@@ -118,6 +148,18 @@ test("renders optional public due date text without exposing the exact day", asy
   if (!baby) {
     throw new Error("expected baby from getByPublicId");
   }
+  expect(baby).not.toHaveProperty("dueDate");
+  const managerDoc = await t
+    .withIdentity({ subject: "alice" })
+    .query(api.baby.getManagerBaby, { babyId: created.babyId });
+  if (managerDoc === FORBIDDEN) {
+    throw new Error("expected manager baby");
+  }
+  expect(managerDocToBabyData(managerDoc)).toMatchObject({
+    dueDate: null,
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
 
   await using view = renderResource(<BabyDetailPage baby={baby} />);
   expect(view.getByText("Any day now")).toBeTruthy();
@@ -144,6 +186,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </LocaleProvider>,
@@ -173,6 +216,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </LocaleProvider>,
@@ -212,7 +256,6 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
     convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
     serverHttpClient: undefined,
   } as never);
-  const routeModule = await import("@/routes/baby/$publicId");
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: { queryClient: QueryClient };
     params: { publicId: string };
@@ -227,6 +270,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: false, isOwner: false },
+    "baby:getManagerBaby": "forbidden",
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": "forbidden",
     "pushSubscriptions:getSubscriptionCount": "forbidden",
@@ -235,6 +279,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
+  expect(result.managerBaby).toMatchObject({ initialData: "forbidden" });
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
@@ -245,6 +290,7 @@ test("loader gives managers the same handles with real data", async () => {
   const result = await runBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "coParents:myAccess": { canManage: true, isOwner: true },
+    "baby:getManagerBaby": { ...BABY_DOC, birthJourney: "labor" },
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
     "pushSubscriptions:getSubscriptionCount": 2,
@@ -260,6 +306,9 @@ test("loader gives managers the same handles with real data", async () => {
     initialData: 2,
   });
   expect(result.onboarding).toMatchObject({ input: {} });
+  expect(result.managerBaby).toMatchObject({
+    initialData: { birthJourney: "labor" },
+  });
   expect(result.coParentsList).toMatchObject({
     input: { babyId: "baby-1" },
     initialData: { coParents: [], invites: [] },

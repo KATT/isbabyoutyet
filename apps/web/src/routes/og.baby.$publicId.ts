@@ -23,9 +23,12 @@ export const Route = createFileRoute("/og/baby/$publicId")({
 
         return createBabyOgImage({
           name: baby.name,
-          dueDate: baby.dueDate,
-          dueDateDisplayMode: baby.dueDateDisplayMode,
-          publicDueDateText: baby.publicDueDateText,
+          ...(baby.dueDateDisplayMode === "exact"
+            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+            : {
+                dueDateDisplayMode: "message" as const,
+                publicDueDateText: baby.publicDueDateText,
+              }),
           theme: baby.theme,
           locale: baby.resolvedLocale,
           babyBorn: baby.babyBorn,

@@ -37,6 +37,13 @@ function addBabySchema(t: TranslationFunction) {
       ]),
     })
     .superRefine((values, ctx) => {
+      if (values.showExactDueDate && !values.dueDate) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["dueDate"],
+          message: t("Pick a date"),
+        });
+      }
       if (!values.showExactDueDate && !values.publicDueDateText) {
         ctx.addIssue({
           code: "custom",
@@ -49,7 +56,7 @@ function addBabySchema(t: TranslationFunction) {
       name: values.name,
       dueDate: values.dueDate,
       dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-      publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+      publicDueDateText: values.publicDueDateText || null,
       birthJourney: values.birthJourney,
     }));
 }
@@ -103,7 +110,7 @@ export function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name, a date, and a journey — that's all it takes!")}
+            {t("A name, how to display the due date, and a journey — that's all it takes!")}
           </p>
         </div>
 
@@ -137,20 +144,6 @@ export function AddBabyPage() {
 
                 <FormField
                   control={form.control}
-                  name="dueDate"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...renderProps.field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
                   name="showExactDueDate"
                   render={(renderProps) => (
                     <FormItem className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
@@ -172,7 +165,25 @@ export function AddBabyPage() {
                   )}
                 />
 
-                {!showExactDueDate ? (
+                {showExactDueDate ? (
+                  <FormField
+                    control={form.control}
+                    name="dueDate"
+                    render={(renderProps) => (
+                      <FormItem>
+                        <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...renderProps.field}
+                            value={renderProps.field.value ?? ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                ) : (
                   <FormField
                     control={form.control}
                     name="publicDueDateText"
@@ -190,7 +201,7 @@ export function AddBabyPage() {
                       </FormItem>
                     )}
                   />
-                ) : null}
+                )}
 
                 <FormField
                   control={form.control}

@@ -22,9 +22,6 @@ const baby: BabyData = {
   laborStarted: "2026-08-10T08:00:00.000Z",
   wentToHospital: null,
   babyBorn: null,
-  hospitalMessage: null,
-  babyBornMessage: null,
-  laborStartedMessage: null,
   encouragementsDisabled: false,
   photoId: null,
   milestoneVisibility: { showLabor: true, showHospital: true },
@@ -35,6 +32,8 @@ const absentSettingsProps = {
   profileLocale: "en-GB" as const,
   onDelete: null,
   coParents: null,
+  onMilestoneRedate: () => undefined,
+  onMilestoneRemove: () => undefined,
 };
 
 function renderResource(ui: React.ReactElement) {
@@ -92,7 +91,12 @@ test("settings dialog shows page fields when open and stays closed when not", as
 test("due date row previews optional public text", async () => {
   await using view = renderResource(
     <SettingsPanel
-      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
+      baby={{
+        ...baby,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
       onOpenChange={vi.fn<(open: boolean) => void>()}
@@ -100,7 +104,7 @@ test("due date row previews optional public text", async () => {
     />,
   );
 
-  expect(view.getByText("1 September 2026 · Visitors see “Any day now”.")).toBeTruthy();
+  expect(view.getByText("Visitors see “Any day now”.")).toBeTruthy();
 });
 
 test("delete page control appears when onDelete is provided", async () => {
@@ -118,6 +122,8 @@ test("delete page control appears when onDelete is provided", async () => {
       onOpenChange={onOpenChange}
       profileLocale="en-GB"
       coParents={null}
+      onMilestoneRedate={() => undefined}
+      onMilestoneRemove={() => undefined}
     />,
   );
 
@@ -293,6 +299,8 @@ test("theme constants render through the active translation catalog", async () =
         profileLocale="sv"
         onDelete={null}
         coParents={null}
+        onMilestoneRedate={() => undefined}
+        onMilestoneRemove={() => undefined}
       />
     </LocaleProvider>,
   );

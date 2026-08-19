@@ -30,16 +30,18 @@ import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
-import {
-  getBlockingLaterMilestone,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
+import { getBlockingLaterMilestone, MILESTONE_LABELS } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  Milestone,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
-import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { THEME_OPTIONS } from "./utils";
+import { getThemeOption, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
@@ -86,6 +88,13 @@ function dueDateSchema(t: TranslationFunction) {
       publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
     })
     .superRefine((values, ctx) => {
+      if (values.showExactDueDate && !values.date) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["date"],
+          message: t("Pick a date"),
+        });
+      }
       if (!values.showExactDueDate && !values.publicDueDateText) {
         ctx.addIssue({
           code: "custom",
@@ -98,7 +107,7 @@ function dueDateSchema(t: TranslationFunction) {
       (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
         dueDate: values.date,
         dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+        publicDueDateText: values.publicDueDateText || null,
       }),
     );
 }
@@ -174,24 +183,6 @@ function DueDateForm(props: EditorFormProps) {
     >
       <FormField
         control={form.control}
-        name="date"
-        render={({ field }) => (
-          <FormItem className="mb-3">
-            <FormControl>
-              <Input
-                type="date"
-                aria-label={t("Due Date")}
-                onMouseDown={(e) => e.stopPropagation()}
-                onFocus={(e) => e.stopPropagation()}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
         name="showExactDueDate"
         render={(renderProps) => (
           <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
@@ -212,7 +203,27 @@ function DueDateForm(props: EditorFormProps) {
           </FormItem>
         )}
       />
-      {!showExactDueDate ? (
+      {showExactDueDate ? (
+        <FormField
+          control={form.control}
+          name="date"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormControl>
+                <Input
+                  type="date"
+                  aria-label={t("Due Date")}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onFocus={(event) => event.stopPropagation()}
+                  {...renderProps.field}
+                  value={renderProps.field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : (
         <FormField
           control={form.control}
           name="publicDueDateText"
@@ -226,7 +237,7 @@ function DueDateForm(props: EditorFormProps) {
             </FormItem>
           )}
         />
-      ) : null}
+      )}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
@@ -238,22 +249,14 @@ function DueDateForm(props: EditorFormProps) {
 
 type StatusDateEditorProps = {
   baby: BabyData;
-  status: "labor_started" | "gone_to_hospital" | "born";
+  status: Milestone;
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
 };
 
-function statusDateSchema(t: TranslationFunction, status: Milestone) {
-  return z.object({ dateTime: htmlDateTime(t) }).transform((values): BabyPatch => {
-    switch (status) {
-      case "labor_started":
-        return { laborStarted: values.dateTime };
-      case "gone_to_hospital":
-        return { wentToHospital: values.dateTime };
-      case "born":
-        return { babyBorn: values.dateTime };
-    }
-  });
+function statusDateSchema(t: TranslationFunction) {
+  return z.object({ dateTime: htmlDateTime(t) });
 }
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
@@ -275,7 +278,8 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
           baby={props.baby}
           status={props.status}
           currentDate={props.currentDate}
-          onUpdate={props.onUpdate}
+          onRedate={props.onRedate}
+          onRemove={props.onRemove}
           onClose={() => setIsEditing(false)}
         />
       </PopoverContent>
@@ -287,14 +291,15 @@ function StatusDateForm(props: {
   baby: BabyData;
   status: StatusDateEditorProps["status"];
   currentDate: string;
-  onUpdate: BabyUpdateHandler;
+  onRedate: MilestoneRedateHandler;
+  onRemove: MilestoneRemoveHandler;
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
   const dateTimeCodec = htmlDateTime(t);
   const form = useZodForm({
-    schema: statusDateSchema(t, props.status),
+    schema: statusDateSchema(t),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -311,7 +316,7 @@ function StatusDateForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        await props.onUpdate(values);
+        await props.onRedate(props.status, values.dateTime);
         props.onClose();
       }}
     >
@@ -373,7 +378,7 @@ function StatusDateForm(props: {
                   onClick={async () => {
                     setIsDeleting(true);
                     try {
-                      await props.onUpdate({ [MILESTONE_FIELDS[props.status].date]: null });
+                      await props.onRemove(props.status);
                       props.onClose();
                     } catch {
                       toast.error(
@@ -483,6 +488,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const selectedTheme = getThemeOption(props.baby.theme);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -498,7 +504,8 @@ export function ThemeSelector(props: ThemeSelectorProps) {
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
-              variant={props.baby.theme === option.value ? "default" : "ghost"}
+              variant={selectedTheme?.value === option.value ? "default" : "ghost"}
+              aria-pressed={selectedTheme?.value === option.value}
               size="sm"
               className="justify-start gap-2"
               disabled={isLoading}

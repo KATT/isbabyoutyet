@@ -20,6 +20,16 @@ test("calendar date encode leaves a YYYY-MM-DD value unchanged", () => {
   expect(dateCodec.encode("2026-09-01")).toBe("2026-09-01");
 });
 
+test("optional calendar date maps an empty picker to null", () => {
+  expect(dateCodec.decode("")).toBeNull();
+  expect(dateCodec.encode(null)).toBe("");
+});
+
+test("optional calendar date roundtrips a selected date", () => {
+  expect(dateCodec.decode("2026-09-01")).toBe("2026-09-01T00:00:00.000Z");
+  expect(dateCodec.encode("2026-09-01T00:00:00.000Z")).toBe("2026-09-01");
+});
+
 test("datetime-local roundtrips an instant through the viewer's timezone", () => {
   const iso = "2026-08-10T07:30:00.000Z";
   expect(dateTimeCodec.decode(dateTimeCodec.encode(iso))).toBe(iso);
