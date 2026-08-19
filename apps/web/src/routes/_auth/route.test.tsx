@@ -103,3 +103,19 @@ test("client navigations without a session redirect home after one token check",
   });
   expect(getToken).toHaveBeenCalledTimes(1);
 });
+
+test("client navigations skip cache writes when ensure returns the cached profile", async () => {
+  getToken.mockReset();
+  const cachedProfile = { locale: "sv", isAdmin: false };
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve(cachedProfile));
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { mutation };
+  guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
+
+  const result = await guard.beforeLoad(guard.ctx);
+
+  expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
+  expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
+    cachedProfile,
+  );
+});

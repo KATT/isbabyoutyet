@@ -11,15 +11,21 @@ import schema from "@workspace/convex/convex/schema";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import type { BabyData } from "@workspace/convex/src/types";
-import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
+import {
+  FORBIDDEN,
+  DEFAULT_MILESTONE_VISIBILITY,
+  getCurrentStatus,
+} from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+
+const getToken = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
 
 vi.mock("@tanstack/react-start", () => ({
   createServerFn: () => ({ handler: (fn: unknown) => fn }),
 }));
 
 vi.mock("@/lib/auth-server", () => ({
-  authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
+  authServer: { getToken },
 }));
 
 const routeModule = await import("@/routes/baby/$publicId");
@@ -279,7 +285,25 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   });
 }
 
-async function runBabyLoader(handlers: Record<string, unknown>) {
+type LoaderOptions = {
+  token: string | null | undefined;
+  locale: string | undefined;
+  convexClient:
+    | {
+        setAuth: ReturnType<typeof vi.fn>;
+        mutation: ReturnType<typeof vi.fn>;
+      }
+    | undefined;
+};
+
+async function runBabyLoader(
+  handlers: Record<string, unknown>,
+  options: LoaderOptions | undefined = undefined,
+) {
+  const setAuth = options?.convexClient?.setAuth ?? vi.fn();
+  const mutation =
+    options?.convexClient?.mutation ??
+    vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
@@ -287,11 +311,21 @@ async function runBabyLoader(handlers: Record<string, unknown>) {
     serverHttpClient: undefined,
   } as never);
   const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: { queryClient: QueryClient };
+    context: {
+      queryClient: QueryClient;
+      convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
+      token: string | null;
+      locale: string;
+    };
     params: { publicId: string };
   }) => Promise<Record<string, unknown>>;
   return await loader({
-    context: { queryClient: makeLoaderQueryClient(handlers) },
+    context: {
+      queryClient: makeLoaderQueryClient(handlers),
+      convexClient: { setAuth, mutation },
+      token: options?.token ?? null,
+      locale: options?.locale ?? "en-GB",
+    },
     params: { publicId: "baby-smith" },
   });
 }
@@ -349,4 +383,85 @@ test("loader 404s unknown babies", async () => {
   const pending = runBabyLoader({ "baby:getByPublicId": null });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
+});
+
+test("loader authenticates signed-in visitors before prefetching manager data", async () => {
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce("session-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "en-GB", isAdmin: false }),
+  );
+  const sharedHandlers = {
+    "baby:getByPublicId": BABY_DOC,
+    "profile:get": { locale: "en-GB", isAdmin: false },
+    "coParents:myAccess": { canManage: true, isOwner: true },
+    "baby:getManagerBaby": BABY_DOC,
+    "timeline:listByBaby": EMPTY_PAGE,
+    "baby:getScheduledNotifications": [],
+    "pushSubscriptions:getSubscriptionCount": 0,
+    "coParents:listForBaby": { coParents: [], invites: [] },
+  };
+
+  await runBabyLoader(sharedHandlers, {
+    token: undefined,
+    locale: undefined,
+    convexClient: { setAuth, mutation },
+  });
+
+  expect(getToken).toHaveBeenCalledTimes(1);
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
+});
+
+test("loader reuses a context token without calling getAuthToken", async () => {
+  getToken.mockReset();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const mutation = vi.fn<() => Promise<unknown>>(() =>
+    Promise.resolve({ locale: "sv", isAdmin: false }),
+  );
+
+  await runBabyLoader(
+    {
+      "baby:getByPublicId": BABY_DOC,
+      "profile:get": { locale: "sv", isAdmin: false },
+      "coParents:myAccess": { canManage: false, isOwner: false },
+      "baby:getManagerBaby": "forbidden",
+      "timeline:listByBaby": EMPTY_PAGE,
+      "baby:getScheduledNotifications": "forbidden",
+      "pushSubscriptions:getSubscriptionCount": "forbidden",
+      "coParents:listForBaby": "forbidden",
+    },
+    { token: "layout-token", locale: "sv", convexClient: { setAuth, mutation } },
+  );
+
+  expect(getToken).not.toHaveBeenCalled();
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "sv" });
+});
+
+test("docToBabyData coalesces missing public due date text to null", () => {
+  expect(
+    docToBabyData({
+      _id: "baby-1" as Id<"baby">,
+      _creationTime: 1,
+      name: "Nova",
+      dueDateDisplayMode: "message",
+      publicDueDateText: undefined,
+      theme: "baby-blue",
+      locale: "en-GB",
+      resolvedLocale: "en-GB",
+      laborStarted: null,
+      wentToHospital: null,
+      babyBorn: null,
+      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+      publicId: "nova",
+      photoUrl: null,
+      thumbnailUrl: null,
+      blurDataUrl: null,
+    }),
+  ).toMatchObject({
+    dueDateDisplayMode: "message",
+    publicDueDateText: null,
+  });
 });
