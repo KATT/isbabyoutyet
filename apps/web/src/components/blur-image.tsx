@@ -54,10 +54,10 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
 /**
  * Drop-in `<img>` with a Next.js-style `blurDataURL` placeholder. The real
  * `src` is always on the `<img>` (including SSR HTML) so the browser starts
- * fetching on first paint. The tiny JPEG lives on a sibling behind that img
- * and is CSS-blurred; because the real img is never filtered, a decoded
- * bitmap paints sharp before hydration. TanStack Start/Router has no Image
- * component of its own.
+ * fetching on first paint. The tiny JPEG lives on a sibling in front of that
+ * img and is CSS-blurred until the browser reports the real image loaded. This
+ * avoids exposing the browser's unloaded-image UI during SSR; the real img is
+ * never filtered. TanStack Start/Router has no Image component of its own.
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
@@ -90,7 +90,7 @@ export function BlurImage(props: BlurImageProps) {
         aria-hidden="true"
         suppressHydrationWarning
         className={cn(
-          "pointer-events-none absolute inset-0 z-0 scale-105 bg-cover bg-center blur-xl transition-opacity duration-500",
+          "pointer-events-none absolute inset-0 z-20 scale-105 bg-cover bg-center blur-xl transition-opacity duration-500",
           loaded && "opacity-0",
         )}
         style={{ backgroundImage: `url("${props.blurDataUrl}")` }}

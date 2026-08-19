@@ -25,6 +25,8 @@ test("paints the blur data URL until the image loads", () => {
   expect(placeholder).toBeTruthy();
   expect(placeholder?.style.backgroundImage).toContain(BLUR);
   expect(placeholder?.className).toContain("blur-xl");
+  expect(placeholder?.className).toContain("z-20");
+  expect(img.className).toContain("z-10");
   expect(placeholder?.className).not.toContain("opacity-0");
 
   fireEvent.load(img);
@@ -72,7 +74,7 @@ test("skips the placeholder when no blur data URL is provided", () => {
   expect(img.className).not.toContain("blur-xl");
 });
 
-test("paints the real src and blur placeholder in server HTML", () => {
+test("starts the real src behind the blur placeholder in server HTML", () => {
   const html = renderToString(
     <BlurImage src="https://cdn.example/full.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
@@ -80,5 +82,6 @@ test("paints the real src and blur placeholder in server HTML", () => {
   expect(html).toContain('src="https://cdn.example/full.jpg"');
   expect(html).toContain(BLUR);
   expect(html).toContain("blur-xl");
+  expect(html).toContain("z-20");
   expect(html).not.toMatch(/<img\b[^>]*blur-xl/);
 });
