@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { convexTest } from "convex-test";
 import type { FunctionReturnType } from "convex/server";
 import type { ReactElement } from "react";
@@ -304,6 +305,7 @@ async function setupBabyLoader(
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
       token: string | null;
       locale: string;
@@ -314,6 +316,7 @@ async function setupBabyLoader(
   const result = await loader({
     context: {
       queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
       convexClient: { setAuth, mutation },
       token: options?.token ?? null,
       locale: options?.locale ?? "en-GB",
@@ -382,14 +385,20 @@ test("loader gives managers the same handles with real data", async () => {
 
 test("beforeLoad 404s unknown babies", async () => {
   const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
-    context: { queryClient: QueryClient };
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
     params: { publicId: string };
     location: { search: Record<string, unknown> };
   }) => Promise<unknown>;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
   const pending = beforeLoad({
-    context: { queryClient },
+    context: {
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
+    },
     params: { publicId: "baby-smith" },
     location: { search: {} },
   });

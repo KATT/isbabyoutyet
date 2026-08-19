@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -21,7 +21,7 @@ const authRoute = getRouteApi("/_auth");
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     return await allKeyed({
       babies: preloader.ensureQueryData(api.baby.listByUser, {}),
       onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
