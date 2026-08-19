@@ -140,9 +140,9 @@ test("custom public due date text hides the exact day from visitors", async () =
     dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",
   });
-  expect(
-    await asAlice.query(api.baby.getByPublicId, { id: created.publicId }),
-  ).not.toHaveProperty("publicDueDateText");
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).not.toHaveProperty(
+    "publicDueDateText",
+  );
   expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",

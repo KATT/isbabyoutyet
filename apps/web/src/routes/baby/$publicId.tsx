@@ -239,10 +239,7 @@ function docToBabyData(
       };
 }
 
-type ManagerBabyDoc = Exclude<
-  FunctionReturnType<typeof api.baby.getManagerBaby>,
-  typeof FORBIDDEN
->;
+type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
 
 function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
@@ -287,10 +284,7 @@ function BabyPage() {
     loaderData.latestUpdate,
   );
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
-  const managerBabyQuery = usePreloadedConvexQuery(
-    api.baby.getManagerBaby,
-    loaderData.managerBaby,
-  );
+  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const vapidQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getPublicKey,
