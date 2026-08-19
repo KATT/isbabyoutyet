@@ -1,10 +1,24 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { DueDateEditor, NameEditor, StatusDateEditor } from "@/components/baby/editors";
+import {
+  DueDateEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+
+const mocks = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: mocks.toastError },
+}));
 
 const baby: BabyData = {
   name: "Nova",
@@ -178,6 +192,48 @@ test("due date editor localizes its accessible label", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Editar" }));
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
+});
+
+test("theme selector marks Baby Blue selected", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
+  expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
+  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+
+  fireEvent.click(babyBlueButton);
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
+});
+
+test("theme selector leaves canonical options unselected for an unknown theme", async () => {
+  await using view = renderResource(
+    <ThemeSelector
+      baby={{ ...baby, theme: "not-a-real-theme" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+});
+
+test("theme selector reports a failed update and remains open", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue(new Error("Theme update failed"));
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
+
+  await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Theme update failed"));
+  expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
 });
 
 test("status editor confirms destructive deletion", async () => {
