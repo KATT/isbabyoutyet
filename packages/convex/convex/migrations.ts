@@ -371,9 +371,13 @@ export const backfillCoParentTokenIdentifier = migrations.define({
   migrateOne: backfillCoParentTokenIdentifierDoc,
 });
 
+type LegacyUserOnboardingWithRetiredSteps = Omit<Doc<"userOnboarding">, "completedSteps"> & {
+  completedSteps: string[];
+};
+
 export async function sanitizeOnboardingStepsDoc(
   ctx: MutationCtx,
-  onboarding: Doc<"userOnboarding">,
+  onboarding: LegacyUserOnboardingWithRetiredSteps,
 ) {
   const completedSteps = onboarding.completedSteps.filter(isOnboardingStepId);
   if (completedSteps.length === onboarding.completedSteps.length) return;
