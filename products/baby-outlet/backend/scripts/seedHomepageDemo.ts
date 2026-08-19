@@ -63,10 +63,14 @@ function isLfsPointer(buffer: Buffer) {
 
 function pullLfsFiles() {
   console.log("Git LFS pointer files detected — running git lfs pull");
-  execFileSync("git", ["lfs", "pull", "--include", "products/baby-outlet/backend/assets/homepage-demo/**"], {
-    cwd: path.resolve(convexPackageDir, "../../.."),
-    stdio: "inherit",
-  });
+  execFileSync(
+    "git",
+    ["lfs", "pull", "--include", "products/baby-outlet/backend/assets/homepage-demo/**"],
+    {
+      cwd: path.resolve(convexPackageDir, "../../.."),
+      stdio: "inherit",
+    },
+  );
 }
 
 function readPhotoBuffer(filename: string) {
