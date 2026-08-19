@@ -5,14 +5,14 @@ import schema from "./schema";
 import { makeResource } from "./test.resource";
 import { modules } from "./test.setup";
 
-test("gitSha is null when the deploy hash is unset", async () => {
+test("gitSha returns a development placeholder when the deploy hash is unset", async () => {
   vi.stubEnv("GIT_SHA", "");
   await using _env = makeResource({}, () => {
     vi.unstubAllEnvs();
   });
 
   const t = convexTest(schema, modules);
-  expect(await t.query(api.version.gitSha, {})).toBeNull();
+  expect(await t.query(api.version.gitSha, {})).toBe("development");
 });
 
 test("gitSha returns the configured deploy hash", async () => {

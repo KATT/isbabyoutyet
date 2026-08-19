@@ -14,8 +14,7 @@ export function StaleDeployGuard(props: StaleDeployGuardProps) {
   const router = useRouter();
   const gitShaQuery = usePreloadedConvexQuery(api.version.gitSha, props.gitSha);
   const [gitShaAtPageLoad] = useState(gitShaQuery.data);
-  const isStale =
-    gitShaAtPageLoad != null && gitShaQuery.data != null && gitShaQuery.data !== gitShaAtPageLoad;
+  const isStale = gitShaQuery.data !== gitShaAtPageLoad;
 
   useEffect(() => {
     if (!isStale) {

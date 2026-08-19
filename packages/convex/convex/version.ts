@@ -3,8 +3,8 @@ import { env, query } from "./_generated/server";
 
 export const gitSha = query({
   args: {},
-  returns: v.union(v.string(), v.null()),
+  returns: v.string(),
   handler: async () => {
-    return env.GIT_SHA ? env.GIT_SHA : null;
+    return env.GIT_SHA || "development";
   },
 });

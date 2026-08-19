@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const mocks = vi.hoisted(() => ({
-  gitSha: null as string | null | undefined,
+  gitSha: "development",
   bindHardNavigation: vi.fn<(router: unknown, assign: (href: string) => void) => () => void>(
     () => () => {},
   ),
