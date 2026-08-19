@@ -1,5 +1,6 @@
 import { QueryClient } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 
@@ -25,6 +26,7 @@ type GuardCtx = {
   context: {
     queryClient: QueryClient;
     convexClient: unknown;
+    convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
     token: string | null;
     locale: string;
   };
@@ -35,7 +37,13 @@ function makeGuardCtx() {
     defaultOptions: { queries: { retry: false, queryFn: () => Promise.resolve(null) } },
   });
   const ctx: GuardCtx = {
-    context: { queryClient, convexClient: {}, token: null, locale: "en-GB" },
+    context: {
+      queryClient,
+      convexClient: {},
+      convexPreloader: getConvexQueryPreloader(queryClient),
+      token: null,
+      locale: "en-GB",
+    },
   };
   const options = Route as unknown as {
     beforeLoad: (opts: GuardCtx) => Promise<{

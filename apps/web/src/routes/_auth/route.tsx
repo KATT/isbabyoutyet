@@ -1,7 +1,6 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -22,7 +21,7 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
 
     if (typeof window === "undefined") {
       const token = opts.context.token ?? (await getAuthToken());

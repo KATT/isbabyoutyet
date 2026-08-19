@@ -1,5 +1,6 @@
 import { fireEvent, render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -347,14 +348,17 @@ async function runAdminLoader(
     loader: (opts: {
       context: {
         queryClient: QueryClient;
+        convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
         profile: { input: Record<string, never>; initialData: typeof profile };
       };
       deps: { tab: string; sort: string; order: string; hideDemo: boolean };
     }) => Promise<Record<string, unknown>>;
   };
+  const queryClient = makeAdminLoaderQueryClient(handlers);
   return await route.loader({
     context: {
-      queryClient: makeAdminLoaderQueryClient(handlers),
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
       profile: { input: {}, initialData: profile },
     },
     deps: { tab: "babies", sort: "updated", order: "desc", hideDemo: true },

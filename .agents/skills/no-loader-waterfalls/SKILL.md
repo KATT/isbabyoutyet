@@ -17,7 +17,7 @@ One `allKeyed` (or equivalent `Promise.all` of prefetches). Every independent Co
 
 ```typescript
 loader: async (opts) => {
-  const preloader = getConvexQueryPreloader(opts.context.queryClient);
+  const preloader = opts.context.convexPreloader;
   const publicId = opts.params.publicId;
 
   const loaderData = await allKeyed({

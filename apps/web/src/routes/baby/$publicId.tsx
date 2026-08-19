@@ -25,7 +25,7 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
@@ -45,7 +45,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -64,7 +64,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
     const publicId = opts.params.publicId;
 
