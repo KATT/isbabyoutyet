@@ -25,6 +25,8 @@ const babyRowValidator = v.object({
   name: v.string(),
   publicId: v.string(),
   dueDate: v.union(v.string(), v.null()),
+  dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
+  publicDueDateText: v.union(v.string(), v.null()),
   status: v.union(
     v.literal("not_yet"),
     v.literal("labor_started"),
@@ -144,6 +146,8 @@ export const listBabies = query({
         name: baby.name,
         publicId: baby.publicId,
         dueDate: baby.dueDate,
+        dueDateDisplayMode: baby.dueDateDisplayMode,
+        publicDueDateText: baby.publicDueDateText,
         status: getCurrentStatus(baby).type,
         demo: baby.demo === true,
         createdAt,

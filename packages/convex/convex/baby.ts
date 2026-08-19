@@ -28,7 +28,7 @@ import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAcc
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
-import { toBabyDto } from "./babyDto";
+import { toBabyDto, toManagerBabyDto } from "./babyDto";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -121,25 +121,22 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
-    const dueDateDisplay = normalizeDueDateDisplay({
-      dueDate: baby.dueDate,
-      mode: baby.dueDateDisplayMode,
-      text: baby.publicDueDateText,
-    });
-    const canManage = Boolean(await findBabyManager(ctx, baby._id));
-    const canSeeDueDate = dueDateDisplay.mode === "exact" || canManage;
-    const canSeeMessage = dueDateDisplay.mode === "message" || canManage;
 
     return {
       ...toBabyDto(baby),
-      dueDate: canSeeDueDate ? dueDateDisplay.dueDate : null,
-      dueDateDisplayMode: dueDateDisplay.mode,
-      publicDueDateText: canSeeMessage ? dueDateDisplay.text : null,
       milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
       photoUrl,
       thumbnailUrl,
       resolvedLocale,
     };
+  },
+});
+
+export const getManagerBaby = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? toManagerBabyDto(access.baby) : FORBIDDEN;
   },
 });
 

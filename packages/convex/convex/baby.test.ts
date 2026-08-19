@@ -102,36 +102,48 @@ test("custom public due date text hides the exact day from visitors", async () =
     publicDueDateText: "  Any day now  ",
   });
 
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    dueDate: null,
+  const publicMessageBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicMessageBaby).toMatchObject({
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
+  expect(publicMessageBaby).not.toHaveProperty("dueDate");
   expect(
     await t
       .withIdentity({ subject: "bob" })
       .query(api.baby.getByPublicId, { id: created.publicId }),
   ).toMatchObject({
-    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
-  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+  expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).not.toHaveProperty(
+    "dueDate",
+  );
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
+  expect(await t.query(api.baby.getManagerBaby, { babyId: created.babyId })).toBe("forbidden");
 
   await asAlice.mutation(api.baby.update, {
     babyId: created.babyId,
     dueDateDisplayMode: "exact",
   });
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+  const publicExactBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicExactBaby).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",
-    publicDueDateText: null,
   });
+  expect(publicExactBaby).not.toHaveProperty("publicDueDateText");
   expect(await asAlice.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    dueDate: "2026-09-19",
+    dueDateDisplayMode: "exact",
+  });
+  expect(
+    await asAlice.query(api.baby.getByPublicId, { id: created.publicId }),
+  ).not.toHaveProperty("publicDueDateText");
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
     dueDate: "2026-09-19",
     dueDateDisplayMode: "exact",
     publicDueDateText: "Any day now",
@@ -140,11 +152,12 @@ test("custom public due date text hides the exact day from visitors", async () =
     babyId: created.babyId,
     dueDateDisplayMode: "message",
   });
-  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
-    dueDate: null,
+  const publicMessageAgain = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  expect(publicMessageAgain).toMatchObject({
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
+  expect(publicMessageAgain).not.toHaveProperty("dueDate");
   await expect(
     asAlice.mutation(api.baby.update, {
       babyId: created.babyId,
