@@ -11,21 +11,14 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@workspace/ui/components/form";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
+import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
-import { useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
@@ -160,11 +153,6 @@ function DueDateForm(props: EditorFormProps) {
       publicDueDateText: props.baby.publicDueDateText ?? "",
     },
   });
-  const showExactDueDate = useWatch({
-    control: form.control,
-    name: "showExactDueDate",
-  });
-
   return (
     <Form
       form={form}
@@ -173,56 +161,12 @@ function DueDateForm(props: EditorFormProps) {
         props.onClose();
       }}
     >
-      <div className="mb-3 overflow-hidden rounded-xl border border-border">
-        <ShowExactDueDateToggleField
-          control={form.control}
-          name="showExactDueDate"
-          rowClassName="gap-3 p-3 pb-2"
-          titleClassName={undefined}
-        />
-        <div className="border-t border-border/60 bg-muted/30 px-3 pb-3 pt-2">
-          {showExactDueDate ? (
-            <FormField
-              control={form.control}
-              name="date"
-              render={(renderProps) => (
-                <FormItem>
-                  <FormLabel>{t("Due Date")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      aria-label={t("Due Date")}
-                      onMouseDown={(event) => event.stopPropagation()}
-                      onFocus={(event) => event.stopPropagation()}
-                      {...renderProps.field}
-                      value={renderProps.field.value ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <FormField
-              control={form.control}
-              name="publicDueDateText"
-              render={(renderProps) => (
-                <FormItem>
-                  <FormLabel>{t("Public due date message")}</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("September baby")}
-                      maxLength={80}
-                      {...renderProps.field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
-      </div>
+      <DueDateDisplayFields
+        control={form.control}
+        dateFieldName="date"
+        className="mb-3"
+        stopPopoverPropagation={true}
+      />
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}

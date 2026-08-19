@@ -27,7 +27,7 @@ function ShowExactDueDateToggleRow(props: {
   return (
     <label
       htmlFor={formItemId}
-      className={cn("flex cursor-pointer items-center justify-between", props.rowClassName)}
+      className={cn("flex items-center justify-between", props.rowClassName)}
     >
       <div className="flex flex-col gap-1">
         <span id={titleId} className={cn("text-sm leading-none font-medium", props.titleClassName)}>

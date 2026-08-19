@@ -2,11 +2,10 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
-import { useWatch } from "react-hook-form";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
+import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -73,10 +72,6 @@ export function AddBabyPage() {
       birthJourney: "labor" as const,
     },
   });
-  const showExactDueDate = useWatch({
-    control: form.control,
-    name: "showExactDueDate",
-  });
 
   return (
     <div className="min-h-screen bg-background bg-dots">
@@ -135,55 +130,12 @@ export function AddBabyPage() {
                   )}
                 />
 
-                <div className="overflow-hidden rounded-2xl border-2 border-border">
-                  <ShowExactDueDateToggleField
-                    control={form.control}
-                    name="showExactDueDate"
-                    rowClassName="gap-4 p-4 pb-3"
-                    titleClassName="font-bold"
-                  />
-                  <div className="border-t border-border/60 bg-muted/30 px-4 pb-4 pt-3">
-                    {showExactDueDate ? (
-                      <FormField
-                        control={form.control}
-                        name="dueDate"
-                        render={(renderProps) => (
-                          <FormItem>
-                            <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="date"
-                                {...renderProps.field}
-                                value={renderProps.field.value ?? ""}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <FormField
-                        control={form.control}
-                        name="publicDueDateText"
-                        render={(renderProps) => (
-                          <FormItem>
-                            <FormLabel className="font-bold">
-                              {t("Public due date message")}
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder={t("September baby")}
-                                maxLength={80}
-                                {...renderProps.field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                  </div>
-                </div>
+                <DueDateDisplayFields
+                  control={form.control}
+                  dateFieldName="dueDate"
+                  className={undefined}
+                  stopPopoverPropagation={false}
+                />
 
                 <FormField
                   control={form.control}
