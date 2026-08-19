@@ -17,30 +17,28 @@ basics; this skill covers **this project's** workflow and deploy ordering.
 
 On `convex deploy`, Convex **validates every existing document against the new schema before any migration runs**. A tightened validator that rejects legacy rows will fail deploy even if a backfill migration is registered.
 
-Production example (#156): removing `learn_encouragements` from `onboardingStepIdValidator` while prod rows still contained that step ID blocked Vercel deploy.
+If you remove an enum literal or field from the schema in the same deploy as the migration that strips it, validation fails first — the migration never runs.
 
 ## Three-phase pattern (removing fields or enum values)
 
-User workflow maps to Convex recommendations:
-
-| Phase                       | Action                                 | Schema                                                                                   | Migration                                                                                                              | Stack PR                         |
-| --------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc | None yet (or register idempotent strip migration in same PR)                                                           | **1/N**                          |
-| **2. Migrate**              | Strip legacy data from all rows        | Same permissive schema as phase 1                                                        | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
-| **3. Remove**               | Tighten schema and delete dead code    | Drop field from `schema.ts` / remove enum literal from validators                        | Migration already ran; no new migration                                                                                | **2/N**                          |
+| Phase | Action | Schema | Migration | Stack PR |
+| --- | --- | --- | --- | --- |
+| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc | None yet (or register idempotent strip migration in same PR) | **1/N** |
+| **2. Migrate** | Strip legacy data from all rows | Same permissive schema as phase 1 | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
+| **3. Remove** | Tighten schema and delete dead code | Drop field from `schema.ts` / remove enum literal from validators | Migration already ran; no new migration | **2/N** |
 
 **Never tighten before backfill/strip completes** — same rule as adding required fields, applied in reverse for removal.
 
-For **adding** required fields, use the inverse: optional → backfill → required (see prior stacks like #125/#126, #135/#136).
+For **adding** required fields, use the inverse: optional → backfill → required.
 
 ## Stacked PRs (required for breaking changes)
 
 Use [`.agents/skills/create-stacked-prs/SKILL.md`](../../../../.agents/skills/create-stacked-prs/SKILL.md).
 
-- **PR 1/N:** Permissive schema + migration(s) that clean legacy data + tests. One deploy fixes prod and runs migrations via `runAll`.
+- **PR 1/N:** Permissive schema + migration(s) that clean legacy data + tests. One deploy runs migrations via `runAll`.
 - **PR 2/N:** Remove deprecated schema fields after PR 1 has deployed and migrations finished.
 
-Do not combine phase 3 with phase 1 in a single deploy — prod must accept legacy rows first, then migrations strip them, then a follow-up deploy may tighten.
+Do not combine phase 3 with phase 1 in a single deploy — existing rows must validate first, then migrations strip legacy data, then a follow-up deploy may tighten.
 
 ## Repo conventions (`packages/convex/convex/migrations.ts`)
 
@@ -59,7 +57,7 @@ export const removeLegacyField = migrations.define({
 });
 ```
 
-For enum values in arrays, filter unknown ids in `migrateOne` (see `sanitizeOnboardingSteps` — keeps valid `ONBOARDING_STEP_IDS`, strips only unknown strings).
+For enum values in arrays, filter to the current allowed set in `migrateOne` (strip unknown strings, keep valid ids).
 
 ### Register runners
 
@@ -82,20 +80,18 @@ Removal migration:
 - [ ] Phase 2: idempotent migration in runTableMigrations (+ HISTORICAL if gate)
 - [ ] Test in migrations.test.ts
 - [ ] PR 1/N: permissive schema + migration + deploy
-- [ ] Verify prod deploy + migration status
+- [ ] Verify deploy + migration status
 - [ ] Phase 3 / PR 2/N: remove deprecated schema fields only
 - [ ] pnpm checks
 ```
 
-## Examples in this repo
+## Pattern examples
 
-| Change                          | PR 1/N                                                   | PR 2/N                      |
-| ------------------------------- | -------------------------------------------------------- | --------------------------- |
-| Remove `encouragementsDisabled` | Keep optional field + `removeBabyEncouragementsDisabled` | Drop field from `schema.ts` |
-| Require `birthJourney`          | Optional field + `backfillBabyBirthJourney` (#125)       | Required in schema (#126)   |
-| Require `dueDateDisplayMode`    | Optional + `backfillBabyDueDateDisplay` (#135)           | Required (#136)             |
-
-`learn_encouragements` remains a first-class onboarding step — do not remove it from validators or migrate it away.
+| Change | PR 1/N | PR 2/N |
+| --- | --- | --- |
+| Remove optional boolean flag | Keep `v.optional(...)` + strip migration | Drop field from `schema.ts` |
+| Remove enum literal from union | Keep literal with `@deprecated` + filter migration | Drop literal from validator |
+| Add required field | Optional field + backfill migration | Make field required |
 
 ## References
 
