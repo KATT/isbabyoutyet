@@ -1,8 +1,17 @@
 import { convexTest } from "convex-test";
 import sharp from "sharp";
 import { expect, test } from "vitest";
-import { BLUR_PLACEHOLDER, PUSH_IMAGE, renderBlurDataUrl, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
-import { generateBlurDataUrlsForExistingPhotosDoc, generatePushImagesForExistingPhotosDoc } from "./migrations";
+import {
+  BLUR_PLACEHOLDER,
+  PUSH_IMAGE,
+  renderBlurDataUrl,
+  renderPageThumbnail,
+  renderPushImage,
+} from "../src/photoDerivatives";
+import {
+  generateBlurDataUrlsForExistingPhotosDoc,
+  generatePushImagesForExistingPhotosDoc,
+} from "./migrations";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import { modules, registerComponents } from "./test.setup";
