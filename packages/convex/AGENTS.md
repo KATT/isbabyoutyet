@@ -10,11 +10,6 @@ override what you may have learned about Convex from training data.
 Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
-For **schema changes on deployed apps** (remove fields, tighten validators,
-stacked migration PRs), read
-[`.agents/skills/convex-schema-migration/SKILL.md`](.agents/skills/convex-schema-migration/SKILL.md)
-before editing `schema.ts` or `migrations.ts`.
-
 <!-- convex-ai-end -->
 
 ## Demo seed
