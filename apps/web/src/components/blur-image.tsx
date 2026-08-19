@@ -1,11 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import type {
-  CSSProperties,
-  Dispatch,
-  ImgHTMLAttributes,
-  RefObject,
-  SetStateAction,
-} from "react";
+import type { CSSProperties, Dispatch, ImgHTMLAttributes, RefObject, SetStateAction } from "react";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
@@ -50,14 +44,20 @@ function getImageBlurSvg(options: BlurSvgOptions) {
 }
 
 function imgPropsWithoutBlur(props: BlurImageProps) {
-  const { blurDataUrl: _blurDataUrl, ...imgProps } = props;
+  const {
+    alt: _alt,
+    blurDataUrl: _blurDataUrl,
+    decoding: _decoding,
+    onError: _onError,
+    onLoad: _onLoad,
+    src: _src,
+    style: _style,
+    ...imgProps
+  } = props;
   return imgProps;
 }
 
-function callOnLoad(
-  img: HTMLImageElement,
-  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"],
-) {
+function callOnLoad(img: HTMLImageElement, onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"]) {
   if (!onLoad) return;
 
   const nativeEvent = new Event("load");
@@ -151,6 +151,14 @@ export function BlurImage(props: BlurImageProps) {
       : undefined;
   const backgroundSize =
     objectFit === "fill" ? "100% 100%" : objectFit === "contain" ? "contain" : "cover";
+  const placeholderStyle = backgroundImage
+    ? {
+        backgroundSize,
+        backgroundPosition: props.style?.objectPosition ?? "50% 50%",
+        backgroundRepeat: "no-repeat",
+        backgroundImage,
+      }
+    : {};
 
   return (
     <img
@@ -158,14 +166,10 @@ export function BlurImage(props: BlurImageProps) {
       ref={imgRef}
       alt={props.alt}
       decoding={props.decoding ?? "async"}
-      src={props.src}
       style={{
         color: showAltText ? undefined : "transparent",
         ...props.style,
-        backgroundSize,
-        backgroundPosition: props.style?.objectPosition ?? "50% 50%",
-        backgroundRepeat: "no-repeat",
-        backgroundImage,
+        ...placeholderStyle,
       }}
       onLoad={(event) => {
         handleLoading(event.currentTarget, {
@@ -180,6 +184,7 @@ export function BlurImage(props: BlurImageProps) {
         setLoadedSrc(srcKey);
         props.onError?.(event);
       }}
+      src={props.src}
     />
   );
 }

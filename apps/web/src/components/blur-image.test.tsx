@@ -31,12 +31,7 @@ test("keeps the placeholder until decode completes", async () => {
   let finishDecode = () => {};
   const onLoad = vi.fn();
   const view = render(
-    <BlurImage
-      src="https://example.com/photo.jpg"
-      alt="Nova"
-      blurDataUrl={BLUR}
-      onLoad={onLoad}
-    />,
+    <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} onLoad={onLoad} />,
   );
   using _view = makeResource(view, () => {
     view.unmount();
@@ -95,6 +90,27 @@ test("skips the placeholder when no blur data URL is provided", () => {
   const img = view.getByAltText("Nova") as HTMLImageElement;
   expect(img.style.backgroundImage).toBe("");
   expect(img.className).not.toContain("blur-xl");
+});
+
+test("restores a caller background after the placeholder clears", async () => {
+  const view = render(
+    <BlurImage
+      src="https://example.com/photo.jpg"
+      alt="Nova"
+      blurDataUrl={BLUR}
+      style={{ backgroundImage: "linear-gradient(red, blue)" }}
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
+  fireEvent.load(img);
+  await vi.waitFor(() => {
+    expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
+  });
 });
 
 test("removes the placeholder and reveals alt text when loading fails", () => {
