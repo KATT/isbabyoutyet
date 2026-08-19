@@ -47,9 +47,6 @@ function normalizeDueDateDisplay(opts: {
   if (mode === "exact" && !dueDate) {
     throw new Error("A due date is required when the exact date is shown");
   }
-  if (mode === "message" && !normalizedText) {
-    throw new Error("A public due date message is required when the exact date is hidden");
-  }
   return {
     dueDate,
     mode,

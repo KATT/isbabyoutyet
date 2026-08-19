@@ -90,20 +90,29 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   );
 });
 
-test("due date editor requires and saves a custom visitor message", async () => {
+test("due date editor saves message mode without public text", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+    }),
+  );
+});
+
+test("due date editor saves a custom visitor message when provided", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("September baby");
-  fireEvent.click(view.getByRole("button", { name: "Save" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
-  });
-  expect(onUpdate).not.toHaveBeenCalled();
-
   fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() =>

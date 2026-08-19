@@ -163,6 +163,32 @@ test("renders optional public due date text without exposing the exact day", asy
   expect(view.queryByText(/19 September/)).toBeNull();
 });
 
+test("hides the due date box when message mode has no public text", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
+    name: "Baby Smith",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: null,
+  });
+  const baby = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  if (!baby) {
+    throw new Error("expected baby from getByPublicId");
+  }
+  expect(baby).toMatchObject({ dueDateDisplayMode: "message" });
+  if ("publicDueDateText" in baby) {
+    expect(baby.publicDueDateText).toBeUndefined();
+  }
+  expect(baby).not.toHaveProperty("dueDate");
+
+  await using view = renderResource(<BabyDetailPage baby={baby} />);
+  expect(view.getByText("Not yet")).toBeTruthy();
+  expect(view.queryByText(/until due date/)).toBeNull();
+  expect(view.queryByText(/Due date:/)).toBeNull();
+});
+
 test("renders the public baby status in the baby's Swedish override", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {

@@ -44,13 +44,6 @@ function addBabySchema(t: TranslationFunction) {
           message: t("Pick a date"),
         });
       }
-      if (!values.showExactDueDate && !values.publicDueDateText) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["publicDueDateText"],
-          message: t("Enter a message for visitors"),
-        });
-      }
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => ({
       name: values.name,

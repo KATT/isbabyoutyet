@@ -227,7 +227,7 @@ export function docToBabyData(
         ...common,
         dueDate: null,
         dueDateDisplayMode: "message",
-        publicDueDateText: doc.publicDueDateText,
+        publicDueDateText: doc.publicDueDateText ?? null,
       };
 }
 

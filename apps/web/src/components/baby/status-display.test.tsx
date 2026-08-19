@@ -151,6 +151,32 @@ test("custom public due date text replaces the exact date and countdown", async 
   expect(view.queryByText(/19 September/)).toBeNull();
 });
 
+test("hides the due date box when message mode has no public text", async () => {
+  await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
+  const view = render(
+    <StatusDisplay
+      baby={{
+        ...baby,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: null,
+      }}
+      currentStatus={getCurrentStatus(baby)}
+      photoUrl={null}
+      thumbnailUrl={null}
+      blurDataUrl={null}
+      latestUpdate={null}
+    />,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.queryByText(/until due date/)).toBeNull();
+  expect(view.queryByText(/Due date:/)).toBeNull();
+  expect(view.getByText("Not yet")).toBeTruthy();
+});
+
 test("blank public due date text keeps the exact date and countdown", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(

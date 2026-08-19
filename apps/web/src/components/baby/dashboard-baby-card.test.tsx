@@ -146,3 +146,20 @@ test("a message-mode baby card does not show a due date", async () => {
   expect(view.getByText("Not yet")).toBeTruthy();
   expect(view.queryByText(/Due /)).toBeNull();
 });
+
+test("a message-mode baby card with no text shows a hidden label", async () => {
+  const waiting: DashboardBabyCardBaby = {
+    name: "Avery",
+    publicId: "baby-waiting",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: null,
+    role: "owner",
+  };
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
+
+  expect(view.getByText("Due date hidden")).toBeTruthy();
+  expect(view.queryByText(/Due 1 September/)).toBeNull();
+});

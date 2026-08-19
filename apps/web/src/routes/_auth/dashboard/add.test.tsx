@@ -82,7 +82,7 @@ test.each([
   });
 });
 
-test("requires and submits a custom public due date message", async () => {
+test("allows a hidden public due date when message mode has no text", async () => {
   mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
   mocks.navigate.mockReset().mockResolvedValue(undefined);
   await using view = renderResource(<AddBabyPage />);
@@ -90,22 +90,30 @@ test("requires and submits a custom public due date message", async () => {
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
   });
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Pick a date")).toBeTruthy();
-  });
-  expect(mocks.createBaby).not.toHaveBeenCalled();
-
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  expect(view.queryByLabelText("Due date")).toBeNull();
-  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
-  expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
-  await vi.waitFor(() => {
-    expect(view.getByText("Enter a message for visitors")).toBeTruthy();
-  });
-  expect(mocks.createBaby).not.toHaveBeenCalled();
 
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+      birthJourney: "labor",
+    });
+  });
+});
+
+test("submits a custom public due date message when provided", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });
