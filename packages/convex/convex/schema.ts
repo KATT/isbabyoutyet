@@ -27,7 +27,7 @@ export default defineSchema({
     laborStarted: v.optional(v.union(v.string(), v.null())),
     wentToHospital: v.optional(v.union(v.string(), v.null())),
     babyBorn: v.optional(v.union(v.string(), v.null())),
-    theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
+    theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo

@@ -41,7 +41,7 @@ import type {
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { THEME_OPTIONS } from "./utils";
+import { getThemeOption, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
@@ -479,6 +479,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const selectedTheme = getThemeOption(props.baby.theme);
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -494,7 +495,8 @@ export function ThemeSelector(props: ThemeSelectorProps) {
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
-              variant={props.baby.theme === option.value ? "default" : "ghost"}
+              variant={selectedTheme?.value === option.value ? "default" : "ghost"}
+              aria-pressed={selectedTheme?.value === option.value}
               size="sm"
               className="justify-start gap-2"
               disabled={isLoading}

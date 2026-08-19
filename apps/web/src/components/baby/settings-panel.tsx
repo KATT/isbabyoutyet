@@ -55,7 +55,7 @@ import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/conv
 import { api } from "@workspace/convex/convex/_generated/api";
 import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
-import { formatDate, formatDueDate, getRelativeTime, THEME_OPTIONS } from "./utils";
+import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
   SUPPORTED_LOCALES,
   isSupportedLocale,
@@ -292,10 +292,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <ItemContent>
               <ItemTitle>{t("Theme")}</ItemTitle>
               <ItemDescription>
-                {t(
-                  THEME_OPTIONS.find((theme) => theme.value === props.baby.theme)?.labelKey ??
-                    "Default",
-                )}
+                {t(getThemeOption(props.baby.theme)?.labelKey ?? "Default")}
               </ItemDescription>
             </ItemContent>
             <ItemActions>
