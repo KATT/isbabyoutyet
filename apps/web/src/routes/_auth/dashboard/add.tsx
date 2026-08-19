@@ -6,7 +6,7 @@ import { useWatch } from "react-hook-form";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
-import { Switch } from "@workspace/ui/components/switch";
+import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -136,27 +136,11 @@ export function AddBabyPage() {
                 />
 
                 <div className="overflow-hidden rounded-2xl border-2 border-border">
-                  <FormField
+                  <ShowExactDueDateToggleField
                     control={form.control}
                     name="showExactDueDate"
-                    render={(renderProps) => (
-                      <FormItem className="flex items-center justify-between gap-4 border-0 p-4 pb-3">
-                        <div className="flex flex-col gap-1">
-                          <FormLabel className="font-bold">{t("Show exact due date")}</FormLabel>
-                          <FormDescription>
-                            {renderProps.field.value
-                              ? t("Visitors see the exact date and countdown.")
-                              : t("Visitors see only your message.")}
-                          </FormDescription>
-                        </div>
-                        <FormControl>
-                          <Switch
-                            checked={renderProps.field.value}
-                            onCheckedChange={renderProps.field.onChange}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
+                    rowClassName="gap-4 p-4 pb-3"
+                    titleClassName="font-bold"
                   />
                   <div className="border-t border-border/60 bg-muted/30 px-4 pb-4 pt-3">
                     {showExactDueDate ? (

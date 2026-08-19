@@ -124,6 +124,21 @@ test("due date editor saves a custom visitor message when provided", async () =>
   );
 });
 
+test("due date editor toggles exact mode when clicking the row label", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(view.getByText("Visitors see the exact date and countdown."));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+
+  fireEvent.click(view.getByText("Show exact due date"));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+});
+
 test("due date editor toggles modes without losing either field value", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(

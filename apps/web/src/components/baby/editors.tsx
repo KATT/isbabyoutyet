@@ -13,7 +13,6 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,7 +20,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
-import { Switch } from "@workspace/ui/components/switch";
+import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
@@ -175,27 +174,11 @@ function DueDateForm(props: EditorFormProps) {
       }}
     >
       <div className="mb-3 overflow-hidden rounded-xl border border-border">
-        <FormField
+        <ShowExactDueDateToggleField
           control={form.control}
           name="showExactDueDate"
-          render={(renderProps) => (
-            <FormItem className="flex items-center justify-between gap-3 border-0 p-3 pb-2">
-              <div className="flex flex-col gap-1">
-                <FormLabel>{t("Show exact due date")}</FormLabel>
-                <FormDescription>
-                  {renderProps.field.value
-                    ? t("Visitors see the exact date and countdown.")
-                    : t("Visitors see only your message.")}
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={renderProps.field.value}
-                  onCheckedChange={renderProps.field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
+          rowClassName="gap-3 p-3 pb-2"
+          titleClassName={undefined}
         />
         <div className="border-t border-border/60 bg-muted/30 px-3 pb-3 pt-2">
           {showExactDueDate ? (

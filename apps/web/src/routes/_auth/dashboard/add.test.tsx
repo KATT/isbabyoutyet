@@ -130,6 +130,19 @@ test("submits a custom public due date message when provided", async () => {
   });
 });
 
+test("toggles exact due date mode when clicking the row label", async () => {
+  await using view = renderResource(<AddBabyPage />);
+
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(view.getByText("Visitors see the exact date and countdown."));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+
+  fireEvent.click(view.getByText("Show exact due date"));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+});
+
 test("keeps entered date and message values while toggling fields", async () => {
   mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
   mocks.navigate.mockReset().mockResolvedValue(undefined);
