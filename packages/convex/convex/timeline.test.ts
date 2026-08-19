@@ -844,7 +844,7 @@ test("backfill rejects a milestone update without a usable timestamp", async () 
       if (!baby) throw new Error("Baby not found");
       await backfillBabyTimelineDoc(ctx, baby);
     }),
-  ).rejects.toThrow("has no usable timeline timestamp");
+  ).rejects.toThrow("has no active timeline item");
 });
 
 test("clearLegacyStageMessages only clears fields with a proven durable destination", async () => {
