@@ -24,8 +24,15 @@ write n/a.
 ## Schema changes
 
 <!--
-If packages/convex/convex/schema.ts (or related schema files) did not change, write None.
-Otherwise bullet: what changed, why, migration/follow-up.
+If schema.ts (or related schema files) and migrations did not change, write None.
+Otherwise bullets for:
+- Schema: tables/fields/indexes/unions; additive vs breaking vs required-field
+- Why / motivation
+- Migrations: what ran/will run (e.g. packages/convex/convex/migrations.ts or
+  migration functions); backfill vs require-after-backfill; follow-up PRs that
+  tighten validators or drop old fields
+- If this continues schema/migration work from an earlier PR, link it and say
+  what this slice does vs landed vs TODO
 -->
 
 None
