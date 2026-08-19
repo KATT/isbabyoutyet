@@ -1,11 +1,6 @@
 import { expect, test } from "vitest";
 import type { TranslationFunction } from "@/lib/i18n";
-import {
-  htmlDate,
-  htmlDateTime,
-  htmlDateTimeNow,
-  optionalHtmlDateTime,
-} from "@/lib/html-date";
+import { htmlDate, htmlDateTime, htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 
 const t = ((key: string) => key) as TranslationFunction;
 const dateCodec = htmlDate(t);
