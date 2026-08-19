@@ -103,9 +103,9 @@ function dueDateSchema(t: TranslationFunction) {
     })
     .transform(
       (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
-        dueDate: values.showExactDueDate ? values.date : null,
+        dueDate: values.date,
         dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+        publicDueDateText: values.publicDueDateText || null,
       }),
     );
 }

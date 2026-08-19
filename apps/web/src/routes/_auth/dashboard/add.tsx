@@ -54,9 +54,9 @@ function addBabySchema(t: TranslationFunction) {
     })
     .transform((values): FunctionArgs<typeof api.baby.create> => ({
       name: values.name,
-      dueDate: values.showExactDueDate ? values.dueDate : null,
+      dueDate: values.dueDate,
       dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-      publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+      publicDueDateText: values.publicDueDateText || null,
       birthJourney: values.birthJourney,
     }));
 }
