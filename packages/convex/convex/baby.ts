@@ -14,7 +14,7 @@ import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAcc
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
-import { toBabyDto } from "./babyDto";
+import { toBabyDto, toManagerBabyDto } from "./babyDto";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -37,17 +37,23 @@ function normalizePublicDueDateText(value: string | null | undefined) {
 }
 
 function normalizeDueDateDisplay(opts: {
+  dueDate: string | null | undefined;
   mode: DueDateDisplayMode | undefined;
   text: string | null | undefined;
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
   const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  const dueDate = opts.dueDate ?? null;
+  if (mode === "exact" && !dueDate) {
+    throw new Error("A due date is required when the exact date is shown");
+  }
   if (mode === "message" && !normalizedText) {
     throw new Error("A public due date message is required when the exact date is hidden");
   }
   return {
+    dueDate,
     mode,
-    text: mode === "message" ? normalizedText : null,
+    text: normalizedText,
   };
 }
 
@@ -102,23 +108,22 @@ export const getByPublicId = query({
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const blurDataUrl = baby.blurDataUrl ?? null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
-    const dueDateDisplay = normalizeDueDateDisplay({
-      mode: baby.dueDateDisplayMode,
-      text: baby.publicDueDateText,
-    });
-    const canSeeExactDueDate =
-      dueDateDisplay.mode === "exact" || Boolean(await findBabyManager(ctx, baby._id));
 
     return {
       ...(await toBabyDto(ctx, baby)),
-      dueDate: canSeeExactDueDate ? baby.dueDate : baby.dueDate.slice(0, 7),
-      dueDateDisplayMode: dueDateDisplay.mode,
-      publicDueDateText: dueDateDisplay.text,
       photoUrl,
       thumbnailUrl,
       blurDataUrl,
       resolvedLocale,
     };
+  },
+});
+
+export const getManagerBaby = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? await toManagerBabyDto(ctx, access.baby) : FORBIDDEN;
   },
 });
 
@@ -332,7 +337,7 @@ async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
 export const create = mutationWithTriggers({
   args: {
     name: v.string(),
-    dueDate: v.string(),
+    dueDate: v.union(v.string(), v.null()),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
@@ -345,6 +350,7 @@ export const create = mutationWithTriggers({
     }
     const caller = appIdentity(identity);
     const dueDateDisplay = normalizeDueDateDisplay({
+      dueDate: args.dueDate,
       mode: args.dueDateDisplayMode,
       text: args.publicDueDateText,
     });
@@ -359,7 +365,7 @@ export const create = mutationWithTriggers({
       userId: caller.authUserId,
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
-      dueDate: args.dueDate,
+      dueDate: dueDateDisplay.dueDate,
       dueDateDisplayMode: dueDateDisplay.mode,
       publicDueDateText: dueDateDisplay.text,
       publicId,
@@ -605,7 +611,7 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    dueDate: v.optional(v.string()),
+    dueDate: v.optional(v.union(v.string(), v.null())),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
@@ -617,15 +623,23 @@ export const update = mutationWithTriggers({
   handler: async (ctx, args) => {
     const { babyId, ...patch } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
-    let publicId: string | undefined;
-    if (patch.dueDateDisplayMode !== undefined || patch.publicDueDateText !== undefined) {
+    if (
+      patch.dueDate !== undefined ||
+      patch.dueDateDisplayMode !== undefined ||
+      patch.publicDueDateText !== undefined
+    ) {
       const dueDateDisplay = normalizeDueDateDisplay({
-        mode: patch.dueDateDisplayMode,
-        text: patch.publicDueDateText,
+        dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+        mode: patch.dueDateDisplayMode ?? baby.dueDateDisplayMode,
+        text:
+          patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
       });
+      patch.dueDate = dueDateDisplay.dueDate;
       patch.dueDateDisplayMode = dueDateDisplay.mode;
       patch.publicDueDateText = dueDateDisplay.text;
     }
+
+    let publicId: string | undefined;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);

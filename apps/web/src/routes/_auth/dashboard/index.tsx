@@ -161,7 +161,9 @@ type DashboardBaby = {
   _id: Id<"baby">;
   name: string;
   publicId: string;
-  dueDate: string;
+  dueDate: string | null;
+  dueDateDisplayMode: "exact" | "message";
+  publicDueDateText: string | null;
   role: "owner" | "coParent";
 } & Partial<{
   laborStarted: string | null;

@@ -47,6 +47,8 @@ test("shows prefetched babies without a spinner", async () => {
           name: "Baby Smith",
           publicId: "baby-smith",
           dueDate: "2026-12-01",
+          dueDateDisplayMode: "exact",
+          publicDueDateText: null,
           laborStarted: null,
           wentToHospital: null,
           babyBorn: null,

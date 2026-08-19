@@ -131,7 +131,7 @@ test("custom public due date text replaces the exact date and countdown", async 
     <StatusDisplay
       baby={{
         ...baby,
-        dueDate: "2026-09-19",
+        dueDate: null,
         dueDateDisplayMode: "message",
         publicDueDateText: "Any day now",
       }}

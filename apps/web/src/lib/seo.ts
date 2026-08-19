@@ -9,11 +9,8 @@ import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
 
-type BabySeoInput = {
+type BabySeoBase = {
   name: string;
-  dueDate: string;
-  dueDateDisplayMode: "exact" | "message";
-  publicDueDateText: string | null;
   publicId: string;
   theme: string | null | undefined;
   locale: SupportedLocale;
@@ -22,15 +19,22 @@ type BabySeoInput = {
   laborStarted: string | null | undefined;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
 
+type BabyDueDateDisplay =
+  | { dueDateDisplayMode: "exact"; dueDate: string }
+  | { dueDateDisplayMode: "message"; publicDueDateText: string };
+
+type BabySeoInput = BabySeoBase & BabyDueDateDisplay;
+
 function babyPageTitle(baby: BabySeoInput) {
   const isMessageMode = baby.dueDateDisplayMode === "message";
-  const overdueDays = isMessageMode ? 0 : getOverdueDays(baby.dueDate);
-  const daysUntilDueDate = isMessageMode ? 0 : getDaysUntilDueDate(baby.dueDate);
+  const exactDueDate = isMessageMode ? null : baby.dueDate;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
+  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
 
   let title = translate(locale, "Is {{name}} out yet?", { name: baby.name });
-  if (!isBorn && !isMessageMode) {
+  if (!isBorn && exactDueDate) {
     if (overdueDays > 0) {
       title = translate(
         locale,
@@ -101,10 +105,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<
-    BabySeoInput,
-    "dueDate" | "dueDateDisplayMode" | "publicDueDateText" | "babyBorn" | "locale"
-  >;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale"> & BabyDueDateDisplay;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -115,7 +116,7 @@ export function babyStatusDetail(opts: {
     return babyStatusLabel({ status: opts.status, locale });
   }
   if (opts.baby.dueDateDisplayMode === "message") {
-    return opts.baby.publicDueDateText?.trim() ?? "";
+    return opts.baby.publicDueDateText.trim();
   }
   const overdueDays = getOverdueDays(opts.baby.dueDate);
   if (overdueDays > 0) {

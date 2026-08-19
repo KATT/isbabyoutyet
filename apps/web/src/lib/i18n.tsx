@@ -406,6 +406,8 @@ const enGB = {
   "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
   "A name, a date, and a journey — that's all it takes!":
     "A name, a date, and a journey. That's it!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "A name, how to display the due date, and a journey. That's it!",
   "Add Baby 🍼": "Add Baby 🍼",
   "Welcome back!": "Welcome back!",
   "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
@@ -948,6 +950,8 @@ const sv: Record<TranslationKey, string> = {
     "Ett namn och ett beräknat datum. Mer behövs inte!",
   "A name, a date, and a journey — that's all it takes!":
     "Ett namn, ett datum och en resa. Mer behövs inte!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Ett namn, hur det beräknade datumet ska visas och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
@@ -1472,6 +1476,8 @@ const es: Record<TranslationKey, string> = {
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
   "A name, a date, and a journey — that's all it takes!":
     "Solo necesitas un nombre, una fecha y un recorrido.",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, cómo mostrar la fecha prevista y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -2002,6 +2008,8 @@ const ptBR: Record<TranslationKey, string> = {
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
   "A name, a date, and a journey — that's all it takes!":
     "Um nome, uma data e uma jornada. Só isso!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Um nome, como mostrar a data prevista e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
   "Welcome back!": "Que bom te ver de novo!",
   "Sign in to keep everyone in the loop": "Entre para deixar todo mundo por dentro",

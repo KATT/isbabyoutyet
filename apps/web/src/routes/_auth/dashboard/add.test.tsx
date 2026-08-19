@@ -45,6 +45,7 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
   ).toBe("true");
+  expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
@@ -89,10 +90,14 @@ test("requires and submits a custom public due date message", async () => {
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
   });
-  fireEvent.change(view.getByLabelText("Due date"), {
-    target: { value: "2026-09-19" },
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Pick a date")).toBeTruthy();
   });
+  expect(mocks.createBaby).not.toHaveBeenCalled();
+
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  expect(view.queryByLabelText("Due date")).toBeNull();
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
   expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
@@ -104,6 +109,41 @@ test("requires and submits a custom public due date message", async () => {
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
+      birthJourney: "labor",
+    });
+  });
+});
+
+test("keeps entered date and message values while toggling fields", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-19" },
+  });
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  fireEvent.click(exactSwitch);
+  fireEvent.change(view.getByLabelText("Public due date message"), {
+    target: { value: "Any day now" },
+  });
+  fireEvent.click(exactSwitch);
+  expect((view.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-09-19");
+  fireEvent.click(exactSwitch);
+  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
+    "Any day now",
+  );
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {

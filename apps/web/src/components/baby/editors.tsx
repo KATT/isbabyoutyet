@@ -88,6 +88,13 @@ function dueDateSchema(t: TranslationFunction) {
       publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
     })
     .superRefine((values, ctx) => {
+      if (values.showExactDueDate && !values.date) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["date"],
+          message: t("Pick a date"),
+        });
+      }
       if (!values.showExactDueDate && !values.publicDueDateText) {
         ctx.addIssue({
           code: "custom",
@@ -100,7 +107,7 @@ function dueDateSchema(t: TranslationFunction) {
       (values): Pick<BabyPatch, "dueDate" | "dueDateDisplayMode" | "publicDueDateText"> => ({
         dueDate: values.date,
         dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
-        publicDueDateText: values.showExactDueDate ? null : values.publicDueDateText,
+        publicDueDateText: values.publicDueDateText || null,
       }),
     );
 }
@@ -176,24 +183,6 @@ function DueDateForm(props: EditorFormProps) {
     >
       <FormField
         control={form.control}
-        name="date"
-        render={({ field }) => (
-          <FormItem className="mb-3">
-            <FormControl>
-              <Input
-                type="date"
-                aria-label={t("Due Date")}
-                onMouseDown={(e) => e.stopPropagation()}
-                onFocus={(e) => e.stopPropagation()}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={form.control}
         name="showExactDueDate"
         render={(renderProps) => (
           <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
@@ -214,7 +203,27 @@ function DueDateForm(props: EditorFormProps) {
           </FormItem>
         )}
       />
-      {!showExactDueDate ? (
+      {showExactDueDate ? (
+        <FormField
+          control={form.control}
+          name="date"
+          render={(renderProps) => (
+            <FormItem className="mb-3">
+              <FormControl>
+                <Input
+                  type="date"
+                  aria-label={t("Due Date")}
+                  onMouseDown={(event) => event.stopPropagation()}
+                  onFocus={(event) => event.stopPropagation()}
+                  {...renderProps.field}
+                  value={renderProps.field.value ?? ""}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : (
         <FormField
           control={form.control}
           name="publicDueDateText"
@@ -228,7 +237,7 @@ function DueDateForm(props: EditorFormProps) {
             </FormItem>
           )}
         />
-      ) : null}
+      )}
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
