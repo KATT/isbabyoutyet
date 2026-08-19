@@ -510,24 +510,6 @@ const enGB = {
   "Encouragements from visitors": "Messages from visitors",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Anyone with the link can leave a short message without an account. It appears in your timeline.",
-  "Welcome — here's the idea": "Welcome! Here's the idea",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "One page for labour updates, so friends and family stop texting you for news.",
-  "Create a baby page": "Create a baby page",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Add a name and due date. We'll make a public link that shows the latest status.",
-  "Share once, update as you go": "Share once, update as you go",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Post milestones and messages from the menu. Status updates notify subscribers. Other posts stay quiet.",
-  "Skip anytime": "Skip anytime",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "A small checklist stays with you. Tap a step to jump to it. Dismiss the tour any time and restart it later from the ✨ on your dashboard.",
-  "Welcome tour": "Welcome tour",
-  "A short overview of how the app works": "A short overview of how the app works",
-  "Go to slide {{number}}": "Go to slide {{number}}",
-  Skip: "Skip",
-  "Let's go": "Let's go",
-  Next: "Next",
   "Go Home": "Go Home",
   "Something went wrong": "Something went wrong",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1052,24 +1034,6 @@ const sv: Record<TranslationKey, string> = {
   "Encouragements from visitors": "Hälsningar från besökare",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Alla med länken kan lämna en kort pepphälsning utan konto. Den dyker upp i tidslinjen.",
-  "Welcome — here's the idea": "Välkommen! Så här funkar det",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "Appen samlar alla förlossningsuppdateringar på en lugn sida, så familj och vänner slipper skriva och fråga.",
-  "Create a baby page": "Skapa en bäbissida",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Lägg till namn och beräknat datum. Då får du en länk, till exempel isbabyoutyet.com/baby/…, som visar aktuell status.",
-  "Share once, update as you go": "Dela en gång, uppdatera när det händer",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Lägg upp milstolpar och meddelanden från menyn. Prenumeranterna får notiser om statusändringar, men inte om vardagsinlägg eller hälsningar.",
-  "Skip anytime": "Hoppa över när som helst",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "En liten checklista följer med. Tryck på ett steg för att hoppa rätt eller markera det du ska använda. Du kan stänga den när du vill och starta om den via gnistan på översikten.",
-  "Welcome tour": "Välkomstguide",
-  "A short overview of how the app works": "En snabb titt på hur appen funkar",
-  "Go to slide {{number}}": "Gå till bild {{number}}",
-  Skip: "Hoppa över",
-  "Let's go": "Nu kör vi",
-  Next: "Nästa",
   "Go Home": "Gå hem",
   "Something went wrong": "Något gick fel",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1580,24 +1544,6 @@ const es: Record<TranslationKey, string> = {
   "Encouragements from visitors": "Mensajes de los visitantes",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Cualquiera con el enlace puede dejar un mensaje breve de apoyo, sin crear una cuenta. Los mensajes aparecerán en el historial.",
-  "Welcome — here's the idea": "Te damos la bienvenida. Así funciona.",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "Con ¿Ya nació el bebé? tienes una página tranquila para compartir las novedades del parto y evitar que familiares y amigos te escriban a cada rato.",
-  "Create a baby page": "Crea una página del bebé",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Añade un nombre y una fecha prevista. Tendrás un enlace como isbabyoutyet.com/baby/… para compartir y mostrar el estado actual.",
-  "Share once, update as you go": "Comparte una vez, actualiza sobre la marcha",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Publica hitos y mensajes desde el menú. Los cambios de estado avisan a quienes se suscribieron; las notas del día a día y los mensajes de ánimo no envían notificaciones.",
-  "Skip anytime": "Sáltalo cuando quieras",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "Tendrás a mano una lista breve. Toca un paso para ir directamente o destacar el botón. Puedes cerrarla cuando quieras y volver a abrirla desde la estrella del panel.",
-  "Welcome tour": "Recorrido de bienvenida",
-  "A short overview of how the app works": "Un vistazo rápido a cómo funciona la app",
-  "Go to slide {{number}}": "Ir a la diapositiva {{number}}",
-  Skip: "Omitir",
-  "Let's go": "Empecemos",
-  Next: "Siguiente",
   "Go Home": "Ir al inicio",
   "Something went wrong": "Algo salió mal",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -2112,24 +2058,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Encouragements from visitors": "Mensagens de carinho dos visitantes",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Qualquer pessoa com o link pode deixar um recadinho de apoio, sem precisar de conta. O recado aparece na sua linha do tempo.",
-  "Welcome — here's the idea": "Boas-vindas! É assim que funciona:",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    '"O bebê já nasceu?" reúne as novidades do parto numa página tranquila. Assim, amigos e familiares param de perguntar toda hora.',
-  "Create a baby page": "Crie uma página do bebê",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Adicione um nome e uma data prevista. Você recebe um link para compartilhar, como isbabyoutyet.com/baby/…, que mostra o status atual.",
-  "Share once, update as you go": "Compartilhe uma vez e vá atualizando",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Publique etapas e mensagens pelo menu. Mudanças de status avisam quem ativou as notificações. Os outros recados e mensagens de carinho entram na linha do tempo sem notificação.",
-  "Skip anytime": "Pule quando quiser",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "Uma listinha acompanha você pelo app. Toque em uma etapa para ir até ela ou destacar o botão. Feche quando quiser e, se mudar de ideia, recomece pelo ícone de brilho no painel.",
-  "Welcome tour": "Tour de boas-vindas",
-  "A short overview of how the app works": "Uma visão rápida de como o app funciona",
-  "Go to slide {{number}}": "Ir para o slide {{number}}",
-  Skip: "Pular",
-  "Let's go": "Vamos lá",
-  Next: "Próximo",
   "Go Home": "Ir para o início",
   "Something went wrong": "Algo deu errado",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -2166,8 +2094,6 @@ const enUS: Partial<Record<TranslationKey, string>> = {
     "Two days of labor, photos and family messages. Add a test note and take a look around.",
   "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
     "Pick soft pastels, bold colors or whatever feels like you.",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "One page for labor updates, so friends and family stop texting you for news.",
 };
 
 const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {

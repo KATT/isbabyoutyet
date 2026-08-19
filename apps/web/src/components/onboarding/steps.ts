@@ -66,32 +66,3 @@ export const ONBOARDING_STEPS = [
     ctaLabel: undefined,
   },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;
-
-export type WelcomeSlide = {
-  title: TranslationKey;
-  body: TranslationKey;
-  icon: Icon;
-};
-
-export const WELCOME_SLIDES = [
-  {
-    title: "Welcome — here's the idea",
-    body: "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.",
-    icon: Baby,
-  },
-  {
-    title: "Create a baby page",
-    body: "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
-    icon: ShareNetwork,
-  },
-  {
-    title: "Share once, update as you go",
-    body: "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
-    icon: ChatCircleText,
-  },
-  {
-    title: "Skip anytime",
-    body: "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
-    icon: Heart,
-  },
-] as const satisfies ReadonlyArray<WelcomeSlide>;
