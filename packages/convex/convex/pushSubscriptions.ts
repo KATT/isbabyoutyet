@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { findBabyManager } from "./babyAccess";
+import { babyIdOrPublicIdValidator } from "./babyLookup";
 import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
 import schema from "./schema";
@@ -121,7 +122,7 @@ export const getSubscriptionsPage = internalQuery({
 
 export const getSubscriptionCount = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
   },
   returns: v.union(v.number(), v.literal(FORBIDDEN)),
   handler: async (ctx, args) => {

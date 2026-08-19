@@ -15,6 +15,7 @@ import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -68,34 +69,10 @@ export const listByUser = query({
 
 export const getByPublicId = query({
   args: {
-    id: v.union(v.id("baby"), v.string()),
+    id: babyIdOrPublicIdValidator,
   },
   handler: async (ctx, args) => {
-    // Check if it's a valid Convex ID and try to fetch directly
-    const normalizedId = ctx.db.normalizeId("baby", args.id);
-    let baby: Doc<"baby"> | null = null;
-    if (normalizedId) {
-      baby = await ctx.db.get(normalizedId);
-    }
-
-    // Fall back to publicId lookup
-    if (!baby) {
-      baby = await ctx.db
-        .query("baby")
-        .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-        .first();
-    }
-
-    // If not found, check historical publicIds
-    const latestHistoryEntry = await ctx.db
-      .query("babyPublicIdHistory")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-      .order("desc")
-      .first();
-
-    if (latestHistoryEntry) {
-      baby = await ctx.db.get(latestHistoryEntry.babyId);
-    }
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.id);
 
     if (!baby || !isActive(baby)) {
       return null;
@@ -117,7 +94,7 @@ export const getByPublicId = query({
 });
 
 export const getManagerBaby = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     const access = await findBabyManager(ctx, args.babyId);
     return access ? await toManagerBabyDto(ctx, access.baby) : FORBIDDEN;
@@ -405,7 +382,7 @@ export const remove = mutationWithTriggers({
 });
 
 export const getScheduledNotifications = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     // Sentinel instead of throwing: the baby route loader queries this for
     // every visitor.
@@ -416,7 +393,7 @@ export const getScheduledNotifications = query({
 
     const notifications = await ctx.db
       .query("scheduledNotifications")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId", (q) => q.eq("babyId", access.baby._id))
       .order("desc")
       .take(100);
 
