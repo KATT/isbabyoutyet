@@ -19,14 +19,6 @@ export default defineSchema({
       v.literal("home_birth"),
       v.literal("planned_c_section"),
     ),
-    // Transitional optional fields. Status and messages now live on milestone
-    // updates; `clearStoredStatusFields` unsets these before schema removal.
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
-    laborStarted: v.optional(v.union(v.string(), v.null())),
-    wentToHospital: v.optional(v.union(v.string(), v.null())),
-    babyBorn: v.optional(v.union(v.string(), v.null())),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)

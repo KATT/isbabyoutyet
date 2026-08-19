@@ -12,6 +12,27 @@ export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
 export const FORBIDDEN = "forbidden" as const;
 
 /**
+ * Event-clock dates for the three milestones. On the server these are inferred
+ * from the latest active milestone updates; the preview page supplies them as
+ * query params.
+ */
+export type MilestoneDates = {
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+};
+
+/**
+ * Preview-only per-stage messages. Live pages keep copy on timeline updates;
+ * the homepage preview still passes these as query params.
+ */
+export type BabyPreviewMessages = {
+  laborStartedMessage: string | null;
+  hospitalMessage: string | null;
+  babyBornMessage: string | null;
+};
+
+/**
  * Core baby data shape used by both the real page (from Convex) and preview (from query params)
  */
 export type BabyData = Omit<
@@ -25,7 +46,10 @@ export type BabyData = Omit<
   | "_creationTime"
   | "birthJourney"
 > &
+  MilestoneDates &
   Partial<{ milestoneVisibility: MilestoneVisibility }>;
+
+export type PreviewBabyData = BabyData & BabyPreviewMessages;
 
 /**
  * Partial update to baby data - used by editors
@@ -81,12 +105,6 @@ export type BabyStatus =
   | { type: "gone_to_hospital"; date: string }
   | { type: "born"; date: string };
 
-export type MilestoneDates = {
-  laborStarted: string | null;
-  wentToHospital: string | null;
-  babyBorn: string | null;
-};
-
 export const STATUS_ORDER = {
   not_yet: 0,
   labor_started: 1,
@@ -115,7 +133,10 @@ export const MILESTONE_FIELDS = {
   labor_started: { date: "laborStarted", message: "laborStartedMessage" },
   gone_to_hospital: { date: "wentToHospital", message: "hospitalMessage" },
   born: { date: "babyBorn", message: "babyBornMessage" },
-} as const satisfies Record<Milestone, { date: keyof BabyData; message: keyof BabyData }>;
+} as const satisfies Record<
+  Milestone,
+  { date: keyof MilestoneDates; message: keyof BabyPreviewMessages }
+>;
 
 export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
 

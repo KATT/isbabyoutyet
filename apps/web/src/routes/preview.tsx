@@ -3,7 +3,7 @@ import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
-import type { BabyData } from "@workspace/convex/src/types";
+import type { PreviewBabyData } from "@workspace/convex/src/types";
 import {
   getCurrentStatus,
   milestoneVisibilityForPreset,
@@ -15,7 +15,7 @@ import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
-function getDefaultBabyData(): BabyData {
+function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 7);
@@ -87,7 +87,7 @@ export function PreviewPage() {
   const navigate = useNavigate({ from: Route.fullPath });
   const birthJourney = search.birthJourney ?? "labor";
 
-  const baby: BabyData = {
+  const baby: PreviewBabyData = {
     ...getDefaultBabyData(),
     ...search,
     milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
