@@ -134,6 +134,7 @@ export function AddBabyPage() {
                   control={form.control}
                   dateFieldName="dueDate"
                   className={undefined}
+                  sectionLabelClassName="font-bold"
                   stopPopoverPropagation={false}
                 />
 
