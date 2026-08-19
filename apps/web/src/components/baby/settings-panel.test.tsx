@@ -181,7 +181,7 @@ test("falls back to the default label for an unknown legacy theme", async () => 
     />,
   );
 
-  expect(view.getByText("Default")).toBeTruthy();
+  expect(view.getByText("Mango")).toBeTruthy();
 });
 
 test("page language selection saves the locale override", async () => {
@@ -311,7 +311,7 @@ test("theme constants render through the active translation catalog", async () =
   );
 
   expect(view.getByText("Tema")).toBeTruthy();
-  expect(view.getByText("Standard")).toBeTruthy();
+  expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
   expect(view.getByText("Förlossning")).toBeTruthy();
 });

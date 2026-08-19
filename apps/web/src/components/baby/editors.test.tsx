@@ -222,7 +222,7 @@ test("theme selector marks Baby Blue selected", async () => {
 
   const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
   expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
-  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
 
   fireEvent.click(babyBlueButton);
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
@@ -238,7 +238,7 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
 
   fireEvent.click(view.getByRole("button", { name: "Change" }));
 
-  expect(view.getByRole("button", { name: "Default" }).getAttribute("aria-pressed")).toBe("false");
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
 });
 
 test("theme selector reports a failed update and remains open", async () => {

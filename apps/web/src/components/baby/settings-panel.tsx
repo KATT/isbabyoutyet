@@ -308,7 +308,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <ItemContent>
                 <ItemTitle>{t("Theme")}</ItemTitle>
                 <ItemDescription>
-                  {t(getThemeOption(props.baby.theme)?.labelKey ?? "Default")}
+                  {t(getThemeOption(props.baby.theme)?.labelKey ?? "Mango")}
                 </ItemDescription>
               </ItemContent>
               <ItemActions>

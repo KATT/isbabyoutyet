@@ -16,7 +16,7 @@ import type { TranslationKey } from "@/lib/i18n";
 export const THEME_OPTIONS = [
   {
     value: null,
-    labelKey: "Default",
+    labelKey: "Mango",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
     css: null,
   }, // orange primary
