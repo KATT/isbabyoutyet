@@ -45,7 +45,7 @@ Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 - **Stacked PRs:** `## Stack` first, with the full two-column table (PR | Description). Mark the current PR in the PR column as `**👉 …**` (bold plus emoji). Do not use `← this PR` in Description. Then follow the rest of `.github/pull_request_template.md`.
 - **Non-stack PRs:** omit the Stack section entirely. Do not write `n/a`.
 - **Why / How / What / Alternate approaches considered:** titled `##` sections with concise bullets under each. Do not use a single Summary with labeled `Why:` bullets. See `.github/pull_request_template.md` (do not duplicate it here).
-- **Schema changes** is required. If `packages/convex/convex/schema.ts` (or related schema files) did not change, write `None`. If it did, fill what changed, why, the migration story, and any follow-up that continues schema work (link the earlier PR; say what this slice does vs what already landed / what is still TODO).
+- **Schema changes** is required and covers schema **and** related Convex migrations (for example `packages/convex/convex/migrations.ts` or migration functions). If neither changed, write `None`. If either did, fill the schema, why, migrations, and follow-up bullets in `.github/pull_request_template.md` (do not duplicate them here).
 
 ## Stack table
 
@@ -169,7 +169,7 @@ EOF
 )"
 ```
 
-Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep the template sections (Why, How, What, Alternate approaches considered, Schema changes, Test plan) and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` changed; otherwise `None`.
+Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep the template sections (Why, How, What, Alternate approaches considered, Schema changes, Test plan) and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` or related Convex migrations changed; otherwise `None`.
 
 ## Detect an existing stack
 
