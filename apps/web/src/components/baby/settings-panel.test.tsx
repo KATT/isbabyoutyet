@@ -91,7 +91,12 @@ test("settings dialog shows page fields when open and stays closed when not", as
 test("due date row previews optional public text", async () => {
   await using view = renderResource(
     <SettingsPanel
-      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
+      baby={{
+        ...baby,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
       open
       onOpenChange={vi.fn<(open: boolean) => void>()}
@@ -99,7 +104,7 @@ test("due date row previews optional public text", async () => {
     />,
   );
 
-  expect(view.getByText("1 September 2026 · Visitors see “Any day now”.")).toBeTruthy();
+  expect(view.getByText("Visitors see “Any day now”.")).toBeTruthy();
 });
 
 test("delete page control appears when onDelete is provided", async () => {

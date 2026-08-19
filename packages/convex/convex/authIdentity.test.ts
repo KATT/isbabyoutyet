@@ -133,6 +133,7 @@ test("due date display migration preserves and normalizes existing messages", as
   });
 
   expect(await t.run(async (ctx) => await ctx.db.get(babyId))).toMatchObject({
+    dueDate: "2026-09-01",
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });

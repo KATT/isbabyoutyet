@@ -141,8 +141,8 @@ test("admins can list babies sorted by created or updated with manager emails", 
       ownerTokenIdentifier: "https://convex.test|unknown-owner",
       name: "Quiet",
       dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
       publicId: "baby-quiet",
       birthJourney: "labor",
       lastActivityAt: now,
@@ -204,6 +204,11 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const quiet = byCreated.page.find((row) => row.publicId === "baby-quiet");
   expect(quiet?.updatedAt).toBe(quiet?.createdAt);
   expect(quiet?.managerEmails).toEqual([]);
+  expect(quiet).toMatchObject({
+    dueDate: "2026-12-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
 
   const byUpdated = await asDemo.query(api.admin.listBabies, {
     sortBy: "updated",

@@ -76,11 +76,8 @@ async function pngResponse(opts: {
   });
 }
 
-export type BabyOgImageInput = {
+type BabyOgImageBase = {
   name: string;
-  dueDate: string;
-  dueDateDisplayMode: "exact" | "message";
-  publicDueDateText: string | null;
   theme: string | null | undefined;
   locale: SupportedLocale;
   babyBorn: string | null | undefined;
@@ -88,6 +85,12 @@ export type BabyOgImageInput = {
   laborStarted: string | null | undefined;
   photoUrl: string | null;
 } & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+
+export type BabyOgImageInput = BabyOgImageBase &
+  (
+    | { dueDateDisplayMode: "exact"; dueDate: string }
+    | { dueDateDisplayMode: "message"; publicDueDateText: string }
+  );
 
 async function resolvePhotoDataUrl(photoUrl: string | null) {
   if (!photoUrl) {
@@ -119,9 +122,12 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       ? babyStatusDetail({ baby, status })
       : babyPageDescription({
           name: baby.name,
-          dueDate: baby.dueDate,
-          dueDateDisplayMode: baby.dueDateDisplayMode,
-          publicDueDateText: baby.publicDueDateText,
+          ...(baby.dueDateDisplayMode === "exact"
+            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+            : {
+                dueDateDisplayMode: "message" as const,
+                publicDueDateText: baby.publicDueDateText,
+              }),
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,

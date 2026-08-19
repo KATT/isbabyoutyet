@@ -40,7 +40,7 @@ function getDefaultBabyData(): PreviewBabyData {
 }
 const searchSchema = z.object({
   name: z.string().default("Baby"),
-  dueDate: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
   dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
   publicDueDateText: z.string().nullable().optional(),
   theme: z.string().nullable().optional(),
@@ -198,6 +198,7 @@ export function PreviewPage() {
               latestUpdate={latestUpdate}
               photoUrl={null}
               thumbnailUrl={null}
+              blurDataUrl={null}
             />
             <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />

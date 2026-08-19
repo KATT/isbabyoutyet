@@ -11,7 +11,7 @@ description: >-
 
 Open a sequence of dependent PRs. Each PR targets the previous PR's branch (except the first, which targets `main`). Keep commits and PRs small and sequential.
 
-Fill `.github/pull_request_template.md` for PR bodies. Stacked PRs add `## Stack` at the top; non-stack PRs omit that section entirely (never `n/a`). Bodies use titled `##` sections (`Why`, `How`, `What`, `Alternate approaches considered`, `Schema changes`, `Test plan`) with concise bullets — not a single Summary with labeled bullets.
+Fill `.github/pull_request_template.md` for PR bodies. Stacked PRs add `## Stack` at the top; non-stack PRs omit that section entirely (never `n/a`). Bodies use titled `##` sections (`Why`, `How`, `What`, `Alternate approaches considered`, `Schema changes`, `Screenshots / video`, `Test plan`) with concise bullets — not a single Summary with labeled bullets.
 
 ## When to use
 
@@ -46,6 +46,7 @@ Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 - **Non-stack PRs:** omit the Stack section entirely. Do not write `n/a`.
 - **Why / How / What / Alternate approaches considered:** titled `##` sections with concise bullets under each. Do not use a single Summary with labeled `Why:` bullets. See `.github/pull_request_template.md` (do not duplicate it here).
 - **Schema changes** is required and covers schema **and** related Convex migrations (for example `packages/convex/convex/migrations.ts` or migration functions). If neither changed, write `None`. If either did, fill the schema, why, migrations, and follow-up bullets in `.github/pull_request_template.md` (do not duplicate them here).
+- **Screenshots / video** is required. Follow the root `AGENTS.md`: attach final-preview screenshots for UI changes and a short video for interactions; otherwise write `None — <brief reason>`.
 
 ## Stack table
 
@@ -121,6 +122,10 @@ gh pr create --base <previous-branch> --head <this-branch> --title "{imperative 
 
 None
 
+## Screenshots / video
+
+None — no user-visible changes
+
 ## Test plan
 
 - [ ] …
@@ -162,6 +167,10 @@ gh pr edit <n> --body "$(cat <<'EOF'
 
 None
 
+## Screenshots / video
+
+None — no user-visible changes
+
 ## Test plan
 
 - [ ] …
@@ -169,7 +178,7 @@ EOF
 )"
 ```
 
-Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep the template sections (Why, How, What, Alternate approaches considered, Schema changes, Test plan) and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` or related Convex migrations changed; otherwise `None`.
+Each edited body still highlights **that** PR in the PR column (`**👉 …**`). Keep the template sections (Why, How, What, Alternate approaches considered, Schema changes, Screenshots / video, Test plan) and anything the user asked for below the table. Fill Schema changes properly when `schema.ts` or related Convex migrations changed; otherwise `None`. Fill Screenshots / video according to root `AGENTS.md`; never omit it.
 
 ## Detect an existing stack
 
