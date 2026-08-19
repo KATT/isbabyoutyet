@@ -174,63 +174,72 @@ function DueDateForm(props: EditorFormProps) {
         props.onClose();
       }}
     >
-      <FormField
-        control={form.control}
-        name="showExactDueDate"
-        render={(renderProps) => (
-          <FormItem className="mb-3 flex items-center justify-between gap-3 rounded-xl border p-3">
-            <div className="flex flex-col gap-1">
-              <FormLabel>{t("Show exact due date")}</FormLabel>
-              <FormDescription>
-                {renderProps.field.value
-                  ? t("Visitors see the exact date and countdown.")
-                  : t("Visitors see only your message.")}
-              </FormDescription>
-            </div>
-            <FormControl>
-              <Switch
-                checked={renderProps.field.value}
-                onCheckedChange={renderProps.field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-      {showExactDueDate ? (
+      <div className="mb-3 overflow-hidden rounded-xl border border-border">
         <FormField
           control={form.control}
-          name="date"
+          name="showExactDueDate"
           render={(renderProps) => (
-            <FormItem className="mb-3">
+            <FormItem className="flex items-center justify-between gap-3 border-0 p-3 pb-2">
+              <div className="flex flex-col gap-1">
+                <FormLabel>{t("Show exact due date")}</FormLabel>
+                <FormDescription>
+                  {renderProps.field.value
+                    ? t("Visitors see the exact date and countdown.")
+                    : t("Visitors see only your message.")}
+                </FormDescription>
+              </div>
               <FormControl>
-                <Input
-                  type="date"
-                  aria-label={t("Due Date")}
-                  onMouseDown={(event) => event.stopPropagation()}
-                  onFocus={(event) => event.stopPropagation()}
-                  {...renderProps.field}
-                  value={renderProps.field.value ?? ""}
+                <Switch
+                  checked={renderProps.field.value}
+                  onCheckedChange={renderProps.field.onChange}
                 />
               </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
-      ) : (
-        <FormField
-          control={form.control}
-          name="publicDueDateText"
-          render={(renderProps) => (
-            <FormItem className="mb-3">
-              <FormLabel>{t("Public due date message")}</FormLabel>
-              <FormControl>
-                <Input placeholder={t("September baby")} maxLength={80} {...renderProps.field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+        <div className="border-t border-border/60 bg-muted/30 px-3 pb-3 pt-2">
+          {showExactDueDate ? (
+            <FormField
+              control={form.control}
+              name="date"
+              render={(renderProps) => (
+                <FormItem>
+                  <FormLabel>{t("Due Date")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      aria-label={t("Due Date")}
+                      onMouseDown={(event) => event.stopPropagation()}
+                      onFocus={(event) => event.stopPropagation()}
+                      {...renderProps.field}
+                      value={renderProps.field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          ) : (
+            <FormField
+              control={form.control}
+              name="publicDueDateText"
+              render={(renderProps) => (
+                <FormItem>
+                  <FormLabel>{t("Public due date message")}</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder={t("September baby")}
+                      maxLength={80}
+                      {...renderProps.field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           )}
-        />
-      )}
+        </div>
+      </div>
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}

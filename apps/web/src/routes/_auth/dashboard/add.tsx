@@ -135,66 +135,71 @@ export function AddBabyPage() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="showExactDueDate"
-                  render={(renderProps) => (
-                    <FormItem className="flex items-center justify-between gap-4 rounded-2xl border-2 border-border p-4">
-                      <div className="flex flex-col gap-1">
-                        <FormLabel className="font-bold">{t("Show exact due date")}</FormLabel>
-                        <FormDescription>
-                          {renderProps.field.value
-                            ? t("Visitors see the exact date and countdown.")
-                            : t("Visitors see only your message.")}
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={renderProps.field.value}
-                          onCheckedChange={renderProps.field.onChange}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                {showExactDueDate ? (
+                <div className="overflow-hidden rounded-2xl border-2 border-border">
                   <FormField
                     control={form.control}
-                    name="dueDate"
+                    name="showExactDueDate"
                     render={(renderProps) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                      <FormItem className="flex items-center justify-between gap-4 border-0 p-4 pb-3">
+                        <div className="flex flex-col gap-1">
+                          <FormLabel className="font-bold">{t("Show exact due date")}</FormLabel>
+                          <FormDescription>
+                            {renderProps.field.value
+                              ? t("Visitors see the exact date and countdown.")
+                              : t("Visitors see only your message.")}
+                          </FormDescription>
+                        </div>
                         <FormControl>
-                          <Input
-                            type="date"
-                            {...renderProps.field}
-                            value={renderProps.field.value ?? ""}
+                          <Switch
+                            checked={renderProps.field.value}
+                            onCheckedChange={renderProps.field.onChange}
                           />
                         </FormControl>
-                        <FormMessage />
                       </FormItem>
                     )}
                   />
-                ) : (
-                  <FormField
-                    control={form.control}
-                    name="publicDueDateText"
-                    render={(renderProps) => (
-                      <FormItem>
-                        <FormLabel className="font-bold">{t("Public due date message")}</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder={t("September baby")}
-                            maxLength={80}
-                            {...renderProps.field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                  <div className="border-t border-border/60 bg-muted/30 px-4 pb-4 pt-3">
+                    {showExactDueDate ? (
+                      <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={(renderProps) => (
+                          <FormItem>
+                            <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...renderProps.field}
+                                value={renderProps.field.value ?? ""}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <FormField
+                        control={form.control}
+                        name="publicDueDateText"
+                        render={(renderProps) => (
+                          <FormItem>
+                            <FormLabel className="font-bold">
+                              {t("Public due date message")}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder={t("September baby")}
+                                maxLength={80}
+                                {...renderProps.field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     )}
-                  />
-                )}
+                  </div>
+                </div>
 
                 <FormField
                   control={form.control}
