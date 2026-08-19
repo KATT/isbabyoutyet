@@ -477,7 +477,6 @@ const enGB = {
   "Baby born!": "Baby born!",
   "Restart getting started tour": "Restart getting started tour",
   "Restart tour": "Restart tour",
-  "Tour restarted": "Tour restarted",
   "Getting started": "Getting started",
   "Getting started checklist": "Getting started checklist",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -1004,7 +1003,6 @@ const sv: Record<TranslationKey, string> = {
   "Baby born!": "Bäbisen är född!",
   "Restart getting started tour": "Starta om introduktionsguiden",
   "Restart tour": "Starta om guiden",
-  "Tour restarted": "Guiden startades om",
   "Getting started": "Kom igång",
   "Getting started checklist": "Checklista för att komma igång",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -1517,7 +1515,6 @@ const es: Record<TranslationKey, string> = {
   "Baby born!": "¡El bebé ha nacido!",
   "Restart getting started tour": "Reiniciar el recorrido de primeros pasos",
   "Restart tour": "Reiniciar recorrido",
-  "Tour restarted": "Recorrido reiniciado",
   "Getting started": "Primeros pasos",
   "Getting started checklist": "Lista de primeros pasos",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -2034,7 +2031,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Baby born!": "O bebê nasceu!",
   "Restart getting started tour": "Reiniciar o tour de primeiros passos",
   "Restart tour": "Reiniciar o tour",
-  "Tour restarted": "Tour reiniciado",
   "Getting started": "Primeiros passos",
   "Getting started checklist": "Lista de primeiros passos",
   "Getting started: {{completed}} of {{total}} done. Expand.":

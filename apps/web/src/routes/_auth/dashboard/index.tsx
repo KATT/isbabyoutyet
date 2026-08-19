@@ -94,7 +94,6 @@ function DashboardPage() {
               title={t("Restart tour")}
               onClick={async () => {
                 await restartTour({});
-                toast.success(t("Tour restarted"));
               }}
             >
               <Sparkle className="w-4 h-4" />
