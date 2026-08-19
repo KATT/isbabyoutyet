@@ -17,7 +17,7 @@ import {
   getCurrentStatus,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
-import { browserPushCapability } from "@/components/baby/browser-push-capability";
+import { browserPushCapability } from "@/components/baby/notification-subscribe";
 
 const getToken = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
 
