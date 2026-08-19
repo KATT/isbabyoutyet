@@ -16,21 +16,10 @@ function utcCalendarDate(date: Date): string {
 }
 
 /**
- * `<input type="date">` (`YYYY-MM-DD`) ↔ ISO instant (UTC midnight).
+ * Optional `<input type="date">`: empty ↔ null, otherwise UTC midnight ISO.
  * Use `.encode` for defaultValues and let the resolver `.decode` on submit.
  */
 export function htmlDate(t: TranslationFunction) {
-  return z.codec(z.iso.date({ error: t("Pick a date") }), z.string(), {
-    decode: (ymd) => `${ymd}T00:00:00.000Z`,
-    encode: (iso) => {
-      if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso;
-      return utcCalendarDate(parseISO(iso));
-    },
-  });
-}
-
-/** Optional `<input type="date">`: empty ↔ null, otherwise UTC midnight ISO. */
-export function optionalHtmlDate(t: TranslationFunction) {
   const pickerDate = z
     .string()
     .refine((value) => value === "" || z.iso.date().safeParse(value).success, t("Pick a date"));

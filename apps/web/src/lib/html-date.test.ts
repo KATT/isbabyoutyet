@@ -4,13 +4,11 @@ import {
   htmlDate,
   htmlDateTime,
   htmlDateTimeNow,
-  optionalHtmlDate,
   optionalHtmlDateTime,
 } from "@/lib/html-date";
 
 const t = ((key: string) => key) as TranslationFunction;
 const dateCodec = htmlDate(t);
-const optionalDateCodec = optionalHtmlDate(t);
 const dateTimeCodec = htmlDateTime(t);
 const optionalDateTimeCodec = optionalHtmlDateTime(t);
 
@@ -28,13 +26,13 @@ test("calendar date encode leaves a YYYY-MM-DD value unchanged", () => {
 });
 
 test("optional calendar date maps an empty picker to null", () => {
-  expect(optionalDateCodec.decode("")).toBeNull();
-  expect(optionalDateCodec.encode(null)).toBe("");
+  expect(dateCodec.decode("")).toBeNull();
+  expect(dateCodec.encode(null)).toBe("");
 });
 
 test("optional calendar date roundtrips a selected date", () => {
-  expect(optionalDateCodec.decode("2026-09-01")).toBe("2026-09-01T00:00:00.000Z");
-  expect(optionalDateCodec.encode("2026-09-01T00:00:00.000Z")).toBe("2026-09-01");
+  expect(dateCodec.decode("2026-09-01")).toBe("2026-09-01T00:00:00.000Z");
+  expect(dateCodec.encode("2026-09-01T00:00:00.000Z")).toBe("2026-09-01");
 });
 
 test("datetime-local roundtrips an instant through the viewer's timezone", () => {

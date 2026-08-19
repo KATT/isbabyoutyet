@@ -18,7 +18,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
 import { JourneySelector } from "@/components/baby/journey-selector";
-import { optionalHtmlDate } from "@/lib/html-date";
+import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -27,7 +27,7 @@ function addBabySchema(t: TranslationFunction) {
   return z
     .object({
       name: z.string().trim().min(2, t("Name is required")),
-      dueDate: optionalHtmlDate(t),
+      dueDate: htmlDate(t),
       showExactDueDate: z.boolean(),
       publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
       birthJourney: z.union([

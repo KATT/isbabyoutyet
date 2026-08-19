@@ -36,7 +36,7 @@ import {
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
 import type { BabyData, BabyUpdateHandler, Milestone } from "@workspace/convex/src/types";
-import { htmlDateTime, htmlDateTimeNow, optionalHtmlDate } from "@/lib/html-date";
+import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { getThemeOption, THEME_OPTIONS } from "./utils";
@@ -81,7 +81,7 @@ type DueDateEditorProps = {
 function dueDateSchema(t: TranslationFunction) {
   return z
     .object({
-      date: optionalHtmlDate(t),
+      date: htmlDate(t),
       showExactDueDate: z.boolean(),
       publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
     })
@@ -157,7 +157,7 @@ export function DueDateEditor(props: DueDateEditorProps) {
 
 function DueDateForm(props: EditorFormProps) {
   const { t } = useI18n();
-  const dateCodec = optionalHtmlDate(t);
+  const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
     defaultValues: {
