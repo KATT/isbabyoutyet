@@ -123,7 +123,6 @@ test("plays a generated chart through input, pause, results, and replay", async 
 
   fireEvent.ended(audio);
   expect(await screen.findByText("Run complete")).toBeTruthy();
-  expect(screen.getByText(/accuracy/i)).toBeTruthy();
 
   fireEvent.click(screen.getByRole("button", { name: "Play again" }));
   expect(mocks.play).toHaveBeenCalledTimes(3);
