@@ -92,7 +92,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
-      browserPush: prefetchBrowserPushCapability(opts.context.queryClient),
+      browserPush: prefetchBrowserPushCapability(opts.context.queryClient, babyDoc._id),
       ...(await allKeyed({
         myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
         vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),

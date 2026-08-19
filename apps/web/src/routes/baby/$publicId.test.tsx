@@ -17,7 +17,7 @@ import {
   getCurrentStatus,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
-import { browserPushCapability } from "@/components/baby/notification-subscribe";
+import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 
 const getToken = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
 
@@ -452,14 +452,15 @@ test("loader reuses a context token without calling getAuthToken", async () => {
 });
 
 test("loader prefetches browser push capability on the client", async () => {
+  const babyId = BABY_DOC._id as Id<"baby">;
   const { result, queryClient } = await setupBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "timeline:listByBaby": EMPTY_PAGE,
   });
 
-  expect(result.browserPush).toMatchObject({ input: undefined });
+  expect(result.browserPush).toMatchObject({ input: babyId });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(browserPushCapability().queryKey)).toEqual({
+    expect(queryClient.getQueryData(browserPushQueryOptions(queryClient, babyId).queryKey)).toEqual({
       kind: "unsupported",
     });
   });
