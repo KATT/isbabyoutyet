@@ -5,6 +5,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { Milestone, MilestoneDates } from "../src/types";
 import { getCurrentStatus, MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 
 /**
@@ -113,21 +114,22 @@ export type TimelineItem = NonNullable<Awaited<ReturnType<typeof hydrateTimeline
 
 export const listByBaby = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
     // The caller's own visitor id, only used to mark their posts with `isMine`
     visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const baby = await ctx.db.get(args.babyId);
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
       return { page: [], isDone: true, continueCursor: "" };
     }
+    const babyId = baby._id;
     const currentPhotoId = baby.photoId ?? null;
 
     const result = await ctx.db
       .query("timelineItems")
-      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -156,11 +158,17 @@ export const listByBaby = query({
  * visitor activity cannot grow this query.
  */
 export const latestUpdate = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby || !isActive(baby)) {
+      return null;
+    }
+    const babyId = baby._id;
+
     const updates = await ctx.db
       .query("updates")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
       .order("desc")
       .take(256);
 
@@ -175,11 +183,10 @@ export const latestUpdate = query({
     }
 
     if (!latest) return null;
-    const baby = await ctx.db.get(args.babyId);
     return await hydrateUpdate(ctx, {
       item: latest.item,
       update: latest.update,
-      currentPhotoId: baby?.photoId ?? null,
+      currentPhotoId: baby.photoId ?? null,
     });
   },
 });

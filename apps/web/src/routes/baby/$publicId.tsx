@@ -26,7 +26,6 @@ import {
 } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
@@ -36,13 +35,8 @@ import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
-import { authServer } from "@/lib/auth-server";
 
 const TIMELINE_PAGE_SIZE = 20;
-
-const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -67,58 +61,46 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
-    return { locale: babyDoc.resolvedLocale };
+    return { locale: babyDoc.resolvedLocale, babyId: babyDoc._id };
   },
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = babyHandle.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
+    const publicId = opts.params.publicId;
 
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const token =
-      opts.context.token ?? (profileHandle.initialData != null ? await getAuthToken() : null);
-    if (token) {
-      opts.context.convexClient.setAuth(async () => token);
-      await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      });
-    }
-    // One homogeneous set for every visitor: manager-only queries return a
-    // FORBIDDEN sentinel instead of throwing, so no access branching here.
+    const loaderData = await allKeyed({
+      baby: preloader.ensureQueryData(api.baby.getByPublicId, {
+        id: publicId,
+      }),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+        babyId: publicId,
+      }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: publicId },
+        numItems: TIMELINE_PAGE_SIZE,
+      }),
+      managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
+        babyId: publicId,
+      }),
+      scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+        babyId: publicId,
+      }),
+      subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
+        babyId: publicId,
+      }),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      // Prefetch even when settings are closed — Dialog may keep the panel mounted
+      coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
+        babyId: publicId,
+      }),
+    });
+
     return {
-      baby: babyHandle,
-      browserPush: prefetchBrowserPushCapability(opts.context.queryClient),
-      ...(await allKeyed({
-        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
-          babyId: babyDoc._id,
-        }),
-        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-          args: { babyId: babyDoc._id },
-          numItems: TIMELINE_PAGE_SIZE,
-        }),
-        profile: preloader.ensureQueryData(api.profile.get, {}),
-        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
-          babyId: babyDoc._id,
-        }),
-        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
-          babyId: babyDoc._id,
-        }),
-        subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
-          babyId: babyDoc._id,
-        }),
-        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-        // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
-          babyId: babyDoc._id,
-        }),
-      })),
+      browserPush,
+      ...loaderData,
     };
   },
   head: (opts) => {

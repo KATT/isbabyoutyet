@@ -5,6 +5,9 @@
 When working under `packages/convex/`, also follow
 [`packages/convex/AGENTS.md`](packages/convex/AGENTS.md).
 
+For route loaders and other project skills, see
+[`.agents/AGENTS.md`](.agents/AGENTS.md).
+
 ## Pull requests
 
 Fill every section in [`.github/pull_request_template.md`](.github/pull_request_template.md).
