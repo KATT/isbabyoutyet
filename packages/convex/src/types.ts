@@ -45,7 +45,6 @@ export type BabyData = Omit<
   | "_id"
   | "_creationTime"
   | "birthJourney"
-  | "encouragementsDisabled"
 > &
   MilestoneDates &
   Partial<{ milestoneVisibility: MilestoneVisibility }>;
