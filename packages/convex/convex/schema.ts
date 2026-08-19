@@ -14,18 +14,11 @@ export default defineSchema({
     dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
     publicDueDateText: v.union(v.string(), v.null()),
     publicId: v.string(), // Unique shareable ID
-    // Stack 2: required after Stack 1 backfills every existing baby.
     birthJourney: v.union(
       v.literal("labor"),
       v.literal("home_birth"),
       v.literal("planned_c_section"),
     ),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
-    babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when labour started
-    laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
     encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)

@@ -9,7 +9,6 @@ import {
   isHomepageDemoPublicId,
 } from "../src/seedCredentials";
 import { HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO, homepageDemoFeedFor } from "../src/homepageDemoFeed";
-import type { Milestone } from "../src/types";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
@@ -117,9 +116,6 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
   return await ctx.db.insert("baby", {
     ...fields,
     publicId: demo.publicId,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
     photoId: null,
     thumbnailId: null,
     subscriptionCount: 0,
@@ -222,9 +218,6 @@ async function clearAllFeed(
     photoId: null,
     thumbnailId: null,
     blurDataUrl: null,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
   });
 }
 
@@ -243,7 +236,6 @@ async function insertFeedDocs(
   const now = opts.now;
   const locale = opts.locale;
   const demo = HOMEPAGE_DEMO_BABIES[locale];
-  const milestoneIso: Partial<Record<Milestone, string>> = {};
   let pagePhotoId: Id<"_storage"> | null = null;
   let pageThumbnailId: Id<"_storage"> | null = null;
   let pageBlurDataUrl: string | null = null;
@@ -284,9 +276,6 @@ async function insertFeedDocs(
       blurDataUrl: photo?.blurDataUrl ?? null,
     });
 
-    if (item.milestone) {
-      milestoneIso[item.milestone] = new Date(postedAt).toISOString();
-    }
     if (photo) {
       pagePhotoId = photo.photoId;
       pageThumbnailId = photo.thumbnailId ?? null;
@@ -295,16 +284,9 @@ async function insertFeedDocs(
   }
 
   await ctx.db.patch(babyId, {
-    laborStarted: milestoneIso.labor_started ?? null,
-    wentToHospital: milestoneIso.gone_to_hospital ?? null,
-    babyBorn: milestoneIso.born ?? null,
     photoId: pagePhotoId,
     thumbnailId: pageThumbnailId,
     blurDataUrl: pageBlurDataUrl,
-    // Legacy per-stage message fields stay empty; copy lives on the timeline.
-    laborStartedMessage: null,
-    hospitalMessage: null,
-    babyBornMessage: null,
   });
 
   return { babyId, publicId: demo.publicId, locale };

@@ -304,9 +304,6 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
       publicDueDateText: null,
       publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
       birthJourney: "labor",
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -349,9 +346,6 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
       publicId: HOMEPAGE_DEMO_BABY.publicId,
       birthJourney: "labor",
       theme: HOMEPAGE_DEMO_BABY.theme,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -377,9 +371,6 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
       publicDueDateText: null,
       publicId: "someone-else",
       birthJourney: "labor",
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
