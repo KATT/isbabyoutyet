@@ -189,9 +189,7 @@ test("uses the thumbnail inline and opens the full photo", () => {
   const avatar = view.getByRole("button", { name: "Photo of Nova" });
   const inline = view.getByAltText("Photo of Nova") as HTMLImageElement;
   expect(inline.src).toContain("thumb.jpg");
-  expect((inline.previousElementSibling as HTMLElement).style.backgroundImage).toContain(
-    "data:image/jpeg;base64,abc",
-  );
+  expect(inline.style.backgroundImage).toContain("data:image/jpeg;base64,abc");
   fireEvent.click(avatar);
   expect(view.getAllByAltText("Photo of Nova")).toHaveLength(2);
   fireEvent.click(view.getByRole("button", { name: "Close photo" }));

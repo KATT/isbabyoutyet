@@ -1,6 +1,11 @@
-import { useState, useSyncExternalStore } from "react";
-import type { ImgHTMLAttributes } from "react";
-import { cn } from "@workspace/ui/lib/utils";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type {
+  CSSProperties,
+  Dispatch,
+  ImgHTMLAttributes,
+  RefObject,
+  SetStateAction,
+} from "react";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
@@ -11,39 +16,37 @@ function imageSrcKey(src: BlurImageProps["src"]) {
   return typeof src === "string" ? src : "";
 }
 
+function numericDimension(value: BlurImageProps["width"] | BlurImageProps["height"]) {
+  if (typeof value === "number") return value;
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+type BlurSvgOptions = {
+  width: number | undefined;
+  height: number | undefined;
+  blurDataUrl: string;
+  objectFit: CSSProperties["objectFit"];
+};
+
 /**
- * Browser cache check: `new Image(); img.src = url` sets `complete` synchronously
- * when that URL is already decoded. Used as the client snapshot so a cached
- * photo skips the blur on first mount (SPA navigation), while the server
- * snapshot stays `false` so SSR HTML still includes the placeholder.
+ * Mirrors Next.js' SVG placeholder. Blurring a background image inside the
+ * SVG avoids filtering the real replaced-image pixels on the `<img>`.
+ * @see https://github.com/vercel/next.js/blob/78b11c37e6eafb92030612c08de4adb5bb5c8a28/packages/next/src/shared/lib/image-blur-svg.ts
  */
-function isDecodedImageSrc(src: string) {
-  if (src === "") return false;
-  const img = new Image();
-  img.src = src;
-  return img.complete && img.naturalWidth > 0;
-}
+function getImageBlurSvg(options: BlurSvgOptions) {
+  const std = 20;
+  const viewBox =
+    options.width && options.height ? `viewBox='0 0 ${options.width} ${options.height}'` : "";
+  const preserveAspectRatio = viewBox
+    ? "none"
+    : options.objectFit === "contain"
+      ? "xMidYMid"
+      : options.objectFit === "cover"
+        ? "xMidYMid slice"
+        : "none";
 
-function subscribeDecodedImageSrc(src: string, onStoreChange: () => void) {
-  if (src === "") return () => {};
-  const img = new Image();
-  img.src = src;
-  if (img.complete) return () => {};
-  img.addEventListener("load", onStoreChange);
-  img.addEventListener("error", onStoreChange);
-  return () => {
-    img.removeEventListener("load", onStoreChange);
-    img.removeEventListener("error", onStoreChange);
-  };
-}
-
-function useDecodedImageSrc(src: BlurImageProps["src"]) {
-  const srcKey = imageSrcKey(src);
-  return useSyncExternalStore(
-    (onStoreChange) => subscribeDecodedImageSrc(srcKey, onStoreChange),
-    () => isDecodedImageSrc(srcKey),
-    () => false,
-  );
+  return `%3Csvg xmlns='http://www.w3.org/2000/svg' ${viewBox}%3E%3Cfilter id='b' color-interpolation-filters='sRGB'%3E%3CfeGaussianBlur stdDeviation='${std}'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 100 -1' result='s'/%3E%3CfeFlood x='0' y='0' width='100%25' height='100%25'/%3E%3CfeComposite operator='out' in='s'/%3E%3CfeComposite in2='SourceGraphic'/%3E%3CfeGaussianBlur stdDeviation='${std}'/%3E%3C/filter%3E%3Cimage width='100%25' height='100%25' x='0' y='0' preserveAspectRatio='${preserveAspectRatio}' style='filter: url(%23b);' href='${options.blurDataUrl}'/%3E%3C/svg%3E`;
 }
 
 function imgPropsWithoutBlur(props: BlurImageProps) {
@@ -51,51 +54,132 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
   return imgProps;
 }
 
+function callOnLoad(
+  img: HTMLImageElement,
+  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"],
+) {
+  if (!onLoad) return;
+
+  const nativeEvent = new Event("load");
+  Object.defineProperty(nativeEvent, "target", { writable: false, value: img });
+  let prevented = false;
+  let stopped = false;
+
+  onLoad({
+    ...nativeEvent,
+    nativeEvent,
+    currentTarget: img,
+    target: img,
+    isDefaultPrevented: () => prevented,
+    isPropagationStopped: () => stopped,
+    persist: () => {},
+    preventDefault: () => {
+      prevented = true;
+      nativeEvent.preventDefault();
+    },
+    stopPropagation: () => {
+      stopped = true;
+      nativeEvent.stopPropagation();
+    },
+  });
+}
+
+type HandleLoadingOptions = {
+  loadedSrcRef: RefObject<string | null>;
+  srcKey: string;
+  setLoadedSrc: Dispatch<SetStateAction<string | null>>;
+  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
+};
+
 /**
- * Drop-in `<img>` with a Next.js-style `blurDataURL` placeholder. The real
- * `src` is always on the `<img>` (including SSR HTML) so the browser starts
- * fetching on first paint. The tiny JPEG lives on a sibling in front of that
- * img and is CSS-blurred until the browser reports the real image loaded. This
- * avoids exposing the browser's unloaded-image UI during SSR; the real img is
- * never filtered. TanStack Start/Router has no Image component of its own.
+ * Next.js waits for decode before clearing the placeholder and replays this
+ * for an image that completed before hydration attached its load handler.
+ * @see https://github.com/vercel/next.js/blob/78b11c37e6eafb92030612c08de4adb5bb5c8a28/packages/next/src/client/image-component.tsx
+ */
+function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
+  if (options.loadedSrcRef.current === img.src) return;
+  options.loadedSrcRef.current = img.src;
+
+  const decode = "decode" in img ? img.decode() : Promise.resolve();
+  void decode
+    .catch(() => {})
+    .then(() => {
+      if (!img.parentElement || !img.isConnected) return;
+      options.setLoadedSrc(options.srcKey);
+      callOnLoad(img, options.onLoad);
+    });
+}
+
+const useNonWarningLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+/**
+ * Drop-in `<img>` implementing Next.js' `blurDataURL` mechanics. SSR puts both
+ * the real `src` and a blurred SVG background on the same element. The request
+ * starts immediately; decoded replaced-image pixels naturally paint over the
+ * background without waiting for hydration. TanStack Start/Router has no Image
+ * component of its own.
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
-  const alreadyDecoded = useDecodedImageSrc(props.src);
+  const imgRef = useRef<HTMLImageElement | null>(null);
+  const loadedSrcRef = useRef<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
-  const loaded = alreadyDecoded || loadedSrc === srcKey;
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const loaded = loadedSrc === srcKey;
+  const showAltText = failedSrc === srcKey;
 
-  const image = (
-    <img
-      {...imgPropsWithoutBlur(props)}
-      alt={props.alt}
-      src={props.src}
-      className={
-        props.blurDataUrl === null ? props.className : cn("relative z-10", props.className)
-      }
-      onLoad={(event) => {
-        setLoadedSrc(srcKey);
-        props.onLoad?.(event);
-      }}
-    />
-  );
+  useNonWarningLayoutEffect(() => {
+    const img = imgRef.current;
+    if (!img?.complete) return;
+    handleLoading(img, {
+      loadedSrcRef,
+      srcKey,
+      setLoadedSrc,
+      onLoad: props.onLoad,
+    });
+  }, [props.onLoad, srcKey]);
 
-  if (props.blurDataUrl === null) {
-    return image;
-  }
+  const objectFit = props.style?.objectFit;
+  const backgroundImage =
+    props.blurDataUrl && !loaded
+      ? `url("data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
+          width: numericDimension(props.width),
+          height: numericDimension(props.height),
+          blurDataUrl: props.blurDataUrl,
+          objectFit,
+        })}")`
+      : undefined;
+  const backgroundSize =
+    objectFit === "fill" ? "100% 100%" : objectFit === "contain" ? "contain" : "cover";
 
   return (
-    <span className={cn("relative inline-grid overflow-hidden", props.className)}>
-      <span
-        aria-hidden="true"
-        suppressHydrationWarning
-        className={cn(
-          "pointer-events-none absolute inset-0 z-20 scale-105 bg-cover bg-center blur-xl transition-opacity duration-500",
-          loaded && "opacity-0",
-        )}
-        style={{ backgroundImage: `url("${props.blurDataUrl}")` }}
-      />
-      {image}
-    </span>
+    <img
+      {...imgPropsWithoutBlur(props)}
+      ref={imgRef}
+      alt={props.alt}
+      decoding={props.decoding ?? "async"}
+      src={props.src}
+      style={{
+        color: showAltText ? undefined : "transparent",
+        ...props.style,
+        backgroundSize,
+        backgroundPosition: props.style?.objectPosition ?? "50% 50%",
+        backgroundRepeat: "no-repeat",
+        backgroundImage,
+      }}
+      onLoad={(event) => {
+        handleLoading(event.currentTarget, {
+          loadedSrcRef,
+          srcKey,
+          setLoadedSrc,
+          onLoad: props.onLoad,
+        });
+      }}
+      onError={(event) => {
+        setFailedSrc(srcKey);
+        setLoadedSrc(srcKey);
+        props.onError?.(event);
+      }}
+    />
   );
 }

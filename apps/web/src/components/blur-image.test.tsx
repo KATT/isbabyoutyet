@@ -1,16 +1,12 @@
 import { fireEvent, render } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { BlurImage } from "./blur-image";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const BLUR = "data:image/jpeg;base64,/9j/blur";
 
-function placeholderOf(img: HTMLImageElement) {
-  return img.previousElementSibling as HTMLElement | null;
-}
-
-test("paints the blur data URL until the image loads", () => {
+test("paints a blurred SVG background until the image decodes", async () => {
   const view = render(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
@@ -19,33 +15,60 @@ test("paints the blur data URL until the image loads", () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
-  const placeholder = placeholderOf(img);
   expect(img.src).toContain("photo.jpg");
   expect(img.className).not.toContain("blur-xl");
-  expect(placeholder).toBeTruthy();
-  expect(placeholder?.style.backgroundImage).toContain(BLUR);
-  expect(placeholder?.className).toContain("blur-xl");
-  expect(placeholder?.className).toContain("z-20");
-  expect(img.className).toContain("z-10");
-  expect(placeholder?.className).not.toContain("opacity-0");
+  expect(img.style.color).toBe("transparent");
+  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
+  expect(img.style.backgroundImage).toContain(BLUR);
 
   fireEvent.load(img);
-  expect(img.className).not.toContain("blur-xl");
-  expect(placeholderOf(img)?.className).toContain("opacity-0");
+  await vi.waitFor(() => {
+    expect(img.style.backgroundImage).toBe("");
+  });
 });
 
-test("skips the blur on first client mount when the image is already decoded", () => {
-  const OriginalImage = window.Image;
-  window.Image = class DecodedImage {
-    complete = true;
-    naturalWidth = 160;
-    naturalHeight = 160;
-    src = "";
-    addEventListener() {}
-    removeEventListener() {}
-  } as unknown as typeof Image;
-  using _restoreImage = makeResource({}, () => {
-    window.Image = OriginalImage;
+test("keeps the placeholder until decode completes", async () => {
+  let finishDecode = () => {};
+  const onLoad = vi.fn();
+  const view = render(
+    <BlurImage
+      src="https://example.com/photo.jpg"
+      alt="Nova"
+      blurDataUrl={BLUR}
+      onLoad={onLoad}
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  img.decode = () =>
+    new Promise<void>((resolve) => {
+      finishDecode = resolve;
+    });
+
+  fireEvent.load(img);
+  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
+  expect(onLoad).not.toHaveBeenCalled();
+
+  finishDecode();
+  await vi.waitFor(() => {
+    expect(img.style.backgroundImage).toBe("");
+  });
+  expect(onLoad).toHaveBeenCalledOnce();
+});
+
+test("clears the placeholder when a cached image completed before hydration", async () => {
+  const complete = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "complete");
+  Object.defineProperty(HTMLImageElement.prototype, "complete", {
+    configurable: true,
+    get: () => true,
+  });
+  using _restoreComplete = makeResource({}, () => {
+    if (complete) {
+      Object.defineProperty(HTMLImageElement.prototype, "complete", complete);
+    }
   });
 
   const view = render(
@@ -56,8 +79,9 @@ test("skips the blur on first client mount when the image is already decoded", (
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
-  expect(img.className).not.toContain("blur-xl");
-  expect(placeholderOf(img)?.className).toContain("opacity-0");
+  await vi.waitFor(() => {
+    expect(img.style.backgroundImage).toBe("");
+  });
 });
 
 test("skips the placeholder when no blur data URL is provided", () => {
@@ -69,19 +93,41 @@ test("skips the placeholder when no blur data URL is provided", () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
-  expect(placeholderOf(img)).toBeNull();
   expect(img.style.backgroundImage).toBe("");
   expect(img.className).not.toContain("blur-xl");
 });
 
-test("starts the real src behind the blur placeholder in server HTML", () => {
+test("removes the placeholder and reveals alt text when loading fails", () => {
+  const onError = vi.fn();
+  const view = render(
+    <BlurImage
+      src="https://example.com/missing.jpg"
+      alt="Nova"
+      blurDataUrl={BLUR}
+      onError={onError}
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  expect(img.style.color).toBe("transparent");
+  fireEvent.error(img);
+  expect(img.style.color).toBe("");
+  expect(img.style.backgroundImage).toBe("");
+  expect(onError).toHaveBeenCalledOnce();
+});
+
+test("server HTML starts the real src with Next.js-style placeholder mechanics", () => {
   const html = renderToString(
     <BlurImage src="https://cdn.example/full.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
 
   expect(html).toContain('src="https://cdn.example/full.jpg"');
   expect(html).toContain(BLUR);
-  expect(html).toContain("blur-xl");
-  expect(html).toContain("z-20");
+  expect(html).toContain("data:image/svg+xml");
+  expect(html).toContain("color:transparent");
+  expect(html.match(/<img\b/g)).toHaveLength(1);
   expect(html).not.toMatch(/<img\b[^>]*blur-xl/);
 });
