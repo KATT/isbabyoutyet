@@ -11,6 +11,9 @@ import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
+  head: null as
+    | null
+    | ((options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] }),
   search: {
     name: "Nova",
     dueDate: "2026-09-01T00:00:00.000Z",
@@ -24,11 +27,18 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: object) => ({
-    ...options,
-    fullPath: "/preview",
-    useSearch: () => mocks.search,
-  }),
+  createFileRoute:
+    () =>
+    (options: {
+      head: (options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] };
+    }) => {
+      mocks.head = options.head;
+      return {
+        ...options,
+        fullPath: "/preview",
+        useSearch: () => mocks.search,
+      };
+    },
   Link: (props: { children: ReactNode }) => <a href="/">{props.children}</a>,
   useNavigate: () => mocks.navigate,
 }));
@@ -118,4 +128,11 @@ test("preview derives a born status from its search dates", async () => {
   expect(view.getByRole("heading", { name: "Is Nova out yet?" })).toBeTruthy();
   mocks.search.babyBorn = null;
   mocks.search.babyBornMessage = null;
+});
+
+test("preview still supplies localized no-index metadata after the schema cutover", () => {
+  const result = mocks.head?.({
+    match: { context: { locale: "en-GB" } },
+  });
+  expect(result?.meta.length).toBeGreaterThan(2);
 });

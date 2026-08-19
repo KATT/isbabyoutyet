@@ -1,15 +1,7 @@
 import { convexTest } from "convex-test";
 import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
-import {
-  backfillBabyTimelineDoc,
-  backfillEncouragementTimelineDoc,
-  clearLegacyStageMessagesDoc,
-  clearStoredStatusFieldsDoc,
-  separateMilestoneOccurredAtDoc,
-  STORED_STATUS_FIELDS,
-} from "./migrations";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
@@ -197,7 +189,7 @@ test("status is inferred from milestone updates, not stored baby fields", async 
     "hospitalMessage",
     "babyBornMessage",
   ] as const) {
-    expect(stored[field]).toBeUndefined();
+    expect(stored).not.toHaveProperty(field);
   }
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
@@ -216,25 +208,6 @@ test("status is inferred from milestone updates, not stored baby fields", async 
   await expect(
     asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
   ).rejects.toThrow("Only a future status can be marked");
-});
-
-test("stale stored baby dates are ignored when no milestone update exists", async () => {
-  const { t, babyId } = await setup();
-
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, {
-      laborStarted: "2026-08-10T08:00:00.000Z",
-      wentToHospital: "2026-08-10T12:00:00.000Z",
-      babyBorn: "2026-08-11T03:00:00.000Z",
-    });
-  });
-
-  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
-  expect(publicBaby).toMatchObject({
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
-  });
 });
 
 test("a legacy milestone without occurredAt infers its date from feed position", async () => {
@@ -301,7 +274,7 @@ test("journey selection does not block backend milestone writes", async () => {
   });
 
   const baby = await getBaby(t, babyId);
-  expect(baby.laborStarted).toBeUndefined();
+  expect(baby).not.toHaveProperty("laborStarted");
   expect(baby.birthJourney).toBe("planned_c_section");
   const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([{ kind: "update", update: { milestone: "labor_started" } }]);
@@ -525,17 +498,8 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
     milestone: "labor_started",
     message: "It's starting",
   });
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { laborStarted: "2026-08-10T08:00:00.000Z" });
-  });
 
   await asAlice.mutation(api.updates.remove, { updateId });
-  await t.run(async (ctx) => {
-    const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Baby not found");
-    expect(baby.laborStarted).toBeUndefined();
-    await backfillBabyTimelineDoc(ctx, baby);
-  });
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby).toMatchObject({ laborStarted: null, wentToHospital: null, babyBorn: null });
@@ -660,376 +624,6 @@ test("text updates never displace the current page photo; pinning brings back an
   ).rejects.toThrow("Not authorized");
 });
 
-test("backfill migrations preserve announce-time order and are idempotent", async () => {
-  await using _timers = useFakeTimersResource();
-  const { t, babyId, asAlice } = await setup();
-  const thumbnail = await storeBlob(t);
-  const photo = await storeBlob(t);
-
-  // Shape legacy data: milestones + messages + photo, encouragements without
-  // timeline pointers. Milestone event clocks are historical; feed position
-  // uses announce time (notification createdAt / now).
-  const laborStartedAt = new Date(Date.now() - 26 * 60 * 60 * 1000);
-  const laborAnnouncedAt = Date.now() - 24 * 60 * 60 * 1000;
-  const grandmaAt = new Date(Date.now() - 22 * 60 * 60 * 1000);
-  const wentToHospitalAt = new Date(Date.now() - 20 * 60 * 60 * 1000);
-  const auntMegAt = new Date(Date.now() - 30 * 60 * 60 * 1000);
-
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, {
-      laborStarted: laborStartedAt.toISOString(),
-      laborStartedMessage: "It has begun!",
-      wentToHospital: wentToHospitalAt.toISOString(),
-      hospitalMessage: null,
-      photoId: photo,
-      thumbnailId: thumbnail,
-    });
-    // A sent push records when labour was announced to followers
-    await ctx.db.insert("scheduledNotifications", {
-      babyId,
-      status: "sent",
-      scheduledFor: laborAnnouncedAt + 60_000,
-      notificationType: "labor_started",
-      customMessage: null,
-      createdAt: laborAnnouncedAt,
-    });
-    // timelineItemId is required by now (PR 1's backfill linked all rows)
-    const grandmaTimelineItemId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "encouragement",
-      postedAt: grandmaAt.getTime(),
-    });
-    await ctx.db.insert("encouragements", {
-      babyId,
-      authorName: "Grandma",
-      message: "Waiting by the phone!",
-      createdAt: grandmaAt.getTime(),
-      timelineItemId: grandmaTimelineItemId,
-      visitorId: "visitor-legacy-1",
-    });
-    const auntMegTimelineItemId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "encouragement",
-      postedAt: auntMegAt.getTime(),
-    });
-    await ctx.db.insert("encouragements", {
-      babyId,
-      authorName: "Aunt Meg",
-      message: "Thinking of you!",
-      createdAt: auntMegAt.getTime(),
-      timelineItemId: auntMegTimelineItemId,
-      visitorId: "visitor-legacy-2",
-    });
-  });
-
-  // A timeline post during the deploy window created the hospital row before
-  // backfill ran; backfill must still fill in the other milestone and photo.
-  vi.advanceTimersByTime(1_000);
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "gone_to_hospital",
-    occurredAt: wentToHospitalAt.getTime(),
-  });
-
-  const runBackfills = async () => {
-    await t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-      const encouragements: Doc<"encouragements">[] = await ctx.db
-        .query("encouragements")
-        .collect();
-      for (const encouragement of encouragements) {
-        await backfillEncouragementTimelineDoc(ctx, encouragement);
-      }
-    });
-  };
-
-  await runBackfills();
-  // Second run must be a no-op
-  await runBackfills();
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([
-    // Hospital dual-write announces ~now; photo's storage upload is slightly earlier
-    {
-      kind: "update",
-      update: {
-        milestone: "gone_to_hospital",
-        occurredAt: wentToHospitalAt.getTime(),
-      },
-    },
-    { kind: "update", update: { milestone: null, message: null } },
-    { kind: "encouragement", encouragement: { authorName: "Grandma" } },
-    // Labour announced via notification (before Grandma replied)
-    {
-      kind: "update",
-      postedAt: laborAnnouncedAt,
-      update: {
-        milestone: "labor_started",
-        message: "It has begun!",
-        occurredAt: laborStartedAt.getTime(),
-      },
-    },
-    { kind: "encouragement", encouragement: { authorName: "Aunt Meg" } },
-  ]);
-  const photoItem = feed.page[1];
-  expect(photoItem?.kind === "update" && photoItem.update.photoUrl).toBeTruthy();
-  expect(photoItem?.kind === "update" && photoItem.update.thumbnailUrl).toBeTruthy();
-
-  // The photo row's postedAt is the storage file's original upload time
-  const photoUploadedAt = await t.run(async (ctx) => {
-    const fileMetadata = await ctx.db.system.get(photo);
-    return fileMetadata?._creationTime;
-  });
-  expect(photoUploadedAt).toBeTruthy();
-  expect(photoItem?.postedAt).toBe(photoUploadedAt);
-
-  // Clearing the legacy stage messages keeps the feed content intact
-  await t.run(async (ctx) => {
-    const baby = await ctx.db.get(babyId);
-    if (!baby) throw new Error("Baby not found");
-    await clearLegacyStageMessagesDoc(ctx, baby);
-  });
-  const clearedBaby = await getBaby(t, babyId);
-  expect(clearedBaby.laborStartedMessage).toBeNull();
-  expect(clearedBaby.hospitalMessage ?? null).toBeNull();
-  expect(clearedBaby.babyBornMessage ?? null).toBeNull();
-  const feedAfterClear = await t.query(api.timeline.listByBaby, {
-    babyId,
-    paginationOpts: FIRST_PAGE,
-  });
-  expect(feedAfterClear.page).toMatchObject([
-    { kind: "update" },
-    { kind: "update" },
-    { kind: "encouragement" },
-    { kind: "update", update: { milestone: "labor_started", message: "It has begun!" } },
-    { kind: "encouragement" },
-  ]);
-
-  await asAlice.mutation(api.updates.unmarkMilestone, {
-    babyId,
-    milestone: "gone_to_hospital",
-  });
-  const after = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(after.page).toHaveLength(4);
-});
-
-test("backfill rejects an invalid legacy milestone date", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { laborStarted: "not-a-date" });
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("has an invalid laborStarted");
-});
-
-test("backfill rejects an empty legacy milestone date", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { laborStarted: "" });
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("has an invalid laborStarted");
-});
-
-test("backfill rejects a milestone update without a usable timestamp", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
-      milestone: "labor_started",
-    });
-    await ctx.db.delete(timelineItemId);
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("has no active timeline item");
-});
-
-test("backfill rejects a soft-deleted milestone timeline item", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
-      milestone: "labor_started",
-    });
-    await ctx.db.patch(timelineItemId, { deletedAt: Date.now() });
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("has no active timeline item");
-});
-
-test("backfill rejects an invalid update timestamp without a legacy date", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: Date.now(),
-      occurredAt: Number.MAX_VALUE,
-      milestone: "labor_started",
-    });
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await backfillBabyTimelineDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("has an invalid event timestamp");
-});
-
-test("clearLegacyStageMessages only clears fields with a proven durable destination", async () => {
-  const { t, babyId } = await setup();
-  const laborAt = new Date(Date.now() - 10 * 60 * 60 * 1000);
-  const hospitalAt = new Date(Date.now() - 5 * 60 * 60 * 1000);
-
-  await t.run(async (ctx) => {
-    // Unmarked stage with a prepped message (old Settings allowed this):
-    // babyBorn is null but babyBornMessage has text
-    // Marked stage whose row carries a DIFFERENT message (edited since):
-    // laborStarted + row("Newer edit") vs field("Original labour note")
-    // Marked stage whose row has a null message: wentToHospital
-    await ctx.db.patch(babyId, {
-      laborStarted: laborAt.toISOString(),
-      laborStartedMessage: "Original labour note",
-      wentToHospital: hospitalAt.toISOString(),
-      hospitalMessage: "Checked in!",
-      babyBornMessage: "Prepped for the big day",
-    });
-    await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: laborAt.getTime(),
-      occurredAt: laborAt.getTime(),
-      milestone: "labor_started",
-      message: "Newer edit",
-    });
-    await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: hospitalAt.getTime(),
-      occurredAt: hospitalAt.getTime(),
-      milestone: "gone_to_hospital",
-    });
-  });
-
-  const runClear = async () => {
-    await t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await clearLegacyStageMessagesDoc(ctx, baby);
-    });
-  };
-  await runClear();
-  // Idempotent: a re-run must not change the outcome
-  await runClear();
-
-  const baby = await getBaby(t, babyId);
-  // No durable destination → preserved
-  expect(baby.babyBornMessage).toBe("Prepped for the big day");
-  expect(baby.laborStartedMessage).toBe("Original labour note");
-  // Healed onto the row → cleared
-  expect(baby.hospitalMessage).toBeNull();
-
-  const updates = await t.run(async (ctx) => {
-    return await ctx.db
-      .query("updates")
-      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
-      .collect();
-  });
-  // No public update was invented for the unmarked "born" stage
-  expect(updates).toHaveLength(2);
-  expect(updates.find((u) => u.milestone === "labor_started")?.message).toBe("Newer edit");
-  expect(updates.find((u) => u.milestone === "gone_to_hospital")?.message).toBe("Checked in!");
-
-  await expect(
-    t.run(async (ctx) => {
-      const current = await ctx.db.get(babyId);
-      if (!current) throw new Error("Baby not found");
-      await clearStoredStatusFieldsDoc(ctx, current);
-    }),
-  ).rejects.toThrow("unresolved legacy messages: laborStartedMessage, babyBornMessage");
-  const preserved = await getBaby(t, babyId);
-  expect(preserved.laborStartedMessage).toBe("Original labour note");
-  expect(preserved.babyBornMessage).toBe("Prepped for the big day");
-});
-
-test("clearStoredStatusFields unsets retired dates and messages, including nulls", async () => {
-  const { t, babyId } = await setup();
-
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, {
-      laborStarted: "2026-08-10T08:00:00.000Z",
-      wentToHospital: null,
-      babyBorn: "2026-08-11T03:00:00.000Z",
-      laborStartedMessage: null,
-      hospitalMessage: null,
-      babyBornMessage: null,
-    });
-  });
-
-  const runClear = async () => {
-    await t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await clearStoredStatusFieldsDoc(ctx, baby);
-    });
-  };
-  await runClear();
-  await runClear();
-
-  const baby = await getBaby(t, babyId);
-  for (const field of STORED_STATUS_FIELDS) {
-    expect(baby[field]).toBeUndefined();
-    expect(field in baby).toBe(false);
-  }
-});
-
-test("clearStoredStatusFields rejects unresolved legacy messages", async () => {
-  const { t, babyId } = await setup();
-  await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, {
-      laborStartedMessage: "Prepared before the milestone",
-    });
-  });
-
-  await expect(
-    t.run(async (ctx) => {
-      const baby = await ctx.db.get(babyId);
-      if (!baby) throw new Error("Baby not found");
-      await clearStoredStatusFieldsDoc(ctx, baby);
-    }),
-  ).rejects.toThrow("unresolved legacy messages: laborStartedMessage");
-
-  const baby = await getBaby(t, babyId);
-  expect(baby.laborStartedMessage).toBe("Prepared before the milestone");
-});
-
 test("redating validates the timestamp and requires an existing milestone", async () => {
   const { asAlice, babyId } = await setup();
 
@@ -1074,134 +668,6 @@ test("posting a milestone rejects non-finite and out-of-range timestamps", async
   }
 });
 
-test("separateMilestoneOccurredAt moves backdated milestones to announce time", async () => {
-  const { t, babyId } = await setup();
-  const eventAt = Date.parse("2026-01-11T04:14:00.000Z");
-  const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
-
-  const updateId = await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
-    // Legacy shape: postedAt was the event clock
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: eventAt,
-      milestone: "born",
-      message: "She's here!",
-    });
-    await ctx.db.insert("scheduledNotifications", {
-      babyId,
-      status: "cancelled",
-      scheduledFor: announcedAt + 60_000,
-      notificationType: "born",
-      customMessage: null,
-      createdAt: announcedAt,
-    });
-    return updateId;
-  });
-
-  await t.run(async (ctx) => {
-    const update = await ctx.db.get(updateId);
-    if (!update) throw new Error("update missing");
-    await separateMilestoneOccurredAtDoc(ctx, update);
-    // Idempotent
-    const again = await ctx.db.get(updateId);
-    if (!again) throw new Error("update missing");
-    await separateMilestoneOccurredAtDoc(ctx, again);
-  });
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([
-    {
-      kind: "update",
-      postedAt: announcedAt,
-      update: { milestone: "born", occurredAt: eventAt },
-    },
-  ]);
-});
-
-test("separateMilestoneOccurredAt prefers the notification closest to the update", async () => {
-  const { t, babyId } = await setup();
-  const eventAt = Date.parse("2026-03-01T12:00:00.000Z");
-  const staleAnnounceAt = Date.parse("2026-01-11T10:00:00.000Z");
-  const freshAnnounceAt = Date.parse("2026-03-01T12:05:00.000Z");
-
-  const updateId = await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { babyBorn: new Date(eventAt).toISOString() });
-    const { updateId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: eventAt,
-      milestone: "born",
-    });
-    // Prior unmark left a cancelled notification; remark created a new one
-    await ctx.db.insert("scheduledNotifications", {
-      babyId,
-      status: "cancelled",
-      scheduledFor: staleAnnounceAt + 60_000,
-      notificationType: "born",
-      customMessage: null,
-      createdAt: staleAnnounceAt,
-    });
-    await ctx.db.insert("scheduledNotifications", {
-      babyId,
-      status: "sent",
-      scheduledFor: freshAnnounceAt + 60_000,
-      notificationType: "born",
-      customMessage: null,
-      createdAt: freshAnnounceAt,
-    });
-    return updateId;
-  });
-
-  await t.run(async (ctx) => {
-    const update = await ctx.db.get(updateId);
-    if (!update) throw new Error("update missing");
-    await separateMilestoneOccurredAtDoc(ctx, update);
-  });
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([{ postedAt: freshAnnounceAt, update: { occurredAt: eventAt } }]);
-});
-
-test("separateMilestoneOccurredAt still fixes postedAt after a redate set occurredAt", async () => {
-  const { t, babyId } = await setup();
-  const originalEventAt = Date.parse("2026-01-11T04:14:00.000Z");
-  const redatedEventAt = Date.parse("2026-01-11T06:00:00.000Z");
-  const announcedAt = Date.parse("2026-01-11T10:13:18.796Z");
-
-  const updateId = await t.run(async (ctx) => {
-    await ctx.db.patch(babyId, { babyBorn: new Date(originalEventAt).toISOString() });
-    const { updateId, timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
-      babyId,
-      postedAt: originalEventAt,
-      occurredAt: redatedEventAt, // a concurrent redate already won
-      milestone: "born",
-    });
-    await ctx.db.insert("scheduledNotifications", {
-      babyId,
-      status: "sent",
-      scheduledFor: announcedAt + 60_000,
-      notificationType: "born",
-      customMessage: null,
-      createdAt: announcedAt,
-    });
-    // Sanity: postedAt still on the old event clock
-    const item = await ctx.db.get(timelineItemId);
-    expect(item?.postedAt).toBe(originalEventAt);
-    return updateId;
-  });
-
-  await t.run(async (ctx) => {
-    const update = await ctx.db.get(updateId);
-    if (!update) throw new Error("update missing");
-    await separateMilestoneOccurredAtDoc(ctx, update);
-  });
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
-  expect(feed.page).toMatchObject([
-    { postedAt: announcedAt, update: { occurredAt: redatedEventAt } },
-  ]);
-});
-
 test("posting a milestone sets occurredAt to the announce time", async () => {
   const { t, asAlice, babyId } = await setup();
   const before = Date.now();
@@ -1243,7 +709,7 @@ test("posting a milestone can backdate the event clock without moving the feed",
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby?.laborStarted).toBe(new Date(occurredAt).toISOString());
   const stored = await getBaby(t, babyId);
-  expect(stored.laborStarted).toBeUndefined();
+  expect(stored).not.toHaveProperty("laborStarted");
 });
 
 test("a backdated event time is rejected when in the future or without a milestone", async () => {

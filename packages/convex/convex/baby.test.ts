@@ -179,7 +179,7 @@ test("journey selection can change after milestone updates without deleting them
 
   const baby = await t.run(async (ctx) => await ctx.db.get(created.babyId));
   expect(baby?.birthJourney).toBe("planned_c_section");
-  expect(baby?.laborStarted).toBeUndefined();
+  expect(baby).not.toHaveProperty("laborStarted");
   const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(publicBaby).toMatchObject({
     laborStarted: "2026-08-10T08:00:00.000Z",
@@ -307,12 +307,16 @@ test("status is inferred from milestone updates, not stored baby fields", async 
   });
 
   const stored = await t.run(async (ctx) => ctx.db.get(created.babyId));
-  expect(stored?.laborStarted).toBeUndefined();
-  expect(stored?.wentToHospital).toBeUndefined();
-  expect(stored?.babyBorn).toBeUndefined();
-  expect(stored?.laborStartedMessage).toBeUndefined();
-  expect(stored?.hospitalMessage).toBeUndefined();
-  expect(stored?.babyBornMessage).toBeUndefined();
+  for (const field of [
+    "laborStarted",
+    "wentToHospital",
+    "babyBorn",
+    "laborStartedMessage",
+    "hospitalMessage",
+    "babyBornMessage",
+  ] as const) {
+    expect(stored).not.toHaveProperty(field);
+  }
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
   expect(publicBaby).toMatchObject({
