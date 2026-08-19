@@ -214,9 +214,6 @@ function docToBabyData(
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
     milestoneVisibility: doc.milestoneVisibility,
-    hospitalMessage: doc.hospitalMessage ?? null,
-    babyBornMessage: doc.babyBornMessage ?? null,
-    laborStartedMessage: doc.laborStartedMessage ?? null,
     encouragementsDisabled: doc.encouragementsDisabled,
     photoId: doc.photoId ?? null,
   };

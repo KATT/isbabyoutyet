@@ -13,6 +13,9 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
     laborStarted: _laborStarted,
     wentToHospital: _wentToHospital,
     babyBorn: _babyBorn,
+    laborStartedMessage: _laborStartedMessage,
+    hospitalMessage: _hospitalMessage,
+    babyBornMessage: _babyBornMessage,
     birthJourney: _birthJourney,
     ...publicBaby
   } = baby;
