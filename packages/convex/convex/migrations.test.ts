@@ -9,6 +9,7 @@ import {
   backfillEncouragementTimelineDoc,
   backfillUpdatePostedByUserIdDoc,
   removeBabyEncouragementsDisabledDoc,
+  sanitizeOnboardingStepsDoc,
 } from "./migrations";
 import schema from "./schema";
 import { modules, registerMigrationsComponent } from "./test.setup";
@@ -110,6 +111,34 @@ test("retained migrations skip linked rows and backfill update metadata and coun
   ).resolves.toBeTruthy();
 });
 
+test("sanitizeOnboardingSteps strips retired learn_encouragements step ids", async () => {
+  const t = convexTest(schema, modules);
+  await registerMigrationsComponent(t);
+
+  const onboardingId = await t.run(async (ctx) => {
+    return await ctx.db.insert("userOnboarding", {
+      userId: "alice",
+      tokenIdentifier: "https://convex.test|alice",
+      completedSteps: ["add_baby", "learn_encouragements", "share_link"],
+      welcomeDismissed: false,
+      checklistDismissed: false,
+      minimized: false,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    const onboarding = await ctx.db.get(onboardingId);
+    if (!onboarding) throw new Error("Fixture missing");
+    await sanitizeOnboardingStepsDoc(ctx, onboarding);
+    const updated = await ctx.db.get(onboardingId);
+    if (!updated) throw new Error("Fixture missing");
+    await sanitizeOnboardingStepsDoc(ctx, updated);
+  });
+
+  const onboarding = await t.run(async (ctx) => ctx.db.get(onboardingId));
+  expect(onboarding?.completedSteps).toEqual(["add_baby", "share_link"]);
+});
+
 test("removeBabyEncouragementsDisabled strips the retired flag from baby docs", async () => {
   const t = convexTest(schema, modules);
   await registerMigrationsComponent(t);
@@ -124,7 +153,6 @@ test("removeBabyEncouragementsDisabled strips the retired flag from baby docs", 
       birthJourney: "labor",
       dueDateDisplayMode: "exact",
       publicDueDateText: null,
-      encouragementsDisabled: true,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
@@ -133,8 +161,11 @@ test("removeBabyEncouragementsDisabled strips the retired flag from baby docs", 
   await t.run(async (ctx) => {
     const baby = await ctx.db.get(babyId);
     if (!baby) throw new Error("Fixture missing");
-    await removeBabyEncouragementsDisabledDoc(ctx, baby);
-    await removeBabyEncouragementsDisabledDoc(ctx, baby);
+    const legacyBaby = { ...baby, encouragementsDisabled: true };
+    await removeBabyEncouragementsDisabledDoc(ctx, legacyBaby);
+    const updated = await ctx.db.get(babyId);
+    if (!updated) throw new Error("Fixture missing");
+    await removeBabyEncouragementsDisabledDoc(ctx, updated);
   });
 
   const baby = await t.run(async (ctx) => ctx.db.get(babyId));
