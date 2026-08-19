@@ -57,14 +57,15 @@ function normalizeDueDateDisplay(opts: {
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
   const mode = opts.mode ?? (normalizedText ? "message" : "exact");
-  if (mode === "exact" && !opts.dueDate) {
+  const dueDate = opts.dueDate ?? null;
+  if (mode === "exact" && !dueDate) {
     throw new Error("A due date is required when the exact date is shown");
   }
   if (mode === "message" && !normalizedText) {
     throw new Error("A public due date message is required when the exact date is hidden");
   }
   return {
-    dueDate: mode === "exact" ? opts.dueDate : null,
+    dueDate: mode === "exact" ? dueDate : null,
     mode,
     text: mode === "message" ? normalizedText : null,
   };
