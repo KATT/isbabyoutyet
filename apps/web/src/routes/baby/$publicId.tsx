@@ -61,7 +61,7 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
-    return { locale: babyDoc.resolvedLocale, babyId: babyDoc._id };
+    return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);

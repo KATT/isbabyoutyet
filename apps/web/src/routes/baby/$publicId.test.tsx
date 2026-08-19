@@ -307,7 +307,6 @@ async function setupBabyLoader(
       convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
       token: string | null;
       locale: string;
-      babyId: Id<"baby">;
     };
     params: { publicId: string };
   }) => Promise<Record<string, unknown>>;
@@ -318,7 +317,6 @@ async function setupBabyLoader(
       convexClient: { setAuth, mutation },
       token: options?.token ?? null,
       locale: options?.locale ?? "en-GB",
-      babyId: "baby-1" as Id<"baby">,
     },
     params: { publicId: "baby-smith" },
   });
