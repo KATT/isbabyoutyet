@@ -151,9 +151,10 @@ export const setAsCurrentPhoto = mutationWithTriggers({
     await ctx.db.patch(baby._id, {
       photoId: update.photoId,
       thumbnailId: update.thumbnailId ?? null,
+      blurDataUrl: update.blurDataUrl ?? null,
     });
 
-    if (!update.thumbnailId || !update.pushImageId) {
+    if (!update.thumbnailId || !update.pushImageId || !update.blurDataUrl) {
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: update.photoId,
@@ -256,6 +257,7 @@ async function removeManagedUpdate(
     await ctx.db.patch(opts.baby._id, {
       photoId: fallback?.photoId ?? null,
       thumbnailId: fallback?.thumbnailId ?? null,
+      blurDataUrl: fallback?.blurDataUrl ?? null,
     });
   }
 

@@ -42,6 +42,7 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
         currentStatus={currentStatus}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </div>
@@ -185,6 +186,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </LocaleProvider>,
@@ -214,6 +216,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
         thumbnailUrl={null}
+        blurDataUrl={null}
         latestUpdate={null}
       />
     </LocaleProvider>,

@@ -53,6 +53,7 @@ async function hydrateUpdate(
       occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
+      blurDataUrl: opts.update.blurDataUrl ?? null,
       // Whether this update's photo is the baby's current page photo
       isCurrentPagePhoto: !!opts.update.photoId && opts.update.photoId === opts.currentPhotoId,
     },
@@ -210,6 +211,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
     thumbnailId?: Id<"_storage"> | null;
+    blurDataUrl?: string | null;
     pushImageId?: Id<"_storage"> | null;
     postedByUserId?: string | null;
   },
@@ -227,6 +229,7 @@ export async function insertUpdateWithTimelineItem(
     occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
     thumbnailId: opts.thumbnailId ?? null,
+    blurDataUrl: opts.blurDataUrl ?? null,
     pushImageId: opts.pushImageId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
   });

@@ -21,6 +21,7 @@ const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
   thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
   pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
+  blurDataUrl: v.optional(v.union(v.string(), v.null())),
 });
 
 const photosValidator = v.record(v.string(), photoIdsValidator);
@@ -33,6 +34,7 @@ type DemoPhotos = Record<
     photoId: Id<"_storage">;
     thumbnailId?: Id<"_storage"> | null;
     pushImageId?: Id<"_storage"> | null;
+    blurDataUrl?: string | null;
   }
 >;
 
@@ -215,6 +217,7 @@ async function clearAllFeed(
   await ctx.db.patch(opts.babyId, {
     photoId: null,
     thumbnailId: null,
+    blurDataUrl: null,
   });
 }
 
@@ -235,6 +238,7 @@ async function insertFeedDocs(
   const demo = HOMEPAGE_DEMO_BABIES[locale];
   let pagePhotoId: Id<"_storage"> | null = null;
   let pageThumbnailId: Id<"_storage"> | null = null;
+  let pageBlurDataUrl: string | null = null;
 
   // Oldest first so the last photo we see is the newest (page photo).
   const chronological = [...homepageDemoFeedFor(locale)].sort(
@@ -269,17 +273,20 @@ async function insertFeedDocs(
       photoId: photo?.photoId ?? null,
       thumbnailId: photo?.thumbnailId ?? null,
       pushImageId: photo?.pushImageId ?? null,
+      blurDataUrl: photo?.blurDataUrl ?? null,
     });
 
     if (photo) {
       pagePhotoId = photo.photoId;
       pageThumbnailId = photo.thumbnailId ?? null;
+      pageBlurDataUrl = photo.blurDataUrl ?? null;
     }
   }
 
   await ctx.db.patch(babyId, {
     photoId: pagePhotoId,
     thumbnailId: pageThumbnailId,
+    blurDataUrl: pageBlurDataUrl,
   });
 
   return { babyId, publicId: demo.publicId, locale };
