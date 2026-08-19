@@ -31,7 +31,9 @@ export type BabyData = Omit<
  * Partial update to baby data - used by editors
  */
 export type BabyUpdate = Partial<
-  Omit<BabyData, "milestoneVisibility"> & { birthJourney: BirthJourney }
+  Pick<BabyData, "name" | "dueDate" | "theme" | "locale" | "encouragementsDisabled"> & {
+    birthJourney: BirthJourney;
+  }
 >;
 
 /**
@@ -40,6 +42,13 @@ export type BabyUpdate = Partial<
 export type BabyUpdateHandler = (update: BabyUpdate) => void | Promise<void>;
 
 export type Milestone = "labor_started" | "gone_to_hospital" | "born";
+
+export type MilestoneRedateHandler = (
+  milestone: Milestone,
+  occurredAt: string,
+) => void | Promise<void>;
+
+export type MilestoneRemoveHandler = (milestone: Milestone) => void | Promise<void>;
 
 export type MilestoneVisibility = {
   showLabor: boolean;
@@ -71,6 +80,12 @@ export type BabyStatus =
   | { type: "labor_started"; date: string }
   | { type: "gone_to_hospital"; date: string }
   | { type: "born"; date: string };
+
+export type MilestoneDates = {
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  babyBorn: string | null;
+};
 
 export const STATUS_ORDER = {
   not_yet: 0,
@@ -175,14 +190,7 @@ export function getCurrentStatus(baby: MilestonePolicyInput): BabyStatus {
  * can be removed. Milestones are unwound in reverse order so the canonical
  * status never contains gaps.
  */
-export function getBlockingLaterMilestone(
-  baby: {
-    laborStarted?: string | null;
-    wentToHospital?: string | null;
-    babyBorn?: string | null;
-  },
-  milestone: Milestone,
-) {
+export function getBlockingLaterMilestone(baby: Partial<MilestoneDates>, milestone: Milestone) {
   for (let index = MILESTONES.length - 1; index >= 0; index -= 1) {
     const candidate = MILESTONES[index];
     if (

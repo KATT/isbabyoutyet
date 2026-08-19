@@ -9,7 +9,12 @@ import {
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
@@ -158,14 +163,16 @@ test("reopening the editor picks up the latest name without any reset", async ()
 });
 
 test("status editor saves the matching milestone instant", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const laborBaby = { ...baby, laborStarted: "2026-08-10T08:00:00.000Z" };
   await using view = renderResource(
     <StatusDateEditor
       baby={laborBaby}
       status="labor_started"
       currentDate={laborBaby.laborStarted}
-      onUpdate={onUpdate}
+      onRedate={onRedate}
+      onRemove={onRemove}
     />,
   );
 
@@ -176,9 +183,10 @@ test("status editor saves the matching milestone instant", async () => {
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
-    expect(onUpdate).toHaveBeenCalledWith({
-      laborStarted: new Date("2026-08-10T09:30").toISOString(),
-    }),
+    expect(onRedate).toHaveBeenCalledWith(
+      "labor_started",
+      new Date("2026-08-10T09:30").toISOString(),
+    ),
   );
 });
 
@@ -237,7 +245,8 @@ test("theme selector reports a failed update and remains open", async () => {
 });
 
 test("status editor confirms destructive deletion", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     laborStarted: "2026-08-10T08:00:00.000Z",
@@ -249,7 +258,8 @@ test("status editor confirms destructive deletion", async () => {
       baby={bornBaby}
       status="born"
       currentDate={bornBaby.babyBorn}
-      onUpdate={onUpdate}
+      onRedate={onRedate}
+      onRemove={onRemove}
     />,
   );
 
@@ -260,11 +270,12 @@ test("status editor confirms destructive deletion", async () => {
   expect(view.getByText(/deletes its timeline update/i)).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete status" }));
 
-  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ babyBorn: null }));
+  await vi.waitFor(() => expect(onRemove).toHaveBeenCalledWith("born"));
 });
 
 test("status deletion is disabled until later statuses are deleted", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     wentToHospital: "2026-08-10T12:00:00.000Z",
@@ -276,7 +287,8 @@ test("status deletion is disabled until later statuses are deleted", async () =>
         baby={bornBaby}
         status="gone_to_hospital"
         currentDate={bornBaby.wentToHospital}
-        onUpdate={onUpdate}
+        onRedate={onRedate}
+        onRemove={onRemove}
       />
     </TooltipProvider>,
   );
@@ -289,5 +301,5 @@ test("status deletion is disabled until later statuses are deleted", async () =>
   if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
   expect(view.queryByRole("alertdialog")).toBeNull();
-  expect(onUpdate).not.toHaveBeenCalled();
+  expect(onRemove).not.toHaveBeenCalled();
 });

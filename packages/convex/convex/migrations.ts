@@ -1,7 +1,7 @@
 import { Migrations } from "@convex-dev/migrations";
 import { components } from "./_generated/api";
 import type { DataModel, Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -12,6 +12,7 @@ import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
   insertUpdateWithTimelineItem,
+  isValidDateTimestamp,
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
@@ -100,6 +101,16 @@ function parseIsoMs(iso: string | null | undefined) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+async function assertExistingMilestoneHasUsableDate(ctx: MutationCtx, update: Doc<"updates">) {
+  const item = await ctx.db.get(update.timelineItemId);
+  if (!item || !isActive(item)) {
+    throw new Error(`Milestone update ${update._id} has no active timeline item`);
+  }
+  if (!isValidDateTimestamp(update.occurredAt ?? item.postedAt)) {
+    throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+  }
+}
+
 /**
  * Backfills the timeline with a baby's existing milestones and its current
  * photo. Milestone rows land at announce time (`postedAt`) with the event
@@ -112,13 +123,20 @@ function parseIsoMs(iso: string | null | undefined) {
 export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   for (const milestone of MILESTONES) {
     const fields = MILESTONE_FIELDS[milestone];
-    const isoDate = baby[fields.date];
-    if (!isoDate) continue;
+    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone });
+    if (existing) {
+      await assertExistingMilestoneHasUsableDate(ctx, existing);
+    }
 
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
+    const isoDate = baby[fields.date];
+    if (isoDate == null) continue;
+    const occurredAt = parseIsoMs(isoDate);
+    if (occurredAt == null) {
+      throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+    }
+
     if (existing) continue;
 
-    const occurredAt = parseIsoMs(isoDate) ?? Date.now();
     const now = Date.now();
     const postedAt = await resolveMilestoneAnnounceAt(ctx, {
       babyId: baby._id,
@@ -202,9 +220,8 @@ export const backfillEncouragementTimeline = migrations.define({
  * - `postedAt` ← announce time when the row still looks backdated
  *
  * Idempotent: once `postedAt` matches announce time (or no longer looks like
- * the event clock), re-runs are a no-op. Having `occurredAt` already set does
- * NOT skip the feed repair — a redate during the deploy window can set
- * `occurredAt` while leaving a legacy event-clock `postedAt`.
+ * the event clock), re-runs are a no-op. A non-null `occurredAt` wins over the
+ * legacy baby field so a concurrent redate is never reversed.
  */
 export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: Doc<"updates">) {
   if (!update.milestone) return;
@@ -213,18 +230,29 @@ export async function separateMilestoneOccurredAtDoc(ctx: MutationCtx, update: D
   if (!baby) return;
 
   const item = await ctx.db.get(update.timelineItemId);
-  if (!item) return;
-
-  const fields = MILESTONE_FIELDS[update.milestone];
-  const occurredAt = parseIsoMs(baby[fields.date]);
-  if (occurredAt == null) {
-    if (update.occurredAt == null) {
-      await ctx.db.patch(update._id, { occurredAt: item.postedAt });
-    }
-    return;
+  if (!item || !isActive(item)) {
+    throw new Error(`Milestone update ${update._id} has no active timeline item`);
   }
 
-  if (update.occurredAt !== occurredAt) {
+  const fields = MILESTONE_FIELDS[update.milestone];
+  const legacyDate = baby[fields.date];
+  const legacyOccurredAt = parseIsoMs(legacyDate);
+  if (legacyDate && legacyOccurredAt == null) {
+    throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+  }
+  const occurredAt = update.occurredAt ?? legacyOccurredAt;
+  if (occurredAt == null) {
+    if (!isValidDateTimestamp(item.postedAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+    }
+    await ctx.db.patch(update._id, { occurredAt: item.postedAt });
+    return;
+  }
+  if (!isValidDateTimestamp(occurredAt)) {
+    throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+  }
+
+  if (update.occurredAt == null) {
     await ctx.db.patch(update._id, { occurredAt });
   }
 
@@ -287,7 +315,10 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
     if (!existing) {
       // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
       // event time on occurredAt
-      const occurredAt = parseIsoMs(baby[fields.date]) ?? Date.now();
+      const occurredAt = parseIsoMs(baby[fields.date]);
+      if (occurredAt == null) {
+        throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+      }
       const now = Date.now();
       const postedAt = await resolveMilestoneAnnounceAt(ctx, {
         babyId: baby._id,
@@ -588,17 +619,26 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
+// Keep newly added migrations outside the stable historical chain. If an
+// older deployment has that chain in progress, its stored `next` list cannot
+// know about migrations appended by this deployment.
+export const runPushImageBackfill = migrations.runner(
+  internal.migrations.generatePushImagesForExistingPhotos,
+);
+export const runBirthJourneyBackfill = migrations.runner(
+  internal.migrations.backfillBabyBirthJourney,
+);
+export const runDueDateDisplayBackfill = migrations.runner(
+  internal.migrations.backfillBabyDueDateDisplay,
+);
+
 export const runTableMigrations = migrations.runner([
   internal.migrations.generateThumbnailsForExistingPhotos,
-  internal.migrations.generatePushImagesForExistingPhotos,
   internal.migrations.backfillBabyTimeline,
   internal.migrations.backfillEncouragementTimeline,
   internal.migrations.separateMilestoneOccurredAt,
-  internal.migrations.clearLegacyStageMessages,
   internal.migrations.backfillUpdatePostedByUserId,
   internal.migrations.backfillBabyOwnerTokenIdentifier,
-  internal.migrations.backfillBabyBirthJourney,
-  internal.migrations.backfillBabyDueDateDisplay,
   internal.migrations.backfillBabyLastActivityAt,
   internal.migrations.backfillBabySubscriptionCount,
   internal.migrations.backfillProfileTokenIdentifier,
@@ -608,17 +648,13 @@ export const runTableMigrations = migrations.runner([
   internal.migrations.backfillUserProfileIsAdmin,
 ]);
 
-const TABLE_MIGRATION_NAMES = [
+const HISTORICAL_MIGRATION_NAMES = [
   "migrations:generateThumbnailsForExistingPhotos",
-  "migrations:generatePushImagesForExistingPhotos",
   "migrations:backfillBabyTimeline",
   "migrations:backfillEncouragementTimeline",
   "migrations:separateMilestoneOccurredAt",
-  "migrations:clearLegacyStageMessages",
   "migrations:backfillUpdatePostedByUserId",
   "migrations:backfillBabyOwnerTokenIdentifier",
-  "migrations:backfillBabyBirthJourney",
-  "migrations:backfillBabyDueDateDisplay",
   "migrations:backfillBabyLastActivityAt",
   "migrations:backfillBabySubscriptionCount",
   "migrations:backfillProfileTokenIdentifier",
@@ -628,20 +664,36 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillUserProfileIsAdmin",
 ] as const;
 
+const TABLE_MIGRATION_NAMES = [
+  ...HISTORICAL_MIGRATION_NAMES,
+  "migrations:backfillBabyBirthJourney",
+  "migrations:backfillBabyDueDateDisplay",
+  "migrations:generatePushImagesForExistingPhotos",
+] as const;
+
+async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
+  const statuses = await migrations.getStatus(ctx, {
+    migrations: [...names],
+  });
+  return {
+    isDone: statuses.length === names.length && statuses.every((status) => status.isDone),
+    failed: statuses
+      .filter((status) => status.error !== undefined)
+      .map((status) => `${status.name}: ${status.error}`),
+  };
+}
+
+export const historicalDeploymentStatus = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, HISTORICAL_MIGRATION_NAMES);
+  },
+});
+
 export const deploymentStatus = internalQuery({
   args: {},
-  handler: async (ctx): Promise<{ isDone: boolean; failed: string[] }> => {
-    const statuses = await migrations.getStatus(ctx, {
-      migrations: [...TABLE_MIGRATION_NAMES],
-    });
-    return {
-      isDone:
-        statuses.length === TABLE_MIGRATION_NAMES.length &&
-        statuses.every((status) => status.isDone),
-      failed: statuses
-        .filter((status) => status.error !== undefined)
-        .map((status) => `${status.name}: ${status.error}`),
-    };
+  handler: async (ctx) => {
+    return await migrationDeploymentStatus(ctx, TABLE_MIGRATION_NAMES);
   },
 });
 
@@ -662,6 +714,10 @@ export const runAll = internalMutation({
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
       cursor: null,
     });
-    return await ctx.runMutation(internal.migrations.runTableMigrations, args);
+    const historical = await ctx.runMutation(internal.migrations.runTableMigrations, args);
+    await ctx.runMutation(internal.migrations.runBirthJourneyBackfill, {});
+    await ctx.runMutation(internal.migrations.runDueDateDisplayBackfill, {});
+    await ctx.runMutation(internal.migrations.runPushImageBackfill, {});
+    return historical;
   },
 });

@@ -3,7 +3,8 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { Milestone } from "../src/types";
+import type { Milestone, MilestoneDates } from "../src/types";
+import { getCurrentStatus, MILESTONE_FIELDS, MILESTONES } from "../src/types";
 import { isActive, softDeletePatch } from "./softDelete";
 
 /**
@@ -284,6 +285,47 @@ export async function findMilestoneUpdate(
     .order("desc")
     .take(32);
   return updates.find(isActive) ?? null;
+}
+
+const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
+
+export function isValidDateTimestamp(value: number) {
+  return Number.isFinite(value) && Math.abs(value) <= MAX_DATE_TIMESTAMP;
+}
+
+/**
+ * Event-clock dates inferred from the active milestone updates. Missing
+ * `occurredAt` falls back to the feed `postedAt` so legacy rows still count.
+ */
+export async function loadMilestoneDates(
+  ctx: QueryCtx,
+  babyId: Id<"baby">,
+): Promise<MilestoneDates> {
+  const dates: MilestoneDates = {
+    laborStarted: null,
+    wentToHospital: null,
+    babyBorn: null,
+  };
+  for (const milestone of MILESTONES) {
+    const update = await findMilestoneUpdate(ctx, { babyId, milestone });
+    if (!update) continue;
+    const item = await ctx.db.get(update.timelineItemId);
+    if (!item || !isActive(item)) {
+      throw new Error(`Milestone update ${update._id} has no active timeline item`);
+    }
+    const occurredAt = update.occurredAt ?? item.postedAt;
+    if (!isValidDateTimestamp(occurredAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+    }
+    dates[MILESTONE_FIELDS[milestone].date] = new Date(occurredAt).toISOString();
+  }
+  return dates;
+}
+
+export async function loadCurrentStatus(ctx: QueryCtx, babyId: Id<"baby">) {
+  const dates = await loadMilestoneDates(ctx, babyId);
+  const baby = await ctx.db.get(babyId);
+  return getCurrentStatus({ ...dates, birthJourney: baby?.birthJourney });
 }
 
 /**
