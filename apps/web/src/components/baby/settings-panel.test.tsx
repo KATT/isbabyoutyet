@@ -46,7 +46,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
-  await using closed = renderResource(
+  const view = render(
     <SettingsPanel
       baby={baby}
       onUpdate={onUpdate}
@@ -55,10 +55,11 @@ test("settings dialog shows page fields when open and stays closed when not", as
       {...absentSettingsProps}
     />,
   );
-  expect(closed.queryByRole("dialog")).toBeNull();
-  expect(closed.queryByText("Settings")).toBeNull();
+  expect(view.queryByRole("dialog")).toBeNull();
+  // keepMounted leaves the portal in the DOM while closed.
+  expect(view.getByText("Settings")).toBeTruthy();
 
-  await using open = renderResource(
+  view.rerender(
     <SettingsPanel
       baby={baby}
       onUpdate={onUpdate}
@@ -68,24 +69,25 @@ test("settings dialog shows page fields when open and stays closed when not", as
     />,
   );
 
-  expect(open.getByRole("dialog")).toBeTruthy();
-  expect(open.getByRole("heading", { name: "Settings" })).toBeTruthy();
-  expect(open.getByText("Baby name")).toBeTruthy();
-  expect(open.getByText("Nova")).toBeTruthy();
-  expect(open.getByText("Due date")).toBeTruthy();
+  expect(view.getByRole("dialog")).toBeTruthy();
+  expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
+  expect(view.getByText("Baby name")).toBeTruthy();
+  expect(view.getByText("Nova")).toBeTruthy();
+  expect(view.getByText("Due date")).toBeTruthy();
   expect(
-    open.getByText("1 September 2026 · Visitors see the exact date and countdown."),
+    view.getByText("1 September 2026 · Visitors see the exact date and countdown."),
   ).toBeTruthy();
-  expect(open.getByText("Labour started")).toBeTruthy();
-  expect(open.getByText("Theme")).toBeTruthy();
-  expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
-  expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
-  expect(open.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
-  expect(open.queryByText("Delete page")).toBeNull();
+  expect(view.getByText("Labour started")).toBeTruthy();
+  expect(view.getByText("Theme")).toBeTruthy();
+  expect(view.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
+  expect(view.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
+  expect(view.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
+  expect(view.queryByText("Delete page")).toBeNull();
 
-  fireEvent.click(open.getByRole("button", { name: "Close" }));
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
   expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+  view.unmount();
 });
 
 test("due date row previews optional public text", async () => {
@@ -278,4 +280,64 @@ test("theme constants render through the active translation catalog", async () =
   expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
   expect(view.getByText("Förlossning")).toBeTruthy();
+});
+
+test("settings dialog preserves scroll position when closed and reopened", () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const scrollableBaby: BabyData = {
+    ...baby,
+    wentToHospital: "2026-08-10T12:00:00.000Z",
+    babyBorn: "2026-08-11T06:00:00.000Z",
+  };
+
+  const settingsProps = {
+    birthJourney: "labor" as const,
+    profileLocale: "en-GB" as const,
+    onDelete: vi.fn<() => void | Promise<void>>().mockResolvedValue(undefined),
+    coParents: null,
+    onMilestoneRedate: () => undefined,
+    onMilestoneRemove: () => undefined,
+  };
+
+  const view = render(
+    <SettingsPanel
+      baby={scrollableBaby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...settingsProps}
+    />,
+  );
+
+  const scrollEl = document.querySelector('[data-slot="dialog-content"]');
+  if (!(scrollEl instanceof HTMLElement)) {
+    throw new Error("Expected settings dialog scroll container");
+  }
+
+  Object.defineProperty(scrollEl, "scrollHeight", { configurable: true, value: 2000 });
+  scrollEl.scrollTop = 400;
+
+  view.rerender(
+    <SettingsPanel
+      baby={scrollableBaby}
+      onUpdate={onUpdate}
+      open={false}
+      onOpenChange={onOpenChange}
+      {...settingsProps}
+    />,
+  );
+
+  view.rerender(
+    <SettingsPanel
+      baby={scrollableBaby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={onOpenChange}
+      {...settingsProps}
+    />,
+  );
+
+  expect(scrollEl.scrollTop).toBe(400);
+  view.unmount();
 });

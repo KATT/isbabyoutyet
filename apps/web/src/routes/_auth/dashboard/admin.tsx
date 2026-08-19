@@ -34,6 +34,7 @@ import {
 } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { usePersistedWindowScroll } from "@/lib/use-persisted-window-scroll";
 
 const ADMIN_PAGE_SIZE = 20;
 
@@ -414,6 +415,7 @@ export function AdminDashboardPage() {
   const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
+  usePersistedWindowScroll(search.tab);
 
   function setTab(tab: AdminTab) {
     void navigate({
@@ -507,12 +509,12 @@ export function AdminDashboardPage() {
                 ) : null}
               </div>
 
-              <TabsContent value="babies" className="mt-0">
-                {search.tab === "babies" ? <AdminBabiesTab /> : null}
+              <TabsContent value="babies" keepMounted className="mt-0">
+                <AdminBabiesTab />
               </TabsContent>
 
-              <TabsContent value="languages" className="mt-0">
-                {search.tab === "languages" ? <AdminLanguagesTab /> : null}
+              <TabsContent value="languages" keepMounted className="mt-0">
+                <AdminLanguagesTab />
               </TabsContent>
             </Tabs>
           </CardContent>
