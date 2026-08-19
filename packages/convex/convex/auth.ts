@@ -3,12 +3,10 @@ import { createAuthMiddleware } from "better-auth/api";
 import { createClient } from "@convex-dev/better-auth";
 import { convex } from "@convex-dev/better-auth/plugins";
 import authConfig from "./auth.config";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
-import { claimInvitesForAuthUser, ensureUserProfileForAuthUser } from "./profileBootstrap";
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -18,8 +16,11 @@ export function resolveAuthBaseUrl(siteUrl: string | undefined, convexSiteUrl: s
   return siteUrl ?? convexSiteUrl;
 }
 
-function authMutationCtx(ctx: GenericCtx<DataModel>) {
-  return ctx as MutationCtx;
+function requireAuthMutationCtx(ctx: GenericCtx<DataModel>) {
+  if (!("runMutation" in ctx)) {
+    throw new Error("Auth hooks require a context that can run mutations");
+  }
+  return ctx;
 }
 
 function authUserFromReturned(returned: unknown) {
@@ -39,14 +40,13 @@ function authUserFromReturned(returned: unknown) {
   return { userId, email, name };
 }
 
-export const createAuth = (ctx: GenericCtx<DataModel>) => {
-  const mutationCtx = authMutationCtx(ctx);
+export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
   return betterAuth({
     // Fresh preview deployments run the demo seed before deploy-convex.ts can
     // set their branch URL. The Convex site URL is a safe bootstrap origin;
     // subsequent requests use the synced web preview URL.
     baseURL: resolveAuthBaseUrl(env.SITE_URL, env.CONVEX_SITE_URL),
-    database: authComponent.adapter(ctx),
+    database: authComponent.adapter(convexCtx),
     // Configure simple, non-verified email/password to get started
     emailAndPassword: {
       enabled: true,
@@ -59,22 +59,28 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
             if (!user.email) {
               return;
             }
-            await claimInvitesForAuthUser(mutationCtx, {
-              userId: user.id,
-              email: String(user.email),
-              name: typeof user.name === "string" ? user.name : null,
-            });
+            await requireAuthMutationCtx(convexCtx).runMutation(
+              internal.profileBootstrap.claimInvitesForAuthUserMutation,
+              {
+                userId: user.id,
+                email: String(user.email),
+                name: typeof user.name === "string" ? user.name : null,
+              },
+            );
           },
         },
       },
       session: {
         create: {
           after: async (session) => {
-            await claimInvitesForAuthUser(mutationCtx, {
-              userId: String(session.userId),
-              email: null,
-              name: null,
-            });
+            await requireAuthMutationCtx(convexCtx).runMutation(
+              internal.profileBootstrap.claimInvitesForAuthUserMutation,
+              {
+                userId: String(session.userId),
+                email: null,
+                name: null,
+              },
+            );
           },
         },
       },
@@ -88,11 +94,16 @@ export const createAuth = (ctx: GenericCtx<DataModel>) => {
         if (!authUser) {
           return;
         }
-        await ensureUserProfileForAuthUser(mutationCtx, {
-          userId: authUser.userId,
-          localeHint:
-            ctx.headers?.get("accept-language") ?? ctx.request?.headers.get("accept-language"),
-        });
+        await requireAuthMutationCtx(convexCtx).runMutation(
+          internal.profileBootstrap.ensureUserProfileForAuthUserMutation,
+          {
+            userId: authUser.userId,
+            localeHint:
+              ctx.headers?.get("accept-language") ??
+              ctx.request?.headers.get("accept-language") ??
+              null,
+          },
+        );
       }),
     },
     plugins: [

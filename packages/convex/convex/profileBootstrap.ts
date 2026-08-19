@@ -1,4 +1,6 @@
+import { v } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
@@ -67,3 +69,24 @@ export async function claimInvitesForAuthUser(
 
   await claimPendingInvitesForAuthUserId(ctx, opts.userId);
 }
+
+export const ensureUserProfileForAuthUserMutation = internalMutation({
+  args: {
+    userId: v.string(),
+    localeHint: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    return await ensureUserProfileForAuthUser(ctx, args);
+  },
+});
+
+export const claimInvitesForAuthUserMutation = internalMutation({
+  args: {
+    userId: v.string(),
+    email: v.union(v.string(), v.null()),
+    name: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    await claimInvitesForAuthUser(ctx, args);
+  },
+});
