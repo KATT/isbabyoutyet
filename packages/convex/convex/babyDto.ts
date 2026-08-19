@@ -39,10 +39,13 @@ export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
       };
     }
     case "message": {
+      if (!baby.publicDueDateText) {
+        throw new Error("Message due date display requires public text");
+      }
       return {
         ...publicBaby,
         dueDateDisplayMode: "message" as const,
-        publicDueDateText: baby.publicDueDateText?.trim(),
+        publicDueDateText: baby.publicDueDateText,
       };
     }
   }
