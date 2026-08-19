@@ -3,7 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import { renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
+import { renderBlurDataUrl, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
 import {
   HOMEPAGE_DEMO_PHOTO_FILES,
   HOMEPAGE_DEMO_PHOTO_KEYS,
@@ -85,7 +85,8 @@ async function jpegAndDerivatives(buffer: Buffer) {
     .toBuffer();
   const thumbnail = await renderPageThumbnail(buffer);
   const pushImage = await renderPushImage(buffer);
-  return { photo, thumbnail, pushImage };
+  const blurDataUrl = await renderBlurDataUrl(buffer);
+  return { photo, thumbnail, pushImage, blurDataUrl };
 }
 
 function isLoopbackUploadUrl(uploadUrl: string) {
@@ -163,10 +164,10 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
 
   const photos: Record<
     HomepageDemoPhotoKey,
-    { photoId: string; thumbnailId: string; pushImageId: string }
+    { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
   > = {} as Record<
     HomepageDemoPhotoKey,
-    { photoId: string; thumbnailId: string; pushImageId: string }
+    { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
   >;
 
   for (const photo of photosOnDisk) {
@@ -183,7 +184,7 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
       bytes: prepared.pushImage,
       extraConvexArgs,
     });
-    photos[photo.key] = { photoId, thumbnailId, pushImageId };
+    photos[photo.key] = { photoId, thumbnailId, pushImageId, blurDataUrl: prepared.blurDataUrl };
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 

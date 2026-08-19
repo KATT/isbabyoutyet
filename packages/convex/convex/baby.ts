@@ -100,6 +100,7 @@ export const getByPublicId = query({
 
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
+    const blurDataUrl = baby.blurDataUrl ?? null;
     const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
     const dueDateDisplay = normalizeDueDateDisplay({
       mode: baby.dueDateDisplayMode,
@@ -115,6 +116,7 @@ export const getByPublicId = query({
       publicDueDateText: dueDateDisplay.text,
       photoUrl,
       thumbnailUrl,
+      blurDataUrl,
       resolvedLocale,
     };
   },
@@ -152,7 +154,7 @@ export async function applyPhotoSideEffects(
   const baby = opts.baby;
 
   // Update the current photo (retain old photos in storage + feed for history)
-  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null });
+  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null, blurDataUrl: null });
 
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
     babyId: baby._id,
@@ -224,7 +226,7 @@ export const updatePhoto = mutationWithTriggers({
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
       // already posted to the timeline keep their own copies.
-      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null });
+      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null, blurDataUrl: null });
       return;
     }
 
@@ -467,13 +469,18 @@ export const updateThumbnail = internalMutation({
     pushImageId: v.union(v.id("_storage"), v.null()),
     photoId: v.optional(v.id("_storage")), // photo the derivatives were generated from
     updateId: v.optional(v.id("updates")), // timeline update row to also patch
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
     // Skip the baby doc if its current photo changed while the thumbnail was
     // generating — a newer generation owns the field now.
+    const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
+      await ctx.db.patch(args.babyId, {
+        thumbnailId: args.thumbnailId,
+        ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
+      });
     }
 
     if (args.updateId) {
@@ -482,7 +489,34 @@ export const updateThumbnail = internalMutation({
         await ctx.db.patch(args.updateId, {
           thumbnailId: args.thumbnailId,
           pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
         });
+      }
+    }
+  },
+});
+
+/**
+ * Backfill-only write for the inline blur placeholder. Same stale-photo
+ * guard as `updateThumbnail`.
+ */
+export const updateBlurDataUrl = internalMutation({
+  args: {
+    babyId: v.id("baby"),
+    photoId: v.id("_storage"),
+    blurDataUrl: v.string(),
+    updateId: v.optional(v.id("updates")),
+  },
+  handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (baby && baby.photoId === args.photoId) {
+      await ctx.db.patch(args.babyId, { blurDataUrl: args.blurDataUrl });
+    }
+
+    if (args.updateId) {
+      const update = await ctx.db.get(args.updateId);
+      if (update && update.photoId === args.photoId) {
+        await ctx.db.patch(args.updateId, { blurDataUrl: args.blurDataUrl });
       }
     }
   },

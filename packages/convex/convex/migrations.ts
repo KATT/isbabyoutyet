@@ -54,6 +54,48 @@ export const generatePushImagesForExistingPhotos = migrations.define({
 });
 
 /**
+ * Inline Next.js-style blur placeholders for photo updates that predate the field.
+ */
+export async function generateBlurDataUrlsForExistingPhotosDoc(
+  ctx: MutationCtx,
+  update: Doc<"updates">,
+) {
+  if (!isActive(update)) return;
+  if (!update.photoId || update.blurDataUrl) return;
+  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
+    babyId: update.babyId,
+    photoId: update.photoId,
+    updateId: update._id,
+  });
+}
+
+export const generateBlurDataUrlsForExistingPhotos = migrations.define({
+  table: "updates",
+  migrateOne: generateBlurDataUrlsForExistingPhotosDoc,
+});
+
+/**
+ * Same placeholder for a baby's current page photo when no matching update
+ * row carried it (or the update backfill has not landed yet).
+ */
+export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
+  ctx: MutationCtx,
+  baby: Doc<"baby">,
+) {
+  if (!isActive(baby)) return;
+  if (!baby.photoId || baby.blurDataUrl) return;
+  await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
+    babyId: baby._id,
+    photoId: baby.photoId,
+  });
+}
+
+export const generateBlurDataUrlsForExistingBabyPhotos = migrations.define({
+  table: "baby",
+  migrateOne: generateBlurDataUrlsForExistingBabyPhotosDoc,
+});
+
+/**
  * Backfills the timeline row for an existing encouragement at its original
  * creation time. Idempotent: an encouragement with `timelineItemId` set has
  * already been migrated.
@@ -341,6 +383,10 @@ export const backfillUserProfileIsAdmin = migrations.define({
 export const runPushImageBackfill = migrations.runner(
   internal.migrations.generatePushImagesForExistingPhotos,
 );
+export const runBlurDataUrlBackfill = migrations.runner([
+  internal.migrations.generateBlurDataUrlsForExistingPhotos,
+  internal.migrations.generateBlurDataUrlsForExistingBabyPhotos,
+]);
 export const runBirthJourneyBackfill = migrations.runner(
   internal.migrations.backfillBabyBirthJourney,
 );
@@ -381,6 +427,8 @@ const TABLE_MIGRATION_NAMES = [
   "migrations:backfillBabyBirthJourney",
   "migrations:backfillBabyDueDateDisplay",
   "migrations:generatePushImagesForExistingPhotos",
+  "migrations:generateBlurDataUrlsForExistingPhotos",
+  "migrations:generateBlurDataUrlsForExistingBabyPhotos",
 ] as const;
 
 async function migrationDeploymentStatus(ctx: QueryCtx, names: readonly string[]) {
@@ -430,6 +478,7 @@ export const runAll = internalMutation({
     await ctx.runMutation(internal.migrations.runBirthJourneyBackfill, {});
     await ctx.runMutation(internal.migrations.runDueDateDisplayBackfill, {});
     await ctx.runMutation(internal.migrations.runPushImageBackfill, {});
+    await ctx.runMutation(internal.migrations.runBlurDataUrlBackfill, {});
     return historical;
   },
 });

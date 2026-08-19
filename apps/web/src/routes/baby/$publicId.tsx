@@ -435,6 +435,7 @@ function BabyPage() {
               currentStatus={currentStatus}
               photoUrl={babyDoc.photoUrl}
               thumbnailUrl={babyDoc.thumbnailUrl}
+              blurDataUrl={babyDoc.blurDataUrl ?? null}
               latestUpdate={
                 latestUpdate
                   ? {
