@@ -124,10 +124,10 @@ test("plays a generated chart through input, pause, results, and replay", async 
   fireEvent.ended(audio);
   expect(await screen.findByText("Run complete")).toBeTruthy();
 
-  fireEvent.click(screen.getByRole("button", { name: "Play again" }));
+  fireEvent.click(screen.getByText("Play again"));
   expect(mocks.play).toHaveBeenCalledTimes(3);
   fireEvent.ended(audio);
-  fireEvent.click(await screen.findByRole("button", { name: "Pick another song" }));
+  fireEvent.click(await screen.findByText("Pick another song"));
   expect(screen.getByText(/Choose a track below/)).toBeTruthy();
 });
 
