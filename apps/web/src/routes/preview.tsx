@@ -36,7 +36,7 @@ function getDefaultBabyData(): BabyData {
 }
 const searchSchema = z.object({
   name: z.string().default("Baby"),
-  dueDate: z.string().optional(),
+  dueDate: z.string().nullable().optional(),
   dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
   publicDueDateText: z.string().nullable().optional(),
   theme: z.string().nullable().optional(),

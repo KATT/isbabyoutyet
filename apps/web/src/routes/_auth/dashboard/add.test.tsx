@@ -45,6 +45,7 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
   ).toBe("true");
+  expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
@@ -89,10 +90,14 @@ test("requires and submits a custom public due date message", async () => {
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
   });
-  fireEvent.change(view.getByLabelText("Due date"), {
-    target: { value: "2026-09-19" },
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Pick a date")).toBeTruthy();
   });
+  expect(mocks.createBaby).not.toHaveBeenCalled();
+
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  expect(view.queryByLabelText("Due date")).toBeNull();
   const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
   expect(publicMessageInput.placeholder).toBe("September baby");
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
@@ -109,7 +114,7 @@ test("requires and submits a custom public due date message", async () => {
   await vi.waitFor(() => {
     expect(mocks.createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
-      dueDate: expect.stringContaining("2026-09-19"),
+      dueDate: null,
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",

@@ -164,8 +164,9 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const { locale, t } = useI18n();
   const isMessageMode = props.baby.dueDateDisplayMode === "message";
   const publicDueDateText = props.baby.publicDueDateText?.trim() ?? "";
-  const overdueDays = isMessageMode ? 0 : getOverdueDays(props.baby.dueDate);
-  const daysUntilDueDate = isMessageMode ? 0 : getDaysUntilDueDate(props.baby.dueDate);
+  const exactDueDate = isMessageMode ? null : props.baby.dueDate;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
+  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
   const sublineKey =
@@ -229,7 +230,9 @@ export function StatusDisplay(props: StatusDisplayProps) {
           </p>
           {!isMessageMode ? (
             <p className="mt-1 text-sm font-semibold text-muted-foreground">
-              {t("Due date: {{date}}", { date: formatDueDate(props.baby.dueDate, locale) })}
+              {t("Due date: {{date}}", {
+                date: exactDueDate ? formatDueDate(exactDueDate, locale) : "",
+              })}
             </p>
           ) : null}
         </div>

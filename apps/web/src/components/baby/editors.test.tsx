@@ -103,7 +103,7 @@ test("due date editor requires and saves a custom visitor message", async () => 
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() =>
     expect(onUpdate).toHaveBeenCalledWith({
-      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDate: null,
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
     }),
@@ -114,7 +114,12 @@ test("due date editor switches a custom message back to the exact date", async (
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(
     <DueDateEditor
-      baby={{ ...baby, dueDateDisplayMode: "message", publicDueDateText: "Any day now" }}
+      baby={{
+        ...baby,
+        dueDate: null,
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
       onUpdate={onUpdate}
     />,
   );
@@ -127,6 +132,14 @@ test("due date editor switches a custom message back to the exact date", async (
   );
   fireEvent.click(exactSwitch);
   expect(view.queryByLabelText("Public due date message")).toBeNull();
+  const dateInput = view.getByLabelText("Due date");
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Pick a date")).toBeTruthy();
+  });
+  expect(onUpdate).not.toHaveBeenCalled();
+
+  fireEvent.change(dateInput, { target: { value: "2026-09-01" } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>

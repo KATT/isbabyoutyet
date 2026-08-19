@@ -110,7 +110,7 @@ test("renders optional public due date text without exposing the exact day", asy
   await registerComponents(t);
   const created = await t.withIdentity({ subject: "alice" }).mutation(api.baby.create, {
     name: "Baby Smith",
-    dueDate: "2026-09-19",
+    dueDate: null,
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });

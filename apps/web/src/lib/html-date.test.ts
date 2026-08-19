@@ -1,9 +1,16 @@
 import { expect, test } from "vitest";
 import type { TranslationFunction } from "@/lib/i18n";
-import { htmlDate, htmlDateTime, htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
+import {
+  htmlDate,
+  htmlDateTime,
+  htmlDateTimeNow,
+  optionalHtmlDate,
+  optionalHtmlDateTime,
+} from "@/lib/html-date";
 
 const t = ((key: string) => key) as TranslationFunction;
 const dateCodec = htmlDate(t);
+const optionalDateCodec = optionalHtmlDate(t);
 const dateTimeCodec = htmlDateTime(t);
 const optionalDateTimeCodec = optionalHtmlDateTime(t);
 
@@ -18,6 +25,16 @@ test("calendar date encode accepts a stored ISO instant", () => {
 
 test("calendar date encode leaves a YYYY-MM-DD value unchanged", () => {
   expect(dateCodec.encode("2026-09-01")).toBe("2026-09-01");
+});
+
+test("optional calendar date maps an empty picker to null", () => {
+  expect(optionalDateCodec.decode("")).toBeNull();
+  expect(optionalDateCodec.encode(null)).toBe("");
+});
+
+test("optional calendar date roundtrips a selected date", () => {
+  expect(optionalDateCodec.decode("2026-09-01")).toBe("2026-09-01T00:00:00.000Z");
+  expect(optionalDateCodec.encode("2026-09-01T00:00:00.000Z")).toBe("2026-09-01");
 });
 
 test("datetime-local roundtrips an instant through the viewer's timezone", () => {

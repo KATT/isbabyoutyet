@@ -59,7 +59,7 @@ test("custom due date text replaces countdown metadata", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby = {
     name: "Juniper",
-    dueDate: "2026-09",
+    dueDate: null,
     dueDateDisplayMode: "message" as const,
     publicDueDateText: "Any day now",
     publicId: "juniper-hale",

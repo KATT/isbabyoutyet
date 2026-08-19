@@ -78,7 +78,7 @@ async function pngResponse(opts: {
 
 export type BabyOgImageInput = {
   name: string;
-  dueDate: string;
+  dueDate: string | null;
   dueDateDisplayMode: "exact" | "message";
   publicDueDateText: string | null;
   theme: string | null | undefined;
