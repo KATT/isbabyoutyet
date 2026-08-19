@@ -86,7 +86,7 @@ test("minimized chip shows progress count", async () => {
     />,
   );
 
-  expect(screen.getByRole("button", { name: /2 of 4 done/i })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /2 of 5 done/i })).toBeTruthy();
 });
 
 test("dashboard settings CTA marks the step done while opening the page", async () => {
@@ -136,7 +136,13 @@ test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = renderResource(
     <GettingStartedCard
-      effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
+      effectiveSteps={[
+        "add_baby",
+        "share_link",
+        "post_update",
+        "explore_settings",
+        "learn_encouragements",
+      ]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}

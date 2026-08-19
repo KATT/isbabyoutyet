@@ -512,6 +512,9 @@ const enGB = {
   "Peek at settings": "Peek at settings",
   "Themes, names, and language — all in Settings.":
     "Change the name, theme, and language in Settings.",
+  "Encouragements from visitors": "Messages from visitors",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Anyone with the link can leave a short message without an account. It appears in your timeline.",
   "Go Home": "Go Home",
   "Something went wrong": "Something went wrong",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1038,6 +1041,9 @@ const sv: Record<TranslationKey, string> = {
   "Peek at settings": "Titta i inställningarna",
   "Themes, names, and language — all in Settings.":
     "Teman, namn och språk. Allt finns under Inställningar.",
+  "Encouragements from visitors": "Hälsningar från besökare",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Alla med länken kan lämna en kort pepphälsning utan konto. Den dyker upp i tidslinjen.",
   "Go Home": "Gå hem",
   "Something went wrong": "Något gick fel",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1550,6 +1556,9 @@ const es: Record<TranslationKey, string> = {
   "Peek at settings": "Echa un vistazo a Configuración",
   "Themes, names, and language — all in Settings.":
     "Temas, nombres e idioma: todo está en Configuración.",
+  "Encouragements from visitors": "Mensajes de los visitantes",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Cualquiera con el enlace puede dejar un mensaje breve de apoyo, sin crear una cuenta. Los mensajes aparecerán en el historial.",
   "Go Home": "Ir al inicio",
   "Something went wrong": "Algo salió mal",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -2066,6 +2075,9 @@ const ptBR: Record<TranslationKey, string> = {
   "Peek at settings": "Dê uma olhada nas configurações",
   "Themes, names, and language — all in Settings.":
     "Temas, nomes e idioma: tudo nas Configurações.",
+  "Encouragements from visitors": "Mensagens de carinho dos visitantes",
+  "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
+    "Qualquer pessoa com o link pode deixar um recadinho de apoio, sem precisar de conta. O recado aparece na sua linha do tempo.",
   "Go Home": "Ir para o início",
   "Something went wrong": "Algo deu errado",
   "An unexpected error occurred. Reloading usually fixes it.":

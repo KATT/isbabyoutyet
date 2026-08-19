@@ -111,7 +111,7 @@ test("retained migrations skip linked rows and backfill update metadata and coun
   ).resolves.toBeTruthy();
 });
 
-test("sanitizeOnboardingSteps strips retired learn_encouragements step ids", async () => {
+test("sanitizeOnboardingSteps strips unknown retired step ids", async () => {
   const t = convexTest(schema, modules);
   await registerMigrationsComponent(t);
 
@@ -119,7 +119,7 @@ test("sanitizeOnboardingSteps strips retired learn_encouragements step ids", asy
     return await ctx.db.insert("userOnboarding", {
       userId: "alice",
       tokenIdentifier: "https://convex.test|alice",
-      completedSteps: ["add_baby", "learn_encouragements", "share_link"],
+      completedSteps: ["add_baby", "share_link"],
       welcomeDismissed: false,
       checklistDismissed: false,
       minimized: false,
@@ -129,14 +129,18 @@ test("sanitizeOnboardingSteps strips retired learn_encouragements step ids", asy
   await t.run(async (ctx) => {
     const onboarding = await ctx.db.get(onboardingId);
     if (!onboarding) throw new Error("Fixture missing");
-    await sanitizeOnboardingStepsDoc(ctx, onboarding);
+    const legacyOnboarding = {
+      ...onboarding,
+      completedSteps: ["add_baby", "retired_step", "share_link", "learn_encouragements"],
+    };
+    await sanitizeOnboardingStepsDoc(ctx, legacyOnboarding);
     const updated = await ctx.db.get(onboardingId);
     if (!updated) throw new Error("Fixture missing");
     await sanitizeOnboardingStepsDoc(ctx, updated);
   });
 
   const onboarding = await t.run(async (ctx) => ctx.db.get(onboardingId));
-  expect(onboarding?.completedSteps).toEqual(["add_baby", "share_link"]);
+  expect(onboarding?.completedSteps).toEqual(["add_baby", "share_link", "learn_encouragements"]);
 });
 
 test("removeBabyEncouragementsDisabled strips the retired flag from baby docs", async () => {

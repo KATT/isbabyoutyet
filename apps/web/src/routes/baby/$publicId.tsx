@@ -494,7 +494,10 @@ function BabyPage() {
               to scroll past every message to post; the owner posts via the
               "Post update" button in the dock. */}
           <div className="space-y-8">
-            <section className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8">
+            <section
+              className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
+              data-tour-id="learn_encouragements"
+            >
               <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
             </section>
 
