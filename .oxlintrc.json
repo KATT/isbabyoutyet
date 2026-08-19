@@ -1,5 +1,5 @@
 {
-  "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
+  "$schema": "./products/baby-outlet/backend/node_modules/oxlint/configuration_schema.json",
   "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
   "jsPlugins": [
     {
@@ -49,7 +49,7 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/**/*.{ts,tsx}"],
+      "files": ["products/baby-outlet/web/src/**/*.{ts,tsx}"],
       "rules": {
         "infer-callback-params/infer-callback-params": "error",
         "i18n-literal/no-literal-string": "error",
@@ -64,13 +64,13 @@
     },
     {
       "files": [
-        "apps/web/src/routes/demo/**/*.{ts,tsx}",
-        "apps/web/src/**/*.test.{ts,tsx}",
-        "apps/web/src/components/dev-bar.tsx",
-        "apps/web/src/components/demo-account-picker.tsx",
-        "apps/web/src/lib/robots.ts",
-        "apps/web/src/routes/robots[.]txt.ts",
-        "apps/web/src/routes/sitemap[.]xml.ts"
+        "products/baby-outlet/web/src/routes/demo/**/*.{ts,tsx}",
+        "products/baby-outlet/web/src/**/*.test.{ts,tsx}",
+        "products/baby-outlet/web/src/components/dev-bar.tsx",
+        "products/baby-outlet/web/src/components/demo-account-picker.tsx",
+        "products/baby-outlet/web/src/lib/robots.ts",
+        "products/baby-outlet/web/src/routes/robots[.]txt.ts",
+        "products/baby-outlet/web/src/routes/sitemap[.]xml.ts"
       ],
       "rules": {
         "i18n-literal/no-literal-string": "off",

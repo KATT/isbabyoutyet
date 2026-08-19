@@ -11,7 +11,7 @@
     ".": {
       "entry": ["scripts/compareCoverage.ts!"]
     },
-    "apps/web": {
+    "products/baby-outlet/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
       },
@@ -23,7 +23,7 @@
         "scripts/build-web.mjs!"
       ]
     },
-    "packages/convex": {
+    "products/baby-outlet/backend": {
       "entry": ["scripts/seedHomepageDemo.ts!"]
     },
     "packages/query-prefetch": {},

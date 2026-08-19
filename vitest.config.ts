@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { webUnitProject } from "./apps/web/vitest.config.ts";
+import { webUnitProject } from "./products/baby-outlet/web/vitest.config.ts";
 
 /**
  * Monorepo Vitest projects (formerly "workspaces").
@@ -16,7 +16,7 @@ const oxlintPluginsProject = {
 export default defineConfig({
   test: {
     projects: [
-      "packages/convex",
+      "products/baby-outlet/backend",
       "packages/query-prefetch",
       "packages/convex-prefetch",
       webUnitProject,
@@ -28,9 +28,9 @@ export default defineConfig({
       // files into the report, so uncovered code counts against the numbers
       // instead of silently hiding.
       include: [
-        "apps/web/src/**/*.{ts,tsx}",
-        "packages/convex/convex/**/*.ts",
-        "packages/convex/src/**/*.ts",
+        "products/baby-outlet/web/src/**/*.{ts,tsx}",
+        "products/baby-outlet/backend/convex/**/*.ts",
+        "products/baby-outlet/backend/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
       ],

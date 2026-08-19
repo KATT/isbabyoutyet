@@ -2,8 +2,8 @@
 
 ## Convex
 
-When working under `packages/convex/`, also follow
-[`packages/convex/AGENTS.md`](packages/convex/AGENTS.md).
+When working under `products/baby-outlet/backend/`, also follow
+[`products/baby-outlet/backend/AGENTS.md`](products/baby-outlet/backend/AGENTS.md).
 
 ## Pull requests
 
