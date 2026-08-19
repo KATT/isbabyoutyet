@@ -95,6 +95,6 @@ test("retained migrations skip linked rows and backfill update metadata and coun
   });
   expect(result.encouragement?.timelineItemId).not.toBe(ids.originalItemId);
   expect(result.update?.postedByUserId).toBe("alice");
-  expect(result.baby?.lastActivityAt).toBe(500);
+  expect(result.baby?.lastActivityAt).toBe(result.baby?._creationTime);
   expect(result.baby?.subscriptionCount).toBe(1);
 });
