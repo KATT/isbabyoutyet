@@ -12,6 +12,7 @@ import {
   findMilestoneUpdate,
   insertEncouragementTimelineItem,
   insertUpdateWithTimelineItem,
+  isValidDateTimestamp,
 } from "./timeline";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
@@ -100,6 +101,20 @@ function parseIsoMs(iso: string | null | undefined) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
+async function assertExistingMilestoneHasUsableDate(ctx: MutationCtx, update: Doc<"updates">) {
+  if (update.occurredAt != null) {
+    if (!isValidDateTimestamp(update.occurredAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid occurredAt`);
+    }
+    return;
+  }
+
+  const item = await ctx.db.get(update.timelineItemId);
+  if (!item || !isActive(item) || !isValidDateTimestamp(item.postedAt)) {
+    throw new Error(`Milestone update ${update._id} has no usable timeline timestamp`);
+  }
+}
+
 /**
  * Backfills the timeline with a baby's existing milestones and its current
  * photo. Milestone rows land at announce time (`postedAt`) with the event
@@ -114,11 +129,17 @@ export async function backfillBabyTimelineDoc(ctx: MutationCtx, baby: Doc<"baby"
     const fields = MILESTONE_FIELDS[milestone];
     const isoDate = baby[fields.date];
     if (!isoDate) continue;
+    const occurredAt = parseIsoMs(isoDate);
+    if (occurredAt == null) {
+      throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+    }
 
     const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-    if (existing) continue;
+    if (existing) {
+      await assertExistingMilestoneHasUsableDate(ctx, existing);
+      continue;
+    }
 
-    const occurredAt = parseIsoMs(isoDate) ?? Date.now();
     const now = Date.now();
     const postedAt = await resolveMilestoneAnnounceAt(ctx, {
       babyId: baby._id,
@@ -287,7 +308,10 @@ export async function clearLegacyStageMessagesDoc(ctx: MutationCtx, baby: Doc<"b
     if (!existing) {
       // Heal like backfillBabyTimelineDoc: announce time on the feed clock,
       // event time on occurredAt
-      const occurredAt = parseIsoMs(baby[fields.date]) ?? Date.now();
+      const occurredAt = parseIsoMs(baby[fields.date]);
+      if (occurredAt == null) {
+        throw new Error(`Baby ${baby._id} has an invalid ${fields.date}`);
+      }
       const now = Date.now();
       const postedAt = await resolveMilestoneAnnounceAt(ctx, {
         babyId: baby._id,

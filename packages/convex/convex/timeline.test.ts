@@ -802,6 +802,42 @@ test("backfill migrations preserve announce-time order and are idempotent", asyn
   expect(after.page).toHaveLength(4);
 });
 
+test("backfill rejects an invalid legacy milestone date", async () => {
+  const { t, babyId } = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { laborStarted: "not-a-date" });
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      const baby = await ctx.db.get(babyId);
+      if (!baby) throw new Error("Baby not found");
+      await backfillBabyTimelineDoc(ctx, baby);
+    }),
+  ).rejects.toThrow("has an invalid laborStarted");
+});
+
+test("backfill rejects a milestone update without a usable timestamp", async () => {
+  const { t, babyId } = await setup();
+  await t.run(async (ctx) => {
+    await ctx.db.patch(babyId, { laborStarted: "2026-08-10T08:00:00.000Z" });
+    const { timelineItemId } = await insertUpdateWithTimelineItem(ctx, {
+      babyId,
+      postedAt: Date.parse("2026-08-10T08:00:00.000Z"),
+      milestone: "labor_started",
+    });
+    await ctx.db.delete(timelineItemId);
+  });
+
+  await expect(
+    t.run(async (ctx) => {
+      const baby = await ctx.db.get(babyId);
+      if (!baby) throw new Error("Baby not found");
+      await backfillBabyTimelineDoc(ctx, baby);
+    }),
+  ).rejects.toThrow("has no usable timeline timestamp");
+});
+
 test("clearLegacyStageMessages only clears fields with a proven durable destination", async () => {
   const { t, babyId } = await setup();
   const laborAt = new Date(Date.now() - 10 * 60 * 60 * 1000);
