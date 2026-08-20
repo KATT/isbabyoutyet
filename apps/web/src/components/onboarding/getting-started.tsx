@@ -14,6 +14,7 @@ import {
   Drawer,
   DrawerContent,
   DrawerDescription,
+  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@workspace/ui/components/drawer";
@@ -298,8 +299,20 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               t={t}
               onBeforeAction={() => setMobileOpen(false)}
               onRequestDismiss={() => setDismissOpen(true)}
+              showDismissAction={false}
             />
           </div>
+          {nextStep ? (
+            <DrawerFooter className="pt-2">
+              <Button
+                variant="outline"
+                className="min-h-11 w-full"
+                onClick={() => setDismissOpen(true)}
+              >
+                {t("Dismiss guide")}
+              </Button>
+            </DrawerFooter>
+          ) : null}
         </DrawerContent>
       </Drawer>
 
@@ -340,6 +353,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           t={t}
           onBeforeAction={undefined}
           onRequestDismiss={() => setDismissOpen(true)}
+          showDismissAction
         />
       </aside>
 
@@ -381,6 +395,7 @@ type ChecklistContentsProps = GettingStartedCardProps & {
   t: TranslationFunction;
   onBeforeAction: (() => void) | undefined;
   onRequestDismiss: () => void;
+  showDismissAction: boolean;
 };
 
 function ChecklistContents(props: ChecklistContentsProps) {
@@ -438,14 +453,16 @@ function ChecklistContents(props: ChecklistContentsProps) {
             onBeforeAction={props.onBeforeAction}
             t={t}
           />
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2 min-h-11 w-full"
-            onClick={props.onRequestDismiss}
-          >
-            {t("Dismiss guide")}
-          </Button>
+          {props.showDismissAction ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-2 min-h-11 w-full"
+              onClick={props.onRequestDismiss}
+            >
+              {t("Dismiss guide")}
+            </Button>
+          ) : null}
         </>
       ) : (
         <div className="flex flex-col gap-2">

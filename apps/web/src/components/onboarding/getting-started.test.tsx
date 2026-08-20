@@ -81,6 +81,7 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
 
   const drawer = await screen.findByRole("dialog", { name: "Getting started" });
   expect(within(drawer).getByText("Tap a step to jump there")).toBeTruthy();
+  expect(within(drawer).getByRole("button", { name: "Dismiss guide" })).toBeTruthy();
   fireEvent.click(within(drawer).getByRole("button", { name: /close checklist/i }));
   await vi.waitFor(() => {
     expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
