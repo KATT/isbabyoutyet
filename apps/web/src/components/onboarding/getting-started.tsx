@@ -303,7 +303,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             />
           </div>
           {nextStep ? (
-            <DrawerFooter className="pt-2">
+            <DrawerFooter className="relative bg-popover pt-2">
               <Button
                 variant="outline"
                 className="min-h-11 w-full"
