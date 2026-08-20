@@ -70,6 +70,13 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
   const expand = screen.getByRole("button", {
     name: /getting started: 0 of 5 done. expand/i,
   });
+  const mobileDock = screen.getAllByRole("complementary", {
+    name: "Getting started checklist",
+  })[0];
+  if (!mobileDock) {
+    throw new Error("Expected a compact mobile guide");
+  }
+  expect(within(mobileDock).queryByRole("link", { name: /add a baby/i })).toBeNull();
   fireEvent.click(expand);
 
   const drawer = await screen.findByRole("dialog", { name: "Getting started" });
