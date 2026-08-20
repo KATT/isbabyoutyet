@@ -51,7 +51,7 @@ export function Coachmark(props: CoachmarkProps) {
     if (!(el instanceof HTMLElement)) {
       return;
     }
-    el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+    el.scrollIntoView({ block: "center", behavior: "auto", inline: "nearest" });
   }, [props.targetId]);
 
   useEffect(() => {
@@ -114,7 +114,14 @@ export function Coachmark(props: CoachmarkProps) {
       {isMobile ? (
         <div
           className="pointer-events-auto fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
-          style={visualViewport.style}
+          style={{
+            ...visualViewport.style,
+            left: `calc(${visualViewport.left}px + 0.75rem + env(safe-area-inset-left))`,
+            width:
+              visualViewport.width > 0
+                ? `calc(${visualViewport.width}px - 1.5rem - env(safe-area-inset-left) - env(safe-area-inset-right))`
+                : "calc(100dvw - 1.5rem - env(safe-area-inset-left) - env(safe-area-inset-right))",
+          }}
           role="dialog"
           aria-label={props.title}
         >
