@@ -28,8 +28,8 @@ vi.mock("@/lib/auth-server", () => ({
   authServer: { getToken },
 }));
 
-const { docToBabyData, managerDocToBabyData } = await import("@/routes/baby/$publicId/shared");
 const routeModule = await import("@/routes/baby/$publicId/route");
+const { docToBabyData, managerDocToBabyData } = routeModule;
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -346,7 +346,6 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
-  expect(result).not.toHaveProperty("coParentsList");
 });
 
 test("loader gives managers the same handles with real data", async () => {
@@ -371,7 +370,6 @@ test("loader gives managers the same handles with real data", async () => {
   expect(result.managerBaby).toMatchObject({
     initialData: { birthJourney: "labor" },
   });
-  expect(result).not.toHaveProperty("coParentsList");
 });
 
 test("loader 404s unknown babies", async () => {

@@ -31,7 +31,66 @@ import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
 import { authServer } from "@/lib/auth-server";
-import { babySearchWithoutSettings, docToBabyData, TIMELINE_PAGE_SIZE } from "./shared";
+import type { FunctionReturnType } from "convex/server";
+import type { BabyData } from "@workspace/convex/src/types";
+
+export const TIMELINE_PAGE_SIZE = 20;
+
+export function babySearchWithoutSettings(search: {
+  settings: boolean | undefined;
+  beta: boolean | undefined;
+}) {
+  if (!search.beta) {
+    return undefined;
+  }
+  return { beta: true as const };
+}
+
+export function docToBabyData(
+  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+): BabyData {
+  const common = {
+    name: doc.name,
+    theme: doc.theme ?? null,
+    locale: doc.locale ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    photoId: doc.photoId ?? null,
+  };
+  return doc.dueDateDisplayMode === "exact"
+    ? {
+        ...common,
+        dueDate: doc.dueDate,
+        dueDateDisplayMode: "exact" as const,
+        publicDueDateText: null,
+      }
+    : {
+        ...common,
+        dueDate: null,
+        dueDateDisplayMode: "message" as const,
+        publicDueDateText: doc.publicDueDateText ?? null,
+      };
+}
+
+type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
+
+export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
+  return {
+    name: doc.name,
+    dueDate: doc.dueDate,
+    dueDateDisplayMode: doc.dueDateDisplayMode,
+    publicDueDateText: doc.publicDueDateText,
+    theme: doc.theme ?? null,
+    locale: doc.locale ?? null,
+    laborStarted: doc.laborStarted ?? null,
+    wentToHospital: doc.wentToHospital ?? null,
+    babyBorn: doc.babyBorn ?? null,
+    milestoneVisibility: doc.milestoneVisibility,
+    photoId: doc.photoId ?? null,
+  };
+}
 
 const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
   return await authServer.getToken();

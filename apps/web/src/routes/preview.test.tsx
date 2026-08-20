@@ -23,7 +23,6 @@ const mocks = vi.hoisted(() => ({
     laborStartedMessage: "It has begun!",
     babyBornMessage: null as string | null,
   },
-  matchRoute: false,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -45,12 +44,7 @@ vi.mock("@tanstack/react-router", () => ({
     },
   Link: (props: { children: ReactNode }) => <a href="/">{props.children}</a>,
   useNavigate: () => mocks.navigate,
-  useMatchRoute: () => (opts: { to: string }) => {
-    if (opts.to === "/preview/settings") {
-      return mocks.matchRoute;
-    }
-    return false;
-  },
+  useMatchRoute: () => () => false,
   Outlet: () => null,
   redirect: (opts: unknown) => opts,
 }));
@@ -100,7 +94,7 @@ function renderResource(ui: ReactElement) {
   });
 }
 
-test("preview settings routes milestone edits to separate search updates", async () => {
+test("preview routes settings and milestone edits to separate search updates", async () => {
   await using view = renderResource(
     <LocaleProvider locale="en-GB">
       <PreviewSettingsPage />
@@ -111,30 +105,24 @@ test("preview settings routes milestone edits to separate search updates", async
   fireEvent.click(view.getByRole("button", { name: "redate milestone" }));
   fireEvent.click(view.getByRole("button", { name: "remove milestone" }));
 
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    1,
-    expect.objectContaining({
-      search: { ...mocks.search, name: "Nova Rae" },
-      replace: true,
-    }),
-  );
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    2,
-    expect.objectContaining({
-      search: {
-        ...mocks.search,
-        wentToHospital: "2026-08-10T12:00:00.000Z",
-      },
-      replace: true,
-    }),
-  );
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    3,
-    expect.objectContaining({
-      search: { ...mocks.search, laborStarted: null },
-      replace: true,
-    }),
-  );
+  expect(mocks.navigate).toHaveBeenNthCalledWith(1, {
+    search: { ...mocks.search, name: "Nova Rae" },
+    replace: true,
+    resetScroll: false,
+  });
+  expect(mocks.navigate).toHaveBeenNthCalledWith(2, {
+    search: {
+      ...mocks.search,
+      wentToHospital: "2026-08-10T12:00:00.000Z",
+    },
+    replace: true,
+    resetScroll: false,
+  });
+  expect(mocks.navigate).toHaveBeenNthCalledWith(3, {
+    search: { ...mocks.search, laborStarted: null },
+    replace: true,
+    resetScroll: false,
+  });
 });
 
 test("preview derives a born status from its search dates", async () => {

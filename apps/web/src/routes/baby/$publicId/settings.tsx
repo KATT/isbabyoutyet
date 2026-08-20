@@ -1,55 +1,13 @@
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import {
-  createFileRoute,
-  notFound,
-  redirect,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useI18n } from "@/lib/i18n";
-import { managerDocToBabyData } from "./shared";
-import { Route as BabyPageRoute } from "./route";
+import { managerDocToBabyData, Route as BabyPageRoute } from "./route";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
-  beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = baby.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
-
-    const myAccess = await preloader.ensureQueryData(api.coParents.myAccess, {
-      babyId: babyDoc._id,
-    });
-    const access = myAccess.initialData;
-    if (!access.canManage) {
-      throw redirect({
-        to: "/baby/$publicId",
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        resetScroll: false,
-      });
-    }
-
-    const managerBaby = await preloader.ensureQueryData(api.baby.getManagerBaby, {
-      babyId: babyDoc._id,
-    });
-    if (managerBaby.initialData === FORBIDDEN || !managerBaby.initialData?.birthJourney) {
-      throw redirect({
-        to: "/baby/$publicId",
-        params: { publicId: babyDoc.publicId },
-        replace: true,
-        resetScroll: false,
-      });
-    }
-  },
   loader: async (opts) => {
     const preloader = getConvexQueryPreloader(opts.context.queryClient);
     const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
@@ -101,11 +59,13 @@ function BabySettingsPage() {
 
   const profile = profileQuery.data;
   const myAccess = myAccessQuery.data;
-  const isOwner = myAccess.isOwner;
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
-  if (!managerBabyDoc?.birthJourney) {
-    throw notFound();
+
+  // Same gate as before: visitors hitting /settings just see the baby page underneath.
+  if (!myAccess.canManage || !managerBabyDoc?.birthJourney) {
+    return null;
   }
+
   const managerBaby = managerDocToBabyData(managerBabyDoc);
 
   return (
@@ -133,7 +93,7 @@ function BabySettingsPage() {
         await router.invalidate();
       }}
       onDelete={
-        isOwner
+        myAccess.isOwner
           ? async () => {
               await removeBaby({ babyId: babyDoc._id });
               void navigate({ to: "/dashboard" });
@@ -142,7 +102,7 @@ function BabySettingsPage() {
       }
       coParents={{
         babyId: babyDoc._id,
-        isOwner,
+        isOwner: myAccess.isOwner,
         listing: loaderData.coParentsList,
       }}
       open={true}
