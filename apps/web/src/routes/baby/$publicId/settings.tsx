@@ -61,7 +61,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
 
 type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
 
-function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
+export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   return {
     name: doc.name,
     dueDate: doc.dueDate,
@@ -77,7 +77,7 @@ function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-function BabySettingsOverlay() {
+export function BabySettingsOverlay() {
   const { locale } = useI18n();
   const params = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });

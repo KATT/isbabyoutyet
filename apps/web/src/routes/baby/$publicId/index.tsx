@@ -4,6 +4,6 @@ export const Route = createFileRoute("/baby/$publicId/")({
   component: BabyPageIndex,
 });
 
-function BabyPageIndex() {
+export function BabyPageIndex() {
   return null;
 }
