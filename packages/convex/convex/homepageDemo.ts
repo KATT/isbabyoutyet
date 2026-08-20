@@ -4,6 +4,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   HOMEPAGE_DEMO_BABIES,
+  HOMEPAGE_DEMO_BABY,
   HOMEPAGE_DEMO_OWNER_USER_ID,
   HOMEPAGE_DEMO_THEME,
   isHomepageDemoPublicId,
@@ -24,7 +25,6 @@ import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from ".
 
 const CLEAR_BATCH_SIZE = 32;
 const RESET_INACTIVITY_MS = 60 * 60_000;
-const FIXTURE_ENCOURAGEMENT_VISITOR_PREFIX = "homepage-demo-";
 
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
@@ -64,28 +64,24 @@ function dueDateIso(now: number) {
   return new Date(now - HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO * 60_000).toISOString();
 }
 
-function storageIdsToKeep(photos: DemoPhotos) {
-  const keepStorageIds = new Set<string>();
-  for (const photo of Object.values(photos)) {
-    keepStorageIds.add(photo.photoId);
-    if (photo.thumbnailId) keepStorageIds.add(photo.thumbnailId);
-    if (photo.pushImageId) keepStorageIds.add(photo.pushImageId);
-  }
-  return keepStorageIds;
-}
-
 /**
- * Only wipe/patch babies that are explicitly marked demo, or the pre-flag
- * Juniper-hale row owned by the sentinel homepage-demo userId.
+ * Only wipe/patch babies with the fixed homepage-demo identity. `demo: true`
+ * alone is intentionally insufficient because preview login fixtures use it
+ * too. The sole exception is the pre-flag Juniper row with the same sentinel
+ * owner, token, and reserved public id.
  */
 function isManagedHomepageDemo(baby: Doc<"baby">) {
-  if (baby.demo === true) return true;
-  return baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID && isHomepageDemoPublicId(baby.publicId);
+  const hasHomepageIdentity =
+    baby.userId === HOMEPAGE_DEMO_OWNER_USER_ID &&
+    baby.ownerTokenIdentifier === tokenIdentifierForAuthUserId(HOMEPAGE_DEMO_OWNER_USER_ID) &&
+    isHomepageDemoPublicId(baby.publicId);
+  if (!hasHomepageIdentity) return false;
+  return baby.demo === true || baby.publicId === HOMEPAGE_DEMO_BABY.publicId;
 }
 
 function refuseNonDemo(publicId: string) {
   return new Error(
-    `Refusing to overwrite non-demo baby "${publicId}". Homepage seed only touches babies with demo: true.`,
+    `Refusing to overwrite non-demo baby "${publicId}". Homepage seed only touches reserved homepage-demo identities.`,
   );
 }
 
@@ -148,6 +144,15 @@ async function loadReusablePhotos(ctx: MutationCtx | QueryCtx) {
   return null;
 }
 
+async function hasCompleteHomepageDemoSeed(ctx: QueryCtx) {
+  for (const locale of homepageDemoLocales()) {
+    const baby = await findBabyByPublicId(ctx, HOMEPAGE_DEMO_BABIES[locale].publicId);
+    if (!baby || !isManagedHomepageDemo(baby)) return false;
+    if (!(await reusablePhotosForBaby(ctx, { baby, locale }))) return false;
+  }
+  return true;
+}
+
 async function hasRecentVisitorEncouragement(
   ctx: MutationCtx,
   opts: { babies: Doc<"baby">[]; since: number },
@@ -160,7 +165,7 @@ async function hasRecentVisitorEncouragement(
       )
       .order("desc");
     for await (const encouragement of recent) {
-      if (!encouragement.visitorId.startsWith(FIXTURE_ENCOURAGEMENT_VISITOR_PREFIX)) {
+      if (encouragement.demoFixture !== true) {
         return true;
       }
     }
@@ -182,9 +187,7 @@ async function managedHomepageDemoBabies(ctx: MutationCtx) {
 async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
   const baby = await ctx.db.get(babyId);
   if (!baby || !isManagedHomepageDemo(baby)) {
-    throw new Error(
-      `Refusing to modify baby ${babyId}: not a managed homepage demo (demo: true required).`,
-    );
+    throw new Error(`Refusing to modify baby ${babyId}: not a reserved homepage-demo identity.`);
   }
   return baby;
 }
@@ -222,99 +225,56 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
   });
 }
 
-async function deleteStorageIfExists(
-  ctx: MutationCtx,
-  opts: {
-    storageId: Id<"_storage"> | null | undefined;
-    keepStorageIds: Set<string>;
-  },
-) {
-  if (!opts.storageId) return;
-  if (opts.keepStorageIds.has(opts.storageId)) return;
-  const meta = await ctx.db.system.get(opts.storageId);
-  if (!meta) return;
-  await ctx.storage.delete(opts.storageId);
-}
-
-async function deleteTimelineItem(
-  ctx: MutationCtx,
-  opts: { item: Doc<"timelineItems">; keepStorageIds: Set<string> },
-) {
-  switch (opts.item.kind) {
+async function deleteTimelineItem(ctx: MutationCtx, item: Doc<"timelineItems">) {
+  switch (item.kind) {
     case "update": {
       const update = await ctx.db
         .query("updates")
-        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", opts.item._id))
+        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", item._id))
         .first();
       if (update) {
-        await deleteStorageIfExists(ctx, {
-          storageId: update.photoId,
-          keepStorageIds: opts.keepStorageIds,
-        });
-        await deleteStorageIfExists(ctx, {
-          storageId: update.thumbnailId,
-          keepStorageIds: opts.keepStorageIds,
-        });
-        await deleteStorageIfExists(ctx, {
-          storageId: update.pushImageId,
-          keepStorageIds: opts.keepStorageIds,
-        });
         await ctx.db.delete(update._id);
       }
-      await ctx.db.delete(opts.item._id);
+      await ctx.db.delete(item._id);
       return;
     }
     case "encouragement": {
       const encouragement = await ctx.db
         .query("encouragements")
-        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", opts.item._id))
+        .withIndex("by_timelineItemId", (q) => q.eq("timelineItemId", item._id))
         .first();
       if (encouragement) {
         await ctx.db.delete(encouragement._id);
       }
-      await ctx.db.delete(opts.item._id);
+      await ctx.db.delete(item._id);
       return;
     }
   }
 }
 
-async function clearFeedBatchForBaby(
-  ctx: MutationCtx,
-  opts: { babyId: Id<"baby">; keepStorageIds: Set<string> },
-) {
-  await requireManagedDemoBaby(ctx, opts.babyId);
+async function clearFeedBatchForBaby(ctx: MutationCtx, babyId: Id<"baby">) {
+  await requireManagedDemoBaby(ctx, babyId);
 
   const items = await ctx.db
     .query("timelineItems")
-    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", opts.babyId))
+    .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", babyId))
     .take(CLEAR_BATCH_SIZE);
 
   for (const item of items) {
-    await deleteTimelineItem(ctx, { item, keepStorageIds: opts.keepStorageIds });
+    await deleteTimelineItem(ctx, item);
   }
 
   return { deleted: items.length, hasMore: items.length === CLEAR_BATCH_SIZE };
 }
 
-async function clearAllFeed(
-  ctx: MutationCtx,
-  opts: { babyId: Id<"baby">; keepStorageIds: Set<string> },
-) {
+async function clearAllFeed(ctx: MutationCtx, babyId: Id<"baby">) {
   for (;;) {
-    const result = await clearFeedBatchForBaby(ctx, opts);
+    const result = await clearFeedBatchForBaby(ctx, babyId);
     if (!result.hasMore) break;
   }
 
-  const baby = await requireManagedDemoBaby(ctx, opts.babyId);
-  await deleteStorageIfExists(ctx, {
-    storageId: baby.photoId,
-    keepStorageIds: opts.keepStorageIds,
-  });
-  await deleteStorageIfExists(ctx, {
-    storageId: baby.thumbnailId,
-    keepStorageIds: opts.keepStorageIds,
-  });
-  await ctx.db.patch(opts.babyId, {
+  await requireManagedDemoBaby(ctx, babyId);
+  await ctx.db.patch(babyId, {
     photoId: null,
     thumbnailId: null,
     blurDataUrl: null,
@@ -359,6 +319,7 @@ async function insertFeedDocs(
         createdAt: postedAt,
         timelineItemId,
         visitorId: `homepage-demo-${locale}-${slugAuthor(item.authorName)}`,
+        demoFixture: true,
       });
       continue;
     }
@@ -430,7 +391,7 @@ export const hasCompletePhotoSet = internalQuery({
   args: {},
   returns: v.boolean(),
   handler: async (ctx) => {
-    return (await loadReusablePhotos(ctx)) !== null;
+    return await hasCompleteHomepageDemoSeed(ctx);
   },
 });
 
@@ -447,13 +408,9 @@ export const ensureBaby = internalMutation({
 export const clearFeedBatch = internalMutation({
   args: {
     babyId: v.id("baby"),
-    keepStorageIds: v.optional(v.array(v.id("_storage"))),
   },
   handler: async (ctx, args) => {
-    return await clearFeedBatchForBaby(ctx, {
-      babyId: args.babyId,
-      keepStorageIds: new Set(args.keepStorageIds ?? []),
-    });
+    return await clearFeedBatchForBaby(ctx, args.babyId);
   },
 });
 
@@ -480,8 +437,9 @@ export const insertFeed = internalMutation({
  * notifications. Call once per locale from the seed script so each baby stays
  * under mutation limits.
  *
- * Never touches a baby that is not marked `demo: true` (except grandfathering
- * the existing sentinel-owned homepage demo publicIds).
+ * Never touches a baby outside the reserved homepage-demo identity. Storage
+ * objects are retained because Convex storage IDs have no ownership metadata;
+ * deleting one here could invalidate a non-demo update that reused the ID.
  */
 export const refresh = internalMutation({
   args: {
@@ -493,16 +451,17 @@ export const refresh = internalMutation({
     const photos = args.photos ?? {};
     const locale = resolveDemoLocale(args.locale);
     const babyId = await ensureBabyDoc(ctx, { now, locale });
-    await clearAllFeed(ctx, { babyId, keepStorageIds: storageIdsToKeep(photos) });
+    await clearAllFeed(ctx, babyId);
     return await insertFeedDocs(ctx, { babyId, photos, now, locale });
   },
 });
 
 /**
- * Daily reset for the public demo pages. Fixture encouragements use a sentinel
- * visitor-id prefix and do not count as visitor activity. The activity check,
- * photo lookup, and all resets share one transaction so an encouragement
- * cannot arrive between the check and the wipe.
+ * Daily reset for the public demo pages. Only server-marked fixture
+ * encouragements are excluded from activity, so a client cannot spoof the
+ * guard through visitorId. The activity check, photo lookup, and all resets
+ * share one transaction so an encouragement cannot arrive between the check
+ * and the wipe.
  */
 export const resetIfInactive = internalMutation({
   args: {},
@@ -530,11 +489,10 @@ export const resetIfInactive = internalMutation({
     if (!photos) {
       return { status: "skipped_missing_photos" as const, resetBabies: 0 };
     }
-    const keepStorageIds = storageIdsToKeep(photos);
 
     for (const locale of homepageDemoLocales()) {
       const babyId = await ensureBabyDoc(ctx, { now, locale });
-      await clearAllFeed(ctx, { babyId, keepStorageIds });
+      await clearAllFeed(ctx, babyId);
       await insertFeedDocs(ctx, { babyId, photos, now, locale });
     }
 

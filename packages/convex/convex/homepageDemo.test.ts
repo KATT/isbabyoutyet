@@ -212,11 +212,12 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   const photos = await storeCompletePhotoSet(t);
   const first = await t.mutation(internal.homepageDemo.refresh, { photos });
 
-  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
+  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
 
   vi.setSystemTime(new Date("2026-08-21T03:00:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
   expect(result).toEqual({ status: "reset", resetBabies: SUPPORTED_LOCALES.length });
+  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
   const baby = await t.query(api.baby.getByPublicId, { id: first.publicId });
   expect(baby?.photoId).toBe(photos.born?.photoId);
@@ -230,7 +231,7 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   }
 });
 
-test("daily reset preserves a visitor encouragement posted within the last hour", async () => {
+test("daily reset preserves a recent visitor even when its visitorId spoofs the fixture prefix", async () => {
   await using _timers = useFakeTimersResource();
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
@@ -240,7 +241,7 @@ test("daily reset preserves a visitor encouragement posted within the last hour"
     babyId: demo.babyId,
     authorName: "Recent Visitor",
     message: "Still here!",
-    visitorId: "real-visitor",
+    visitorId: "homepage-demo-spoofed-client",
   });
 
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
@@ -467,6 +468,129 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   expect(timelineCount).toBe(0);
 });
 
+test("daily reset rolls back every demo change when a reserved publicId belongs to real data", async () => {
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
+  const beforeFeed = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+
+  const realBabyId = await t.run(async (ctx) => {
+    return await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Real Willow",
+      dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
+      birthJourney: "labor",
+      demo: true,
+      lastActivityAt: 123,
+      subscriptionCount: 0,
+    });
+  });
+  const realBabyBefore = await t.run(async (ctx) => await ctx.db.get(realBabyId));
+
+  await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).rejects.toThrow(
+    /Refusing to overwrite non-demo baby/,
+  );
+
+  const afterFeed = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(afterFeed.page.map((item) => item._id)).toEqual(beforeFeed.page.map((item) => item._id));
+  expect(await t.run(async (ctx) => await ctx.db.get(realBabyId))).toEqual(realBabyBefore);
+});
+
+test("daily reset leaves non-homepage documents and shared storage untouched", async () => {
+  const t = await setup();
+  const reusablePhotos = await storeCompletePhotoSet(t);
+  await t.mutation(internal.homepageDemo.refresh, { photos: reusablePhotos });
+  const divergentPhotos = await storeCompletePhotoSet(t);
+  await t.mutation(internal.homepageDemo.refresh, {
+    locale: "sv",
+    photos: divergentPhotos,
+  });
+  const sharedPhotoId = divergentPhotos.bump?.photoId;
+  if (!sharedPhotoId) throw new Error("Divergent fixture is missing its bump photo");
+
+  const real = await t.run(async (ctx) => {
+    const babyId = await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Alice's Baby",
+      dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      publicId: "alices-real-baby",
+      birthJourney: "labor",
+      lastActivityAt: 123,
+      subscriptionCount: 0,
+    });
+    const updateTimelineId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "update",
+      postedAt: 100,
+    });
+    const updateId = await ctx.db.insert("updates", {
+      babyId,
+      timelineItemId: updateTimelineId,
+      message: "A real family update",
+      photoId: sharedPhotoId,
+    });
+    const encouragementTimelineId = await ctx.db.insert("timelineItems", {
+      babyId,
+      kind: "encouragement",
+      postedAt: 101,
+    });
+    const encouragementId = await ctx.db.insert("encouragements", {
+      babyId,
+      authorName: "Grandma",
+      message: "For the real family",
+      createdAt: 101,
+      timelineItemId: encouragementTimelineId,
+      visitorId: "real-family-visitor",
+    });
+    return {
+      babyId,
+      updateTimelineId,
+      updateId,
+      encouragementTimelineId,
+      encouragementId,
+    };
+  });
+  const before = await t.run(async (ctx) => {
+    return {
+      baby: await ctx.db.get(real.babyId),
+      updateTimeline: await ctx.db.get(real.updateTimelineId),
+      update: await ctx.db.get(real.updateId),
+      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
+      encouragement: await ctx.db.get(real.encouragementId),
+      storage: await ctx.db.system.get(sharedPhotoId),
+    };
+  });
+
+  await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).resolves.toMatchObject({
+    status: "reset",
+  });
+
+  const after = await t.run(async (ctx) => {
+    return {
+      baby: await ctx.db.get(real.babyId),
+      updateTimeline: await ctx.db.get(real.updateTimelineId),
+      update: await ctx.db.get(real.updateId),
+      encouragementTimeline: await ctx.db.get(real.encouragementTimelineId),
+      encouragement: await ctx.db.get(real.encouragementId),
+      storage: await ctx.db.system.get(sharedPhotoId),
+    };
+  });
+  expect(after).toEqual(before);
+});
+
 test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: true", async () => {
   const t = await setup();
 
@@ -494,7 +618,7 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
   expect(getCurrentStatus(baby!)).toMatchObject({ type: "born" });
 });
 
-test("clearFeedBatch refuses a non-demo babyId", async () => {
+test("clearFeedBatch refuses a non-homepage baby even when demo is true", async () => {
   const t = await setup();
   const babyId = await t.run(async (ctx) => {
     return await ctx.db.insert("baby", {
@@ -506,12 +630,13 @@ test("clearFeedBatch refuses a non-demo babyId", async () => {
       publicDueDateText: null,
       publicId: "someone-else",
       birthJourney: "labor",
+      demo: true,
       lastActivityAt: 1,
       subscriptionCount: 0,
     });
   });
 
   await expect(t.mutation(internal.homepageDemo.clearFeedBatch, { babyId })).rejects.toThrow(
-    /not a managed homepage demo/,
+    /not a reserved homepage-demo identity/,
   );
 });
