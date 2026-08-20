@@ -2,7 +2,6 @@ import { fireEvent, render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { api } from "@workspace/convex/convex/_generated/api";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { browserImageFactory } from "@/lib/image-prefetch";
