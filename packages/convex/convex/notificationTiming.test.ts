@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { notificationScheduleDelayMs } from "./notificationTiming";
+import { notificationScheduleDelayMs } from "../src/notificationTiming";
 
 test("uses a 60 second production cancellation window", () => {
   expect(notificationScheduleDelayMs("production", "production")).toBe(60_000);

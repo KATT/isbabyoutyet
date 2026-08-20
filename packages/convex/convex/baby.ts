@@ -6,6 +6,7 @@ import { internal } from "./_generated/api";
 import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
 import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
@@ -16,7 +17,6 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
-import { notificationScheduleDelayMs } from "./notificationTiming";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
