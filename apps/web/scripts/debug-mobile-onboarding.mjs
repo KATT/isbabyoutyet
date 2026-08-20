@@ -31,6 +31,10 @@ if (await restart.isVisible()) {
 }
 const expand = page.getByRole("button", { name: /Getting started: .* Expand/ });
 await expand.waitFor();
+await expand.evaluate((element) => {
+  const dock = element.closest("aside");
+  return Promise.all((dock?.getAnimations() ?? []).map((animation) => animation.finished));
+});
 
 const metrics = await page.evaluate(() => ({
   innerWidth: window.innerWidth,
@@ -113,6 +117,10 @@ await page.evaluate(() => {
 await page.setViewportSize({ width: 391, height: 845 });
 await page.setViewportSize({ width: 390, height: 844 });
 const viewportEventCount = await page.evaluate(() => window.__agentVisualViewportEvents);
+await expand.evaluate((element) => {
+  const dock = element.closest("aside");
+  return Promise.all((dock?.getAnimations() ?? []).map((animation) => animation.finished));
+});
 // #region agent log
 log({
   hypothesisId: "C",
