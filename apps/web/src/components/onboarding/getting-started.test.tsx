@@ -266,6 +266,48 @@ test("baby-page checklist links post update and can open settings", async () => 
   expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
 });
 
+test("baby-page share action jumps to the share target", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      className={undefined}
+      onGoToStep={onGoToStep}
+      surface="baby"
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const shareButton = screen.getAllByRole("button", { name: "Show Share" })[0];
+  if (!shareButton) {
+    throw new Error("Expected a share guide action");
+  }
+  fireEvent.click(shareButton);
+  expect(onGoToStep).toHaveBeenCalledWith("share_link");
+});
+
+test("baby-page post action stays unavailable until a tour baby exists", async () => {
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      className={undefined}
+      onGoToStep={vi.fn<(stepId: string) => void>()}
+      surface="baby"
+      tourBaby={null}
+    />,
+  );
+
+  expect(screen.queryByRole("link", { name: "Post an update" })).toBeNull();
+});
+
 test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = renderResource(
