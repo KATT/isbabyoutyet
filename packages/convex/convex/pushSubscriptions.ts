@@ -4,7 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { findBabyManager } from "./babyAccess";
-import { babyIdOrPublicIdValidator } from "./babyLookup";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
 import schema from "./schema";
@@ -146,14 +146,19 @@ export const getPublicKey = query({
 
 export const isSubscribed = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
     endpoint: v.string(),
   },
   handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby) {
+      return false;
+    }
+
     const subscription = await ctx.db
       .query("pushSubscriptions")
       .withIndex("by_babyId_and_endpoint", (q) =>
-        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+        q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
       )
       .first();
 

@@ -42,7 +42,7 @@ const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 const SERVICE_WORKER_READY_TIMEOUT_MS = 5000;
 const SERVICE_WORKER_READY_TIMEOUT_MESSAGE = "Service worker ready timeout";
 
-export function browserPushQueryOptions(queryClient: QueryClient, babyRef: Id<"baby">) {
+export function browserPushQueryOptions(queryClient: QueryClient, babyRef: string) {
   return queryOptions({
     queryKey: [...browserPushCapabilityQueryKey, babyRef],
     queryFn:
@@ -53,14 +53,14 @@ export function browserPushQueryOptions(queryClient: QueryClient, babyRef: Id<"b
 }
 
 function browserPushCapabilityFactory(queryClient: QueryClient) {
-  return (babyRef: Id<"baby">) => browserPushQueryOptions(queryClient, babyRef);
+  return (babyRef: string) => browserPushQueryOptions(queryClient, babyRef);
 }
 
 export type BrowserPushCapabilityFactory = ReturnType<typeof browserPushCapabilityFactory>;
 
 export function prefetchBrowserPushCapability(
   queryClient: QueryClient,
-  babyRef: Id<"baby">,
+  babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory> {
   if (typeof window === "undefined") {
     return { input: babyRef } as InitiatedQuery<BrowserPushCapabilityFactory>;
@@ -370,7 +370,7 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
 
 async function resolveBrowserPushCapability(
   queryClient: QueryClient,
-  babyRef: Id<"baby">,
+  babyRef: string,
 ): Promise<BrowserPushCapability> {
   const iosStatus = getIOSStatus();
   if (iosStatus.isIOS && !iosStatus.isStandalone) {

@@ -78,11 +78,15 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,
   loader: async (opts) => {
+    if (!opts.context.profile.initialData?.isAdmin) {
+      throw redirect({ to: "/dashboard" });
+    }
+
     const preloader = opts.context.convexPreloader;
     const search = opts.deps;
     // Infinite queries stay blocking on the client too: the react-query cache
     // makes revisits free, and suspense churn on paginated tables isn't worth it.
-    const loaderData = await allKeyed({
+    return await allKeyed({
       babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
         args: {
           sortBy: search.sort,
@@ -96,12 +100,6 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
         numItems: ADMIN_PAGE_SIZE,
       }),
     });
-
-    if (!opts.context.profile.initialData?.isAdmin) {
-      throw redirect({ to: "/dashboard" });
-    }
-
-    return loaderData;
   },
 });
 

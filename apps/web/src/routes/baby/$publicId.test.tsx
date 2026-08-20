@@ -279,6 +279,7 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 
 type LoaderOptions = {
   token: string | null | undefined;
+  isAuthenticated: boolean | undefined;
   locale: string | undefined;
   convexClient:
     | {
@@ -308,6 +309,7 @@ async function setupBabyLoader(
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
       token: string | null;
+      isAuthenticated: boolean;
       locale: string;
     };
     params: { publicId: string };
@@ -319,6 +321,7 @@ async function setupBabyLoader(
       convexPreloader: getConvexQueryPreloader(queryClient),
       convexClient: { setAuth, mutation },
       token: options?.token ?? null,
+      isAuthenticated: options?.isAuthenticated ?? false,
       locale: options?.locale ?? "en-GB",
     },
     params: { publicId: "baby-smith" },
@@ -406,8 +409,8 @@ test("beforeLoad 404s unknown babies", async () => {
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });
 
-test("loader prefetches manager data without blocking on profile.ensure", async () => {
-  const mutation = vi.fn<() => Promise<unknown>>();
+test("loader ensures the profile before prefetching manager data", async () => {
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,
@@ -419,25 +422,29 @@ test("loader prefetches manager data without blocking on profile.ensure", async 
       "pushSubscriptions:getSubscriptionCount": 0,
       "coParents:listForBaby": { coParents: [], invites: [] },
     },
-    { token: "layout-token", locale: "en-GB", convexClient: { setAuth: vi.fn(), mutation } },
+    {
+      token: "layout-token",
+      isAuthenticated: true,
+      locale: "en-GB",
+      convexClient: { setAuth: vi.fn(), mutation },
+    },
   );
 
-  expect(mutation).not.toHaveBeenCalled();
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
   expect(result.managerBaby).toMatchObject({ initialData: BABY_DOC });
 });
 
 test("loader prefetches browser push capability on the client", async () => {
-  const babyId = BABY_DOC._id as Id<"baby">;
   const { result, queryClient } = await setupBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "timeline:listByBaby": EMPTY_PAGE,
   });
 
-  expect(result.browserPush).toMatchObject({ input: babyId });
+  expect(result.browserPush).toMatchObject({ input: "baby-smith" });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(browserPushQueryOptions(queryClient, babyId).queryKey)).toEqual({
-      kind: "unsupported",
-    });
+    expect(
+      queryClient.getQueryData(browserPushQueryOptions(queryClient, "baby-smith").queryKey),
+    ).toEqual({ kind: "unsupported" });
   });
 });
 

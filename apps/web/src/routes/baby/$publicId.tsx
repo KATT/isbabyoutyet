@@ -29,8 +29,10 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
+import type { ConvexReactClient } from "convex/react";
 import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
@@ -65,8 +67,10 @@ export const Route = createFileRoute("/baby/$publicId")({
   },
   loader: async (opts) => {
     const preloader = opts.context.convexPreloader;
-    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient);
     const publicId = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
+
+    await ensureProfileForAuthenticatedVisit(opts.context);
 
     const loaderData = await allKeyed({
       baby: preloader.ensureQueryData(api.baby.getByPublicId, {
@@ -247,6 +251,24 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     milestoneVisibility: doc.milestoneVisibility,
     photoId: doc.photoId ?? null,
   };
+}
+
+async function ensureProfileForAuthenticatedVisit(context: {
+  convexClient: ConvexReactClient;
+  token: string | null | undefined;
+  isAuthenticated: boolean;
+  locale: SupportedLocale;
+}) {
+  const token = context.token;
+  if (!context.isAuthenticated && !token) {
+    return;
+  }
+  if (token) {
+    context.convexClient.setAuth(async () => token);
+  }
+  await context.convexClient.mutation(api.profile.ensure, {
+    browserLocale: context.locale,
+  });
 }
 
 function BabyPage() {
