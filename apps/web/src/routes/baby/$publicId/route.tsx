@@ -32,7 +32,7 @@ import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
-import { babyOverlayOpenLink, useDismissBabyOverlay } from "@/lib/overlay-route";
+import { useRouteModal } from "@/lib/route-modal";
 
 const TIMELINE_PAGE_SIZE = 20;
 
@@ -276,7 +276,26 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const dismissOverlay = useDismissBabyOverlay(params.publicId);
+  const postModal = useRouteModal({
+    open: {
+      to: "/baby/$publicId/post",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
+  const settingsModal = useRouteModal({
+    open: {
+      to: "/baby/$publicId/settings",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -300,21 +319,11 @@ function BabyPageLayout() {
           spotlight={!postUpdateOpen && !settingsOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
-              void navigate({
-                ...babyOverlayOpenLink({
-                  to: "/baby/$publicId/post",
-                  publicId: babyDoc.publicId,
-                }),
-              });
+              void navigate(postModal.openLink);
               return;
             }
             if (stepId === "explore_settings") {
-              void navigate({
-                ...babyOverlayOpenLink({
-                  to: "/baby/$publicId/settings",
-                  publicId: babyDoc.publicId,
-                }),
-              });
+              void navigate(settingsModal.openLink);
             }
           }}
         />
@@ -348,26 +357,12 @@ function BabyPageLayout() {
                   }
                 : null
             }
-            postUpdateButton={
-              canManage
-                ? babyOverlayOpenLink({
-                    to: "/baby/$publicId/post",
-                    publicId: params.publicId,
-                  })
-                : null
-            }
+            postUpdateButton={canManage ? postModal.openLink : null}
             postUpdateOpen={postUpdateOpen}
-            onDismissPostUpdate={canManage && postUpdateOpen ? dismissOverlay : null}
-            settingsButton={
-              canManage
-                ? babyOverlayOpenLink({
-                    to: "/baby/$publicId/settings",
-                    publicId: params.publicId,
-                  })
-                : null
-            }
+            onDismissPostUpdate={canManage && postUpdateOpen ? postModal.dismiss : null}
+            settingsButton={canManage ? settingsModal.openLink : null}
             settingsOpen={settingsOpen}
-            onDismissSettings={canManage && settingsOpen ? dismissOverlay : null}
+            onDismissSettings={canManage && settingsOpen ? settingsModal.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {

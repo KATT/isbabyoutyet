@@ -1,30 +1,27 @@
 # Agent notes
 
-## Routing / scroll / overlay history
+## Routing / scroll / route modals
 
 Baby settings (`/baby/$publicId/settings`) and post-update (`/baby/$publicId/post`)
 are nested child routes rendered into the baby layout `<Outlet />` so the page
 stays mounted underneath.
 
-Use `@/lib/overlay-route` for open/close:
+Use `@/lib/route-modal` for open/close (TanStack has `history.back` /
+`canGoBack` and `linkOptions`, but no modal-history helper):
 
-- **Open:** `babyOverlayOpenLink()` — push (no `replace`), `resetScroll: false`,
-  and history `state: { babyOverlay: true }` so dismiss can detect a push-opened
-  overlay. Wire nav CTAs, onboarding, and dashboard checklist links through it.
-- **Close:** `useDismissBabyOverlay(publicId)` / `dismissBabyOverlay()` —
-  if `history.state.babyOverlay === true` and `router.history.canGoBack()`, call
-  `router.history.back()` so the browser Back/swipe gesture matches dialog
-  dismiss; otherwise `navigate` to `/baby/$publicId` with `replace: true` and
-  `resetScroll: false` (direct load, shared link, or empty history stack).
+- **Open link:** `routeModalOpenLink({ to, params, ... })` — push (no
+  `replace`), `resetScroll: false`, and `state: { routeModal: true }`. Pass to
+  `<Link>` or `navigate()`.
+- **Close link:** `routeModalCloseLink({ to, params, ... })` — replace close
+  target with `resetScroll: false` (declarative fallback / cold-load close).
+- **Hook:** `useRouteModal({ open, close })` returns `{ openLink, closeLink,
+  dismiss }`. `dismiss()` calls `history.back()` when the entry was push-opened
+  and `canGoBack()`; otherwise navigates with `closeLink`.
 - Close overlay dialogs via `onOpenChange` → `onOpenChangeComplete` so the exit
   animation finishes before dismissing.
 
 Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
-still use `resetScroll: false` (not overlay history).
-
-TanStack Router exposes `router.history.back()` / `canGoBack()` via
-`@tanstack/history`; there is no built-in modal-history helper, so the thin
-`overlay-route` module is the shared seam.
+still use `resetScroll: false` (not route-modal history).
 
 ## Convex
 

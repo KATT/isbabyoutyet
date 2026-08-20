@@ -7,7 +7,7 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useDismissBabyOverlay } from "@/lib/overlay-route";
+import { useRouteModal } from "@/lib/route-modal";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -56,7 +56,16 @@ export function BabyPostUpdateOverlay() {
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const dismissOverlay = useDismissBabyOverlay(params.publicId);
+  const postModal = useRouteModal({
+    open: {
+      to: "/baby/$publicId/post",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc) {
@@ -74,7 +83,7 @@ export function BabyPostUpdateOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          dismissOverlay();
+          postModal.dismiss();
         }
       }}
     >

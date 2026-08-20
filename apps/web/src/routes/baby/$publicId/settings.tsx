@@ -3,12 +3,18 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { BabyData } from "@workspace/convex/src/types";
-import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  notFound,
+  redirect,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useDismissBabyOverlay } from "@/lib/overlay-route";
+import { useRouteModal } from "@/lib/route-modal";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -79,7 +85,16 @@ export function BabySettingsOverlay() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
-  const dismissOverlay = useDismissBabyOverlay(params.publicId);
+  const settingsModal = useRouteModal({
+    open: {
+      to: "/baby/$publicId/settings",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
@@ -134,7 +149,7 @@ export function BabySettingsOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          dismissOverlay();
+          settingsModal.dismiss();
         }
       }}
     />

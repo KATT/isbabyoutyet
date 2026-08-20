@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
   historyBack: vi.fn<() => void>(),
   canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { babyOverlay: undefined as true | undefined },
+  historyState: { routeModal: undefined as true | undefined },
   invalidate: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   updateBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   removeBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
@@ -38,31 +38,36 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: Record<string, unknown>) => ({
-    options,
-    ...options,
-    fullPath: "/baby/$publicId/settings",
-    useParams: () => mocks.params,
-    useLoaderData: () => mocks.loaderData,
-  }),
-  useNavigate: () => mocks.navigate,
-  useRouter: () => ({
-    invalidate: mocks.invalidate,
-    history: {
-      location: { state: mocks.historyState },
-      canGoBack: mocks.canGoBack,
-      back: mocks.historyBack,
+vi.mock("@tanstack/react-router", async () => {
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
+  return {
+    ...actual,
+    createFileRoute: () => (options: Record<string, unknown>) => ({
+      options,
+      ...options,
+      fullPath: "/baby/$publicId/settings",
+      useParams: () => mocks.params,
+      useLoaderData: () => mocks.loaderData,
+    }),
+    useNavigate: () => mocks.navigate,
+    useRouter: () => ({
+      invalidate: mocks.invalidate,
+      history: {
+        location: { state: mocks.historyState },
+        canGoBack: mocks.canGoBack,
+        back: mocks.historyBack,
+      },
+      navigate: mocks.navigate,
+    }),
+    notFound: () => {
+      throw { isNotFound: true };
     },
-    navigate: mocks.navigate,
-  }),
-  notFound: () => {
-    throw { isNotFound: true };
-  },
-  redirect: (opts: unknown) => {
-    throw { options: opts };
-  },
-}));
+    redirect: (opts: unknown) => {
+      throw { options: opts };
+    },
+  };
+});
 
 vi.mock("convex/react", () => ({
   useMutation: (() => {
@@ -302,7 +307,7 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.babyOverlay = undefined;
+  mocks.historyState.routeModal = undefined;
   mocks.loaderData = ownerLoaderData();
 
   await using view = renderResource(<BabySettingsOverlay />);
@@ -322,7 +327,7 @@ test("settings overlay prefers history.back when opened via push", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.babyOverlay = true;
+  mocks.historyState.routeModal = true;
   mocks.loaderData = ownerLoaderData();
 
   await using view = renderResource(<BabySettingsOverlay />);

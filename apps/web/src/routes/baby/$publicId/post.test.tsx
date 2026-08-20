@@ -14,36 +14,41 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
   historyBack: vi.fn<() => void>(),
   canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { babyOverlay: undefined as true | undefined },
+  historyState: { routeModal: undefined as true | undefined },
   completeStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   params: { publicId: "baby-smith" },
   loaderData: null as null | Record<string, unknown>,
 }));
 
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: Record<string, unknown>) => ({
-    options,
-    ...options,
-    fullPath: "/baby/$publicId/post",
-    useParams: () => mocks.params,
-    useLoaderData: () => mocks.loaderData,
-  }),
-  useNavigate: () => mocks.navigate,
-  useRouter: () => ({
-    history: {
-      location: { state: mocks.historyState },
-      canGoBack: mocks.canGoBack,
-      back: mocks.historyBack,
+vi.mock("@tanstack/react-router", async () => {
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
+  return {
+    ...actual,
+    createFileRoute: () => (options: Record<string, unknown>) => ({
+      options,
+      ...options,
+      fullPath: "/baby/$publicId/post",
+      useParams: () => mocks.params,
+      useLoaderData: () => mocks.loaderData,
+    }),
+    useNavigate: () => mocks.navigate,
+    useRouter: () => ({
+      history: {
+        location: { state: mocks.historyState },
+        canGoBack: mocks.canGoBack,
+        back: mocks.historyBack,
+      },
+      navigate: mocks.navigate,
+    }),
+    notFound: () => {
+      throw { isNotFound: true };
     },
-    navigate: mocks.navigate,
-  }),
-  notFound: () => {
-    throw { isNotFound: true };
-  },
-  redirect: (opts: unknown) => {
-    throw { options: opts };
-  },
-}));
+    redirect: (opts: unknown) => {
+      throw { options: opts };
+    },
+  };
+});
 
 vi.mock("@/components/onboarding/onboarding-host", () => ({
   useCompleteOnboardingStep: () => mocks.completeStep,
@@ -200,7 +205,7 @@ test("post overlay closes to the baby page after dismiss", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.babyOverlay = undefined;
+  mocks.historyState.routeModal = undefined;
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
       input: { babyId: "baby-smith" },
@@ -229,7 +234,7 @@ test("post overlay prefers history.back when opened via push", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.babyOverlay = true;
+  mocks.historyState.routeModal = true;
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
       input: { babyId: "baby-smith" },
@@ -253,7 +258,7 @@ test("successful post completes onboarding and closes the overlay", async () => 
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.babyOverlay = undefined;
+  mocks.historyState.routeModal = undefined;
   mocks.completeStep.mockClear();
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
