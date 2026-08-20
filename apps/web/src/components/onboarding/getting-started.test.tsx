@@ -109,7 +109,7 @@ test("dashboard settings CTA marks the step done while opening the page", async 
   expect(onAcknowledge).toHaveBeenCalledWith("explore_settings");
 });
 
-test("baby-page checklist can open post update and settings", async () => {
+test("baby-page checklist links post update and can open settings", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = renderResource(
     <GettingStartedCard
@@ -125,8 +125,8 @@ test("baby-page checklist can open post update and settings", async () => {
     />,
   );
 
-  fireEvent.click(screen.getAllByRole("button", { name: /post an update/i })[0]!);
-  expect(onGoToStep).toHaveBeenCalledWith("post_update");
+  const postLink = screen.getAllByRole("link", { name: /post an update/i })[0];
+  expect(postLink?.getAttribute("href")).toContain("/baby/baby-waiting/post");
 
   fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);
   expect(onGoToStep).toHaveBeenCalledWith("explore_settings");

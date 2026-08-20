@@ -2,12 +2,12 @@
 
 ## Routing / scroll
 
-Baby settings is a nested child route (`/baby/$publicId/settings`) rendered into
-the baby layout `<Outlet />` so the page stays mounted underneath. When a
-`Link` or `navigate()` only opens/closes that overlay (or switches admin tabs),
-pass `resetScroll: false` so the page does not jump to the top. Close the
-settings dialog via `onOpenChange` → `onOpenChangeComplete` so the exit
-animation finishes before navigating away.
+Baby settings (`/baby/$publicId/settings`) and post-update (`/baby/$publicId/post`)
+are nested child routes rendered into the baby layout `<Outlet />` so the page
+stays mounted underneath. When a `Link` or `navigate()` only opens/closes those
+overlays (or switches admin tabs), pass `resetScroll: false` so the page does
+not jump to the top. Close overlay dialogs via `onOpenChange` →
+`onOpenChangeComplete` so the exit animation finishes before navigating away.
 
 ## Convex
 

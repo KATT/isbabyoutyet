@@ -35,10 +35,17 @@ type StepAction =
   | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
   | { kind: "button"; onClick: () => void; label: string };
 
-function babyPageLink(opts: { publicId: string; settings: boolean | undefined }): LinkProps {
-  if (opts.settings) {
+function babyPageLink(opts: { publicId: string; overlay: "settings" | "post" | null }): LinkProps {
+  if (opts.overlay === "settings") {
     return {
       to: "/baby/$publicId/settings",
+      params: { publicId: opts.publicId },
+      resetScroll: false,
+    };
+  }
+  if (opts.overlay === "post") {
+    return {
+      to: "/baby/$publicId/post",
       params: { publicId: opts.publicId },
       resetScroll: false,
     };
@@ -84,7 +91,7 @@ function getStepAction(opts: {
     if (step.id === "share_link") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, settings: undefined }),
+        link: babyPageLink({ publicId, overlay: null }),
         label: t("Open {{name}}'s page", { name }),
         onClick: undefined,
       };
@@ -92,7 +99,7 @@ function getStepAction(opts: {
     if (step.id === "post_update") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, settings: undefined }),
+        link: babyPageLink({ publicId, overlay: "post" }),
         label: t("Post an update"),
         onClick: undefined,
       };
@@ -100,7 +107,7 @@ function getStepAction(opts: {
     if (step.id === "explore_settings") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, settings: true }),
+        link: babyPageLink({ publicId, overlay: "settings" }),
         label: t("Open settings"),
         onClick: () => opts.onAcknowledge(step.id),
       };
@@ -108,7 +115,7 @@ function getStepAction(opts: {
     if (step.id === "learn_encouragements") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, settings: undefined }),
+        link: babyPageLink({ publicId, overlay: null }),
         label: t("See {{name}}'s page", { name }),
         onClick: undefined,
       };
@@ -117,10 +124,14 @@ function getStepAction(opts: {
   }
 
   if (step.id === "post_update") {
+    if (!opts.tourBaby) {
+      return null;
+    }
     return {
-      kind: "button",
-      onClick: () => opts.onGoToStep?.(step.id),
+      kind: "link",
+      link: babyPageLink({ publicId: opts.tourBaby.publicId, overlay: "post" }),
       label: t("Post an update"),
+      onClick: undefined,
     };
   }
   if (step.id === "explore_settings") {

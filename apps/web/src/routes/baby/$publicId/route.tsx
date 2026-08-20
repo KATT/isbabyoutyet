@@ -1,8 +1,7 @@
-import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed } from "@/components/baby/timeline";
 import {
   NotificationSubscribe,
   prefetchBrowserPushCapability,
@@ -28,7 +27,6 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
@@ -256,6 +254,7 @@ function BabyPageLayout() {
   const navigate = useNavigate({ from: Route.fullPath });
   const matchRoute = useMatchRoute();
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
+  const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -276,7 +275,6 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const [composerOpen, setComposerOpen] = useState(false);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -297,10 +295,15 @@ function BabyPageLayout() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!composerOpen && !settingsOpen}
+          spotlight={!postUpdateOpen && !settingsOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
-              setComposerOpen(true);
+              void navigate({
+                to: "/baby/$publicId/post",
+                params: { publicId: babyDoc.publicId },
+                replace: true,
+                resetScroll: false,
+              });
               return;
             }
             if (stepId === "explore_settings") {
@@ -316,26 +319,10 @@ function BabyPageLayout() {
       ) : null}
 
       {canManage && birthJourney && managerBaby ? (
-        <>
-          <ScheduledNotificationToast
-            notifications={loaderData.scheduledNotifications}
-            subscriptionCount={loaderData.subscriptionCount}
-          />
-          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-              <UpdateComposer
-                babyId={babyDoc._id}
-                baby={baby}
-                babyName={baby.name}
-                onPosted={() => {
-                  setComposerOpen(false);
-                  void completeOnboardingStep({ stepId: "post_update" });
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        </>
+        <ScheduledNotificationToast
+          notifications={loaderData.scheduledNotifications}
+          subscriptionCount={loaderData.subscriptionCount}
+        />
       ) : null}
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
@@ -359,7 +346,24 @@ function BabyPageLayout() {
                   }
                 : null
             }
-            onPostUpdate={canManage ? () => setComposerOpen(true) : null}
+            postUpdateButton={
+              canManage
+                ? postUpdateOpen
+                  ? {
+                      to: "/baby/$publicId",
+                      params: { publicId: params.publicId },
+                      replace: true,
+                      resetScroll: false,
+                    }
+                  : {
+                      to: "/baby/$publicId/post",
+                      params: { publicId: params.publicId },
+                      replace: true,
+                      resetScroll: false,
+                    }
+                : null
+            }
+            postUpdateOpen={postUpdateOpen}
             settingsButton={
               canManage
                 ? settingsOpen
