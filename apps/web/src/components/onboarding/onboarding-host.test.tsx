@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
-  toastInfo: vi.fn<(message: string, options: unknown) => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -36,12 +35,6 @@ vi.mock("convex/react", () => ({
       return mocks.completeStep;
     };
   })(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: {
-    info: (message: string, options: unknown) => mocks.toastInfo(message, options),
-  },
 }));
 
 vi.mock("./getting-started", () => ({
@@ -169,7 +162,7 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   expect(view.getByTestId("getting-started")).toBeTruthy();
 });
 
-test("explains how to restore the guide after dismissal", async () => {
+test("highlights how to restore the guide after dismissal", async () => {
   mocks.useSession.mockReturnValue({
     data: { user: { id: "user-1" } },
     isPending: false,
@@ -190,14 +183,9 @@ test("explains how to restore the guide after dismissal", async () => {
   fireEvent.click(view.getByRole("button", { name: "Dismiss guide" }));
   expect(mocks.dismissChecklist).toHaveBeenCalledWith({});
   await vi.waitFor(() => {
-    expect(mocks.toastInfo).toHaveBeenCalledWith(
-      "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
-      {
-        duration: 7000,
-        position: "top-center",
-      },
-    );
+    expect(view.getByTestId("coachmark").textContent).toBe("restart_tour");
   });
+  expect(view.queryByTestId("getting-started")).toBeNull();
 });
 
 test("renders on the tour baby page when babyPublicId matches", async () => {

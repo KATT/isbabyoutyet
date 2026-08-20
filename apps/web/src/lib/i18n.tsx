@@ -490,8 +490,9 @@ const enGB = {
   "Keep guide": "Keep guide",
   "You can bring it back anytime from your dashboard with the sparkle button in the header.":
     "You can bring it back anytime from your dashboard with the sparkle button in the header.",
-  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
-    "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
+  "Guide dismissed": "Guide dismissed",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use this sparkle button to bring the guide back anytime.",
   "Tour progress": "Tour progress",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -1026,8 +1027,9 @@ const sv: Record<TranslationKey, string> = {
   "Keep guide": "Behåll guiden",
   "You can bring it back anytime from your dashboard with the sparkle button in the header.":
     "Du kan ta fram den igen när som helst via gnistknappen i sidhuvudet på din översikt.",
-  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
-    "Guiden är stängd. Använd gnistknappen i sidhuvudet på din översikt för att ta fram den igen.",
+  "Guide dismissed": "Guiden är stängd",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Använd den här gnistknappen för att ta fram guiden igen när du vill.",
   "Tour progress": "Hur långt du har kommit i guiden",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -1548,8 +1550,9 @@ const es: Record<TranslationKey, string> = {
   "Keep guide": "Conservar guía",
   "You can bring it back anytime from your dashboard with the sparkle button in the header.":
     "Puedes volver a abrirla cuando quieras desde el botón de destellos del encabezado de tu panel.",
-  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
-    "Guía cerrada. Usa el botón de destellos del encabezado de tu panel para volver a abrirla.",
+  "Guide dismissed": "Guía cerrada",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Usa este botón de destellos para volver a abrir la guía cuando quieras.",
   "Tour progress": "Progreso del recorrido",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -2074,8 +2077,9 @@ const ptBR: Record<TranslationKey, string> = {
   "Keep guide": "Manter guia",
   "You can bring it back anytime from your dashboard with the sparkle button in the header.":
     "Você pode reabri-lo quando quiser pelo botão de brilho no cabeçalho do painel.",
-  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
-    "Guia fechado. Use o botão de brilho no cabeçalho do painel para reabri-lo.",
+  "Guide dismissed": "Guia fechado",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use este botão de brilho para reabrir o guia quando quiser.",
   "Tour progress": "Progresso do tour",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",

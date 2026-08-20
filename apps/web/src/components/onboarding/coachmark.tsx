@@ -29,6 +29,7 @@ type Rect = {
  */
 export function Coachmark(props: CoachmarkProps) {
   const { t } = useI18n();
+  const { onDismiss } = props;
   const [rect, setRect] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
   const [isMobile, setIsMobile] = useState(false);
@@ -52,6 +53,16 @@ export function Coachmark(props: CoachmarkProps) {
     }
     el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
   }, [props.targetId]);
+
+  useEffect(() => {
+    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
+    if (!(el instanceof HTMLElement)) {
+      return;
+    }
+    const dismiss = () => onDismiss();
+    el.addEventListener("click", dismiss);
+    return () => el.removeEventListener("click", dismiss);
+  }, [onDismiss, props.targetId]);
 
   useEffect(() => {
     function measure() {
@@ -117,7 +128,7 @@ export function Coachmark(props: CoachmarkProps) {
                 if (props.completeOnDismiss) {
                   props.onComplete?.();
                 }
-                props.onDismiss();
+                onDismiss();
               }}
             >
               {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
@@ -145,7 +156,7 @@ export function Coachmark(props: CoachmarkProps) {
                 if (props.completeOnDismiss) {
                   props.onComplete?.();
                 }
-                props.onDismiss();
+                onDismiss();
               }}
             >
               {props.completeOnDismiss ? t("Got it") : t("Hide tip")}

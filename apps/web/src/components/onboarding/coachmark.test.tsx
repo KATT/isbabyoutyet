@@ -35,6 +35,9 @@ test("scrolls the target into view and can hide the tip", async () => {
 
   expect(scrollIntoView).toHaveBeenCalled();
   expect(screen.getByText("Share the link")).toBeTruthy();
+  fireEvent.click(target);
+  expect(onDismiss).toHaveBeenCalledOnce();
+  onDismiss.mockClear();
   fireEvent.click(screen.getByRole("button", { name: /hide tip/i }));
   expect(onDismiss).toHaveBeenCalledOnce();
 

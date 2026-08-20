@@ -4,7 +4,6 @@ import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useEffect, useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
@@ -63,6 +62,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const completeStep = useMutation(api.onboarding.completeStep);
 
   const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
+  const [restartHintVisible, setRestartHintVisible] = useState(false);
 
   // Don't leave a finished checklist hanging on the page
   useEffect(() => {
@@ -94,10 +94,11 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const coachmarkTargetId = nextStep?.targetId;
   const coachmarkTitle = nextStep ? t(nextStep.title) : "";
   const coachmarkDescription = nextStep ? t(nextStep.description) : "";
+  const showRestartHint = props.surface === "dashboard" && restartHintVisible;
 
   return (
     <>
-      {showChecklist && !showCoachmark ? (
+      {showChecklist && !showCoachmark && !showRestartHint ? (
         <GettingStartedCard
           effectiveSteps={progress.effectiveSteps}
           minimized={progress.minimized}
@@ -107,15 +108,9 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onDismiss={() => {
             void (async () => {
               await dismissChecklist({});
-              toast.info(
-                t(
-                  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
-                ),
-                {
-                  duration: 7000,
-                  position: "top-center",
-                },
-              );
+              if (props.surface === "dashboard") {
+                setRestartHintVisible(true);
+              }
             })();
           }}
           onAcknowledgeStep={(stepId) => {
@@ -153,6 +148,17 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             void completeStep({ stepId: nextStep.id });
           }}
           onDismiss={() => setActiveCoachmarkStepId(null)}
+        />
+      ) : null}
+
+      {showRestartHint ? (
+        <Coachmark
+          targetId="restart_tour"
+          title={t("Guide dismissed")}
+          description={t("Use this sparkle button to bring the guide back anytime.")}
+          completeOnDismiss={undefined}
+          onComplete={undefined}
+          onDismiss={() => setRestartHintVisible(false)}
         />
       ) : null}
     </>

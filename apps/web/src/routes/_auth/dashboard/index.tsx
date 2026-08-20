@@ -94,6 +94,7 @@ function DashboardPage() {
               className="rounded-full text-muted-foreground"
               aria-label={t("Restart getting started tour")}
               title={t("Restart tour")}
+              data-tour-id="restart_tour"
               onClick={async () => {
                 await restartTour({});
               }}
