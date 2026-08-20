@@ -22,17 +22,21 @@ const mocks = vi.hoisted(() => ({
     babyBorn: null as string | null,
     laborStartedMessage: "It has begun!",
     babyBornMessage: null as string | null,
-    settings: true,
   },
+  matchRoute: false,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute:
     () =>
     (options: {
-      head: (options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] };
+      head:
+        | ((options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] })
+        | undefined;
     }) => {
-      mocks.head = options.head;
+      if (options.head) {
+        mocks.head = options.head;
+      }
       return {
         ...options,
         fullPath: "/preview",
@@ -41,6 +45,14 @@ vi.mock("@tanstack/react-router", () => ({
     },
   Link: (props: { children: ReactNode }) => <a href="/">{props.children}</a>,
   useNavigate: () => mocks.navigate,
+  useMatchRoute: () => (opts: { to: string }) => {
+    if (opts.to === "/preview/settings") {
+      return mocks.matchRoute;
+    }
+    return false;
+  },
+  Outlet: () => null,
+  redirect: (opts: unknown) => opts,
 }));
 
 vi.mock("@/components/baby/baby-nav", () => ({
@@ -78,7 +90,8 @@ vi.mock("@/components/baby/settings-panel", () => ({
   ),
 }));
 
-const { PreviewPage } = await import("./preview");
+const { PreviewPageLayout } = await import("./preview/route");
+const { PreviewSettingsPage } = await import("./preview/settings");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -87,10 +100,10 @@ function renderResource(ui: ReactElement) {
   });
 }
 
-test("preview routes settings and milestone edits to separate search updates", async () => {
+test("preview settings routes milestone edits to separate search updates", async () => {
   await using view = renderResource(
     <LocaleProvider locale="en-GB">
-      <PreviewPage />
+      <PreviewSettingsPage />
     </LocaleProvider>,
   );
 
@@ -101,6 +114,7 @@ test("preview routes settings and milestone edits to separate search updates", a
   expect(mocks.navigate).toHaveBeenNthCalledWith(1, {
     search: { ...mocks.search, name: "Nova Rae" },
     replace: true,
+    resetScroll: false,
   });
   expect(mocks.navigate).toHaveBeenNthCalledWith(2, {
     search: {
@@ -108,10 +122,12 @@ test("preview routes settings and milestone edits to separate search updates", a
       wentToHospital: "2026-08-10T12:00:00.000Z",
     },
     replace: true,
+    resetScroll: false,
   });
   expect(mocks.navigate).toHaveBeenNthCalledWith(3, {
     search: { ...mocks.search, laborStarted: null },
     replace: true,
+    resetScroll: false,
   });
 });
 
@@ -121,7 +137,7 @@ test("preview derives a born status from its search dates", async () => {
 
   await using view = renderResource(
     <LocaleProvider locale="en-GB">
-      <PreviewPage />
+      <PreviewPageLayout />
     </LocaleProvider>,
   );
 

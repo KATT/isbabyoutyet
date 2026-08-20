@@ -1,26 +1,20 @@
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
-import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import type { PreviewBabyData } from "@workspace/convex/src/types";
-import {
-  getCurrentStatus,
-  milestoneVisibilityForPreset,
-  MILESTONE_FIELDS,
-} from "@workspace/convex/src/types";
+import { getCurrentStatus, milestoneVisibilityForPreset } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, redirect, useMatchRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
+import { preserveScroll } from "@/lib/scroll-restoration";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
 function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 7);
-  const laborStarted = new Date(now);
-  laborStarted.setHours(laborStarted.getHours() - 2);
 
   return {
     name: "Baby",
@@ -38,7 +32,8 @@ function getDefaultBabyData(): PreviewBabyData {
     photoId: null,
   };
 }
-const searchSchema = z.object({
+
+export const previewSearchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().nullable().optional(),
   dueDateDisplayMode: z.union([z.literal("exact"), z.literal("message")]).optional(),
@@ -56,9 +51,34 @@ const searchSchema = z.object({
   settings: z.boolean().optional(),
 });
 
+export type PreviewSearch = z.infer<typeof previewSearchSchema>;
+
+export function previewSearchWithoutSettings(search: PreviewSearch) {
+  const { settings: _settings, ...rest } = search;
+  return rest;
+}
+
+export function previewBabyFromSearch(search: PreviewSearch): PreviewBabyData {
+  const birthJourney = search.birthJourney ?? "labor";
+  return {
+    ...getDefaultBabyData(),
+    ...search,
+    milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
+  };
+}
+
 export const Route = createFileRoute("/preview")({
-  component: PreviewPage,
-  validateSearch: searchSchema,
+  component: PreviewPageLayout,
+  validateSearch: previewSearchSchema,
+  beforeLoad: (opts) => {
+    if (opts.search.settings === true) {
+      throw redirect({
+        to: "/preview/settings",
+        search: previewSearchWithoutSettings(opts.search),
+        replace: true,
+      });
+    }
+  },
   head: (opts) => ({
     meta: [
       {
@@ -81,21 +101,16 @@ export const Route = createFileRoute("/preview")({
   }),
 });
 
-export function PreviewPage() {
-  const { t, locale } = useI18n();
+export function PreviewPageLayout() {
+  const { t } = useI18n();
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
-  const birthJourney = search.birthJourney ?? "labor";
+  const matchRoute = useMatchRoute();
+  const settingsOpen = !!matchRoute({ to: "/preview/settings" });
 
-  const baby: PreviewBabyData = {
-    ...getDefaultBabyData(),
-    ...search,
-    milestoneVisibility: milestoneVisibilityForPreset(birthJourney),
-  };
+  const baby = previewBabyFromSearch(search);
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
 
-  // The preview has no timeline; simulate the latest update from the stage message
   const stageMessage =
     currentStatus.type === "born"
       ? baby.babyBornMessage
@@ -112,50 +127,6 @@ export function PreviewPage() {
   return (
     <div>
       {themeCss ? <style dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
-      <SettingsPanel
-        baby={baby}
-        birthJourney={birthJourney}
-        onUpdate={(update) => {
-          navigate({
-            search: {
-              ...search,
-              ...update,
-            },
-            replace: true,
-          });
-        }}
-        onMilestoneRedate={(milestone, occurredAt) => {
-          void navigate({
-            search: {
-              ...search,
-              [MILESTONE_FIELDS[milestone].date]: occurredAt,
-            },
-            replace: true,
-          });
-        }}
-        onMilestoneRemove={(milestone) => {
-          void navigate({
-            search: {
-              ...search,
-              [MILESTONE_FIELDS[milestone].date]: null,
-            },
-            replace: true,
-          });
-        }}
-        open={!!search.settings}
-        onOpenChange={(open) => {
-          void navigate({
-            search: {
-              ...search,
-              settings: open || undefined,
-            },
-            replace: true,
-          });
-        }}
-        profileLocale={locale}
-        onDelete={null}
-        coParents={null}
-      />
 
       <div className="min-h-screen bg-background bg-dots">
         <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
@@ -174,14 +145,22 @@ export function PreviewPage() {
               onPostUpdate={null}
               onShareCopied={null}
               onSettingsOpened={null}
-              settingsButton={{
-                to: "/preview",
-                search: {
-                  ...search,
-                  settings: search.settings ? undefined : true,
-                },
-              }}
-              settingsOpen={!!search.settings}
+              settingsButton={
+                settingsOpen
+                  ? {
+                      to: "/preview",
+                      search: previewSearchWithoutSettings(search),
+                      replace: true,
+                      ...preserveScroll,
+                    }
+                  : {
+                      to: "/preview/settings",
+                      search: previewSearchWithoutSettings(search),
+                      replace: true,
+                      ...preserveScroll,
+                    }
+              }
+              settingsOpen={settingsOpen}
             />
           </div>
         </header>
@@ -214,6 +193,8 @@ export function PreviewPage() {
           </Link>
         </footer>
       </div>
+
+      <Outlet />
     </div>
   );
 }

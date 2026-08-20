@@ -36,10 +36,15 @@ type StepAction =
   | { kind: "button"; onClick: () => void; label: string };
 
 function babyPageLink(opts: { publicId: string; settings: boolean | undefined }): LinkProps {
+  if (opts.settings) {
+    return {
+      to: "/baby/$publicId/settings",
+      params: { publicId: opts.publicId },
+    };
+  }
   return {
     to: "/baby/$publicId",
     params: { publicId: opts.publicId },
-    search: opts.settings ? { settings: true } : undefined,
   };
 }
 

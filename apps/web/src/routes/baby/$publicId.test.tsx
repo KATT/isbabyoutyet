@@ -28,8 +28,8 @@ vi.mock("@/lib/auth-server", () => ({
   authServer: { getToken },
 }));
 
-const routeModule = await import("@/routes/baby/$publicId");
-const { docToBabyData, managerDocToBabyData } = routeModule;
+const { docToBabyData, managerDocToBabyData } = await import("@/routes/baby/$publicId/shared");
+const routeModule = await import("@/routes/baby/$publicId/route");
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -338,7 +338,6 @@ test("loader queries the same set for visitors; gated queries come back forbidde
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": "forbidden",
     "pushSubscriptions:getSubscriptionCount": "forbidden",
-    "coParents:listForBaby": "forbidden",
   });
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
@@ -347,7 +346,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
-  expect(result.coParentsList).toMatchObject({ initialData: "forbidden" });
+  expect(result).not.toHaveProperty("coParentsList");
 });
 
 test("loader gives managers the same handles with real data", async () => {
@@ -358,7 +357,6 @@ test("loader gives managers the same handles with real data", async () => {
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
     "pushSubscriptions:getSubscriptionCount": 2,
-    "coParents:listForBaby": { coParents: [], invites: [] },
   });
 
   expect(result.scheduledNotifications).toMatchObject({
@@ -373,10 +371,7 @@ test("loader gives managers the same handles with real data", async () => {
   expect(result.managerBaby).toMatchObject({
     initialData: { birthJourney: "labor" },
   });
-  expect(result.coParentsList).toMatchObject({
-    input: { babyId: "baby-1" },
-    initialData: { coParents: [], invites: [] },
-  });
+  expect(result).not.toHaveProperty("coParentsList");
 });
 
 test("loader 404s unknown babies", async () => {
@@ -400,7 +395,6 @@ test("loader authenticates signed-in visitors before prefetching manager data", 
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
     "pushSubscriptions:getSubscriptionCount": 0,
-    "coParents:listForBaby": { coParents: [], invites: [] },
   };
 
   await runBabyLoader(sharedHandlers, {
@@ -430,7 +424,6 @@ test("loader reuses a context token without calling getAuthToken", async () => {
       "timeline:listByBaby": EMPTY_PAGE,
       "baby:getScheduledNotifications": "forbidden",
       "pushSubscriptions:getSubscriptionCount": "forbidden",
-      "coParents:listForBaby": "forbidden",
     },
     { token: "layout-token", locale: "sv", convexClient: { setAuth, mutation } },
   );

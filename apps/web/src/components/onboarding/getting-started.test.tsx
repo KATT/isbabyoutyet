@@ -107,6 +107,9 @@ test("dashboard settings CTA marks the step done while opening the page", async 
 
   fireEvent.click(screen.getAllByRole("link", { name: /open settings/i })[0]!);
   expect(onAcknowledge).toHaveBeenCalledWith("explore_settings");
+  expect(
+    screen.getAllByRole("link", { name: /open settings/i })[0]?.getAttribute("href"),
+  ).toContain("/settings");
 });
 
 test("baby-page checklist can open post update and settings", async () => {
