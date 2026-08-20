@@ -248,7 +248,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
 
       <Drawer open={mobileOpen} onOpenChange={setMobileOpen} showSwipeHandle>
         <DrawerContent
-          className="max-h-[calc(100dvh-2rem)] md:hidden"
+          className="right-auto w-dvw max-w-dvw max-h-[calc(100dvh-2rem)] md:hidden"
           style={{ bottom: `${visualViewportBottomOffset}px` }}
         >
           <DrawerHeader className="flex-row items-start text-left">
