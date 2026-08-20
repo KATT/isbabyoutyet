@@ -256,6 +256,9 @@ function BabyPageLayout() {
   const matchRoute = useMatchRoute();
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
+  const photoOpen =
+    !!matchRoute({ to: "/baby/$publicId/photo" }) ||
+    !!matchRoute({ to: "/baby/$publicId/updates/$updateId/photo" });
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -316,7 +319,7 @@ function BabyPageLayout() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!postUpdateOpen && !settingsOpen}
+          spotlight={!postUpdateOpen && !settingsOpen && !photoOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               void navigate(post.openLink);
@@ -384,6 +387,7 @@ function BabyPageLayout() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
           <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
             <StatusDisplay
+              publicId={babyDoc.publicId}
               baby={baby}
               currentStatus={currentStatus}
               photoUrl={babyDoc.photoUrl}
@@ -425,6 +429,7 @@ function BabyPageLayout() {
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed
                 babyId={babyDoc._id}
+                publicId={babyDoc.publicId}
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}

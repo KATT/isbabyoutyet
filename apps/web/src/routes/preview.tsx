@@ -203,6 +203,7 @@ export function PreviewPage() {
 
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
             <StatusDisplay
+              publicId={null}
               baby={baby}
               currentStatus={currentStatus}
               latestUpdate={latestUpdate}

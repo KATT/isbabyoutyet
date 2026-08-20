@@ -36,6 +36,7 @@ type Env = {
   readonly VAPID_PRIVATE_KEY: string | undefined;
   readonly VAPID_PUBLIC_KEY: string | undefined;
   readonly VAPID_SUBJECT: string | undefined;
+  readonly VERCEL_ENV: "production" | "preview" | undefined;
 };
 
 /**

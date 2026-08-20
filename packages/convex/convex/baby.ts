@@ -6,6 +6,7 @@ import { internal } from "./_generated/api";
 import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
 import { mutationWithTriggers } from "./triggers";
 import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
@@ -142,10 +143,6 @@ export async function applyPhotoSideEffects(
   });
 }
 
-function notificationScheduleDelayMs() {
-  return env.NODE_ENV === "production" ? 60_000 : 3_000;
-}
-
 /**
  * Schedules one delayed Web Push for this baby. Does not cancel other pending
  * jobs — callers that replace a pending status notification do that first.
@@ -161,7 +158,7 @@ export async function schedulePushNotification(
   },
 ) {
   const baby = opts.baby;
-  const scheduledFor = Date.now() + notificationScheduleDelayMs();
+  const scheduledFor = Date.now() + notificationScheduleDelayMs(env.VERCEL_ENV, env.NODE_ENV);
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
     babyId: baby._id,
