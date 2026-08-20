@@ -1,6 +1,6 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation } from "./_generated/server";
-import type { MutationCtx } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
   HOMEPAGE_DEMO_BABIES,
@@ -8,7 +8,14 @@ import {
   HOMEPAGE_DEMO_THEME,
   isHomepageDemoPublicId,
 } from "../src/seedCredentials";
-import { HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO, homepageDemoFeedFor } from "../src/homepageDemoFeed";
+import {
+  HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO,
+  HOMEPAGE_DEMO_FEED_SLOTS,
+  HOMEPAGE_DEMO_PHOTO_KEYS,
+  homepageDemoFeedFor,
+  homepageDemoLocales,
+} from "../src/homepageDemoFeed";
+import type { HomepageDemoPhotoKey } from "../src/homepageDemoFeed";
 import type { SupportedLocale } from "../src/i18n";
 import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
@@ -16,6 +23,8 @@ import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 
 const CLEAR_BATCH_SIZE = 32;
+const RESET_INACTIVITY_MS = 60 * 60_000;
+const FIXTURE_ENCOURAGEMENT_VISITOR_PREFIX = "homepage-demo-";
 
 const photoIdsValidator = v.object({
   photoId: v.id("_storage"),
@@ -37,6 +46,15 @@ type DemoPhotos = Record<
     blurDataUrl?: string | null;
   }
 >;
+
+type CompleteDemoPhoto = {
+  photoId: Id<"_storage">;
+  thumbnailId: Id<"_storage">;
+  pushImageId: Id<"_storage">;
+  blurDataUrl: string;
+};
+
+type CompleteDemoPhotos = Record<HomepageDemoPhotoKey, CompleteDemoPhoto>;
 
 function resolveDemoLocale(locale: SupportedLocale | undefined) {
   return locale ?? DEFAULT_LOCALE;
@@ -71,11 +89,94 @@ function refuseNonDemo(publicId: string) {
   );
 }
 
-async function findBabyByPublicId(ctx: MutationCtx, publicId: string) {
+async function findBabyByPublicId(ctx: MutationCtx | QueryCtx, publicId: string) {
   return await ctx.db
     .query("baby")
     .withIndex("by_publicId", (q) => q.eq("publicId", publicId))
     .unique();
+}
+
+async function storageObjectExists(ctx: MutationCtx | QueryCtx, storageId: Id<"_storage">) {
+  return (await ctx.db.system.get(storageId)) !== null;
+}
+
+async function reusablePhotosForBaby(
+  ctx: MutationCtx | QueryCtx,
+  opts: { baby: Doc<"baby">; locale: SupportedLocale },
+) {
+  const updates = await ctx.db
+    .query("updates")
+    .withIndex("by_babyId", (q) => q.eq("babyId", opts.baby._id))
+    .take(HOMEPAGE_DEMO_FEED_SLOTS.length);
+  const photos = {} as Partial<CompleteDemoPhotos>;
+
+  for (const item of homepageDemoFeedFor(opts.locale)) {
+    if (item.kind !== "update" || !item.photo) continue;
+    const update = updates.find((candidate) => candidate.message === item.message);
+    if (!update?.photoId || !update.thumbnailId || !update.pushImageId || !update.blurDataUrl) {
+      return null;
+    }
+    if (
+      !(await storageObjectExists(ctx, update.photoId)) ||
+      !(await storageObjectExists(ctx, update.thumbnailId)) ||
+      !(await storageObjectExists(ctx, update.pushImageId))
+    ) {
+      return null;
+    }
+    photos[item.photo] = {
+      photoId: update.photoId,
+      thumbnailId: update.thumbnailId,
+      pushImageId: update.pushImageId,
+      blurDataUrl: update.blurDataUrl,
+    };
+  }
+
+  if (!HOMEPAGE_DEMO_PHOTO_KEYS.every((key) => photos[key] !== undefined)) {
+    return null;
+  }
+  return photos as CompleteDemoPhotos;
+}
+
+async function loadReusablePhotos(ctx: MutationCtx | QueryCtx) {
+  for (const locale of homepageDemoLocales()) {
+    const demo = HOMEPAGE_DEMO_BABIES[locale];
+    const baby = await findBabyByPublicId(ctx, demo.publicId);
+    if (!baby || !isManagedHomepageDemo(baby)) continue;
+    const photos = await reusablePhotosForBaby(ctx, { baby, locale });
+    if (photos) return photos;
+  }
+  return null;
+}
+
+async function hasRecentVisitorEncouragement(
+  ctx: MutationCtx,
+  opts: { babies: Doc<"baby">[]; since: number },
+) {
+  for (const baby of opts.babies) {
+    const recent = ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId_and_createdAt", (q) =>
+        q.eq("babyId", baby._id).gte("createdAt", opts.since),
+      )
+      .order("desc");
+    for await (const encouragement of recent) {
+      if (!encouragement.visitorId.startsWith(FIXTURE_ENCOURAGEMENT_VISITOR_PREFIX)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+async function managedHomepageDemoBabies(ctx: MutationCtx) {
+  const babies: Doc<"baby">[] = [];
+  for (const locale of homepageDemoLocales()) {
+    const baby = await findBabyByPublicId(ctx, HOMEPAGE_DEMO_BABIES[locale].publicId);
+    if (baby && isManagedHomepageDemo(baby)) {
+      babies.push(baby);
+    }
+  }
+  return babies;
 }
 
 async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
@@ -321,6 +422,18 @@ export const storePhoto = internalAction({
   },
 });
 
+/**
+ * Deploy-time sentinel: a complete fixture feed already owns the reusable
+ * storage objects, so seeding can skip both the reset and photo uploads.
+ */
+export const hasCompletePhotoSet = internalQuery({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    return (await loadReusablePhotos(ctx)) !== null;
+  },
+});
+
 export const ensureBaby = internalMutation({
   args: { locale: localeArg },
   handler: async (ctx, args) => {
@@ -382,5 +495,49 @@ export const refresh = internalMutation({
     const babyId = await ensureBabyDoc(ctx, { now, locale });
     await clearAllFeed(ctx, { babyId, keepStorageIds: storageIdsToKeep(photos) });
     return await insertFeedDocs(ctx, { babyId, photos, now, locale });
+  },
+});
+
+/**
+ * Daily reset for the public demo pages. Fixture encouragements use a sentinel
+ * visitor-id prefix and do not count as visitor activity. The activity check,
+ * photo lookup, and all resets share one transaction so an encouragement
+ * cannot arrive between the check and the wipe.
+ */
+export const resetIfInactive = internalMutation({
+  args: {},
+  returns: v.object({
+    status: v.union(
+      v.literal("reset"),
+      v.literal("skipped_recent_encouragement"),
+      v.literal("skipped_missing_photos"),
+    ),
+    resetBabies: v.number(),
+  }),
+  handler: async (ctx) => {
+    const now = Date.now();
+    const babies = await managedHomepageDemoBabies(ctx);
+    if (
+      await hasRecentVisitorEncouragement(ctx, {
+        babies,
+        since: now - RESET_INACTIVITY_MS,
+      })
+    ) {
+      return { status: "skipped_recent_encouragement" as const, resetBabies: 0 };
+    }
+
+    const photos = await loadReusablePhotos(ctx);
+    if (!photos) {
+      return { status: "skipped_missing_photos" as const, resetBabies: 0 };
+    }
+    const keepStorageIds = storageIdsToKeep(photos);
+
+    for (const locale of homepageDemoLocales()) {
+      const babyId = await ensureBabyDoc(ctx, { now, locale });
+      await clearAllFeed(ctx, { babyId, keepStorageIds });
+      await insertFeedDocs(ctx, { babyId, photos, now, locale });
+    }
+
+    return { status: "reset" as const, resetBabies: homepageDemoLocales().length };
   },
 });

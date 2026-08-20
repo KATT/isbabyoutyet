@@ -27,7 +27,9 @@ refresh mutation refuses to wipe any baby missing that flag (except grandfatheri
 the existing sentinel-owned Juniper Hale row). Local `setup-dev` seeds fixture
 text first (`seed:data`); sharp resize + photo uploads run in the background
 after `pnpm dev` starts (`dev:seed-photos-deferred`). Production/preview
-deploys still run the full synchronous `seed:homepage`: dates shift to now and
-visitor comments are wiped on each build.
+deploys run `seed:homepage` as an idempotent bootstrap: an existing complete
+fixture feed is the photo sentinel, so builds do not reset dates, wipe visitor
+encouragements, or reupload photos. `crons.ts` checks daily and resets every
+locale only when no real visitor encouragement was posted in the previous hour.
 When opening PRs, follow the root
 [`AGENTS.md`](../../AGENTS.md) and link each seeded baby on the Vercel preview.

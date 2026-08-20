@@ -1,8 +1,9 @@
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
+import { makeResource } from "./test.resource";
 import { modules, registerComponents } from "./test.setup";
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "../src/seedCredentials";
@@ -30,6 +31,34 @@ async function storeBlob(t: Awaited<ReturnType<typeof setup>>, bytes: string) {
   return await t.run(async (ctx) => {
     return await ctx.storage.store(new Blob([bytes], { type: "image/jpeg" }));
   });
+}
+
+function useFakeTimersResource() {
+  vi.useFakeTimers();
+  return makeResource({}, () => {
+    vi.useRealTimers();
+  });
+}
+
+async function storeCompletePhotoSet(t: Awaited<ReturnType<typeof setup>>) {
+  const photos: Record<
+    string,
+    {
+      photoId: Id<"_storage">;
+      thumbnailId: Id<"_storage">;
+      pushImageId: Id<"_storage">;
+      blurDataUrl: string;
+    }
+  > = {};
+  for (const key of HOMEPAGE_DEMO_PHOTO_KEYS) {
+    photos[key] = {
+      photoId: await storeBlob(t, `${key}-photo`),
+      thumbnailId: await storeBlob(t, `${key}-thumb`),
+      pushImageId: await storeBlob(t, `${key}-push`),
+      blurDataUrl: `data:image/jpeg;base64,${key}`,
+    };
+  }
+  return photos;
 }
 
 test("every locale has copy for every shared feed slot", () => {
@@ -174,6 +203,114 @@ test("refresh attaches photos to the matching updates and pins the newborn as th
   expect(bornUpdate?.kind === "update" && bornUpdate.update.blurDataUrl).toBe(
     photos.born?.blurDataUrl,
   );
+});
+
+test("daily reset reuses stored photos and ignores recent fixture encouragements", async () => {
+  await using _timers = useFakeTimersResource();
+  vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+  const first = await t.mutation(internal.homepageDemo.refresh, { photos });
+
+  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
+
+  vi.setSystemTime(new Date("2026-08-21T03:00:00.000Z"));
+  const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
+  expect(result).toEqual({ status: "reset", resetBabies: SUPPORTED_LOCALES.length });
+
+  const baby = await t.query(api.baby.getByPublicId, { id: first.publicId });
+  expect(baby?.photoId).toBe(photos.born?.photoId);
+  expect(baby?.thumbnailId).toBe(photos.born?.thumbnailId);
+  if (!baby?.dueDate) throw new Error("Reset demo baby is missing its due date");
+  expect(Date.parse(baby.dueDate)).toBeGreaterThan(Date.parse("2026-08-18T00:00:00.000Z"));
+
+  for (const locale of SUPPORTED_LOCALES) {
+    const localeBaby = await t.query(api.baby.getByPublicId, {
+      id: HOMEPAGE_DEMO_BABIES[locale].publicId,
+    });
+    expect(localeBaby?.photoId).toBe(photos.born?.photoId);
+  }
+});
+
+test("daily reset preserves a visitor encouragement posted within the last hour", async () => {
+  await using _timers = useFakeTimersResource();
+  vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
+  await t.mutation(api.encouragements.create, {
+    babyId: demo.babyId,
+    authorName: "Recent Visitor",
+    message: "Still here!",
+    visitorId: "real-visitor",
+  });
+
+  vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
+  const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
+  expect(result).toEqual({
+    status: "skipped_recent_encouragement",
+    resetBabies: 0,
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(
+    feed.page.some(
+      (item) => item.kind === "encouragement" && item.encouragement.authorName === "Recent Visitor",
+    ),
+  ).toBe(true);
+});
+
+test("daily reset clears visitor encouragements once they are older than one hour", async () => {
+  await using _timers = useFakeTimersResource();
+  vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+  const demo = await t.mutation(internal.homepageDemo.refresh, { photos });
+  await t.mutation(api.encouragements.create, {
+    babyId: demo.babyId,
+    authorName: "Earlier Visitor",
+    message: "Good luck!",
+    visitorId: "real-visitor",
+  });
+
+  vi.setSystemTime(new Date("2026-08-20T04:01:00.000Z"));
+  const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
+  expect(result.status).toBe("reset");
+
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(
+    feed.page.some(
+      (item) =>
+        item.kind === "encouragement" && item.encouragement.authorName === "Earlier Visitor",
+    ),
+  ).toBe(false);
+});
+
+test("daily reset does not wipe a demo when its complete photo sentinel is missing", async () => {
+  const t = await setup();
+  const demo = await t.mutation(internal.homepageDemo.refresh, {});
+  const before = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+
+  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(false);
+  await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).resolves.toEqual({
+    status: "skipped_missing_photos",
+    resetBabies: 0,
+  });
+
+  const after = await t.query(api.timeline.listByBaby, {
+    babyId: demo.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(after.page.map((item) => item._id)).toEqual(before.page.map((item) => item._id));
 });
 
 test("generateUploadUrl returns a storage upload URL", async () => {
