@@ -56,8 +56,8 @@ export const Route = createFileRoute("/baby/$publicId")({
     }
     if (opts.search.settings) {
       throw redirect({
-        to: "/settings",
-        search: { baby: babyDoc.publicId },
+        to: "/baby/$publicId/settings",
+        params: { publicId: babyDoc.publicId },
         replace: true,
       });
     }
@@ -317,8 +317,8 @@ function BabyPage() {
             }
             if (stepId === "explore_settings") {
               void navigate({
-                to: "/settings",
-                search: { baby: babyDoc.publicId },
+                to: "/baby/$publicId/settings",
+                params: { publicId: babyDoc.publicId },
               });
             }
           }}
@@ -373,8 +373,8 @@ function BabyPage() {
             settingsButton={
               canManage
                 ? {
-                    to: "/settings",
-                    search: { baby: params.publicId },
+                    to: "/baby/$publicId/settings",
+                    params: { publicId: params.publicId },
                   }
                 : null
             }

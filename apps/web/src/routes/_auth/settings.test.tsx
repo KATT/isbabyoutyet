@@ -1,69 +1,36 @@
-import { QueryClient } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { expect, test } from "vitest";
 
 const routeModule = await import("@/routes/_auth/settings");
 
-function makeLoaderQueryClient(handlers: Record<string, unknown>) {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(handlers[name] ?? null);
-        },
-      },
-    },
-  });
+function captureRedirect(run: () => unknown) {
+  try {
+    run();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("Expected redirect");
 }
 
-async function runSettingsLoader(handlers: Record<string, unknown>) {
-  const queryClient = makeLoaderQueryClient(handlers);
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    deps: { baby: string | undefined };
-  }) => Promise<Record<string, unknown>>;
-  return await loader({
-    context: {
-      queryClient,
-      convexPreloader: getConvexQueryPreloader(queryClient),
+test("temporary settings URL redirects to the baby-scoped route", () => {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    search: { baby: string | undefined };
+  }) => unknown;
+
+  expect(captureRedirect(() => beforeLoad({ search: { baby: "baby-smith" } }))).toMatchObject({
+    options: {
+      to: "/baby/$publicId/settings",
+      params: { publicId: "baby-smith" },
+      replace: true,
     },
-    deps: { baby: "baby-smith" },
-  });
-}
-
-test("settings loader fetches only manager settings data", async () => {
-  const result = await runSettingsLoader({
-    "baby:getManagerBaby": { _id: "baby-id", name: "Baby Smith" },
-    "coParents:myAccess": { canManage: true, isOwner: true },
-    "coParents:listForBaby": { coParents: [], invites: [] },
-  });
-
-  expect(result.managerBaby).toMatchObject({
-    input: { babyId: "baby-smith" },
-    initialData: { name: "Baby Smith" },
-  });
-  expect(result.coParentsList).toMatchObject({
-    input: { babyId: "baby-smith" },
-    initialData: { coParents: [], invites: [] },
   });
 });
 
-test("settings loader redirects non-managers to the public baby page", async () => {
-  await expect(
-    runSettingsLoader({
-      "baby:getManagerBaby": "forbidden",
-      "coParents:myAccess": { canManage: false, isOwner: false },
-      "coParents:listForBaby": "forbidden",
-    }),
-  ).rejects.toMatchObject({
-    options: {
-      to: "/baby/$publicId",
-      params: { publicId: "baby-smith" },
-    },
+test("bare settings URL redirects to the dashboard", () => {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    search: { baby: string | undefined };
+  }) => unknown;
+
+  expect(captureRedirect(() => beforeLoad({ search: { baby: undefined } }))).toMatchObject({
+    options: { to: "/dashboard" },
   });
 });

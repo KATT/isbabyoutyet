@@ -428,8 +428,8 @@ test("beforeLoad redirects legacy settings links", async () => {
     }),
   ).rejects.toMatchObject({
     options: {
-      to: "/settings",
-      search: { baby: "baby-smith" },
+      to: "/baby/$publicId/settings",
+      params: { publicId: "baby-smith" },
       replace: true,
     },
   });

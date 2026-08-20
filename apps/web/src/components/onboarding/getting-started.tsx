@@ -38,8 +38,8 @@ type StepAction =
 function babyPageLink(opts: { publicId: string; settings: boolean | undefined }): LinkProps {
   if (opts.settings) {
     return {
-      to: "/settings",
-      search: { baby: opts.publicId },
+      to: "/baby/$publicId/settings",
+      params: { publicId: opts.publicId },
     };
   }
   return {
