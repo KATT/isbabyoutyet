@@ -110,7 +110,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       return {};
     }
 
-    const seo = getBabySeo(babyDoc);
+    const seo = getBabySeo(babyDoc, opts.params.publicId);
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
     // navigating away. Inline head styles still paint before body (no FOUC)
@@ -234,7 +234,10 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-function getBabySeo(doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>) {
+export function getBabySeo(
+  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
+  routePublicId: string,
+) {
   return babySeoHead({
     name: doc.name,
     ...(doc.dueDateDisplayMode === "exact"
@@ -243,7 +246,9 @@ function getBabySeo(doc: NonNullable<FunctionReturnType<typeof api.baby.getByPub
           dueDateDisplayMode: "message" as const,
           publicDueDateText: doc.publicDueDateText,
         }),
-    publicId: doc.publicId,
+    // beforeLoad canonicalizes this route parameter. During same-route
+    // navigation, reactive query data can briefly belong to the prior slug.
+    publicId: routePublicId,
     theme: doc.theme,
     locale: doc.resolvedLocale,
     babyBorn: doc.babyBorn,
@@ -274,7 +279,7 @@ function BabyPageLayout() {
     throw notFound();
   }
   const baby = docToBabyData(babyDoc);
-  const seo = getBabySeo(babyDoc);
+  const seo = getBabySeo(babyDoc, params.publicId);
 
   const latestUpdateQuery = usePreloadedConvexQuery(
     api.timeline.latestUpdate,
@@ -357,7 +362,7 @@ function BabyPageLayout() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
+            shareLink={canonicalUrl(`/baby/${params.publicId}`)}
             sharePreview={{
               imageUrl: seo.imageUrl,
               title: seo.title,
