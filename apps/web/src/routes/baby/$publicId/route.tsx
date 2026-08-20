@@ -110,22 +110,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       return {};
     }
 
-    const seo = babySeoHead({
-      name: babyDoc.name,
-      ...(babyDoc.dueDateDisplayMode === "exact"
-        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
-        : {
-            dueDateDisplayMode: "message" as const,
-            publicDueDateText: babyDoc.publicDueDateText,
-          }),
-      publicId: babyDoc.publicId,
-      theme: babyDoc.theme,
-      locale: babyDoc.resolvedLocale,
-      babyBorn: babyDoc.babyBorn,
-      wentToHospital: babyDoc.wentToHospital,
-      laborStarted: babyDoc.laborStarted,
-      milestoneVisibility: babyDoc.milestoneVisibility,
-    });
+    const seo = getBabySeo(babyDoc);
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
     // navigating away. Inline head styles still paint before body (no FOUC)
@@ -249,6 +234,25 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
+function getBabySeo(doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>) {
+  return babySeoHead({
+    name: doc.name,
+    ...(doc.dueDateDisplayMode === "exact"
+      ? { dueDateDisplayMode: "exact" as const, dueDate: doc.dueDate }
+      : {
+          dueDateDisplayMode: "message" as const,
+          publicDueDateText: doc.publicDueDateText,
+        }),
+    publicId: doc.publicId,
+    theme: doc.theme,
+    locale: doc.resolvedLocale,
+    babyBorn: doc.babyBorn,
+    wentToHospital: doc.wentToHospital,
+    laborStarted: doc.laborStarted,
+    milestoneVisibility: doc.milestoneVisibility,
+  });
+}
+
 function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
@@ -270,6 +274,7 @@ function BabyPageLayout() {
     throw notFound();
   }
   const baby = docToBabyData(babyDoc);
+  const seo = getBabySeo(babyDoc);
 
   const latestUpdateQuery = usePreloadedConvexQuery(
     api.timeline.latestUpdate,
@@ -353,6 +358,11 @@ function BabyPageLayout() {
           </Link>
           <BabyNav
             shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
+            sharePreview={{
+              imageUrl: seo.imageUrl,
+              title: seo.title,
+              description: seo.description,
+            }}
             onShareCopied={
               canManage
                 ? () => {

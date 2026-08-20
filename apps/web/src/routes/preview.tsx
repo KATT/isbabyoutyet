@@ -176,6 +176,7 @@ export function PreviewPage() {
             </Link>
             <BabyNav
               shareLink=""
+              sharePreview={null}
               postUpdateButton={null}
               postUpdateOpen={false}
               onDismissPostUpdate={null}
