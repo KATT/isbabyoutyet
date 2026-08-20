@@ -136,4 +136,31 @@ log({
 });
 // #endregion
 
+if (clickResult.clickable) {
+  await expand.click();
+}
+const drawer = page.getByRole("dialog", { name: "Getting started" });
+const drawerState = clickResult.clickable
+  ? await drawer.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        visible: rect.width > 0 && rect.height > 0,
+        rect: {
+          left: rect.left,
+          top: rect.top,
+          right: rect.right,
+          bottom: rect.bottom,
+        },
+      };
+    })
+  : { visible: false, rect: null };
+// #region agent log
+log({
+  hypothesisId: "A,D",
+  location: "debug-mobile-onboarding.mjs:drawer",
+  message: "Drawer state after expand interaction",
+  data: drawerState,
+});
+// #endregion
+
 await browser.close();
