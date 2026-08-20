@@ -4,9 +4,10 @@ import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-ho
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import { createFileRoute, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -52,25 +53,25 @@ export const Route = createFileRoute("/baby/$publicId/post")({
 export function BabyPostUpdateOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
-  const navigate = useNavigate({ from: Route.fullPath });
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const post = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/post",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc) {
     throw notFound();
   }
   const baby = managerDocToBabyData(managerBabyDoc);
-
-  function closeToBabyPage() {
-    void navigate({
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-      replace: true,
-      resetScroll: false,
-    });
-  }
 
   return (
     <Dialog
@@ -82,7 +83,7 @@ export function BabyPostUpdateOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          closeToBabyPage();
+          post.dismiss();
         }
       }}
     >

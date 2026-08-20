@@ -12,27 +12,43 @@ import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
+  historyBack: vi.fn<() => void>(),
+  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
+  historyState: { overlay: undefined as true | undefined },
   completeStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   params: { publicId: "baby-smith" },
   loaderData: null as null | Record<string, unknown>,
 }));
 
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (options: Record<string, unknown>) => ({
-    options,
-    ...options,
-    fullPath: "/baby/$publicId/post",
-    useParams: () => mocks.params,
-    useLoaderData: () => mocks.loaderData,
-  }),
-  useNavigate: () => mocks.navigate,
-  notFound: () => {
-    throw { isNotFound: true };
-  },
-  redirect: (opts: unknown) => {
-    throw { options: opts };
-  },
-}));
+vi.mock("@tanstack/react-router", async () => {
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
+  return {
+    ...actual,
+    createFileRoute: () => (options: Record<string, unknown>) => ({
+      options,
+      ...options,
+      fullPath: "/baby/$publicId/post",
+      useParams: () => mocks.params,
+      useLoaderData: () => mocks.loaderData,
+    }),
+    useNavigate: () => mocks.navigate,
+    useRouter: () => ({
+      history: {
+        location: { state: mocks.historyState },
+        canGoBack: mocks.canGoBack,
+        back: mocks.historyBack,
+      },
+      navigate: mocks.navigate,
+    }),
+    notFound: () => {
+      throw { isNotFound: true };
+    },
+    redirect: (opts: unknown) => {
+      throw { options: opts };
+    },
+  };
+});
 
 vi.mock("@/components/onboarding/onboarding-host", () => ({
   useCompleteOnboardingStep: () => mocks.completeStep,
@@ -187,6 +203,9 @@ test("post loader redirects non-managers to the public baby page", async () => {
 
 test("post overlay closes to the baby page after dismiss", async () => {
   mocks.navigate.mockReset();
+  mocks.historyBack.mockReset();
+  mocks.canGoBack.mockReturnValue(false);
+  mocks.historyState.overlay = undefined;
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
       input: { babyId: "baby-smith" },
@@ -202,6 +221,7 @@ test("post overlay closes to the baby page after dismiss", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
+  expect(mocks.historyBack).not.toHaveBeenCalled();
   expect(mocks.navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
@@ -210,8 +230,35 @@ test("post overlay closes to the baby page after dismiss", async () => {
   });
 });
 
+test("post overlay prefers history.back when opened via push", async () => {
+  mocks.navigate.mockReset();
+  mocks.historyBack.mockReset();
+  mocks.canGoBack.mockReturnValue(true);
+  mocks.historyState.overlay = true;
+  mocks.loaderData = {
+    managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
+      input: { babyId: "baby-smith" },
+      initialData: managerBabyDoc,
+    }),
+    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
+      input: { babyId: "baby-smith" },
+      initialData: { canManage: true, isOwner: true, isCoParent: false },
+    }),
+  };
+
+  await using view = renderResource(<BabyPostUpdateOverlay />);
+
+  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
+
+  expect(mocks.historyBack).toHaveBeenCalledOnce();
+  expect(mocks.navigate).not.toHaveBeenCalled();
+});
+
 test("successful post completes onboarding and closes the overlay", async () => {
   mocks.navigate.mockReset();
+  mocks.historyBack.mockReset();
+  mocks.canGoBack.mockReturnValue(false);
+  mocks.historyState.overlay = undefined;
   mocks.completeStep.mockClear();
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({

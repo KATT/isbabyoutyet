@@ -14,6 +14,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -84,6 +85,16 @@ export function BabySettingsOverlay() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
+  const settings = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/settings",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
@@ -95,15 +106,6 @@ export function BabySettingsOverlay() {
   }
   const baby = managerDocToBabyData(managerBabyDoc);
   const isOwner = loaderData.myAccess.initialData.isOwner;
-
-  function closeToBabyPage() {
-    void navigate({
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-      replace: true,
-      resetScroll: false,
-    });
-  }
 
   return (
     <SettingsPanel
@@ -147,7 +149,7 @@ export function BabySettingsOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          closeToBabyPage();
+          settings.dismiss();
         }
       }}
     />

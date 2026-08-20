@@ -32,6 +32,7 @@ import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
+import { useOverlayNav } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
 
@@ -275,6 +276,26 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const post = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/post",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
+  const settings = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/settings",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -298,21 +319,11 @@ function BabyPageLayout() {
           spotlight={!postUpdateOpen && !settingsOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
-              void navigate({
-                to: "/baby/$publicId/post",
-                params: { publicId: babyDoc.publicId },
-                replace: true,
-                resetScroll: false,
-              });
+              void navigate(post.openLink);
               return;
             }
             if (stepId === "explore_settings") {
-              void navigate({
-                to: "/baby/$publicId/settings",
-                params: { publicId: babyDoc.publicId },
-                replace: true,
-                resetScroll: false,
-              });
+              void navigate(settings.openLink);
             }
           }}
         />
@@ -346,42 +357,12 @@ function BabyPageLayout() {
                   }
                 : null
             }
-            postUpdateButton={
-              canManage
-                ? postUpdateOpen
-                  ? {
-                      to: "/baby/$publicId",
-                      params: { publicId: params.publicId },
-                      replace: true,
-                      resetScroll: false,
-                    }
-                  : {
-                      to: "/baby/$publicId/post",
-                      params: { publicId: params.publicId },
-                      replace: true,
-                      resetScroll: false,
-                    }
-                : null
-            }
+            postUpdateButton={canManage ? post.openLink : null}
             postUpdateOpen={postUpdateOpen}
-            settingsButton={
-              canManage
-                ? settingsOpen
-                  ? {
-                      to: "/baby/$publicId",
-                      params: { publicId: params.publicId },
-                      replace: true,
-                      resetScroll: false,
-                    }
-                  : {
-                      to: "/baby/$publicId/settings",
-                      params: { publicId: params.publicId },
-                      replace: true,
-                      resetScroll: false,
-                    }
-                : null
-            }
+            onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}
+            settingsButton={canManage ? settings.openLink : null}
             settingsOpen={settingsOpen}
+            onDismissSettings={canManage && settingsOpen ? settings.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {

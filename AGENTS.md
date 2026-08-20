@@ -1,13 +1,27 @@
 # Agent notes
 
-## Routing / scroll
+## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`) and post-update (`/baby/$publicId/post`)
 are nested child routes rendered into the baby layout `<Outlet />` so the page
-stays mounted underneath. When a `Link` or `navigate()` only opens/closes those
-overlays (or switches admin tabs), pass `resetScroll: false` so the page does
-not jump to the top. Close overlay dialogs via `onOpenChange` →
-`onOpenChangeComplete` so the exit animation finishes before navigating away.
+stays mounted underneath.
+
+Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
+`canGoBack` and `linkOptions`, but no overlay-history helper):
+
+- **Open link:** `openOverlayLink({ to, params, ... })` — push (no `replace`),
+  `resetScroll: false`, and `state: { overlay: true }`. Pass to `<Link>` or
+  `navigate()`.
+- **Close link:** `closeOverlayLink({ to, params, ... })` — replace close
+  target with `resetScroll: false` (declarative fallback / cold-load close).
+- **Hook:** `useOverlayNav({ open, close })` returns `{ openLink, closeLink,
+  dismiss }`. `dismiss()` calls `history.back()` when the entry was push-opened
+  and `canGoBack()`; otherwise navigates with `closeLink`.
+- Close overlay dialogs via `onOpenChange` → `onOpenChangeComplete` so the exit
+  animation finishes before dismissing.
+
+Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
+still use `resetScroll: false` (not overlay history).
 
 ## Convex
 

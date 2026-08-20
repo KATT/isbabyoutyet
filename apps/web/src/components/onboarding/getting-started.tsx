@@ -7,6 +7,7 @@ import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { openOverlayLink } from "@/lib/overlay-nav";
 import { ONBOARDING_STEPS } from "./steps";
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
@@ -37,18 +38,16 @@ type StepAction =
 
 function babyPageLink(opts: { publicId: string; overlay: "settings" | "post" | null }): LinkProps {
   if (opts.overlay === "settings") {
-    return {
+    return openOverlayLink({
       to: "/baby/$publicId/settings",
       params: { publicId: opts.publicId },
-      resetScroll: false,
-    };
+    });
   }
   if (opts.overlay === "post") {
-    return {
+    return openOverlayLink({
       to: "/baby/$publicId/post",
       params: { publicId: opts.publicId },
-      resetScroll: false,
-    };
+    });
   }
   return {
     to: "/baby/$publicId",
