@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, ImgHTMLAttributes, RefObject, SetStateAction } from "react";
+import { writeBlurImageDebug } from "@/lib/blur-image-debug";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
@@ -16,12 +17,7 @@ type BlurImageDebugEntry = {
 
 function recordBlurImageDebug(entry: BlurImageDebugEntry) {
   if (typeof window === "undefined") return;
-  void fetch("/api/debug/blur-image", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify(entry),
-    keepalive: true,
-  }).catch(() => {});
+  void writeBlurImageDebug({ data: entry }).catch(() => {});
 }
 
 function imageOrigin(src: string) {
@@ -51,7 +47,8 @@ function imageElementDebugData(img: HTMLImageElement) {
     opacity: computed.opacity,
     renderedWidth: img.getBoundingClientRect().width,
     renderedHeight: img.getBoundingClientRect().height,
-    resourceResponseEnd: resource?.entryType === "resource" ? resource.startTime + resource.duration : null,
+    resourceResponseEnd:
+      resource?.entryType === "resource" ? resource.startTime + resource.duration : null,
     isConnected: img.isConnected,
   };
 }
