@@ -24,6 +24,11 @@ await page.getByLabel("Email").fill("test+newuser@example.com");
 await page.getByLabel("Password").fill("password");
 await page.getByRole("button", { name: "Sign In" }).click();
 await page.waitForURL("**/dashboard");
+await page.getByText("Your babies").waitFor();
+const restart = page.getByRole("button", { name: "Restart getting started tour" });
+if (await restart.isVisible()) {
+  await restart.click();
+}
 const expand = page.getByRole("button", { name: /Getting started: .* Expand/ });
 await expand.waitFor();
 
@@ -140,6 +145,16 @@ if (clickResult.clickable) {
   await expand.click();
 }
 const drawer = page.getByRole("dialog", { name: "Getting started" });
+if (clickResult.clickable) {
+  await drawer.waitFor();
+  await page.waitForFunction(() => {
+    const element = document.querySelector('[data-slot="drawer-popup"]');
+    const viewport = window.visualViewport;
+    if (!element || !viewport) return false;
+    const rect = element.getBoundingClientRect();
+    return rect.top >= viewport.offsetTop && rect.bottom <= viewport.offsetTop + viewport.height;
+  });
+}
 const drawerState = clickResult.clickable
   ? await drawer.evaluate((element) => {
       const rect = element.getBoundingClientRect();
