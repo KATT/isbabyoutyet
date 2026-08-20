@@ -1,5 +1,11 @@
 # Agent notes
 
+## Routing / scroll
+
+When a `Link` or `navigate()` only opens/closes an overlay on the same page
+(e.g. `/settings` child routes, dialogs driven by the router), pass
+`resetScroll: false` so the underlying page does not jump to the top.
+
 ## Convex
 
 When working under `packages/convex/`, also follow
