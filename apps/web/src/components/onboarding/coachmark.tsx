@@ -100,7 +100,7 @@ export function Coachmark(props: CoachmarkProps) {
       />
       {isMobile ? (
         <div
-          className="pointer-events-auto fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
+          className="pointer-events-auto fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+max(0px,100vh-100dvh))] w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
           role="dialog"
           aria-label={props.title}
         >

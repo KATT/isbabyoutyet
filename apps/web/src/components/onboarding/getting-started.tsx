@@ -193,7 +193,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         onClick={() => props.onMinimize(false)}
         className={cn(
           "fixed z-40 flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-popover/95 px-3 py-2 text-sm font-medium shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm transition hover:border-primary/40",
-          "right-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] sm:right-4 sm:bottom-6",
+          "right-[calc(0.75rem+env(safe-area-inset-right)+max(0px,100vw-100dvw))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+max(0px,100vh-100dvh))] sm:right-4 sm:bottom-6",
           props.className,
         )}
         aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
@@ -216,7 +216,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
     <>
       <aside
         className={cn(
-          "fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
+          "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+max(0px,100vh-100dvh))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
           "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
           props.className,
         )}
