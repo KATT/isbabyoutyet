@@ -1,10 +1,9 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import { resolveSupportedLocale } from "../src/i18n";
+import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
-import { ensureUserProfileForAuthUser } from "./profileBootstrap";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -43,23 +42,7 @@ export const get = query({
     }
     const caller = appIdentity(identity);
     const profile = await getProfileHandler(ctx, caller.tokenIdentifier);
-    return profile ? toProfileResult(profile) : null;
-  },
-});
-
-/** Returns the caller's profile, creating it when missing (e.g. test identities). */
-export const ensure = mutation({
-  args: {
-    browserLocale: v.string(),
-  },
-  returns: profileResultValidator,
-  handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
-    const caller = appIdentity(identity);
-    return await ensureUserProfileForAuthUser(ctx, {
-      userId: caller.authUserId,
-      localeHint: args.browserLocale,
-    });
+    return profile ? toProfileResult(profile) : { locale: DEFAULT_LOCALE, isAdmin: false };
   },
 });
 

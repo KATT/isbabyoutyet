@@ -191,6 +191,44 @@ export const latestUpdate = query({
   },
 });
 
+/**
+ * Public photo payload for the timeline-update lightbox overlay. Returns null
+ * when the update is missing, soft-deleted, on another baby, or has no photo.
+ */
+export const getUpdatePhoto = query({
+  args: {
+    babyId: babyIdOrPublicIdValidator,
+    updateId: v.id("updates"),
+  },
+  returns: v.union(
+    v.object({
+      photoUrl: v.string(),
+      blurDataUrl: v.union(v.string(), v.null()),
+      babyName: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby || !isActive(baby)) {
+      return null;
+    }
+    const update = await ctx.db.get(args.updateId);
+    if (!update || !isActive(update) || update.babyId !== baby._id || !update.photoId) {
+      return null;
+    }
+    const photoUrl = await ctx.storage.getUrl(update.photoId);
+    if (!photoUrl) {
+      return null;
+    }
+    return {
+      photoUrl,
+      blurDataUrl: update.blurDataUrl ?? null,
+      babyName: baby.name,
+    };
+  },
+});
+
 // --- Write helpers (shared by baby.ts, updates.ts, encouragements.ts, migrations.ts) ---
 
 async function advanceBabyActivity(

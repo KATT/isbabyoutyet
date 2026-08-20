@@ -44,6 +44,7 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
     <div>
       <h1>Is {baby.name} out yet?</h1>
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={currentStatus}
         photoUrl={null}
@@ -210,6 +211,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
   await using view = renderResource(
     <LocaleProvider locale="sv">
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
@@ -240,6 +242,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   await using view = renderResource(
     <LocaleProvider locale="pt-BR">
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
@@ -435,7 +438,7 @@ test("beforeLoad redirects legacy settings links", async () => {
   });
 });
 
-test("loader does not call profile.ensure for authenticated visitors", async () => {
+test("loader does not mutate profiles for authenticated visitors", async () => {
   const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {

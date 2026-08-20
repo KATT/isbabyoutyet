@@ -11,7 +11,6 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -33,6 +32,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -58,6 +58,7 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { openOverlayLink } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
@@ -470,6 +471,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -637,6 +639,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
           <TimelinePhoto
+            publicId={props.publicId}
+            updateId={update._id}
             photoUrl={update.photoUrl}
             thumbnailUrl={update.thumbnailUrl}
             blurDataUrl={update.blurDataUrl}
@@ -654,6 +658,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 }
 
 type TimelinePhotoProps = {
+  publicId: string;
+  updateId: Id<"updates">;
   photoUrl: string;
   thumbnailUrl: string | null;
   blurDataUrl: string | null;
@@ -661,43 +667,25 @@ type TimelinePhotoProps = {
 
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            aria-label={t("View photo full size")}
-            className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <BlurImage
-              src={inlineUrl}
-              alt={t("Baby update")}
-              blurDataUrl={props.blurDataUrl}
-              className="aspect-square max-h-64 w-full object-cover"
-              loading="lazy"
-            />
-          </button>
-        }
+    <Link
+      {...openOverlayLink({
+        to: "/baby/$publicId/updates/$updateId/photo",
+        params: { publicId: props.publicId, updateId: props.updateId },
+      })}
+      aria-label={t("View photo full size")}
+      className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <BlurImage
+        src={inlineUrl}
+        alt={t("Baby update")}
+        blurDataUrl={props.blurDataUrl}
+        className="aspect-square max-h-64 w-full object-cover"
+        loading="lazy"
       />
-      <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-        <button
-          onClick={() => setIsOpen(false)}
-          aria-label={t("Close photo")}
-          className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <BlurImage
-          src={props.photoUrl}
-          alt={t("Baby update")}
-          blurDataUrl={props.blurDataUrl}
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-        />
-      </DialogContent>
-    </Dialog>
+    </Link>
   );
 }
 
@@ -906,6 +894,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -1045,6 +1034,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              publicId={props.publicId}
               baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}

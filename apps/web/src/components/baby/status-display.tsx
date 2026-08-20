@@ -1,6 +1,4 @@
-import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
-import { X } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import { getMilestonePolicy } from "@workspace/convex/src/types";
 import {
@@ -11,9 +9,11 @@ import {
   formatDueDate,
 } from "./utils";
 import { useI18n } from "@/lib/i18n";
+import { openOverlayLink } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
+  publicId: string | null;
   babyName: string;
   photoUrl: string | null;
   thumbnailUrl: string | null;
@@ -24,25 +24,6 @@ type PhotoAvatarProps = {
 
 function PhotoAvatar(props: PhotoAvatarProps) {
   const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Prefetch the full-size image when component mounts or photoUrl changes
-  useEffect(() => {
-    if (props.photoUrl) {
-      const link = document.createElement("link");
-      link.rel = "prefetch";
-      link.as = "image";
-      link.href = props.photoUrl;
-      document.head.appendChild(link);
-
-      return () => {
-        // Only remove if still in the document
-        if (document.head.contains(link)) {
-          document.head.removeChild(link);
-        }
-      };
-    }
-  }, [props.photoUrl]);
 
   const baseClasses =
     "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
@@ -64,45 +45,33 @@ function PhotoAvatar(props: PhotoAvatarProps) {
     );
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
-          >
-            {avatarImageUrl && (
-              <BlurImage
-                src={avatarImageUrl}
-                alt={t("Photo of {{name}}", { name: props.babyName })}
-                width={160}
-                height={160}
-                blurDataUrl={props.blurDataUrl}
-                className="w-full h-full object-cover"
-              />
-            )}
-          </button>
-        }
-      />
-      {props.photoUrl && (
-        <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-          <button
-            onClick={() => setIsOpen(false)}
-            aria-label={t("Close photo")}
-            className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <BlurImage
-            src={props.photoUrl}
-            alt={t("Photo of {{name}}", { name: props.babyName })}
-            blurDataUrl={props.blurDataUrl}
-            className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-          />
-        </DialogContent>
-      )}
-    </Dialog>
-  );
+  const avatarImage = avatarImageUrl ? (
+    <BlurImage
+      src={avatarImageUrl}
+      alt={t("Photo of {{name}}", { name: props.babyName })}
+      width={160}
+      height={160}
+      blurDataUrl={props.blurDataUrl}
+      className="h-full w-full object-cover"
+    />
+  ) : null;
+
+  if (props.photoUrl && props.publicId) {
+    return (
+      <Link
+        {...openOverlayLink({
+          to: "/baby/$publicId/photo",
+          params: { publicId: props.publicId },
+        })}
+        aria-label={t("Photo of {{name}}", { name: props.babyName })}
+        className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+      >
+        {avatarImage}
+      </Link>
+    );
+  }
+
+  return <div className={`${baseClasses} ${variantClasses}`}>{avatarImage}</div>;
 }
 
 /**
@@ -115,6 +84,7 @@ type LatestUpdateMessage = {
 };
 
 type StatusDisplayProps = {
+  publicId: string | null;
   baby: BabyData;
   currentStatus: BabyStatus;
   photoUrl: string | null;
@@ -186,6 +156,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
   return (
     <div className="flex flex-col items-center py-8">
       <PhotoAvatar
+        publicId={props.publicId}
         babyName={props.baby.name}
         photoUrl={props.photoUrl}
         thumbnailUrl={props.thumbnailUrl}
