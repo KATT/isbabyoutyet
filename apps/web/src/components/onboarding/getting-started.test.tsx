@@ -204,11 +204,12 @@ test("dashboard share step links to the first baby's page", async () => {
 });
 
 test("minimized chip shows progress count", async () => {
+  const onMinimize = vi.fn<(minimized: boolean) => void>();
   await using _view = renderResource(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized
-      onMinimize={vi.fn<() => void>()}
+      onMinimize={onMinimize}
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
@@ -218,7 +219,8 @@ test("minimized chip shows progress count", async () => {
     />,
   );
 
-  expect(screen.getByRole("button", { name: /2 of 5 done/i })).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: /2 of 5 done/i }));
+  expect(onMinimize).toHaveBeenCalledWith(false);
 });
 
 test("dashboard settings CTA marks the step done while opening the page", async () => {
