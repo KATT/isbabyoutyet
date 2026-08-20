@@ -3,7 +3,10 @@ import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
-import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
+import {
+  NotificationSubscribe,
+  prefetchBrowserPushCapability,
+} from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
@@ -85,11 +88,11 @@ export const Route = createFileRoute("/baby/$publicId")({
         browserLocale: opts.context.locale,
       });
     }
-
     // One homogeneous set for every visitor: manager-only queries return a
     // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
       baby: babyHandle,
+      browserPush: prefetchBrowserPushCapability(opts.context.queryClient, babyDoc._id),
       ...(await allKeyed({
         myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
         vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
@@ -289,10 +292,6 @@ function BabyPage() {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
-  const vapidQuery = usePreloadedConvexQuery(
-    api.pushSubscriptions.getPublicKey,
-    loaderData.vapidPublicKey,
-  );
 
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
@@ -482,7 +481,11 @@ function BabyPage() {
               }
             />
             <div className="flex justify-center">
-              <NotificationSubscribe babyId={babyDoc._id} vapidPublicKey={vapidQuery.data} />
+              <NotificationSubscribe
+                babyId={babyDoc._id}
+                vapidPublicKey={loaderData.vapidPublicKey}
+                browserPush={loaderData.browserPush}
+              />
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />

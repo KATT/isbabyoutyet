@@ -17,6 +17,7 @@ import {
   getCurrentStatus,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 
 const getToken = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
 
@@ -296,7 +297,7 @@ type LoaderOptions = {
     | undefined;
 };
 
-async function runBabyLoader(
+async function setupBabyLoader(
   handlers: Record<string, unknown>,
   options: LoaderOptions | undefined = undefined,
 ) {
@@ -319,15 +320,25 @@ async function runBabyLoader(
     };
     params: { publicId: string };
   }) => Promise<Record<string, unknown>>;
-  return await loader({
+  const queryClient = makeLoaderQueryClient(handlers);
+  const result = await loader({
     context: {
-      queryClient: makeLoaderQueryClient(handlers),
+      queryClient,
       convexClient: { setAuth, mutation },
       token: options?.token ?? null,
       locale: options?.locale ?? "en-GB",
     },
     params: { publicId: "baby-smith" },
   });
+  return { result, queryClient };
+}
+
+async function runBabyLoader(
+  handlers: Record<string, unknown>,
+  options: LoaderOptions | undefined = undefined,
+) {
+  const setup = await setupBabyLoader(handlers, options);
+  return setup.result;
 }
 
 test("loader queries the same set for visitors; gated queries come back forbidden", async () => {
@@ -438,6 +449,21 @@ test("loader reuses a context token without calling getAuthToken", async () => {
   expect(getToken).not.toHaveBeenCalled();
   expect(setAuth).toHaveBeenCalledTimes(1);
   expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "sv" });
+});
+
+test("loader prefetches browser push capability on the client", async () => {
+  const babyId = BABY_DOC._id as Id<"baby">;
+  const { result, queryClient } = await setupBabyLoader({
+    "baby:getByPublicId": BABY_DOC,
+    "timeline:listByBaby": EMPTY_PAGE,
+  });
+
+  expect(result.browserPush).toMatchObject({ input: babyId });
+  await vi.waitFor(() => {
+    expect(queryClient.getQueryData(browserPushQueryOptions(queryClient, babyId).queryKey)).toEqual({
+      kind: "unsupported",
+    });
+  });
 });
 
 test("docToBabyData coalesces missing public due date text to null", () => {
