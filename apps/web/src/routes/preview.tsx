@@ -178,6 +178,7 @@ export function PreviewPage() {
               shareLink=""
               postUpdateButton={null}
               postUpdateOpen={false}
+              onDismissPostUpdate={null}
               onShareCopied={null}
               onSettingsOpened={null}
               settingsButton={{
@@ -190,6 +191,7 @@ export function PreviewPage() {
                 resetScroll: false,
               }}
               settingsOpen={!!search.settings}
+              onDismissSettings={null}
             />
           </div>
         </header>

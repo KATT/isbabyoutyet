@@ -1,13 +1,30 @@
 # Agent notes
 
-## Routing / scroll
+## Routing / scroll / overlay history
 
 Baby settings (`/baby/$publicId/settings`) and post-update (`/baby/$publicId/post`)
 are nested child routes rendered into the baby layout `<Outlet />` so the page
-stays mounted underneath. When a `Link` or `navigate()` only opens/closes those
-overlays (or switches admin tabs), pass `resetScroll: false` so the page does
-not jump to the top. Close overlay dialogs via `onOpenChange` →
-`onOpenChangeComplete` so the exit animation finishes before navigating away.
+stays mounted underneath.
+
+Use `@/lib/overlay-route` for open/close:
+
+- **Open:** `babyOverlayOpenLink()` — push (no `replace`), `resetScroll: false`,
+  and history `state: { babyOverlay: true }` so dismiss can detect a push-opened
+  overlay. Wire nav CTAs, onboarding, and dashboard checklist links through it.
+- **Close:** `useDismissBabyOverlay(publicId)` / `dismissBabyOverlay()` —
+  if `history.state.babyOverlay === true` and `router.history.canGoBack()`, call
+  `router.history.back()` so the browser Back/swipe gesture matches dialog
+  dismiss; otherwise `navigate` to `/baby/$publicId` with `replace: true` and
+  `resetScroll: false` (direct load, shared link, or empty history stack).
+- Close overlay dialogs via `onOpenChange` → `onOpenChangeComplete` so the exit
+  animation finishes before dismissing.
+
+Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
+still use `resetScroll: false` (not overlay history).
+
+TanStack Router exposes `router.history.back()` / `canGoBack()` via
+`@tanstack/history`; there is no built-in modal-history helper, so the thin
+`overlay-route` module is the shared seam.
 
 ## Convex
 

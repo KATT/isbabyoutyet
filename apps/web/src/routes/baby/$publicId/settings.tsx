@@ -3,17 +3,12 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { BabyData } from "@workspace/convex/src/types";
-import {
-  createFileRoute,
-  notFound,
-  redirect,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, notFound, redirect, useNavigate, useRouter } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { useDismissBabyOverlay } from "@/lib/overlay-route";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -84,6 +79,7 @@ export function BabySettingsOverlay() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
+  const dismissOverlay = useDismissBabyOverlay(params.publicId);
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
@@ -95,15 +91,6 @@ export function BabySettingsOverlay() {
   }
   const baby = managerDocToBabyData(managerBabyDoc);
   const isOwner = loaderData.myAccess.initialData.isOwner;
-
-  function closeToBabyPage() {
-    void navigate({
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-      replace: true,
-      resetScroll: false,
-    });
-  }
 
   return (
     <SettingsPanel
@@ -147,7 +134,7 @@ export function BabySettingsOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          closeToBabyPage();
+          dismissOverlay();
         }
       }}
     />

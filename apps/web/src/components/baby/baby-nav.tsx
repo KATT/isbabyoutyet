@@ -10,11 +10,16 @@ import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
   shareLink: string;
+  /** Open-settings link (push). Null when the visitor cannot manage. */
   settingsButton: LinkProps | null;
   settingsOpen: boolean;
-  /** Owner-only "Post update" overlay link */
+  /** When settings is open, dismiss via history.back / replace fallback. */
+  onDismissSettings: (() => void) | null;
+  /** Open post-update link (push). Null when the visitor cannot manage. */
   postUpdateButton: LinkProps | null;
   postUpdateOpen: boolean;
+  /** When post-update is open, dismiss via history.back / replace fallback. */
+  onDismissPostUpdate: (() => void) | null;
   /** Fired after the share URL is copied (used by the first-run tour) */
   onShareCopied: (() => void) | null;
   /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
@@ -34,38 +39,60 @@ export function BabyNav(props: BabyNavProps) {
 
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
-      {props.postUpdateButton && (
-        <Button
-          variant={props.postUpdateOpen ? "default" : "ghost"}
-          className="rounded-full font-bold"
-          render={<Link {...(props.postUpdateButton as any)} />}
-          nativeButton={false}
-          data-tour-id="post_update"
-        >
-          <ChatCircleText data-icon="inline-start" />
-          {t("Post update")}
-        </Button>
-      )}
+      {props.postUpdateButton &&
+        (props.postUpdateOpen && props.onDismissPostUpdate ? (
+          <Button
+            variant="default"
+            className="rounded-full font-bold"
+            data-tour-id="post_update"
+            onClick={props.onDismissPostUpdate}
+          >
+            <ChatCircleText data-icon="inline-start" />
+            {t("Post update")}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            className="rounded-full font-bold"
+            render={<Link {...(props.postUpdateButton as any)} />}
+            nativeButton={false}
+            data-tour-id="post_update"
+          >
+            <ChatCircleText data-icon="inline-start" />
+            {t("Post update")}
+          </Button>
+        ))}
       {props.settingsButton && (
         <Tooltip>
           <TooltipTrigger
             render={
-              <Button
-                variant={props.settingsOpen ? "default" : "ghost"}
-                size="icon"
-                className="rounded-full"
-                render={<Link {...(props.settingsButton as any)} />}
-                nativeButton={false}
-                aria-label={props.settingsOpen ? t("Close settings") : t("Settings")}
-                data-tour-id="explore_settings"
-                onClick={() => {
-                  if (!props.settingsOpen) {
+              props.settingsOpen && props.onDismissSettings ? (
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label={t("Close settings")}
+                  data-tour-id="explore_settings"
+                  onClick={props.onDismissSettings}
+                >
+                  <GearSix />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full"
+                  render={<Link {...(props.settingsButton as any)} />}
+                  nativeButton={false}
+                  aria-label={t("Settings")}
+                  data-tour-id="explore_settings"
+                  onClick={() => {
                     props.onSettingsOpened?.();
-                  }
-                }}
-              >
-                <GearSix />
-              </Button>
+                  }}
+                >
+                  <GearSix />
+                </Button>
+              )
             }
           />
           <TooltipContent>
