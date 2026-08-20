@@ -182,6 +182,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dismissOpen, setDismissOpen] = useState(false);
+  const [dismissAfterDrawerClose, setDismissAfterDrawerClose] = useState(false);
   const visualViewport = useVisualViewportMetrics();
   const done = new Set(props.effectiveSteps);
   const completedCount = ONBOARDING_STEPS.filter((step) => done.has(step.id)).length;
@@ -259,7 +260,17 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         </Progress>
       </aside>
 
-      <Drawer open={mobileOpen} onOpenChange={setMobileOpen} showSwipeHandle>
+      <Drawer
+        open={mobileOpen}
+        onOpenChange={setMobileOpen}
+        onOpenChangeComplete={(open) => {
+          if (!open && dismissAfterDrawerClose) {
+            setDismissAfterDrawerClose(false);
+            setDismissOpen(true);
+          }
+        }}
+        showSwipeHandle
+      >
         <DrawerContent
           className="right-auto w-dvw max-w-dvw max-h-[calc(100dvh-2rem)] md:hidden"
           style={{
@@ -307,7 +318,10 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               <Button
                 variant="secondary"
                 className="min-h-11 w-full"
-                onClick={() => setDismissOpen(true)}
+                onClick={() => {
+                  setDismissAfterDrawerClose(true);
+                  setMobileOpen(false);
+                }}
               >
                 {t("Dismiss guide")}
               </Button>

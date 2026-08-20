@@ -87,6 +87,15 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
     expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
   });
   expect(onDismiss).not.toHaveBeenCalled();
+
+  fireEvent.click(expand);
+  const reopenedDrawer = await screen.findByRole("dialog", { name: "Getting started" });
+  fireEvent.click(within(reopenedDrawer).getByRole("button", { name: "Dismiss guide" }));
+  const confirmation = await screen.findByRole("alertdialog", {
+    name: "Dismiss getting started guide?",
+  });
+  expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
+  expect(within(confirmation).getByText(/sparkle button in the header/i)).toBeTruthy();
 });
 
 test("uses an explicit confirmation before dismissing the guide", async () => {
