@@ -20,7 +20,7 @@ import {
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 
-const routeModule = await import("@/routes/baby/$publicId");
+const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
 
 function useFakeTimersResource(now: Date) {

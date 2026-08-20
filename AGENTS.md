@@ -2,9 +2,12 @@
 
 ## Routing / scroll
 
-When a `Link` or `navigate()` only opens/closes settings or switches admin tabs
-on the same underlying page, pass `resetScroll: false` so the page does not
-jump to the top.
+Baby settings is a nested child route (`/baby/$publicId/settings`) rendered into
+the baby layout `<Outlet />` so the page stays mounted underneath. When a
+`Link` or `navigate()` only opens/closes that overlay (or switches admin tabs),
+pass `resetScroll: false` so the page does not jump to the top. Close the
+settings dialog via `onOpenChange` → `onOpenChangeComplete` so the exit
+animation finishes before navigating away.
 
 ## Convex
 

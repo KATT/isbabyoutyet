@@ -156,6 +156,7 @@ export function PreviewPage() {
             resetScroll: false,
           });
         }}
+        onOpenChangeComplete={null}
         profileLocale={locale}
         onDelete={null}
         coParents={null}
