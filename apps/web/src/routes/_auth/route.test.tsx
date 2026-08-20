@@ -22,6 +22,12 @@ vi.mock("@/lib/auth-server", () => ({
 
 const { Route } = await import("@/routes/_auth/route");
 
+test("auth layout renders its child outlet", () => {
+  const options = Route as unknown as { component: () => unknown };
+
+  expect(options.component()).toBeTruthy();
+});
+
 type GuardCtx = {
   context: {
     queryClient: QueryClient;
@@ -111,6 +117,21 @@ test("client navigations without a session redirect home after one token check",
   expect(getToken).toHaveBeenCalledTimes(1);
 });
 
+test("client navigations redirect when an authenticated profile cannot be read", async () => {
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { setAuth };
+
+  await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+    isRedirect: true,
+    to: "/",
+  });
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(guard.queryFn).toHaveBeenCalledTimes(2);
+});
+
 test("client navigations keep the cached profile", async () => {
   getToken.mockReset();
   const cachedProfile = { locale: "sv", isAdmin: false };
@@ -167,6 +188,23 @@ test("server render reuses the layout token without calling getAuthToken", async
       isAuthenticated: true,
     });
     expect(getToken).not.toHaveBeenCalled();
+    expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("server render redirects when its authenticated profile cannot be read", async () => {
+  getToken.mockReset();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.ctx.context.token = "ssr-token";
+  guard.ctx.context.convexClient = { setAuth };
+
+  await withoutBrowserWindow(async () => {
+    await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+      isRedirect: true,
+      to: "/",
+    });
     expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });

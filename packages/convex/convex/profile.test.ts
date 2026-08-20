@@ -30,6 +30,12 @@ test("a missing authenticated profile defaults to British English", async () => 
   });
 });
 
+test("anonymous callers have no profile", async () => {
+  const t = await setup();
+
+  expect(await t.query(api.profile.get, {})).toBeNull();
+});
+
 test("language requests are stored for authenticated users", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
