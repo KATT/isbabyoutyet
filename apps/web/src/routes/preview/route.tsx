@@ -8,7 +8,6 @@ import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, Outlet, redirect, useMatchRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 import { robotsNoIndexMeta } from "@/lib/seo";
 
 function getDefaultBabyData(): PreviewBabyData {
@@ -151,13 +150,13 @@ export function PreviewPageLayout() {
                       to: "/preview",
                       search: previewSearchWithoutSettings(search),
                       replace: true,
-                      ...preserveScroll,
+                      resetScroll: false,
                     }
                   : {
                       to: "/preview/settings",
                       search: previewSearchWithoutSettings(search),
                       replace: true,
-                      ...preserveScroll,
+                      resetScroll: false,
                     }
               }
               settingsOpen={settingsOpen}

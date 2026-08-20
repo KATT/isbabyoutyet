@@ -2,7 +2,6 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { MILESTONE_FIELDS } from "@workspace/convex/src/types";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 import {
   previewBabyFromSearch,
   previewSearchWithoutSettings,
@@ -31,7 +30,7 @@ export function PreviewSettingsPage() {
             ...update,
           },
           replace: true,
-          ...preserveScroll,
+          resetScroll: false,
         });
       }}
       onMilestoneRedate={(milestone, occurredAt) => {
@@ -41,7 +40,7 @@ export function PreviewSettingsPage() {
             [MILESTONE_FIELDS[milestone].date]: occurredAt,
           },
           replace: true,
-          ...preserveScroll,
+          resetScroll: false,
         });
       }}
       onMilestoneRemove={(milestone) => {
@@ -51,7 +50,7 @@ export function PreviewSettingsPage() {
             [MILESTONE_FIELDS[milestone].date]: null,
           },
           replace: true,
-          ...preserveScroll,
+          resetScroll: false,
         });
       }}
       open={true}
@@ -61,7 +60,7 @@ export function PreviewSettingsPage() {
             to: "/preview",
             search: previewSearchWithoutSettings(search),
             replace: true,
-            ...preserveScroll,
+            resetScroll: false,
           });
         }
       }}

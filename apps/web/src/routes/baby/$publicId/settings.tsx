@@ -11,7 +11,6 @@ import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/con
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 import { managerDocToBabyData } from "./shared";
 import { Route as BabyPageRoute } from "./route";
 
@@ -35,7 +34,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         to: "/baby/$publicId",
         params: { publicId: babyDoc.publicId },
         replace: true,
-        ...preserveScroll,
+        resetScroll: false,
       });
     }
 
@@ -47,7 +46,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         to: "/baby/$publicId",
         params: { publicId: babyDoc.publicId },
         replace: true,
-        ...preserveScroll,
+        resetScroll: false,
       });
     }
   },
@@ -153,7 +152,7 @@ function BabySettingsPage() {
             to: "/baby/$publicId",
             params: { publicId: params.publicId },
             replace: true,
-            ...preserveScroll,
+            resetScroll: false,
           });
         }
       }}

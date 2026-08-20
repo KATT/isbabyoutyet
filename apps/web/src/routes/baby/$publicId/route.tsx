@@ -29,7 +29,6 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 import { canonicalUrl } from "@/lib/site-url";
 import { authServer } from "@/lib/auth-server";
 import { babySearchWithoutSettings, docToBabyData, TIMELINE_PAGE_SIZE } from "./shared";
@@ -278,7 +277,7 @@ function BabyPageLayout() {
                 to: "/baby/$publicId/settings",
                 params: { publicId: babyDoc.publicId },
                 replace: true,
-                ...preserveScroll,
+                resetScroll: false,
               });
             }
           }}
@@ -336,13 +335,13 @@ function BabyPageLayout() {
                       to: "/baby/$publicId",
                       params: { publicId: params.publicId },
                       replace: true,
-                      ...preserveScroll,
+                      resetScroll: false,
                     }
                   : {
                       to: "/baby/$publicId/settings",
                       params: { publicId: params.publicId },
                       replace: true,
-                      ...preserveScroll,
+                      resetScroll: false,
                     }
                 : null
             }
