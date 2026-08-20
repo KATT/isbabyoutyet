@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { GettingStartedCard } from "./getting-started";
@@ -76,6 +76,67 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
   expect(within(drawer).getByText("Tap a step to jump there")).toBeTruthy();
   fireEvent.click(within(drawer).getByRole("button", { name: /dismiss tour/i }));
   expect(onDismiss).toHaveBeenCalledOnce();
+});
+
+test("anchors the mobile dock and drawer to the visual viewport", async () => {
+  const innerHeightDescriptor = Object.getOwnPropertyDescriptor(window, "innerHeight");
+  const visualViewportDescriptor = Object.getOwnPropertyDescriptor(window, "visualViewport");
+  await using _viewport = makeResource({}, () => {
+    if (innerHeightDescriptor) {
+      Object.defineProperty(window, "innerHeight", innerHeightDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "innerHeight");
+    }
+    if (visualViewportDescriptor) {
+      Object.defineProperty(window, "visualViewport", visualViewportDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "visualViewport");
+    }
+  });
+
+  const visualViewport = Object.assign(new EventTarget(), {
+    height: 844,
+    offsetTop: 0,
+  }) as VisualViewport;
+  Object.defineProperty(window, "innerHeight", { configurable: true, value: 959 });
+  Object.defineProperty(window, "visualViewport", {
+    configurable: true,
+    value: visualViewport,
+  });
+
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={[]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={null}
+    />,
+  );
+
+  const mobileDock = screen.getAllByRole("complementary", {
+    name: "Getting started checklist",
+  })[0];
+  expect(mobileDock?.style.getPropertyValue("--visual-viewport-bottom")).toBe("115px");
+
+  fireEvent.click(
+    screen.getByRole("button", {
+      name: /getting started: 0 of 5 done. expand/i,
+    }),
+  );
+  await screen.findByRole("dialog", { name: "Getting started" });
+  const drawer = document.querySelector<HTMLElement>('[data-slot="drawer-popup"]');
+  expect(drawer?.style.bottom).toBe("115px");
+
+  Object.defineProperty(visualViewport, "height", { configurable: true, value: 800 });
+  act(() => {
+    visualViewport.dispatchEvent(new Event("resize"));
+  });
+  expect(mobileDock?.style.getPropertyValue("--visual-viewport-bottom")).toBe("159px");
 });
 
 test("dashboard share step links to the first baby's page", async () => {

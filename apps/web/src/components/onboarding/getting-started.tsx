@@ -12,7 +12,8 @@ import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
+import type { CSSProperties } from "react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { openOverlayLink } from "@/lib/overlay-nav";
@@ -43,6 +44,38 @@ type GettingStartedCardProps = {
 type StepAction =
   | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
   | { kind: "button"; onClick: () => void; label: string };
+
+function subscribeToVisualViewport(onStoreChange: () => void) {
+  const viewport = window.visualViewport;
+  window.addEventListener("resize", onStoreChange);
+  viewport?.addEventListener("resize", onStoreChange);
+  viewport?.addEventListener("scroll", onStoreChange);
+  return () => {
+    window.removeEventListener("resize", onStoreChange);
+    viewport?.removeEventListener("resize", onStoreChange);
+    viewport?.removeEventListener("scroll", onStoreChange);
+  };
+}
+
+function getVisualViewportBottomOffset() {
+  const viewport = window.visualViewport;
+  if (!viewport) {
+    return 0;
+  }
+  return Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height);
+}
+
+function getServerVisualViewportBottomOffset() {
+  return 0;
+}
+
+function useVisualViewportBottomOffset() {
+  return useSyncExternalStore(
+    subscribeToVisualViewport,
+    getVisualViewportBottomOffset,
+    getServerVisualViewportBottomOffset,
+  );
+}
 
 function babyPageLink(opts: { publicId: string; overlay: "settings" | "post" | null }): LinkProps {
   if (opts.overlay === "settings") {
@@ -168,6 +201,10 @@ function getStepAction(opts: {
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const visualViewportBottomOffset = useVisualViewportBottomOffset();
+  const visualViewportStyle = {
+    "--visual-viewport-bottom": `${visualViewportBottomOffset}px`,
+  } as CSSProperties;
   const done = new Set(props.effectiveSteps);
   const completedCount = ONBOARDING_STEPS.filter((step) => done.has(step.id)).length;
   const total = ONBOARDING_STEPS.length;
@@ -191,9 +228,10 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
       <button
         type="button"
         onClick={() => props.onMinimize(false)}
+        style={visualViewportStyle}
         className={cn(
           "fixed z-40 flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-popover/95 px-3 py-2 text-sm font-medium shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm transition hover:border-primary/40",
-          "right-[calc(0.75rem+env(safe-area-inset-right)+max(0px,100vw-100dvw))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+max(0px,100vh-100dvh))] sm:right-4 sm:bottom-6",
+          "right-[calc(0.75rem+env(safe-area-inset-right)+max(0px,100vw-100dvw))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] sm:right-4 sm:bottom-6",
           props.className,
         )}
         aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
@@ -215,8 +253,9 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
   return (
     <>
       <aside
+        style={visualViewportStyle}
         className={cn(
-          "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+max(0px,100vh-100dvh))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
+          "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(0.75rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
           "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
           props.className,
         )}
@@ -264,7 +303,10 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
       </aside>
 
       <Drawer open={mobileOpen} onOpenChange={setMobileOpen} showSwipeHandle>
-        <DrawerContent className="max-h-[calc(100dvh-2rem)] md:hidden">
+        <DrawerContent
+          className="max-h-[calc(100dvh-2rem)] md:hidden"
+          style={{ bottom: `${visualViewportBottomOffset}px` }}
+        >
           <DrawerHeader className="flex-row items-start text-left">
             <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
               <Sparkle className="size-5" />
