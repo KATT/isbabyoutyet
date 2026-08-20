@@ -436,3 +436,36 @@ test("renders historical milestone badges regardless of current selection", asyn
   expect(view.getByText("A family update")).toBeTruthy();
   expect(view.getByText("Labour started")).toBeTruthy();
 });
+
+test("timeline photos link to the update photo overlay", async () => {
+  await using view = renderFeed({
+    baby: notYetBaby,
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-photo-id" as Id<"updates">,
+            message: "Smile!",
+            milestone: null,
+            occurredAt: null,
+            photoUrl: "https://example.com/full.jpg",
+            thumbnailUrl: "https://example.com/thumb.jpg",
+            blurDataUrl: "data:image/jpeg;base64,abc",
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  const photoLink = view.getByRole("link", { name: "View photo full size" });
+  expect(photoLink.getAttribute("href")).toBe("/baby/baby-smith/updates/update-photo-id/photo");
+  const inline = view.getByAltText("Baby update") as HTMLImageElement;
+  expect(inline.src).toContain("thumb.jpg");
+});

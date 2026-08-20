@@ -779,3 +779,27 @@ test("getUpdatePhoto returns null for text-only updates", async () => {
     }),
   ).toBeNull();
 });
+
+test("getUpdatePhoto returns null when the update belongs to another baby", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const other = await asAlice.mutation(api.baby.create, {
+    name: "Baby Other",
+    dueDate: "2026-10-01",
+  });
+  const photoId = await storeBlob(t);
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    message: "First baby photo",
+    photoId,
+  });
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+
+  expect(
+    await t.query(api.timeline.getUpdatePhoto, {
+      babyId: other.publicId,
+      updateId: item.update._id,
+    }),
+  ).toBeNull();
+});
