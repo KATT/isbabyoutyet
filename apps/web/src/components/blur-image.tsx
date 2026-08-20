@@ -16,6 +16,17 @@ function numericDimension(value: BlurImageProps["width"] | BlurImageProps["heigh
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function placeholderObjectFit(props: BlurImageProps) {
+  if (props.style?.objectFit) return props.style.objectFit;
+
+  const className = ` ${props.className ?? ""} `;
+  if (className.includes(" object-contain ")) return "contain";
+  if (className.includes(" object-fill ")) return "fill";
+  if (className.includes(" object-none ")) return "none";
+  if (className.includes(" object-scale-down ")) return "scale-down";
+  return "cover";
+}
+
 type BlurSvgOptions = {
   width: number | undefined;
   height: number | undefined;
@@ -138,7 +149,7 @@ export function BlurImage(props: BlurImageProps) {
     });
   }, [props.onLoad, srcKey]);
 
-  const objectFit = props.style?.objectFit;
+  const objectFit = placeholderObjectFit(props);
   const placeholderSrc =
     props.blurDataUrl && !loaded
       ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
@@ -189,13 +200,14 @@ export function BlurImage(props: BlurImageProps) {
         <img
           aria-hidden="true"
           alt=""
+          className={props.className}
           data-blur-image-placeholder=""
           src={placeholderSrc}
           style={{
             borderRadius: "inherit",
             height: "100%",
             inset: 0,
-            objectFit: objectFit ?? "cover",
+            objectFit,
             objectPosition: props.style?.objectPosition ?? "50% 50%",
             pointerEvents: "none",
             position: "absolute",

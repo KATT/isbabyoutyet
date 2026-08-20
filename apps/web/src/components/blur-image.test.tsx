@@ -123,8 +123,13 @@ test("keeps sizing classes and dimensions on the wrapper and real image", () => 
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
+  const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
+    "[data-blur-image-placeholder]",
+  );
   expect(img.parentElement?.className).toBe("aspect-square h-full w-full object-cover");
   expect(img.className).toBe("aspect-square h-full w-full object-cover");
+  expect(placeholder?.className).toBe("aspect-square h-full w-full object-cover");
+  expect(placeholder?.style.objectFit).toBe("cover");
   expect(img.width).toBe(160);
   expect(img.height).toBe(160);
 });
