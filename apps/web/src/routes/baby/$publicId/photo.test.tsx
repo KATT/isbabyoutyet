@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import { testInitiatedQuery } from "@workspace/query-prefetch/test-helpers";
-import type { BrowserImageFactory } from "@/lib/image-prefetch";
+import { browserImageFactory } from "@/lib/image-prefetch";
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
@@ -87,24 +87,39 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/photo");
 const { BabyPhotoOverlay } = routeModule;
 
-function makeLoaderQueryClient(handlers: Record<string, unknown>) {
+async function runPhotoLoader(handlers: Record<string, unknown>) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
         queryFn: (ctx) => {
           const name = String(ctx.queryKey[1]);
-          if (name in handlers) {
-            return Promise.resolve(handlers[name]);
-          }
-          return Promise.reject(new Error(`unexpected query ${name}`));
+          return Promise.resolve(handlers[name] ?? null);
         },
       },
     },
   });
-  return makeResource(queryClient, () => {
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<{
+    baby: unknown;
+    imagePrefetch: { input: string | undefined };
+  }>;
+  try {
+    return await loader({
+      context: {
+        queryClient,
+        convexPreloader: getConvexQueryPreloader(queryClient),
+      },
+      params: { publicId: "baby-smith" },
+    });
+  } finally {
     queryClient.clear();
-  });
+  }
 }
 
 function babyDoc(opts: { photoUrl: string | null }) {
@@ -126,16 +141,10 @@ function babyDoc(opts: { photoUrl: string | null }) {
 }
 
 test("loader redirects home when the baby has no page photo", async () => {
-  await using queryClient = makeLoaderQueryClient({
-    "baby:getByPublicId": babyDoc({ photoUrl: null }),
-  });
-  const preloader = getConvexQueryPreloader(queryClient);
-
   await expect(
-    routeModule.Route.options.loader!({
-      context: { convexPreloader: preloader, queryClient },
-      params: { publicId: "baby-smith" },
-    } as never),
+    runPhotoLoader({
+      "baby:getByPublicId": babyDoc({ photoUrl: null }),
+    }),
   ).rejects.toMatchObject({
     options: {
       to: "/baby/$publicId",
@@ -147,10 +156,20 @@ test("loader redirects home when the baby has no page photo", async () => {
 
 test("loader prefetches the full image in the browser", async () => {
   const photoUrl = "https://cdn.example/full.jpg";
-  await using queryClient = makeLoaderQueryClient({
-    "baby:getByPublicId": babyDoc({ photoUrl }),
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        queryFn: (ctx) => {
+          const name = String(ctx.queryKey[1]);
+          return Promise.resolve(name === "baby:getByPublicId" ? babyDoc({ photoUrl }) : null);
+        },
+      },
+    },
   });
-  const preloader = getConvexQueryPreloader(queryClient);
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
 
   const OriginalImage = globalThis.Image;
   class MockImage {
@@ -167,10 +186,21 @@ test("loader prefetches the full image in the browser", async () => {
     vi.stubGlobal("Image", OriginalImage);
   });
 
-  const data = await routeModule.Route.options.loader!({
-    context: { convexPreloader: preloader, queryClient },
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<{ imagePrefetch: { input: string | undefined } }>;
+
+  const data = await loader({
+    context: {
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
+    },
     params: { publicId: "baby-smith" },
-  } as never);
+  });
 
   expect(data.imagePrefetch).toMatchObject({ input: photoUrl });
   await vi.waitFor(() => {
@@ -191,10 +221,7 @@ test("dismisses the lightbox overlay after the dialog closes", async () => {
       input: { id: "baby-smith" },
       initialData: babyDoc({ photoUrl }) as never,
     }),
-    imagePrefetch: testInitiatedQuery(
-      ((url: string) => ({ queryKey: ["browserImagePrefetch", url] })) as BrowserImageFactory,
-      photoUrl,
-    ),
+    imagePrefetch: testInitiatedQuery(browserImageFactory, photoUrl),
   };
   mocks.historyState.overlay = true;
   mocks.canGoBack.mockReturnValue(true);

@@ -5,11 +5,7 @@ import { getQueryInitiator } from "@workspace/query-prefetch";
 
 const browserImagePrefetchQueryKey = ["browserImagePrefetch"] as const;
 
-/**
- * Decode/warm a full-size image in the browser so the lightbox can paint from
- * cache. SSR uses `skipToken` — same pattern as browser push capability.
- */
-export function browserImageQueryOptions(imageUrl: string) {
+function browserImageQueryOptions(imageUrl: string) {
   return queryOptions({
     queryKey: [...browserImagePrefetchQueryKey, imageUrl],
     queryFn: typeof window !== "undefined" ? () => loadBrowserImage(imageUrl) : skipToken,
