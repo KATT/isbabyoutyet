@@ -43,9 +43,7 @@ test("shows a persistent demo toast on the homepage demo baby", async () => {
     content.unmount();
   });
   expect(
-    screen.getByText(
-      "Go wild with test messages. We clear them once a day, but only after an hour of quiet.",
-    ),
+    screen.getByText("Feel free to post test messages — we reset this demo daily."),
   ).toBeTruthy();
 });
 

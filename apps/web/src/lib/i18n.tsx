@@ -442,8 +442,8 @@ const enGB = {
   "Open the live page →": "Open the live page →",
   "Or preview how each stage looks": "Or preview how each stage looks",
   "This is a demo baby": "This is a demo page",
-  "Go wild with test messages. We clear them once a day, but only after an hour of quiet.":
-    "Go wild with test messages. We clear them once a day, but only after an hour of quiet.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Feel free to post test messages — we reset this demo daily.",
   "How it works": "How it works",
   "Get Started Free 🎉": "Get Started Free 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -971,8 +971,8 @@ const sv: Record<TranslationKey, string> = {
   "Open the live page →": "Öppna livesidan →",
   "Or preview how each stage looks": "Eller se hur varje steg ser ut",
   "This is a demo baby": "Det här är en demobäbis",
-  "Go wild with test messages. We clear them once a day, but only after an hour of quiet.":
-    "Skriv gärna testmeddelanden. Vi rensar dem en gång om dagen, men bara efter en timmes lugn.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Skriv gärna testmeddelanden — vi återställer demon varje dag.",
   "How it works": "Så funkar det",
   "Get Started Free 🎉": "Kom igång gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1486,8 +1486,8 @@ const es: Record<TranslationKey, string> = {
   "Open the live page →": "Abrir la demo →",
   "Or preview how each stage looks": "O mira cómo queda cada etapa",
   "This is a demo baby": "Esta página es una demo",
-  "Go wild with test messages. We clear them once a day, but only after an hour of quiet.":
-    "Deja los mensajes de prueba que quieras. Los borramos una vez al día, pero solo después de una hora sin mensajes nuevos.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Deja los mensajes de prueba que quieras — restablecemos esta demo cada día.",
   "How it works": "Cómo funciona",
   "Get Started Free 🎉": "Empieza gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -2005,8 +2005,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Open the live page →": "Abrir a página ao vivo →",
   "Or preview how each stage looks": "Ou veja como cada etapa fica",
   "This is a demo baby": "Esta é uma página de demonstração",
-  "Go wild with test messages. We clear them once a day, but only after an hour of quiet.":
-    "Pode mandar mensagens de teste à vontade. Elas são apagadas uma vez por dia, mas só depois de uma hora sem mensagens novas.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Pode mandar mensagens de teste à vontade — redefinimos esta demo diariamente.",
   "How it works": "Como funciona",
   "Get Started Free 🎉": "Comece grátis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
