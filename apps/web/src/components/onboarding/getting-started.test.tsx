@@ -181,8 +181,12 @@ test("all-done state offers close checklist", async () => {
     />,
   );
 
-  expect(screen.getByText(/you're all set/i)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /close checklist/i }));
+  expect(screen.getAllByText(/you're all set/i)).toHaveLength(2);
+  const closeButton = screen.getAllByRole("button", { name: /close checklist/i })[0];
+  if (!closeButton) {
+    throw new Error("Expected a close checklist button");
+  }
+  fireEvent.click(closeButton);
   expect(onDismiss).toHaveBeenCalledOnce();
 });
 

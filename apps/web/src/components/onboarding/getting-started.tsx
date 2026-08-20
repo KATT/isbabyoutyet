@@ -241,7 +241,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               size="default"
             />
           ) : (
-            <Button size="default" variant="outline" onClick={props.onDismiss}>
+            <Button className="min-h-11" size="default" variant="outline" onClick={props.onDismiss}>
               {t("Close checklist")}
             </Button>
           )}
@@ -550,7 +550,7 @@ function StepActionControl(props: {
     return (
       <Button
         size={props.size}
-        className={cn(props.size === "sm" && "min-h-11")}
+        className="min-h-11"
         render={
           <Link
             {...action.link}
@@ -571,18 +571,19 @@ function StepActionControl(props: {
     );
   }
 
+  const action = props.action;
   return (
     <Button
       size={props.size}
-      className={cn(props.size === "sm" && "min-h-11")}
+      className="min-h-11"
       onClick={() => {
         if (props.onBeforeAction) {
           props.onBeforeAction();
         }
-        props.action.onClick();
+        action.onClick();
       }}
     >
-      {props.action.label}
+      {action.label}
     </Button>
   );
 }
