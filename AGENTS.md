@@ -1,27 +1,27 @@
 # Agent notes
 
-## Routing / scroll / route modals
+## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`) and post-update (`/baby/$publicId/post`)
 are nested child routes rendered into the baby layout `<Outlet />` so the page
 stays mounted underneath.
 
-Use `@/lib/route-modal` for open/close (TanStack has `history.back` /
-`canGoBack` and `linkOptions`, but no modal-history helper):
+Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
+`canGoBack` and `linkOptions`, but no overlay-history helper):
 
-- **Open link:** `routeModalOpenLink({ to, params, ... })` — push (no
-  `replace`), `resetScroll: false`, and `state: { routeModal: true }`. Pass to
-  `<Link>` or `navigate()`.
-- **Close link:** `routeModalCloseLink({ to, params, ... })` — replace close
+- **Open link:** `openOverlayLink({ to, params, ... })` — push (no `replace`),
+  `resetScroll: false`, and `state: { overlay: true }`. Pass to `<Link>` or
+  `navigate()`.
+- **Close link:** `closeOverlayLink({ to, params, ... })` — replace close
   target with `resetScroll: false` (declarative fallback / cold-load close).
-- **Hook:** `useRouteModal({ open, close })` returns `{ openLink, closeLink,
+- **Hook:** `useOverlayNav({ open, close })` returns `{ openLink, closeLink,
   dismiss }`. `dismiss()` calls `history.back()` when the entry was push-opened
   and `canGoBack()`; otherwise navigates with `closeLink`.
 - Close overlay dialogs via `onOpenChange` → `onOpenChangeComplete` so the exit
   animation finishes before dismissing.
 
 Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
-still use `resetScroll: false` (not route-modal history).
+still use `resetScroll: false` (not overlay history).
 
 ## Convex
 

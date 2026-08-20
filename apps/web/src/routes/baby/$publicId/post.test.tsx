@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
   historyBack: vi.fn<() => void>(),
   canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { routeModal: undefined as true | undefined },
+  historyState: { overlay: undefined as true | undefined },
   completeStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   params: { publicId: "baby-smith" },
   loaderData: null as null | Record<string, unknown>,
@@ -205,7 +205,7 @@ test("post overlay closes to the baby page after dismiss", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.routeModal = undefined;
+  mocks.historyState.overlay = undefined;
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
       input: { babyId: "baby-smith" },
@@ -234,7 +234,7 @@ test("post overlay prefers history.back when opened via push", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.routeModal = true;
+  mocks.historyState.overlay = true;
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
       input: { babyId: "baby-smith" },
@@ -258,7 +258,7 @@ test("successful post completes onboarding and closes the overlay", async () => 
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.routeModal = undefined;
+  mocks.historyState.overlay = undefined;
   mocks.completeStep.mockClear();
   mocks.loaderData = {
     managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({

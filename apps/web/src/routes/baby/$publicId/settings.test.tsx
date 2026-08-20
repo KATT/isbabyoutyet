@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(options: unknown) => void>(),
   historyBack: vi.fn<() => void>(),
   canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { routeModal: undefined as true | undefined },
+  historyState: { overlay: undefined as true | undefined },
   invalidate: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
   updateBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   removeBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
@@ -307,7 +307,7 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.routeModal = undefined;
+  mocks.historyState.overlay = undefined;
   mocks.loaderData = ownerLoaderData();
 
   await using view = renderResource(<BabySettingsOverlay />);
@@ -327,7 +327,7 @@ test("settings overlay prefers history.back when opened via push", async () => {
   mocks.navigate.mockReset();
   mocks.historyBack.mockReset();
   mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.routeModal = true;
+  mocks.historyState.overlay = true;
   mocks.loaderData = ownerLoaderData();
 
   await using view = renderResource(<BabySettingsOverlay />);

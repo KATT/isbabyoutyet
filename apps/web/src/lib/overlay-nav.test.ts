@@ -1,9 +1,9 @@
 import { expect, test, vi } from "vitest";
-import { dismissRouteModal, routeModalCloseLink, routeModalOpenLink } from "@/lib/route-modal";
+import { closeOverlayLink, dismissOverlay, openOverlayLink } from "@/lib/overlay-nav";
 
-test("routeModalOpenLink pushes with routeModal state and keeps scroll", () => {
+test("openOverlayLink pushes with overlay state and keeps scroll", () => {
   expect(
-    routeModalOpenLink({
+    openOverlayLink({
       to: "/baby/$publicId/post",
       params: { publicId: "baby-smith" },
     }),
@@ -11,13 +11,13 @@ test("routeModalOpenLink pushes with routeModal state and keeps scroll", () => {
     to: "/baby/$publicId/post",
     params: { publicId: "baby-smith" },
     resetScroll: false,
-    state: { routeModal: true },
+    state: { overlay: true },
   });
 });
 
-test("routeModalCloseLink replaces to the close target without scroll reset", () => {
+test("closeOverlayLink replaces to the close target without scroll reset", () => {
   expect(
-    routeModalCloseLink({
+    closeOverlayLink({
       to: "/baby/$publicId",
       params: { publicId: "baby-smith" },
     }),
@@ -29,17 +29,17 @@ test("routeModalCloseLink replaces to the close target without scroll reset", ()
   });
 });
 
-test("dismissRouteModal prefers history.back when the modal was push-opened", () => {
+test("dismissOverlay prefers history.back when the overlay was push-opened", () => {
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: unknown) => void>();
-  const closeLink = routeModalCloseLink({
+  const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
   });
 
-  dismissRouteModal({
+  dismissOverlay({
     history: {
-      location: { state: { routeModal: true } },
+      location: { state: { overlay: true } },
       canGoBack: () => true,
       back,
     },
@@ -51,17 +51,17 @@ test("dismissRouteModal prefers history.back when the modal was push-opened", ()
   expect(navigate).not.toHaveBeenCalled();
 });
 
-test("dismissRouteModal navigates with closeLink without routeModal history", () => {
+test("dismissOverlay navigates with closeLink without overlay history", () => {
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: unknown) => void>();
-  const closeLink = routeModalCloseLink({
+  const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
   });
 
-  dismissRouteModal({
+  dismissOverlay({
     history: {
-      location: { state: { routeModal: undefined } },
+      location: { state: { overlay: undefined } },
       canGoBack: () => true,
       back,
     },
@@ -73,17 +73,17 @@ test("dismissRouteModal navigates with closeLink without routeModal history", ()
   expect(navigate).toHaveBeenCalledWith(closeLink);
 });
 
-test("dismissRouteModal navigates with closeLink when history cannot go back", () => {
+test("dismissOverlay navigates with closeLink when history cannot go back", () => {
   const back = vi.fn<() => void>();
   const navigate = vi.fn<(opts: unknown) => void>();
-  const closeLink = routeModalCloseLink({
+  const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
   });
 
-  dismissRouteModal({
+  dismissOverlay({
     history: {
-      location: { state: { routeModal: true } },
+      location: { state: { overlay: true } },
       canGoBack: () => false,
       back,
     },

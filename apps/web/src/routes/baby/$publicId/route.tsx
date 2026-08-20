@@ -32,7 +32,7 @@ import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
-import { useRouteModal } from "@/lib/route-modal";
+import { useOverlayNav } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
 
@@ -276,7 +276,7 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const postModal = useRouteModal({
+  const post = useOverlayNav({
     open: {
       to: "/baby/$publicId/post",
       params: { publicId: params.publicId },
@@ -286,7 +286,7 @@ function BabyPageLayout() {
       params: { publicId: params.publicId },
     },
   });
-  const settingsModal = useRouteModal({
+  const settings = useOverlayNav({
     open: {
       to: "/baby/$publicId/settings",
       params: { publicId: params.publicId },
@@ -319,11 +319,11 @@ function BabyPageLayout() {
           spotlight={!postUpdateOpen && !settingsOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
-              void navigate(postModal.openLink);
+              void navigate(post.openLink);
               return;
             }
             if (stepId === "explore_settings") {
-              void navigate(settingsModal.openLink);
+              void navigate(settings.openLink);
             }
           }}
         />
@@ -357,12 +357,12 @@ function BabyPageLayout() {
                   }
                 : null
             }
-            postUpdateButton={canManage ? postModal.openLink : null}
+            postUpdateButton={canManage ? post.openLink : null}
             postUpdateOpen={postUpdateOpen}
-            onDismissPostUpdate={canManage && postUpdateOpen ? postModal.dismiss : null}
-            settingsButton={canManage ? settingsModal.openLink : null}
+            onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}
+            settingsButton={canManage ? settings.openLink : null}
             settingsOpen={settingsOpen}
-            onDismissSettings={canManage && settingsOpen ? settingsModal.dismiss : null}
+            onDismissSettings={canManage && settingsOpen ? settings.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {

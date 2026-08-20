@@ -7,7 +7,7 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useRouteModal } from "@/lib/route-modal";
+import { useOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -56,7 +56,7 @@ export function BabyPostUpdateOverlay() {
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const postModal = useRouteModal({
+  const post = useOverlayNav({
     open: {
       to: "/baby/$publicId/post",
       params: { publicId: params.publicId },
@@ -83,7 +83,7 @@ export function BabyPostUpdateOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          postModal.dismiss();
+          post.dismiss();
         }
       }}
     >

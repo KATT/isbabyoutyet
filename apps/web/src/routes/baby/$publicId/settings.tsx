@@ -14,7 +14,7 @@ import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
-import { useRouteModal } from "@/lib/route-modal";
+import { useOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -85,7 +85,7 @@ export function BabySettingsOverlay() {
   const router = useRouter();
   const loaderData = Route.useLoaderData();
   const [open, setOpen] = useState(true);
-  const settingsModal = useRouteModal({
+  const settings = useOverlayNav({
     open: {
       to: "/baby/$publicId/settings",
       params: { publicId: params.publicId },
@@ -149,7 +149,7 @@ export function BabySettingsOverlay() {
       }}
       onOpenChangeComplete={(nextOpen) => {
         if (!nextOpen) {
-          settingsModal.dismiss();
+          settings.dismiss();
         }
       }}
     />
