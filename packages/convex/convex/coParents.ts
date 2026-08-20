@@ -6,6 +6,7 @@ import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
+import { claimPendingInvitesForAuthUser } from "./coParentInviteClaims";
 import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
 import { FORBIDDEN } from "../src/types";
 import { toManagerBabyDto } from "./babyDto";
@@ -256,65 +257,23 @@ export const leave = mutation({
 
 /**
  * Turns pending email invites for the signed-in user into co-parent rows.
- * Idempotent — safe to call on every authenticated session sync.
+ * Idempotent — also runs from Better Auth sign-up / sign-in hooks.
  */
 export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: AppIdentity) {
   const profile = await resolveCallerProfile(ctx, caller.authUserId);
   if (!profile) {
     return 0;
   }
-
-  const email = profile.email;
-  const name = profile.name;
-
-  const invites = await ctx.db
-    .query("babyCoParentInvites")
-    .withIndex("by_email", (q) => q.eq("email", email))
-    .order("desc")
-    .take(100);
-
-  let claimed = 0;
-  for (const invite of invites) {
-    if (!isActive(invite)) continue;
-
-    const baby = await ctx.db.get(invite.babyId);
-    if (!baby || !isActive(baby)) {
-      await ctx.db.patch(invite._id, softDeletePatch());
-      continue;
-    }
-
-    // Never make the owner a co-parent of their own page
-    const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
-    if (isOwner) {
-      await ctx.db.patch(invite._id, softDeletePatch());
-      continue;
-    }
-
-    const existing = await findActiveCoParent(ctx, {
-      babyId: invite.babyId,
-      identity: caller,
-    });
-    if (!existing) {
-      await ctx.db.insert("babyCoParents", {
-        babyId: invite.babyId,
-        userId: caller.authUserId,
-        tokenIdentifier: caller.tokenIdentifier,
-        email,
-        name,
-        addedByUserId: invite.invitedByUserId,
-        addedAt: Date.now(),
-      });
-      claimed += 1;
-    }
-    await ctx.db.patch(invite._id, softDeletePatch());
-  }
-
-  return claimed;
+  return await claimPendingInvitesForAuthUser(ctx, {
+    userId: caller.authUserId,
+    email: profile.email,
+    name: profile.name,
+  });
 }
 
 /**
- * Explicit invite claim — prefer profile.ensure, which runs automatically
- * on authenticated session sync.
+ * Explicit invite claim — pending invites are claimed automatically on
+ * sign-up and sign-in hooks.
  */
 export const claimPendingInvites = mutation({
   args: {},
