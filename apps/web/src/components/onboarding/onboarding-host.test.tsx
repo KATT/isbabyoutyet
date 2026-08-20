@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -38,11 +38,24 @@ vi.mock("convex/react", () => ({
 }));
 
 vi.mock("./getting-started", () => ({
-  GettingStartedCard: () => <div data-testid="getting-started" />,
+  GettingStartedCard: (props: { onGoToStep: ((stepId: "share_link") => void) | undefined }) => (
+    <div data-testid="getting-started">
+      <button
+        type="button"
+        onClick={() => {
+          if (props.onGoToStep) {
+            props.onGoToStep("share_link");
+          }
+        }}
+      >
+        Show Share
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./coachmark", () => ({
-  Coachmark: () => null,
+  Coachmark: (props: { targetId: string }) => <div data-testid="coachmark">{props.targetId}</div>,
 }));
 
 const { OnboardingHost } = await import("./onboarding-host");
@@ -162,4 +175,28 @@ test("renders on the tour baby page when babyPublicId matches", async () => {
   );
 
   expect(view.getByTestId("getting-started")).toBeTruthy();
+});
+
+test("shows a coachmark only after the user asks for contextual help", async () => {
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="baby"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId="baby-smith"
+      onGoToStep={undefined}
+    />,
+  );
+
+  expect(view.queryByTestId("coachmark")).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "Show Share" }));
+  expect(view.getByTestId("coachmark").textContent).toBe("share_link");
+  expect(view.queryByTestId("getting-started")).toBeNull();
 });

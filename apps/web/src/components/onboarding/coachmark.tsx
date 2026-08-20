@@ -30,6 +30,18 @@ export function Coachmark(props: CoachmarkProps) {
   const { t } = useI18n();
   const [rect, setRect] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
@@ -78,7 +90,7 @@ export function Coachmark(props: CoachmarkProps) {
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">
       <div
-        className="absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition-all duration-300 animate-pulse"
+        className="motion-safe:animate-pulse absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition-all duration-300"
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -86,31 +98,58 @@ export function Coachmark(props: CoachmarkProps) {
           height: rect.height + 8,
         }}
       />
-      <div
-        className={cn(
-          "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
-          placement === "above" && "-translate-y-full",
-        )}
-        style={{ top: tipTop, left: tipLeft }}
-        role="status"
-      >
-        <p className="font-medium text-foreground mb-1">{props.title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3">{props.description}</p>
-        <div className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              if (props.completeOnDismiss) {
-                props.onComplete?.();
-              }
-              props.onDismiss();
-            }}
-          >
-            {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
-          </Button>
+      {isMobile ? (
+        <div
+          className="pointer-events-auto fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
+          role="dialog"
+          aria-label={props.title}
+        >
+          <p className="mb-1 font-medium text-foreground">{props.title}</p>
+          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{props.description}</p>
+          <div className="flex justify-end">
+            <Button
+              className="min-h-11"
+              variant="outline"
+              onClick={() => {
+                if (props.completeOnDismiss) {
+                  props.onComplete?.();
+                }
+                props.onDismiss();
+              }}
+            >
+              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          className={cn(
+            "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
+            placement === "above" && "-translate-y-full",
+          )}
+          style={{ top: tipTop, left: tipLeft }}
+          role="dialog"
+          aria-label={props.title}
+        >
+          <p className="mb-1 font-medium text-foreground">{props.title}</p>
+          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{props.description}</p>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="min-h-11"
+              variant="ghost"
+              onClick={() => {
+                if (props.completeOnDismiss) {
+                  props.onComplete?.();
+                }
+                props.onDismiss();
+              }}
+            >
+              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );

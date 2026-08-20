@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { GettingStartedCard } from "./getting-started";
@@ -49,6 +49,33 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
   expect(screen.getAllByText("Add your first baby").length).toBeGreaterThan(0);
   expect(screen.getAllByText(/choose a journey/i).length).toBeGreaterThan(0);
   expect(screen.getAllByRole("link", { name: /add a baby/i }).length).toBeGreaterThan(0);
+});
+
+test("keeps mobile first-use guidance compact until the user opens the checklist", async () => {
+  const onDismiss = vi.fn<() => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={[]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={onDismiss}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={null}
+    />,
+  );
+
+  const expand = screen.getByRole("button", {
+    name: /getting started: 0 of 5 done. expand/i,
+  });
+  fireEvent.click(expand);
+
+  const drawer = await screen.findByRole("dialog", { name: "Getting started" });
+  expect(within(drawer).getByText("Tap a step to jump there")).toBeTruthy();
+  fireEvent.click(within(drawer).getByRole("button", { name: /dismiss tour/i }));
+  expect(onDismiss).toHaveBeenCalledOnce();
 });
 
 test("dashboard share step links to the first baby's page", async () => {
