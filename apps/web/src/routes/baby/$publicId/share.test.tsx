@@ -198,6 +198,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     params: { publicId: string };
   }) => Promise<{
     imagePrefetch: { input: string | undefined };
+    canManage: boolean;
     shareLink: string;
     sharePreview: { imageUrl: string; title: string; description: string } | null;
   }>;
@@ -213,6 +214,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   expect(data.sharePreview).not.toBeNull();
   expect(new URL(data.imagePrefetch.input ?? "").pathname).toBe("/og/baby/baby-smith");
   expect(data.sharePreview?.imageUrl).toBe(data.imagePrefetch.input);
+  expect(data.canManage).toBe(false);
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
 });
 
@@ -230,7 +232,7 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   });
   mocks.loaderData = {
     imagePrefetch: testInitiatedQuery(browserImageFactory, imageUrl),
-    myAccess: { initialData: { canManage: true, isOwner: true } },
+    canManage: true,
     shareLink: "https://isbabyoutyet.com/baby/baby-smith",
     sharePreview: {
       imageUrl,

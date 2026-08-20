@@ -60,8 +60,8 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     const babyDoc = data.baby.initialData;
 
     return {
-      ...data,
       imagePrefetch,
+      canManage: data.myAccess.initialData.canManage,
       shareLink: canonicalUrl(`/baby/${publicId}`),
       sharePreview: babyDoc ? getBabySeo(babyDoc, publicId) : null,
     };
@@ -97,7 +97,7 @@ export function BabyShareOverlay() {
       await navigator.clipboard.writeText(loaderData.shareLink);
       setCopied(true);
       toast.success(t("Copied to clipboard"));
-      if (loaderData.myAccess.initialData.canManage) {
+      if (loaderData.canManage) {
         void completeOnboardingStep({ stepId: "share_link" });
       }
     } catch {
@@ -112,7 +112,7 @@ export function BabyShareOverlay() {
         document.execCommand("copy");
         setCopied(true);
         toast.success(t("Copied to clipboard"));
-        if (loaderData.myAccess.initialData.canManage) {
+        if (loaderData.canManage) {
           void completeOnboardingStep({ stepId: "share_link" });
         }
       } catch (cause) {
