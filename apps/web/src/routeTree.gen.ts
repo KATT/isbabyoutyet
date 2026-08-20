@@ -24,6 +24,7 @@ import { Route as AuthDashboardAdminRouteImport } from "./routes/_auth/dashboard
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as BabyManifest_idRouteImport } from "./routes/baby/manifest/$_id";
 import { Route as OgBabyPublicIdRouteImport } from "./routes/og.baby.$publicId";
+import { Route as AuthBabyPublicIdSettingsRouteImport } from "./routes/_auth/baby/$publicId/settings";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -99,6 +100,11 @@ const OgBabyPublicIdRoute = OgBabyPublicIdRouteImport.update({
   path: "/baby/$publicId",
   getParentRoute: () => OgRoute,
 } as any);
+const AuthBabyPublicIdSettingsRoute = AuthBabyPublicIdSettingsRouteImport.update({
+  id: "/baby/$publicId/settings",
+  path: "/baby/$publicId/settings",
+  getParentRoute: () => AuthRouteRoute,
+} as any);
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute;
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/dashboard/": typeof AuthDashboardIndexRoute;
+  "/baby/$publicId/settings": typeof AuthBabyPublicIdSettingsRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/dashboard": typeof AuthDashboardIndexRoute;
+  "/baby/$publicId/settings": typeof AuthBabyPublicIdSettingsRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/_auth/dashboard/": typeof AuthDashboardIndexRoute;
+  "/_auth/baby/$publicId/settings": typeof AuthBabyPublicIdSettingsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -166,7 +175,8 @@ export interface FileRouteTypes {
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/og/baby/$publicId"
-    | "/dashboard/";
+    | "/dashboard/"
+    | "/baby/$publicId/settings";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
@@ -182,7 +192,8 @@ export interface FileRouteTypes {
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/og/baby/$publicId"
-    | "/dashboard";
+    | "/dashboard"
+    | "/baby/$publicId/settings";
   id:
     | "__root__"
     | "/"
@@ -199,7 +210,8 @@ export interface FileRouteTypes {
     | "/api/auth/$"
     | "/baby/manifest/$_id"
     | "/og/baby/$publicId"
-    | "/_auth/dashboard/";
+    | "/_auth/dashboard/"
+    | "/_auth/baby/$publicId/settings";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -323,6 +335,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof OgBabyPublicIdRouteImport;
       parentRoute: typeof OgRoute;
     };
+    "/_auth/baby/$publicId/settings": {
+      id: "/_auth/baby/$publicId/settings";
+      path: "/baby/$publicId/settings";
+      fullPath: "/baby/$publicId/settings";
+      preLoaderRoute: typeof AuthBabyPublicIdSettingsRouteImport;
+      parentRoute: typeof AuthRouteRoute;
+    };
   }
 }
 
@@ -330,12 +349,14 @@ interface AuthRouteRouteChildren {
   AuthDashboardAddRoute: typeof AuthDashboardAddRoute;
   AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute;
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute;
+  AuthBabyPublicIdSettingsRoute: typeof AuthBabyPublicIdSettingsRoute;
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDashboardAddRoute: AuthDashboardAddRoute,
   AuthDashboardAdminRoute: AuthDashboardAdminRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,
+  AuthBabyPublicIdSettingsRoute: AuthBabyPublicIdSettingsRoute,
 };
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(AuthRouteRouteChildren);
