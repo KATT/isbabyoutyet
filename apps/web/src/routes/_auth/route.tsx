@@ -1,6 +1,5 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
-import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -29,16 +28,16 @@ export const Route = createFileRoute("/_auth")({
         throw redirect({ to: "/" });
       }
       opts.context.convexClient.setAuth(async () => token);
-      const profile = await opts.context.convexClient.query(api.profile.get, {});
+      const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      const profile = profileHandle.initialData;
       if (!profile) {
         throw redirect({ to: "/" });
       }
-      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
       return {
         locale: profile.locale,
         token,
         isAuthenticated: true,
-        profile: authProfileHandle(profile),
+        profile: profileHandle,
       };
     }
 
@@ -50,7 +49,7 @@ export const Route = createFileRoute("/_auth")({
     // throwing), so the next navigation lands in the fallback below and
     // redirects home. A null profile means logged out or the websocket has not
     // re-authenticated after sign-in, so confirm with the server once.
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
     let profile = profileHandle.initialData;
     if (!profile) {
       const token = await getAuthToken();
@@ -60,27 +59,24 @@ export const Route = createFileRoute("/_auth")({
       // Right after login, authenticate the Convex client with the fresh token
       // before reading the profile created by the auth hook.
       opts.context.convexClient.setAuth(async () => token);
-      profile = await opts.context.convexClient.query(api.profile.get, {});
+      opts.context.queryClient.removeQueries({
+        queryKey: convexQuery(api.profile.get, {}).queryKey,
+      });
+      profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      profile = profileHandle.initialData;
       if (!profile) {
         throw redirect({ to: "/" });
       }
-      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
     }
     return {
       locale: profile.locale,
       token: opts.context.token,
       isAuthenticated: true,
-      profile: authProfileHandle(profile),
+      profile: profileHandle,
     };
   },
   component: AuthLayout,
 });
-
-function authProfileHandle(
-  profile: NonNullable<PreloadedConvexQuery<typeof api.profile.get>["initialData"]>,
-): PreloadedConvexQuery<typeof api.profile.get> {
-  return { input: {}, initialData: profile };
-}
 
 function AuthLayout() {
   return <Outlet />;
