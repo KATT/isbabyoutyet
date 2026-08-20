@@ -19,6 +19,7 @@ const context = await browser.newContext({
 const page = await context.newPage();
 
 await page.goto(`${APP_URL}/auth/login`);
+await page.waitForLoadState("networkidle");
 await page.getByLabel("Email").fill("test+newuser@example.com");
 await page.getByLabel("Password").fill("password");
 await page.getByRole("button", { name: "Sign In" }).click();
