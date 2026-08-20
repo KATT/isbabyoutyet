@@ -1,10 +1,60 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { CSSProperties, Dispatch, ImgHTMLAttributes, RefObject, SetStateAction } from "react";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
   blurDataUrl: string | null;
 };
+
+type BlurImageDebugEntry = {
+  hypothesisId: string;
+  location: string;
+  message: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+};
+
+function recordBlurImageDebug(entry: BlurImageDebugEntry) {
+  if (typeof window === "undefined") return;
+  void fetch("/api/debug/blur-image", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(entry),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+function imageOrigin(src: string) {
+  if (!src) return null;
+  if (src.startsWith("data:")) return "data:";
+  try {
+    return new URL(src, window.location.href).origin;
+  } catch {
+    return "invalid";
+  }
+}
+
+function imageElementDebugData(img: HTMLImageElement) {
+  const computed = window.getComputedStyle(img);
+  const resource = performance.getEntriesByName(img.currentSrc).at(-1);
+  return {
+    complete: img.complete,
+    naturalWidth: img.naturalWidth,
+    naturalHeight: img.naturalHeight,
+    currentSrcOrigin: imageOrigin(img.currentSrc),
+    inlineBackgroundPresent: img.style.backgroundImage.includes("data:image/svg+xml"),
+    inlineBackgroundLength: img.style.backgroundImage.length,
+    computedBackgroundPresent: computed.backgroundImage.includes("data:image/svg+xml"),
+    computedBackgroundLength: computed.backgroundImage.length,
+    display: computed.display,
+    visibility: computed.visibility,
+    opacity: computed.opacity,
+    renderedWidth: img.getBoundingClientRect().width,
+    renderedHeight: img.getBoundingClientRect().height,
+    resourceResponseEnd: resource?.entryType === "resource" ? resource.startTime + resource.duration : null,
+    isConnected: img.isConnected,
+  };
+}
 
 function imageSrcKey(src: BlurImageProps["src"]) {
   return typeof src === "string" ? src : "";
@@ -89,6 +139,8 @@ type HandleLoadingOptions = {
   srcKey: string;
   setLoadedSrc: Dispatch<SetStateAction<string | null>>;
   onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
+  debugId: string;
+  debugStartedAt: number;
 };
 
 /**
@@ -97,13 +149,44 @@ type HandleLoadingOptions = {
  * @see https://github.com/vercel/next.js/blob/78b11c37e6eafb92030612c08de4adb5bb5c8a28/packages/next/src/client/image-component.tsx
  */
 function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
+  // #region agent log
+  recordBlurImageDebug({
+    hypothesisId: "D",
+    location: "blur-image.tsx:handleLoading-entry",
+    message: "load handling entered",
+    data: {
+      debugId: options.debugId,
+      elapsedMs: Date.now() - options.debugStartedAt,
+      duplicateForSrc: options.loadedSrcRef.current === img.src,
+      ...imageElementDebugData(img),
+    },
+    timestamp: Date.now(),
+  });
+  // #endregion
   if (options.loadedSrcRef.current === img.src) return;
   options.loadedSrcRef.current = img.src;
 
   const decode = "decode" in img ? img.decode() : Promise.resolve();
   void decode
-    .catch(() => {})
-    .then(() => {
+    .then(
+      () => "resolved",
+      () => "rejected",
+    )
+    .then((decodeOutcome) => {
+      // #region agent log
+      recordBlurImageDebug({
+        hypothesisId: "B,D",
+        location: "blur-image.tsx:decode-settled",
+        message: "full image decode settled before placeholder clear",
+        data: {
+          debugId: options.debugId,
+          elapsedMs: Date.now() - options.debugStartedAt,
+          decodeOutcome,
+          ...imageElementDebugData(img),
+        },
+        timestamp: Date.now(),
+      });
+      // #endregion
       if (!img.parentElement || !img.isConnected) return;
       options.setLoadedSrc(options.srcKey);
       callOnLoad(img, options.onLoad);
@@ -121,6 +204,8 @@ const useNonWarningLayoutEffect = typeof window === "undefined" ? useEffect : us
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
+  const debugId = useId();
+  const debugStartedAt = useRef(Date.now());
   const imgRef = useRef<HTMLImageElement | null>(null);
   const loadedSrcRef = useRef<string | null>(null);
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
@@ -130,25 +215,42 @@ export function BlurImage(props: BlurImageProps) {
 
   useNonWarningLayoutEffect(() => {
     const img = imgRef.current;
+    // #region agent log
+    recordBlurImageDebug({
+      hypothesisId: "D",
+      location: "blur-image.tsx:layout-effect",
+      message: "hydration completion check",
+      data: {
+        debugId,
+        elapsedMs: Date.now() - debugStartedAt.current,
+        hasElement: !!img,
+        ...(img ? imageElementDebugData(img) : {}),
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
     if (!img?.complete) return;
     handleLoading(img, {
       loadedSrcRef,
       srcKey,
       setLoadedSrc,
       onLoad: props.onLoad,
+      debugId,
+      debugStartedAt: debugStartedAt.current,
     });
-  }, [props.onLoad, srcKey]);
+  }, [debugId, props.onLoad, srcKey]);
 
   const objectFit = props.style?.objectFit;
-  const backgroundImage =
+  const blurSvgUrl =
     props.blurDataUrl && !loaded
-      ? `url("data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
+      ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
           width: numericDimension(props.width),
           height: numericDimension(props.height),
           blurDataUrl: props.blurDataUrl,
           objectFit,
-        })}")`
-      : undefined;
+        })}`
+      : null;
+  const backgroundImage = blurSvgUrl ? `url("${blurSvgUrl}")` : undefined;
   const backgroundSize =
     objectFit === "fill" ? "100% 100%" : objectFit === "contain" ? "contain" : "cover";
   const placeholderStyle = backgroundImage
@@ -159,6 +261,76 @@ export function BlurImage(props: BlurImageProps) {
         backgroundImage,
       }
     : {};
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img) return;
+    // #region agent log
+    recordBlurImageDebug({
+      hypothesisId: "A,B",
+      location: "blur-image.tsx:committed",
+      message: "blur image committed with runtime styles",
+      data: {
+        debugId,
+        elapsedMs: Date.now() - debugStartedAt.current,
+        blurDataUrlPresent: !!props.blurDataUrl,
+        blurDataUrlLength: props.blurDataUrl?.length ?? 0,
+        blurDataUrlMimePrefix: props.blurDataUrl?.slice(0, 23) ?? null,
+        srcOrigin: imageOrigin(srcKey),
+        ...imageElementDebugData(img),
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+  }, [debugId, props.blurDataUrl, srcKey]);
+
+  useEffect(() => {
+    if (!blurSvgUrl) return;
+    const probe = new Image();
+    const finishProbe = (outcome: "load" | "error") => {
+      // #region agent log
+      recordBlurImageDebug({
+        hypothesisId: "C",
+        location: "blur-image.tsx:svg-probe",
+        message: "standalone SVG placeholder probe finished",
+        data: {
+          debugId,
+          elapsedMs: Date.now() - debugStartedAt.current,
+          outcome,
+          naturalWidth: probe.naturalWidth,
+          naturalHeight: probe.naturalHeight,
+        },
+        timestamp: Date.now(),
+      });
+      // #endregion
+    };
+    probe.onload = () => finishProbe("load");
+    probe.onerror = () => finishProbe("error");
+    probe.src = blurSvgUrl;
+    return () => {
+      probe.onload = null;
+      probe.onerror = null;
+    };
+  }, [blurSvgUrl, debugId]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const img = imgRef.current;
+    if (!img) return;
+    // #region agent log
+    recordBlurImageDebug({
+      hypothesisId: "D",
+      location: "blur-image.tsx:placeholder-cleared",
+      message: "loaded state committed after placeholder clear",
+      data: {
+        debugId,
+        elapsedMs: Date.now() - debugStartedAt.current,
+        ...imageElementDebugData(img),
+      },
+      timestamp: Date.now(),
+    });
+    // #endregion
+  }, [debugId, loaded]);
 
   return (
     <img
@@ -177,6 +349,8 @@ export function BlurImage(props: BlurImageProps) {
           srcKey,
           setLoadedSrc,
           onLoad: props.onLoad,
+          debugId,
+          debugStartedAt: debugStartedAt.current,
         });
       }}
       onError={(event) => {
