@@ -7,16 +7,12 @@ import {
   backfillBabyLastActivityAtDoc,
   backfillBabySubscriptionCountDoc,
   backfillEncouragementTimelineDoc,
-  backfillMissingProfilesPage,
   backfillUpdatePostedByUserIdDoc,
   removeBabyEncouragementsDisabledDoc,
   sanitizeOnboardingStepsDoc,
 } from "./migrations";
 import schema from "./schema";
-import { modules, registerComponents, registerMigrationsComponent } from "./test.setup";
-import { createAuth } from "./auth";
-import { DEMO_EMPTY_USER } from "../src/seedCredentials";
-import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
+import { modules, registerMigrationsComponent } from "./test.setup";
 
 test("retained migrations skip linked rows and backfill update metadata and counts", async () => {
   const t = convexTest(schema, modules);
@@ -113,86 +109,6 @@ test("retained migrations skip linked rows and backfill update metadata and coun
       oneBatchOnly: true,
     }),
   ).resolves.toBeTruthy();
-});
-
-test("missing profile backfill defaults locale and completes legacy onboarding", async () => {
-  const t = convexTest(schema, modules);
-  await registerComponents(t);
-  await registerMigrationsComponent(t);
-
-  const users = await t.run(async (ctx) => {
-    const auth = createAuth(ctx);
-    const legacy = await auth.api.signUpEmail({
-      body: {
-        email: "legacy-profile@example.com",
-        password: "password123",
-        name: "Legacy Profile",
-      },
-    });
-    const existing = await auth.api.signUpEmail({
-      body: {
-        email: "existing-profile@example.com",
-        password: "password123",
-        name: "Existing Profile",
-      },
-    });
-    const demo = await auth.api.signUpEmail({
-      body: {
-        email: DEMO_EMPTY_USER.email,
-        password: DEMO_EMPTY_USER.password,
-        name: DEMO_EMPTY_USER.name,
-      },
-    });
-    return {
-      legacyId: legacy.user.id,
-      existingId: existing.user.id,
-      demoId: demo.user.id,
-    };
-  });
-
-  await t.run(async (ctx) => {
-    const profiles = await ctx.db.query("userProfiles").take(100);
-    for (const profile of profiles) {
-      await ctx.db.delete(profile._id);
-    }
-    await ctx.db.insert("userProfiles", {
-      userId: users.existingId,
-      tokenIdentifier: `https://convex.test|${users.existingId}`,
-      locale: "sv",
-      isAdmin: false,
-    });
-  });
-
-  const result = await t.run(async (ctx) => await backfillMissingProfilesPage(ctx, null));
-  expect(result).toMatchObject({ isDone: true, alreadyRan: false, created: 2 });
-
-  const state = await t.run(async (ctx) => {
-    const profiles = await ctx.db.query("userProfiles").take(100);
-    const onboarding = await ctx.db.query("userOnboarding").take(100);
-    return { profiles, onboarding };
-  });
-  expect(state.profiles.find((profile) => profile.userId === users.legacyId)).toMatchObject({
-    locale: "en-GB",
-    isAdmin: false,
-  });
-  expect(state.profiles.find((profile) => profile.userId === users.existingId)).toMatchObject({
-    locale: "sv",
-  });
-  expect(state.onboarding.find((row) => row.userId === users.legacyId)).toMatchObject({
-    completedSteps: [...ONBOARDING_STEP_IDS],
-    welcomeDismissed: true,
-    checklistDismissed: true,
-    minimized: true,
-  });
-  expect(state.onboarding.find((row) => row.userId === users.demoId)).toBeUndefined();
-
-  await expect(
-    t.run(async (ctx) => await backfillMissingProfilesPage(ctx, null)),
-  ).resolves.toMatchObject({
-    isDone: true,
-    alreadyRan: true,
-    created: 0,
-  });
 });
 
 test("sanitizeOnboardingSteps strips unknown retired step ids", async () => {

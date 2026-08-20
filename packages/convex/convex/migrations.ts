@@ -11,8 +11,6 @@ import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
-import { DEFAULT_LOCALE } from "../src/i18n";
-import { ensureUserProfileForAuthUser } from "./profileBootstrap";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -201,90 +199,6 @@ export const skipTourForExistingUsers = internalMutation({
     const result = await skipTourForExistingUsersPage(ctx, args.cursor);
     if (!result.isDone && !result.alreadyRan) {
       await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
-        cursor: result.continueCursor,
-      });
-    }
-    return result;
-  },
-});
-
-const BACKFILL_MISSING_PROFILES_SENTINEL = "migration:backfillMissingProfiles";
-
-/**
- * Creates the profile rows that predate auth-time profile creation. These
- * legacy users default to British English and have already passed the point
- * where the first-run onboarding should be shown.
- */
-export async function backfillMissingProfilesPage(ctx: MutationCtx, cursor: string | null) {
-  const sentinel = await ctx.db
-    .query("userOnboarding")
-    .withIndex("by_userId", (q) => q.eq("userId", BACKFILL_MISSING_PROFILES_SENTINEL))
-    .unique();
-  if (sentinel) {
-    return {
-      isDone: true,
-      continueCursor: "",
-      alreadyRan: true,
-      processed: 0,
-      created: 0,
-    };
-  }
-
-  const page = await ctx.runQuery(components.betterAuth.adapter.findMany, {
-    model: "user",
-    paginationOpts: {
-      numItems: SKIP_TOUR_BATCH_SIZE,
-      cursor,
-    },
-  });
-
-  let created = 0;
-  for (const user of page.page) {
-    const userId = authUserId(user);
-    const existing = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .unique();
-    if (existing) continue;
-
-    await ensureUserProfileForAuthUser(ctx, {
-      userId,
-      localeHint: DEFAULT_LOCALE,
-    });
-    if (authUserEmail(user) !== DEMO_EMPTY_USER.email) {
-      await skipUserOnboarding(ctx, userId);
-    }
-    created += 1;
-  }
-
-  if (page.isDone) {
-    await skipUserOnboarding(ctx, BACKFILL_MISSING_PROFILES_SENTINEL);
-    return {
-      isDone: true,
-      continueCursor: page.continueCursor,
-      alreadyRan: false,
-      processed: page.page.length,
-      created,
-    };
-  }
-
-  return {
-    isDone: false,
-    continueCursor: page.continueCursor,
-    alreadyRan: false,
-    processed: page.page.length,
-    created,
-  };
-}
-
-export const backfillMissingProfiles = internalMutation({
-  args: {
-    cursor: v.union(v.string(), v.null()),
-  },
-  handler: async (ctx, args) => {
-    const result = await backfillMissingProfilesPage(ctx, args.cursor);
-    if (!result.isDone && !result.alreadyRan) {
-      await ctx.scheduler.runAfter(0, internal.migrations.backfillMissingProfiles, {
         cursor: result.continueCursor,
       });
     }
@@ -572,8 +486,8 @@ export const deploymentStatus = internalQuery({
 });
 
 // Run all pending migrations - called automatically during deployment.
-// Better Auth users live in a component, so cross-component migrations are
-// kicked off alongside the serial app-table series.
+// skipTourForExistingUsers is not a table walker (users live in the Better
+// Auth component), so it is kicked off alongside the serial table series.
 export const runAll = internalMutation({
   args: {
     fn: v.optional(v.string()),
@@ -586,9 +500,6 @@ export const runAll = internalMutation({
   },
   handler: async (ctx, args): Promise<unknown> => {
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
-      cursor: null,
-    });
-    await ctx.scheduler.runAfter(0, internal.migrations.backfillMissingProfiles, {
       cursor: null,
     });
     const historical = await ctx.runMutation(internal.migrations.runTableMigrations, args);
