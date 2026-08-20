@@ -28,10 +28,10 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { openGraphImageMeta } from "@/lib/seo";
+import { getBabySeo } from "@/lib/baby-seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { canonicalUrl } from "@/lib/site-url";
 import { useOverlayNav } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
@@ -234,35 +234,12 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-export function getBabySeo(
-  doc: NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>>,
-  routePublicId: string,
-) {
-  return babySeoHead({
-    name: doc.name,
-    ...(doc.dueDateDisplayMode === "exact"
-      ? { dueDateDisplayMode: "exact" as const, dueDate: doc.dueDate }
-      : {
-          dueDateDisplayMode: "message" as const,
-          publicDueDateText: doc.publicDueDateText,
-        }),
-    // beforeLoad canonicalizes this route parameter. During same-route
-    // navigation, reactive query data can briefly belong to the prior slug.
-    publicId: routePublicId,
-    theme: doc.theme,
-    locale: doc.resolvedLocale,
-    babyBorn: doc.babyBorn,
-    wentToHospital: doc.wentToHospital,
-    laborStarted: doc.laborStarted,
-    milestoneVisibility: doc.milestoneVisibility,
-  });
-}
-
 function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
   const matchRoute = useMatchRoute();
+  const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
   const photoOpen =
@@ -279,7 +256,6 @@ function BabyPageLayout() {
     throw notFound();
   }
   const baby = docToBabyData(babyDoc);
-  const seo = getBabySeo(babyDoc, params.publicId);
 
   const latestUpdateQuery = usePreloadedConvexQuery(
     api.timeline.latestUpdate,
@@ -289,6 +265,16 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const share = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/share",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const post = useOverlayNav({
     open: {
       to: "/baby/$publicId/post",
@@ -329,7 +315,7 @@ function BabyPageLayout() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!postUpdateOpen && !settingsOpen && !photoOpen}
+          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               void navigate(post.openLink);
@@ -362,19 +348,9 @@ function BabyPageLayout() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={canonicalUrl(`/baby/${params.publicId}`)}
-            sharePreview={{
-              imageUrl: seo.imageUrl,
-              title: seo.title,
-              description: seo.description,
-            }}
-            onShareCopied={
-              canManage
-                ? () => {
-                    void completeOnboardingStep({ stepId: "share_link" });
-                  }
-                : null
-            }
+            shareButton={share.openLink}
+            shareOpen={shareOpen}
+            onDismissShare={shareOpen ? share.dismiss : null}
             postUpdateButton={canManage ? post.openLink : null}
             postUpdateOpen={postUpdateOpen}
             onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}

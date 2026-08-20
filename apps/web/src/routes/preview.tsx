@@ -175,12 +175,12 @@ export function PreviewPage() {
               <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
             </Link>
             <BabyNav
-              shareLink=""
-              sharePreview={null}
+              shareButton={null}
+              shareOpen={false}
+              onDismissShare={null}
               postUpdateButton={null}
               postUpdateOpen={false}
               onDismissPostUpdate={null}
-              onShareCopied={null}
               onSettingsOpened={null}
               settingsButton={{
                 to: "/preview",

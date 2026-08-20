@@ -19,9 +19,10 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
+import { getBabySeo } from "@/lib/baby-seo";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
-const { docToBabyData, getBabySeo, managerDocToBabyData } = routeModule;
+const { docToBabyData, managerDocToBabyData } = routeModule;
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });

@@ -144,6 +144,10 @@ function babyOgImagePath(publicId: string) {
   return `/og/baby/${publicId}`;
 }
 
+export function babyOgImageUrl(publicId: string) {
+  return absoluteUrl(babyOgImagePath(publicId));
+}
+
 export function homepageOgImagePath() {
   return "/og";
 }
@@ -164,7 +168,7 @@ export function babySeoHead(baby: BabySeoInput) {
   const title = babyPageTitle(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageUrl = absoluteUrl(babyOgImagePath(baby.publicId));
+  const imageUrl = babyOgImageUrl(baby.publicId);
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {
