@@ -122,6 +122,7 @@ export function PreviewPage() {
               ...update,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         onMilestoneRedate={(milestone, occurredAt) => {
@@ -131,6 +132,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: occurredAt,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         onMilestoneRemove={(milestone) => {
@@ -140,6 +142,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         open={!!search.settings}
@@ -150,6 +153,7 @@ export function PreviewPage() {
               settings: open || undefined,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         profileLocale={locale}
@@ -180,6 +184,8 @@ export function PreviewPage() {
                   ...search,
                   settings: search.settings ? undefined : true,
                 },
+                replace: true,
+                resetScroll: false,
               }}
               settingsOpen={!!search.settings}
             />

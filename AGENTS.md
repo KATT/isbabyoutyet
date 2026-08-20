@@ -1,5 +1,11 @@
 # Agent notes
 
+## Routing / scroll
+
+When a `Link` or `navigate()` only opens/closes settings or switches admin tabs
+on the same underlying page, pass `resetScroll: false` so the page does not
+jump to the top.
+
 ## Convex
 
 When working under `packages/convex/`, also follow

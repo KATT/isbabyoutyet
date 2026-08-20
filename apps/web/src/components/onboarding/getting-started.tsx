@@ -40,6 +40,7 @@ function babyPageLink(opts: { publicId: string; settings: boolean | undefined })
     return {
       to: "/baby/$publicId/settings",
       params: { publicId: opts.publicId },
+      resetScroll: false,
     };
   }
   return {

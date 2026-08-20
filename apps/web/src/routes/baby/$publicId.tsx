@@ -297,6 +297,7 @@ function BabyPage() {
               void navigate({
                 to: "/baby/$publicId/settings",
                 params: { publicId: babyDoc.publicId },
+                resetScroll: false,
               });
             }
           }}
@@ -353,6 +354,7 @@ function BabyPage() {
                 ? {
                     to: "/baby/$publicId/settings",
                     params: { publicId: params.publicId },
+                    resetScroll: false,
                   }
                 : null
             }

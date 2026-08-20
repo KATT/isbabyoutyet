@@ -156,6 +156,7 @@ function SettingsPage() {
             void navigate({
               to: "/baby/$publicId",
               params: { publicId: params.publicId },
+              resetScroll: false,
             });
           }
         }}
