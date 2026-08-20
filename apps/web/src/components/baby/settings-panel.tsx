@@ -73,6 +73,8 @@ type SettingsPanelProps = {
   onMilestoneRemove: MilestoneRemoveHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after open/close animations finish (used for route-driven close). */
+  onOpenChangeComplete: ((open: boolean) => void) | null;
   profileLocale: SupportedLocale;
   /** Owner-only soft delete. Null on the preview page / for co-parents. */
   onDelete: (() => void | Promise<void>) | null;
@@ -154,7 +156,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const coParents = props.coParents;
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+    <Dialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      onOpenChangeComplete={props.onOpenChangeComplete ?? undefined}
+    >
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("Settings")}</DialogTitle>

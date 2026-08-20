@@ -15,7 +15,15 @@ import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboardi
 import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  Outlet,
+  redirect,
+  useMatchRoute,
+  useNavigate,
+} from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
@@ -30,7 +38,7 @@ import { canonicalUrl } from "@/lib/site-url";
 const TIMELINE_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/baby/$publicId")({
-  component: BabyPage,
+  component: BabyPageLayout,
   validateSearch: z.object({
     settings: z.boolean().optional(),
     beta: z.boolean().optional(),
@@ -242,10 +250,12 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-function BabyPage() {
+function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
+  const matchRoute = useMatchRoute();
+  const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -287,7 +297,7 @@ function BabyPage() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!composerOpen}
+          spotlight={!composerOpen && !settingsOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               setComposerOpen(true);
@@ -297,6 +307,7 @@ function BabyPage() {
               void navigate({
                 to: "/baby/$publicId/settings",
                 params: { publicId: babyDoc.publicId },
+                replace: true,
                 resetScroll: false,
               });
             }
@@ -351,14 +362,22 @@ function BabyPage() {
             onPostUpdate={canManage ? () => setComposerOpen(true) : null}
             settingsButton={
               canManage
-                ? {
-                    to: "/baby/$publicId/settings",
-                    params: { publicId: params.publicId },
-                    resetScroll: false,
-                  }
+                ? settingsOpen
+                  ? {
+                      to: "/baby/$publicId",
+                      params: { publicId: params.publicId },
+                      replace: true,
+                      resetScroll: false,
+                    }
+                  : {
+                      to: "/baby/$publicId/settings",
+                      params: { publicId: params.publicId },
+                      replace: true,
+                      resetScroll: false,
+                    }
                 : null
             }
-            settingsOpen={false}
+            settingsOpen={settingsOpen}
             onSettingsOpened={
               canManage
                 ? () => {
@@ -439,6 +458,8 @@ function BabyPage() {
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
         </Link>
       </footer>
+
+      <Outlet />
     </div>
   );
 }

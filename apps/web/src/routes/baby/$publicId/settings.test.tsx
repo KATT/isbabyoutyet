@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { expect, test } from "vitest";
 
-const routeModule = await import("@/routes/_auth/baby/$publicId/settings");
+const routeModule = await import("@/routes/baby/$publicId/settings");
 
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
@@ -41,6 +41,7 @@ test("settings loader fetches only manager settings data", async () => {
     "baby:getManagerBaby": { _id: "baby-id", name: "Baby Smith" },
     "coParents:myAccess": { canManage: true, isOwner: true },
     "coParents:listForBaby": { coParents: [], invites: [] },
+    "profile:get": { locale: "en-GB" },
   });
 
   expect(result.managerBaby).toMatchObject({
@@ -50,6 +51,9 @@ test("settings loader fetches only manager settings data", async () => {
   expect(result.coParentsList).toMatchObject({
     input: { babyId: "baby-smith" },
     initialData: { coParents: [], invites: [] },
+  });
+  expect(result.profile).toMatchObject({
+    initialData: { locale: "en-GB" },
   });
 });
 
