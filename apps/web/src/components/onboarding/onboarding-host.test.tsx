@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
-  toastInfo: vi.fn<(message: string) => void>(),
+  toastInfo: vi.fn<(message: string, options: unknown) => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -40,7 +40,7 @@ vi.mock("convex/react", () => ({
 
 vi.mock("sonner", () => ({
   toast: {
-    info: (message: string) => mocks.toastInfo(message),
+    info: (message: string, options: unknown) => mocks.toastInfo(message, options),
   },
 }));
 
@@ -192,6 +192,10 @@ test("explains how to restore the guide after dismissal", async () => {
   await vi.waitFor(() => {
     expect(mocks.toastInfo).toHaveBeenCalledWith(
       "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
+      {
+        duration: 7000,
+        position: "top-center",
+      },
     );
   });
 });

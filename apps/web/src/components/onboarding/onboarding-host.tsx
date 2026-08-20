@@ -111,6 +111,10 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
                 t(
                   "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
                 ),
+                {
+                  duration: 7000,
+                  position: "top-center",
+                },
               );
             })();
           }}

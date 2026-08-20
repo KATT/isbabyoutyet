@@ -440,8 +440,8 @@ function ChecklistContents(props: ChecklistContentsProps) {
           />
           <Button
             size="sm"
-            variant="ghost"
-            className="mt-2 min-h-11 w-full text-muted-foreground"
+            variant="outline"
+            className="mt-2 min-h-11 w-full"
             onClick={props.onRequestDismiss}
           >
             {t("Dismiss guide")}
