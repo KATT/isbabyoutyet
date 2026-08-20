@@ -9,6 +9,7 @@ import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
 import { FORBIDDEN } from "../src/types";
 import { toManagerBabyDto } from "./babyDto";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 
 function normalizeEmail(email: string) {
@@ -80,7 +81,7 @@ async function listActiveInvites(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">
  * Anonymous callers get canManage/isOwner false.
  */
 export const myAccess = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -88,15 +89,15 @@ export const myAccess = query({
     }
     const caller = appIdentity(identity);
 
-    const baby = await ctx.db.get(args.babyId);
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
       return { isOwner: false, isCoParent: false, canManage: false };
     }
 
+    const babyId = baby._id;
     const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
     const isCoParent =
-      !isOwner &&
-      (await findActiveCoParent(ctx, { babyId: args.babyId, identity: caller })) != null;
+      !isOwner && (await findActiveCoParent(ctx, { babyId, identity: caller })) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
 });
@@ -105,7 +106,7 @@ export const myAccess = query({
  * Owner/co-parent view of current co-parents and pending invites.
  */
 export const listForBaby = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     // Sentinel instead of throwing: the baby route loader queries this for
     // every visitor.
@@ -114,9 +115,10 @@ export const listForBaby = query({
       return FORBIDDEN;
     }
 
+    const babyId = access.baby._id;
     const [coParents, invites] = await Promise.all([
-      listActiveCoParents(ctx, args.babyId),
-      listActiveInvites(ctx, args.babyId),
+      listActiveCoParents(ctx, babyId),
+      listActiveInvites(ctx, babyId),
     ]);
 
     return {

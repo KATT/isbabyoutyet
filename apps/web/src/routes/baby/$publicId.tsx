@@ -25,24 +25,20 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { createServerFn } from "@tanstack/react-start";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
+import type { ConvexReactClient } from "convex/react";
 import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
-import { authServer } from "@/lib/auth-server";
 
 const TIMELINE_PAGE_SIZE = 20;
-
-const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -51,7 +47,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -70,55 +66,45 @@ export const Route = createFileRoute("/baby/$publicId")({
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
-    });
-    const babyDoc = babyHandle.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
+    const preloader = opts.context.convexPreloader;
+    const publicId = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
 
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const token =
-      opts.context.token ?? (profileHandle.initialData != null ? await getAuthToken() : null);
-    if (token) {
-      opts.context.convexClient.setAuth(async () => token);
-      await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      });
-    }
-    // One homogeneous set for every visitor: manager-only queries return a
-    // FORBIDDEN sentinel instead of throwing, so no access branching here.
+    await ensureProfileForAuthenticatedVisit(opts.context);
+
+    const loaderData = await allKeyed({
+      baby: preloader.ensureQueryData(api.baby.getByPublicId, {
+        id: publicId,
+      }),
+      profile: preloader.ensureQueryData(api.profile.get, {}),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+        babyId: publicId,
+      }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: publicId },
+        numItems: TIMELINE_PAGE_SIZE,
+      }),
+      managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
+        babyId: publicId,
+      }),
+      scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+        babyId: publicId,
+      }),
+      subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
+        babyId: publicId,
+      }),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
+      // Prefetch even when settings are closed — Dialog may keep the panel mounted
+      coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
+        babyId: publicId,
+      }),
+    });
+
     return {
-      baby: babyHandle,
-      browserPush: prefetchBrowserPushCapability(opts.context.queryClient, babyDoc._id),
-      ...(await allKeyed({
-        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
-          babyId: babyDoc._id,
-        }),
-        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-          args: { babyId: babyDoc._id },
-          numItems: TIMELINE_PAGE_SIZE,
-        }),
-        profile: preloader.ensureQueryData(api.profile.get, {}),
-        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
-          babyId: babyDoc._id,
-        }),
-        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
-          babyId: babyDoc._id,
-        }),
-        subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
-          babyId: babyDoc._id,
-        }),
-        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-        // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
-          babyId: babyDoc._id,
-        }),
-      })),
+      browserPush,
+      ...loaderData,
     };
   },
   head: (opts) => {
@@ -265,6 +251,24 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     milestoneVisibility: doc.milestoneVisibility,
     photoId: doc.photoId ?? null,
   };
+}
+
+async function ensureProfileForAuthenticatedVisit(context: {
+  convexClient: ConvexReactClient;
+  token: string | null | undefined;
+  isAuthenticated: boolean;
+  locale: SupportedLocale;
+}) {
+  const token = context.token;
+  if (!context.isAuthenticated && !token) {
+    return;
+  }
+  if (token) {
+    context.convexClient.setAuth(async () => token);
+  }
+  await context.convexClient.mutation(api.profile.ensure, {
+    browserLocale: context.locale,
+  });
 }
 
 function BabyPage() {

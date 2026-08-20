@@ -16,14 +16,17 @@ import type {
  * The Convex function reference IS the interface — no per-query factory:
  *
  * @example
- * const preloader = getConvexQueryPreloader(opts.context.queryClient);
- * return await allKeyed({
- *   profile: preloader.ensureQueryData(api.profile.get, {}),
- *   timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
- *     args: { babyId },
- *     numItems: 20,
- *   }),
- * });
+ * // Created once in getRouter() and passed on router context as convexPreloader.
+ * loader: async (opts) => {
+ *   const preloader = opts.context.convexPreloader;
+ *   return await allKeyed({
+ *     profile: preloader.ensureQueryData(api.profile.get, {}),
+ *     timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+ *       args: { babyId },
+ *       numItems: 20,
+ *     }),
+ *   });
+ * };
  *
  * function Page() {
  *   const loaderData = Route.useLoaderData();
@@ -31,6 +34,8 @@ import type {
  *   // ...
  * }
  */
+export type ConvexQueryPreloader = ReturnType<typeof getConvexQueryPreloader>;
+
 export function getConvexQueryPreloader(queryClient: QueryClient) {
   return {
     /** Awaits a Convex query and returns a {@link PreloadedConvexQuery} handle. */

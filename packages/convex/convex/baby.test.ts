@@ -289,6 +289,22 @@ test("getByPublicId resolves by publicId and by document id", async () => {
   expect(byDocumentId).toMatchObject({ publicId: created.publicId });
 });
 
+test("manager queries resolve babyId or publicId slug", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Little One",
+    dueDate: "2026-10-15",
+  });
+
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.publicId })).toMatchObject({
+    name: "Little One",
+  });
+  expect(await t.query(api.baby.getManagerBaby, { babyId: created.publicId })).toBe("forbidden");
+  expect(await asAlice.query(api.timeline.latestUpdate, { babyId: created.publicId })).toBeNull();
+});
+
 test("a baby inherits the owner locale until an override is set", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

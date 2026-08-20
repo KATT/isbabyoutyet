@@ -1,5 +1,6 @@
 import { render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { convexTest } from "convex-test";
 import type { FunctionReturnType } from "convex/server";
 import type { ReactElement } from "react";
@@ -18,16 +19,6 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
-
-const getToken = vi.hoisted(() => vi.fn<() => Promise<string | null>>());
-
-vi.mock("@tanstack/react-start", () => ({
-  createServerFn: () => ({ handler: (fn: unknown) => fn }),
-}));
-
-vi.mock("@/lib/auth-server", () => ({
-  authServer: { getToken },
-}));
 
 const routeModule = await import("@/routes/baby/$publicId");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -288,6 +279,7 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 
 type LoaderOptions = {
   token: string | null | undefined;
+  isAuthenticated: boolean | undefined;
   locale: string | undefined;
   convexClient:
     | {
@@ -314,8 +306,10 @@ async function setupBabyLoader(
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
       convexClient: { setAuth: typeof setAuth; mutation: typeof mutation };
       token: string | null;
+      isAuthenticated: boolean;
       locale: string;
     };
     params: { publicId: string };
@@ -324,8 +318,10 @@ async function setupBabyLoader(
   const result = await loader({
     context: {
       queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
       convexClient: { setAuth, mutation },
       token: options?.token ?? null,
+      isAuthenticated: options?.isAuthenticated ?? false,
       locale: options?.locale ?? "en-GB",
     },
     params: { publicId: "baby-smith" },
@@ -355,7 +351,7 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
   expect(result.myAccess).toMatchObject({ initialData: { canManage: false } });
   expect(result.managerBaby).toMatchObject({ initialData: "forbidden" });
-  expect(result.timeline).toMatchObject({ input: { babyId: "baby-1" }, numItems: 20 });
+  expect(result.timeline).toMatchObject({ input: { babyId: "baby-smith" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
   expect(result.coParentsList).toMatchObject({ initialData: "forbidden" });
@@ -373,11 +369,11 @@ test("loader gives managers the same handles with real data", async () => {
   });
 
   expect(result.scheduledNotifications).toMatchObject({
-    input: { babyId: "baby-1" },
+    input: { babyId: "baby-smith" },
     initialData: [],
   });
   expect(result.subscriptionCount).toMatchObject({
-    input: { babyId: "baby-1" },
+    input: { babyId: "baby-smith" },
     initialData: 2,
   });
   expect(result.onboarding).toMatchObject({ input: {} });
@@ -385,84 +381,70 @@ test("loader gives managers the same handles with real data", async () => {
     initialData: { birthJourney: "labor" },
   });
   expect(result.coParentsList).toMatchObject({
-    input: { babyId: "baby-1" },
+    input: { babyId: "baby-smith" },
     initialData: { coParents: [], invites: [] },
   });
 });
 
-test("loader 404s unknown babies", async () => {
-  const pending = runBabyLoader({ "baby:getByPublicId": null });
+test("beforeLoad 404s unknown babies", async () => {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+    location: { search: Record<string, unknown> };
+  }) => Promise<unknown>;
+
+  const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
+  const pending = beforeLoad({
+    context: {
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
+    },
+    params: { publicId: "baby-smith" },
+    location: { search: {} },
+  });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
 });
 
-test("loader authenticates signed-in visitors before prefetching manager data", async () => {
-  getToken.mockReset();
-  getToken.mockResolvedValueOnce("session-token");
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
-  const mutation = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ locale: "en-GB", isAdmin: false }),
-  );
-  const sharedHandlers = {
-    "baby:getByPublicId": BABY_DOC,
-    "profile:get": { locale: "en-GB", isAdmin: false },
-    "coParents:myAccess": { canManage: true, isOwner: true },
-    "baby:getManagerBaby": BABY_DOC,
-    "timeline:listByBaby": EMPTY_PAGE,
-    "baby:getScheduledNotifications": [],
-    "pushSubscriptions:getSubscriptionCount": 0,
-    "coParents:listForBaby": { coParents: [], invites: [] },
-  };
-
-  await runBabyLoader(sharedHandlers, {
-    token: undefined,
-    locale: undefined,
-    convexClient: { setAuth, mutation },
-  });
-
-  expect(getToken).toHaveBeenCalledTimes(1);
-  expect(setAuth).toHaveBeenCalledTimes(1);
-  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
-});
-
-test("loader reuses a context token without calling getAuthToken", async () => {
-  getToken.mockReset();
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
-  const mutation = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ locale: "sv", isAdmin: false }),
-  );
-
-  await runBabyLoader(
+test("loader ensures the profile before prefetching manager data", async () => {
+  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
+  const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,
-      "profile:get": { locale: "sv", isAdmin: false },
-      "coParents:myAccess": { canManage: false, isOwner: false },
-      "baby:getManagerBaby": "forbidden",
+      "profile:get": { locale: "en-GB", isAdmin: false },
+      "coParents:myAccess": { canManage: true, isOwner: true },
+      "baby:getManagerBaby": BABY_DOC,
       "timeline:listByBaby": EMPTY_PAGE,
-      "baby:getScheduledNotifications": "forbidden",
-      "pushSubscriptions:getSubscriptionCount": "forbidden",
-      "coParents:listForBaby": "forbidden",
+      "baby:getScheduledNotifications": [],
+      "pushSubscriptions:getSubscriptionCount": 0,
+      "coParents:listForBaby": { coParents: [], invites: [] },
     },
-    { token: "layout-token", locale: "sv", convexClient: { setAuth, mutation } },
+    {
+      token: "layout-token",
+      isAuthenticated: true,
+      locale: "en-GB",
+      convexClient: { setAuth: vi.fn(), mutation },
+    },
   );
 
-  expect(getToken).not.toHaveBeenCalled();
-  expect(setAuth).toHaveBeenCalledTimes(1);
-  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "sv" });
+  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
+  expect(result.managerBaby).toMatchObject({ initialData: BABY_DOC });
 });
 
 test("loader prefetches browser push capability on the client", async () => {
-  const babyId = BABY_DOC._id as Id<"baby">;
   const { result, queryClient } = await setupBabyLoader({
     "baby:getByPublicId": BABY_DOC,
     "timeline:listByBaby": EMPTY_PAGE,
   });
 
-  expect(result.browserPush).toMatchObject({ input: babyId });
+  expect(result.browserPush).toMatchObject({ input: "baby-smith" });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(browserPushQueryOptions(queryClient, babyId).queryKey)).toEqual({
-      kind: "unsupported",
-    });
+    expect(
+      queryClient.getQueryData(browserPushQueryOptions(queryClient, "baby-smith").queryKey),
+    ).toEqual({ kind: "unsupported" });
   });
 });
 
