@@ -13,26 +13,31 @@ function subscribeToVisualViewport(onStoreChange: () => void) {
   };
 }
 
-function getVisualViewportBottomOffset() {
+function getVisualViewportSnapshot() {
   const viewport = window.visualViewport;
   if (!viewport) {
-    return 0;
+    return "0|0|0";
   }
-  return Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height);
+  const bottom = Math.max(0, window.innerHeight - viewport.offsetTop - viewport.height);
+  return `${bottom}|${viewport.width}|${viewport.offsetLeft}`;
 }
 
-function getServerVisualViewportBottomOffset() {
-  return 0;
+function getServerVisualViewportSnapshot() {
+  return "0|0|0";
 }
 
-export function useVisualViewportBottom() {
-  const offset = useSyncExternalStore(
+export function useVisualViewportMetrics() {
+  const snapshot = useSyncExternalStore(
     subscribeToVisualViewport,
-    getVisualViewportBottomOffset,
-    getServerVisualViewportBottomOffset,
+    getVisualViewportSnapshot,
+    getServerVisualViewportSnapshot,
   );
+  const [bottomText, widthText, leftText] = snapshot.split("|");
+  const bottom = Number(bottomText);
+  const width = Number(widthText);
+  const left = Number(leftText);
   const style = {
-    "--visual-viewport-bottom": `${offset}px`,
+    "--visual-viewport-bottom": `${bottom}px`,
   } as CSSProperties;
-  return [offset, style] as const;
+  return { bottom, width, left, style };
 }

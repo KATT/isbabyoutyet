@@ -3,7 +3,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
-import { useVisualViewportBottom } from "./visual-viewport";
+import { useVisualViewportMetrics } from "./visual-viewport";
 
 type CoachmarkProps = {
   /** Matches `data-tour-id` on the highlighted element */
@@ -32,7 +32,7 @@ export function Coachmark(props: CoachmarkProps) {
   const [rect, setRect] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
   const [isMobile, setIsMobile] = useState(false);
-  const visualViewport = useVisualViewportBottom();
+  const visualViewport = useVisualViewportMetrics();
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") {
@@ -103,7 +103,7 @@ export function Coachmark(props: CoachmarkProps) {
       {isMobile ? (
         <div
           className="pointer-events-auto fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
-          style={visualViewport[1]}
+          style={visualViewport.style}
           role="dialog"
           aria-label={props.title}
         >

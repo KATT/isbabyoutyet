@@ -103,6 +103,8 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
 
   const visualViewport = Object.assign(new EventTarget(), {
     height: 844,
+    width: 390,
+    offsetLeft: 0,
     offsetTop: 0,
   }) as VisualViewport;
   Object.defineProperty(window, "innerHeight", { configurable: true, value: 959 });
@@ -138,6 +140,8 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
   await screen.findByRole("dialog", { name: "Getting started" });
   const drawer = document.querySelector<HTMLElement>('[data-slot="drawer-popup"]');
   expect(drawer?.style.bottom).toBe("115px");
+  expect(drawer?.style.left).toBe("0px");
+  expect(drawer?.style.width).toBe("390px");
 
   Object.defineProperty(visualViewport, "height", { configurable: true, value: 800 });
   act(() => {
