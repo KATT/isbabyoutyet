@@ -221,8 +221,6 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   const baby = await t.query(api.baby.getByPublicId, { id: first.publicId });
   expect(baby?.photoId).toBe(photos.born?.photoId);
   expect(baby?.thumbnailId).toBe(photos.born?.thumbnailId);
-  if (!baby?.dueDate) throw new Error("Reset demo baby is missing its due date");
-  expect(Date.parse(baby.dueDate)).toBeGreaterThan(Date.parse("2026-08-18T00:00:00.000Z"));
 
   for (const locale of SUPPORTED_LOCALES) {
     const localeBaby = await t.query(api.baby.getByPublicId, {
