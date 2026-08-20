@@ -22,6 +22,12 @@ vi.mock("@/lib/auth-server", () => ({
 
 const { Route } = await import("@/routes/_auth/route");
 
+test("auth layout renders its child outlet", () => {
+  const options = Route as unknown as { component: () => unknown };
+
+  expect(options.component()).toBeTruthy();
+});
+
 type GuardCtx = {
   context: {
     queryClient: QueryClient;
@@ -33,8 +39,9 @@ type GuardCtx = {
 };
 
 function makeGuardCtx() {
+  const queryFn = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null));
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn: () => Promise.resolve(null) } },
+    defaultOptions: { queries: { retry: false, queryFn } },
   });
   const ctx: GuardCtx = {
     context: {
@@ -52,16 +59,12 @@ function makeGuardCtx() {
       profile: { input: Record<string, never>; initialData: unknown };
     }>;
   };
-  return { ctx, queryClient, beforeLoad: options.beforeLoad };
+  return { ctx, queryClient, queryFn, beforeLoad: options.beforeLoad };
 }
 
-test("client navigations with a cached profile still sync the session", async () => {
+test("client navigations reuse a cached profile without an auth round-trip", async () => {
   getToken.mockReset();
-  const mutation = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ locale: "sv", isAdmin: false }),
-  );
   const guard = makeGuardCtx();
-  guard.ctx.context.convexClient = { mutation };
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
     isAdmin: false,
@@ -71,30 +74,28 @@ test("client navigations with a cached profile still sync the session", async ()
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(getToken).not.toHaveBeenCalled();
-  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
+  expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
-test("regression: a fresh login authenticates the websocket before ensuring the profile", async () => {
+test("a fresh login authenticates the Convex client before reading the hook-created profile", async () => {
   // Right after login the cache still says "no profile" and the auth provider
-  // hasn't re-authenticated the websocket yet — the guard must setAuth with
-  // its fresh token before running profile.ensure, or ensure throws
-  // "Not authenticated" and the login form shows "Something went wrong".
+  // hasn't re-authenticated the websocket yet.
   getToken.mockReset();
   getToken.mockResolvedValueOnce("fresh-token");
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
-  const mutation = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ locale: "en-US", isAdmin: false }),
-  );
   const guard = makeGuardCtx();
-  guard.ctx.context.convexClient = { setAuth, mutation };
+  guard.queryFn
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce({ locale: "en-US", isAdmin: false });
+  guard.ctx.context.convexClient = { setAuth };
 
   const result = await guard.beforeLoad(guard.ctx);
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
   expect(setAuth).toHaveBeenCalledTimes(1);
   const setAuthOrder = setAuth.mock.invocationCallOrder[0] ?? Infinity;
-  const mutationOrder = mutation.mock.invocationCallOrder[0] ?? 0;
-  expect(setAuthOrder).toBeLessThan(mutationOrder);
+  const queryOrder = guard.queryFn.mock.invocationCallOrder[1] ?? 0;
+  expect(setAuthOrder).toBeLessThan(queryOrder);
   // The guard's token fetcher authenticates with the fresh token.
   const fetchToken = setAuth.mock.calls[0]?.[0];
   expect(await fetchToken?.()).toBe("fresh-token");
@@ -116,12 +117,25 @@ test("client navigations without a session redirect home after one token check",
   expect(getToken).toHaveBeenCalledTimes(1);
 });
 
-test("client navigations skip cache writes when ensure returns the cached profile", async () => {
+test("client navigations redirect when an authenticated profile cannot be read", async () => {
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { setAuth };
+
+  await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+    isRedirect: true,
+    to: "/",
+  });
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(guard.queryFn).toHaveBeenCalledTimes(2);
+});
+
+test("client navigations keep the cached profile", async () => {
   getToken.mockReset();
   const cachedProfile = { locale: "sv", isAdmin: false };
-  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve(cachedProfile));
   const guard = makeGuardCtx();
-  guard.ctx.context.convexClient = { mutation };
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
 
   const result = await guard.beforeLoad(guard.ctx);
@@ -130,6 +144,7 @@ test("client navigations skip cache writes when ensure returns the cached profil
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
     cachedProfile,
   );
+  expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
 function withoutBrowserWindow(run: () => Promise<void>) {
@@ -159,12 +174,10 @@ test("server render redirects home when no auth token is available", async () =>
 test("server render reuses the layout token without calling getAuthToken", async () => {
   getToken.mockReset();
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
-  const mutation = vi.fn<() => Promise<unknown>>(() =>
-    Promise.resolve({ locale: "en-GB", isAdmin: false }),
-  );
   const guard = makeGuardCtx();
+  guard.queryFn.mockResolvedValueOnce({ locale: "en-GB", isAdmin: false });
   guard.ctx.context.token = "ssr-token";
-  guard.ctx.context.convexClient = { setAuth, mutation };
+  guard.ctx.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
     const result = await guard.beforeLoad(guard.ctx);
@@ -176,5 +189,23 @@ test("server render reuses the layout token without calling getAuthToken", async
     });
     expect(getToken).not.toHaveBeenCalled();
     expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("server render redirects when its authenticated profile cannot be read", async () => {
+  getToken.mockReset();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.ctx.context.token = "ssr-token";
+  guard.ctx.context.convexClient = { setAuth };
+
+  await withoutBrowserWindow(async () => {
+    await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+      isRedirect: true,
+      to: "/",
+    });
+    expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });
 });
