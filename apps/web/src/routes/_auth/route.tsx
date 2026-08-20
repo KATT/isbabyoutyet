@@ -28,16 +28,12 @@ export const Route = createFileRoute("/_auth")({
       if (!token) {
         throw redirect({ to: "/" });
       }
-      // Mutations via the Convex React client during SSR need setAuth too
       opts.context.convexClient.setAuth(async () => token);
-
-      const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-      const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      });
-      if (profileHandle.initialData !== profile) {
-        opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+      const profile = await opts.context.convexClient.query(api.profile.get, {});
+      if (!profile) {
+        throw redirect({ to: "/" });
       }
+      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
       return {
         locale: profile.locale,
         token,
@@ -52,26 +48,22 @@ export const Route = createFileRoute("/_auth")({
     // cache self-heals: the live profile.get subscription flips to null (all
     // dashboard queries return empty for anonymous callers rather than
     // throwing), so the next navigation lands in the fallback below and
-    // redirects home. A null profile means logged out or a first-ever visit
-    // before ensure ran: confirm with the server function once, then ensure
-    // the profile row exists.
+    // redirects home. A null profile means logged out or the websocket has not
+    // re-authenticated after sign-in, so confirm with the server once.
     const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const existingProfile = profileHandle.initialData;
-    if (!existingProfile) {
+    let profile = profileHandle.initialData;
+    if (!profile) {
       const token = await getAuthToken();
       if (!token) {
         throw redirect({ to: "/" });
       }
-      // Right after login the auth provider may not have re-authenticated the
-      // websocket yet, so ensure (and the route loaders after it) would throw
-      // "Not authenticated". Authenticate it with the fresh token; the
-      // provider's own setAuth supersedes this once its session effect runs.
+      // Right after login, authenticate the Convex client with the fresh token
+      // before reading the profile created by the auth hook.
       opts.context.convexClient.setAuth(async () => token);
-    }
-    const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
-      browserLocale: opts.context.locale,
-    });
-    if (existingProfile !== profile) {
+      profile = await opts.context.convexClient.query(api.profile.get, {});
+      if (!profile) {
+        throw redirect({ to: "/" });
+      }
       opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
     }
     return {

@@ -61,12 +61,12 @@ Backend queries accept `v.union(v.id("baby"), v.string())` and resolve internall
 loader: async (opts) => {
   const token = await getAuthToken(opts);
   opts.context.convexClient.setAuth(token);
-  await opts.context.convexClient.mutation(api.profile.ensure, {});
+  await preloader.ensureQueryData(api.profile.get, {});
   return await allKeyed({ /* … */ });
 };
 ```
 
-Auth belongs on root SSR / layout; public pages should not block on profile side effects.
+Auth and profile loading belong on the authenticated layout, not page loaders.
 
 ## ❌ Sequential awaits inside loader
 
