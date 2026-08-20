@@ -7,7 +7,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const BLUR = "data:image/jpeg;base64,/9j/blur";
 
-test("paints a blurred SVG background until the image decodes", async () => {
+test("paints a blurred SVG in front of the real image until it decodes", async () => {
   const view = render(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
@@ -16,15 +16,19 @@ test("paints a blurred SVG background until the image decodes", async () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
+  const wrapper = img.parentElement;
+  const placeholder = wrapper?.querySelector<HTMLImageElement>("[data-blur-image-placeholder]");
   expect(img.src).toContain("photo.jpg");
   expect(img.className).not.toContain("blur-xl");
   expect(img.style.color).toBe("transparent");
-  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
-  expect(img.style.backgroundImage).toContain(BLUR);
+  expect(wrapper?.lastElementChild).toBe(placeholder);
+  expect(placeholder?.src).toContain("data:image/svg+xml");
+  expect(placeholder?.src).toContain(BLUR);
+  expect(placeholder?.getAttribute("aria-hidden")).toBe("true");
 
   fireEvent.load(img);
   await vi.waitFor(() => {
-    expect(img.style.backgroundImage).toBe("");
+    expect(wrapper?.querySelector("[data-blur-image-placeholder]")).toBeNull();
   });
 });
 
@@ -47,18 +51,19 @@ test("keeps the placeholder until decode completes", async () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
+  const wrapper = img.parentElement;
   img.decode = () =>
     new Promise<void>((resolve) => {
       finishDecode = resolve;
     });
 
   fireEvent.load(img);
-  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
+  expect(wrapper?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
   expect(onLoad).not.toHaveBeenCalled();
 
   finishDecode();
   await vi.waitFor(() => {
-    expect(img.style.backgroundImage).toBe("");
+    expect(wrapper?.querySelector("[data-blur-image-placeholder]")).toBeNull();
   });
   expect(onLoad).toHaveBeenCalledOnce();
 });
@@ -84,7 +89,7 @@ test("clears the placeholder when a cached image completed before hydration", as
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
   await vi.waitFor(() => {
-    expect(img.style.backgroundImage).toBe("");
+    expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).toBeNull();
   });
 });
 
@@ -97,11 +102,83 @@ test("skips the placeholder when no blur data URL is provided", () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
+  expect(img.parentElement).toBe(view.container);
   expect(img.style.backgroundImage).toBe("");
   expect(img.className).not.toContain("blur-xl");
 });
 
-test("restores a caller background after the placeholder clears", async () => {
+test("keeps sizing classes and dimensions on the wrapper and real image", () => {
+  const view = render(
+    <BlurImage
+      src="https://example.com/photo.jpg"
+      alt="Nova"
+      blurDataUrl={BLUR}
+      className="aspect-square h-full w-full object-cover"
+      width={160}
+      height={160}
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
+    "[data-blur-image-placeholder]",
+  );
+  expect(img.parentElement?.className).toBe("aspect-square h-full w-full object-cover");
+  expect(img.className).toBe("aspect-square h-full w-full object-cover");
+  expect(placeholder?.className).toBe("aspect-square h-full w-full object-cover");
+  expect(placeholder?.style.objectFit).toBe("cover");
+  expect(img.width).toBe(160);
+  expect(img.height).toBe(160);
+});
+
+test("matches placeholder object fit from inline styles and utility classes", () => {
+  const view = render(
+    <>
+      <BlurImage
+        src="https://example.com/inline.jpg"
+        alt="Inline fit"
+        blurDataUrl={BLUR}
+        style={{ objectFit: "contain" }}
+      />
+      <BlurImage
+        src="https://example.com/fill.jpg"
+        alt="Fill fit"
+        blurDataUrl={BLUR}
+        className="object-fill"
+      />
+      <BlurImage
+        src="https://example.com/none.jpg"
+        alt="None fit"
+        blurDataUrl={BLUR}
+        className="object-none"
+      />
+      <BlurImage
+        src="https://example.com/scale-down.jpg"
+        alt="Scale down fit"
+        blurDataUrl={BLUR}
+        className="object-scale-down"
+      />
+    </>,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const placeholders = view.container.querySelectorAll<HTMLImageElement>(
+    "[data-blur-image-placeholder]",
+  );
+  expect([...placeholders].map((placeholder) => placeholder.style.objectFit)).toEqual([
+    "contain",
+    "fill",
+    "none",
+    "scale-down",
+  ]);
+});
+
+test("preserves caller styles while layering the placeholder separately", async () => {
   const view = render(
     <BlurImage
       src="https://example.com/photo.jpg"
@@ -115,9 +192,11 @@ test("restores a caller background after the placeholder clears", async () => {
   });
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
-  expect(img.style.backgroundImage).toContain("data:image/svg+xml");
+  expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
+  expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
   fireEvent.load(img);
   await vi.waitFor(() => {
+    expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).toBeNull();
     expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
   });
 });
@@ -138,13 +217,15 @@ test("removes the placeholder and reveals alt text when loading fails", () => {
 
   const img = view.getByAltText("Nova") as HTMLImageElement;
   expect(img.style.color).toBe("transparent");
+  expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
   fireEvent.error(img);
   expect(img.style.color).toBe("");
+  expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).toBeNull();
   expect(img.style.backgroundImage).toBe("");
   expect(onError).toHaveBeenCalledOnce();
 });
 
-test("server HTML starts the real src with Next.js-style placeholder mechanics", () => {
+test("server HTML starts the real src beneath a foreground placeholder", () => {
   const html = renderToString(
     <BlurImage src="https://cdn.example/full.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
@@ -153,6 +234,10 @@ test("server HTML starts the real src with Next.js-style placeholder mechanics",
   expect(html).toContain(BLUR);
   expect(html).toContain("data:image/svg+xml");
   expect(html).toContain("color:transparent");
-  expect(html.match(/<img\b/g)).toHaveLength(1);
-  expect(html).not.toMatch(/<img\b[^>]*blur-xl/);
+  expect(html).toContain("data-blur-image-wrapper");
+  expect(html).toContain("data-blur-image-placeholder");
+  expect(html.match(/<img\b/g)).toHaveLength(2);
+  expect(html.indexOf('src="https://cdn.example/full.jpg"')).toBeLessThan(
+    html.indexOf("data-blur-image-placeholder"),
+  );
 });
