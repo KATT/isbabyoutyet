@@ -16,6 +16,7 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { notificationScheduleDelayMs } from "./notificationTiming";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -142,10 +143,6 @@ export async function applyPhotoSideEffects(
   });
 }
 
-function notificationScheduleDelayMs() {
-  return env.NODE_ENV === "production" ? 60_000 : 3_000;
-}
-
 /**
  * Schedules one delayed Web Push for this baby. Does not cancel other pending
  * jobs — callers that replace a pending status notification do that first.
@@ -161,7 +158,7 @@ export async function schedulePushNotification(
   },
 ) {
   const baby = opts.baby;
-  const scheduledFor = Date.now() + notificationScheduleDelayMs();
+  const scheduledFor = Date.now() + notificationScheduleDelayMs(env.VERCEL_ENV, env.NODE_ENV);
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
     babyId: baby._id,
