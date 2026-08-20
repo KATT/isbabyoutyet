@@ -81,7 +81,46 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
 
   const drawer = await screen.findByRole("dialog", { name: "Getting started" });
   expect(within(drawer).getByText("Tap a step to jump there")).toBeTruthy();
-  fireEvent.click(within(drawer).getByRole("button", { name: /dismiss tour/i }));
+  fireEvent.click(within(drawer).getByRole("button", { name: /close checklist/i }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
+  });
+  expect(onDismiss).not.toHaveBeenCalled();
+});
+
+test("uses an explicit confirmation before dismissing the guide", async () => {
+  const onDismiss = vi.fn<() => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={[]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={onDismiss}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={null}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss guide" }));
+  let confirmation = await screen.findByRole("alertdialog", {
+    name: "Dismiss getting started guide?",
+  });
+  expect(within(confirmation).getByText(/sparkle button in the header/i)).toBeTruthy();
+
+  fireEvent.click(within(confirmation).getByRole("button", { name: "Keep guide" }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(onDismiss).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByRole("button", { name: "Dismiss guide" }));
+  confirmation = await screen.findByRole("alertdialog", {
+    name: "Dismiss getting started guide?",
+  });
+  fireEvent.click(within(confirmation).getByRole("button", { name: "Dismiss guide" }));
   expect(onDismiss).toHaveBeenCalledOnce();
 });
 

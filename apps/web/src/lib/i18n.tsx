@@ -485,6 +485,13 @@ const enGB = {
   "Tap a step to jump there": "Tap a step to jump there",
   Minimize: "Minimize",
   "Dismiss tour": "Dismiss tour",
+  "Dismiss guide": "Dismiss guide",
+  "Dismiss getting started guide?": "Dismiss getting started guide?",
+  "Keep guide": "Keep guide",
+  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
+    "You can bring it back anytime from your dashboard with the sparkle button in the header.",
+  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
+    "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
   "Tour progress": "Tour progress",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -1014,6 +1021,13 @@ const sv: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Tryck på ett steg för att hoppa dit",
   Minimize: "Fäll ihop",
   "Dismiss tour": "Stäng guiden",
+  "Dismiss guide": "Stäng guiden",
+  "Dismiss getting started guide?": "Stäng kom igång-guiden?",
+  "Keep guide": "Behåll guiden",
+  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
+    "Du kan ta fram den igen när som helst via gnistknappen i sidhuvudet på din översikt.",
+  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
+    "Guiden är stängd. Använd gnistknappen i sidhuvudet på din översikt för att ta fram den igen.",
   "Tour progress": "Hur långt du har kommit i guiden",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -1529,6 +1543,13 @@ const es: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toca un paso para abrirlo",
   Minimize: "Minimizar",
   "Dismiss tour": "Cerrar el recorrido",
+  "Dismiss guide": "Cerrar guía",
+  "Dismiss getting started guide?": "¿Cerrar la guía de primeros pasos?",
+  "Keep guide": "Conservar guía",
+  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
+    "Puedes volver a abrirla cuando quieras desde el botón de destellos del encabezado de tu panel.",
+  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
+    "Guía cerrada. Usa el botón de destellos del encabezado de tu panel para volver a abrirla.",
   "Tour progress": "Progreso del recorrido",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -2048,6 +2069,13 @@ const ptBR: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toque em um passo para ir até lá",
   Minimize: "Minimizar",
   "Dismiss tour": "Fechar o tour",
+  "Dismiss guide": "Fechar guia",
+  "Dismiss getting started guide?": "Fechar o guia de primeiros passos?",
+  "Keep guide": "Manter guia",
+  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
+    "Você pode reabri-lo quando quiser pelo botão de brilho no cabeçalho do painel.",
+  "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.":
+    "Guia fechado. Use o botão de brilho no cabeçalho do painel para reabri-lo.",
   "Tour progress": "Progresso do tour",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",

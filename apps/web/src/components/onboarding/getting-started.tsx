@@ -1,5 +1,16 @@
 import { Button } from "@workspace/ui/components/button";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog";
+import {
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -169,6 +180,7 @@ function getStepAction(opts: {
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [dismissOpen, setDismissOpen] = useState(false);
   const visualViewport = useVisualViewportMetrics();
   const done = new Set(props.effectiveSteps);
   const completedCount = ONBOARDING_STEPS.filter((step) => done.has(step.id)).length;
@@ -271,8 +283,8 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               variant="ghost"
               size="icon"
               className="size-11"
-              aria-label={t("Dismiss tour")}
-              onClick={props.onDismiss}
+              aria-label={t("Close checklist")}
+              onClick={() => setMobileOpen(false)}
             >
               <X />
             </Button>
@@ -285,6 +297,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               percent={percent}
               t={t}
               onBeforeAction={() => setMobileOpen(false)}
+              onRequestDismiss={() => setDismissOpen(true)}
             />
           </div>
         </DrawerContent>
@@ -310,24 +323,14 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t("Minimize")}
-              onClick={() => props.onMinimize(true)}
-            >
-              <CaretDown />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label={t("Dismiss tour")}
-              onClick={props.onDismiss}
-            >
-              <X />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={t("Minimize")}
+            onClick={() => props.onMinimize(true)}
+          >
+            <CaretDown />
+          </Button>
         </div>
         <ChecklistContents
           {...props}
@@ -336,8 +339,37 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           percent={percent}
           t={t}
           onBeforeAction={undefined}
+          onRequestDismiss={() => setDismissOpen(true)}
         />
       </aside>
+
+      <AlertDialog open={dismissOpen} onOpenChange={setDismissOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <Sparkle />
+            </AlertDialogMedia>
+            <AlertDialogTitle>{t("Dismiss getting started guide?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "You can bring it back anytime from your dashboard with the sparkle button in the header.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="min-h-11">{t("Keep guide")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="min-h-11"
+              onClick={() => {
+                setDismissOpen(false);
+                props.onDismiss();
+              }}
+            >
+              {t("Dismiss guide")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -348,6 +380,7 @@ type ChecklistContentsProps = GettingStartedCardProps & {
   percent: number;
   t: TranslationFunction;
   onBeforeAction: (() => void) | undefined;
+  onRequestDismiss: () => void;
 };
 
 function ChecklistContents(props: ChecklistContentsProps) {
@@ -391,19 +424,29 @@ function ChecklistContents(props: ChecklistContentsProps) {
       </ul>
 
       {props.nextStep ? (
-        <NextStepHint
-          step={props.nextStep}
-          surface={props.surface}
-          tourBaby={props.tourBaby}
-          onGoToStep={props.onGoToStep}
-          onAcknowledge={() => {
-            if (props.nextStep) {
-              props.onAcknowledgeStep(props.nextStep.id);
-            }
-          }}
-          onBeforeAction={props.onBeforeAction}
-          t={t}
-        />
+        <>
+          <NextStepHint
+            step={props.nextStep}
+            surface={props.surface}
+            tourBaby={props.tourBaby}
+            onGoToStep={props.onGoToStep}
+            onAcknowledge={() => {
+              if (props.nextStep) {
+                props.onAcknowledgeStep(props.nextStep.id);
+              }
+            }}
+            onBeforeAction={props.onBeforeAction}
+            t={t}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            className="mt-2 min-h-11 w-full text-muted-foreground"
+            onClick={props.onRequestDismiss}
+          >
+            {t("Dismiss guide")}
+          </Button>
+        </>
       ) : (
         <div className="flex flex-col gap-2">
           <p className="text-xs text-muted-foreground">

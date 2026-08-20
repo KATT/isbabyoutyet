@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
+  toastInfo: vi.fn<(message: string) => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -37,8 +38,17 @@ vi.mock("convex/react", () => ({
   })(),
 }));
 
+vi.mock("sonner", () => ({
+  toast: {
+    info: (message: string) => mocks.toastInfo(message),
+  },
+}));
+
 vi.mock("./getting-started", () => ({
-  GettingStartedCard: (props: { onGoToStep: ((stepId: "share_link") => void) | undefined }) => (
+  GettingStartedCard: (props: {
+    onGoToStep: ((stepId: "share_link") => void) | undefined;
+    onDismiss: () => void;
+  }) => (
     <div data-testid="getting-started">
       <button
         type="button"
@@ -49,6 +59,9 @@ vi.mock("./getting-started", () => ({
         }}
       >
         Show Share
+      </button>
+      <button type="button" onClick={props.onDismiss}>
+        Dismiss guide
       </button>
     </div>
   ),
@@ -154,6 +167,33 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   );
 
   expect(view.getByTestId("getting-started")).toBeTruthy();
+});
+
+test("explains how to restore the guide after dismissal", async () => {
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Dismiss guide" }));
+  expect(mocks.dismissChecklist).toHaveBeenCalledWith({});
+  await vi.waitFor(() => {
+    expect(mocks.toastInfo).toHaveBeenCalledWith(
+      "Guide dismissed. Use the sparkle button in your dashboard header to bring it back.",
+    );
+  });
 });
 
 test("renders on the tour baby page when babyPublicId matches", async () => {
