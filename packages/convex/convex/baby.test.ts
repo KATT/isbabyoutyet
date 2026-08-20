@@ -308,7 +308,7 @@ test("manager queries resolve babyId or publicId slug", async () => {
 test("a baby inherits the owner locale until an override is set", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "sv-SE" });
+  await asAlice.mutation(api.profile.updateLocale, { locale: "sv" });
   const created = await asAlice.mutation(api.baby.create, {
     name: "Little One",
     dueDate: "2026-10-15",

@@ -438,7 +438,7 @@ test("beforeLoad redirects legacy settings links", async () => {
   });
 });
 
-test("loader does not call profile.ensure for authenticated visitors", async () => {
+test("loader does not mutate profiles for authenticated visitors", async () => {
   const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {

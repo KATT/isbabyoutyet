@@ -244,5 +244,7 @@ test("uses the thumbnail inline and links to the photo overlay", () => {
   expect(avatar.getAttribute("href")).toBe("/baby/baby-nova/photo");
   const inline = view.getByAltText("Photo of Nova") as HTMLImageElement;
   expect(inline.src).toContain("thumb.jpg");
-  expect(inline.style.backgroundImage).toContain("data:image/jpeg;base64,abc");
+  expect(
+    inline.parentElement?.querySelector<HTMLImageElement>("[data-blur-image-placeholder]")?.src,
+  ).toContain("data:image/jpeg;base64,abc");
 });
