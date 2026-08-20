@@ -33,7 +33,10 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
         }
       }}
     >
-      <DialogContent className="max-w-3xl border-0 bg-transparent p-0 shadow-none">
+      <DialogContent
+        className="max-w-3xl border-0 bg-transparent p-0 shadow-none"
+        showCloseButton={false}
+      >
         <button
           type="button"
           onClick={() => {
