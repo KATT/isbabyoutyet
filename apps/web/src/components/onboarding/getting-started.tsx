@@ -305,7 +305,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           {nextStep ? (
             <DrawerFooter className="relative bg-popover pt-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 className="min-h-11 w-full"
                 onClick={() => setDismissOpen(true)}
               >
@@ -456,7 +456,7 @@ function ChecklistContents(props: ChecklistContentsProps) {
           {props.showDismissAction ? (
             <Button
               size="sm"
-              variant="outline"
+              variant="secondary"
               className="mt-2 min-h-11 w-full"
               onClick={props.onRequestDismiss}
             >
