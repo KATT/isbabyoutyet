@@ -21,7 +21,7 @@ import { useVisualViewportMetrics } from "./visual-viewport";
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
-export type TourBaby = {
+type TourBaby = {
   publicId: string;
   name: string;
 };
