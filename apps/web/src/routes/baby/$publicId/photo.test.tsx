@@ -87,7 +87,16 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/photo");
 const { BabyPhotoOverlay } = routeModule;
 
-async function runPhotoLoader(handlers: Record<string, unknown>) {
+async function withPhotoRouteHandlers<TResult>(
+  handlers: Record<string, unknown>,
+  run: (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<TResult>,
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -99,6 +108,31 @@ async function runPhotoLoader(handlers: Record<string, unknown>) {
       },
     },
   });
+  try {
+    return await run({
+      context: {
+        queryClient,
+        convexPreloader: getConvexQueryPreloader(queryClient),
+      },
+      params: { publicId: "baby-smith" },
+    });
+  } finally {
+    queryClient.clear();
+  }
+}
+
+async function runPhotoBeforeLoad(handlers: Record<string, unknown>) {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<unknown>;
+  return await withPhotoRouteHandlers(handlers, beforeLoad);
+}
+
+async function runPhotoLoader(handlers: Record<string, unknown>) {
   const loader = routeModule.Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
@@ -109,17 +143,7 @@ async function runPhotoLoader(handlers: Record<string, unknown>) {
     baby: unknown;
     imagePrefetch: { input: string | undefined };
   }>;
-  try {
-    return await loader({
-      context: {
-        queryClient,
-        convexPreloader: getConvexQueryPreloader(queryClient),
-      },
-      params: { publicId: "baby-smith" },
-    });
-  } finally {
-    queryClient.clear();
-  }
+  return await withPhotoRouteHandlers(handlers, loader);
 }
 
 function babyDoc(opts: { photoUrl: string | null }) {
@@ -140,6 +164,37 @@ function babyDoc(opts: { photoUrl: string | null }) {
   };
 }
 
+test("beforeLoad 404s unknown babies", async () => {
+  await expect(runPhotoBeforeLoad({ "baby:getByPublicId": null })).rejects.toMatchObject({
+    isNotFound: true,
+  });
+});
+
+test("beforeLoad redirects when the public id resolves to a different slug", async () => {
+  await expect(
+    runPhotoBeforeLoad({
+      "baby:getByPublicId": {
+        ...babyDoc({ photoUrl: "https://cdn.example/full.jpg" }),
+        publicId: "baby-nova",
+      },
+    }),
+  ).rejects.toMatchObject({
+    options: {
+      to: "/baby/$publicId/photo",
+      params: { publicId: "baby-nova" },
+      replace: true,
+    },
+  });
+});
+
+test("beforeLoad allows matching public ids", async () => {
+  await expect(
+    runPhotoBeforeLoad({
+      "baby:getByPublicId": babyDoc({ photoUrl: "https://cdn.example/full.jpg" }),
+    }),
+  ).resolves.toBeUndefined();
+});
+
 test("loader redirects home when the baby has no page photo", async () => {
   await expect(
     runPhotoLoader({
@@ -152,6 +207,34 @@ test("loader redirects home when the baby has no page photo", async () => {
       resetScroll: false,
     },
   });
+});
+
+test("overlay 404s when loader data loses the page photo", async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  mocks.loaderData = {
+    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
+      input: { id: "baby-smith" },
+      initialData: babyDoc({ photoUrl: null }) as never,
+    }),
+    imagePrefetch: testInitiatedQuery(browserImageFactory, "https://cdn.example/full.jpg"),
+  };
+
+  expect(() =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LocaleProvider locale="en-GB">
+          <BabyPhotoOverlay />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    ),
+  ).toThrow(
+    expect.objectContaining({
+      isNotFound: true,
+    }),
+  );
+  queryClient.clear();
 });
 
 test("loader prefetches the full image in the browser", async () => {

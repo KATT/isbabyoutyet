@@ -90,7 +90,16 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/updates.$updateId.photo");
 const { BabyUpdatePhotoOverlay } = routeModule;
 
-async function runUpdatePhotoLoader(handlers: Record<string, unknown>) {
+async function withUpdatePhotoRouteHandlers<TResult>(
+  handlers: Record<string, unknown>,
+  run: (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string; updateId: string };
+  }) => Promise<TResult>,
+) {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
@@ -102,18 +111,8 @@ async function runUpdatePhotoLoader(handlers: Record<string, unknown>) {
       },
     },
   });
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string; updateId: string };
-  }) => Promise<{
-    updatePhoto: unknown;
-    imagePrefetch: { input: string | undefined };
-  }>;
   try {
-    return await loader({
+    return await run({
       context: {
         queryClient,
         convexPreloader: getConvexQueryPreloader(queryClient),
@@ -124,6 +123,69 @@ async function runUpdatePhotoLoader(handlers: Record<string, unknown>) {
     queryClient.clear();
   }
 }
+
+async function runUpdatePhotoBeforeLoad(handlers: Record<string, unknown>) {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string; updateId: string };
+  }) => Promise<unknown>;
+  return await withUpdatePhotoRouteHandlers(handlers, beforeLoad);
+}
+
+async function runUpdatePhotoLoader(handlers: Record<string, unknown>) {
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string; updateId: string };
+  }) => Promise<{
+    updatePhoto: unknown;
+    imagePrefetch: { input: string | undefined };
+  }>;
+  return await withUpdatePhotoRouteHandlers(handlers, loader);
+}
+
+test("update photo beforeLoad 404s unknown babies", async () => {
+  await expect(runUpdatePhotoBeforeLoad({ "baby:getByPublicId": null })).rejects.toMatchObject({
+    isNotFound: true,
+  });
+});
+
+test("update photo beforeLoad redirects when the public id resolves to a different slug", async () => {
+  await expect(
+    runUpdatePhotoBeforeLoad({
+      "baby:getByPublicId": {
+        _id: "jd7baby000000000000000000",
+        publicId: "baby-nova",
+        name: "Baby Nova",
+        photoUrl: null,
+      },
+    }),
+  ).rejects.toMatchObject({
+    options: {
+      to: "/baby/$publicId/updates/$updateId/photo",
+      params: { publicId: "baby-nova", updateId },
+      replace: true,
+    },
+  });
+});
+
+test("update photo beforeLoad allows matching public ids", async () => {
+  await expect(
+    runUpdatePhotoBeforeLoad({
+      "baby:getByPublicId": {
+        _id: "jd7baby000000000000000000",
+        publicId: "baby-smith",
+        name: "Baby Smith",
+        photoUrl: null,
+      },
+    }),
+  ).resolves.toBeUndefined();
+});
 
 test("update photo loader redirects home when the update has no photo", async () => {
   await expect(
@@ -202,6 +264,34 @@ test("update photo loader prefetches the full image in the browser", async () =>
       ok: true,
     });
   });
+});
+
+test("update photo overlay 404s when loader data loses the photo", async () => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  mocks.loaderData = {
+    updatePhoto: testPreloadedConvexQuery<typeof api.timeline.getUpdatePhoto>({
+      input: { babyId: "baby-smith", updateId },
+      initialData: null,
+    }),
+    imagePrefetch: testInitiatedQuery(browserImageFactory, "https://cdn.example/update.jpg"),
+  };
+
+  expect(() =>
+    render(
+      <QueryClientProvider client={queryClient}>
+        <LocaleProvider locale="en-GB">
+          <BabyUpdatePhotoOverlay />
+        </LocaleProvider>
+      </QueryClientProvider>,
+    ),
+  ).toThrow(
+    expect.objectContaining({
+      isNotFound: true,
+    }),
+  );
+  queryClient.clear();
 });
 
 test("dismisses the update photo overlay after the dialog closes", async () => {
