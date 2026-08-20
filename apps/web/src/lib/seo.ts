@@ -17,7 +17,10 @@ type BabySeoBase = {
   babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+} & Partial<{
+  milestoneVisibility: MilestoneVisibility | null;
+  photoId: string | null;
+}>;
 
 type BabyDueDateDisplay =
   | { dueDateDisplayMode: "exact"; dueDate: string }
@@ -144,8 +147,39 @@ function babyOgImagePath(publicId: string) {
   return `/og/baby/${publicId}`;
 }
 
-export function babyOgImageUrl(publicId: string) {
-  return absoluteUrl(babyOgImagePath(publicId));
+function babyOgImageVersion(opts: { baby: BabySeoInput; title: string; description: string }) {
+  const source = JSON.stringify([
+    opts.title,
+    opts.description,
+    opts.baby.name,
+    opts.baby.dueDateDisplayMode ?? null,
+    opts.baby.dueDateDisplayMode === "exact" ? opts.baby.dueDate : null,
+    opts.baby.dueDateDisplayMode === "message" ? (opts.baby.publicDueDateText ?? null) : null,
+    opts.baby.theme ?? null,
+    opts.baby.locale,
+    opts.baby.babyBorn ?? null,
+    opts.baby.wentToHospital ?? null,
+    opts.baby.laborStarted ?? null,
+    opts.baby.milestoneVisibility?.showLabor ?? null,
+    opts.baby.milestoneVisibility?.showHospital ?? null,
+    opts.baby.photoId ?? null,
+  ]);
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let index = 0; index < source.length; index++) {
+    const code = source.charCodeAt(index);
+    first = Math.imul(first ^ code, 0x01000193);
+    second = Math.imul(second ^ code, 0x85ebca6b);
+  }
+  return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}`;
+}
+
+export function babyOgImageUrl(publicId: string, version: string | undefined) {
+  const url = new URL(absoluteUrl(babyOgImagePath(publicId)));
+  if (version) {
+    url.searchParams.set("v", version);
+  }
+  return url.toString();
 }
 
 export function homepageOgImagePath() {
@@ -168,7 +202,8 @@ export function babySeoHead(baby: BabySeoInput) {
   const title = babyPageTitle(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageUrl = babyOgImageUrl(baby.publicId);
+  const imageVersion = babyOgImageVersion({ baby, title, description });
+  const imageUrl = babyOgImageUrl(baby.publicId, imageVersion);
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {

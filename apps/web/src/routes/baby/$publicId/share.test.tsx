@@ -211,7 +211,9 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   );
 
   expect(data.sharePreview).not.toBeNull();
-  expect(new URL(data.imagePrefetch.input ?? "").pathname).toBe("/og/baby/baby-smith");
+  const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
+  expect(prefetchedImageUrl.pathname).toBe("/og/baby/baby-smith");
+  expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
   expect(data.sharePreview?.imageUrl).toBe(data.imagePrefetch.input);
   expect(data.canManage).toBe(false);
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");

@@ -22,5 +22,6 @@ export function getBabySeo(doc: PublicBabyDoc, routePublicId: string) {
     wentToHospital: doc.wentToHospital,
     laborStarted: doc.laborStarted,
     milestoneVisibility: doc.milestoneVisibility,
+    photoId: doc.photoId ?? null,
   });
 }

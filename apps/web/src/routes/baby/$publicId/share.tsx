@@ -48,7 +48,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
   },
   loader: async (opts) => {
     const publicId = opts.params.publicId;
-    const imagePrefetch = prefetchBrowserImage(opts.context.queryClient, babyOgImageUrl(publicId));
+    const imageUrl = babyOgImageUrl(publicId, undefined);
     const data = await allKeyed({
       baby: opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
         id: publicId,
@@ -58,12 +58,18 @@ export const Route = createFileRoute("/baby/$publicId/share")({
       }),
     });
     const babyDoc = data.baby.initialData;
+    const sharePreview = babyDoc ? getBabySeo(babyDoc, publicId) : null;
+    // The browser image identity depends on the fetched public baby fields.
+    const imagePrefetch = prefetchBrowserImage(
+      opts.context.queryClient,
+      sharePreview?.imageUrl ?? imageUrl,
+    );
 
     return {
       imagePrefetch,
       canManage: data.myAccess.initialData.canManage,
       shareLink: canonicalUrl(`/baby/${publicId}`),
-      sharePreview: babyDoc ? getBabySeo(babyDoc, publicId) : null,
+      sharePreview,
     };
   },
   component: BabyShareOverlay,
