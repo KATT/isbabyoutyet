@@ -109,6 +109,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             void (async () => {
               await dismissChecklist({});
               if (props.surface === "dashboard") {
+                window.scrollTo({ top: 0, behavior: "auto" });
                 setRestartHintVisible(true);
               }
             })();

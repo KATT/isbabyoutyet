@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
+  scrollTo: vi.fn<(options: ScrollToOptions) => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -163,6 +164,18 @@ test("mounts authed onboarding host when progress is loaded", async () => {
 });
 
 test("highlights how to restore the guide after dismissal", async () => {
+  const scrollToDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
+  await using _scrollTo = makeResource({}, () => {
+    if (scrollToDescriptor) {
+      Object.defineProperty(window, "scrollTo", scrollToDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "scrollTo");
+    }
+  });
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    value: mocks.scrollTo,
+  });
   mocks.useSession.mockReturnValue({
     data: { user: { id: "user-1" } },
     isPending: false,
@@ -185,6 +198,7 @@ test("highlights how to restore the guide after dismissal", async () => {
   await vi.waitFor(() => {
     expect(view.getByTestId("coachmark").textContent).toBe("restart_tour");
   });
+  expect(mocks.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
   expect(view.queryByTestId("getting-started")).toBeNull();
 });
 
