@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   setMinimized: vi.fn<() => void>(),
   dismissChecklist: vi.fn<() => void>(),
   completeStep: vi.fn<() => void>(),
+  scrollTo: vi.fn<(options: ScrollToOptions) => void>(),
 }));
 
 vi.mock("@/lib/auth-client", () => ({
@@ -38,11 +39,30 @@ vi.mock("convex/react", () => ({
 }));
 
 vi.mock("./getting-started", () => ({
-  GettingStartedCard: () => <div data-testid="getting-started" />,
+  GettingStartedCard: (props: {
+    onGoToStep: ((stepId: "share_link") => void) | undefined;
+    onDismiss: () => void;
+  }) => (
+    <div data-testid="getting-started">
+      <button
+        type="button"
+        onClick={() => {
+          if (props.onGoToStep) {
+            props.onGoToStep("share_link");
+          }
+        }}
+      >
+        Show Share
+      </button>
+      <button type="button" onClick={props.onDismiss}>
+        Dismiss guide
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("./coachmark", () => ({
-  Coachmark: () => null,
+  Coachmark: (props: { targetId: string }) => <div data-testid="coachmark">{props.targetId}</div>,
 }));
 
 const { OnboardingHost } = await import("./onboarding-host");
@@ -143,6 +163,45 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   expect(view.getByTestId("getting-started")).toBeTruthy();
 });
 
+test("highlights how to restore the guide after dismissal", async () => {
+  const scrollToDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
+  await using _scrollTo = makeResource({}, () => {
+    if (scrollToDescriptor) {
+      Object.defineProperty(window, "scrollTo", scrollToDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "scrollTo");
+    }
+  });
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    value: mocks.scrollTo,
+  });
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="dashboard"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId={undefined}
+      onGoToStep={undefined}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Dismiss guide" }));
+  expect(mocks.dismissChecklist).toHaveBeenCalledWith({});
+  await vi.waitFor(() => {
+    expect(view.getByTestId("coachmark").textContent).toBe("restart_tour");
+  });
+  expect(mocks.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+  expect(view.queryByTestId("getting-started")).toBeNull();
+});
+
 test("renders on the tour baby page when babyPublicId matches", async () => {
   mocks.useSession.mockReturnValue({
     data: { user: { id: "user-1" } },
@@ -162,4 +221,28 @@ test("renders on the tour baby page when babyPublicId matches", async () => {
   );
 
   expect(view.getByTestId("getting-started")).toBeTruthy();
+});
+
+test("shows a coachmark only after the user asks for contextual help", async () => {
+  mocks.useSession.mockReturnValue({
+    data: { user: { id: "user-1" } },
+    isPending: false,
+  });
+  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+
+  await using view = renderResource(
+    <OnboardingHost
+      surface="baby"
+      onboarding={onboardingHandle}
+      enabled={undefined}
+      spotlight={undefined}
+      babyPublicId="baby-smith"
+      onGoToStep={undefined}
+    />,
+  );
+
+  expect(view.queryByTestId("coachmark")).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "Show Share" }));
+  expect(view.getByTestId("coachmark").textContent).toBe("share_link");
+  expect(view.queryByTestId("getting-started")).toBeNull();
 });

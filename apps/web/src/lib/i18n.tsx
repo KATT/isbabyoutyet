@@ -485,6 +485,10 @@ const enGB = {
   "Tap a step to jump there": "Tap a step to jump there",
   Minimize: "Minimize",
   "Dismiss tour": "Dismiss tour",
+  "Dismiss guide": "Dismiss guide",
+  "Guide dismissed": "Guide dismissed",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use this sparkle button to bring the guide back anytime.",
   "Tour progress": "Tour progress",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -1014,6 +1018,10 @@ const sv: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Tryck på ett steg för att hoppa dit",
   Minimize: "Fäll ihop",
   "Dismiss tour": "Stäng guiden",
+  "Dismiss guide": "Stäng guiden",
+  "Guide dismissed": "Guiden är stängd",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Använd den här gnistknappen för att ta fram guiden igen när du vill.",
   "Tour progress": "Hur långt du har kommit i guiden",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -1529,6 +1537,10 @@ const es: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toca un paso para abrirlo",
   Minimize: "Minimizar",
   "Dismiss tour": "Cerrar el recorrido",
+  "Dismiss guide": "Cerrar guía",
+  "Guide dismissed": "Guía cerrada",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Usa este botón de destellos para volver a abrir la guía cuando quieras.",
   "Tour progress": "Progreso del recorrido",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -2048,6 +2060,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toque em um passo para ir até lá",
   Minimize: "Minimizar",
   "Dismiss tour": "Fechar o tour",
+  "Dismiss guide": "Fechar guia",
+  "Guide dismissed": "Guia fechado",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use este botão de brilho para reabrir o guia quando quiser.",
   "Tour progress": "Progresso do tour",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",

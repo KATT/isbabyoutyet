@@ -1,5 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
+import { cn } from "@workspace/ui/lib/utils";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -91,9 +92,14 @@ function DashboardPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full text-muted-foreground"
+              className={cn(
+                "rounded-full text-muted-foreground",
+                progress.checklistDismissed &&
+                  "ring-2 ring-primary ring-offset-2 ring-offset-background",
+              )}
               aria-label={t("Restart getting started tour")}
               title={t("Restart tour")}
+              data-tour-id="restart_tour"
               onClick={async () => {
                 await restartTour({});
               }}
