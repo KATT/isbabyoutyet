@@ -123,6 +123,13 @@ test("copies the share link from the preview", async () => {
     expect(onShareCopied).toHaveBeenCalledOnce();
     expect(view.getByRole("button", { name: "Copied!" })).toBeTruthy();
   });
+
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+  vi.advanceTimersByTime(3_000);
+  expect(view.getByRole("button", { name: "Copied!" })).toBeTruthy();
 });
 
 test("hides the owner group when the visitor has no owner actions", async () => {

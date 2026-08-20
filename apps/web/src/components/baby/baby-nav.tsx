@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/component
 import { ChatCircleText, CheckCircle, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { useI18n } from "@/lib/i18n";
 
@@ -51,12 +51,6 @@ export function BabyNav(props: BabyNavProps) {
   const [copied, setCopied] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const hasOwnerActions = !!(props.postUpdateButton || props.settingsButton);
-
-  useEffect(() => {
-    if (!copied) return;
-    const timeout = setTimeout(() => setCopied(false), 2000);
-    return () => clearTimeout(timeout);
-  }, [copied]);
 
   async function copyShareLink() {
     if (!props.shareLink) return;
@@ -189,7 +183,15 @@ export function BabyNav(props: BabyNavProps) {
         {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
         {pageActions}
       </div>
-      <Dialog open={shareOpen} onOpenChange={setShareOpen}>
+      <Dialog
+        open={shareOpen}
+        onOpenChange={(open) => {
+          setShareOpen(open);
+          if (!open) {
+            setCopied(false);
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{t("Share the Link")}</DialogTitle>
