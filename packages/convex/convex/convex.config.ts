@@ -12,6 +12,7 @@ const app = defineApp({
     VAPID_PRIVATE_KEY: v.optional(v.string()),
     VAPID_PUBLIC_KEY: v.optional(v.string()),
     VAPID_SUBJECT: v.optional(v.string()),
+    VERCEL_ENV: v.optional(v.union(v.literal("production"), v.literal("preview"))),
   },
 });
 app.use(betterAuth);
