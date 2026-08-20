@@ -38,7 +38,9 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
           <ItemContent>
             <ItemTitle>{t("This is a demo baby")}</ItemTitle>
             <ItemDescription>
-              {t("Feel free to post test messages — they get cleared on each deploy.")}
+              {t(
+                "Go wild with test messages. We clear them once a day, but only after an hour of quiet.",
+              )}
             </ItemDescription>
           </ItemContent>
         </Item>
