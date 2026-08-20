@@ -486,10 +486,6 @@ const enGB = {
   Minimize: "Minimize",
   "Dismiss tour": "Dismiss tour",
   "Dismiss guide": "Dismiss guide",
-  "Dismiss getting started guide?": "Dismiss getting started guide?",
-  "Keep guide": "Keep guide",
-  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
-    "You can bring it back anytime from your dashboard with the sparkle button in the header.",
   "Guide dismissed": "Guide dismissed",
   "Use this sparkle button to bring the guide back anytime.":
     "Use this sparkle button to bring the guide back anytime.",
@@ -1023,10 +1019,6 @@ const sv: Record<TranslationKey, string> = {
   Minimize: "Fäll ihop",
   "Dismiss tour": "Stäng guiden",
   "Dismiss guide": "Stäng guiden",
-  "Dismiss getting started guide?": "Stäng kom igång-guiden?",
-  "Keep guide": "Behåll guiden",
-  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
-    "Du kan ta fram den igen när som helst via gnistknappen i sidhuvudet på din översikt.",
   "Guide dismissed": "Guiden är stängd",
   "Use this sparkle button to bring the guide back anytime.":
     "Använd den här gnistknappen för att ta fram guiden igen när du vill.",
@@ -1546,10 +1538,6 @@ const es: Record<TranslationKey, string> = {
   Minimize: "Minimizar",
   "Dismiss tour": "Cerrar el recorrido",
   "Dismiss guide": "Cerrar guía",
-  "Dismiss getting started guide?": "¿Cerrar la guía de primeros pasos?",
-  "Keep guide": "Conservar guía",
-  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
-    "Puedes volver a abrirla cuando quieras desde el botón de destellos del encabezado de tu panel.",
   "Guide dismissed": "Guía cerrada",
   "Use this sparkle button to bring the guide back anytime.":
     "Usa este botón de destellos para volver a abrir la guía cuando quieras.",
@@ -2073,10 +2061,6 @@ const ptBR: Record<TranslationKey, string> = {
   Minimize: "Minimizar",
   "Dismiss tour": "Fechar o tour",
   "Dismiss guide": "Fechar guia",
-  "Dismiss getting started guide?": "Fechar o guia de primeiros passos?",
-  "Keep guide": "Manter guia",
-  "You can bring it back anytime from your dashboard with the sparkle button in the header.":
-    "Você pode reabri-lo quando quiser pelo botão de brilho no cabeçalho do painel.",
   "Guide dismissed": "Guia fechado",
   "Use this sparkle button to bring the guide back anytime.":
     "Use este botão de brilho para reabrir o guia quando quiser.",

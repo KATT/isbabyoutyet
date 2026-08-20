@@ -1,16 +1,5 @@
 import { Button } from "@workspace/ui/components/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@workspace/ui/components/alert-dialog";
-import {
   Drawer,
   DrawerContent,
   DrawerDescription,
@@ -181,8 +170,6 @@ function getStepAction(opts: {
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dismissOpen, setDismissOpen] = useState(false);
-  const [dismissAfterDrawerClose, setDismissAfterDrawerClose] = useState(false);
   const visualViewport = useVisualViewportMetrics();
   const done = new Set(props.effectiveSteps);
   const completedCount = ONBOARDING_STEPS.filter((step) => done.has(step.id)).length;
@@ -260,17 +247,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
         </Progress>
       </aside>
 
-      <Drawer
-        open={mobileOpen}
-        onOpenChange={setMobileOpen}
-        onOpenChangeComplete={(open) => {
-          if (!open && dismissAfterDrawerClose) {
-            setDismissAfterDrawerClose(false);
-            setDismissOpen(true);
-          }
-        }}
-        showSwipeHandle
-      >
+      <Drawer open={mobileOpen} onOpenChange={setMobileOpen} showSwipeHandle>
         <DrawerContent
           className="right-auto w-dvw max-w-dvw max-h-[calc(100dvh-2rem)] md:hidden"
           style={{
@@ -309,7 +286,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               percent={percent}
               t={t}
               onBeforeAction={() => setMobileOpen(false)}
-              onRequestDismiss={() => setDismissOpen(true)}
+              onRequestDismiss={props.onDismiss}
               showDismissAction={false}
             />
           </div>
@@ -319,8 +296,8 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
                 variant="secondary"
                 className="min-h-11 w-full"
                 onClick={() => {
-                  setDismissAfterDrawerClose(true);
                   setMobileOpen(false);
+                  props.onDismiss();
                 }}
               >
                 {t("Dismiss guide")}
@@ -366,38 +343,10 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           percent={percent}
           t={t}
           onBeforeAction={undefined}
-          onRequestDismiss={() => setDismissOpen(true)}
+          onRequestDismiss={props.onDismiss}
           showDismissAction
         />
       </aside>
-
-      <AlertDialog open={dismissOpen} onOpenChange={setDismissOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <Sparkle />
-            </AlertDialogMedia>
-            <AlertDialogTitle>{t("Dismiss getting started guide?")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t(
-                "You can bring it back anytime from your dashboard with the sparkle button in the header.",
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-11">{t("Keep guide")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="min-h-11"
-              onClick={() => {
-                setDismissOpen(false);
-                props.onDismiss();
-              }}
-            >
-              {t("Dismiss guide")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

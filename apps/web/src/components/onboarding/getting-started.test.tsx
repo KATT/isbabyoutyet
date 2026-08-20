@@ -91,14 +91,13 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
   fireEvent.click(expand);
   const reopenedDrawer = await screen.findByRole("dialog", { name: "Getting started" });
   fireEvent.click(within(reopenedDrawer).getByRole("button", { name: "Dismiss guide" }));
-  const confirmation = await screen.findByRole("alertdialog", {
-    name: "Dismiss getting started guide?",
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
   });
-  expect(screen.queryByRole("dialog", { name: "Getting started" })).toBeNull();
-  expect(within(confirmation).getByText(/sparkle button in the header/i)).toBeTruthy();
+  expect(onDismiss).toHaveBeenCalledOnce();
 });
 
-test("uses an explicit confirmation before dismissing the guide", async () => {
+test("dismisses the guide from the explicit labeled action", async () => {
   const onDismiss = vi.fn<() => void>();
   await using _view = renderResource(
     <GettingStartedCard
@@ -115,23 +114,8 @@ test("uses an explicit confirmation before dismissing the guide", async () => {
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Dismiss guide" }));
-  let confirmation = await screen.findByRole("alertdialog", {
-    name: "Dismiss getting started guide?",
-  });
-  expect(within(confirmation).getByText(/sparkle button in the header/i)).toBeTruthy();
-
-  fireEvent.click(within(confirmation).getByRole("button", { name: "Keep guide" }));
-  await vi.waitFor(() => {
-    expect(screen.queryByRole("alertdialog")).toBeNull();
-  });
-  expect(onDismiss).not.toHaveBeenCalled();
-
-  fireEvent.click(screen.getByRole("button", { name: "Dismiss guide" }));
-  confirmation = await screen.findByRole("alertdialog", {
-    name: "Dismiss getting started guide?",
-  });
-  fireEvent.click(within(confirmation).getByRole("button", { name: "Dismiss guide" }));
   expect(onDismiss).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("alertdialog")).toBeNull();
 });
 
 test("anchors the mobile dock and drawer to the visual viewport", async () => {
