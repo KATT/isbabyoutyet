@@ -1,7 +1,6 @@
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { getThemeCss } from "@/components/baby/utils";
 import { allKeyed } from "@workspace/query-prefetch";
-import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { BabyData } from "@workspace/convex/src/types";
@@ -66,6 +65,7 @@ export const Route = createFileRoute("/_auth/settings")({
         params: { publicId: babyRef },
       });
     }
+    // oxlint-disable-next-line query-prefetch/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
     return data;
   },
   head: (opts) => {
@@ -106,19 +106,18 @@ function SettingsPage() {
   const router = useRouter();
   const search = Route.useSearch();
   const loaderData = Route.useLoaderData();
-  const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
-  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
   const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
-  const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
+  const managerBabyDoc =
+    loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc || !search.baby) {
     throw notFound();
   }
   const babyRef = search.baby;
   const baby = managerDocToBabyData(managerBabyDoc);
-  const isOwner = myAccessQuery.data.isOwner;
+  const isOwner = loaderData.myAccess.initialData.isOwner;
 
   return (
     <main className="min-h-screen bg-background bg-dots px-4 py-8">
