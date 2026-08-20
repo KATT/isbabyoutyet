@@ -4,7 +4,7 @@ import type { QueryCtx } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
-import { claimPendingInvitesForCaller } from "./coParents";
+import { ensureUserProfileForAuthUser } from "./profileBootstrap";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -47,6 +47,7 @@ export const get = query({
   },
 });
 
+/** Returns the caller's profile, creating it when missing (e.g. test identities). */
 export const ensure = mutation({
   args: {
     browserLocale: v.string(),
@@ -55,20 +56,10 @@ export const ensure = mutation({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const caller = appIdentity(identity);
-    await claimPendingInvitesForCaller(ctx, caller);
-    const existing = await getProfileHandler(ctx, caller.tokenIdentifier);
-    if (existing) {
-      return toProfileResult(existing);
-    }
-
-    const locale = resolveSupportedLocale(args.browserLocale);
-    await ctx.db.insert("userProfiles", {
+    return await ensureUserProfileForAuthUser(ctx, {
       userId: caller.authUserId,
-      tokenIdentifier: caller.tokenIdentifier,
-      locale,
-      isAdmin: false,
+      localeHint: args.browserLocale,
     });
-    return { locale, isAdmin: false };
   },
 });
 

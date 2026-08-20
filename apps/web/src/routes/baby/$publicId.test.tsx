@@ -435,18 +435,16 @@ test("beforeLoad redirects legacy settings links", async () => {
   });
 });
 
-test("loader ensures the profile before prefetching manager data", async () => {
+test("loader does not call profile.ensure for authenticated visitors", async () => {
   const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,
-      "profile:get": { locale: "en-GB", isAdmin: false },
       "coParents:myAccess": { canManage: true, isOwner: true },
       "baby:getManagerBaby": BABY_DOC,
       "timeline:listByBaby": EMPTY_PAGE,
       "baby:getScheduledNotifications": [],
       "pushSubscriptions:getSubscriptionCount": 0,
-      "coParents:listForBaby": { coParents: [], invites: [] },
     },
     {
       token: "layout-token",
@@ -456,7 +454,7 @@ test("loader ensures the profile before prefetching manager data", async () => {
     },
   );
 
-  expect(mutation).toHaveBeenCalledWith(api.profile.ensure, { browserLocale: "en-GB" });
+  expect(mutation).not.toHaveBeenCalled();
   expect(result.managerBaby).toMatchObject({ initialData: BABY_DOC });
 });
 
