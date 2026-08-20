@@ -134,6 +134,50 @@ test("keeps sizing classes and dimensions on the wrapper and real image", () => 
   expect(img.height).toBe(160);
 });
 
+test("matches placeholder object fit from inline styles and utility classes", () => {
+  const view = render(
+    <>
+      <BlurImage
+        src="https://example.com/inline.jpg"
+        alt="Inline fit"
+        blurDataUrl={BLUR}
+        style={{ objectFit: "contain" }}
+      />
+      <BlurImage
+        src="https://example.com/fill.jpg"
+        alt="Fill fit"
+        blurDataUrl={BLUR}
+        className="object-fill"
+      />
+      <BlurImage
+        src="https://example.com/none.jpg"
+        alt="None fit"
+        blurDataUrl={BLUR}
+        className="object-none"
+      />
+      <BlurImage
+        src="https://example.com/scale-down.jpg"
+        alt="Scale down fit"
+        blurDataUrl={BLUR}
+        className="object-scale-down"
+      />
+    </>,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const placeholders = view.container.querySelectorAll<HTMLImageElement>(
+    "[data-blur-image-placeholder]",
+  );
+  expect([...placeholders].map((placeholder) => placeholder.style.objectFit)).toEqual([
+    "contain",
+    "fill",
+    "none",
+    "scale-down",
+  ]);
+});
+
 test("preserves caller styles while layering the placeholder separately", async () => {
   const view = render(
     <BlurImage
