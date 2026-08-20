@@ -731,3 +731,51 @@ test("a backdated event time is rejected when in the future or without a milesto
     }),
   ).rejects.toThrow("A backdated time requires a status change");
 });
+
+test("getUpdatePhoto returns the public photo payload for a timeline update", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const photoId = await storeBlob(t);
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  if (!publicBaby) throw new Error("expected baby");
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    message: "First smile",
+    photoId,
+  });
+
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+
+  const photo = await t.query(api.timeline.getUpdatePhoto, {
+    babyId: publicBaby.publicId,
+    updateId: item.update._id,
+  });
+  expect(photo).toMatchObject({
+    babyName: "Baby Smith",
+    blurDataUrl: null,
+  });
+  expect(photo?.photoUrl).toEqual(expect.any(String));
+});
+
+test("getUpdatePhoto returns null for text-only updates", async () => {
+  const { t, asAlice, babyId } = await setup();
+  const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
+  if (!publicBaby) throw new Error("expected baby");
+
+  await asAlice.mutation(api.updates.post, {
+    babyId,
+    message: "No photo here",
+  });
+  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const item = feed.page[0];
+  if (item?.kind !== "update") throw new Error("expected update");
+
+  expect(
+    await t.query(api.timeline.getUpdatePhoto, {
+      babyId: publicBaby.publicId,
+      updateId: item.update._id,
+    }),
+  ).toBeNull();
+});

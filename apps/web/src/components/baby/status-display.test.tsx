@@ -1,9 +1,29 @@
-import { fireEvent, render } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { StatusDisplay } from "./status-display";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { BabyData } from "@workspace/convex/src/types";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: (
+    props: React.ComponentProps<"a"> & {
+      to: string | undefined;
+      params: { publicId: string } | undefined;
+    },
+  ) => {
+    const href =
+      typeof props.to === "string"
+        ? props.to.replace("$publicId", props.params?.publicId ?? "")
+        : "#";
+    return (
+      <a href={href} aria-label={props["aria-label"]} className={props.className}>
+        {props.children}
+      </a>
+    );
+  },
+}));
+
+const { StatusDisplay } = await import("./status-display");
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -44,6 +64,7 @@ test.each([
   const currentBaby = { ...baby, ...testCase.dates };
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={currentBaby}
       currentStatus={getCurrentStatus(currentBaby)}
       photoUrl={null}
@@ -68,6 +89,7 @@ test("home-birth labour copy does not mention hospital", () => {
   };
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={homeBirthBaby}
       currentStatus={getCurrentStatus(homeBirthBaby)}
       photoUrl={null}
@@ -87,6 +109,7 @@ test("home-birth labour copy does not mention hospital", () => {
 test("shows the latest family message when present", () => {
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={baby}
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
@@ -110,6 +133,7 @@ test.each([
   const currentBaby = { ...baby, dueDate: testCase.dueDate };
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={currentBaby}
       currentStatus={getCurrentStatus(currentBaby)}
       photoUrl={null}
@@ -129,6 +153,7 @@ test("custom public due date text replaces the exact date and countdown", async 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={{
         ...baby,
         dueDate: null,
@@ -155,6 +180,7 @@ test("hides the due date box when message mode has no public text", async () => 
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={{
         ...baby,
         dueDate: null,
@@ -181,6 +207,7 @@ test("blank public due date text keeps the exact date and countdown", async () =
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const view = render(
     <StatusDisplay
+      publicId={null}
       baby={{ ...baby, publicDueDateText: "   " }}
       currentStatus={getCurrentStatus(baby)}
       photoUrl={null}
@@ -197,9 +224,10 @@ test("blank public due date text keeps the exact date and countdown", async () =
   expect(view.getByText("Due date: 1 September 2026")).toBeTruthy();
 });
 
-test("uses the thumbnail inline and opens the full photo", () => {
+test("uses the thumbnail inline and links to the photo overlay", () => {
   const view = render(
     <StatusDisplay
+      publicId="baby-nova"
       baby={baby}
       currentStatus={getCurrentStatus(baby)}
       photoUrl="https://example.com/full.jpg"
@@ -212,11 +240,9 @@ test("uses the thumbnail inline and opens the full photo", () => {
     view.unmount();
   });
 
-  const avatar = view.getByRole("button", { name: "Photo of Nova" });
+  const avatar = view.getByRole("link", { name: "Photo of Nova" });
+  expect(avatar.getAttribute("href")).toBe("/baby/baby-nova/photo");
   const inline = view.getByAltText("Photo of Nova") as HTMLImageElement;
   expect(inline.src).toContain("thumb.jpg");
   expect(inline.style.backgroundImage).toContain("data:image/jpeg;base64,abc");
-  fireEvent.click(avatar);
-  expect(view.getAllByAltText("Photo of Nova")).toHaveLength(2);
-  fireEvent.click(view.getByRole("button", { name: "Close photo" }));
 });
