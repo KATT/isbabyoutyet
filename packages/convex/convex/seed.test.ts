@@ -172,7 +172,7 @@ test("seedDemoData creates an empty demo user with no babies", async () => {
       .withIndex("by_userId", (q) => q.eq("userId", first.emptyUserId))
       .unique();
   });
-  expect(profile).toBeNull();
+  expect(profile).toMatchObject({ locale: "en-GB", isAdmin: false });
 
   const onboarding = await t.run(async (ctx) => {
     return await ctx.db

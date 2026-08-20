@@ -9,6 +9,11 @@ vi.mock("@tanstack/react-router", () => ({
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
   createFileRoute: () => (opts: { component: unknown }) => opts,
+  getRouteApi: () => ({
+    useRouteContext: () => ({
+      profile: { input: {}, initialData: { locale: "en-GB", isAdmin: false } },
+    }),
+  }),
 }));
 
 vi.mock("@/components/language-settings", () => ({

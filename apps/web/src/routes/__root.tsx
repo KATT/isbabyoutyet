@@ -12,6 +12,7 @@ import {
 import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
@@ -51,6 +52,7 @@ export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
   convexClient: ConvexReactClient;
+  convexPreloader: ConvexQueryPreloader;
   locale: SupportedLocale;
   isAuthenticated: boolean;
   token: string | null | undefined;

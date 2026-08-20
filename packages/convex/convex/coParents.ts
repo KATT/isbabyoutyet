@@ -6,9 +6,11 @@ import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
+import { claimPendingInvitesForAuthUser } from "./coParentInviteClaims";
 import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
 import { FORBIDDEN } from "../src/types";
 import { toManagerBabyDto } from "./babyDto";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 
 function normalizeEmail(email: string) {
@@ -80,7 +82,7 @@ async function listActiveInvites(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">
  * Anonymous callers get canManage/isOwner false.
  */
 export const myAccess = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -88,15 +90,15 @@ export const myAccess = query({
     }
     const caller = appIdentity(identity);
 
-    const baby = await ctx.db.get(args.babyId);
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
       return { isOwner: false, isCoParent: false, canManage: false };
     }
 
+    const babyId = baby._id;
     const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
     const isCoParent =
-      !isOwner &&
-      (await findActiveCoParent(ctx, { babyId: args.babyId, identity: caller })) != null;
+      !isOwner && (await findActiveCoParent(ctx, { babyId, identity: caller })) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
 });
@@ -105,7 +107,7 @@ export const myAccess = query({
  * Owner/co-parent view of current co-parents and pending invites.
  */
 export const listForBaby = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     // Sentinel instead of throwing: the baby route loader queries this for
     // every visitor.
@@ -114,9 +116,10 @@ export const listForBaby = query({
       return FORBIDDEN;
     }
 
+    const babyId = access.baby._id;
     const [coParents, invites] = await Promise.all([
-      listActiveCoParents(ctx, args.babyId),
-      listActiveInvites(ctx, args.babyId),
+      listActiveCoParents(ctx, babyId),
+      listActiveInvites(ctx, babyId),
     ]);
 
     return {
@@ -254,65 +257,23 @@ export const leave = mutation({
 
 /**
  * Turns pending email invites for the signed-in user into co-parent rows.
- * Idempotent — safe to call on every authenticated session sync.
+ * Idempotent — also runs from Better Auth sign-up / sign-in hooks.
  */
 export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: AppIdentity) {
   const profile = await resolveCallerProfile(ctx, caller.authUserId);
   if (!profile) {
     return 0;
   }
-
-  const email = profile.email;
-  const name = profile.name;
-
-  const invites = await ctx.db
-    .query("babyCoParentInvites")
-    .withIndex("by_email", (q) => q.eq("email", email))
-    .order("desc")
-    .take(100);
-
-  let claimed = 0;
-  for (const invite of invites) {
-    if (!isActive(invite)) continue;
-
-    const baby = await ctx.db.get(invite.babyId);
-    if (!baby || !isActive(baby)) {
-      await ctx.db.patch(invite._id, softDeletePatch());
-      continue;
-    }
-
-    // Never make the owner a co-parent of their own page
-    const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
-    if (isOwner) {
-      await ctx.db.patch(invite._id, softDeletePatch());
-      continue;
-    }
-
-    const existing = await findActiveCoParent(ctx, {
-      babyId: invite.babyId,
-      identity: caller,
-    });
-    if (!existing) {
-      await ctx.db.insert("babyCoParents", {
-        babyId: invite.babyId,
-        userId: caller.authUserId,
-        tokenIdentifier: caller.tokenIdentifier,
-        email,
-        name,
-        addedByUserId: invite.invitedByUserId,
-        addedAt: Date.now(),
-      });
-      claimed += 1;
-    }
-    await ctx.db.patch(invite._id, softDeletePatch());
-  }
-
-  return claimed;
+  return await claimPendingInvitesForAuthUser(ctx, {
+    userId: caller.authUserId,
+    email: profile.email,
+    name: profile.name,
+  });
 }
 
 /**
- * Explicit invite claim — prefer profile.ensure, which runs automatically
- * on authenticated session sync.
+ * Explicit invite claim — pending invites are claimed automatically on
+ * sign-up and sign-in hooks.
  */
 export const claimPendingInvites = mutation({
   args: {},

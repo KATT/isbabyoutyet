@@ -3,43 +3,31 @@ import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
-import { NotificationSubscribe } from "@/components/baby/notification-subscribe";
+import {
+  NotificationSubscribe,
+  prefetchBrowserPushCapability,
+} from "@/components/baby/notification-subscribe";
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
-import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import {
-  createFileRoute,
-  Link,
-  notFound,
-  redirect,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { createServerFn } from "@tanstack/react-start";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
-import { useMutation } from "convex/react";
 import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { canonicalUrl } from "@/lib/site-url";
-import { authServer } from "@/lib/auth-server";
 
 const TIMELINE_PAGE_SIZE = 20;
-
-const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPage,
@@ -48,7 +36,7 @@ export const Route = createFileRoute("/baby/$publicId")({
     beta: z.boolean().optional(),
   }),
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     const baby = await preloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -64,58 +52,48 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
+    if (opts.search.settings) {
+      throw redirect({
+        to: "/baby/$publicId/settings",
+        params: { publicId: babyDoc.publicId },
+        replace: true,
+      });
+    }
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const babyHandle = await preloader.ensureQueryData(api.baby.getByPublicId, {
-      id: opts.params.publicId,
+    const preloader = opts.context.convexPreloader;
+    const publicId = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, publicId);
+
+    const loaderData = await allKeyed({
+      baby: preloader.ensureQueryData(api.baby.getByPublicId, {
+        id: publicId,
+      }),
+      vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
+      myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
+      latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
+        babyId: publicId,
+      }),
+      timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
+        args: { babyId: publicId },
+        numItems: TIMELINE_PAGE_SIZE,
+      }),
+      managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
+        babyId: publicId,
+      }),
+      scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
+        babyId: publicId,
+      }),
+      subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
+        babyId: publicId,
+      }),
+      onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
     });
-    const babyDoc = babyHandle.initialData;
-    if (!babyDoc) {
-      throw notFound();
-    }
 
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const token =
-      opts.context.token ?? (profileHandle.initialData != null ? await getAuthToken() : null);
-    if (token) {
-      opts.context.convexClient.setAuth(async () => token);
-      await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      });
-    }
-
-    // One homogeneous set for every visitor: manager-only queries return a
-    // FORBIDDEN sentinel instead of throwing, so no access branching here.
     return {
-      baby: babyHandle,
-      ...(await allKeyed({
-        myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: babyDoc._id }),
-        vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
-        latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
-          babyId: babyDoc._id,
-        }),
-        timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-          args: { babyId: babyDoc._id },
-          numItems: TIMELINE_PAGE_SIZE,
-        }),
-        profile: preloader.ensureQueryData(api.profile.get, {}),
-        managerBaby: preloader.ensureQueryData(api.baby.getManagerBaby, {
-          babyId: babyDoc._id,
-        }),
-        scheduledNotifications: preloader.ensureQueryData(api.baby.getScheduledNotifications, {
-          babyId: babyDoc._id,
-        }),
-        subscriptionCount: preloader.ensureQueryData(api.pushSubscriptions.getSubscriptionCount, {
-          babyId: babyDoc._id,
-        }),
-        onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-        // Prefetch even when settings are closed — Dialog may keep the panel mounted
-        coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
-          babyId: babyDoc._id,
-        }),
-      })),
+      browserPush,
+      ...loaderData,
     };
   },
   head: (opts) => {
@@ -265,11 +243,9 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
 }
 
 function BabyPage() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const params = Route.useParams();
-  const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const router = useRouter();
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -286,25 +262,14 @@ function BabyPage() {
     api.timeline.latestUpdate,
     loaderData.latestUpdate,
   );
-  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
-  const vapidQuery = usePreloadedConvexQuery(
-    api.pushSubscriptions.getPublicKey,
-    loaderData.vapidPublicKey,
-  );
 
-  const updateBaby = useMutation(api.baby.update);
-  const removeBaby = useMutation(api.baby.remove);
-  const redateMilestone = useMutation(api.updates.redateMilestone);
-  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
 
   const latestUpdate = latestUpdateQuery.data;
-  const profile = profileQuery.data;
   const myAccess = myAccessQuery.data;
-  const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
   const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
@@ -322,7 +287,7 @@ function BabyPage() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!search.settings && !composerOpen}
+          spotlight={!composerOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               setComposerOpen(true);
@@ -330,11 +295,8 @@ function BabyPage() {
             }
             if (stepId === "explore_settings") {
               void navigate({
-                search: {
-                  ...search,
-                  settings: true,
-                },
-                replace: true,
+                to: "/baby/$publicId/settings",
+                params: { publicId: babyDoc.publicId },
                 resetScroll: false,
               });
             }
@@ -344,54 +306,6 @@ function BabyPage() {
 
       {canManage && birthJourney && managerBaby ? (
         <>
-          <SettingsPanel
-            baby={managerBaby}
-            birthJourney={birthJourney}
-            profileLocale={profile?.locale ?? locale}
-            onUpdate={async (update) => {
-              await updateBaby({
-                babyId: babyDoc._id,
-                ...update,
-              });
-              await router.invalidate();
-            }}
-            onMilestoneRedate={async (milestone, occurredAt) => {
-              await redateMilestone({
-                babyId: babyDoc._id,
-                milestone,
-                occurredAt: Date.parse(occurredAt),
-              });
-              await router.invalidate();
-            }}
-            onMilestoneRemove={async (milestone) => {
-              await unmarkMilestone({ babyId: babyDoc._id, milestone });
-              await router.invalidate();
-            }}
-            onDelete={
-              isOwner
-                ? async () => {
-                    await removeBaby({ babyId: babyDoc._id });
-                    void navigate({ to: "/dashboard" });
-                  }
-                : null
-            }
-            coParents={{
-              babyId: babyDoc._id,
-              isOwner,
-              listing: loaderData.coParentsList,
-            }}
-            open={!!search.settings}
-            onOpenChange={(open) => {
-              void navigate({
-                search: {
-                  ...search,
-                  settings: open || undefined,
-                },
-                replace: true,
-                resetScroll: false,
-              });
-            }}
-          />
           <ScheduledNotificationToast
             notifications={loaderData.scheduledNotifications}
             subscriptionCount={loaderData.subscriptionCount}
@@ -438,18 +352,13 @@ function BabyPage() {
             settingsButton={
               canManage
                 ? {
-                    to: "/baby/$publicId",
+                    to: "/baby/$publicId/settings",
                     params: { publicId: params.publicId },
-                    search: {
-                      ...search,
-                      settings: search.settings ? undefined : true,
-                    },
-                    replace: true,
                     resetScroll: false,
                   }
                 : null
             }
-            settingsOpen={!!search.settings}
+            settingsOpen={false}
             onSettingsOpened={
               canManage
                 ? () => {
@@ -486,7 +395,11 @@ function BabyPage() {
               }
             />
             <div className="flex justify-center">
-              <NotificationSubscribe babyId={babyDoc._id} vapidPublicKey={vapidQuery.data} />
+              <NotificationSubscribe
+                babyId={babyDoc._id}
+                vapidPublicKey={loaderData.vapidPublicKey}
+                browserPush={loaderData.browserPush}
+              />
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />

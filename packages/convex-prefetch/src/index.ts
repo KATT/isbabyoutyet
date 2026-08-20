@@ -15,7 +15,7 @@ export type {
   QueryReference,
 } from "./handles.js";
 
-export { getConvexQueryPreloader } from "./preloader.js";
+export { getConvexQueryPreloader, type ConvexQueryPreloader } from "./preloader.js";
 export {
   preloadedConvexQueryOptions,
   useInitiateConvexQuery,

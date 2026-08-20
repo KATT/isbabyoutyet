@@ -28,10 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
-import {
-  getConvexQueryPreloader,
-  usePreloadedConvexInfiniteQuery,
-} from "@workspace/convex-prefetch";
+import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -80,15 +77,12 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,
-  beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const profile = await preloader.ensureQueryData(api.profile.get, {});
-    if (!profile.initialData?.isAdmin) {
+  loader: async (opts) => {
+    if (!opts.context.profile.initialData?.isAdmin) {
       throw redirect({ to: "/dashboard" });
     }
-  },
-  loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+
+    const preloader = opts.context.convexPreloader;
     const search = opts.deps;
     // Infinite queries stay blocking on the client too: the react-query cache
     // makes revisits free, and suspense churn on paginated tables isn't worth it.

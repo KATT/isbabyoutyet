@@ -1,6 +1,6 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
 
     if (typeof window === "undefined") {
       const token = opts.context.token ?? (await getAuthToken());
@@ -38,7 +38,12 @@ export const Route = createFileRoute("/_auth")({
       if (profileHandle.initialData !== profile) {
         opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
       }
-      return { locale: profile.locale, token, isAuthenticated: true };
+      return {
+        locale: profile.locale,
+        token,
+        isAuthenticated: true,
+        profile: authProfileHandle(profile),
+      };
     }
 
     // Client navigations: the cached profile IS the auth signal — no token
@@ -73,10 +78,17 @@ export const Route = createFileRoute("/_auth")({
       locale: profile.locale,
       token: opts.context.token,
       isAuthenticated: true,
+      profile: authProfileHandle(profile),
     };
   },
   component: AuthLayout,
 });
+
+function authProfileHandle(
+  profile: NonNullable<PreloadedConvexQuery<typeof api.profile.get>["initialData"]>,
+): PreloadedConvexQuery<typeof api.profile.get> {
+  return { input: {}, initialData: profile };
+}
 
 function AuthLayout() {
   return <Outlet />;

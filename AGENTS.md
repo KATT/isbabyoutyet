@@ -2,14 +2,17 @@
 
 ## Routing / scroll
 
-When a `Link` or `navigate()` only toggles overlay UI on the same page
-(e.g. `?settings=true`, admin tabs), pass `resetScroll: false` so the page
-does not jump to the top.
+When a `Link` or `navigate()` only opens/closes settings or switches admin tabs
+on the same underlying page, pass `resetScroll: false` so the page does not
+jump to the top.
 
 ## Convex
 
 When working under `packages/convex/`, also follow
 [`packages/convex/AGENTS.md`](packages/convex/AGENTS.md).
+
+For route loaders and other project skills, see
+[`.agents/AGENTS.md`](.agents/AGENTS.md).
 
 ## Pull requests
 

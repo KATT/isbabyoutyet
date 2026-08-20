@@ -6,6 +6,7 @@ import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
 import {
   convexInfiniteQueryFn,
+  getConvexQueryPreloader,
   registerConvexInfiniteQueryClient,
 } from "@workspace/convex-prefetch";
 import { RootErrorComponent } from "./routes/__root";
@@ -35,6 +36,7 @@ export function getRouter() {
     },
   });
   convexQueryClient.connect(queryClient);
+  const convexPreloader = getConvexQueryPreloader(queryClient);
 
   // Resolve auth (signed-in or anonymous) before React mounts — see the
   // function's doc comment for why the auth provider alone is not enough.
@@ -54,6 +56,7 @@ export function getRouter() {
       queryClient,
       convexQueryClient,
       convexClient: convexQueryClient.convexClient,
+      convexPreloader,
       locale: getDetectedLocale(),
       isAuthenticated: false,
       token: null,
