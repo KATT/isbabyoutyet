@@ -25,7 +25,8 @@ test("groups owner actions separately from page actions", async () => {
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
-      onPostUpdate={() => {}}
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={false}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}
@@ -50,7 +51,8 @@ test("hides the owner group when the visitor has no owner actions", async () => 
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
-      onPostUpdate={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={null}
@@ -66,7 +68,8 @@ test("disables sharing when the share link is empty", async () => {
   await using view = renderResource(
     <BabyNav
       shareLink=""
-      onPostUpdate={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}

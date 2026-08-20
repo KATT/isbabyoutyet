@@ -23,6 +23,7 @@ import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/a
 import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
+import { Route as BabyPublicIdPostRouteImport } from './routes/baby/$publicId/post'
 import { Route as BabyPublicIdSettingsRouteImport } from './routes/baby/$publicId/settings'
 import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
 import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
@@ -96,6 +97,11 @@ const BabyPublicIdIndexRoute = BabyPublicIdIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BabyPublicIdRouteRoute,
 } as any)
+const BabyPublicIdPostRoute = BabyPublicIdPostRouteImport.update({
+  id: '/post',
+  path: '/post',
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any)
 const BabyPublicIdSettingsRoute = BabyPublicIdSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/_auth/dashboard/add': typeof AuthDashboardAddRoute
   '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
   '/baby/manifest/$_id': typeof BabyManifest_idRoute
   '/og/baby/$publicId': typeof OgBabyPublicIdRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
@@ -217,6 +228,7 @@ export interface FileRouteTypes {
     | '/_auth/dashboard/add'
     | '/_auth/dashboard/admin'
     | '/api/auth/$'
+    | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
     | '/baby/manifest/$_id'
     | '/og/baby/$publicId'
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BabyPublicIdIndexRouteImport
       parentRoute: typeof BabyPublicIdRouteRoute
     }
+    '/baby/$publicId/post': {
+      id: '/baby/$publicId/post'
+      path: '/post'
+      fullPath: '/baby/$publicId/post'
+      preLoaderRoute: typeof BabyPublicIdPostRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
     '/baby/$publicId/settings': {
       id: '/baby/$publicId/settings'
       path: '/settings'
@@ -389,11 +408,13 @@ const OgRouteChildren: OgRouteChildren = {
 const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren)
 
 interface BabyPublicIdRouteRouteChildren {
+  BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute
   BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute
   BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute
 }
 
 const BabyPublicIdRouteRouteChildren: BabyPublicIdRouteRouteChildren = {
+  BabyPublicIdPostRoute: BabyPublicIdPostRoute,
   BabyPublicIdSettingsRoute: BabyPublicIdSettingsRoute,
   BabyPublicIdIndexRoute: BabyPublicIdIndexRoute,
 }

@@ -12,8 +12,9 @@ type BabyNavProps = {
   shareLink: string;
   settingsButton: LinkProps | null;
   settingsOpen: boolean;
-  /** Owner-only "Post update" action */
-  onPostUpdate: (() => void) | null;
+  /** Owner-only "Post update" overlay link */
+  postUpdateButton: LinkProps | null;
+  postUpdateOpen: boolean;
   /** Fired after the share URL is copied (used by the first-run tour) */
   onShareCopied: (() => void) | null;
   /** Fired when the owner opens Settings from the gear (not from a URL deep-link) */
@@ -23,7 +24,7 @@ type BabyNavProps = {
 export function BabyNav(props: BabyNavProps) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const hasOwnerActions = !!(props.onPostUpdate || props.settingsButton);
+  const hasOwnerActions = !!(props.postUpdateButton || props.settingsButton);
 
   useEffect(() => {
     if (!copied) return;
@@ -33,11 +34,12 @@ export function BabyNav(props: BabyNavProps) {
 
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
-      {props.onPostUpdate && (
+      {props.postUpdateButton && (
         <Button
-          variant="ghost"
+          variant={props.postUpdateOpen ? "default" : "ghost"}
           className="rounded-full font-bold"
-          onClick={props.onPostUpdate}
+          render={<Link {...(props.postUpdateButton as any)} />}
+          nativeButton={false}
           data-tour-id="post_update"
         >
           <ChatCircleText data-icon="inline-start" />

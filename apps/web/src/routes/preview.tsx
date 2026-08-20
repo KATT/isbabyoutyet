@@ -176,7 +176,8 @@ export function PreviewPage() {
             </Link>
             <BabyNav
               shareLink=""
-              onPostUpdate={null}
+              postUpdateButton={null}
+              postUpdateOpen={false}
               onShareCopied={null}
               onSettingsOpened={null}
               settingsButton={{
