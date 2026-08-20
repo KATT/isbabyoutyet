@@ -15,6 +15,7 @@ import { Route as OgRouteImport } from "./routes/og";
 import { Route as PreviewRouteImport } from "./routes/preview";
 import { Route as RobotsDottxtRouteImport } from "./routes/robots[.]txt";
 import { Route as SitemapDotxmlRouteImport } from "./routes/sitemap[.]xml";
+import { Route as AuthSettingsRouteImport } from "./routes/_auth/settings";
 import { Route as AuthLoginRouteImport } from "./routes/auth/login";
 import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
 import { Route as BabyPublicIdRouteImport } from "./routes/baby/$publicId";
@@ -53,6 +54,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: "/sitemap.xml",
   path: "/sitemap.xml",
   getParentRoute: () => rootRouteImport,
+} as any);
+const AuthSettingsRoute = AuthSettingsRouteImport.update({
+  id: "/settings",
+  path: "/settings",
+  getParentRoute: () => AuthRouteRoute,
 } as any);
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: "/auth/login",
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   "/preview": typeof PreviewRoute;
   "/robots.txt": typeof RobotsDottxtRoute;
   "/sitemap.xml": typeof SitemapDotxmlRoute;
+  "/settings": typeof AuthSettingsRoute;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
@@ -122,6 +129,7 @@ export interface FileRoutesByTo {
   "/preview": typeof PreviewRoute;
   "/robots.txt": typeof RobotsDottxtRoute;
   "/sitemap.xml": typeof SitemapDotxmlRoute;
+  "/settings": typeof AuthSettingsRoute;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
@@ -140,6 +148,7 @@ export interface FileRoutesById {
   "/preview": typeof PreviewRoute;
   "/robots.txt": typeof RobotsDottxtRoute;
   "/sitemap.xml": typeof SitemapDotxmlRoute;
+  "/_auth/settings": typeof AuthSettingsRoute;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
   "/baby/$publicId": typeof BabyPublicIdRoute;
@@ -158,6 +167,7 @@ export interface FileRouteTypes {
     | "/preview"
     | "/robots.txt"
     | "/sitemap.xml"
+    | "/settings"
     | "/auth/login"
     | "/auth/signup"
     | "/baby/$publicId"
@@ -174,6 +184,7 @@ export interface FileRouteTypes {
     | "/preview"
     | "/robots.txt"
     | "/sitemap.xml"
+    | "/settings"
     | "/auth/login"
     | "/auth/signup"
     | "/baby/$publicId"
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | "/preview"
     | "/robots.txt"
     | "/sitemap.xml"
+    | "/_auth/settings"
     | "/auth/login"
     | "/auth/signup"
     | "/baby/$publicId"
@@ -260,6 +272,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof SitemapDotxmlRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/_auth/settings": {
+      id: "/_auth/settings";
+      path: "/settings";
+      fullPath: "/settings";
+      preLoaderRoute: typeof AuthSettingsRouteImport;
+      parentRoute: typeof AuthRouteRoute;
+    };
     "/auth/login": {
       id: "/auth/login";
       path: "/auth/login";
@@ -327,12 +346,14 @@ declare module "@tanstack/react-router" {
 }
 
 interface AuthRouteRouteChildren {
+  AuthSettingsRoute: typeof AuthSettingsRoute;
   AuthDashboardAddRoute: typeof AuthDashboardAddRoute;
   AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute;
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute;
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthSettingsRoute: AuthSettingsRoute,
   AuthDashboardAddRoute: AuthDashboardAddRoute,
   AuthDashboardAdminRoute: AuthDashboardAdminRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,

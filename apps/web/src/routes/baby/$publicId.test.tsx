@@ -345,7 +345,6 @@ test("loader queries the same set for visitors; gated queries come back forbidde
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": "forbidden",
     "pushSubscriptions:getSubscriptionCount": "forbidden",
-    "coParents:listForBaby": "forbidden",
   });
 
   expect(result.baby).toMatchObject({ initialData: BABY_DOC });
@@ -354,7 +353,6 @@ test("loader queries the same set for visitors; gated queries come back forbidde
   expect(result.timeline).toMatchObject({ input: { babyId: "baby-smith" }, numItems: 20 });
   expect(result.scheduledNotifications).toMatchObject({ initialData: "forbidden" });
   expect(result.subscriptionCount).toMatchObject({ initialData: "forbidden" });
-  expect(result.coParentsList).toMatchObject({ initialData: "forbidden" });
 });
 
 test("loader gives managers the same handles with real data", async () => {
@@ -365,7 +363,6 @@ test("loader gives managers the same handles with real data", async () => {
     "timeline:listByBaby": EMPTY_PAGE,
     "baby:getScheduledNotifications": [],
     "pushSubscriptions:getSubscriptionCount": 2,
-    "coParents:listForBaby": { coParents: [], invites: [] },
   });
 
   expect(result.scheduledNotifications).toMatchObject({
@@ -380,10 +377,6 @@ test("loader gives managers the same handles with real data", async () => {
   expect(result.managerBaby).toMatchObject({
     initialData: { birthJourney: "labor" },
   });
-  expect(result.coParentsList).toMatchObject({
-    input: { babyId: "baby-smith" },
-    initialData: { coParents: [], invites: [] },
-  });
 });
 
 test("beforeLoad 404s unknown babies", async () => {
@@ -393,6 +386,7 @@ test("beforeLoad 404s unknown babies", async () => {
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
     };
     params: { publicId: string };
+    search: { settings: boolean | undefined };
     location: { search: Record<string, unknown> };
   }) => Promise<unknown>;
 
@@ -403,10 +397,42 @@ test("beforeLoad 404s unknown babies", async () => {
       convexPreloader: getConvexQueryPreloader(queryClient),
     },
     params: { publicId: "baby-smith" },
+    search: { settings: undefined },
     location: { search: {} },
   });
 
   await expect(pending).rejects.toMatchObject({ isNotFound: true });
+});
+
+test("beforeLoad redirects legacy settings links", async () => {
+  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+    search: { settings: boolean | undefined };
+    location: { search: Record<string, unknown> };
+  }) => Promise<unknown>;
+  const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
+
+  await expect(
+    beforeLoad({
+      context: {
+        queryClient,
+        convexPreloader: getConvexQueryPreloader(queryClient),
+      },
+      params: { publicId: "baby-smith" },
+      search: { settings: true },
+      location: { search: { settings: true } },
+    }),
+  ).rejects.toMatchObject({
+    options: {
+      to: "/settings",
+      search: { baby: "baby-smith" },
+      replace: true,
+    },
+  });
 });
 
 test("loader ensures the profile before prefetching manager data", async () => {

@@ -10,25 +10,16 @@ import {
 import { ProgressIndicator } from "@/components/baby/progress-indicator";
 import { ScheduledNotificationToast } from "@/components/baby/scheduled-notification-toast";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
-import { SettingsPanel } from "@/components/baby/settings-panel";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import {
-  createFileRoute,
-  Link,
-  notFound,
-  redirect,
-  useNavigate,
-  useRouter,
-} from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
-import { useMutation } from "convex/react";
 import type { ConvexReactClient } from "convex/react";
 import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -63,6 +54,13 @@ export const Route = createFileRoute("/baby/$publicId")({
         replace: true,
       });
     }
+    if (opts.search.settings) {
+      throw redirect({
+        to: "/settings",
+        search: { baby: babyDoc.publicId },
+        replace: true,
+      });
+    }
     return { locale: babyDoc.resolvedLocale };
   },
   loader: async (opts) => {
@@ -76,7 +74,6 @@ export const Route = createFileRoute("/baby/$publicId")({
       baby: preloader.ensureQueryData(api.baby.getByPublicId, {
         id: publicId,
       }),
-      profile: preloader.ensureQueryData(api.profile.get, {}),
       vapidPublicKey: preloader.ensureQueryData(api.pushSubscriptions.getPublicKey, {}),
       myAccess: preloader.ensureQueryData(api.coParents.myAccess, { babyId: publicId }),
       latestUpdate: preloader.ensureQueryData(api.timeline.latestUpdate, {
@@ -96,10 +93,6 @@ export const Route = createFileRoute("/baby/$publicId")({
         babyId: publicId,
       }),
       onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-      // Prefetch even when settings are closed — Dialog may keep the panel mounted
-      coParentsList: preloader.ensureQueryData(api.coParents.listForBaby, {
-        babyId: publicId,
-      }),
     });
 
     return {
@@ -272,11 +265,9 @@ async function ensureProfileForAuthenticatedVisit(context: {
 }
 
 function BabyPage() {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const params = Route.useParams();
-  const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-  const router = useRouter();
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -293,21 +284,14 @@ function BabyPage() {
     api.timeline.latestUpdate,
     loaderData.latestUpdate,
   );
-  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
   const managerBabyQuery = usePreloadedConvexQuery(api.baby.getManagerBaby, loaderData.managerBaby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
-  const updateBaby = useMutation(api.baby.update);
-  const removeBaby = useMutation(api.baby.remove);
-  const redateMilestone = useMutation(api.updates.redateMilestone);
-  const unmarkMilestone = useMutation(api.updates.unmarkMilestone);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const [composerOpen, setComposerOpen] = useState(false);
 
   const latestUpdate = latestUpdateQuery.data;
-  const profile = profileQuery.data;
   const myAccess = myAccessQuery.data;
-  const isOwner = myAccess.isOwner;
   const canManage = myAccess.canManage;
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
   const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
@@ -325,7 +309,7 @@ function BabyPage() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!search.settings && !composerOpen}
+          spotlight={!composerOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               setComposerOpen(true);
@@ -333,11 +317,8 @@ function BabyPage() {
             }
             if (stepId === "explore_settings") {
               void navigate({
-                search: {
-                  ...search,
-                  settings: true,
-                },
-                replace: true,
+                to: "/settings",
+                search: { baby: babyDoc.publicId },
               });
             }
           }}
@@ -346,53 +327,6 @@ function BabyPage() {
 
       {canManage && birthJourney && managerBaby ? (
         <>
-          <SettingsPanel
-            baby={managerBaby}
-            birthJourney={birthJourney}
-            profileLocale={profile?.locale ?? locale}
-            onUpdate={async (update) => {
-              await updateBaby({
-                babyId: babyDoc._id,
-                ...update,
-              });
-              await router.invalidate();
-            }}
-            onMilestoneRedate={async (milestone, occurredAt) => {
-              await redateMilestone({
-                babyId: babyDoc._id,
-                milestone,
-                occurredAt: Date.parse(occurredAt),
-              });
-              await router.invalidate();
-            }}
-            onMilestoneRemove={async (milestone) => {
-              await unmarkMilestone({ babyId: babyDoc._id, milestone });
-              await router.invalidate();
-            }}
-            onDelete={
-              isOwner
-                ? async () => {
-                    await removeBaby({ babyId: babyDoc._id });
-                    void navigate({ to: "/dashboard" });
-                  }
-                : null
-            }
-            coParents={{
-              babyId: babyDoc._id,
-              isOwner,
-              listing: loaderData.coParentsList,
-            }}
-            open={!!search.settings}
-            onOpenChange={(open) => {
-              void navigate({
-                search: {
-                  ...search,
-                  settings: open || undefined,
-                },
-                replace: true,
-              });
-            }}
-          />
           <ScheduledNotificationToast
             notifications={loaderData.scheduledNotifications}
             subscriptionCount={loaderData.subscriptionCount}
@@ -439,16 +373,12 @@ function BabyPage() {
             settingsButton={
               canManage
                 ? {
-                    to: "/baby/$publicId",
-                    params: { publicId: params.publicId },
-                    search: {
-                      ...search,
-                      settings: search.settings ? undefined : true,
-                    },
+                    to: "/settings",
+                    search: { baby: params.publicId },
                   }
                 : null
             }
-            settingsOpen={!!search.settings}
+            settingsOpen={false}
             onSettingsOpened={
               canManage
                 ? () => {
