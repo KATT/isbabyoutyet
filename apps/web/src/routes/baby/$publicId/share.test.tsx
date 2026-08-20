@@ -1,9 +1,15 @@
+import { convexQuery } from "@convex-dev/react-query";
 import { fireEvent, render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
+import { getBabySeo } from "@/lib/baby-seo";
 import { browserImageFactory } from "@/lib/image-prefetch";
 import { LocaleProvider } from "@/lib/i18n";
 import { testInitiatedQuery } from "@workspace/query-prefetch/test-helpers";
@@ -93,9 +99,12 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/share");
 const { BabyShareOverlay } = routeModule;
 
-function babyDoc(opts: { publicId: string }) {
+function babyDoc(opts: {
+  publicId: string;
+  theme: "baby-blue" | "orange";
+}): NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>> {
   return {
-    _id: "jd7baby000000000000000000",
+    _id: "jd7baby000000000000000000" as Id<"baby">,
     _creationTime: 1,
     publicId: opts.publicId,
     name: "Baby Smith",
@@ -104,7 +113,7 @@ function babyDoc(opts: { publicId: string }) {
     blurDataUrl: null,
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact" as const,
-    theme: "baby-blue",
+    theme: opts.theme,
     locale: "en-GB",
     resolvedLocale: "en-GB",
     laborStarted: null,
@@ -162,7 +171,7 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   ).rejects.toMatchObject({ isNotFound: true });
   await expect(
     withShareRouteHandlers(
-      { "baby:getByPublicId": babyDoc({ publicId: "baby-nova" }) },
+      { "baby:getByPublicId": babyDoc({ publicId: "baby-nova", theme: "baby-blue" }) },
       beforeLoad,
     ),
   ).rejects.toMatchObject({
@@ -199,47 +208,98 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     imagePrefetch: { input: string | undefined };
     canManage: boolean;
     shareLink: string;
-    sharePreview: { imageUrl: string; title: string; description: string } | null;
   }>;
 
+  const baby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
   const data = await withShareRouteHandlers(
     {
-      "baby:getByPublicId": babyDoc({ publicId: "baby-smith" }),
+      "baby:getByPublicId": baby,
       "coParents:myAccess": { canManage: false, isOwner: false },
     },
     loader,
   );
 
-  expect(data.sharePreview).not.toBeNull();
   const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
   expect(prefetchedImageUrl.pathname).toBe("/og/baby/baby-smith");
   expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
-  expect(data.sharePreview?.imageUrl).toBe(data.imagePrefetch.input);
+  expect(data.imagePrefetch.input).toBe(getBabySeo(baby, "baby-smith").imageUrl);
   expect(data.canManage).toBe(false);
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
 });
 
+test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
+  const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
+  const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
+  const queryFn = vi.fn<(ctx: { queryKey: readonly unknown[] }) => Promise<unknown>>((ctx) => {
+    const name = String(ctx.queryKey[1]);
+    if (name === "baby:getByPublicId") {
+      return Promise.resolve(freshBaby);
+    }
+    return Promise.resolve({ canManage: false, isOwner: false });
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, queryFn } },
+  });
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+  queryClient.setQueryData(
+    convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
+    oldBaby,
+  );
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<{
+    imagePrefetch: { input: string | undefined };
+  }>;
+
+  const data = await loader({
+    context: {
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
+    },
+    params: { publicId: "baby-smith" },
+  });
+
+  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, "baby-smith").imageUrl);
+  expect(queryFn).toHaveBeenCalledWith(
+    expect.objectContaining({
+      queryKey: convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
+    }),
+  );
+});
+
 test("copies from the route overlay and dismisses through overlay history", async () => {
-  const imageUrl = "https://example.com/og/baby/baby-smith";
+  const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
+  const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
+  const oldImageUrl = getBabySeo(oldBaby, "baby-smith").imageUrl;
+  const freshPreview = getBabySeo(freshBaby, "baby-smith");
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   await using _queryClient = makeResource(queryClient, () => {
     queryClient.clear();
   });
-  queryClient.setQueryData(browserImageFactory(imageUrl).queryKey, {
-    url: imageUrl,
+  queryClient.setQueryData(
+    convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
+    freshBaby,
+  );
+  queryClient.setQueryData(browserImageFactory(freshPreview.imageUrl).queryKey, {
+    url: freshPreview.imageUrl,
     ok: true,
   });
   mocks.loaderData = {
-    imagePrefetch: testInitiatedQuery(browserImageFactory, imageUrl),
+    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
+      input: { id: "baby-smith" },
+      initialData: oldBaby,
+    }),
+    imagePrefetch: testInitiatedQuery(browserImageFactory, oldImageUrl),
     canManage: true,
     shareLink: "https://isbabyoutyet.com/baby/baby-smith",
-    sharePreview: {
-      imageUrl,
-      title: "Is Baby Smith out yet?",
-      description: "Track Baby Smith's journey.",
-    },
   };
   const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
   const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
@@ -270,7 +330,8 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     view.unmount();
   });
 
-  expect(view.getByRole("img", { name: "Is Baby Smith out yet?" })).toBeTruthy();
+  const image = view.getByRole("img", { name: freshPreview.title });
+  expect(image.getAttribute("src")).toBe(freshPreview.imageUrl);
   fireEvent.click(view.getByRole("button", { name: "Copy link to share" }));
   await vi.waitFor(() => {
     expect(writeText).toHaveBeenCalledWith("https://isbabyoutyet.com/baby/baby-smith");

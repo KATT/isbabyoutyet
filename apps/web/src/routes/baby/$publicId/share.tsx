@@ -18,6 +18,7 @@ import { CheckCircle } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -50,7 +51,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     const publicId = opts.params.publicId;
     const imageUrl = babyOgImageUrl(publicId, undefined);
     const data = await allKeyed({
-      baby: opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
+      baby: opts.context.convexPreloader.fetchQueryData(api.baby.getByPublicId, {
         id: publicId,
       }),
       myAccess: opts.context.convexPreloader.ensureQueryData(api.coParents.myAccess, {
@@ -66,10 +67,10 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     );
 
     return {
+      baby: data.baby,
       imagePrefetch,
       canManage: data.myAccess.initialData.canManage,
       shareLink: canonicalUrl(`/baby/${publicId}`),
-      sharePreview,
     };
   },
   component: BabyShareOverlay,
@@ -82,7 +83,18 @@ export function BabyShareOverlay() {
   const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
   const completeOnboardingStep = useCompleteOnboardingStep();
-  useQuery(preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch));
+  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
+  const babyDoc = babyQuery.data;
+  const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
+  useQuery(
+    preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch, () => {
+      return (
+        sharePreview?.imageUrl ??
+        loaderData.imagePrefetch.input ??
+        babyOgImageUrl(params.publicId, undefined)
+      );
+    }),
+  );
   const share = useOverlayNav({
     open: {
       to: "/baby/$publicId/share",
@@ -93,7 +105,6 @@ export function BabyShareOverlay() {
       params: { publicId: params.publicId },
     },
   });
-  const sharePreview = loaderData.sharePreview;
   if (!sharePreview) {
     throw notFound();
   }

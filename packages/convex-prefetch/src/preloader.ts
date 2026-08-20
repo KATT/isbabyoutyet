@@ -51,6 +51,22 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
     },
 
     /**
+     * Fetches a Convex query even when the TanStack cache already has data and
+     * returns a {@link PreloadedConvexQuery} handle with the fresh snapshot.
+     */
+    async fetchQueryData<TQuery extends QueryReference>(
+      funcRef: TQuery,
+      args: FunctionArgs<TQuery>,
+    ): Promise<PreloadedConvexQuery<TQuery>> {
+      const options = convexQuery(funcRef, args as never);
+      const initialData = await queryClient.fetchQuery({
+        ...options,
+        staleTime: 0,
+      } as unknown as Parameters<QueryClient["fetchQuery"]>[0]);
+      return { input: args, initialData } as PreloadedConvexQuery<TQuery>;
+    },
+
+    /**
      * Awaits the first page of a paginated Convex query and returns a
      * {@link PreloadedConvexInfiniteQuery} handle.
      */

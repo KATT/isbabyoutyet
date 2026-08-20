@@ -50,6 +50,22 @@ test("getConvexQueryPreloader awaits queries and returns handles with initialDat
   expect(handle.initialData).toEqual({ locale: "sv", isAdmin: false });
 });
 
+test("fetchQueryData replaces cached data with a fresh snapshot", async () => {
+  const queryFn = vi.fn<() => Promise<{ name: string }>>(async () => ({ name: "Fresh baby" }));
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, queryFn } },
+  });
+  const queryKey = ["convexQuery", "baby:getByPublicId", { id: "baby-smith" }];
+  queryClient.setQueryData(queryKey, { name: "Cached baby" });
+
+  const preloader = getConvexQueryPreloader(queryClient);
+  const handle = await preloader.fetchQueryData(babyByPublicId, { id: "baby-smith" });
+
+  expect(queryFn).toHaveBeenCalledOnce();
+  expect(handle.input).toEqual({ id: "baby-smith" });
+  expect(handle.initialData).toEqual({ name: "Fresh baby" });
+});
+
 test("getConvexQueryPreloader ensures infinite pages and stores numItems", async () => {
   registerConvexInfiniteQueryClient({
     convexClient: {

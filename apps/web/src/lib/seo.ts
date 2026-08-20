@@ -149,6 +149,7 @@ function babyOgImagePath(publicId: string) {
 
 function babyOgImageVersion(opts: { baby: BabySeoInput; title: string; description: string }) {
   const source = JSON.stringify([
+    "baby-og-v2",
     opts.title,
     opts.description,
     opts.baby.name,
