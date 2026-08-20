@@ -32,7 +32,6 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 import { canonicalUrl } from "@/lib/site-url";
 import { authServer } from "@/lib/auth-server";
 
@@ -336,7 +335,7 @@ function BabyPage() {
                   settings: true,
                 },
                 replace: true,
-                ...preserveScroll,
+                resetScroll: false,
               });
             }
           }}
@@ -389,7 +388,7 @@ function BabyPage() {
                   settings: open || undefined,
                 },
                 replace: true,
-                ...preserveScroll,
+                resetScroll: false,
               });
             }}
           />
@@ -446,7 +445,7 @@ function BabyPage() {
                       settings: search.settings ? undefined : true,
                     },
                     replace: true,
-                    ...preserveScroll,
+                    resetScroll: false,
                   }
                 : null
             }

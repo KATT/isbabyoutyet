@@ -155,10 +155,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent
-        data-scroll-restoration-id="settings-panel"
-        className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto"
-      >
+      <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("Settings")}</DialogTitle>
         </DialogHeader>

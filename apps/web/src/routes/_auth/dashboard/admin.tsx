@@ -34,7 +34,6 @@ import {
 } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { preserveScroll } from "@/lib/scroll-restoration";
 
 const ADMIN_PAGE_SIZE = 20;
 
@@ -221,7 +220,7 @@ function SortableHeaderLink(props: {
           hideDemo: props.hideDemo,
         }}
         replace
-        {...preserveScroll}
+        resetScroll={false}
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
           active ? "text-foreground" : "text-muted-foreground",
@@ -420,7 +419,7 @@ export function AdminDashboardPage() {
     void navigate({
       search: (prev) => ({ ...prev, tab }),
       replace: true,
-      ...preserveScroll,
+      resetScroll: false,
     });
   }
 
@@ -482,7 +481,7 @@ export function AdminDashboardPage() {
                         to="/dashboard/admin"
                         search={tabSearch("babies")}
                         replace
-                        {...preserveScroll}
+                        resetScroll={false}
                       />
                     }
                   >
@@ -496,7 +495,7 @@ export function AdminDashboardPage() {
                         to="/dashboard/admin"
                         search={tabSearch("languages")}
                         replace
-                        {...preserveScroll}
+                        resetScroll={false}
                       />
                     }
                   >
@@ -513,7 +512,7 @@ export function AdminDashboardPage() {
                         void navigate({
                           search: (prev) => ({ ...prev, hideDemo }),
                           replace: true,
-                          ...preserveScroll,
+                          resetScroll: false,
                         });
                       }}
                     />

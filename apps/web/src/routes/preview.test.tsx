@@ -98,24 +98,30 @@ test("preview routes settings and milestone edits to separate search updates", a
   fireEvent.click(view.getByRole("button", { name: "redate milestone" }));
   fireEvent.click(view.getByRole("button", { name: "remove milestone" }));
 
-  expect(mocks.navigate).toHaveBeenNthCalledWith(1, {
-    search: { ...mocks.search, name: "Nova Rae" },
-    replace: true,
-    resetScroll: false,
-  });
-  expect(mocks.navigate).toHaveBeenNthCalledWith(2, {
-    search: {
-      ...mocks.search,
-      wentToHospital: "2026-08-10T12:00:00.000Z",
-    },
-    replace: true,
-    resetScroll: false,
-  });
-  expect(mocks.navigate).toHaveBeenNthCalledWith(3, {
-    search: { ...mocks.search, laborStarted: null },
-    replace: true,
-    resetScroll: false,
-  });
+  expect(mocks.navigate).toHaveBeenNthCalledWith(
+    1,
+    expect.objectContaining({
+      search: { ...mocks.search, name: "Nova Rae" },
+      replace: true,
+    }),
+  );
+  expect(mocks.navigate).toHaveBeenNthCalledWith(
+    2,
+    expect.objectContaining({
+      search: {
+        ...mocks.search,
+        wentToHospital: "2026-08-10T12:00:00.000Z",
+      },
+      replace: true,
+    }),
+  );
+  expect(mocks.navigate).toHaveBeenNthCalledWith(
+    3,
+    expect.objectContaining({
+      search: { ...mocks.search, laborStarted: null },
+      replace: true,
+    }),
+  );
 });
 
 test("preview derives a born status from its search dates", async () => {

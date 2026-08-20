@@ -279,18 +279,3 @@ test("theme constants render through the active translation catalog", async () =
   expect(view.getByText("Resa")).toBeTruthy();
   expect(view.getByText("Förlossning")).toBeTruthy();
 });
-
-test("settings dialog registers scroll restoration on its scroll container", async () => {
-  await using _view = renderResource(
-    <SettingsPanel
-      baby={baby}
-      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
-      open
-      onOpenChange={vi.fn<(open: boolean) => void>()}
-      {...absentSettingsProps}
-    />,
-  );
-
-  const scrollContainer = document.querySelector('[data-scroll-restoration-id="settings-panel"]');
-  expect(scrollContainer).toBeTruthy();
-});
