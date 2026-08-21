@@ -90,17 +90,6 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/updates.$updateId.photo");
 const { BabyUpdatePhotoOverlay } = routeModule;
 
-test("timeline-photo overlay opts into tagged public caching", () => {
-  const headers = (
-    routeModule.Route.options.headers as (opts: {
-      params: { publicId: string };
-    }) => Record<string, string>
-  )({ params: { publicId: "juniper-hale" } });
-
-  expect(headers["Cache-Control"]).toContain("public");
-  expect(headers["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
-});
-
 async function withUpdatePhotoRouteHandlers<TResult>(
   handlers: Record<string, unknown>,
   run: (opts: {

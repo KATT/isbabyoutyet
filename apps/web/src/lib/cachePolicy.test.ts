@@ -3,6 +3,7 @@ import {
   applyCachePolicy,
   authPageCacheHeaders,
   babyPageCacheHeaders,
+  babyRouteCacheHeaders,
   homepageCacheHeaders,
   privateCacheHeaders,
   previewCacheHeaders,
@@ -107,6 +108,36 @@ describe("applyCachePolicy", () => {
     expect(babyPageCacheHeaders("juniper-hale")["Vercel-Cache-Tag"]).toBe(
       "baby-pages,baby-public-id:juniper-hale",
     );
+  });
+
+  test.each([
+    "/baby/$publicId/",
+    "/baby/$publicId/share",
+    "/baby/$publicId/photo",
+    "/baby/$publicId/updates/$updateId/photo",
+  ])("treats the %s overlay match as public", (routeId) => {
+    const headers = babyRouteCacheHeaders({
+      publicId: "juniper-hale",
+      routeIds: ["/baby/$publicId", routeId],
+    });
+
+    expect(headers["Cache-Control"]).toContain("public");
+    expect(headers["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
+  });
+
+  test.each([
+    "/baby/$publicId/settings",
+    "/baby/$publicId/post",
+    "/baby/$publicId/future-manager-overlay",
+  ])("treats the %s overlay match as private", (routeId) => {
+    const headers = babyRouteCacheHeaders({
+      publicId: "juniper-hale",
+      routeIds: ["/baby/$publicId", routeId],
+    });
+
+    expect(headers["Cache-Control"]).toContain("private");
+    expect(headers["Cache-Control"]).toContain("no-store");
+    expect(headers).not.toHaveProperty("Vercel-Cache-Tag");
   });
 
   test("adds public caching to resource responses without losing their headers", async () => {

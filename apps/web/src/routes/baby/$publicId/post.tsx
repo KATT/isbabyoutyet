@@ -6,13 +6,11 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
-  headers: privateCacheHeaders,
   beforeLoad: async (opts) => {
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,

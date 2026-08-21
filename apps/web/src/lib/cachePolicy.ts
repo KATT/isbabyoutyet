@@ -13,6 +13,13 @@ export type PublicCachePolicy = {
   tags: readonly string[];
 };
 
+const PUBLIC_BABY_ROUTE_IDS = new Set([
+  "/baby/$publicId/",
+  "/baby/$publicId/share",
+  "/baby/$publicId/photo",
+  "/baby/$publicId/updates/$updateId/photo",
+]);
+
 export function publicCacheHeaders(policy: PublicCachePolicy) {
   return {
     "Cache-Control": PUBLIC_BROWSER_CACHE_CONTROL,
@@ -47,6 +54,11 @@ export function babyPageCacheHeaders(publicId: string) {
     maxAgeSeconds: 86_400,
     tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(publicId)],
   });
+}
+
+export function babyRouteCacheHeaders(opts: { publicId: string; routeIds: readonly string[] }) {
+  const isPublicRoute = opts.routeIds.some((routeId) => PUBLIC_BABY_ROUTE_IDS.has(routeId));
+  return isPublicRoute ? babyPageCacheHeaders(opts.publicId) : privateCacheHeaders();
 }
 
 export function withPublicCache(response: Response, policy: PublicCachePolicy) {
