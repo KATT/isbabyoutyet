@@ -16,6 +16,7 @@ import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
 import type * as babyDto from "../babyDto.js";
 import type * as babyLookup from "../babyLookup.js";
+import type * as babyPreferences from "../babyPreferences.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   babyAccess: typeof babyAccess;
   babyDto: typeof babyDto;
   babyLookup: typeof babyLookup;
+  babyPreferences: typeof babyPreferences;
   babyThumbnails: typeof babyThumbnails;
   coParentInviteClaims: typeof coParentInviteClaims;
   coParents: typeof coParents;
