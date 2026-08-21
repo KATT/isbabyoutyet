@@ -90,16 +90,26 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
-const timeZoneOptions = Array.from(
-  new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")]),
-).sort();
-
 function formatTimeZoneLabel(timeZone: string) {
   const [firstPart, ...locationParts] = timeZone.split("/");
   const area = firstPart ?? timeZone;
   const location = locationParts.join(" / ").replaceAll("_", " ");
   return location ? `${location} (${area})` : area;
 }
+
+const timeZoneOptions = Array.from(
+  new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")]),
+)
+  .sort()
+  .map((timeZone) => ({
+    label: formatTimeZoneLabel(timeZone),
+    value: timeZone,
+  }));
+
+const defaultTimeZoneOption = {
+  label: formatTimeZoneLabel(DEFAULT_TIME_ZONE),
+  value: DEFAULT_TIME_ZONE,
+};
 
 export function LanguageSettings(props: {
   profile:
@@ -114,18 +124,20 @@ export function LanguageSettings(props: {
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
+  const selectedTimeZoneOption =
+    timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption;
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <Combobox
         items={timeZoneOptions}
-        itemToStringValue={formatTimeZoneLabel}
-        value={selectedTimeZone}
-        onValueChange={(value) => {
-          if (!value || value === selectedTimeZone) {
+        itemToStringValue={(option) => option.label}
+        defaultValue={selectedTimeZoneOption}
+        onValueChange={(option) => {
+          if (!option || option.value === selectedTimeZone) {
             return;
           }
-          void updateTimeZone({ timeZone: value }).then(() => {
+          void updateTimeZone({ timeZone: option.value }).then(() => {
             toast.success(t("Time zone saved"));
           });
         }}
@@ -135,13 +147,16 @@ export function LanguageSettings(props: {
           className="w-56"
           aria-label={t("Profile time zone")}
           placeholder={t("Search time zones")}
+          onFocus={(event) => {
+            event.currentTarget.select();
+          }}
         />
         <ComboboxContent>
           <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
           <ComboboxList>
-            {(timeZone) => (
-              <ComboboxItem key={timeZone} value={timeZone}>
-                {formatTimeZoneLabel(timeZone)}
+            {(option) => (
+              <ComboboxItem key={option.value} value={option}>
+                {option.label}
               </ComboboxItem>
             )}
           </ComboboxList>
