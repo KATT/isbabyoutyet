@@ -51,7 +51,7 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
   expect(screen.getAllByRole("link", { name: /add a baby/i }).length).toBeGreaterThan(0);
 });
 
-test("dashboard share step links to the first baby's page", async () => {
+test("dashboard share step links to the first baby's share overlay", async () => {
   await using _view = renderResource(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
@@ -66,9 +66,32 @@ test("dashboard share step links to the first baby's page", async () => {
     />,
   );
 
-  const links = screen.getAllByRole("link", { name: /open ada's page/i });
+  const links = screen.getAllByRole("link", { name: /show share/i });
   expect(links.length).toBeGreaterThan(0);
-  expect(links[0]?.getAttribute("href")).toContain("baby-waiting");
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
+});
+
+test("baby-page share step links directly to the share overlay", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="baby"
+      onGoToStep={onGoToStep}
+      className={undefined}
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const links = screen.getAllByRole("link", { name: /show share/i });
+  expect(links.length).toBeGreaterThan(0);
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
+  fireEvent.click(links[0]!);
+  expect(onGoToStep).not.toHaveBeenCalled();
 });
 
 test("minimized chip shows progress count", async () => {
