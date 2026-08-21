@@ -17,6 +17,7 @@ import type * as babyAccess from "../babyAccess.js";
 import type * as babyDto from "../babyDto.js";
 import type * as babyLookup from "../babyLookup.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
+import type * as cacheInvalidation from "../cacheInvalidation.js";
 import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
 import type * as encouragements from "../encouragements.js";
@@ -38,11 +39,7 @@ import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
 
-import type {
-  ApiFromModules,
-  FilterApi,
-  FunctionReference,
-} from "convex/server";
+import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
@@ -54,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   babyDto: typeof babyDto;
   babyLookup: typeof babyLookup;
   babyThumbnails: typeof babyThumbnails;
+  cacheInvalidation: typeof cacheInvalidation;
   coParentInviteClaims: typeof coParentInviteClaims;
   coParents: typeof coParents;
   encouragements: typeof encouragements;
@@ -84,10 +82,7 @@ declare const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export declare const api: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "public">
->;
+export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.
@@ -97,10 +92,7 @@ export declare const api: FilterApi<
  * const myFunctionReference = internal.myModule.myFunction;
  * ```
  */
-export declare const internal: FilterApi<
-  typeof fullApi,
-  FunctionReference<any, "internal">
->;
+export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;

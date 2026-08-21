@@ -22,6 +22,7 @@ import { Baby } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
+import { authPageCacheHeaders } from "@/lib/cachePolicy";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -33,6 +34,7 @@ function signupSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
+  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {

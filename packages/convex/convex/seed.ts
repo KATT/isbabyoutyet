@@ -1,5 +1,4 @@
 import { components } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
@@ -8,6 +7,7 @@ import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from ".
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
+import { internalMutationWithTriggers } from "./triggers";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
   const userId = await ensureAuthUser(ctx, DEMO_USER);
@@ -90,13 +90,13 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
-export const seedDemoData = internalMutation({
+export const seedDemoData = internalMutationWithTriggers({
   args: {},
   handler: seedDemoDataHandler,
 });
 
 /** Alias kept so older `--preview-run seed:seedPreviewData` refs keep working. */
-export const seedPreviewData = internalMutation({
+export const seedPreviewData = internalMutationWithTriggers({
   args: {},
   handler: seedDemoDataHandler,
 });

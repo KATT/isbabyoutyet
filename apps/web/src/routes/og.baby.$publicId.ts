@@ -3,6 +3,8 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { getBabySeo } from "@/lib/baby-seo";
 import { createBabyOgImage } from "@/lib/og-image";
+import { withVersionedImageCache } from "@/lib/cachePolicy";
+import { ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag } from "@workspace/convex/src/cacheTags";
 
 export const Route = createFileRoute("/og/baby/$publicId")({
   server: {
@@ -32,27 +34,31 @@ export const Route = createFileRoute("/og/baby/$publicId")({
             status: 307,
             headers: {
               "Cache-Control": "no-store",
+              "Vercel-CDN-Cache-Control": "private, no-store",
               Location: requestUrl.toString(),
             },
           });
         }
 
-        return createBabyOgImage({
-          name: baby.name,
-          ...(baby.dueDateDisplayMode === "exact"
-            ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
-            : {
-                dueDateDisplayMode: "message" as const,
-                publicDueDateText: baby.publicDueDateText,
-              }),
-          theme: baby.theme,
-          locale: baby.resolvedLocale,
-          babyBorn: baby.babyBorn,
-          wentToHospital: baby.wentToHospital,
-          laborStarted: baby.laborStarted,
-          milestoneVisibility: baby.milestoneVisibility,
-          photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
-        });
+        return withVersionedImageCache(
+          await createBabyOgImage({
+            name: baby.name,
+            ...(baby.dueDateDisplayMode === "exact"
+              ? { dueDateDisplayMode: "exact" as const, dueDate: baby.dueDate }
+              : {
+                  dueDateDisplayMode: "message" as const,
+                  publicDueDateText: baby.publicDueDateText,
+                }),
+            theme: baby.theme,
+            locale: baby.resolvedLocale,
+            babyBorn: baby.babyBorn,
+            wentToHospital: baby.wentToHospital,
+            laborStarted: baby.laborStarted,
+            milestoneVisibility: baby.milestoneVisibility,
+            photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
+          }),
+          [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(opts.params.publicId)],
+        );
       },
     },
   },

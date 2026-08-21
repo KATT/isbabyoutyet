@@ -30,6 +30,7 @@ import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { openGraphImageMeta } from "@/lib/seo";
 import { getBabySeo } from "@/lib/baby-seo";
+import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
@@ -182,7 +183,13 @@ export const Route = createFileRoute("/baby/$publicId")({
       ],
     };
   },
-  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
+  headers: (opts) => ({
+    ...babyRouteCacheHeaders({
+      publicId: opts.params.publicId,
+      routeIds: opts.matches.map((match) => match.routeId),
+    }),
+    ...babyPageRobotsHeaders(opts.params.publicId),
+  }),
 });
 
 /**

@@ -206,7 +206,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
     params: { publicId: string };
   }) => Promise<{
     imagePrefetch: { input: string | undefined };
-    canManage: boolean;
+    myAccess: { initialData: { canManage: boolean } };
     shareLink: string;
   }>;
 
@@ -223,7 +223,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   expect(prefetchedImageUrl.pathname).toBe("/og/baby/baby-smith");
   expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
   expect(data.imagePrefetch.input).toBe(getBabySeo(baby, "baby-smith").imageUrl);
-  expect(data.canManage).toBe(false);
+  expect(data.myAccess.initialData.canManage).toBe(false);
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
 });
 
@@ -346,6 +346,11 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
     freshBaby,
   );
+  queryClient.setQueryData(convexQuery(api.coParents.myAccess, { babyId: "baby-smith" }).queryKey, {
+    canManage: true,
+    isOwner: true,
+    isCoParent: false,
+  });
   queryClient.setQueryData(browserImageFactory(freshPreview.imageUrl).queryKey, {
     url: freshPreview.imageUrl,
     ok: true,
@@ -356,7 +361,10 @@ test("copies from the route overlay and dismisses through overlay history", asyn
       initialData: oldBaby,
     }),
     imagePrefetch: testInitiatedQuery(browserImageFactory, oldImageUrl),
-    canManage: true,
+    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
+      input: { babyId: "baby-smith" },
+      initialData: { canManage: false, isOwner: false, isCoParent: false },
+    }),
     shareLink: "https://isbabyoutyet.com/baby/baby-smith",
   };
   const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);

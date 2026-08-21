@@ -14,10 +14,20 @@ import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
+    const token = await authenticateManagerOverlaySsr(opts.context);
+    if (typeof window === "undefined" && !token) {
+      throw redirect({
+        to: "/baby/$publicId",
+        params: { publicId: opts.params.publicId },
+        resetScroll: false,
+      });
+    }
+
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -32,6 +42,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         replace: true,
       });
     }
+    return token ? { token, isAuthenticated: true } : undefined;
   },
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
