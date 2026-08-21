@@ -54,6 +54,10 @@ vi.mock("@/components/onboarding/onboarding-host", () => ({
   useCompleteOnboardingStep: () => mocks.completeStep,
 }));
 
+vi.mock("@/lib/managerOverlayAuth", () => ({
+  authenticateManagerOverlaySsr: () => Promise.resolve(null),
+}));
+
 vi.mock("@/routes/baby/$publicId/route", () => ({
   managerDocToBabyData: (doc: { name: string }) => ({
     name: doc.name,
