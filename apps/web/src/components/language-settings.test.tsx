@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
   updateTimeZone: vi.fn<(args: unknown) => Promise<unknown>>(),
   requestLanguage: vi.fn<(args: unknown) => Promise<unknown>>(),
   setLocale: vi.fn<(locale: string) => Promise<void>>(),
+  toastError: vi.fn<(message: string) => void>(),
+  toastSuccess: vi.fn<(message: string) => void>(),
 }));
 
 vi.mock("convex/react", async () => {
@@ -31,7 +33,7 @@ vi.mock("@/lib/paraglide-setup", () => ({
 }));
 
 vi.mock("sonner", () => ({
-  toast: { success: vi.fn<(message: string) => void>(), error: vi.fn<(message: string) => void>() },
+  toast: { success: mocks.toastSuccess, error: mocks.toastError },
 }));
 
 const { LanguageSettings } = await import("./language-settings");
@@ -98,6 +100,28 @@ test("changing the profile time zone persists it", async () => {
   await vi.waitFor(() => {
     expect(mocks.updateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
   });
+});
+
+test.each([
+  { failure: new Error("Could not save time zone"), expectedMessage: "Could not save time zone" },
+  { failure: "offline", expectedMessage: "Something went wrong. Try again." },
+])("a failed time zone save rolls back for $expectedMessage", async (testCase) => {
+  mocks.updateTimeZone.mockRejectedValueOnce(testCase.failure);
+  await using _view = renderResource();
+
+  const picker = screen.getByRole("combobox", { name: "Profile time zone" });
+  const trigger = picker.parentElement?.querySelector("button");
+  if (!trigger) throw new Error("time zone trigger missing");
+  fireEvent.click(trigger);
+  fireEvent.input(picker, { target: { value: "Tokyo" } });
+  const tokyo = screen.getByRole("option", { name: "Tokyo (Asia)" });
+  fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
+  fireEvent.click(tokyo);
+
+  await vi.waitFor(() => {
+    expect((picker as HTMLInputElement).value).toBe("London (Europe)");
+  });
+  expect(mocks.toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
 });
 
 test("disables the picker and falls back to the UI locale without a profile", async () => {
