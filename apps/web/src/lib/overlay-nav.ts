@@ -8,12 +8,13 @@ function isOverlayHistoryState(state: { overlay: true | undefined }) {
   return state.overlay === true;
 }
 
-type OverlayOpenInput = Omit<LinkProps, "resetScroll" | "state" | "replace">;
+type OverlayOpenInput = Omit<LinkProps, "resetScroll" | "state" | "replace" | "preload">;
 type OverlayCloseInput = Omit<LinkProps, "resetScroll" | "replace">;
 
 /**
- * Link/navigate options to *open* an overlay: push a history entry, keep
- * scroll, and mark `state.overlay` so dismiss can prefer `history.back()`.
+ * Link/navigate options to *open* an overlay: push a history entry, preload
+ * while its real Link is visible, keep scroll, and mark `state.overlay` so
+ * dismiss can prefer `history.back()`.
  *
  * Pass to `<Link {...opts} />` or `navigate(opts)`.
  *
@@ -22,6 +23,7 @@ type OverlayCloseInput = Omit<LinkProps, "resetScroll" | "replace">;
 export function openOverlayLink(options: OverlayOpenInput): LinkProps {
   return {
     ...options,
+    preload: "viewport",
     resetScroll: false,
     state: overlayHistoryState,
   };

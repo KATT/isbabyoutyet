@@ -32,6 +32,9 @@ type GuardCtx = {
   context: {
     queryClient: QueryClient;
     convexClient: unknown;
+    convexQueryClient: {
+      serverHttpClient: { setAuth: (token: string) => void };
+    };
     convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
     token: string | null;
     locale: string;
@@ -43,10 +46,12 @@ function makeGuardCtx() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, queryFn } },
   });
+  const setServerAuth = vi.fn<(token: string) => void>();
   const ctx: GuardCtx = {
     context: {
       queryClient,
       convexClient: {},
+      convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
       convexPreloader: getConvexQueryPreloader(queryClient),
       token: null,
       locale: "en-GB",
@@ -59,7 +64,7 @@ function makeGuardCtx() {
       profile: { input: Record<string, never>; initialData: unknown };
     }>;
   };
-  return { ctx, queryClient, queryFn, beforeLoad: options.beforeLoad };
+  return { ctx, queryClient, queryFn, setServerAuth, beforeLoad: options.beforeLoad };
 }
 
 test("client navigations reuse a cached profile without an auth round-trip", async () => {
@@ -193,6 +198,7 @@ test("server render reuses the layout token without calling getAuthToken", async
       isAuthenticated: true,
     });
     expect(getToken).not.toHaveBeenCalled();
+    expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
     expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });

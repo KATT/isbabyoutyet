@@ -5,6 +5,7 @@ import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { DEFAULT_TIME_ZONE, isValidTimeZone, resolveTimeZone } from "../src/timeZone";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
+import { mutationWithTriggers } from "./triggers";
 
 const profileResultValidator = v.object({
   locale: supportedLocaleValidator,
@@ -53,7 +54,7 @@ export const get = query({
   },
 });
 
-export const updateLocale = mutation({
+export const updateLocale = mutationWithTriggers({
   args: {
     locale: supportedLocaleValidator,
   },

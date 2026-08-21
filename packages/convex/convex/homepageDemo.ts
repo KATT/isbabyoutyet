@@ -14,6 +14,7 @@ import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
+import { internalMutationWithTriggers } from "./triggers";
 
 const CLEAR_BATCH_SIZE = 32;
 
@@ -321,7 +322,7 @@ export const storePhoto = internalAction({
   },
 });
 
-export const ensureBaby = internalMutation({
+export const ensureBaby = internalMutationWithTriggers({
   args: { locale: localeArg },
   handler: async (ctx, args) => {
     return await ensureBabyDoc(ctx, {
@@ -331,7 +332,7 @@ export const ensureBaby = internalMutation({
   },
 });
 
-export const clearFeedBatch = internalMutation({
+export const clearFeedBatch = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     keepStorageIds: v.optional(v.array(v.id("_storage"))),
@@ -344,7 +345,7 @@ export const clearFeedBatch = internalMutation({
   },
 });
 
-export const insertFeed = internalMutation({
+export const insertFeed = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photos: v.optional(photosValidator),
@@ -370,7 +371,7 @@ export const insertFeed = internalMutation({
  * Never touches a baby that is not marked `demo: true` (except grandfathering
  * the existing sentinel-owned homepage demo publicIds).
  */
-export const refresh = internalMutation({
+export const refresh = internalMutationWithTriggers({
   args: {
     photos: v.optional(photosValidator),
     locale: localeArg,

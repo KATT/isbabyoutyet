@@ -7,7 +7,7 @@ import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
 import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
-import { mutationWithTriggers } from "./triggers";
+import { internalMutationWithTriggers, mutationWithTriggers } from "./triggers";
 import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
@@ -426,8 +426,7 @@ export const markNotificationSent = internalMutation({
   },
 });
 
-// Internal mutation to attach generated page/push images (called from action)
-export const updateThumbnail = internalMutation({
+export const updateThumbnail = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
@@ -465,7 +464,7 @@ export const updateThumbnail = internalMutation({
  * Backfill-only write for the inline blur placeholder. Same stale-photo
  * guard as `updateThumbnail`.
  */
-export const updateBlurDataUrl = internalMutation({
+export const updateBlurDataUrl = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),

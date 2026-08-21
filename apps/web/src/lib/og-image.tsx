@@ -55,7 +55,6 @@ async function loadNunitoFont(opts: { weight: 700 | 900; text: string }) {
 async function pngResponse(opts: {
   element: ReactNode;
   fonts: { name: string; data: ArrayBuffer; weight: 700 | 900; style: "normal" }[];
-  cacheControl: string;
 }) {
   const svg = await satori(opts.element as ReactElement, {
     width: OG_IMAGE_WIDTH,
@@ -71,7 +70,6 @@ async function pngResponse(opts: {
   return new Response(Buffer.from(png), {
     headers: {
       "Content-Type": "image/png",
-      "Cache-Control": opts.cacheControl,
     },
   });
 }
@@ -155,7 +153,6 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
       { name: "Nunito", data: bold, weight: 700, style: "normal" },
       { name: "Nunito", data: black, weight: 900, style: "normal" },
     ],
-    cacheControl: "public, max-age=0, s-maxage=300, stale-while-revalidate=86400",
     element: (
       <div
         style={{
@@ -272,7 +269,6 @@ export async function createHomepageOgImage(locale: SupportedLocale) {
       { name: "Nunito", data: bold, weight: 700, style: "normal" },
       { name: "Nunito", data: black, weight: 900, style: "normal" },
     ],
-    cacheControl: "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
     element: (
       <div
         style={{

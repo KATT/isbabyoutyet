@@ -24,6 +24,26 @@ import { getBabySeo } from "@/lib/baby-seo";
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
 
+test("parent route caches public overlays and keeps manager overlays private", () => {
+  const headers = routeModule.Route.options.headers as unknown as (opts: {
+    params: { publicId: string };
+    matches: Array<{ routeId: string }>;
+  }) => Record<string, string>;
+  const publicHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/share" }],
+  });
+  const privateHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
+  });
+
+  expect(publicHeaders["Cache-Control"]).toContain("public");
+  expect(publicHeaders["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
+  expect(privateHeaders["Cache-Control"]).toContain("private");
+  expect(privateHeaders["Cache-Control"]).toContain("no-store");
+});
+
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
   return makeResource({}, () => {
