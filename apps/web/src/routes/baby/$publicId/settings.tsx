@@ -13,10 +13,12 @@ import {
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
+  headers: privateCacheHeaders,
   beforeLoad: async (opts) => {
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,

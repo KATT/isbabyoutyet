@@ -117,6 +117,13 @@ vi.mock("@/components/baby/timeline", () => ({
 const routeModule = await import("@/routes/baby/$publicId/post");
 const { BabyPostUpdateOverlay } = routeModule;
 
+test("post overlay opts out of shared caching", () => {
+  const headers = (routeModule.Route.options.headers as () => Record<string, string>)();
+
+  expect(headers["Cache-Control"]).toContain("private");
+  expect(headers["Cache-Control"]).toContain("no-store");
+});
+
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
     defaultOptions: {

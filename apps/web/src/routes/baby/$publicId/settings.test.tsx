@@ -131,6 +131,13 @@ vi.mock("@/components/baby/settings-panel", () => ({
 const routeModule = await import("@/routes/baby/$publicId/settings");
 const { BabySettingsOverlay, managerDocToBabyData } = routeModule;
 
+test("settings overlay opts out of shared caching", () => {
+  const headers = (routeModule.Route.options.headers as () => Record<string, string>)();
+
+  expect(headers["Cache-Control"]).toContain("private");
+  expect(headers["Cache-Control"]).toContain("no-store");
+});
+
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
     defaultOptions: {
