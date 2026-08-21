@@ -143,8 +143,10 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const showDueDateBox =
     props.currentStatus.type === "not_yet" &&
     (publicDueDateText.length > 0 || exactDueDate !== null);
-  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
-  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate, props.baby.timeZone) : 0;
+  const daysUntilDueDate = exactDueDate
+    ? getDaysUntilDueDate(exactDueDate, props.baby.timeZone)
+    : 0;
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
   const sublineKey =
@@ -177,8 +179,11 @@ export function StatusDisplay(props: StatusDisplayProps) {
             : props.currentStatus.type === "labor_started"
               ? t("Started")
               : t("Since")}{" "}
-          {formatDate(props.currentStatus.date, locale)} (
-          {getRelativeTime(props.currentStatus.date, locale)})
+          {formatDate(props.currentStatus.date, {
+            locale,
+            timeZone: props.baby.timeZone,
+          })}{" "}
+          ({getRelativeTime(props.currentStatus.date, locale)})
         </p>
       )}
 

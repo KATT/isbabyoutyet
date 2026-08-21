@@ -11,7 +11,10 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (opts: { component: unknown }) => opts,
   getRouteApi: () => ({
     useRouteContext: () => ({
-      profile: { input: {}, initialData: { locale: "en-GB", isAdmin: false } },
+      profile: {
+        input: {},
+        initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
+      },
     }),
   }),
 }));

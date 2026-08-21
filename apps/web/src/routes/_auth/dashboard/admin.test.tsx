@@ -337,7 +337,7 @@ function makeAdminLoaderQueryClient(handlers: Record<string, unknown>) {
 
 async function runAdminLoader(
   handlers: Record<string, unknown>,
-  profile: { locale: string; isAdmin: boolean },
+  profile: { locale: string; timeZone: string; isAdmin: boolean },
 ) {
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
@@ -371,7 +371,7 @@ test("loader prefetches babies and language requests in parallel for admins", as
       "admin:listBabies": ADMIN_EMPTY_PAGE,
       "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
     },
-    { locale: "en-GB", isAdmin: true },
+    { locale: "en-GB", timeZone: "Europe/London", isAdmin: true },
   );
 
   expect(result.babies).toMatchObject({
@@ -391,7 +391,7 @@ test("loader redirects non-admins without prefetching admin queries", async () =
         throw new Error("admin:listLanguageRequests should not run for non-admins");
       },
     },
-    { locale: "en-GB", isAdmin: false },
+    { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
   );
 
   await expect(pending).rejects.toMatchObject({ isRedirect: true, to: "/dashboard" });

@@ -342,6 +342,28 @@ test("a baby inherits the owner locale until an override is set", async () => {
   });
 });
 
+test("a baby inherits its owner's time zone without a baby override", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Little One",
+    dueDate: "2026-10-15",
+  });
+
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    timeZone: "Europe/London",
+  });
+
+  await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "Asia/Tokyo" });
+  expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
+    timeZone: "Asia/Tokyo",
+  });
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    timeZone: "Asia/Tokyo",
+  });
+  expect(await asAlice.query(api.baby.listByUser, {})).toMatchObject([{ timeZone: "Asia/Tokyo" }]);
+});
+
 test("renaming a baby rotates the publicId and keeps the old one resolvable", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });

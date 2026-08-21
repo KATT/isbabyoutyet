@@ -22,10 +22,19 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@workspace/ui/components/combobox";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
@@ -81,6 +90,17 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
+const timeZoneOptions = Array.from(
+  new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")]),
+).sort();
+
+function formatTimeZoneLabel(timeZone: string) {
+  const [firstPart, ...locationParts] = timeZone.split("/");
+  const area = firstPart ?? timeZone;
+  const location = locationParts.join(" / ").replaceAll("_", " ");
+  return location ? `${location} (${area})` : area;
+}
+
 export function LanguageSettings(props: {
   profile:
     | PreloadedConvexQuery<typeof api.profile.get>
@@ -90,11 +110,44 @@ export function LanguageSettings(props: {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const profile = profileQuery.data;
   const updateLocale = useMutation(api.profile.updateLocale);
+  const updateTimeZone = useMutation(api.profile.updateTimeZone);
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
+  const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Combobox
+        items={timeZoneOptions}
+        itemToStringValue={formatTimeZoneLabel}
+        value={selectedTimeZone}
+        onValueChange={(value) => {
+          if (!value || value === selectedTimeZone) {
+            return;
+          }
+          void updateTimeZone({ timeZone: value }).then(() => {
+            toast.success(t("Time zone saved"));
+          });
+        }}
+        disabled={!profile}
+      >
+        <ComboboxInput
+          className="w-56"
+          aria-label={t("Profile time zone")}
+          placeholder={t("Search time zones")}
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
+          <ComboboxList>
+            {(timeZone) => (
+              <ComboboxItem key={timeZone} value={timeZone}>
+                {formatTimeZoneLabel(timeZone)}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+
       <LanguagePicker
         value={selectedLocale}
         disabled={!profile}

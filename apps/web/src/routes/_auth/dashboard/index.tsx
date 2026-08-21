@@ -166,6 +166,7 @@ type DashboardBaby = {
   dueDateDisplayMode: "exact" | "message";
   publicDueDateText: string | null;
   role: "owner" | "coParent";
+  timeZone: string;
 } & Partial<{
   laborStarted: string | null;
   wentToHospital: string | null;

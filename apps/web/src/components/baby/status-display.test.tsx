@@ -34,6 +34,7 @@ function useFakeTimersResource(now: Date) {
 
 const baby: BabyData = {
   name: "Nova",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,

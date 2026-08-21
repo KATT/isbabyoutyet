@@ -157,6 +157,10 @@ const enGB = {
   "Add Your First Baby": "Add Your First Baby",
   "Due today!": "Due today!",
   "Profile language": "Profile language",
+  "Profile time zone": "Profile time zone",
+  "Search time zones": "Search time zones",
+  "No time zones found": "No time zones found",
+  "Time zone saved": "Time zone saved",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "We start with your browser language. New baby pages use it too.",
   "Request another language": "Request another language",
@@ -690,6 +694,10 @@ const sv: Record<TranslationKey, string> = {
   "Add Your First Baby": "Lägg till din första bäbis",
   "Due today!": "Beräknad idag!",
   "Profile language": "Profilspråk",
+  "Profile time zone": "Profiltidszon",
+  "Search time zones": "Sök tidszoner",
+  "No time zones found": "Inga tidszoner hittades",
+  "Time zone saved": "Tidszonen har sparats",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "Vi börjar med språket i din webbläsare. Nya bäbissidor använder samma språk.",
   "Request another language": "Önska ett annat språk",
@@ -1206,6 +1214,10 @@ const es: Record<TranslationKey, string> = {
   "Add Your First Baby": "Añade tu primer bebé",
   "Due today!": "¡Fecha prevista hoy!",
   "Profile language": "Idioma del perfil",
+  "Profile time zone": "Zona horaria del perfil",
+  "Search time zones": "Buscar zonas horarias",
+  "No time zones found": "No se encontraron zonas horarias",
+  "Time zone saved": "Zona horaria guardada",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "Al principio usamos el idioma de tu navegador. Las páginas nuevas usarán ese mismo idioma.",
   "Request another language": "Solicitar otro idioma",
@@ -1728,6 +1740,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Add Your First Baby": "Adicionar seu primeiro bebê",
   "Due today!": "É para hoje!",
   "Profile language": "Idioma do perfil",
+  "Profile time zone": "Fuso horário do perfil",
+  "Search time zones": "Buscar fusos horários",
+  "No time zones found": "Nenhum fuso horário encontrado",
+  "Time zone saved": "Fuso horário salvo",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "O idioma inicial vem do navegador. Novas páginas de bebê herdam essa escolha.",
   "Request another language": "Pedir outro idioma",

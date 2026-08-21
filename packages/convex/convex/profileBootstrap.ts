@@ -3,6 +3,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
+import { DEFAULT_TIME_ZONE, resolveTimeZone } from "../src/timeZone";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import {
   claimPendingInvitesForAuthUser,
@@ -11,6 +12,7 @@ import {
 
 export type ProfileResult = {
   locale: SupportedLocale;
+  timeZone: string;
   isAdmin: boolean;
 };
 
@@ -36,6 +38,7 @@ export async function ensureUserProfileForAuthUser(
   if (existing) {
     return {
       locale: resolveSupportedLocale(existing.locale),
+      timeZone: resolveTimeZone(existing.timeZone),
       isAdmin: existing.isAdmin,
     };
   }
@@ -45,9 +48,10 @@ export async function ensureUserProfileForAuthUser(
     userId: opts.userId,
     tokenIdentifier,
     locale,
+    timeZone: DEFAULT_TIME_ZONE,
     isAdmin: false,
   });
-  return { locale, isAdmin: false };
+  return { locale, timeZone: DEFAULT_TIME_ZONE, isAdmin: false };
 }
 
 export async function claimInvitesForAuthUser(

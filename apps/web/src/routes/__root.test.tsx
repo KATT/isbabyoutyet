@@ -91,6 +91,7 @@ test("beforeLoad resolves locale and auth locally on the client, without a serve
   // A cached profile is the session signal for client navigations.
   queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
   const authed = await options.beforeLoad(ctx);

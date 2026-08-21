@@ -96,6 +96,7 @@ const { TimelineFeed, UpdateComposer } = await import("@/components/baby/timelin
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,
@@ -262,7 +263,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
-    occurredAt: new Date(backdated).getTime(),
+    occurredAt: Date.parse("2026-08-10T07:30:00.000Z"),
   });
 });
 

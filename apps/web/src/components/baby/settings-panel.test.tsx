@@ -15,6 +15,7 @@ vi.mock("sonner", () => ({
 
 const baby: BabyData = {
   name: "Nova",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01T00:00:00.000Z",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,

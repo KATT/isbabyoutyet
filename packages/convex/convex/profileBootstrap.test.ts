@@ -37,6 +37,7 @@ test("sign-up creates a profile from Accept-Language", async () => {
   const asUser = t.withIdentity({ subject: userId });
   expect(await asUser.query(api.profile.get, {})).toEqual({
     locale: "sv",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
 });
@@ -83,6 +84,7 @@ test("sign-in ensures a profile exists for legacy users", async () => {
   const asUser = t.withIdentity({ subject: userId });
   expect(await asUser.query(api.profile.get, {})).toEqual({
     locale: "es",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
 });

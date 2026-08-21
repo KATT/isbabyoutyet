@@ -13,6 +13,7 @@ type DashboardBabyCardBaby = {
   dueDateDisplayMode: "exact" | "message";
   publicDueDateText: string | null;
   role: "owner" | "coParent";
+  timeZone: string;
 } & Partial<{
   laborStarted: string | null;
   wentToHospital: string | null;
@@ -56,8 +57,8 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
           </Badge>
         );
       }
-      const overdueDays = getOverdueDays(props.baby.dueDate);
-      const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
+      const overdueDays = getOverdueDays(props.baby.dueDate, props.baby.timeZone);
+      const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate, props.baby.timeZone);
       if (overdueDays > 0) {
         return (
           <Badge className="rounded-full font-bold">
