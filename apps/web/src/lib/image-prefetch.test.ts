@@ -1,7 +1,11 @@
 import { QueryClient } from "@tanstack/react-query";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
-import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
+import {
+  browserImageFactory,
+  prefetchBrowserImage,
+  waitForBrowserImage,
+} from "@/lib/image-prefetch";
 
 function queryClientResource() {
   const queryClient = new QueryClient({
@@ -50,7 +54,7 @@ test("prefetches the image into the query cache in the browser", async () => {
   });
 });
 
-test("does not construct Image while prefetching on the server", async () => {
+test("does not construct or await Image while warming on the server", async () => {
   await using queryClient = queryClientResource();
   const url = "https://cdn.example/full.jpg";
   const originalWindow = globalThis.window;
@@ -65,8 +69,10 @@ test("does not construct Image while prefetching on the server", async () => {
 
   const ensureSpy = vi.spyOn(queryClient, "ensureQueryData");
   const handle = prefetchBrowserImage(queryClient, url);
+  const waitedHandle = await waitForBrowserImage(queryClient, url);
 
   expect(handle).toMatchObject({ input: url });
+  expect(waitedHandle).toMatchObject({ input: url });
   expect(ensureSpy).not.toHaveBeenCalled();
   expect(ImageSpy).not.toHaveBeenCalled();
   expect(queryClient.getQueryData(browserImageFactory(url).queryKey)).toBeUndefined();

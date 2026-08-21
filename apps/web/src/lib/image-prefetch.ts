@@ -46,6 +46,22 @@ export function prefetchBrowserImage(
   return getQueryInitiator(queryClient).ensureQueryData(browserImageFactory, imageUrl);
 }
 
+/**
+ * Starts the same cached browser warm as {@link prefetchBrowserImage}, then
+ * waits for it before allowing client navigation to finish. SSR still returns
+ * the serializable handle immediately without touching `Image`.
+ */
+export async function waitForBrowserImage(
+  queryClient: QueryClient,
+  imageUrl: string,
+): Promise<InitiatedQuery<BrowserImageFactory>> {
+  const imagePrefetch = prefetchBrowserImage(queryClient, imageUrl);
+  if (typeof window !== "undefined") {
+    await queryClient.ensureQueryData(browserImageQueryOptions(imageUrl));
+  }
+  return imagePrefetch;
+}
+
 function loadBrowserImage(imageUrl: string) {
   return new Promise<{ url: string; ok: boolean }>((resolve) => {
     const startedAt = Date.now();
