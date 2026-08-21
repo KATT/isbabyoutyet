@@ -7,12 +7,13 @@ import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   hasDemoLogin: true,
-  navigate: vi.fn<(opts: { to: string; reloadDocument: boolean }) => Promise<void>>(async () => {}),
+  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signInEmail: vi.fn<
     (opts: { email: string; password: string; rememberMe: boolean }) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
+  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
 }));
 
 vi.mock("@/lib/has-demo-login", () => ({
@@ -38,6 +39,10 @@ vi.mock("@/lib/auth-client", () => ({
   },
 }));
 
+vi.mock("@/lib/convexAuthHandoff", () => ({
+  waitForConvexAuth: () => mocks.waitForConvexAuth(),
+}));
+
 vi.mock("sonner", () => ({
   toast: { error: vi.fn<(message: string) => void>() },
 }));
@@ -56,11 +61,17 @@ function renderLogin() {
   });
 }
 
-test("prefills and signs in when a test account is chosen", async () => {
+test("waits for provider-confirmed Convex auth before SPA navigation", async () => {
   mocks.hasDemoLogin = true;
   mocks.navigate.mockClear();
   mocks.signInEmail.mockClear();
+  mocks.waitForConvexAuth.mockClear();
   mocks.signInEmail.mockResolvedValueOnce({ error: null });
+  let confirmAuth = () => {};
+  const authConfirmation = new Promise<void>((resolve) => {
+    confirmAuth = resolve;
+  });
+  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
 
   await using _view = renderLogin();
 
@@ -82,9 +93,14 @@ test("prefills and signs in when a test account is chosen", async () => {
       rememberMe: true,
     });
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({
-    to: "/dashboard",
-    reloadDocument: true,
+  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/dashboard",
+    });
   });
 });
 

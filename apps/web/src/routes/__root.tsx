@@ -13,6 +13,7 @@ import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import * as React from "react";
 import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
@@ -39,6 +40,7 @@ import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
+import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -190,6 +192,7 @@ function RootComponent() {
         authClient={authClient as unknown as AuthClient}
         initialToken={token}
       >
+        <ProviderAuthObserver />
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>
@@ -203,6 +206,22 @@ function RootComponent() {
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );
+}
+
+function ProviderAuthObserver() {
+  const auth = useConvexAuth();
+
+  useEffect(() => {
+    // Better Auth exposes its session before Convex has validated the token.
+    // useConvexAuth is the documented server-confirmed signal:
+    // https://labs.convex.dev/better-auth/basic-usage/authorization
+    reportConvexAuthState({
+      isAuthenticated: auth.isAuthenticated,
+      isLoading: auth.isLoading,
+    });
+  }, [auth.isAuthenticated, auth.isLoading]);
+
+  return null;
 }
 
 // Router-wide error fallback (registered as defaultErrorComponent): residual

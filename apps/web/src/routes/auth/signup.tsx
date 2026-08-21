@@ -23,6 +23,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
+import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -94,9 +95,8 @@ function SignupPage() {
                   throw new Error(result.error.message || t("Failed to sign up"));
                 }
 
-                // Authenticate Convex during the new document load instead of
-                // racing the mounted auth provider during an SPA transition.
-                await router.navigate({ to: "/dashboard", reloadDocument: true });
+                await waitForConvexAuth();
+                await router.navigate({ to: "/dashboard" });
               }}
             >
               <div className="space-y-5">

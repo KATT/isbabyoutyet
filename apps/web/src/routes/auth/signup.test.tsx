@@ -5,12 +5,13 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(opts: { to: string; reloadDocument: boolean }) => Promise<void>>(async () => {}),
+  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signUpEmail: vi.fn<
     (opts: { email: string; password: string; name: string }) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
+  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -27,6 +28,10 @@ vi.mock("@/lib/auth-client", () => ({
       email: (opts: { email: string; password: string; name: string }) => mocks.signUpEmail(opts),
     },
   },
+}));
+
+vi.mock("@/lib/convexAuthHandoff", () => ({
+  waitForConvexAuth: () => mocks.waitForConvexAuth(),
 }));
 
 vi.mock("sonner", () => ({
@@ -56,10 +61,16 @@ test("signup has no test-account picker and starts empty", async () => {
   expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
 });
 
-test("loads the dashboard as a new document after signup", async () => {
+test("waits for provider-confirmed Convex auth before SPA navigation after signup", async () => {
   mocks.navigate.mockClear();
   mocks.signUpEmail.mockClear();
+  mocks.waitForConvexAuth.mockClear();
   mocks.signUpEmail.mockResolvedValueOnce({ error: null });
+  let confirmAuth = () => {};
+  const authConfirmation = new Promise<void>((resolve) => {
+    confirmAuth = resolve;
+  });
+  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
 
   await using _view = renderSignup();
 
@@ -75,8 +86,13 @@ test("loads the dashboard as a new document after signup", async () => {
       name: "Test Parent",
     });
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({
-    to: "/dashboard",
-    reloadDocument: true,
+  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/dashboard",
+    });
   });
 });
