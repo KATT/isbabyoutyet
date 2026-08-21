@@ -82,14 +82,30 @@ test("a fresh login authenticates the Convex client before reading the hook-crea
   // hasn't re-authenticated the websocket yet.
   getToken.mockReset();
   getToken.mockResolvedValueOnce("fresh-token");
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const setAuth =
+    vi.fn<
+      (
+        fetchToken: () => Promise<string | null>,
+        onChange: (isAuthenticated: boolean) => void,
+      ) => void
+    >();
   const guard = makeGuardCtx();
   guard.queryFn
     .mockResolvedValueOnce(null)
     .mockResolvedValueOnce({ locale: "en-US", isAdmin: false });
   guard.ctx.context.convexClient = { setAuth };
 
-  const result = await guard.beforeLoad(guard.ctx);
+  const resultPromise = guard.beforeLoad(guard.ctx);
+
+  await vi.waitFor(() => {
+    expect(setAuth).toHaveBeenCalledTimes(1);
+  });
+  // setAuth only starts the websocket handshake. The authenticated profile
+  // must not be queried until Convex confirms that the token was accepted.
+  expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  setAuth.mock.calls[0]?.[1](true);
+
+  const result = await resultPromise;
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
   expect(setAuth).toHaveBeenCalledTimes(1);
@@ -120,7 +136,11 @@ test("client navigations without a session redirect home after one token check",
 test("client navigations redirect when an authenticated profile cannot be read", async () => {
   getToken.mockReset();
   getToken.mockResolvedValueOnce("fresh-token");
-  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const setAuth = vi.fn<
+    (fetchToken: () => Promise<string | null>, onChange: (isAuthenticated: boolean) => void) => void
+  >((_fetchToken, onChange) => {
+    onChange(true);
+  });
   const guard = makeGuardCtx();
   guard.ctx.context.convexClient = { setAuth };
 
@@ -130,6 +150,25 @@ test("client navigations redirect when an authenticated profile cannot be read",
   });
   expect(setAuth).toHaveBeenCalledTimes(1);
   expect(guard.queryFn).toHaveBeenCalledTimes(2);
+});
+
+test("client navigations redirect without retrying when Convex rejects the fresh token", async () => {
+  getToken.mockReset();
+  getToken.mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<
+    (fetchToken: () => Promise<string | null>, onChange: (isAuthenticated: boolean) => void) => void
+  >((_fetchToken, onChange) => {
+    onChange(false);
+  });
+  const guard = makeGuardCtx();
+  guard.ctx.context.convexClient = { setAuth };
+
+  await expect(guard.beforeLoad(guard.ctx)).rejects.toMatchObject({
+    isRedirect: true,
+    to: "/",
+  });
+  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(guard.queryFn).toHaveBeenCalledTimes(1);
 });
 
 test("client navigations keep the cached profile", async () => {
