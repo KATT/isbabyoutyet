@@ -3,7 +3,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { getBabySeo } from "@/lib/baby-seo";
 import { createBabyOgImage } from "@/lib/og-image";
-import { withPublicCache } from "@/lib/cachePolicy";
+import { withVersionedImageCache } from "@/lib/cachePolicy";
 import { ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag } from "@workspace/convex/src/cacheTags";
 
 export const Route = createFileRoute("/og/baby/$publicId")({
@@ -34,12 +34,13 @@ export const Route = createFileRoute("/og/baby/$publicId")({
             status: 307,
             headers: {
               "Cache-Control": "no-store",
+              "Vercel-CDN-Cache-Control": "private, no-store",
               Location: requestUrl.toString(),
             },
           });
         }
 
-        return withPublicCache(
+        return withVersionedImageCache(
           await createBabyOgImage({
             name: baby.name,
             ...(baby.dueDateDisplayMode === "exact"
@@ -56,10 +57,7 @@ export const Route = createFileRoute("/og/baby/$publicId")({
             milestoneVisibility: baby.milestoneVisibility,
             photoUrl: baby.photoUrl ?? baby.thumbnailUrl ?? null,
           }),
-          {
-            maxAgeSeconds: 86_400,
-            tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(opts.params.publicId)],
-          },
+          [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(opts.params.publicId)],
         );
       },
     },

@@ -7,6 +7,7 @@ import {
   privateCacheHeaders,
   previewCacheHeaders,
   withPublicCache,
+  withVersionedImageCache,
 } from "./cachePolicy";
 
 function responseFor(path: string, method: string) {
@@ -142,5 +143,23 @@ describe("applyCachePolicy", () => {
     expect(response.headers.get("Content-Type")).toBe("application/manifest+json");
     expect(response.headers.get("Vercel-Cache-Tag")).toBe("baby-id:123");
     expect(await response.text()).toBe("manifest");
+  });
+
+  test("makes content-versioned generated images immutable and tagged", async () => {
+    const imageResponse = withVersionedImageCache(
+      new Response("png", { headers: { "Content-Type": "image/png", Vary: "Cookie" } }),
+      ["baby-pages", "baby-public-id:juniper-hale"],
+    );
+    const response = applyCachePolicy(
+      new Request("https://example.com/og/baby/juniper-hale?v=current"),
+      imageResponse,
+    );
+
+    expect(response.headers.get("Content-Type")).toBe("image/png");
+    expect(response.headers.get("Cache-Control")).toBe("public, max-age=31536000, immutable");
+    expect(response.headers.get("Vercel-CDN-Cache-Control")).toContain("s-maxage=31536000");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-public-id:juniper-hale");
+    expect(response.headers.get("Vary")).toBeNull();
+    expect(await response.text()).toBe("png");
   });
 });

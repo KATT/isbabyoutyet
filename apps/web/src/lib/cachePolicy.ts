@@ -7,6 +7,7 @@ import {
 const PRIVATE_CACHE_CONTROL = "private, no-store, no-cache, max-age=0, must-revalidate";
 const PUBLIC_BROWSER_CACHE_CONTROL = "public, max-age=0, must-revalidate";
 const PUBLIC_STALE_SECONDS = 86_400;
+const VERSIONED_IMAGE_MAX_AGE_SECONDS = 31_536_000;
 
 export type PublicCachePolicy = {
   maxAgeSeconds: number;
@@ -66,6 +67,18 @@ export function withPublicCache(response: Response, policy: PublicCachePolicy) {
   for (const [name, value] of Object.entries(publicCacheHeaders(policy))) {
     headers.set(name, value);
   }
+  return responseWithHeaders(response, headers);
+}
+
+export function withVersionedImageCache(response: Response, tags: readonly string[]) {
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", `public, max-age=${VERSIONED_IMAGE_MAX_AGE_SECONDS}, immutable`);
+  headers.set(
+    "Vercel-CDN-Cache-Control",
+    `public, s-maxage=${VERSIONED_IMAGE_MAX_AGE_SECONDS}, stale-while-revalidate=${PUBLIC_STALE_SECONDS}`,
+  );
+  headers.set("Vercel-Cache-Tag", tags.join(","));
+  headers.delete("Vary");
   return responseWithHeaders(response, headers);
 }
 
@@ -155,6 +168,12 @@ export function applyCachePolicy(request: Request, response: Response) {
     headers.set("Vercel-CDN-Cache-Control", PRIVATE_CACHE_CONTROL);
     headers.delete("Vercel-Cache-Tag");
     mergeVary(headers, ["Cookie"]);
+    return responseWithHeaders(response, headers);
+  }
+
+  // Route/handler-specific policy is more precise than the pathname fallback
+  // (for example immutable content-versioned OG images).
+  if (/\bpublic\b/i.test(cacheControl) && headers.has("Vercel-CDN-Cache-Control")) {
     return responseWithHeaders(response, headers);
   }
 
