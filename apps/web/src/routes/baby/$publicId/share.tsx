@@ -24,7 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { getBabySeo } from "@/lib/baby-seo";
-import { browserImageFactory, waitForBrowserImage } from "@/lib/image-prefetch";
+import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
@@ -61,8 +61,10 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     const babyDoc = data.baby.initialData;
     const sharePreview = babyDoc ? getBabySeo(babyDoc, publicId) : null;
     // The browser image identity depends on the fetched public baby fields.
-    const resolvedImageUrl = sharePreview?.imageUrl ?? imageUrl;
-    const imagePrefetch = await waitForBrowserImage(opts.context.queryClient, resolvedImageUrl);
+    const imagePrefetch = prefetchBrowserImage(
+      opts.context.queryClient,
+      sharePreview?.imageUrl ?? imageUrl,
+    );
 
     return {
       baby: data.baby,

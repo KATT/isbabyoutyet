@@ -227,65 +227,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
 });
 
-test("loader waits for the canonical OG image before completing in the browser", async () => {
-  const OriginalImage = globalThis.Image;
-  const imageLoad = { finish: null as (() => void) | null };
-  class MockImage {
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
-    set src(_value: string) {
-      imageLoad.finish = () => {
-        this.onload?.();
-      };
-    }
-  }
-  vi.stubGlobal("Image", MockImage);
-  await using _image = makeResource({}, () => {
-    vi.stubGlobal("Image", OriginalImage);
-  });
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<unknown>;
-  const loaderResult = withShareRouteHandlers(
-    {
-      "baby:getByPublicId": babyDoc({ publicId: "baby-smith", theme: "baby-blue" }),
-      "coParents:myAccess": { canManage: false, isOwner: false },
-    },
-    loader,
-  );
-  let loaderCompleted = false;
-  void loaderResult.then(() => {
-    loaderCompleted = true;
-  });
-
-  await vi.waitFor(() => {
-    expect(imageLoad.finish).not.toBeNull();
-  });
-  expect(loaderCompleted).toBe(false);
-
-  imageLoad.finish?.();
-  await expect(loaderResult).resolves.toBeDefined();
-});
-
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
-  const OriginalImage = globalThis.Image;
-  class MockImage {
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
-    set src(_value: string) {
-      queueMicrotask(() => {
-        this.onload?.();
-      });
-    }
-  }
-  vi.stubGlobal("Image", MockImage);
-  await using _image = makeResource({}, () => {
-    vi.stubGlobal("Image", OriginalImage);
-  });
   const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
   const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
   const queryFn = vi.fn<(ctx: { queryKey: readonly unknown[] }) => Promise<unknown>>((ctx) => {
