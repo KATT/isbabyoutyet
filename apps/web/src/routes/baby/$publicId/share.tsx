@@ -69,7 +69,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     return {
       baby: data.baby,
       imagePrefetch,
-      canManage: data.myAccess.initialData.canManage,
+      myAccess: data.myAccess,
       shareLink: canonicalUrl(`/baby/${publicId}`),
     };
   },
@@ -84,6 +84,7 @@ export function BabyShareOverlay() {
   const [copied, setCopied] = useState(false);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
+  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const babyDoc = babyQuery.data;
   const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
   useQuery(
@@ -114,7 +115,7 @@ export function BabyShareOverlay() {
       await navigator.clipboard.writeText(loaderData.shareLink);
       setCopied(true);
       toast.success(t("Copied to clipboard"));
-      if (loaderData.canManage) {
+      if (myAccessQuery.data.canManage) {
         void completeOnboardingStep({ stepId: "share_link" });
       }
     } catch {
@@ -129,7 +130,7 @@ export function BabyShareOverlay() {
         document.execCommand("copy");
         setCopied(true);
         toast.success(t("Copied to clipboard"));
-        if (loaderData.canManage) {
+        if (myAccessQuery.data.canManage) {
           void completeOnboardingStep({ stepId: "share_link" });
         }
       } catch (cause) {

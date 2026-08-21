@@ -128,6 +128,10 @@ vi.mock("@/components/baby/settings-panel", () => ({
   },
 }));
 
+vi.mock("@/lib/managerOverlayAuth", () => ({
+  authenticateManagerOverlaySsr: () => Promise.resolve(null),
+}));
+
 const routeModule = await import("@/routes/baby/$publicId/settings");
 const { BabySettingsOverlay, managerDocToBabyData } = routeModule;
 
