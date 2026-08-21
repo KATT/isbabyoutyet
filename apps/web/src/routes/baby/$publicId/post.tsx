@@ -7,11 +7,21 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
+import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
   beforeLoad: async (opts) => {
+    const token = await authenticateManagerOverlaySsr(opts.context);
+    if (typeof window === "undefined" && !token) {
+      throw redirect({
+        to: "/baby/$publicId",
+        params: { publicId: opts.params.publicId },
+        resetScroll: false,
+      });
+    }
+
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,
     });
@@ -26,6 +36,7 @@ export const Route = createFileRoute("/baby/$publicId/post")({
         replace: true,
       });
     }
+    return token ? { token, isAuthenticated: true } : {};
   },
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
