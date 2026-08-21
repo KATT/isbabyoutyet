@@ -46,7 +46,10 @@ type StepAction =
   | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
   | { kind: "button"; onClick: () => void; label: string };
 
-function babyPageLink(opts: { publicId: string; overlay: "settings" | "post" | null }): LinkProps {
+function babyPageLink(opts: {
+  publicId: string;
+  overlay: "settings" | "post" | "share" | null;
+}): LinkProps {
   if (opts.overlay === "settings") {
     return openOverlayLink({
       to: "/baby/$publicId/settings",
@@ -56,6 +59,12 @@ function babyPageLink(opts: { publicId: string; overlay: "settings" | "post" | n
   if (opts.overlay === "post") {
     return openOverlayLink({
       to: "/baby/$publicId/post",
+      params: { publicId: opts.publicId },
+    });
+  }
+  if (opts.overlay === "share") {
+    return openOverlayLink({
+      to: "/baby/$publicId/share",
       params: { publicId: opts.publicId },
     });
   }
@@ -100,8 +109,8 @@ function getStepAction(opts: {
     if (step.id === "share_link") {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, overlay: null }),
-        label: t("Open {{name}}'s page", { name }),
+        link: babyPageLink({ publicId, overlay: "share" }),
+        label: t("Show Share"),
         onClick: undefined,
       };
     }
@@ -151,10 +160,14 @@ function getStepAction(opts: {
     };
   }
   if (step.id === "share_link") {
+    if (!opts.tourBaby) {
+      return null;
+    }
     return {
-      kind: "button",
-      onClick: () => opts.onGoToStep?.(step.id),
+      kind: "link",
+      link: babyPageLink({ publicId: opts.tourBaby.publicId, overlay: "share" }),
       label: t("Show Share"),
+      onClick: undefined,
     };
   }
   if (step.id === "learn_encouragements") {

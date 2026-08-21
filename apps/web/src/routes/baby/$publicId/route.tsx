@@ -28,10 +28,10 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { openGraphImageMeta } from "@/lib/seo";
+import { getBabySeo } from "@/lib/baby-seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { canonicalUrl } from "@/lib/site-url";
 import { useOverlayNav } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
@@ -110,22 +110,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       return {};
     }
 
-    const seo = babySeoHead({
-      name: babyDoc.name,
-      ...(babyDoc.dueDateDisplayMode === "exact"
-        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
-        : {
-            dueDateDisplayMode: "message" as const,
-            publicDueDateText: babyDoc.publicDueDateText,
-          }),
-      publicId: babyDoc.publicId,
-      theme: babyDoc.theme,
-      locale: babyDoc.resolvedLocale,
-      babyBorn: babyDoc.babyBorn,
-      wentToHospital: babyDoc.wentToHospital,
-      laborStarted: babyDoc.laborStarted,
-      milestoneVisibility: babyDoc.milestoneVisibility,
-    });
+    const seo = getBabySeo(babyDoc, opts.params.publicId);
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
     // navigating away. Inline head styles still paint before body (no FOUC)
@@ -254,6 +239,7 @@ function BabyPageLayout() {
   const params = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
   const matchRoute = useMatchRoute();
+  const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
   const photoOpen =
@@ -279,6 +265,16 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const share = useOverlayNav({
+    open: {
+      to: "/baby/$publicId/share",
+      params: { publicId: params.publicId },
+    },
+    close: {
+      to: "/baby/$publicId",
+      params: { publicId: params.publicId },
+    },
+  });
   const post = useOverlayNav({
     open: {
       to: "/baby/$publicId/post",
@@ -319,7 +315,7 @@ function BabyPageLayout() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!postUpdateOpen && !settingsOpen && !photoOpen}
+          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
               void navigate(post.openLink);
@@ -352,14 +348,9 @@ function BabyPageLayout() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
-            onShareCopied={
-              canManage
-                ? () => {
-                    void completeOnboardingStep({ stepId: "share_link" });
-                  }
-                : null
-            }
+            shareButton={share.openLink}
+            shareOpen={shareOpen}
+            onDismissShare={shareOpen ? share.dismiss : null}
             postUpdateButton={canManage ? post.openLink : null}
             postUpdateOpen={postUpdateOpen}
             onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}

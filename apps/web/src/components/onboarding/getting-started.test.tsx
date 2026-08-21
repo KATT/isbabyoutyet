@@ -183,7 +183,7 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
   expect(mobileDock?.style.getPropertyValue("--visual-viewport-bottom")).toBe("159px");
 });
 
-test("dashboard share step links to the first baby's page", async () => {
+test("dashboard share step links to the first baby's share overlay", async () => {
   await using _view = renderResource(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
@@ -198,9 +198,32 @@ test("dashboard share step links to the first baby's page", async () => {
     />,
   );
 
-  const links = screen.getAllByRole("link", { name: /open ada's page/i });
+  const links = screen.getAllByRole("link", { name: /show share/i });
   expect(links.length).toBeGreaterThan(0);
-  expect(links[0]?.getAttribute("href")).toContain("baby-waiting");
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
+});
+
+test("baby-page share step links directly to the share overlay", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
+  await using _view = renderResource(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="baby"
+      onGoToStep={onGoToStep}
+      className={undefined}
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const links = screen.getAllByRole("link", { name: /show share/i });
+  expect(links.length).toBeGreaterThan(0);
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
+  fireEvent.click(links[0]!);
+  expect(onGoToStep).not.toHaveBeenCalled();
 });
 
 test("minimized chip shows progress count", async () => {
@@ -264,30 +287,6 @@ test("baby-page checklist links post update and can open settings", async () => 
 
   fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);
   expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
-});
-
-test("baby-page share action jumps to the share target", async () => {
-  const onGoToStep = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
-    <GettingStartedCard
-      effectiveSteps={["add_baby"]}
-      minimized={false}
-      onMinimize={vi.fn<() => void>()}
-      onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
-      className={undefined}
-      onGoToStep={onGoToStep}
-      surface="baby"
-      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
-    />,
-  );
-
-  const shareButton = screen.getAllByRole("button", { name: "Show Share" })[0];
-  if (!shareButton) {
-    throw new Error("Expected a share guide action");
-  }
-  fireEvent.click(shareButton);
-  expect(onGoToStep).toHaveBeenCalledWith("share_link");
 });
 
 test("baby-page post action stays unavailable until a tour baby exists", async () => {
