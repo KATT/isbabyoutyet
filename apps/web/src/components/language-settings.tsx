@@ -124,22 +124,31 @@ export function LanguageSettings(props: {
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
-  const selectedTimeZoneOption =
-    timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption;
+  const [selectedTimeZoneOption, setSelectedTimeZoneOption] = useState(
+    () =>
+      timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption,
+  );
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <Combobox
         items={timeZoneOptions}
         itemToStringValue={(option) => option.label}
-        defaultValue={selectedTimeZoneOption}
+        value={selectedTimeZoneOption}
         onValueChange={(option) => {
-          if (!option || option.value === selectedTimeZone) {
+          if (!option || option.value === selectedTimeZoneOption.value) {
             return;
           }
-          void updateTimeZone({ timeZone: option.value }).then(() => {
-            toast.success(t("Time zone saved"));
-          });
+          const previousOption = selectedTimeZoneOption;
+          setSelectedTimeZoneOption(option);
+          void updateTimeZone({ timeZone: option.value })
+            .then(() => {
+              toast.success(t("Time zone saved"));
+            })
+            .catch((error: unknown) => {
+              setSelectedTimeZoneOption(previousOption);
+              toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
+            });
         }}
         disabled={!profile}
       >

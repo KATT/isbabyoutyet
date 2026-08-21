@@ -94,6 +94,7 @@ test("changing the profile time zone persists it", async () => {
   fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
   fireEvent.click(tokyo);
 
+  expect((picker as HTMLInputElement).value).toBe("Tokyo (Asia)");
   await vi.waitFor(() => {
     expect(mocks.updateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
   });
