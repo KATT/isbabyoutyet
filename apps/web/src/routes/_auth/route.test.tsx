@@ -82,9 +82,10 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
   expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
-test("a fresh login authenticates the Convex client before reading the hook-created profile", async () => {
-  // Right after login the cache still says "no profile" and the auth provider
-  // hasn't re-authenticated the websocket yet.
+test("a fresh login retries the profile without taking auth ownership from the provider", async () => {
+  // The login handoff waits for provider-confirmed auth before navigating. If
+  // an anonymous profile result is still cached, the guard may safely refetch
+  // it without replacing the provider's token callback.
   getToken.mockReset();
   getToken.mockResolvedValueOnce("fresh-token");
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
@@ -97,13 +98,7 @@ test("a fresh login authenticates the Convex client before reading the hook-crea
   const result = await guard.beforeLoad(guard.ctx);
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
-  expect(setAuth).toHaveBeenCalledTimes(1);
-  const setAuthOrder = setAuth.mock.invocationCallOrder[0] ?? Infinity;
-  const queryOrder = guard.queryFn.mock.invocationCallOrder[1] ?? 0;
-  expect(setAuthOrder).toBeLessThan(queryOrder);
-  // The guard's token fetcher authenticates with the fresh token.
-  const fetchToken = setAuth.mock.calls[0]?.[0];
-  expect(await fetchToken?.()).toBe("fresh-token");
+  expect(setAuth).not.toHaveBeenCalled();
   // The ensured profile lands in the cache for subsequent navigations.
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toMatchObject({
     locale: "en-US",
@@ -133,7 +128,7 @@ test("client navigations redirect when an authenticated profile cannot be read",
     isRedirect: true,
     to: "/",
   });
-  expect(setAuth).toHaveBeenCalledTimes(1);
+  expect(setAuth).not.toHaveBeenCalled();
   expect(guard.queryFn).toHaveBeenCalledTimes(2);
 });
 
