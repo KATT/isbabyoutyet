@@ -516,6 +516,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
       theme: "baby-blue",
       locale: "en-GB",
       resolvedLocale: "en-GB",
+      timeZone: "Europe/London",
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
