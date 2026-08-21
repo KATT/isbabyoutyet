@@ -3,6 +3,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
+import { useVisualViewportMetrics } from "./visual-viewport";
 
 type CoachmarkProps = {
   /** Matches `data-tour-id` on the highlighted element */
@@ -28,16 +29,40 @@ type Rect = {
  */
 export function Coachmark(props: CoachmarkProps) {
   const { t } = useI18n();
+  const { onDismiss } = props;
   const [rect, setRect] = useState<Rect | null>(null);
   const [placement, setPlacement] = useState<"above" | "below">("below");
+  const [isMobile, setIsMobile] = useState(false);
+  const visualViewport = useVisualViewportMetrics();
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mediaQuery.matches);
+    update();
+    mediaQuery.addEventListener("change", update);
+    return () => mediaQuery.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
     if (!(el instanceof HTMLElement)) {
       return;
     }
-    el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+    el.scrollIntoView({ block: "center", behavior: "auto", inline: "nearest" });
   }, [props.targetId]);
+
+  useEffect(() => {
+    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
+    if (!(el instanceof HTMLElement)) {
+      return;
+    }
+    const dismiss = () => onDismiss();
+    el.addEventListener("click", dismiss);
+    return () => el.removeEventListener("click", dismiss);
+  }, [onDismiss, props.targetId]);
 
   useEffect(() => {
     function measure() {
@@ -78,7 +103,7 @@ export function Coachmark(props: CoachmarkProps) {
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">
       <div
-        className="absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition-all duration-300 animate-pulse"
+        className="motion-safe:animate-pulse absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition-all duration-300"
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -86,31 +111,59 @@ export function Coachmark(props: CoachmarkProps) {
           height: rect.height + 8,
         }}
       />
-      <div
-        className={cn(
-          "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
-          placement === "above" && "-translate-y-full",
-        )}
-        style={{ top: tipTop, left: tipLeft }}
-        role="status"
-      >
-        <p className="font-medium text-foreground mb-1">{props.title}</p>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3">{props.description}</p>
-        <div className="flex justify-end gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => {
-              if (props.completeOnDismiss) {
-                props.onComplete?.();
-              }
-              props.onDismiss();
-            }}
-          >
-            {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
-          </Button>
+      {isMobile ? (
+        <div
+          className="pointer-events-auto fixed left-1/2 bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] w-[calc(100dvw-1.5rem)] max-w-xs -translate-x-1/2 rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
+          style={visualViewport.style}
+          role="dialog"
+          aria-label={props.title}
+        >
+          <p className="mb-1 font-medium text-foreground">{props.title}</p>
+          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{props.description}</p>
+          <div className="flex justify-end">
+            <Button
+              className="min-h-11"
+              variant="outline"
+              onClick={() => {
+                if (props.completeOnDismiss) {
+                  props.onComplete?.();
+                }
+                onDismiss();
+              }}
+            >
+              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div
+          className={cn(
+            "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
+            placement === "above" && "-translate-y-full",
+          )}
+          style={{ top: tipTop, left: tipLeft }}
+          role="dialog"
+          aria-label={props.title}
+        >
+          <p className="mb-1 font-medium text-foreground">{props.title}</p>
+          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{props.description}</p>
+          <div className="flex justify-end">
+            <Button
+              size="sm"
+              className="min-h-11"
+              variant="ghost"
+              onClick={() => {
+                if (props.completeOnDismiss) {
+                  props.onComplete?.();
+                }
+                onDismiss();
+              }}
+            >
+              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>,
     document.body,
   );

@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -25,11 +25,14 @@ test("groups owner actions separately from page actions", async () => {
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
-      onPostUpdate={() => {}}
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}
       settingsOpen={false}
+      onDismissSettings={null}
     />,
   );
 
@@ -50,11 +53,14 @@ test("hides the owner group when the visitor has no owner actions", async () => 
   await using view = renderResource(
     <BabyNav
       shareLink="https://example.com/baby/demo"
-      onPostUpdate={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={null}
       settingsOpen={false}
+      onDismissSettings={null}
     />,
   );
 
@@ -66,15 +72,43 @@ test("disables sharing when the share link is empty", async () => {
   await using view = renderResource(
     <BabyNav
       shareLink=""
-      onPostUpdate={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onShareCopied={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}
       settingsOpen={true}
+      onDismissSettings={() => {}}
     />,
   );
 
   const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
   expect(share.disabled).toBe(true);
   expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
+});
+
+test("calls dismiss handlers when overlay owner actions are open", async () => {
+  const onDismissPostUpdate = vi.fn<() => void>();
+  const onDismissSettings = vi.fn<() => void>();
+
+  await using view = renderResource(
+    <BabyNav
+      shareLink="https://example.com/baby/demo"
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={true}
+      onDismissPostUpdate={onDismissPostUpdate}
+      onShareCopied={null}
+      onSettingsOpened={null}
+      settingsButton={{ to: "/baby/$publicId/settings" }}
+      settingsOpen={true}
+      onDismissSettings={onDismissSettings}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: /post update/i }));
+  fireEvent.click(view.getByRole("button", { name: /close settings/i }));
+
+  expect(onDismissPostUpdate).toHaveBeenCalledOnce();
+  expect(onDismissSettings).toHaveBeenCalledOnce();
 });

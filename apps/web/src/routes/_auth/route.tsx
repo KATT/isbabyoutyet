@@ -1,6 +1,5 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -22,36 +21,61 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    // Prefer the root-resolved token when present; fall back to a fresh check
-    // for client navigations where root may not have re-fetched yet.
-    const token = opts.context.token ?? (await getAuthToken());
+    const preloader = opts.context.convexPreloader;
 
-    if (!token) {
-      throw redirect({
-        to: "/",
-      });
-    }
-
-    // Mutations via the Convex React client during SSR need setAuth too
     if (typeof window === "undefined") {
+      const token = opts.context.token ?? (await getAuthToken());
+      if (!token) {
+        throw redirect({ to: "/" });
+      }
       opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
       opts.context.convexClient.setAuth(async () => token);
+      const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      const profile = profileHandle.initialData;
+      if (!profile) {
+        throw redirect({ to: "/" });
+      }
+      return {
+        locale: profile.locale,
+        token,
+        isAuthenticated: true,
+        profile: profileHandle,
+      };
     }
 
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const existingProfile = profileHandle.initialData;
-    const profile =
-      existingProfile ??
-      (await opts.context.convexClient.mutation(api.profile.ensure, {
-        browserLocale: opts.context.locale,
-      }));
-
-    if (!existingProfile) {
-      opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+    // Client navigations: the cached profile IS the auth signal — no token
+    // round-trip (sign-out does a full page reload, so the cache can't say
+    // "signed in" after logging out). If the session expires mid-browse the
+    // cache self-heals: the live profile.get subscription flips to null (all
+    // dashboard queries return empty for anonymous callers rather than
+    // throwing), so the next navigation lands in the fallback below and
+    // redirects home. A null profile means logged out or the websocket has not
+    // re-authenticated after sign-in, so confirm with the server once.
+    let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    let profile = profileHandle.initialData;
+    if (!profile) {
+      const token = await getAuthToken();
+      if (!token) {
+        throw redirect({ to: "/" });
+      }
+      // Right after login, authenticate the Convex client with the fresh token
+      // before reading the profile created by the auth hook.
+      opts.context.convexClient.setAuth(async () => token);
+      opts.context.queryClient.removeQueries({
+        queryKey: convexQuery(api.profile.get, {}).queryKey,
+      });
+      profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      profile = profileHandle.initialData;
+      if (!profile) {
+        throw redirect({ to: "/" });
+      }
     }
-
-    return { locale: profile.locale, token, isAuthenticated: true };
+    return {
+      locale: profile.locale,
+      token: opts.context.token,
+      isAuthenticated: true,
+      profile: profileHandle,
+    };
   },
   component: AuthLayout,
 });

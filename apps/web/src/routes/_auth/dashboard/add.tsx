@@ -5,15 +5,18 @@ import type { FunctionArgs } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
+import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
+import { JourneySelector } from "@/components/baby/journey-selector";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -24,15 +27,37 @@ function addBabySchema(t: TranslationFunction) {
     .object({
       name: z.string().trim().min(2, t("Name is required")),
       dueDate: htmlDate(t),
+      showExactDueDate: z.boolean(),
+      publicDueDateText: z.string().trim().max(80, t("Keep this under 80 characters")),
+      birthJourney: z.union([
+        z.literal("labor"),
+        z.literal("home_birth"),
+        z.literal("planned_c_section"),
+      ]),
     })
-    .transform((values): FunctionArgs<typeof api.baby.create> => values);
+    .superRefine((values, ctx) => {
+      if (values.showExactDueDate && !values.dueDate) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["dueDate"],
+          message: t("Pick a date"),
+        });
+      }
+    })
+    .transform((values): FunctionArgs<typeof api.baby.create> => ({
+      name: values.name,
+      dueDate: values.dueDate,
+      dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
+      publicDueDateText: values.publicDueDateText || null,
+      birthJourney: values.birthJourney,
+    }));
 }
 
 export const Route = createFileRoute("/_auth/dashboard/add")({
   component: AddBabyPage,
 });
 
-function AddBabyPage() {
+export function AddBabyPage() {
   const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
@@ -42,6 +67,9 @@ function AddBabyPage() {
     defaultValues: {
       name: "",
       dueDate: "",
+      showExactDueDate: true,
+      publicDueDateText: "",
+      birthJourney: "labor" as const,
     },
   });
 
@@ -70,7 +98,7 @@ function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name and a due date — that's all it takes!")}
+            {t("A name, how to display the due date, and a journey — that's all it takes!")}
           </p>
         </div>
 
@@ -87,30 +115,47 @@ function AddBabyPage() {
                 });
               }}
             >
-              <div className="space-y-5">
+              <div className="flex flex-col gap-5">
                 <FormField
                   control={form.control}
                   name="name"
-                  render={({ field }) => (
+                  render={(renderProps) => (
                     <FormItem>
                       <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t("Enter baby's name")} {...field} />
+                        <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
+                <DueDateDisplayFields
+                  control={form.control}
+                  dateFieldName="dueDate"
+                  className={undefined}
+                  sectionLabelClassName="font-bold"
+                  stopPopoverPropagation={false}
+                />
+
                 <FormField
                   control={form.control}
-                  name="dueDate"
-                  render={({ field }) => (
+                  name="birthJourney"
+                  render={(renderProps) => (
                     <FormItem>
-                      <FormLabel className="font-bold">{t("Due Date")}</FormLabel>
+                      <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <JourneySelector
+                          value={renderProps.field.value}
+                          onValueChange={renderProps.field.onChange}
+                          idPrefix="add-journey"
+                        />
                       </FormControl>
+                      <FormDescription>
+                        {t(
+                          "We save this choice for your settings, but we don't show it to anyone.",
+                        )}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

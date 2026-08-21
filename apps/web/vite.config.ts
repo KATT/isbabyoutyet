@@ -1,8 +1,9 @@
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
+import babel from "@rolldown/plugin-babel";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import viteReact from "@vitejs/plugin-react";
+import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
@@ -43,6 +44,25 @@ function aliasUseSyncExternalStoreShim(): Plugin {
 }
 
 /**
+ * `@resvg/resvg-js` loads a NAPI `.node` binary. Rolldown (Vite 8 dep
+ * optimization + SSR) tries to parse that file as UTF-8 and crashes
+ * (`UNLOADABLE_DEPENDENCY` / "stream did not contain valid UTF-8"). Keep the
+ * package as a Node builtin-style require so OG PNG rendering still works.
+ */
+function skipNativeNodeAddons(): Plugin {
+  return {
+    name: "skip-native-node-addons",
+    enforce: "pre",
+    resolveId(source) {
+      if (!source.endsWith(".node")) {
+        return null;
+      }
+      return { id: source, external: true };
+    },
+  };
+}
+
+/**
  * Belt-and-suspenders for any remaining leaked `__require("react")` after the
  * shim alias (same rewrite as discussed on nitro#4171).
  */
@@ -71,6 +91,7 @@ const config = defineConfig({
     // https://tanstack.com/devtools/latest/docs/quick-start#vite-plugin
     devtools(),
     aliasUseSyncExternalStoreShim(),
+    skipNativeNodeAddons(),
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/paraglide",
@@ -120,9 +141,19 @@ const config = defineConfig({
       },
     }),
     viteReact(),
+    babel({
+      presets: [reactCompilerPreset()],
+    }),
   ],
+  optimizeDeps: {
+    exclude: ["@resvg/resvg-js"],
+  },
   ssr: {
     noExternal: ["@convex-dev/better-auth"],
+    external: ["@resvg/resvg-js"],
+    optimizeDeps: {
+      exclude: ["@resvg/resvg-js"],
+    },
   },
 });
 

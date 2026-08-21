@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useId } from "react";
+import { useId, useRef } from "react";
+import type { RefObject } from "react";
 import type { DefaultValues, FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -14,6 +15,7 @@ interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseF
   TOutput
 > {
   id: ReturnType<typeof useId>;
+  formRef: RefObject<HTMLFormElement | null>;
 }
 /**
  * Reusable hook for zod + react-hook-form
@@ -30,6 +32,7 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
   }) as UseZodForm<TInput, TContext, TOutput>;
 
   form.id = useId();
+  form.formRef = useRef<HTMLFormElement>(null);
 
   return form;
 }
@@ -40,11 +43,12 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   handleSubmit: (values: TOutput) => Promise<void>;
 }) => {
   const { t } = useI18n();
-  const { id, ...rest } = props.form;
+  const { id, formRef, ...rest } = props.form;
   return (
     <FormProvider {...rest}>
       <form
         id={id}
+        ref={formRef}
         onSubmit={(event) => {
           return rest.handleSubmit(async (values) => {
             try {

@@ -40,6 +40,7 @@ self.addEventListener("push", (event) => {
       body: data.body,
       icon: data.icon,
       badge: data.icon, // Use same icon for badge
+      image: typeof data.image === "string" ? data.image : undefined,
       data: { url: data.url },
       tag: data.tag,
       requireInteraction: false,

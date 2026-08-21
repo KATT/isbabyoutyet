@@ -1,9 +1,10 @@
 import { parseISO } from "date-fns";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 // Inline theme CSS (?raw) so we can inject via route `head.styles`.
 // External `head.links` stylesheets get React 19 `precedence` via TanStack's
 // Asset helper and can stay in the document after navigating away.
 import violetBloomCss from "@/styles/themes/violet-bloom.css?raw";
-import twitterCss from "@/styles/themes/twitter.css?raw";
+import babyBlueCss from "@/styles/themes/baby-blue.css?raw";
 import bubblegumCss from "@/styles/themes/bubblegum.css?raw";
 import catppuccinCss from "@/styles/themes/catppuccin.css?raw";
 import mochaMousseCss from "@/styles/themes/mocha-mousse.css?raw";
@@ -15,7 +16,7 @@ import type { TranslationKey } from "@/lib/i18n";
 export const THEME_OPTIONS = [
   {
     value: null,
-    labelKey: "Default",
+    labelKey: "Mango",
     colors: ["#ea580c", "#fef3c7", "#fed7aa"],
     css: null,
   }, // orange primary
@@ -26,9 +27,9 @@ export const THEME_OPTIONS = [
     colors: ["#7033ff", "#fdfdfd", "#e2ebff"],
   },
   {
-    value: "twitter",
-    labelKey: "Twitter Blue",
-    css: twitterCss,
+    value: BABY_BLUE_THEME,
+    labelKey: "Baby Blue",
+    css: babyBlueCss,
     colors: ["#1e9df1", "#ffffff", "#e3ecf6"],
   },
   {
@@ -68,20 +69,24 @@ export const THEME_OPTIONS = [
   css: string | null;
 }>;
 
+export function getThemeOption(theme: string | null | undefined) {
+  return THEME_OPTIONS.find((option) => option.value === (theme ?? null));
+}
+
+export function getThemeColors(theme: string | null | undefined) {
+  return getThemeOption(theme)?.colors ?? THEME_OPTIONS[0].colors;
+}
+
 const TIMEZONE = "Europe/Stockholm";
 
 /** Raw CSS for a theme preset, or null for the default (app) theme. */
 export function getThemeCss(theme: string | null | undefined): string | null {
   if (!theme) return null;
-  const option = THEME_OPTIONS.find((t) => t.value === theme);
-  return option?.css ?? null;
+  return getThemeOption(theme)?.css ?? null;
 }
 
 export function getThemePrimaryColor(theme: string | null | undefined): string {
-  const defaultColor = "#ea580c"; // Default orange primary
-  if (!theme) return defaultColor;
-  const option = THEME_OPTIONS.find((t) => t.value === theme);
-  return option?.colors[0] ?? defaultColor;
+  return getThemeColors(theme)[0];
 }
 
 function parseDate(dateString: string): Date {

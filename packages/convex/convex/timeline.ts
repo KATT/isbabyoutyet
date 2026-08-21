@@ -3,7 +3,9 @@ import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { Milestone } from "../src/types";
+import type { Milestone, MilestoneDates } from "../src/types";
+import { getCurrentStatus, MILESTONE_FIELDS, MILESTONES } from "../src/types";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 
 /**
@@ -36,6 +38,7 @@ async function hydrateUpdate(
     currentPhotoId: Id<"_storage"> | null;
   },
 ) {
+  const milestone = opts.update.milestone ?? null;
   const photoUrl = opts.update.photoId ? await ctx.storage.getUrl(opts.update.photoId) : null;
   const thumbnailUrl = opts.update.thumbnailId
     ? await ctx.storage.getUrl(opts.update.thumbnailId)
@@ -47,10 +50,11 @@ async function hydrateUpdate(
     update: {
       _id: opts.update._id,
       message: opts.update.message ?? null,
-      milestone: opts.update.milestone ?? null,
+      milestone,
       occurredAt: opts.update.occurredAt ?? null,
       photoUrl,
       thumbnailUrl,
+      blurDataUrl: opts.update.blurDataUrl ?? null,
       // Whether this update's photo is the baby's current page photo
       isCurrentPagePhoto: !!opts.update.photoId && opts.update.photoId === opts.currentPhotoId,
     },
@@ -110,21 +114,22 @@ export type TimelineItem = NonNullable<Awaited<ReturnType<typeof hydrateTimeline
 
 export const listByBaby = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
     // The caller's own visitor id, only used to mark their posts with `isMine`
     visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
-    const baby = await ctx.db.get(args.babyId);
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
       return { page: [], isDone: true, continueCursor: "" };
     }
+    const babyId = baby._id;
     const currentPhotoId = baby.photoId ?? null;
 
     const result = await ctx.db
       .query("timelineItems")
-      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_postedAt", (q) => q.eq("babyId", babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -153,11 +158,17 @@ export const listByBaby = query({
  * visitor activity cannot grow this query.
  */
 export const latestUpdate = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby || !isActive(baby)) {
+      return null;
+    }
+    const babyId = baby._id;
+
     const updates = await ctx.db
       .query("updates")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
       .order("desc")
       .take(256);
 
@@ -172,12 +183,49 @@ export const latestUpdate = query({
     }
 
     if (!latest) return null;
-    const baby = await ctx.db.get(args.babyId);
     return await hydrateUpdate(ctx, {
       item: latest.item,
       update: latest.update,
-      currentPhotoId: baby?.photoId ?? null,
+      currentPhotoId: baby.photoId ?? null,
     });
+  },
+});
+
+/**
+ * Public photo payload for the timeline-update lightbox overlay. Returns null
+ * when the update is missing, soft-deleted, on another baby, or has no photo.
+ */
+export const getUpdatePhoto = query({
+  args: {
+    babyId: babyIdOrPublicIdValidator,
+    updateId: v.id("updates"),
+  },
+  returns: v.union(
+    v.object({
+      photoUrl: v.string(),
+      blurDataUrl: v.union(v.string(), v.null()),
+      babyName: v.string(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby || !isActive(baby)) {
+      return null;
+    }
+    const update = await ctx.db.get(args.updateId);
+    if (!update || !isActive(update) || update.babyId !== baby._id || !update.photoId) {
+      return null;
+    }
+    const photoUrl = await ctx.storage.getUrl(update.photoId);
+    if (!photoUrl) {
+      return null;
+    }
+    return {
+      photoUrl,
+      blurDataUrl: update.blurDataUrl ?? null,
+      babyName: baby.name,
+    };
   },
 });
 
@@ -208,6 +256,8 @@ export async function insertUpdateWithTimelineItem(
     occurredAt?: number | null;
     photoId?: Id<"_storage"> | null;
     thumbnailId?: Id<"_storage"> | null;
+    blurDataUrl?: string | null;
+    pushImageId?: Id<"_storage"> | null;
     postedByUserId?: string | null;
   },
 ) {
@@ -224,6 +274,8 @@ export async function insertUpdateWithTimelineItem(
     occurredAt: opts.occurredAt ?? null,
     photoId: opts.photoId ?? null,
     thumbnailId: opts.thumbnailId ?? null,
+    blurDataUrl: opts.blurDataUrl ?? null,
+    pushImageId: opts.pushImageId ?? null,
     postedByUserId: opts.postedByUserId ?? null,
   });
   await advanceBabyActivity(ctx, {
@@ -281,6 +333,47 @@ export async function findMilestoneUpdate(
     .order("desc")
     .take(32);
   return updates.find(isActive) ?? null;
+}
+
+const MAX_DATE_TIMESTAMP = 8_640_000_000_000_000;
+
+export function isValidDateTimestamp(value: number) {
+  return Number.isFinite(value) && Math.abs(value) <= MAX_DATE_TIMESTAMP;
+}
+
+/**
+ * Event-clock dates inferred from the active milestone updates. Missing
+ * `occurredAt` falls back to the feed `postedAt` so legacy rows still count.
+ */
+export async function loadMilestoneDates(
+  ctx: QueryCtx,
+  babyId: Id<"baby">,
+): Promise<MilestoneDates> {
+  const dates: MilestoneDates = {
+    laborStarted: null,
+    wentToHospital: null,
+    babyBorn: null,
+  };
+  for (const milestone of MILESTONES) {
+    const update = await findMilestoneUpdate(ctx, { babyId, milestone });
+    if (!update) continue;
+    const item = await ctx.db.get(update.timelineItemId);
+    if (!item || !isActive(item)) {
+      throw new Error(`Milestone update ${update._id} has no active timeline item`);
+    }
+    const occurredAt = update.occurredAt ?? item.postedAt;
+    if (!isValidDateTimestamp(occurredAt)) {
+      throw new Error(`Milestone update ${update._id} has an invalid event timestamp`);
+    }
+    dates[MILESTONE_FIELDS[milestone].date] = new Date(occurredAt).toISOString();
+  }
+  return dates;
+}
+
+export async function loadCurrentStatus(ctx: QueryCtx, babyId: Id<"baby">) {
+  const dates = await loadMilestoneDates(ctx, babyId);
+  const baby = await ctx.db.get(babyId);
+  return getCurrentStatus({ ...dates, birthJourney: baby?.birthJourney });
 }
 
 /**

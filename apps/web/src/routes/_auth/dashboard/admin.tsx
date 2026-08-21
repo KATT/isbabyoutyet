@@ -28,10 +28,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import { cn } from "@workspace/ui/lib/utils";
 import { z } from "zod";
-import {
-  getConvexQueryPreloader,
-  usePreloadedConvexInfiniteQuery,
-} from "@workspace/convex-prefetch";
+import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -80,16 +77,15 @@ export const Route = createFileRoute("/_auth/dashboard/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,
-  beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
-    const profile = await preloader.ensureQueryData(api.profile.get, {});
-    if (!profile.initialData?.isAdmin) {
+  loader: async (opts) => {
+    if (!opts.context.profile.initialData?.isAdmin) {
       throw redirect({ to: "/dashboard" });
     }
-  },
-  loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+
+    const preloader = opts.context.convexPreloader;
     const search = opts.deps;
+    // Infinite queries stay blocking on the client too: the react-query cache
+    // makes revisits free, and suspense churn on paginated tables isn't worth it.
     return await allKeyed({
       babies: preloader.ensureInfiniteQueryData(api.admin.listBabies, {
         args: {
@@ -218,6 +214,7 @@ function SortableHeaderLink(props: {
           hideDemo: props.hideDemo,
         }}
         replace
+        resetScroll={false}
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
           active ? "text-foreground" : "text-muted-foreground",
@@ -412,18 +409,11 @@ export function AdminDashboardPage() {
   const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
-
   function setTab(tab: AdminTab) {
     void navigate({
       search: (prev) => ({ ...prev, tab }),
       replace: true,
-    });
-  }
-
-  function setHideDemo(hideDemo: boolean) {
-    void navigate({
-      search: (prev) => ({ ...prev, hideDemo }),
-      replace: true,
+      resetScroll: false,
     });
   }
 
@@ -480,14 +470,28 @@ export function AdminDashboardPage() {
                   <TabsTrigger
                     value="babies"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("babies")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("babies")}
+                        replace
+                        resetScroll={false}
+                      />
+                    }
                   >
                     {t("All babies")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="languages"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("languages")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("languages")}
+                        replace
+                        resetScroll={false}
+                      />
+                    }
                   >
                     {t("Requested languages")}
                   </TabsTrigger>
@@ -498,7 +502,13 @@ export function AdminDashboardPage() {
                     <Switch
                       id="admin-hide-demo"
                       checked={search.hideDemo}
-                      onCheckedChange={setHideDemo}
+                      onCheckedChange={(hideDemo) => {
+                        void navigate({
+                          search: (prev) => ({ ...prev, hideDemo }),
+                          replace: true,
+                          resetScroll: false,
+                        });
+                      }}
                     />
                     <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
                       {t("Hide demo babies")}

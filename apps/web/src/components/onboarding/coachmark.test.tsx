@@ -35,6 +35,9 @@ test("scrolls the target into view and can hide the tip", async () => {
 
   expect(scrollIntoView).toHaveBeenCalled();
   expect(screen.getByText("Share the link")).toBeTruthy();
+  fireEvent.click(target);
+  expect(onDismiss).toHaveBeenCalledOnce();
+  onDismiss.mockClear();
   fireEvent.click(screen.getByRole("button", { name: /hide tip/i }));
   expect(onDismiss).toHaveBeenCalledOnce();
 
@@ -45,7 +48,7 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
   const onDismiss = vi.fn<() => void>();
   const onComplete = vi.fn<() => void>();
   const target = document.createElement("button");
-  target.setAttribute("data-tour-id", "learn_encouragements");
+  target.setAttribute("data-tour-id", "explore_settings");
   target.scrollIntoView = vi.fn<() => void>();
   Object.defineProperty(target, "getBoundingClientRect", {
     value: () => ({ top: 40, left: 40, width: 80, height: 32, bottom: 72, right: 120 }),
@@ -54,9 +57,9 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
 
   await using _view = renderResource(
     <Coachmark
-      targetId="learn_encouragements"
-      title="Encouragements"
-      description="Visitors can leave notes."
+      targetId="explore_settings"
+      title="Peek at settings"
+      description="Themes, names, and language — all in Settings."
       onDismiss={onDismiss}
       completeOnDismiss
       onComplete={onComplete}
@@ -68,4 +71,57 @@ test("Got it completes the step when completeOnDismiss is set", async () => {
   expect(onDismiss).toHaveBeenCalledOnce();
 
   target.remove();
+});
+
+test("uses a bounded mobile card on narrow viewports", async () => {
+  const matchMediaDescriptor = Object.getOwnPropertyDescriptor(window, "matchMedia");
+  await using _matchMedia = makeResource({}, () => {
+    if (matchMediaDescriptor) {
+      Object.defineProperty(window, "matchMedia", matchMediaDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "matchMedia");
+    }
+  });
+  const mediaQuery = {
+    matches: true,
+    media: "(max-width: 767px)",
+    onchange: null,
+    addListener: vi.fn<() => void>(),
+    removeListener: vi.fn<() => void>(),
+    addEventListener: vi.fn<() => void>(),
+    removeEventListener: vi.fn<() => void>(),
+    dispatchEvent: vi.fn<() => boolean>(() => true),
+  } as MediaQueryList;
+  Object.defineProperty(window, "matchMedia", {
+    configurable: true,
+    value: vi.fn<(query: string) => MediaQueryList>(() => mediaQuery),
+  });
+
+  const onDismiss = vi.fn<() => void>();
+  const target = document.createElement("button");
+  target.setAttribute("data-tour-id", "share_link");
+  target.scrollIntoView = vi.fn<() => void>();
+  Object.defineProperty(target, "getBoundingClientRect", {
+    value: () => ({ top: 40, left: 40, width: 80, height: 32, bottom: 72, right: 120 }),
+  });
+  document.body.appendChild(target);
+  await using _target = makeResource({}, () => target.remove());
+
+  await using _view = renderResource(
+    <Coachmark
+      targetId="share_link"
+      title="Share the link"
+      description="Copy the page URL for family."
+      onDismiss={onDismiss}
+      completeOnDismiss={undefined}
+      onComplete={undefined}
+    />,
+  );
+
+  const dialog = screen.getByRole("dialog", { name: "Share the link" });
+  await vi.waitFor(() => {
+    expect(dialog.className).toContain("max-w-xs");
+  });
+  fireEvent.click(screen.getByRole("button", { name: /hide tip/i }));
+  expect(onDismiss).toHaveBeenCalledOnce();
 });

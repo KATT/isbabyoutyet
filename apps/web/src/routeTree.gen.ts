@@ -17,21 +17,19 @@ import { Route as RobotsDottxtRouteImport } from "./routes/robots[.]txt";
 import { Route as SitemapDotxmlRouteImport } from "./routes/sitemap[.]xml";
 import { Route as AuthLoginRouteImport } from "./routes/auth/login";
 import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
-import { Route as BabyPublicIdRouteImport } from "./routes/baby/$publicId";
+import { Route as BabyPublicIdRouteRouteImport } from "./routes/baby/$publicId/route";
 import { Route as AuthDashboardIndexRouteImport } from "./routes/_auth/dashboard/index";
 import { Route as AuthDashboardAddRouteImport } from "./routes/_auth/dashboard/add";
 import { Route as AuthDashboardAdminRouteImport } from "./routes/_auth/dashboard/admin";
 import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
 import { Route as ApiCachePurgeRouteImport } from "./routes/api/cache/purge";
+import { Route as BabyPublicIdIndexRouteImport } from "./routes/baby/$publicId/index";
+import { Route as BabyPublicIdPhotoRouteImport } from "./routes/baby/$publicId/photo";
+import { Route as BabyPublicIdPostRouteImport } from "./routes/baby/$publicId/post";
+import { Route as BabyPublicIdSettingsRouteImport } from "./routes/baby/$publicId/settings";
 import { Route as BabyManifest_idRouteImport } from "./routes/baby/manifest/$_id";
-import { Route as DemoApiNamesRouteImport } from "./routes/demo/api.names";
-import { Route as DemoStartApiRequestRouteImport } from "./routes/demo/start.api-request";
-import { Route as DemoStartServerFuncsRouteImport } from "./routes/demo/start.server-funcs";
 import { Route as OgBabyPublicIdRouteImport } from "./routes/og.baby.$publicId";
-import { Route as DemoStartSsrIndexRouteImport } from "./routes/demo/start.ssr.index";
-import { Route as DemoStartSsrDataOnlyRouteImport } from "./routes/demo/start.ssr.data-only";
-import { Route as DemoStartSsrFullSsrRouteImport } from "./routes/demo/start.ssr.full-ssr";
-import { Route as DemoStartSsrSpaModeRouteImport } from "./routes/demo/start.ssr.spa-mode";
+import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from "./routes/baby/$publicId/updates.$updateId.photo";
 
 const IndexRoute = IndexRouteImport.update({
   id: "/",
@@ -72,7 +70,7 @@ const AuthSignupRoute = AuthSignupRouteImport.update({
   path: "/auth/signup",
   getParentRoute: () => rootRouteImport,
 } as any);
-const BabyPublicIdRoute = BabyPublicIdRouteImport.update({
+const BabyPublicIdRouteRoute = BabyPublicIdRouteRouteImport.update({
   id: "/baby/$publicId",
   path: "/baby/$publicId",
   getParentRoute: () => rootRouteImport,
@@ -102,24 +100,29 @@ const ApiCachePurgeRoute = ApiCachePurgeRouteImport.update({
   path: "/api/cache/purge",
   getParentRoute: () => rootRouteImport,
 } as any);
+const BabyPublicIdIndexRoute = BabyPublicIdIndexRouteImport.update({
+  id: "/",
+  path: "/",
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any);
+const BabyPublicIdPhotoRoute = BabyPublicIdPhotoRouteImport.update({
+  id: "/photo",
+  path: "/photo",
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any);
+const BabyPublicIdPostRoute = BabyPublicIdPostRouteImport.update({
+  id: "/post",
+  path: "/post",
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any);
+const BabyPublicIdSettingsRoute = BabyPublicIdSettingsRouteImport.update({
+  id: "/settings",
+  path: "/settings",
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any);
 const BabyManifest_idRoute = BabyManifest_idRouteImport.update({
   id: "/baby/manifest/$_id",
   path: "/baby/manifest/$_id",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoApiNamesRoute = DemoApiNamesRouteImport.update({
-  id: "/demo/api/names",
-  path: "/demo/api/names",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoStartApiRequestRoute = DemoStartApiRequestRouteImport.update({
-  id: "/demo/start/api-request",
-  path: "/demo/start/api-request",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoStartServerFuncsRoute = DemoStartServerFuncsRouteImport.update({
-  id: "/demo/start/server-funcs",
-  path: "/demo/start/server-funcs",
   getParentRoute: () => rootRouteImport,
 } as any);
 const OgBabyPublicIdRoute = OgBabyPublicIdRouteImport.update({
@@ -127,25 +130,10 @@ const OgBabyPublicIdRoute = OgBabyPublicIdRouteImport.update({
   path: "/baby/$publicId",
   getParentRoute: () => OgRoute,
 } as any);
-const DemoStartSsrIndexRoute = DemoStartSsrIndexRouteImport.update({
-  id: "/demo/start/ssr/",
-  path: "/demo/start/ssr/",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoStartSsrDataOnlyRoute = DemoStartSsrDataOnlyRouteImport.update({
-  id: "/demo/start/ssr/data-only",
-  path: "/demo/start/ssr/data-only",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoStartSsrFullSsrRoute = DemoStartSsrFullSsrRouteImport.update({
-  id: "/demo/start/ssr/full-ssr",
-  path: "/demo/start/ssr/full-ssr",
-  getParentRoute: () => rootRouteImport,
-} as any);
-const DemoStartSsrSpaModeRoute = DemoStartSsrSpaModeRouteImport.update({
-  id: "/demo/start/ssr/spa-mode",
-  path: "/demo/start/ssr/spa-mode",
-  getParentRoute: () => rootRouteImport,
+const BabyPublicIdUpdatesUpdateIdPhotoRoute = BabyPublicIdUpdatesUpdateIdPhotoRouteImport.update({
+  id: "/updates/$updateId/photo",
+  path: "/updates/$updateId/photo",
+  getParentRoute: () => BabyPublicIdRouteRoute,
 } as any);
 
 export interface FileRoutesByFullPath {
@@ -154,23 +142,21 @@ export interface FileRoutesByFullPath {
   "/preview": typeof PreviewRoute;
   "/robots.txt": typeof RobotsDottxtRoute;
   "/sitemap.xml": typeof SitemapDotxmlRoute;
+  "/baby/$publicId": typeof BabyPublicIdRouteRouteWithChildren;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
-  "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
   "/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/api/cache/purge": typeof ApiCachePurgeRoute;
+  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
+  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
+  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/demo/api/names": typeof DemoApiNamesRoute;
-  "/demo/start/api-request": typeof DemoStartApiRequestRoute;
-  "/demo/start/server-funcs": typeof DemoStartServerFuncsRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/dashboard/": typeof AuthDashboardIndexRoute;
-  "/demo/start/ssr/data-only": typeof DemoStartSsrDataOnlyRoute;
-  "/demo/start/ssr/full-ssr": typeof DemoStartSsrFullSsrRoute;
-  "/demo/start/ssr/spa-mode": typeof DemoStartSsrSpaModeRoute;
-  "/demo/start/ssr/": typeof DemoStartSsrIndexRoute;
+  "/baby/$publicId/": typeof BabyPublicIdIndexRoute;
+  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute;
@@ -180,21 +166,18 @@ export interface FileRoutesByTo {
   "/sitemap.xml": typeof SitemapDotxmlRoute;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
-  "/baby/$publicId": typeof BabyPublicIdRoute;
   "/dashboard/add": typeof AuthDashboardAddRoute;
   "/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/api/cache/purge": typeof ApiCachePurgeRoute;
+  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
+  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
+  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/demo/api/names": typeof DemoApiNamesRoute;
-  "/demo/start/api-request": typeof DemoStartApiRequestRoute;
-  "/demo/start/server-funcs": typeof DemoStartServerFuncsRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/dashboard": typeof AuthDashboardIndexRoute;
-  "/demo/start/ssr/data-only": typeof DemoStartSsrDataOnlyRoute;
-  "/demo/start/ssr/full-ssr": typeof DemoStartSsrFullSsrRoute;
-  "/demo/start/ssr/spa-mode": typeof DemoStartSsrSpaModeRoute;
-  "/demo/start/ssr": typeof DemoStartSsrIndexRoute;
+  "/baby/$publicId": typeof BabyPublicIdIndexRoute;
+  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -204,23 +187,21 @@ export interface FileRoutesById {
   "/preview": typeof PreviewRoute;
   "/robots.txt": typeof RobotsDottxtRoute;
   "/sitemap.xml": typeof SitemapDotxmlRoute;
+  "/baby/$publicId": typeof BabyPublicIdRouteRouteWithChildren;
   "/auth/login": typeof AuthLoginRoute;
   "/auth/signup": typeof AuthSignupRoute;
-  "/baby/$publicId": typeof BabyPublicIdRoute;
   "/_auth/dashboard/add": typeof AuthDashboardAddRoute;
   "/_auth/dashboard/admin": typeof AuthDashboardAdminRoute;
   "/api/auth/$": typeof ApiAuthSplatRoute;
   "/api/cache/purge": typeof ApiCachePurgeRoute;
+  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
+  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
+  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
   "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/demo/api/names": typeof DemoApiNamesRoute;
-  "/demo/start/api-request": typeof DemoStartApiRequestRoute;
-  "/demo/start/server-funcs": typeof DemoStartServerFuncsRoute;
   "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
   "/_auth/dashboard/": typeof AuthDashboardIndexRoute;
-  "/demo/start/ssr/data-only": typeof DemoStartSsrDataOnlyRoute;
-  "/demo/start/ssr/full-ssr": typeof DemoStartSsrFullSsrRoute;
-  "/demo/start/ssr/spa-mode": typeof DemoStartSsrSpaModeRoute;
-  "/demo/start/ssr/": typeof DemoStartSsrIndexRoute;
+  "/baby/$publicId/": typeof BabyPublicIdIndexRoute;
+  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -230,23 +211,21 @@ export interface FileRouteTypes {
     | "/preview"
     | "/robots.txt"
     | "/sitemap.xml"
+    | "/baby/$publicId"
     | "/auth/login"
     | "/auth/signup"
-    | "/baby/$publicId"
     | "/dashboard/add"
     | "/dashboard/admin"
     | "/api/auth/$"
     | "/api/cache/purge"
+    | "/baby/$publicId/photo"
+    | "/baby/$publicId/post"
+    | "/baby/$publicId/settings"
     | "/baby/manifest/$_id"
-    | "/demo/api/names"
-    | "/demo/start/api-request"
-    | "/demo/start/server-funcs"
     | "/og/baby/$publicId"
     | "/dashboard/"
-    | "/demo/start/ssr/data-only"
-    | "/demo/start/ssr/full-ssr"
-    | "/demo/start/ssr/spa-mode"
-    | "/demo/start/ssr/";
+    | "/baby/$publicId/"
+    | "/baby/$publicId/updates/$updateId/photo";
   fileRoutesByTo: FileRoutesByTo;
   to:
     | "/"
@@ -256,21 +235,18 @@ export interface FileRouteTypes {
     | "/sitemap.xml"
     | "/auth/login"
     | "/auth/signup"
-    | "/baby/$publicId"
     | "/dashboard/add"
     | "/dashboard/admin"
     | "/api/auth/$"
     | "/api/cache/purge"
+    | "/baby/$publicId/photo"
+    | "/baby/$publicId/post"
+    | "/baby/$publicId/settings"
     | "/baby/manifest/$_id"
-    | "/demo/api/names"
-    | "/demo/start/api-request"
-    | "/demo/start/server-funcs"
     | "/og/baby/$publicId"
     | "/dashboard"
-    | "/demo/start/ssr/data-only"
-    | "/demo/start/ssr/full-ssr"
-    | "/demo/start/ssr/spa-mode"
-    | "/demo/start/ssr";
+    | "/baby/$publicId"
+    | "/baby/$publicId/updates/$updateId/photo";
   id:
     | "__root__"
     | "/"
@@ -279,23 +255,21 @@ export interface FileRouteTypes {
     | "/preview"
     | "/robots.txt"
     | "/sitemap.xml"
+    | "/baby/$publicId"
     | "/auth/login"
     | "/auth/signup"
-    | "/baby/$publicId"
     | "/_auth/dashboard/add"
     | "/_auth/dashboard/admin"
     | "/api/auth/$"
     | "/api/cache/purge"
+    | "/baby/$publicId/photo"
+    | "/baby/$publicId/post"
+    | "/baby/$publicId/settings"
     | "/baby/manifest/$_id"
-    | "/demo/api/names"
-    | "/demo/start/api-request"
-    | "/demo/start/server-funcs"
     | "/og/baby/$publicId"
     | "/_auth/dashboard/"
-    | "/demo/start/ssr/data-only"
-    | "/demo/start/ssr/full-ssr"
-    | "/demo/start/ssr/spa-mode"
-    | "/demo/start/ssr/";
+    | "/baby/$publicId/"
+    | "/baby/$publicId/updates/$updateId/photo";
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -305,19 +279,12 @@ export interface RootRouteChildren {
   PreviewRoute: typeof PreviewRoute;
   RobotsDottxtRoute: typeof RobotsDottxtRoute;
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute;
+  BabyPublicIdRouteRoute: typeof BabyPublicIdRouteRouteWithChildren;
   AuthLoginRoute: typeof AuthLoginRoute;
   AuthSignupRoute: typeof AuthSignupRoute;
-  BabyPublicIdRoute: typeof BabyPublicIdRoute;
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
   ApiCachePurgeRoute: typeof ApiCachePurgeRoute;
   BabyManifest_idRoute: typeof BabyManifest_idRoute;
-  DemoApiNamesRoute: typeof DemoApiNamesRoute;
-  DemoStartApiRequestRoute: typeof DemoStartApiRequestRoute;
-  DemoStartServerFuncsRoute: typeof DemoStartServerFuncsRoute;
-  DemoStartSsrDataOnlyRoute: typeof DemoStartSsrDataOnlyRoute;
-  DemoStartSsrFullSsrRoute: typeof DemoStartSsrFullSsrRoute;
-  DemoStartSsrSpaModeRoute: typeof DemoStartSsrSpaModeRoute;
-  DemoStartSsrIndexRoute: typeof DemoStartSsrIndexRoute;
 }
 
 declare module "@tanstack/react-router" {
@@ -382,7 +349,7 @@ declare module "@tanstack/react-router" {
       id: "/baby/$publicId";
       path: "/baby/$publicId";
       fullPath: "/baby/$publicId";
-      preLoaderRoute: typeof BabyPublicIdRouteImport;
+      preLoaderRoute: typeof BabyPublicIdRouteRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/_auth/dashboard/": {
@@ -420,32 +387,39 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ApiCachePurgeRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    "/baby/$publicId/": {
+      id: "/baby/$publicId/";
+      path: "/";
+      fullPath: "/baby/$publicId/";
+      preLoaderRoute: typeof BabyPublicIdIndexRouteImport;
+      parentRoute: typeof BabyPublicIdRouteRoute;
+    };
+    "/baby/$publicId/photo": {
+      id: "/baby/$publicId/photo";
+      path: "/photo";
+      fullPath: "/baby/$publicId/photo";
+      preLoaderRoute: typeof BabyPublicIdPhotoRouteImport;
+      parentRoute: typeof BabyPublicIdRouteRoute;
+    };
+    "/baby/$publicId/post": {
+      id: "/baby/$publicId/post";
+      path: "/post";
+      fullPath: "/baby/$publicId/post";
+      preLoaderRoute: typeof BabyPublicIdPostRouteImport;
+      parentRoute: typeof BabyPublicIdRouteRoute;
+    };
+    "/baby/$publicId/settings": {
+      id: "/baby/$publicId/settings";
+      path: "/settings";
+      fullPath: "/baby/$publicId/settings";
+      preLoaderRoute: typeof BabyPublicIdSettingsRouteImport;
+      parentRoute: typeof BabyPublicIdRouteRoute;
+    };
     "/baby/manifest/$_id": {
       id: "/baby/manifest/$_id";
       path: "/baby/manifest/$_id";
       fullPath: "/baby/manifest/$_id";
       preLoaderRoute: typeof BabyManifest_idRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/api/names": {
-      id: "/demo/api/names";
-      path: "/demo/api/names";
-      fullPath: "/demo/api/names";
-      preLoaderRoute: typeof DemoApiNamesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/start/api-request": {
-      id: "/demo/start/api-request";
-      path: "/demo/start/api-request";
-      fullPath: "/demo/start/api-request";
-      preLoaderRoute: typeof DemoStartApiRequestRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/start/server-funcs": {
-      id: "/demo/start/server-funcs";
-      path: "/demo/start/server-funcs";
-      fullPath: "/demo/start/server-funcs";
-      preLoaderRoute: typeof DemoStartServerFuncsRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     "/og/baby/$publicId": {
@@ -455,33 +429,12 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof OgBabyPublicIdRouteImport;
       parentRoute: typeof OgRoute;
     };
-    "/demo/start/ssr/": {
-      id: "/demo/start/ssr/";
-      path: "/demo/start/ssr";
-      fullPath: "/demo/start/ssr/";
-      preLoaderRoute: typeof DemoStartSsrIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/start/ssr/data-only": {
-      id: "/demo/start/ssr/data-only";
-      path: "/demo/start/ssr/data-only";
-      fullPath: "/demo/start/ssr/data-only";
-      preLoaderRoute: typeof DemoStartSsrDataOnlyRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/start/ssr/full-ssr": {
-      id: "/demo/start/ssr/full-ssr";
-      path: "/demo/start/ssr/full-ssr";
-      fullPath: "/demo/start/ssr/full-ssr";
-      preLoaderRoute: typeof DemoStartSsrFullSsrRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/demo/start/ssr/spa-mode": {
-      id: "/demo/start/ssr/spa-mode";
-      path: "/demo/start/ssr/spa-mode";
-      fullPath: "/demo/start/ssr/spa-mode";
-      preLoaderRoute: typeof DemoStartSsrSpaModeRouteImport;
-      parentRoute: typeof rootRouteImport;
+    "/baby/$publicId/updates/$updateId/photo": {
+      id: "/baby/$publicId/updates/$updateId/photo";
+      path: "/updates/$updateId/photo";
+      fullPath: "/baby/$publicId/updates/$updateId/photo";
+      preLoaderRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRouteImport;
+      parentRoute: typeof BabyPublicIdRouteRoute;
     };
   }
 }
@@ -510,6 +463,26 @@ const OgRouteChildren: OgRouteChildren = {
 
 const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren);
 
+interface BabyPublicIdRouteRouteChildren {
+  BabyPublicIdPhotoRoute: typeof BabyPublicIdPhotoRoute;
+  BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute;
+  BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute;
+  BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute;
+  BabyPublicIdUpdatesUpdateIdPhotoRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
+}
+
+const BabyPublicIdRouteRouteChildren: BabyPublicIdRouteRouteChildren = {
+  BabyPublicIdPhotoRoute: BabyPublicIdPhotoRoute,
+  BabyPublicIdPostRoute: BabyPublicIdPostRoute,
+  BabyPublicIdSettingsRoute: BabyPublicIdSettingsRoute,
+  BabyPublicIdIndexRoute: BabyPublicIdIndexRoute,
+  BabyPublicIdUpdatesUpdateIdPhotoRoute: BabyPublicIdUpdatesUpdateIdPhotoRoute,
+};
+
+const BabyPublicIdRouteRouteWithChildren = BabyPublicIdRouteRoute._addFileChildren(
+  BabyPublicIdRouteRouteChildren,
+);
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRouteRoute: AuthRouteRouteWithChildren,
@@ -517,19 +490,12 @@ const rootRouteChildren: RootRouteChildren = {
   PreviewRoute: PreviewRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  BabyPublicIdRouteRoute: BabyPublicIdRouteRouteWithChildren,
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
-  BabyPublicIdRoute: BabyPublicIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCachePurgeRoute: ApiCachePurgeRoute,
   BabyManifest_idRoute: BabyManifest_idRoute,
-  DemoApiNamesRoute: DemoApiNamesRoute,
-  DemoStartApiRequestRoute: DemoStartApiRequestRoute,
-  DemoStartServerFuncsRoute: DemoStartServerFuncsRoute,
-  DemoStartSsrDataOnlyRoute: DemoStartSsrDataOnlyRoute,
-  DemoStartSsrFullSsrRoute: DemoStartSsrFullSsrRoute,
-  DemoStartSsrSpaModeRoute: DemoStartSsrSpaModeRoute,
-  DemoStartSsrIndexRoute: DemoStartSsrIndexRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

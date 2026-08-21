@@ -1,0 +1,3 @@
+interface:
+  display_name: "No Loader Waterfalls"
+  short_description: "Parallel TanStack Router loader prefetch"

@@ -33,10 +33,9 @@ const queryClient = new QueryClient({
 
 ```ts
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 
 loader: async (opts) => {
-  const preloader = getConvexQueryPreloader(opts.context.queryClient);
+  const preloader = opts.context.convexPreloader;
   return await allKeyed({
     profile: preloader.ensureQueryData(api.profile.get, {}),
     timeline: preloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
@@ -46,6 +45,8 @@ loader: async (opts) => {
   });
 };
 ```
+
+`convexPreloader` is created once in `getRouter()` via `getConvexQueryPreloader(queryClient)` and passed on router context.
 
 ## Read site
 

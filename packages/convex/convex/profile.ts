@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
-import { resolveSupportedLocale } from "../src/i18n";
+import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { appIdentity } from "./authIdentity";
 import { mutationWithTriggers } from "./triggers";
@@ -43,31 +43,7 @@ export const get = query({
     }
     const caller = appIdentity(identity);
     const profile = await getProfileHandler(ctx, caller.tokenIdentifier);
-    return profile ? toProfileResult(profile) : null;
-  },
-});
-
-export const ensure = mutationWithTriggers({
-  args: {
-    browserLocale: v.string(),
-  },
-  returns: profileResultValidator,
-  handler: async (ctx, args) => {
-    const identity = await requireIdentity(ctx);
-    const caller = appIdentity(identity);
-    const existing = await getProfileHandler(ctx, caller.tokenIdentifier);
-    if (existing) {
-      return toProfileResult(existing);
-    }
-
-    const locale = resolveSupportedLocale(args.browserLocale);
-    await ctx.db.insert("userProfiles", {
-      userId: caller.authUserId,
-      tokenIdentifier: caller.tokenIdentifier,
-      locale,
-      isAdmin: false,
-    });
-    return { locale, isAdmin: false };
+    return profile ? toProfileResult(profile) : { locale: DEFAULT_LOCALE, isAdmin: false };
   },
 });
 

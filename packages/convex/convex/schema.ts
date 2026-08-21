@@ -2,25 +2,29 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { supportedLocaleValidator } from "./i18n";
 import { onboardingStepIdValidator } from "./onboardingValidators";
+import { notifiableStatusValidator } from "./pushValidators";
 
 export default defineSchema({
   baby: defineTable({
     userId: v.string(), // Better-auth user ID
     ownerTokenIdentifier: v.string(), // Stable Convex auth identity
     name: v.string(),
-    dueDate: v.string(), // ISO date string
+    dueDate: v.union(v.string(), v.null()), // ISO date string in exact mode; null in message mode
+    // Stack 2: required after backfillBabyDueDateDisplay populates every baby.
+    dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
+    publicDueDateText: v.union(v.string(), v.null()),
     publicId: v.string(), // Unique shareable ID
-    hospitalMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when gone to hospital
-    babyBornMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when baby is born
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())), // Custom message shown when labour started
-    laborStarted: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    wentToHospital: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    babyBorn: v.optional(v.union(v.string(), v.null())), // ISO date string, nullable
-    theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "twitter")
+    birthJourney: v.union(
+      v.literal("labor"),
+      v.literal("home_birth"),
+      v.literal("planned_c_section"),
+    ),
+    theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile
-    encouragementsDisabled: v.optional(v.boolean()), // Whether encouragement form is disabled (default: false)
     photoId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())), // Convex storage ID for baby photo thumbnail
+    // Tiny JPEG data URL shown while the page photo loads (Next.js blurDataURL)
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
     // Homepage live-demo babies only. Seed/refresh refuse to wipe babies without this flag.
     demo: v.optional(v.boolean()),
     // Denormalized exact Web Push subscriber count, maintained with subscription writes.
@@ -69,6 +73,8 @@ export default defineSchema({
     p256dh: v.string(), // Public key for encryption
     auth: v.string(), // Authentication secret
     createdAt: v.number(), // Timestamp
+    // Recorded at subscribe/resubscribe for future payload gating
+    userAgent: v.optional(v.union(v.string(), v.null())),
   })
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
@@ -78,13 +84,11 @@ export default defineSchema({
     scheduledId: v.optional(v.id("_scheduled_functions")), // The Convex scheduler job ID (set after scheduling)
     status: v.union(v.literal("pending"), v.literal("sent"), v.literal("cancelled")), // Current status
     scheduledFor: v.number(), // Timestamp when notification will be sent
-    notificationType: v.union(
-      v.literal("labor_started"),
-      v.literal("gone_to_hospital"),
-      v.literal("born"),
-      v.literal("photo_added"),
-    ), // Type of notification
+    notificationType: notifiableStatusValidator, // Type of notification
     customMessage: v.optional(v.union(v.string(), v.null())), // Optional custom message
+    // Original photo; send prefers the update's 1350×675 push image when ready
+    photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    updateId: v.optional(v.union(v.id("updates"), v.null())),
     createdAt: v.number(), // Creation timestamp
   })
     .index("by_babyId", ["babyId"])
@@ -137,6 +141,10 @@ export default defineSchema({
     occurredAt: v.optional(v.union(v.number(), v.null())),
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
     thumbnailId: v.optional(v.union(v.id("_storage"), v.null())),
+    // Tiny JPEG data URL shown while the update photo loads
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
+    // 1350×675 JPEG for Chromium Notification.image (Android / Windows)
+    pushImageId: v.optional(v.union(v.id("_storage"), v.null())),
     // Who posted this update. Optional until backfill makes it required.
     postedByUserId: v.optional(v.union(v.string(), v.null())),
     // Soft delete: set to ms epoch when deleted; absent/null means active

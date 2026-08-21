@@ -31,11 +31,6 @@ export const create = mutationWithTriggers({
       throw new Error("Baby not found");
     }
 
-    // Check if encouragements are enabled
-    if (baby.encouragementsDisabled) {
-      throw new Error("Encouragements are disabled for this baby");
-    }
-
     // Validate author name
     const trimmedName = args.authorName.trim();
     if (trimmedName.length === 0) {

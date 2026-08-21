@@ -2,18 +2,22 @@ import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@workspace/ui/components/badge";
 import { getCurrentStatus } from "@workspace/convex/src/types";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";
 import { useI18n } from "@/lib/i18n";
 
 type DashboardBabyCardBaby = {
   name: string;
   publicId: string;
-  dueDate: string;
+  dueDate: string | null;
+  dueDateDisplayMode: "exact" | "message";
+  publicDueDateText: string | null;
   role: "owner" | "coParent";
 } & Partial<{
   laborStarted: string | null;
   wentToHospital: string | null;
   babyBorn: string | null;
+  birthJourney: BirthJourney;
 }>;
 
 type DashboardBabyCardProps = {
@@ -42,6 +46,16 @@ function StatusBadge(props: { baby: DashboardBabyCardBaby }) {
     case "gone_to_hospital":
       return <Badge className="rounded-full font-bold">{t("Gone to hospital")}</Badge>;
     case "not_yet": {
+      if (props.baby.dueDateDisplayMode === "message" || !props.baby.dueDate) {
+        return (
+          <Badge
+            variant="outline"
+            className="rounded-full border-2 border-primary/20 bg-primary/5 font-bold"
+          >
+            {t("Not yet")}
+          </Badge>
+        );
+      }
       const overdueDays = getOverdueDays(props.baby.dueDate);
       const daysUntilDueDate = getDaysUntilDueDate(props.baby.dueDate);
       if (overdueDays > 0) {
@@ -77,10 +91,15 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
   const { locale, t } = useI18n();
   const baby = props.baby;
   const currentStatus = getCurrentStatus(baby);
+  const publicDueDateText = baby.publicDueDateText?.trim() ?? "";
   const dateLine =
     currentStatus.type === "born"
       ? t("Born {{date}}", { date: formatDueDate(currentStatus.date, locale) })
-      : t("Due {{date}}", { date: formatDueDate(baby.dueDate, locale) });
+      : baby.dueDateDisplayMode === "message"
+        ? publicDueDateText || t("Due date hidden")
+        : t("Due {{date}}", {
+            date: baby.dueDate ? formatDueDate(baby.dueDate, locale) : "",
+          });
 
   return (
     <Link

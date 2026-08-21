@@ -2,19 +2,24 @@ import { components } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
-import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
+import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
-import { markUserOnboardingComplete } from "./onboarding";
+import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
 import { internalMutationWithTriggers } from "./triggers";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
-  const userId = await ensureDemoUser(ctx);
+  const userId = await ensureAuthUser(ctx, DEMO_USER);
   await ensureDemoProfile(ctx, userId);
 
   // Demo login is for exploring the product — skip the first-run tour.
-  await markUserOnboardingComplete(ctx, userId);
+  await skipUserOnboarding(ctx, userId);
+
+  const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
+  // Re-seeding restores the first-run state; skipTourForExistingUsers ignores
+  // this account when it grandfathers everyone else.
+  await clearUserOnboarding(ctx, emptyUserId);
 
   const existingBabies = await ctx.db
     .query("baby")
@@ -39,6 +44,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
       userId,
       email: DEMO_USER.email,
       count: existingBabies.length,
+      emptyUserId,
+      emptyUserEmail: DEMO_EMPTY_USER.email,
     };
   }
 
@@ -50,6 +57,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     userId,
     email: DEMO_USER.email,
     babies,
+    emptyUserId,
+    emptyUserEmail: DEMO_EMPTY_USER.email,
   };
 }
 
@@ -75,7 +84,9 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
 
 /**
  * Idempotent seeder for local development and Vercel preview deployments.
- * Creates DEMO_USER (test@example.com / password) and babies in every status.
+ * Creates DEMO_USER (test@example.com / password) with babies in every status,
+ * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies
+ * and onboarding left unset so the first-run tour still appears.
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
@@ -90,10 +101,13 @@ export const seedPreviewData = internalMutationWithTriggers({
   handler: seedDemoDataHandler,
 });
 
-async function ensureDemoUser(ctx: MutationCtx) {
+async function ensureAuthUser(
+  ctx: MutationCtx,
+  user: { email: string; password: string; name: string },
+) {
   const existing = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
-    where: [{ field: "email", value: DEMO_USER.email }],
+    where: [{ field: "email", value: user.email }],
   });
 
   if (existing) {
@@ -103,9 +117,9 @@ async function ensureDemoUser(ctx: MutationCtx) {
   const auth = createAuth(ctx);
   const result = await auth.api.signUpEmail({
     body: {
-      email: DEMO_USER.email,
-      password: DEMO_USER.password,
-      name: DEMO_USER.name,
+      email: user.email,
+      password: user.password,
+      name: user.name,
     },
   });
 
@@ -266,20 +280,17 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
     const wentToHospital = hoursAgoIso(now, spec.hoursAgo?.wentToHospital);
     const babyBorn = hoursAgoIso(now, spec.hoursAgo?.babyBorn);
 
-    // The legacy per-stage message fields are retired (cleared by the
-    // clearLegacyStageMessages migration) — fixture messages live only on the
-    // timeline rows via seedMilestoneUpdates below.
+    // Fixture messages live only on the timeline rows via seedMilestoneUpdates.
     const babyId = await ctx.db.insert("baby", {
       userId,
       ownerTokenIdentifier,
       name: spec.name,
       dueDate: dueDate.toISOString(),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: spec.publicId,
-      laborStarted,
-      wentToHospital,
-      babyBorn,
+      birthJourney: "labor",
       theme: null,
-      encouragementsDisabled: false,
       demo: true,
       subscriptionCount: 0,
       lastActivityAt: now.getTime(),

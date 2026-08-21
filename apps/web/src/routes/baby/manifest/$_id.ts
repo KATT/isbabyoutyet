@@ -9,7 +9,7 @@ import { ALL_BABY_PAGES_CACHE_TAG, babyIdCacheTag } from "@workspace/convex/src/
 export const Route = createFileRoute("/baby/manifest/$_id")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async (opts) => {
         const convexUrl = import.meta.env.VITE_CONVEX_URL;
         if (!convexUrl) {
           return new Response("VITE_CONVEX_URL not set", { status: 500 });
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
 
         const client = new ConvexHttpClient(convexUrl);
         const baby = await client.query(api.baby.getByPublicId, {
-          id: params._id,
+          id: opts.params._id,
         });
 
         if (!baby) {
@@ -27,14 +27,14 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
         const locale = baby.resolvedLocale;
         const name = translate(locale, "Is {{name}} out yet?", { name: baby.name });
         const themeColor = getThemePrimaryColor(baby.theme);
-        const startUrl = `/baby/${baby.publicId}`;
+        const permanentUrl = `/baby/${baby._id}`;
 
         const manifest = {
           name,
           short_name: name,
-          id: startUrl,
-          start_url: startUrl,
-          scope: `/baby/${baby.publicId}`,
+          id: permanentUrl,
+          start_url: permanentUrl,
+          scope: "/baby/",
           lang: locale,
           description: translate(locale, "Track {{name}}'s journey – know when baby arrives!", {
             name: baby.name,

@@ -1,12 +1,13 @@
-import { useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { cn } from "@workspace/ui/lib/utils";
+import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useMutation } from "convex/react";
 import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -16,14 +17,15 @@ import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 
+const authRoute = getRouteApi("/_auth");
+
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardPage,
   loader: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
     return await allKeyed({
       babies: preloader.ensureQueryData(api.baby.listByUser, {}),
       onboarding: preloader.ensureQueryData(api.onboarding.getMine, {}),
-      profile: preloader.ensureQueryData(api.profile.get, {}),
     });
   },
 });
@@ -31,17 +33,13 @@ export const Route = createFileRoute("/_auth/dashboard/")({
 function DashboardPage() {
   const { t } = useI18n();
   const loaderData = Route.useLoaderData();
+  const authContext = authRoute.useRouteContext();
   const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, loaderData.babies);
   const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, loaderData.onboarding);
-  const profileQuery = usePreloadedConvexQuery(api.profile.get, loaderData.profile);
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
   const profile = profileQuery.data;
-
-  const claimInvites = useMutation(api.coParents.claimPendingInvites);
-  useEffect(() => {
-    void claimInvites({});
-  }, [claimInvites]);
 
   const restartTour = useMutation(api.onboarding.restart);
 
@@ -94,12 +92,16 @@ function DashboardPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="rounded-full text-muted-foreground"
+              className={cn(
+                "rounded-full text-muted-foreground",
+                progress.checklistDismissed &&
+                  "ring-2 ring-primary ring-offset-2 ring-offset-background",
+              )}
               aria-label={t("Restart getting started tour")}
               title={t("Restart tour")}
+              data-tour-id="restart_tour"
               onClick={async () => {
                 await restartTour({});
-                toast.success(t("Tour restarted"));
               }}
             >
               <Sparkle className="w-4 h-4" />
@@ -149,7 +151,7 @@ function DashboardPage() {
 
       <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
         <div className="mx-auto flex max-w-5xl justify-center">
-          <LanguageSettings profile={loaderData.profile} />
+          <LanguageSettings profile={authContext.profile} />
         </div>
       </footer>
     </div>
@@ -160,12 +162,15 @@ type DashboardBaby = {
   _id: Id<"baby">;
   name: string;
   publicId: string;
-  dueDate: string;
+  dueDate: string | null;
+  dueDateDisplayMode: "exact" | "message";
+  publicDueDateText: string | null;
   role: "owner" | "coParent";
 } & Partial<{
   laborStarted: string | null;
   wentToHospital: string | null;
   babyBorn: string | null;
+  birthJourney: BirthJourney;
 }>;
 
 export function DashboardBabyList(props: {

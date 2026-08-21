@@ -45,7 +45,7 @@ test("profile locale changes purge every baby page without reading an unbounded 
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asAlice.mutation(api.profile.updateLocale, { locale: "en-GB" });
   await asAlice.mutation(api.profile.updateLocale, { locale: "sv" });
 
   const jobs = await t.run(async (ctx) => {

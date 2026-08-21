@@ -7,7 +7,6 @@ import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/conv
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
-import { WelcomeTourDialog } from "./welcome-tour";
 import { Coachmark } from "./coachmark";
 import { ONBOARDING_STEPS } from "./steps";
 
@@ -35,7 +34,7 @@ function scrollToTourTarget(targetId: string) {
 }
 
 /**
- * Owns the first-run welcome carousel + floating checklist + one active coachmark.
+ * Owns the first-run floating checklist + one active coachmark.
  * Mount on the dashboard index (not /dashboard/add) and the first baby's owner page.
  *
  * Auth-gated: only mounts the suspense query once the session is known so
@@ -58,23 +57,12 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const spotlight = props.spotlight !== false;
   const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
   const progress = progressQuery.data;
-  const dismissWelcome = useMutation(api.onboarding.dismissWelcome);
   const setMinimized = useMutation(api.onboarding.setMinimized);
   const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
   const completeStep = useMutation(api.onboarding.completeStep);
 
-  const [welcomeOpen, setWelcomeOpen] = useState(false);
-  const [coachmarkHidden, setCoachmarkHidden] = useState(false);
-
-  // Open welcome once progress loads — skip if already dismissed or they already have a baby
-  useEffect(() => {
-    if (progress.welcomeDismissed) return;
-    if (progress.hasBaby) {
-      void dismissWelcome({});
-      return;
-    }
-    setWelcomeOpen(true);
-  }, [progress, dismissWelcome]);
+  const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
+  const [restartHintVisible, setRestartHintVisible] = useState(false);
 
   // Don't leave a finished checklist hanging on the page
   useEffect(() => {
@@ -87,10 +75,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 
-  useEffect(() => {
-    setCoachmarkHidden(false);
-  }, [nextStep?.id]);
-
   const isTourBabyPage =
     props.surface !== "baby" ||
     (progress.tourBaby != null && progress.tourBaby.publicId === props.babyPublicId);
@@ -99,54 +83,22 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
     return null;
   }
 
-  const showChecklist = progress.welcomeDismissed && !progress.checklistDismissed;
-  const highlightBabyCard =
-    props.surface === "dashboard" && nextStep?.surface === "baby" && progress.tourBaby != null;
+  const showChecklist = !progress.checklistDismissed;
   const showCoachmark =
     spotlight &&
     showChecklist &&
-    !progress.minimized &&
-    !coachmarkHidden &&
     nextStep &&
-    (nextStep.surface === props.surface || highlightBabyCard);
+    activeCoachmarkStepId === nextStep.id &&
+    nextStep.surface === props.surface;
 
-  const coachmarkTargetId = highlightBabyCard ? "tour_baby" : nextStep?.targetId;
+  const coachmarkTargetId = nextStep?.targetId;
   const coachmarkTitle = nextStep ? t(nextStep.title) : "";
-  const coachmarkDescription = highlightBabyCard
-    ? t("Open {{name}}'s page to do this — or tap the step in the checklist.", {
-        name: progress.tourBaby?.name ?? "baby",
-      })
-    : nextStep
-      ? t(nextStep.description)
-      : "";
-
-  function handleGoToStep(stepId: OnboardingStepId) {
-    if (stepId === "post_update") {
-      props.onGoToStep?.(stepId);
-      return;
-    }
-    if (stepId === "explore_settings") {
-      props.onGoToStep?.(stepId);
-      void completeStep({ stepId });
-      return;
-    }
-    const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
-    if (step) {
-      scrollToTourTarget(step.targetId);
-    }
-  }
+  const coachmarkDescription = nextStep ? t(nextStep.description) : "";
+  const showRestartHint = props.surface === "dashboard" && restartHintVisible;
 
   return (
     <>
-      <WelcomeTourDialog
-        open={welcomeOpen}
-        onOpenChange={setWelcomeOpen}
-        onFinished={() => {
-          void dismissWelcome({});
-        }}
-      />
-
-      {showChecklist ? (
+      {showChecklist && !showCoachmark && !showRestartHint ? (
         <GettingStartedCard
           effectiveSteps={progress.effectiveSteps}
           minimized={progress.minimized}
@@ -154,12 +106,33 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             void setMinimized({ minimized });
           }}
           onDismiss={() => {
-            void dismissChecklist({});
+            void (async () => {
+              await dismissChecklist({});
+              if (props.surface === "dashboard") {
+                window.scrollTo({ top: 0, behavior: "auto" });
+                setRestartHintVisible(true);
+              }
+            })();
           }}
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
           }}
-          onGoToStep={handleGoToStep}
+          onGoToStep={(stepId) => {
+            if (stepId === "post_update") {
+              props.onGoToStep?.(stepId);
+              return;
+            }
+            if (stepId === "explore_settings") {
+              props.onGoToStep?.(stepId);
+              void completeStep({ stepId });
+              return;
+            }
+            const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
+            if (step) {
+              setActiveCoachmarkStepId(step.id);
+              scrollToTourTarget(step.targetId);
+            }
+          }}
           surface={props.surface}
           tourBaby={progress.tourBaby}
           className={undefined}
@@ -175,7 +148,18 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}
-          onDismiss={() => setCoachmarkHidden(true)}
+          onDismiss={() => setActiveCoachmarkStepId(null)}
+        />
+      ) : null}
+
+      {showRestartHint ? (
+        <Coachmark
+          targetId="restart_tour"
+          title={t("Guide dismissed")}
+          description={t("Use this sparkle button to bring the guide back anytime.")}
+          completeOnDismiss={undefined}
+          onComplete={undefined}
+          onDismiss={() => setRestartHintVisible(false)}
         />
       ) : null}
     </>

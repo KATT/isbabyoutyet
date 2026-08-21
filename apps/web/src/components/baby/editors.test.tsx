@@ -1,14 +1,35 @@
 import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { DueDateEditor, NameEditor, StatusDateEditor } from "@/components/baby/editors";
+import {
+  DueDateEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  MilestoneRedateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+
+const mocks = vi.hoisted(() => ({
+  toastError: vi.fn<(message: string) => void>(),
+}));
+
+vi.mock("sonner", () => ({
+  toast: { error: mocks.toastError },
+}));
 
 const baby: BabyData = {
   name: "Nova",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -52,12 +73,110 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
+  expect(
+    view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
+  ).toHaveLength(1);
+  expect(
+    view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),
+  ).toBe("true");
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
 
   fireEvent.change(input, { target: { value: "2026-10-15" } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
-    expect(onUpdate).toHaveBeenCalledWith({ dueDate: "2026-10-15T00:00:00.000Z" }),
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-10-15T00:00:00.000Z",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+    }),
+  );
+});
+
+test("due date editor saves message mode without public text", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "message",
+      publicDueDateText: null,
+    }),
+  );
+});
+
+test("due date editor saves a custom visitor message when provided", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
+  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
+    }),
+  );
+});
+
+test("due date editor toggles exact mode when clicking the row label", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+
+  fireEvent.click(view.getByText("Visitors see the exact date and countdown."));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+
+  fireEvent.click(view.getByText("Show exact due date"));
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
+});
+
+test("due date editor toggles modes without losing either field value", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <DueDateEditor
+      baby={{
+        ...baby,
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+      }}
+      onUpdate={onUpdate}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Edit" }));
+  const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
+  expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
+  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
+    "Any day now",
+  );
+  fireEvent.click(exactSwitch);
+  expect(view.queryByLabelText("Public due date message")).toBeNull();
+  expect((view.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-09-01");
+  fireEvent.click(exactSwitch);
+  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
+    "Any day now",
+  );
+  fireEvent.click(exactSwitch);
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() =>
+    expect(onUpdate).toHaveBeenCalledWith({
+      dueDate: "2026-09-01T00:00:00.000Z",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: "Any day now",
+    }),
   );
 });
 
@@ -81,14 +200,16 @@ test("reopening the editor picks up the latest name without any reset", async ()
 });
 
 test("status editor saves the matching milestone instant", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const laborBaby = { ...baby, laborStarted: "2026-08-10T08:00:00.000Z" };
   await using view = renderResource(
     <StatusDateEditor
       baby={laborBaby}
       status="labor_started"
       currentDate={laborBaby.laborStarted}
-      onUpdate={onUpdate}
+      onRedate={onRedate}
+      onRemove={onRemove}
     />,
   );
 
@@ -99,9 +220,10 @@ test("status editor saves the matching milestone instant", async () => {
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
-    expect(onUpdate).toHaveBeenCalledWith({
-      laborStarted: new Date("2026-08-10T09:30").toISOString(),
-    }),
+    expect(onRedate).toHaveBeenCalledWith(
+      "labor_started",
+      new Date("2026-08-10T09:30").toISOString(),
+    ),
   );
 });
 
@@ -117,8 +239,51 @@ test("due date editor localizes its accessible label", async () => {
   expect(view.getByLabelText("Data prevista")).toBeTruthy();
 });
 
-test("status editor confirms destructive deletion", async () => {
+test("theme selector marks Baby Blue selected", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
+  expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
+
+  fireEvent.click(babyBlueButton);
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
+});
+
+test("theme selector leaves canonical options unselected for an unknown theme", async () => {
+  await using view = renderResource(
+    <ThemeSelector
+      baby={{ ...baby, theme: "not-a-real-theme" }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
+});
+
+test("theme selector reports a failed update and remains open", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue(new Error("Theme update failed"));
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
+
+  await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Theme update failed"));
+  expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
+});
+
+test("status editor confirms destructive deletion", async () => {
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     laborStarted: "2026-08-10T08:00:00.000Z",
@@ -130,7 +295,8 @@ test("status editor confirms destructive deletion", async () => {
       baby={bornBaby}
       status="born"
       currentDate={bornBaby.babyBorn}
-      onUpdate={onUpdate}
+      onRedate={onRedate}
+      onRemove={onRemove}
     />,
   );
 
@@ -141,11 +307,12 @@ test("status editor confirms destructive deletion", async () => {
   expect(view.getByText(/deletes its timeline update/i)).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete status" }));
 
-  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ babyBorn: null }));
+  await vi.waitFor(() => expect(onRemove).toHaveBeenCalledWith("born"));
 });
 
 test("status deletion is disabled until later statuses are deleted", async () => {
-  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
+  const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const bornBaby = {
     ...baby,
     wentToHospital: "2026-08-10T12:00:00.000Z",
@@ -157,7 +324,8 @@ test("status deletion is disabled until later statuses are deleted", async () =>
         baby={bornBaby}
         status="gone_to_hospital"
         currentDate={bornBaby.wentToHospital}
-        onUpdate={onUpdate}
+        onRedate={onRedate}
+        onRemove={onRemove}
       />
     </TooltipProvider>,
   );
@@ -170,5 +338,5 @@ test("status deletion is disabled until later statuses are deleted", async () =>
   if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
   expect(view.queryByRole("alertdialog")).toBeNull();
-  expect(onUpdate).not.toHaveBeenCalled();
+  expect(onRemove).not.toHaveBeenCalled();
 });

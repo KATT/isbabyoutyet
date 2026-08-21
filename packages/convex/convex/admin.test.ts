@@ -16,7 +16,7 @@ async function setup() {
 test("admin queries refuse non-admins and anonymous callers", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asAlice.mutation(api.profile.updateLocale, { locale: "en-GB" });
 
   await expect(
     asAlice.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
@@ -64,7 +64,7 @@ test("admins can list language requests with requester emails", async () => {
   const asDemo = t.withIdentity({ subject: seeded.userId });
 
   const asBob = t.withIdentity({ subject: "bob" });
-  await asBob.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asBob.mutation(api.profile.updateLocale, { locale: "en-GB" });
   await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "French" });
 
   const requests = await asDemo.query(api.admin.listLanguageRequests, {
@@ -128,7 +128,10 @@ test("admins can list babies sorted by created or updated with manager emails", 
       ownerTokenIdentifier: "https://convex.test|unknown-owner",
       name: "Deleted",
       dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: "baby-deleted",
+      birthJourney: "labor",
       lastActivityAt: now,
       subscriptionCount: 0,
       deletedAt: Date.now(),
@@ -138,7 +141,10 @@ test("admins can list babies sorted by created or updated with manager emails", 
       ownerTokenIdentifier: "https://convex.test|unknown-owner",
       name: "Quiet",
       dueDate: "2026-12-01",
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
       publicId: "baby-quiet",
+      birthJourney: "labor",
       lastActivityAt: now,
       subscriptionCount: 0,
     });
@@ -147,7 +153,10 @@ test("admins can list babies sorted by created or updated with manager emails", 
       ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_OWNER_USER_ID}`,
       name: "Juniper Hale",
       dueDate: "2026-08-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: "juniper-hale",
+      birthJourney: "labor",
       demo: true,
       lastActivityAt: now,
       subscriptionCount: 0,
@@ -195,6 +204,11 @@ test("admins can list babies sorted by created or updated with manager emails", 
   const quiet = byCreated.page.find((row) => row.publicId === "baby-quiet");
   expect(quiet?.updatedAt).toBe(quiet?.createdAt);
   expect(quiet?.managerEmails).toEqual([]);
+  expect(quiet).toMatchObject({
+    dueDate: "2026-12-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
 
   const byUpdated = await asDemo.query(api.admin.listBabies, {
     sortBy: "updated",

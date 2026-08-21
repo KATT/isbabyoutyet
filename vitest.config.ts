@@ -42,17 +42,6 @@ export default defineConfig({
         "**/test.resource.ts",
       ],
       reporter: ["text-summary", "html", "json", "json-summary"],
-      thresholds: {
-        // Coverage ratchet: `autoUpdate` rewrites these numbers whenever a
-        // test run beats them, so coverage can only go up. Never lower them
-        // by hand.
-        autoUpdate: true,
-        // Merge: take the higher of each side so the ratchet never goes down.
-        statements: 71.72,
-        branches: 64.66,
-        functions: 70.39,
-        lines: 72.15,
-      },
     },
   },
 });

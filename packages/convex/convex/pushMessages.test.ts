@@ -17,11 +17,13 @@ test("push copy follows the baby's locale and dialect", () => {
     msg({ locale: "en-GB", status: "gone_to_hospital", babyName: "Nova" }),
     msg({ locale: "en-GB", status: "born", babyName: "Nova" }),
     msg({ locale: "en-GB", status: "photo_added", babyName: "Nova" }),
+    msg({ locale: "en-GB", status: "update_posted", babyName: "Nova" }),
   ]).toEqual([
     { title: "Nova: Labour's started!", body: "It's happening! Tap for the latest." },
     { title: "Nova is heading to hospital!", body: "They're heading in. Tap for the latest." },
     { title: "Nova is here! 🎉", body: "The wait is over. Tap for the happy news." },
     { title: "Nova: New photo! 📸", body: "Tap to have a look!" },
+    { title: "Nova: New update", body: "Tap for the latest." },
   ]);
   expect([
     msg({ locale: "en-US", status: "labor_started", babyName: "Nova" }),
