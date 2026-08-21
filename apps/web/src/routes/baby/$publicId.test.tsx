@@ -200,6 +200,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
     name: "Nova",
+    timeZone: "Europe/London",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
@@ -231,6 +232,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
     name: "Nova",
+    timeZone: "Europe/London",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
@@ -486,6 +488,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
       theme: "baby-blue",
       locale: "en-GB",
       resolvedLocale: "en-GB",
+      timeZone: "Europe/London",
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,

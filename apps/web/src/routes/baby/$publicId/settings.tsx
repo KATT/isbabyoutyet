@@ -70,6 +70,7 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,

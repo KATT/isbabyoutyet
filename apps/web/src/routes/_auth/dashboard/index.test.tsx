@@ -53,6 +53,7 @@ test("shows prefetched babies without a spinner", async () => {
         {
           _id: "baby-id" as Id<"baby">,
           name: "Baby Smith",
+          timeZone: "Europe/London",
           publicId: "baby-smith",
           dueDate: "2026-12-01",
           dueDateDisplayMode: "exact",

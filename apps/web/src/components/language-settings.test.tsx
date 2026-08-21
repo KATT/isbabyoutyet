@@ -81,7 +81,10 @@ test("changing the profile time zone persists it", async () => {
   await using _view = renderResource();
 
   const picker = screen.getByRole("combobox", { name: "Profile time zone" });
-  fireEvent.change(picker, { target: { value: "Tokyo" } });
+  const trigger = picker.parentElement?.querySelector("button");
+  if (!trigger) throw new Error("time zone trigger missing");
+  fireEvent.click(trigger);
+  fireEvent.input(picker, { target: { value: "Tokyo" } });
   const tokyo = screen.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
   fireEvent.click(tokyo);
