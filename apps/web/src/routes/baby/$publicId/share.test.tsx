@@ -272,6 +272,20 @@ test("loader waits for the canonical OG image before completing in the browser",
 });
 
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
+  const OriginalImage = globalThis.Image;
+  class MockImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    set src(_value: string) {
+      queueMicrotask(() => {
+        this.onload?.();
+      });
+    }
+  }
+  vi.stubGlobal("Image", MockImage);
+  await using _image = makeResource({}, () => {
+    vi.stubGlobal("Image", OriginalImage);
+  });
   const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
   const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
   const queryFn = vi.fn<(ctx: { queryKey: readonly unknown[] }) => Promise<unknown>>((ctx) => {
