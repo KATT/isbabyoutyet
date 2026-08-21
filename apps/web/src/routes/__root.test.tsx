@@ -53,8 +53,8 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { useSession: () => session.value },
 }));
 
-vi.mock("@tanstack/react-start", () => ({
-  createServerFn: () => ({ handler: (fn: unknown) => fn }),
+vi.mock("@/lib/detect-locale", () => ({
+  detectRequestLocale: () => Promise.resolve("en-GB"),
 }));
 
 const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route } =
