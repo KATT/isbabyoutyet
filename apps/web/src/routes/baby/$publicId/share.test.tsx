@@ -227,6 +227,50 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
 });
 
+test("loader waits for the canonical OG image before completing in the browser", async () => {
+  const OriginalImage = globalThis.Image;
+  let finishImageLoad: (() => void) | null = null;
+  class MockImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    set src(_value: string) {
+      finishImageLoad = () => {
+        this.onload?.();
+      };
+    }
+  }
+  vi.stubGlobal("Image", MockImage);
+  await using _image = makeResource({}, () => {
+    vi.stubGlobal("Image", OriginalImage);
+  });
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: {
+      queryClient: QueryClient;
+      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+    };
+    params: { publicId: string };
+  }) => Promise<unknown>;
+  const loaderResult = withShareRouteHandlers(
+    {
+      "baby:getByPublicId": babyDoc({ publicId: "baby-smith", theme: "baby-blue" }),
+      "coParents:myAccess": { canManage: false, isOwner: false },
+    },
+    loader,
+  );
+  let loaderCompleted = false;
+  void loaderResult.then(() => {
+    loaderCompleted = true;
+  });
+
+  await vi.waitFor(() => {
+    expect(finishImageLoad).not.toBeNull();
+  });
+  expect(loaderCompleted).toBe(false);
+
+  finishImageLoad?.();
+  await expect(loaderResult).resolves.toBeDefined();
+});
+
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
   const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
   const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
