@@ -9,7 +9,10 @@ const mocks = vi.hoisted(() => ({
   hasDemoLogin: true,
   navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signInEmail: vi.fn<
-    (opts: { email: string; password: string; rememberMe: boolean }) => Promise<{
+    (
+      opts: { email: string; password: string; rememberMe: boolean },
+      fetchOptions: { headers: Record<string, string> },
+    ) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
@@ -30,10 +33,13 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/lib/auth-client", () => ({
+  getBrowserAuthHeaders: () => ({ "x-time-zone": "Asia/Tokyo" }),
   authClient: {
     signIn: {
-      email: (opts: { email: string; password: string; rememberMe: boolean }) =>
-        mocks.signInEmail(opts),
+      email: (
+        opts: { email: string; password: string; rememberMe: boolean },
+        fetchOptions: { headers: Record<string, string> },
+      ) => mocks.signInEmail(opts, fetchOptions),
     },
   },
 }));
@@ -76,11 +82,14 @@ test("prefills and signs in when a test account is chosen", async () => {
   );
 
   await vi.waitFor(() => {
-    expect(mocks.signInEmail).toHaveBeenCalledWith({
-      email: DEMO_EMPTY_USER.email,
-      password: DEMO_EMPTY_USER.password,
-      rememberMe: true,
-    });
+    expect(mocks.signInEmail).toHaveBeenCalledWith(
+      {
+        email: DEMO_EMPTY_USER.email,
+        password: DEMO_EMPTY_USER.password,
+        rememberMe: true,
+      },
+      { headers: { "x-time-zone": "Asia/Tokyo" } },
+    );
   });
   expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
 });

@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { authClient } from "@/lib/auth-client";
+import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -82,11 +82,14 @@ function SignupPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await authClient.signUp.email({
-                  email: values.email,
-                  password: values.password,
-                  name: values.name,
-                });
+                const result = await authClient.signUp.email(
+                  {
+                    email: values.email,
+                    password: values.password,
+                    name: values.name,
+                  },
+                  { headers: getBrowserAuthHeaders() },
+                );
 
                 if (result.error) {
                   throw new Error(result.error.message || t("Failed to sign up"));

@@ -1,4 +1,5 @@
 export const DEFAULT_TIME_ZONE = "Europe/London";
+export const TIME_ZONE_HINT_HEADER = "x-time-zone";
 
 export function isValidTimeZone(timeZone: string): boolean {
   try {
