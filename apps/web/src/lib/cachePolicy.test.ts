@@ -2,12 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
   applyCachePolicy,
   authPageCacheHeaders,
-  babyPageCacheHeaders,
   babyRouteCacheHeaders,
   homepageCacheHeaders,
   privateCacheHeaders,
   previewCacheHeaders,
-  publicCacheHeaders,
   withPublicCache,
 } from "./cachePolicy";
 
@@ -93,11 +91,6 @@ describe("applyCachePolicy", () => {
   });
 
   test("builds route-level public and private cache headers", () => {
-    expect(publicCacheHeaders({ maxAgeSeconds: 120, tags: ["one", "two"] })).toMatchObject({
-      "Cache-Control": "public, max-age=0, must-revalidate",
-      "Vercel-CDN-Cache-Control": expect.stringContaining("s-maxage=120"),
-      "Vercel-Cache-Tag": "one,two",
-    });
     expect(privateCacheHeaders()).toMatchObject({
       "Cache-Control": expect.stringContaining("private"),
       "Vercel-CDN-Cache-Control": expect.stringContaining("no-store"),
@@ -105,9 +98,6 @@ describe("applyCachePolicy", () => {
     expect(homepageCacheHeaders()["Vercel-Cache-Tag"]).toBe("homepage");
     expect(previewCacheHeaders()["Vercel-Cache-Tag"]).toBe("preview");
     expect(authPageCacheHeaders()["Vercel-Cache-Tag"]).toBe("auth-pages");
-    expect(babyPageCacheHeaders("juniper-hale")["Vercel-Cache-Tag"]).toBe(
-      "baby-pages,baby-public-id:juniper-hale",
-    );
   });
 
   test.each([
@@ -122,7 +112,9 @@ describe("applyCachePolicy", () => {
     });
 
     expect(headers["Cache-Control"]).toContain("public");
-    expect(headers["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
+    expect("Vercel-Cache-Tag" in headers && headers["Vercel-Cache-Tag"]).toContain(
+      "baby-public-id:juniper-hale",
+    );
   });
 
   test.each([

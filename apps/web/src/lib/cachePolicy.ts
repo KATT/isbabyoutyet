@@ -20,7 +20,7 @@ const PUBLIC_BABY_ROUTE_IDS = new Set([
   "/baby/$publicId/updates/$updateId/photo",
 ]);
 
-export function publicCacheHeaders(policy: PublicCachePolicy) {
+function publicCacheHeaders(policy: PublicCachePolicy) {
   return {
     "Cache-Control": PUBLIC_BROWSER_CACHE_CONTROL,
     "Vercel-CDN-Cache-Control": `public, s-maxage=${policy.maxAgeSeconds}, stale-while-revalidate=${PUBLIC_STALE_SECONDS}`,
@@ -49,7 +49,7 @@ export function authPageCacheHeaders() {
   return publicCacheHeaders({ maxAgeSeconds: 3_600, tags: ["auth-pages"] });
 }
 
-export function babyPageCacheHeaders(publicId: string) {
+function babyPageCacheHeaders(publicId: string) {
   return publicCacheHeaders({
     maxAgeSeconds: 86_400,
     tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(publicId)],
