@@ -53,6 +53,10 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { useSession: () => session.value },
 }));
 
+vi.mock("@tanstack/react-start", () => ({
+  createServerFn: () => ({ handler: (fn: unknown) => fn }),
+}));
+
 const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route } =
   await import("@/routes/__root");
 
