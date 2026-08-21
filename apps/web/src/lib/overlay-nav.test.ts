@@ -1,7 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { closeOverlayLink, dismissOverlay, openOverlayLink } from "@/lib/overlay-nav";
 
-test("openOverlayLink pushes with overlay state and keeps scroll", () => {
+test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
     openOverlayLink({
       to: "/baby/$publicId/post",
@@ -10,6 +10,7 @@ test("openOverlayLink pushes with overlay state and keeps scroll", () => {
   ).toEqual({
     to: "/baby/$publicId/post",
     params: { publicId: "baby-smith" },
+    preload: "viewport",
     resetScroll: false,
     state: { overlay: true },
   });

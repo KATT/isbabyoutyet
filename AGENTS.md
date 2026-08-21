@@ -13,8 +13,9 @@ Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
 `canGoBack` and `linkOptions`, but no overlay-history helper):
 
 - **Open link:** `openOverlayLink({ to, params, ... })` — push (no `replace`),
-  `resetScroll: false`, and `state: { overlay: true }`. Pass to `<Link>` or
-  `navigate()`.
+ viewport preload, `resetScroll: false`, and `state: { overlay: true }`. Prefer
+ passing it to a real `<Link>` so the child route loader runs before click;
+ `navigate()` is reserved for imperative flows.
 - **Close link:** `closeOverlayLink({ to, params, ... })` — replace close
   target with `resetScroll: false` (declarative fallback / cold-load close).
 - **Hook:** `useOverlayNav({ open, close })` returns `{ openLink, closeLink,
