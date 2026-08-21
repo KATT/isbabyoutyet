@@ -42,7 +42,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         replace: true,
       });
     }
-    return token ? { token, isAuthenticated: true } : {};
+    return token ? { token, isAuthenticated: true } : undefined;
   },
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
