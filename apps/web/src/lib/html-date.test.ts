@@ -42,6 +42,10 @@ test("datetime-local display changes with the baby's timezone", () => {
   expect(htmlDateTime(t, "America/New_York").encode(iso)).toBe("2026-08-10T03:30");
 });
 
+test("datetime-local rejects a wall time skipped by daylight saving", () => {
+  expect(htmlDateTime(t, "Europe/London").safeDecode("2026-03-29T01:30").success).toBe(false);
+});
+
 test("empty optional time means now (null)", () => {
   expect(optionalDateTimeCodec.decode("")).toBe(null);
   expect(optionalDateTimeCodec.encode(null)).toBe("");
