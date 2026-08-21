@@ -13,6 +13,7 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
 export const Route = createFileRoute("/_auth")({
   headers() {
     return {
+      "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
       Vary: "Cookie",
       // Prefer header over route `head` — TanStack's head+beforeLoad typing
       // currently collapses child beforeLoad to `never` when the layout sets head.
@@ -27,6 +28,7 @@ export const Route = createFileRoute("/_auth")({
       if (!token) {
         throw redirect({ to: "/" });
       }
+      opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
       opts.context.convexClient.setAuth(async () => token);
       const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
       const profile = profileHandle.initialData;

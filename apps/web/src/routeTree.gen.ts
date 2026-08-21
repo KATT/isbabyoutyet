@@ -22,6 +22,7 @@ import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard
 import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
 import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCachePurgeRouteImport } from './routes/api/cache/purge'
 import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
 import { Route as BabyPublicIdPhotoRouteImport } from './routes/baby/$publicId/photo'
 import { Route as BabyPublicIdPostRouteImport } from './routes/baby/$publicId/post'
@@ -95,6 +96,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCachePurgeRoute = ApiCachePurgeRouteImport.update({
+  id: '/api/cache/purge',
+  path: '/api/cache/purge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BabyPublicIdIndexRoute = BabyPublicIdIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -149,6 +155,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
@@ -170,6 +177,7 @@ export interface FileRoutesByTo {
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
@@ -194,6 +202,7 @@ export interface FileRoutesById {
   '/_auth/dashboard/add': typeof AuthDashboardAddRoute
   '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
   '/baby/$publicId/post': typeof BabyPublicIdPostRoute
   '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/api/cache/purge'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
@@ -239,6 +249,7 @@ export interface FileRouteTypes {
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
+    | '/api/cache/purge'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
@@ -262,6 +273,7 @@ export interface FileRouteTypes {
     | '/_auth/dashboard/add'
     | '/_auth/dashboard/admin'
     | '/api/auth/$'
+    | '/api/cache/purge'
     | '/baby/$publicId/photo'
     | '/baby/$publicId/post'
     | '/baby/$publicId/settings'
@@ -284,6 +296,7 @@ export interface RootRouteChildren {
   AuthLoginRoute: typeof AuthLoginRoute
   AuthSignupRoute: typeof AuthSignupRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCachePurgeRoute: typeof ApiCachePurgeRoute
   BabyManifest_idRoute: typeof BabyManifest_idRoute
 }
 
@@ -378,6 +391,13 @@ declare module '@tanstack/react-router' {
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cache/purge': {
+      id: '/api/cache/purge'
+      path: '/api/cache/purge'
+      fullPath: '/api/cache/purge'
+      preLoaderRoute: typeof ApiCachePurgeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/baby/$publicId/': {
@@ -497,6 +517,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthLoginRoute: AuthLoginRoute,
   AuthSignupRoute: AuthSignupRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCachePurgeRoute: ApiCachePurgeRoute,
   BabyManifest_idRoute: BabyManifest_idRoute,
 }
 export const routeTree = rootRouteImport
