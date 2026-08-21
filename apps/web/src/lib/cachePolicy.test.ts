@@ -20,6 +20,7 @@ describe("applyCachePolicy", () => {
     ["/preview?name=Sam", "preview"],
     ["/auth/login", "auth-pages"],
     ["/robots.txt", "discovery"],
+    ["/og", "homepage"],
   ])("caches the public route %s", (path, expectedTag) => {
     const response = responseFor(path, "GET");
 

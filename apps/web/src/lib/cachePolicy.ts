@@ -114,10 +114,6 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
     };
   }
 
-  if (pathname.startsWith("/demo/start/")) {
-    return { maxAgeSeconds: 3_600, tags: ["demo-pages"] };
-  }
-
   return null;
 }
 
