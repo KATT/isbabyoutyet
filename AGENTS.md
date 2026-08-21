@@ -3,11 +3,11 @@
 ## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`), post-update (`/baby/$publicId/post`),
-and photo lightboxes (`/baby/$publicId/photo`,
+share preview (`/baby/$publicId/share`), and photo lightboxes (`/baby/$publicId/photo`,
 `/baby/$publicId/updates/$updateId/photo`) are nested child routes rendered into
-the baby layout `<Outlet />` so the page stays mounted underneath. Photo route
-loaders prefetch the full image in the browser via `prefetchBrowserImage`
-(same initiator pattern as notification push capability).
+the baby layout `<Outlet />` so the page stays mounted underneath. Share and
+photo route loaders prefetch their full image in the browser via
+`prefetchBrowserImage` (same initiator pattern as notification push capability).
 
 Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
 `canGoBack` and `linkOptions`, but no overlay-history helper):

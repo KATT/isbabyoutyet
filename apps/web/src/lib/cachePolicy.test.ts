@@ -29,11 +29,21 @@ describe("applyCachePolicy", () => {
   });
 
   test("tags every public representation of a baby for targeted deletion", () => {
-    const page = responseFor("/baby/juniper-hale", "GET");
+    const publicPages = [
+      "/baby/juniper-hale",
+      "/baby/juniper-hale/",
+      "/baby/juniper-hale/share",
+      "/baby/juniper-hale/photo",
+      "/baby/juniper-hale/updates/update-123/photo",
+    ];
     const image = responseFor("/og/baby/juniper-hale", "GET");
     const manifest = responseFor("/baby/manifest/j57abc", "GET");
 
-    expect(page.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-public-id:juniper-hale");
+    for (const path of publicPages) {
+      expect(responseFor(path, "GET").headers.get("Vercel-Cache-Tag")).toBe(
+        "baby-pages,baby-public-id:juniper-hale",
+      );
+    }
     expect(image.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-public-id:juniper-hale");
     expect(manifest.headers.get("Vercel-Cache-Tag")).toBe("baby-pages,baby-id:j57abc");
   });
@@ -43,11 +53,30 @@ describe("applyCachePolicy", () => {
     ["/api/auth/session", "GET"],
     ["/_server/functions/getAuth", "GET"],
     ["/baby/juniper-hale", "POST"],
+    ["/baby/juniper-hale/settings", "GET"],
+    ["/baby/juniper-hale/post", "GET"],
   ])("keeps %s %s private", (path, method) => {
     const response = responseFor(path, method);
 
     expect(response.headers.get("Cache-Control")).toContain("private");
     expect(response.headers.get("Cache-Control")).toContain("no-store");
+    expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
+  });
+
+  test("preserves an explicit no-store redirect on an otherwise public route", () => {
+    const response = applyCachePolicy(
+      new Request("https://example.com/og/baby/juniper-hale"),
+      new Response(null, {
+        status: 307,
+        headers: {
+          "Cache-Control": "no-store",
+          Location: "https://example.com/og/baby/juniper-hale?v=current",
+        },
+      }),
+    );
+
+    expect(response.headers.get("Cache-Control")).toContain("no-store");
+    expect(response.headers.get("Vercel-CDN-Cache-Control")).toContain("no-store");
     expect(response.headers.get("Vercel-Cache-Tag")).toBeNull();
   });
 

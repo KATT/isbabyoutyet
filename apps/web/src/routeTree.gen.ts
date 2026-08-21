@@ -8,480 +8,503 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as AuthRouteRouteImport } from "./routes/_auth/route";
-import { Route as OgRouteImport } from "./routes/og";
-import { Route as PreviewRouteImport } from "./routes/preview";
-import { Route as RobotsDottxtRouteImport } from "./routes/robots[.]txt";
-import { Route as SitemapDotxmlRouteImport } from "./routes/sitemap[.]xml";
-import { Route as AuthLoginRouteImport } from "./routes/auth/login";
-import { Route as AuthSignupRouteImport } from "./routes/auth/signup";
-import { Route as BabyPublicIdRouteRouteImport } from "./routes/baby/$publicId/route";
-import { Route as AuthDashboardIndexRouteImport } from "./routes/_auth/dashboard/index";
-import { Route as AuthDashboardAddRouteImport } from "./routes/_auth/dashboard/add";
-import { Route as AuthDashboardAdminRouteImport } from "./routes/_auth/dashboard/admin";
-import { Route as ApiAuthSplatRouteImport } from "./routes/api/auth/$";
-import { Route as ApiCachePurgeRouteImport } from "./routes/api/cache/purge";
-import { Route as BabyPublicIdIndexRouteImport } from "./routes/baby/$publicId/index";
-import { Route as BabyPublicIdPhotoRouteImport } from "./routes/baby/$publicId/photo";
-import { Route as BabyPublicIdPostRouteImport } from "./routes/baby/$publicId/post";
-import { Route as BabyPublicIdSettingsRouteImport } from "./routes/baby/$publicId/settings";
-import { Route as BabyManifest_idRouteImport } from "./routes/baby/manifest/$_id";
-import { Route as OgBabyPublicIdRouteImport } from "./routes/og.baby.$publicId";
-import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from "./routes/baby/$publicId/updates.$updateId.photo";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthRouteRouteImport } from './routes/_auth/route'
+import { Route as OgRouteImport } from './routes/og'
+import { Route as PreviewRouteImport } from './routes/preview'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as AuthSignupRouteImport } from './routes/auth/signup'
+import { Route as BabyPublicIdRouteRouteImport } from './routes/baby/$publicId/route'
+import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard/index'
+import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
+import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiCachePurgeRouteImport } from './routes/api/cache/purge'
+import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
+import { Route as BabyPublicIdPhotoRouteImport } from './routes/baby/$publicId/photo'
+import { Route as BabyPublicIdPostRouteImport } from './routes/baby/$publicId/post'
+import { Route as BabyPublicIdSettingsRouteImport } from './routes/baby/$publicId/settings'
+import { Route as BabyPublicIdShareRouteImport } from './routes/baby/$publicId/share'
+import { Route as BabyManifest_idRouteImport } from './routes/baby/manifest/$_id'
+import { Route as OgBabyPublicIdRouteImport } from './routes/og.baby.$publicId'
+import { Route as BabyPublicIdUpdatesUpdateIdPhotoRouteImport } from './routes/baby/$publicId/updates.$updateId.photo'
 
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthRouteRoute = AuthRouteRouteImport.update({
-  id: "/_auth",
+  id: '/_auth',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const OgRoute = OgRouteImport.update({
-  id: "/og",
-  path: "/og",
+  id: '/og',
+  path: '/og',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PreviewRoute = PreviewRouteImport.update({
-  id: "/preview",
-  path: "/preview",
+  id: '/preview',
+  path: '/preview',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
-  id: "/robots.txt",
-  path: "/robots.txt",
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: "/sitemap.xml",
-  path: "/sitemap.xml",
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: "/auth/login",
-  path: "/auth/login",
+  id: '/auth/login',
+  path: '/auth/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthSignupRoute = AuthSignupRouteImport.update({
-  id: "/auth/signup",
-  path: "/auth/signup",
+  id: '/auth/signup',
+  path: '/auth/signup',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const BabyPublicIdRouteRoute = BabyPublicIdRouteRouteImport.update({
-  id: "/baby/$publicId",
-  path: "/baby/$publicId",
+  id: '/baby/$publicId',
+  path: '/baby/$publicId',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthDashboardIndexRoute = AuthDashboardIndexRouteImport.update({
-  id: "/dashboard/",
-  path: "/dashboard/",
+  id: '/dashboard/',
+  path: '/dashboard/',
   getParentRoute: () => AuthRouteRoute,
-} as any);
+} as any)
 const AuthDashboardAddRoute = AuthDashboardAddRouteImport.update({
-  id: "/dashboard/add",
-  path: "/dashboard/add",
+  id: '/dashboard/add',
+  path: '/dashboard/add',
   getParentRoute: () => AuthRouteRoute,
-} as any);
+} as any)
 const AuthDashboardAdminRoute = AuthDashboardAdminRouteImport.update({
-  id: "/dashboard/admin",
-  path: "/dashboard/admin",
+  id: '/dashboard/admin',
+  path: '/dashboard/admin',
   getParentRoute: () => AuthRouteRoute,
-} as any);
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
-  id: "/api/auth/$",
-  path: "/api/auth/$",
+  id: '/api/auth/$',
+  path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ApiCachePurgeRoute = ApiCachePurgeRouteImport.update({
-  id: "/api/cache/purge",
-  path: "/api/cache/purge",
+  id: '/api/cache/purge',
+  path: '/api/cache/purge',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const BabyPublicIdIndexRoute = BabyPublicIdIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => BabyPublicIdRouteRoute,
-} as any);
+} as any)
 const BabyPublicIdPhotoRoute = BabyPublicIdPhotoRouteImport.update({
-  id: "/photo",
-  path: "/photo",
+  id: '/photo',
+  path: '/photo',
   getParentRoute: () => BabyPublicIdRouteRoute,
-} as any);
+} as any)
 const BabyPublicIdPostRoute = BabyPublicIdPostRouteImport.update({
-  id: "/post",
-  path: "/post",
+  id: '/post',
+  path: '/post',
   getParentRoute: () => BabyPublicIdRouteRoute,
-} as any);
+} as any)
 const BabyPublicIdSettingsRoute = BabyPublicIdSettingsRouteImport.update({
-  id: "/settings",
-  path: "/settings",
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => BabyPublicIdRouteRoute,
-} as any);
+} as any)
+const BabyPublicIdShareRoute = BabyPublicIdShareRouteImport.update({
+  id: '/share',
+  path: '/share',
+  getParentRoute: () => BabyPublicIdRouteRoute,
+} as any)
 const BabyManifest_idRoute = BabyManifest_idRouteImport.update({
-  id: "/baby/manifest/$_id",
-  path: "/baby/manifest/$_id",
+  id: '/baby/manifest/$_id',
+  path: '/baby/manifest/$_id',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const OgBabyPublicIdRoute = OgBabyPublicIdRouteImport.update({
-  id: "/baby/$publicId",
-  path: "/baby/$publicId",
+  id: '/baby/$publicId',
+  path: '/baby/$publicId',
   getParentRoute: () => OgRoute,
-} as any);
-const BabyPublicIdUpdatesUpdateIdPhotoRoute = BabyPublicIdUpdatesUpdateIdPhotoRouteImport.update({
-  id: "/updates/$updateId/photo",
-  path: "/updates/$updateId/photo",
-  getParentRoute: () => BabyPublicIdRouteRoute,
-} as any);
+} as any)
+const BabyPublicIdUpdatesUpdateIdPhotoRoute =
+  BabyPublicIdUpdatesUpdateIdPhotoRouteImport.update({
+    id: '/updates/$updateId/photo',
+    path: '/updates/$updateId/photo',
+    getParentRoute: () => BabyPublicIdRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/og": typeof OgRouteWithChildren;
-  "/preview": typeof PreviewRoute;
-  "/robots.txt": typeof RobotsDottxtRoute;
-  "/sitemap.xml": typeof SitemapDotxmlRoute;
-  "/baby/$publicId": typeof BabyPublicIdRouteRouteWithChildren;
-  "/auth/login": typeof AuthLoginRoute;
-  "/auth/signup": typeof AuthSignupRoute;
-  "/dashboard/add": typeof AuthDashboardAddRoute;
-  "/dashboard/admin": typeof AuthDashboardAdminRoute;
-  "/api/auth/$": typeof ApiAuthSplatRoute;
-  "/api/cache/purge": typeof ApiCachePurgeRoute;
-  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
-  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
-  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
-  "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
-  "/dashboard/": typeof AuthDashboardIndexRoute;
-  "/baby/$publicId/": typeof BabyPublicIdIndexRoute;
-  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
+  '/': typeof IndexRoute
+  '/og': typeof OgRouteWithChildren
+  '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/add': typeof AuthDashboardAddRoute
+  '/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
+  '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
+  '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/manifest/$_id': typeof BabyManifest_idRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
+  '/dashboard/': typeof AuthDashboardIndexRoute
+  '/baby/$publicId/': typeof BabyPublicIdIndexRoute
+  '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/og": typeof OgRouteWithChildren;
-  "/preview": typeof PreviewRoute;
-  "/robots.txt": typeof RobotsDottxtRoute;
-  "/sitemap.xml": typeof SitemapDotxmlRoute;
-  "/auth/login": typeof AuthLoginRoute;
-  "/auth/signup": typeof AuthSignupRoute;
-  "/dashboard/add": typeof AuthDashboardAddRoute;
-  "/dashboard/admin": typeof AuthDashboardAdminRoute;
-  "/api/auth/$": typeof ApiAuthSplatRoute;
-  "/api/cache/purge": typeof ApiCachePurgeRoute;
-  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
-  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
-  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
-  "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
-  "/dashboard": typeof AuthDashboardIndexRoute;
-  "/baby/$publicId": typeof BabyPublicIdIndexRoute;
-  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
+  '/': typeof IndexRoute
+  '/og': typeof OgRouteWithChildren
+  '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/add': typeof AuthDashboardAddRoute
+  '/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
+  '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
+  '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/manifest/$_id': typeof BabyManifest_idRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
+  '/dashboard': typeof AuthDashboardIndexRoute
+  '/baby/$publicId': typeof BabyPublicIdIndexRoute
+  '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/_auth": typeof AuthRouteRouteWithChildren;
-  "/og": typeof OgRouteWithChildren;
-  "/preview": typeof PreviewRoute;
-  "/robots.txt": typeof RobotsDottxtRoute;
-  "/sitemap.xml": typeof SitemapDotxmlRoute;
-  "/baby/$publicId": typeof BabyPublicIdRouteRouteWithChildren;
-  "/auth/login": typeof AuthLoginRoute;
-  "/auth/signup": typeof AuthSignupRoute;
-  "/_auth/dashboard/add": typeof AuthDashboardAddRoute;
-  "/_auth/dashboard/admin": typeof AuthDashboardAdminRoute;
-  "/api/auth/$": typeof ApiAuthSplatRoute;
-  "/api/cache/purge": typeof ApiCachePurgeRoute;
-  "/baby/$publicId/photo": typeof BabyPublicIdPhotoRoute;
-  "/baby/$publicId/post": typeof BabyPublicIdPostRoute;
-  "/baby/$publicId/settings": typeof BabyPublicIdSettingsRoute;
-  "/baby/manifest/$_id": typeof BabyManifest_idRoute;
-  "/og/baby/$publicId": typeof OgBabyPublicIdRoute;
-  "/_auth/dashboard/": typeof AuthDashboardIndexRoute;
-  "/baby/$publicId/": typeof BabyPublicIdIndexRoute;
-  "/baby/$publicId/updates/$updateId/photo": typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_auth': typeof AuthRouteRouteWithChildren
+  '/og': typeof OgRouteWithChildren
+  '/preview': typeof PreviewRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
+  '/auth/login': typeof AuthLoginRoute
+  '/auth/signup': typeof AuthSignupRoute
+  '/_auth/dashboard/add': typeof AuthDashboardAddRoute
+  '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cache/purge': typeof ApiCachePurgeRoute
+  '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
+  '/baby/$publicId/post': typeof BabyPublicIdPostRoute
+  '/baby/$publicId/settings': typeof BabyPublicIdSettingsRoute
+  '/baby/$publicId/share': typeof BabyPublicIdShareRoute
+  '/baby/manifest/$_id': typeof BabyManifest_idRoute
+  '/og/baby/$publicId': typeof OgBabyPublicIdRoute
+  '/_auth/dashboard/': typeof AuthDashboardIndexRoute
+  '/baby/$publicId/': typeof BabyPublicIdIndexRoute
+  '/baby/$publicId/updates/$updateId/photo': typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/og"
-    | "/preview"
-    | "/robots.txt"
-    | "/sitemap.xml"
-    | "/baby/$publicId"
-    | "/auth/login"
-    | "/auth/signup"
-    | "/dashboard/add"
-    | "/dashboard/admin"
-    | "/api/auth/$"
-    | "/api/cache/purge"
-    | "/baby/$publicId/photo"
-    | "/baby/$publicId/post"
-    | "/baby/$publicId/settings"
-    | "/baby/manifest/$_id"
-    | "/og/baby/$publicId"
-    | "/dashboard/"
-    | "/baby/$publicId/"
-    | "/baby/$publicId/updates/$updateId/photo";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/og'
+    | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/baby/$publicId'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/dashboard/add'
+    | '/dashboard/admin'
+    | '/api/auth/$'
+    | '/api/cache/purge'
+    | '/baby/$publicId/photo'
+    | '/baby/$publicId/post'
+    | '/baby/$publicId/settings'
+    | '/baby/$publicId/share'
+    | '/baby/manifest/$_id'
+    | '/og/baby/$publicId'
+    | '/dashboard/'
+    | '/baby/$publicId/'
+    | '/baby/$publicId/updates/$updateId/photo'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/og"
-    | "/preview"
-    | "/robots.txt"
-    | "/sitemap.xml"
-    | "/auth/login"
-    | "/auth/signup"
-    | "/dashboard/add"
-    | "/dashboard/admin"
-    | "/api/auth/$"
-    | "/api/cache/purge"
-    | "/baby/$publicId/photo"
-    | "/baby/$publicId/post"
-    | "/baby/$publicId/settings"
-    | "/baby/manifest/$_id"
-    | "/og/baby/$publicId"
-    | "/dashboard"
-    | "/baby/$publicId"
-    | "/baby/$publicId/updates/$updateId/photo";
+    | '/'
+    | '/og'
+    | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/dashboard/add'
+    | '/dashboard/admin'
+    | '/api/auth/$'
+    | '/api/cache/purge'
+    | '/baby/$publicId/photo'
+    | '/baby/$publicId/post'
+    | '/baby/$publicId/settings'
+    | '/baby/$publicId/share'
+    | '/baby/manifest/$_id'
+    | '/og/baby/$publicId'
+    | '/dashboard'
+    | '/baby/$publicId'
+    | '/baby/$publicId/updates/$updateId/photo'
   id:
-    | "__root__"
-    | "/"
-    | "/_auth"
-    | "/og"
-    | "/preview"
-    | "/robots.txt"
-    | "/sitemap.xml"
-    | "/baby/$publicId"
-    | "/auth/login"
-    | "/auth/signup"
-    | "/_auth/dashboard/add"
-    | "/_auth/dashboard/admin"
-    | "/api/auth/$"
-    | "/api/cache/purge"
-    | "/baby/$publicId/photo"
-    | "/baby/$publicId/post"
-    | "/baby/$publicId/settings"
-    | "/baby/manifest/$_id"
-    | "/og/baby/$publicId"
-    | "/_auth/dashboard/"
-    | "/baby/$publicId/"
-    | "/baby/$publicId/updates/$updateId/photo";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/_auth'
+    | '/og'
+    | '/preview'
+    | '/robots.txt'
+    | '/sitemap.xml'
+    | '/baby/$publicId'
+    | '/auth/login'
+    | '/auth/signup'
+    | '/_auth/dashboard/add'
+    | '/_auth/dashboard/admin'
+    | '/api/auth/$'
+    | '/api/cache/purge'
+    | '/baby/$publicId/photo'
+    | '/baby/$publicId/post'
+    | '/baby/$publicId/settings'
+    | '/baby/$publicId/share'
+    | '/baby/manifest/$_id'
+    | '/og/baby/$publicId'
+    | '/_auth/dashboard/'
+    | '/baby/$publicId/'
+    | '/baby/$publicId/updates/$updateId/photo'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuthRouteRoute: typeof AuthRouteRouteWithChildren;
-  OgRoute: typeof OgRouteWithChildren;
-  PreviewRoute: typeof PreviewRoute;
-  RobotsDottxtRoute: typeof RobotsDottxtRoute;
-  SitemapDotxmlRoute: typeof SitemapDotxmlRoute;
-  BabyPublicIdRouteRoute: typeof BabyPublicIdRouteRouteWithChildren;
-  AuthLoginRoute: typeof AuthLoginRoute;
-  AuthSignupRoute: typeof AuthSignupRoute;
-  ApiAuthSplatRoute: typeof ApiAuthSplatRoute;
-  ApiCachePurgeRoute: typeof ApiCachePurgeRoute;
-  BabyManifest_idRoute: typeof BabyManifest_idRoute;
+  IndexRoute: typeof IndexRoute
+  AuthRouteRoute: typeof AuthRouteRouteWithChildren
+  OgRoute: typeof OgRouteWithChildren
+  PreviewRoute: typeof PreviewRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  BabyPublicIdRouteRoute: typeof BabyPublicIdRouteRouteWithChildren
+  AuthLoginRoute: typeof AuthLoginRoute
+  AuthSignupRoute: typeof AuthSignupRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCachePurgeRoute: typeof ApiCachePurgeRoute
+  BabyManifest_idRoute: typeof BabyManifest_idRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/_auth": {
-      id: "/_auth";
-      path: "";
-      fullPath: "/";
-      preLoaderRoute: typeof AuthRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/og": {
-      id: "/og";
-      path: "/og";
-      fullPath: "/og";
-      preLoaderRoute: typeof OgRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/preview": {
-      id: "/preview";
-      path: "/preview";
-      fullPath: "/preview";
-      preLoaderRoute: typeof PreviewRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/robots.txt": {
-      id: "/robots.txt";
-      path: "/robots.txt";
-      fullPath: "/robots.txt";
-      preLoaderRoute: typeof RobotsDottxtRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/sitemap.xml": {
-      id: "/sitemap.xml";
-      path: "/sitemap.xml";
-      fullPath: "/sitemap.xml";
-      preLoaderRoute: typeof SitemapDotxmlRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/auth/login": {
-      id: "/auth/login";
-      path: "/auth/login";
-      fullPath: "/auth/login";
-      preLoaderRoute: typeof AuthLoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/auth/signup": {
-      id: "/auth/signup";
-      path: "/auth/signup";
-      fullPath: "/auth/signup";
-      preLoaderRoute: typeof AuthSignupRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/baby/$publicId": {
-      id: "/baby/$publicId";
-      path: "/baby/$publicId";
-      fullPath: "/baby/$publicId";
-      preLoaderRoute: typeof BabyPublicIdRouteRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/_auth/dashboard/": {
-      id: "/_auth/dashboard/";
-      path: "/dashboard";
-      fullPath: "/dashboard/";
-      preLoaderRoute: typeof AuthDashboardIndexRouteImport;
-      parentRoute: typeof AuthRouteRoute;
-    };
-    "/_auth/dashboard/add": {
-      id: "/_auth/dashboard/add";
-      path: "/dashboard/add";
-      fullPath: "/dashboard/add";
-      preLoaderRoute: typeof AuthDashboardAddRouteImport;
-      parentRoute: typeof AuthRouteRoute;
-    };
-    "/_auth/dashboard/admin": {
-      id: "/_auth/dashboard/admin";
-      path: "/dashboard/admin";
-      fullPath: "/dashboard/admin";
-      preLoaderRoute: typeof AuthDashboardAdminRouteImport;
-      parentRoute: typeof AuthRouteRoute;
-    };
-    "/api/auth/$": {
-      id: "/api/auth/$";
-      path: "/api/auth/$";
-      fullPath: "/api/auth/$";
-      preLoaderRoute: typeof ApiAuthSplatRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/api/cache/purge": {
-      id: "/api/cache/purge";
-      path: "/api/cache/purge";
-      fullPath: "/api/cache/purge";
-      preLoaderRoute: typeof ApiCachePurgeRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/baby/$publicId/": {
-      id: "/baby/$publicId/";
-      path: "/";
-      fullPath: "/baby/$publicId/";
-      preLoaderRoute: typeof BabyPublicIdIndexRouteImport;
-      parentRoute: typeof BabyPublicIdRouteRoute;
-    };
-    "/baby/$publicId/photo": {
-      id: "/baby/$publicId/photo";
-      path: "/photo";
-      fullPath: "/baby/$publicId/photo";
-      preLoaderRoute: typeof BabyPublicIdPhotoRouteImport;
-      parentRoute: typeof BabyPublicIdRouteRoute;
-    };
-    "/baby/$publicId/post": {
-      id: "/baby/$publicId/post";
-      path: "/post";
-      fullPath: "/baby/$publicId/post";
-      preLoaderRoute: typeof BabyPublicIdPostRouteImport;
-      parentRoute: typeof BabyPublicIdRouteRoute;
-    };
-    "/baby/$publicId/settings": {
-      id: "/baby/$publicId/settings";
-      path: "/settings";
-      fullPath: "/baby/$publicId/settings";
-      preLoaderRoute: typeof BabyPublicIdSettingsRouteImport;
-      parentRoute: typeof BabyPublicIdRouteRoute;
-    };
-    "/baby/manifest/$_id": {
-      id: "/baby/manifest/$_id";
-      path: "/baby/manifest/$_id";
-      fullPath: "/baby/manifest/$_id";
-      preLoaderRoute: typeof BabyManifest_idRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/og/baby/$publicId": {
-      id: "/og/baby/$publicId";
-      path: "/baby/$publicId";
-      fullPath: "/og/baby/$publicId";
-      preLoaderRoute: typeof OgBabyPublicIdRouteImport;
-      parentRoute: typeof OgRoute;
-    };
-    "/baby/$publicId/updates/$updateId/photo": {
-      id: "/baby/$publicId/updates/$updateId/photo";
-      path: "/updates/$updateId/photo";
-      fullPath: "/baby/$publicId/updates/$updateId/photo";
-      preLoaderRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRouteImport;
-      parentRoute: typeof BabyPublicIdRouteRoute;
-    };
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth': {
+      id: '/_auth'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og': {
+      id: '/og'
+      path: '/og'
+      fullPath: '/og'
+      preLoaderRoute: typeof OgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/preview': {
+      id: '/preview'
+      path: '/preview'
+      fullPath: '/preview'
+      preLoaderRoute: typeof PreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/login': {
+      id: '/auth/login'
+      path: '/auth/login'
+      fullPath: '/auth/login'
+      preLoaderRoute: typeof AuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/signup': {
+      id: '/auth/signup'
+      path: '/auth/signup'
+      fullPath: '/auth/signup'
+      preLoaderRoute: typeof AuthSignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/baby/$publicId': {
+      id: '/baby/$publicId'
+      path: '/baby/$publicId'
+      fullPath: '/baby/$publicId'
+      preLoaderRoute: typeof BabyPublicIdRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_auth/dashboard/': {
+      id: '/_auth/dashboard/'
+      path: '/dashboard'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthDashboardIndexRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/dashboard/add': {
+      id: '/_auth/dashboard/add'
+      path: '/dashboard/add'
+      fullPath: '/dashboard/add'
+      preLoaderRoute: typeof AuthDashboardAddRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/_auth/dashboard/admin': {
+      id: '/_auth/dashboard/admin'
+      path: '/dashboard/admin'
+      fullPath: '/dashboard/admin'
+      preLoaderRoute: typeof AuthDashboardAdminRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cache/purge': {
+      id: '/api/cache/purge'
+      path: '/api/cache/purge'
+      fullPath: '/api/cache/purge'
+      preLoaderRoute: typeof ApiCachePurgeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/baby/$publicId/': {
+      id: '/baby/$publicId/'
+      path: '/'
+      fullPath: '/baby/$publicId/'
+      preLoaderRoute: typeof BabyPublicIdIndexRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
+    '/baby/$publicId/photo': {
+      id: '/baby/$publicId/photo'
+      path: '/photo'
+      fullPath: '/baby/$publicId/photo'
+      preLoaderRoute: typeof BabyPublicIdPhotoRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
+    '/baby/$publicId/post': {
+      id: '/baby/$publicId/post'
+      path: '/post'
+      fullPath: '/baby/$publicId/post'
+      preLoaderRoute: typeof BabyPublicIdPostRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
+    '/baby/$publicId/settings': {
+      id: '/baby/$publicId/settings'
+      path: '/settings'
+      fullPath: '/baby/$publicId/settings'
+      preLoaderRoute: typeof BabyPublicIdSettingsRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
+    '/baby/$publicId/share': {
+      id: '/baby/$publicId/share'
+      path: '/share'
+      fullPath: '/baby/$publicId/share'
+      preLoaderRoute: typeof BabyPublicIdShareRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
+    '/baby/manifest/$_id': {
+      id: '/baby/manifest/$_id'
+      path: '/baby/manifest/$_id'
+      fullPath: '/baby/manifest/$_id'
+      preLoaderRoute: typeof BabyManifest_idRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/og/baby/$publicId': {
+      id: '/og/baby/$publicId'
+      path: '/baby/$publicId'
+      fullPath: '/og/baby/$publicId'
+      preLoaderRoute: typeof OgBabyPublicIdRouteImport
+      parentRoute: typeof OgRoute
+    }
+    '/baby/$publicId/updates/$updateId/photo': {
+      id: '/baby/$publicId/updates/$updateId/photo'
+      path: '/updates/$updateId/photo'
+      fullPath: '/baby/$publicId/updates/$updateId/photo'
+      preLoaderRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRouteImport
+      parentRoute: typeof BabyPublicIdRouteRoute
+    }
   }
 }
 
 interface AuthRouteRouteChildren {
-  AuthDashboardAddRoute: typeof AuthDashboardAddRoute;
-  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute;
-  AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute;
+  AuthDashboardAddRoute: typeof AuthDashboardAddRoute
+  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute
+  AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDashboardAddRoute: AuthDashboardAddRoute,
   AuthDashboardAdminRoute: AuthDashboardAdminRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,
-};
+}
 
-const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(AuthRouteRouteChildren);
+const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(
+  AuthRouteRouteChildren,
+)
 
 interface OgRouteChildren {
-  OgBabyPublicIdRoute: typeof OgBabyPublicIdRoute;
+  OgBabyPublicIdRoute: typeof OgBabyPublicIdRoute
 }
 
 const OgRouteChildren: OgRouteChildren = {
   OgBabyPublicIdRoute: OgBabyPublicIdRoute,
-};
+}
 
-const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren);
+const OgRouteWithChildren = OgRoute._addFileChildren(OgRouteChildren)
 
 interface BabyPublicIdRouteRouteChildren {
-  BabyPublicIdPhotoRoute: typeof BabyPublicIdPhotoRoute;
-  BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute;
-  BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute;
-  BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute;
-  BabyPublicIdUpdatesUpdateIdPhotoRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRoute;
+  BabyPublicIdPhotoRoute: typeof BabyPublicIdPhotoRoute
+  BabyPublicIdPostRoute: typeof BabyPublicIdPostRoute
+  BabyPublicIdSettingsRoute: typeof BabyPublicIdSettingsRoute
+  BabyPublicIdShareRoute: typeof BabyPublicIdShareRoute
+  BabyPublicIdIndexRoute: typeof BabyPublicIdIndexRoute
+  BabyPublicIdUpdatesUpdateIdPhotoRoute: typeof BabyPublicIdUpdatesUpdateIdPhotoRoute
 }
 
 const BabyPublicIdRouteRouteChildren: BabyPublicIdRouteRouteChildren = {
   BabyPublicIdPhotoRoute: BabyPublicIdPhotoRoute,
   BabyPublicIdPostRoute: BabyPublicIdPostRoute,
   BabyPublicIdSettingsRoute: BabyPublicIdSettingsRoute,
+  BabyPublicIdShareRoute: BabyPublicIdShareRoute,
   BabyPublicIdIndexRoute: BabyPublicIdIndexRoute,
   BabyPublicIdUpdatesUpdateIdPhotoRoute: BabyPublicIdUpdatesUpdateIdPhotoRoute,
-};
+}
 
-const BabyPublicIdRouteRouteWithChildren = BabyPublicIdRouteRoute._addFileChildren(
-  BabyPublicIdRouteRouteChildren,
-);
+const BabyPublicIdRouteRouteWithChildren =
+  BabyPublicIdRouteRoute._addFileChildren(BabyPublicIdRouteRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -496,16 +519,16 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCachePurgeRoute: ApiCachePurgeRoute,
   BabyManifest_idRoute: BabyManifest_idRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { createStart } from "@tanstack/react-start";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }

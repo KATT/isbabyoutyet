@@ -83,7 +83,11 @@ function publicPagePolicy(pathname: string): PublicCachePolicy | null {
     };
   }
 
-  const babyPageMatch = /^\/baby\/([^/]+)$/.exec(pathname);
+  // Public overlay routes render only public baby data. Manager overlays
+  // (`settings` and `post`) intentionally do not match and stay private.
+  const babyPageMatch = /^\/baby\/([^/]+)(?:\/(?:share|photo)|\/updates\/[^/]+\/photo)?\/?$/.exec(
+    pathname,
+  );
   if (babyPageMatch?.[1]) {
     return {
       maxAgeSeconds: 86_400,
@@ -124,8 +128,14 @@ export function applyCachePolicy(request: Request, response: Response) {
   const headers = new Headers(response.headers);
   const methodIsCacheable = request.method === "GET" || request.method === "HEAD";
   const policy = methodIsCacheable ? publicPagePolicy(new URL(request.url).pathname) : null;
+  const cacheControl = headers.get("Cache-Control") ?? "";
+  const explicitlyUncacheableRedirect =
+    response.status >= 300 &&
+    response.status < 400 &&
+    headers.has("Location") &&
+    /\bno-store\b/i.test(cacheControl);
 
-  if (!policy) {
+  if (!policy || explicitlyUncacheableRedirect) {
     headers.set("Cache-Control", PRIVATE_CACHE_CONTROL);
     headers.set("Vercel-CDN-Cache-Control", PRIVATE_CACHE_CONTROL);
     headers.delete("Vercel-Cache-Tag");

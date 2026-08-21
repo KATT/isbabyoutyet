@@ -63,6 +63,32 @@ function skipNativeNodeAddons(): Plugin {
 }
 
 /**
+ * Nitro's Vite dev middleware classifies every `Sec-Fetch-Dest: image`
+ * request as a static asset before TanStack Start can dispatch extensionless
+ * server routes. Keep generated `/og` images on the SSR path in development.
+ */
+function routeGeneratedImagesThroughSsr(): Plugin {
+  return {
+    name: "route-generated-images-through-ssr",
+    enforce: "pre",
+    configureServer(server) {
+      server.middlewares.use((...args) => {
+        const request = args[0];
+        const next = args[2];
+        const pathname = request.url?.split(/[?#]/, 1)[0];
+        if (
+          request.headers["sec-fetch-dest"] === "image" &&
+          (pathname === "/og" || pathname?.startsWith("/og/"))
+        ) {
+          delete request.headers["sec-fetch-dest"];
+        }
+        next();
+      });
+    },
+  };
+}
+
+/**
  * Belt-and-suspenders for any remaining leaked `__require("react")` after the
  * shim alias (same rewrite as discussed on nitro#4171).
  */
@@ -92,6 +118,7 @@ const config = defineConfig({
     devtools(),
     aliasUseSyncExternalStoreShim(),
     skipNativeNodeAddons(),
+    routeGeneratedImagesThroughSsr(),
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/paraglide",
