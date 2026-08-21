@@ -4,6 +4,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/component
 import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import { agentDebugShareLinkEvent } from "@/lib/agent-debug";
 import { useI18n } from "@/lib/i18n";
 
 type BabyNavProps = {
@@ -117,7 +118,43 @@ export function BabyNav(props: BabyNavProps) {
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
-                render={props.shareButton ? <Link {...(props.shareButton as any)} /> : undefined}
+                render={
+                  props.shareButton ? (
+                    <Link
+                      {...(props.shareButton as any)}
+                      ref={(element) => {
+                        if (element) {
+                          agentDebugShareLinkEvent({
+                            source: "baby-nav",
+                            event: "mount",
+                            href: element.getAttribute("href"),
+                          });
+                        }
+                      }}
+                      onMouseEnter={(event) => {
+                        agentDebugShareLinkEvent({
+                          source: "baby-nav",
+                          event: "pointer-enter",
+                          href: event.currentTarget.getAttribute("href"),
+                        });
+                      }}
+                      onFocus={(event) => {
+                        agentDebugShareLinkEvent({
+                          source: "baby-nav",
+                          event: "focus",
+                          href: event.currentTarget.getAttribute("href"),
+                        });
+                      }}
+                      onClick={(event) => {
+                        agentDebugShareLinkEvent({
+                          source: "baby-nav",
+                          event: "click",
+                          href: event.currentTarget.getAttribute("href"),
+                        });
+                      }}
+                    />
+                  ) : undefined
+                }
                 nativeButton={!props.shareButton}
                 disabled={!props.shareButton}
                 aria-label={t("Share the link")}

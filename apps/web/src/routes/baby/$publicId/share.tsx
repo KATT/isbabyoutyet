@@ -20,15 +20,34 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
+import { agentDebugLog } from "@/lib/agent-debug";
 import { getBabySeo } from "@/lib/baby-seo";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
+
+function logShareImageEvent(opts: {
+  event: "query-state" | "dom-load";
+  status: string;
+  fetchStatus: string;
+  warmedUrlMatches: boolean;
+  complete: boolean | null;
+  naturalWidth: number | null;
+}) {
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: "B,C,D,E",
+    location: "share.tsx:overlay-image",
+    message: "Share overlay image event",
+    data: opts,
+  });
+  // #endregion
+}
 
 export const Route = createFileRoute("/baby/$publicId/share")({
   beforeLoad: async (opts) => {
@@ -48,6 +67,15 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     }
   },
   loader: async (opts) => {
+    const startedAt = Date.now();
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "A,B,C",
+      location: "share.tsx:loader-entry",
+      message: "Share loader entered",
+      data: { cause: opts.cause },
+    });
+    // #endregion
     const publicId = opts.params.publicId;
     const imageUrl = babyOgImageUrl(publicId, undefined);
     const data = await allKeyed({
@@ -60,11 +88,32 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     });
     const babyDoc = data.baby.initialData;
     const sharePreview = babyDoc ? getBabySeo(babyDoc, publicId) : null;
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "C,D",
+      location: "share.tsx:loader-data-ready",
+      message: "Share loader data ready",
+      data: { elapsedMs: Date.now() - startedAt, hasBaby: !!babyDoc },
+    });
+    // #endregion
     // The browser image identity depends on the fetched public baby fields.
-    const imagePrefetch = prefetchBrowserImage(
-      opts.context.queryClient,
-      sharePreview?.imageUrl ?? imageUrl,
+    const resolvedImageUrl = sharePreview?.imageUrl ?? imageUrl;
+    const imagePrefetch = prefetchBrowserImage(opts.context.queryClient, resolvedImageUrl);
+    const imageState = opts.context.queryClient.getQueryState(
+      browserImageFactory(resolvedImageUrl).queryKey,
     );
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "B,C",
+      location: "share.tsx:loader-return",
+      message: "Share loader returning",
+      data: {
+        elapsedMs: Date.now() - startedAt,
+        imageStatus: imageState?.status ?? "missing",
+        imageFetchStatus: imageState?.fetchStatus ?? "idle",
+      },
+    });
+    // #endregion
 
     return {
       baby: data.baby,
@@ -86,7 +135,7 @@ export function BabyShareOverlay() {
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const babyDoc = babyQuery.data;
   const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
-  useQuery(
+  const imageQuery = useQuery(
     preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch, () => {
       return (
         sharePreview?.imageUrl ??
@@ -95,6 +144,21 @@ export function BabyShareOverlay() {
       );
     }),
   );
+  useEffect(() => {
+    logShareImageEvent({
+      event: "query-state",
+      status: imageQuery.status,
+      fetchStatus: imageQuery.fetchStatus,
+      warmedUrlMatches: loaderData.imagePrefetch.input === sharePreview?.imageUrl,
+      complete: null,
+      naturalWidth: null,
+    });
+  }, [
+    imageQuery.fetchStatus,
+    imageQuery.status,
+    loaderData.imagePrefetch.input,
+    sharePreview?.imageUrl,
+  ]);
   const share = useOverlayNav({
     open: {
       to: "/baby/$publicId/share",
@@ -168,6 +232,16 @@ export function BabyShareOverlay() {
             width={1200}
             height={630}
             className="aspect-[1200/630] w-full object-cover"
+            onLoad={(event) => {
+              logShareImageEvent({
+                event: "dom-load",
+                status: imageQuery.status,
+                fetchStatus: imageQuery.fetchStatus,
+                warmedUrlMatches: loaderData.imagePrefetch.input === sharePreview.imageUrl,
+                complete: event.currentTarget.complete,
+                naturalWidth: event.currentTarget.naturalWidth,
+              });
+            }}
           />
           <CardHeader>
             <CardTitle className="line-clamp-2">{sharePreview.title}</CardTitle>

@@ -14,6 +14,7 @@ import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useState } from "react";
+import { agentDebugShareLinkEvent } from "@/lib/agent-debug";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { openOverlayLink } from "@/lib/overlay-nav";
@@ -483,12 +484,29 @@ function StepRow(props: {
 
   if (props.action?.kind === "link") {
     const action = props.action;
+    const debugShare = action.link.to === "/baby/$publicId/share";
     return (
       <Link
         {...action.link}
+        ref={(element) => {
+          if (debugShare && element) {
+            agentDebugShareLinkEvent({
+              source: "onboarding",
+              event: "mount",
+              href: element.getAttribute("href"),
+            });
+          }
+        }}
         className={cn(rowClass, "transition hover:bg-primary/6")}
         aria-label={action.label}
-        onClick={() => {
+        onClick={(event) => {
+          if (debugShare) {
+            agentDebugShareLinkEvent({
+              source: "onboarding",
+              event: "click",
+              href: event.currentTarget.getAttribute("href"),
+            });
+          }
           if (props.onBeforeAction) {
             props.onBeforeAction();
           }
@@ -575,6 +593,7 @@ function StepActionControl(props: {
 }) {
   if (props.action.kind === "link") {
     const action = props.action;
+    const debugShare = action.link.to === "/baby/$publicId/share";
     return (
       <Button
         size={props.size}
@@ -582,7 +601,23 @@ function StepActionControl(props: {
         render={
           <Link
             {...action.link}
-            onClick={() => {
+            ref={(element) => {
+              if (debugShare && element) {
+                agentDebugShareLinkEvent({
+                  source: "onboarding",
+                  event: "mount",
+                  href: element.getAttribute("href"),
+                });
+              }
+            }}
+            onClick={(event) => {
+              if (debugShare) {
+                agentDebugShareLinkEvent({
+                  source: "onboarding",
+                  event: "click",
+                  href: event.currentTarget.getAttribute("href"),
+                });
+              }
               if (props.onBeforeAction) {
                 props.onBeforeAction();
               }
