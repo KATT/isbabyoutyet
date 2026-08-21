@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   applyCachePolicy,
   authPageCacheHeaders,
+  babyPageCacheHeaders,
   homepageCacheHeaders,
   privateCacheHeaders,
   previewCacheHeaders,
@@ -103,6 +104,9 @@ describe("applyCachePolicy", () => {
     expect(homepageCacheHeaders()["Vercel-Cache-Tag"]).toBe("homepage");
     expect(previewCacheHeaders()["Vercel-Cache-Tag"]).toBe("preview");
     expect(authPageCacheHeaders()["Vercel-Cache-Tag"]).toBe("auth-pages");
+    expect(babyPageCacheHeaders("juniper-hale")["Vercel-Cache-Tag"]).toBe(
+      "baby-pages,baby-public-id:juniper-hale",
+    );
   });
 
   test("adds public caching to resource responses without losing their headers", async () => {

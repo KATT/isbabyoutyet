@@ -32,8 +32,6 @@ import { openGraphImageMeta } from "@/lib/seo";
 import { getBabySeo } from "@/lib/baby-seo";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { publicCacheHeaders } from "@/lib/cachePolicy";
-import { ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag } from "@workspace/convex/src/cacheTags";
 import { useOverlayNav } from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
@@ -184,13 +182,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       ],
     };
   },
-  headers: (opts) => ({
-    ...publicCacheHeaders({
-      maxAgeSeconds: 86_400,
-      tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(opts.params.publicId)],
-    }),
-    ...babyPageRobotsHeaders(opts.params.publicId),
-  }),
+  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
 });
 
 /**

@@ -42,6 +42,13 @@ export function authPageCacheHeaders() {
   return publicCacheHeaders({ maxAgeSeconds: 3_600, tags: ["auth-pages"] });
 }
 
+export function babyPageCacheHeaders(publicId: string) {
+  return publicCacheHeaders({
+    maxAgeSeconds: 86_400,
+    tags: [ALL_BABY_PAGES_CACHE_TAG, babyPublicIdCacheTag(publicId)],
+  });
+}
+
 export function withPublicCache(response: Response, policy: PublicCachePolicy) {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(publicCacheHeaders(policy))) {

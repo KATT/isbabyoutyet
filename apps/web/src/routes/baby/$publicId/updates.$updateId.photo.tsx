@@ -1,4 +1,5 @@
 import { PhotoLightbox } from "@/components/baby/photo-lightbox";
+import { babyPageCacheHeaders } from "@/lib/cachePolicy";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
@@ -9,6 +10,7 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { preloadedQueryOptions } from "@workspace/query-prefetch";
 
 export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")({
+  headers: (opts) => babyPageCacheHeaders(opts.params.publicId),
   beforeLoad: async (opts) => {
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,

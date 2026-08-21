@@ -24,6 +24,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { getBabySeo } from "@/lib/baby-seo";
+import { babyPageCacheHeaders } from "@/lib/cachePolicy";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
@@ -31,6 +32,7 @@ import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 
 export const Route = createFileRoute("/baby/$publicId/share")({
+  headers: (opts) => babyPageCacheHeaders(opts.params.publicId),
   beforeLoad: async (opts) => {
     const baby = await opts.context.convexPreloader.ensureQueryData(api.baby.getByPublicId, {
       id: opts.params.publicId,

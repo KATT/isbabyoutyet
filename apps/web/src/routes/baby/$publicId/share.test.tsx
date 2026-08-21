@@ -99,6 +99,17 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 const routeModule = await import("@/routes/baby/$publicId/share");
 const { BabyShareOverlay } = routeModule;
 
+test("share overlay opts into tagged public caching", () => {
+  const headers = (
+    routeModule.Route.options.headers as (opts: {
+      params: { publicId: string };
+    }) => Record<string, string>
+  )({ params: { publicId: "juniper-hale" } });
+
+  expect(headers["Cache-Control"]).toContain("public");
+  expect(headers["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
+});
+
 function babyDoc(opts: {
   publicId: string;
   theme: "baby-blue" | "orange";
