@@ -7,7 +7,7 @@ import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
   hasDemoLogin: true,
-  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
+  navigate: vi.fn<(opts: { to: string; reloadDocument: boolean }) => Promise<void>>(async () => {}),
   signInEmail: vi.fn<
     (opts: { email: string; password: string; rememberMe: boolean }) => Promise<{
       error: { message: string } | null;
@@ -82,7 +82,10 @@ test("prefills and signs in when a test account is chosen", async () => {
       rememberMe: true,
     });
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
+  expect(mocks.navigate).toHaveBeenCalledWith({
+    to: "/dashboard",
+    reloadDocument: true,
+  });
 });
 
 test("hides the test-account picker when demo login is disabled", async () => {

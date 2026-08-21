@@ -1,11 +1,11 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
+  navigate: vi.fn<(opts: { to: string; reloadDocument: boolean }) => Promise<void>>(async () => {}),
   signUpEmail: vi.fn<
     (opts: { email: string; password: string; name: string }) => Promise<{
       error: { message: string } | null;
@@ -54,4 +54,29 @@ test("signup has no test-account picker and starts empty", async () => {
   expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("");
   expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
   expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+});
+
+test("loads the dashboard as a new document after signup", async () => {
+  mocks.navigate.mockClear();
+  mocks.signUpEmail.mockClear();
+  mocks.signUpEmail.mockResolvedValueOnce({ error: null });
+
+  await using _view = renderSignup();
+
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Test Parent" } });
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "parent@example.com" } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password" } });
+  fireEvent.click(screen.getByRole("button", { name: "Sign Up" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.signUpEmail).toHaveBeenCalledWith({
+      email: "parent@example.com",
+      password: "password",
+      name: "Test Parent",
+    });
+  });
+  expect(mocks.navigate).toHaveBeenCalledWith({
+    to: "/dashboard",
+    reloadDocument: true,
+  });
 });

@@ -92,7 +92,9 @@ function SignupPage() {
                   throw new Error(result.error.message || t("Failed to sign up"));
                 }
 
-                await router.navigate({ to: "/dashboard" });
+                // Authenticate Convex during the new document load instead of
+                // racing the mounted auth provider during an SPA transition.
+                await router.navigate({ to: "/dashboard", reloadDocument: true });
               }}
             >
               <div className="space-y-5">

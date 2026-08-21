@@ -105,7 +105,10 @@ function LoginPage() {
                   throw new Error(result.error.message || t("Failed to sign in"));
                 }
 
-                await router.navigate({ to: "/dashboard" });
+                // Load the authenticated route from a clean document. Keeping
+                // Convex auth ownership in one provider avoids replacing an
+                // in-flight route-guard callback during the session transition.
+                await router.navigate({ to: "/dashboard", reloadDocument: true });
               }}
             >
               <div className="space-y-5">

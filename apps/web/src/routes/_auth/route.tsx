@@ -56,15 +56,9 @@ export const Route = createFileRoute("/_auth")({
       if (!token) {
         throw redirect({ to: "/" });
       }
-      // setAuth starts an asynchronous websocket handshake. Wait for Convex's
-      // server-confirmed auth callback before re-reading the profile; otherwise
-      // the existing anonymous subscription can immediately return stale null.
-      const isConvexAuthenticated = await new Promise<boolean>((resolve) => {
-        opts.context.convexClient.setAuth(async () => token, resolve);
-      });
-      if (!isConvexAuthenticated) {
-        throw redirect({ to: "/" });
-      }
+      // Right after login, authenticate the Convex client with the fresh token
+      // before reading the profile created by the auth hook.
+      opts.context.convexClient.setAuth(async () => token);
       opts.context.queryClient.removeQueries({
         queryKey: convexQuery(api.profile.get, {}).queryKey,
       });
