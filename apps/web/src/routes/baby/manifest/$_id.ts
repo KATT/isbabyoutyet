@@ -71,7 +71,7 @@ export const Route = createFileRoute("/baby/manifest/$_id")({
           }),
           {
             maxAgeSeconds: 86_400,
-            tags: [ALL_BABY_PAGES_CACHE_TAG, babyIdCacheTag(params._id)],
+            tags: [ALL_BABY_PAGES_CACHE_TAG, babyIdCacheTag(opts.params._id)],
           },
         );
       },
