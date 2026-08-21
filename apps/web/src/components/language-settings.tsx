@@ -145,7 +145,7 @@ export function LanguageSettings(props: {
             .then(() => {
               toast.success(t("Time zone saved"));
             })
-            .catch((error: unknown) => {
+            .catch((error) => {
               setSelectedTimeZoneOption(previousOption);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             });
