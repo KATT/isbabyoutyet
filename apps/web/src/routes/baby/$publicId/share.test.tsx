@@ -229,12 +229,12 @@ test("loader prefetches the canonical OG image in the browser", async () => {
 
 test("loader waits for the canonical OG image before completing in the browser", async () => {
   const OriginalImage = globalThis.Image;
-  let finishImageLoad: (() => void) | null = null;
+  const imageLoad = { finish: null as (() => void) | null };
   class MockImage {
     onload: (() => void) | null = null;
     onerror: (() => void) | null = null;
     set src(_value: string) {
-      finishImageLoad = () => {
+      imageLoad.finish = () => {
         this.onload?.();
       };
     }
@@ -263,11 +263,11 @@ test("loader waits for the canonical OG image before completing in the browser",
   });
 
   await vi.waitFor(() => {
-    expect(finishImageLoad).not.toBeNull();
+    expect(imageLoad.finish).not.toBeNull();
   });
   expect(loaderCompleted).toBe(false);
 
-  finishImageLoad?.();
+  imageLoad.finish?.();
   await expect(loaderResult).resolves.toBeDefined();
 });
 

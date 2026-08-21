@@ -98,10 +98,7 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     // #endregion
     // The browser image identity depends on the fetched public baby fields.
     const resolvedImageUrl = sharePreview?.imageUrl ?? imageUrl;
-    const imagePrefetch = await waitForBrowserImage(
-      opts.context.queryClient,
-      resolvedImageUrl,
-    );
+    const imagePrefetch = await waitForBrowserImage(opts.context.queryClient, resolvedImageUrl);
     const imageState = opts.context.queryClient.getQueryState(
       browserImageFactory(resolvedImageUrl).queryKey,
     );
