@@ -120,13 +120,13 @@ test("time zone updates preserve an existing profile's locale", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
   await asAlice.mutation(api.profile.updateLocale, { locale: "sv" });
 
-  expect(await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "America/New_York" })).toEqual(
-    {
-      locale: "sv",
-      timeZone: "America/New_York",
-      isAdmin: false,
-    },
-  );
+  expect(
+    await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "America/New_York" }),
+  ).toEqual({
+    locale: "sv",
+    timeZone: "America/New_York",
+    isAdmin: false,
+  });
 });
 
 test("language requests enforce their length bounds", async () => {
