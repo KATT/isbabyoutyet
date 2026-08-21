@@ -19,6 +19,7 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
+import { getBabySeo } from "@/lib/baby-seo";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -502,4 +503,31 @@ test("docToBabyData coalesces missing public due date text to null", () => {
     dueDateDisplayMode: "message",
     publicDueDateText: null,
   });
+});
+
+test("share preview uses the canonical route slug while reactive baby data changes", () => {
+  const seo = getBabySeo(
+    {
+      _id: "baby-1" as Id<"baby">,
+      _creationTime: 1,
+      name: "Juniper Hale",
+      dueDateDisplayMode: "message",
+      publicDueDateText: undefined,
+      theme: "baby-blue",
+      locale: "en-GB",
+      resolvedLocale: "en-GB",
+      laborStarted: null,
+      wentToHospital: null,
+      babyBorn: null,
+      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+      publicId: "juniper-hale-1",
+      photoUrl: null,
+      thumbnailUrl: null,
+      blurDataUrl: null,
+    },
+    "juniper-hale",
+  );
+
+  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
+  expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });

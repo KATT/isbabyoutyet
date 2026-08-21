@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { getBabySeo } from "@/lib/baby-seo";
 import { createBabyOgImage } from "@/lib/og-image";
 
 export const Route = createFileRoute("/og/baby/$publicId")({
@@ -19,6 +20,21 @@ export const Route = createFileRoute("/og/baby/$publicId")({
 
         if (!baby) {
           return new Response("Baby not found", { status: 404 });
+        }
+
+        const requestUrl = new URL(opts.request.url);
+        const requestedVersion = requestUrl.searchParams.get("v");
+        const currentImageUrl = new URL(getBabySeo(baby, opts.params.publicId).imageUrl);
+        const currentVersion = currentImageUrl.searchParams.get("v");
+        if (currentVersion && requestedVersion !== currentVersion) {
+          requestUrl.searchParams.set("v", currentVersion);
+          return new Response(null, {
+            status: 307,
+            headers: {
+              "Cache-Control": "no-store",
+              Location: requestUrl.toString(),
+            },
+          });
         }
 
         return createBabyOgImage({
