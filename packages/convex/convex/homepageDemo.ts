@@ -97,9 +97,7 @@ async function storageObjectExists(ctx: MutationCtx | QueryCtx, storageId: Id<"_
   return (await ctx.db.system.get(storageId)) !== null;
 }
 
-function isCompleteDemoPhotos(
-  photos: Partial<CompleteDemoPhotos>,
-): photos is CompleteDemoPhotos {
+function isCompleteDemoPhotos(photos: Partial<CompleteDemoPhotos>): photos is CompleteDemoPhotos {
   return HOMEPAGE_DEMO_PHOTO_KEYS.every((key) => photos[key] !== undefined);
 }
 

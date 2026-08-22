@@ -19,7 +19,7 @@ export function browserImageFactory(imageUrl: string) {
 export type BrowserImageFactory = typeof browserImageFactory;
 
 function initiatedBrowserImage(imageUrl: string): InitiatedQuery<BrowserImageFactory>;
-function initiatedBrowserImage(imageUrl: string) {
+function initiatedBrowserImage(imageUrl: string): unknown {
   return { input: imageUrl };
 }
 

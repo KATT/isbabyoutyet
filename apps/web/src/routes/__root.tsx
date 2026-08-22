@@ -172,12 +172,10 @@ export function contextLocale(context: unknown): SupportedLocale | undefined {
 }
 
 function contextToken(context: unknown) {
-  return (
-    typeof context === "object" &&
+  return typeof context === "object" &&
     context !== null &&
     "token" in context &&
     (typeof context.token === "string" || context.token === null)
-  )
     ? context.token
     : undefined;
 }

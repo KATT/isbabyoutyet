@@ -69,13 +69,8 @@ vi.mock("@/lib/detect-locale", () => ({
   detectRequestLocale: () => Promise.resolve("en-GB"),
 }));
 
-const {
-  NavigationProgress,
-  NotFoundComponent,
-  RootErrorComponent,
-  Route,
-  contextLocale,
-} = await import("@/routes/__root");
+const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route, contextLocale } =
+  await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);

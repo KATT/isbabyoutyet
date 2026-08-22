@@ -61,7 +61,7 @@ export type BrowserPushCapabilityFactory = ReturnType<typeof browserPushCapabili
 function initiatedBrowserPushCapability(
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory>;
-function initiatedBrowserPushCapability(babyRef: string) {
+function initiatedBrowserPushCapability(babyRef: string): unknown {
   return { input: babyRef };
 }
 
@@ -385,11 +385,7 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
   return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 }
 
-function fetchIsSubscribed(opts: {
-  queryClient: QueryClient;
-  babyRef: string;
-  endpoint: string;
-}) {
+function fetchIsSubscribed(opts: { queryClient: QueryClient; babyRef: string; endpoint: string }) {
   return opts.queryClient.fetchQuery(
     convexQuery(api.pushSubscriptions.isSubscribed, {
       babyId: opts.babyRef,
