@@ -80,7 +80,6 @@ export function BabyShareOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
@@ -145,17 +144,9 @@ export function BabyShareOverlay() {
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          share.dismiss();
-        }
-      }}
+      open={share.open}
+      onOpenChange={share.onOpenChange}
+      onOpenChangeComplete={share.onOpenChangeComplete}
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>

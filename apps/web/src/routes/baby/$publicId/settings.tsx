@@ -12,7 +12,6 @@ import {
 } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
-import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useOverlayNav } from "@/lib/overlay-nav";
@@ -96,7 +95,6 @@ export function BabySettingsOverlay() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
-  const [open, setOpen] = useState(true);
   const settings = useOverlayNav({
     open: {
       to: "/baby/$publicId/settings",
@@ -153,17 +151,9 @@ export function BabySettingsOverlay() {
         isOwner,
         listing: loaderData.coParentsList,
       }}
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          settings.dismiss();
-        }
-      }}
+      open={settings.open}
+      onOpenChange={settings.onOpenChange}
+      onOpenChangeComplete={settings.onOpenChangeComplete}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { useRouter } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 /** History state marker for push-opened overlays. */
 const overlayHistoryState = { overlay: true as const };
@@ -76,10 +77,18 @@ type UseOverlayNavOptions = {
 };
 
 type OverlayNav = {
+  /** Whether the route-backed overlay should currently be visible. */
+  open: boolean;
   /** Spread onto `<Link>` / pass to `navigate` to open the overlay (push). */
   openLink: LinkProps;
   /** Spread onto `<Link>` / pass to `navigate` for replace-close fallback. */
   closeLink: LinkProps;
+  /** Start the overlay's exit animation. */
+  close: () => void;
+  /** Pass to the overlay primitive's `onOpenChange`. */
+  onOpenChange: (open: boolean) => void;
+  /** Pass to `onOpenChangeComplete` so navigation waits for the exit animation. */
+  onOpenChangeComplete: (open: boolean) => void;
   /**
    * Close the overlay: `history.back()` when this entry was push-opened and the
    * router can go back; otherwise navigate with {@link closeLink}.
@@ -102,22 +111,51 @@ type OverlayNav = {
  * // or declarative close: <Link {...post.closeLink} />
  * ```
  */
+export type OverlayControl = Pick<
+  OverlayNav,
+  "open" | "close" | "onOpenChange" | "onOpenChangeComplete"
+>;
+
 export function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setOpen(true);
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, []);
   const openLink = openOverlayLink(opts.open);
   const closeLink = closeOverlayLink(opts.close);
+  const dismiss = () => {
+    dismissOverlay({
+      history: router.history,
+      navigate: (link) => {
+        void router.navigate(link);
+      },
+      closeLink,
+    });
+  };
 
   return {
+    open,
     openLink,
     closeLink,
-    dismiss: () => {
-      dismissOverlay({
-        history: router.history,
-        navigate: (link) => {
-          void router.navigate(link);
-        },
-        closeLink,
-      });
+    close: () => {
+      setOpen(false);
     },
+    onOpenChange: (nextOpen) => {
+      if (!nextOpen) {
+        setOpen(false);
+      }
+    },
+    onOpenChangeComplete: (nextOpen) => {
+      if (!nextOpen) {
+        dismiss();
+      }
+    },
+    dismiss,
   };
 }

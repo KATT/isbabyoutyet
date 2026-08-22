@@ -44,7 +44,11 @@ vi.mock("@workspace/ui/components/sheet", () => ({
 }));
 
 vi.mock("@/lib/overlay-nav", () => ({
-  useOverlayNav: () => ({ dismiss: vi.fn<() => void>() }),
+  useOverlayNav: () => ({
+    open: true,
+    onOpenChange: vi.fn<(open: boolean) => void>(),
+    onOpenChangeComplete: vi.fn<(open: boolean) => void>(),
+  }),
 }));
 
 vi.mock("@/lib/auth-client", () => ({

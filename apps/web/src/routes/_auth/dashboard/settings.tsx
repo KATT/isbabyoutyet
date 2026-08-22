@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Palette, Shield, SignOut, User } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
@@ -59,7 +58,6 @@ export function DashboardSettingsSheet() {
   const { t } = useI18n();
   const authContext = authRoute.useRouteContext();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
-  const [open, setOpen] = useState(true);
   const settings = useOverlayNav({
     open: { to: "/dashboard/settings" },
     close: { to: "/dashboard" },
@@ -67,19 +65,11 @@ export function DashboardSettingsSheet() {
 
   return (
     <Sheet
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          settings.dismiss();
-        }
-      }}
+      open={settings.open}
+      onOpenChange={settings.onOpenChange}
+      onOpenChangeComplete={settings.onOpenChangeComplete}
     >
-      <SheetContent side="right" className="w-full border-0 sm:max-w-sm">
+      <SheetContent side="right" className="w-full sm:max-w-sm">
         <SheetHeader>
           <SheetTitle>{t("Settings")}</SheetTitle>
           <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
@@ -87,7 +77,7 @@ export function DashboardSettingsSheet() {
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-            <Avatar size="lg" className="after:border-0">
+            <Avatar size="lg">
               <AvatarFallback>
                 <User />
               </AvatarFallback>
@@ -108,7 +98,7 @@ export function DashboardSettingsSheet() {
           </section>
 
           <ItemGroup className="gap-2">
-            <Item variant="muted">
+            <Item>
               <ItemMedia variant="icon">
                 <Palette />
               </ItemMedia>
@@ -117,13 +107,12 @@ export function DashboardSettingsSheet() {
                 <ItemDescription>{t("Theme")}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <ModeToggle className="rounded-full border-0" />
+                <ModeToggle />
               </ItemActions>
             </Item>
 
             {profileQuery.data?.isAdmin ? (
               <Item
-                variant="muted"
                 render={
                   <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
                 }
@@ -141,7 +130,6 @@ export function DashboardSettingsSheet() {
 
         <SheetFooter>
           <Button
-            variant="ghost"
             onClick={async () => {
               await authClient.signOut({
                 fetchOptions: {

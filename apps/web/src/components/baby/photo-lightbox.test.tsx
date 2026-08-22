@@ -31,15 +31,20 @@ vi.mock("@workspace/ui/components/dialog", async () => {
 
 const { PhotoLightbox } = await import("./photo-lightbox");
 
-test("renders the photo and dismisses after the close control", async () => {
-  const onDismiss = vi.fn<() => void>();
+test("renders the photo and delegates the close control to overlay navigation", async () => {
+  const close = vi.fn<() => void>();
   const view = render(
     <LocaleProvider locale="en-GB">
       <PhotoLightbox
         photoUrl="https://cdn.example/full.jpg"
         blurDataUrl="data:image/jpeg;base64,abc"
         alt="Photo of Nova"
-        onDismiss={onDismiss}
+        overlay={{
+          open: true,
+          close,
+          onOpenChange: vi.fn<(open: boolean) => void>(),
+          onOpenChangeComplete: vi.fn<(open: boolean) => void>(),
+        }}
       />
     </LocaleProvider>,
   );
@@ -50,7 +55,5 @@ test("renders the photo and dismisses after the close control", async () => {
   expect(view.getByAltText("Photo of Nova")).toBeTruthy();
   expect(view.container.querySelector("[data-show-close='false']")).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Close photo" }));
-  await vi.waitFor(() => {
-    expect(onDismiss).toHaveBeenCalled();
-  });
+  expect(close).toHaveBeenCalled();
 });

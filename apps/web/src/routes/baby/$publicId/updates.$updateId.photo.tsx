@@ -78,7 +78,7 @@ export function BabyUpdatePhotoOverlay() {
       photoUrl={updatePhoto.photoUrl}
       blurDataUrl={updatePhoto.blurDataUrl}
       alt={t("Photo of {{name}}", { name: updatePhoto.babyName })}
-      onDismiss={photo.dismiss}
+      overlay={photo}
     />
   );
 }

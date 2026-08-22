@@ -1,5 +1,24 @@
+import { act, renderHook } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { closeOverlayLink, dismissOverlay, openOverlayLink } from "@/lib/overlay-nav";
+import {
+  closeOverlayLink,
+  dismissOverlay,
+  openOverlayLink,
+  useOverlayNav,
+} from "@/lib/overlay-nav";
+
+const router = vi.hoisted(() => ({
+  history: {
+    location: { state: { overlay: true as true | undefined } },
+    canGoBack: () => true,
+    back: vi.fn<() => void>(),
+  },
+  navigate: vi.fn<(opts: unknown) => Promise<void>>(async () => {}),
+}));
+
+vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => router,
+}));
 
 test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
@@ -94,4 +113,29 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
 
   expect(back).not.toHaveBeenCalled();
   expect(navigate).toHaveBeenCalledWith(closeLink);
+});
+
+test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
+  router.history.back.mockClear();
+  const hook = renderHook(() =>
+    useOverlayNav({
+      open: { to: "/baby/$publicId/post", params: { publicId: "baby-smith" } },
+      close: { to: "/baby/$publicId", params: { publicId: "baby-smith" } },
+    }),
+  );
+
+  expect(hook.result.current.open).toBe(false);
+  await vi.waitFor(() => {
+    expect(hook.result.current.open).toBe(true);
+  });
+  act(() => {
+    hook.result.current.close();
+  });
+  expect(hook.result.current.open).toBe(false);
+  expect(router.history.back).not.toHaveBeenCalled();
+
+  act(() => {
+    hook.result.current.onOpenChangeComplete(false);
+  });
+  expect(router.history.back).toHaveBeenCalledOnce();
 });
