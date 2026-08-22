@@ -161,6 +161,8 @@ function DueDateForm(props: EditorFormProps) {
       <DueDateDisplayFields
         control={form.control}
         dateFieldName="date"
+        showExactDueDateFieldName="showExactDueDate"
+        publicDueDateTextFieldName="publicDueDateText"
         className="mb-3"
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}

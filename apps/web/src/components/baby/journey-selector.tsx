@@ -10,13 +10,21 @@ type JourneySelectorProps = {
   idPrefix: string;
 };
 
+function isBirthJourney(value: string): value is BirthJourney {
+  return JOURNEY_OPTIONS.some((option) => option.value === value);
+}
+
 export function JourneySelector(props: JourneySelectorProps) {
   const { t } = useI18n();
 
   return (
     <RadioGroup
       value={props.value}
-      onValueChange={(value) => props.onValueChange(value as BirthJourney)}
+      onValueChange={(value) => {
+        if (isBirthJourney(value)) {
+          props.onValueChange(value);
+        }
+      }}
       aria-label={t("Choose a journey")}
       className="grid gap-3"
     >

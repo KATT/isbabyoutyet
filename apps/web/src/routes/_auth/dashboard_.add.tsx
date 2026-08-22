@@ -133,6 +133,8 @@ export function AddBabyPage() {
                 <DueDateDisplayFields
                   control={form.control}
                   dateFieldName="dueDate"
+                  showExactDueDateFieldName="showExactDueDate"
+                  publicDueDateTextFieldName="publicDueDateText"
                   className={undefined}
                   sectionLabelClassName="font-bold"
                   stopPopoverPropagation={false}
