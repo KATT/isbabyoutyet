@@ -20,7 +20,7 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { getBabySeo } from "@/lib/baby-seo";
@@ -81,6 +81,7 @@ export function BabyShareOverlay() {
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
   const [copied, setCopied] = useState(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
@@ -139,7 +140,7 @@ export function BabyShareOverlay() {
       onOpenChange={share.onOpenChange}
       onOpenChangeComplete={share.onOpenChangeComplete}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t("Share the Link")}</DialogTitle>
           <DialogDescription>{t("This is how your page will look when shared.")}</DialogDescription>
