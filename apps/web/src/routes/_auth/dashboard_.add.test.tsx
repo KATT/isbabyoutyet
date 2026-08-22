@@ -12,7 +12,10 @@ vi.mock("@tanstack/react-router", () => ({
   Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
   ),
-  createFileRoute: () => (options: { component: unknown }) => options,
+  createFileRoute: (routeId: string) => (options: { component: unknown }) => ({
+    ...options,
+    routeId,
+  }),
   useRouter: () => ({ navigate: mocks.navigate }),
 }));
 
@@ -20,7 +23,8 @@ vi.mock("convex/react", () => ({
   useMutation: () => mocks.createBaby,
 }));
 
-const { AddBabyPage } = await import("./add");
+const routeModule = await import("./dashboard_.add");
+const { AddBabyPage } = routeModule;
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -28,6 +32,12 @@ function renderResource(ui: ReactElement) {
     view.unmount();
   });
 }
+
+test("add baby remains a standalone non-nested dashboard route", () => {
+  const route = routeModule.Route as unknown as { routeId: string; component: unknown };
+  expect(route.routeId).toBe("/_auth/dashboard_/add");
+  expect(route.component).toBe(AddBabyPage);
+});
 
 test("journey choices explain visible statuses and privacy", async () => {
   await using view = renderResource(<AddBabyPage />);

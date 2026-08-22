@@ -7,7 +7,7 @@ import { LocaleProvider } from "@/lib/i18n";
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: { component: unknown }) => ({
     ...options,
-    useLoaderData: () => ({ babies: {}, onboarding: {} }),
+    options,
   }),
   getRouteApi: () => ({
     useRouteContext: () => ({
@@ -55,19 +55,16 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { signOut: vi.fn<() => Promise<void>>(async () => {}) },
 }));
 
-vi.mock("@/routes/_auth/dashboard/admin", () => ({
+vi.mock("@/routes/_auth/dashboard_.admin", () => ({
   ADMIN_DEFAULT_SEARCH: {},
-}));
-
-vi.mock("@/routes/_auth/dashboard/index", () => ({
-  DashboardPage: () => null,
 }));
 
 vi.mock("sonner", () => ({
   toast: { error: vi.fn<(message: string) => void>() },
 }));
 
-const { DashboardSettingsSheet } = await import("./settings");
+const routeModule = await import("./settings");
+const { DashboardSettingsRoute, DashboardSettingsSheet } = routeModule;
 
 function renderResource(ui: ReactElement) {
   const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
@@ -87,4 +84,15 @@ test("profile sheet groups preferences and secondary dashboard actions", async (
   );
   expect(view.getByRole("button", { name: "Log out" })).toBeTruthy();
   expect(view.queryByText("Restart tour")).toBeNull();
+});
+
+test("settings route renders only its route-backed sheet overlay", async () => {
+  expect(routeModule.Route.options).not.toHaveProperty("loader");
+  expect(routeModule.Route.options.component).toBe(DashboardSettingsRoute);
+
+  await using view = renderResource(<DashboardSettingsRoute />);
+
+  expect(view.getByRole("complementary")).toBeTruthy();
+  expect(view.queryByRole("button", { name: "Add Baby" })).toBeNull();
+  expect(view.queryByRole("heading", { name: /Your babies/ })).toBeNull();
 });

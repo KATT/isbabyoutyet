@@ -4,7 +4,6 @@ import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { allKeyed } from "@workspace/query-prefetch";
 import { Button } from "@workspace/ui/components/button";
 import {
   Item,
@@ -28,30 +27,16 @@ import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
-import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
-import { DashboardPage, type DashboardLoaderData } from "@/routes/_auth/dashboard/index";
+import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 
 const authRoute = getRouteApi("/_auth");
 
 export const Route = createFileRoute("/_auth/dashboard/settings")({
-  loader: async (opts) => {
-    return await allKeyed({
-      babies: opts.context.convexPreloader.ensureQueryData(api.baby.listByUser, {}),
-      onboarding: opts.context.convexPreloader.ensureQueryData(api.onboarding.getMine, {}),
-    });
-  },
   component: DashboardSettingsRoute,
 });
 
-function DashboardSettingsRoute() {
-  const loaderData: DashboardLoaderData = Route.useLoaderData();
-
-  return (
-    <>
-      <DashboardPage babies={loaderData.babies} onboarding={loaderData.onboarding} />
-      <DashboardSettingsSheet />
-    </>
-  );
+export function DashboardSettingsRoute() {
+  return <DashboardSettingsSheet />;
 }
 
 function SettingsSection(props: { title: string; children: ReactNode }) {

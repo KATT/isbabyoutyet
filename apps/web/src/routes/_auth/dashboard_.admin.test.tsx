@@ -31,8 +31,9 @@ vi.mock("@tanstack/react-router", () => ({
       </a>
     );
   },
-  createFileRoute: () => (opts: Record<string, unknown>) => ({
+  createFileRoute: (routeId: string) => (opts: Record<string, unknown>) => ({
     ...opts,
+    routeId,
     useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
     useLoaderData: () => ({
       babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
@@ -83,7 +84,7 @@ const {
   formatWhen,
   nextSortSearch,
   statusLabel,
-} = await import("@/routes/_auth/dashboard/admin");
+} = await import("@/routes/_auth/dashboard_.admin");
 
 function renderResource(ui: ReactElement) {
   const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
@@ -104,6 +105,12 @@ const sampleBaby = {
   updatedAt: 2,
   managerEmails: ["owner@example.com", "co@example.com"],
 };
+
+test("admin remains a standalone non-nested dashboard route", () => {
+  const route = AdminRoute as unknown as { routeId: string; component: unknown };
+  expect(route.routeId).toBe("/_auth/dashboard_/admin");
+  expect(route.component).toBe(AdminDashboardPage);
+});
 
 test("statusLabel covers every baby status", () => {
   expect(statusLabel("not_yet", t)).toBe("Not yet");

@@ -4,6 +4,11 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 
+const mocks = vi.hoisted(() => ({
+  babies: { kind: "babies" },
+  onboarding: { kind: "onboarding" },
+}));
+
 vi.mock("@tanstack/react-router", () => ({
   useRouter: () => ({
     history: {
@@ -16,7 +21,15 @@ vi.mock("@tanstack/react-router", () => ({
   Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
-  createFileRoute: () => (opts: { component: unknown }) => opts,
+  Outlet: () => <div data-testid="dashboard-outlet" />,
+  createFileRoute: () => (opts: { component: unknown; loader: unknown }) => ({
+    ...opts,
+    options: opts,
+    useLoaderData: () => ({
+      babies: mocks.babies,
+      onboarding: mocks.onboarding,
+    }),
+  }),
   getRouteApi: () => ({
     useRouteContext: () => ({
       profile: {
@@ -25,6 +38,19 @@ vi.mock("@tanstack/react-router", () => ({
       },
     }),
   }),
+}));
+
+vi.mock("@workspace/convex-prefetch", () => ({
+  usePreloadedConvexQuery: (_query: unknown, handle: unknown) =>
+    handle === mocks.babies
+      ? { data: [] }
+      : {
+          data: { tourBaby: null },
+        },
+}));
+
+vi.mock("@/components/onboarding/onboarding-host", () => ({
+  OnboardingHost: () => null,
 }));
 
 vi.mock("@/components/language-settings", () => ({
@@ -38,7 +64,8 @@ vi.mock("@/lib/auth-server", () => ({
   },
 }));
 
-const { DashboardBabyList, DashboardHeader } = await import("@/routes/_auth/dashboard/index");
+const routeModule = await import("@/routes/_auth/dashboard/route");
+const { DashboardBabyList, DashboardHeader, DashboardPageLayout } = routeModule;
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -65,6 +92,38 @@ test("dashboard header keeps only add baby and profile settings actions", async 
   expect(view.queryByText("Admin")).toBeNull();
   expect(view.queryByText("Log out")).toBeNull();
   expect(view.queryByLabelText("Restart getting started tour")).toBeNull();
+});
+
+test("parent dashboard stays mounted while child routes render through its outlet", async () => {
+  await using view = renderResource(<DashboardPageLayout />);
+
+  expect(view.getByRole("heading", { name: /Your babies/ })).toBeTruthy();
+  expect(view.getByTestId("dashboard-outlet")).toBeTruthy();
+});
+
+test("parent dashboard loader starts independent prefetches without a waterfall", async () => {
+  const calls: string[] = [];
+  const ensureQueryData = vi.fn<
+    (_query: unknown, _input: unknown) => Promise<Record<string, never>>
+  >(() => {
+    calls.push(`query-${String(calls.length + 1)}`);
+    return Promise.resolve({});
+  });
+  const loader = routeModule.Route.options.loader as unknown as (opts: {
+    context: { convexPreloader: { ensureQueryData: typeof ensureQueryData } };
+  }) => Promise<unknown>;
+
+  const pending = loader({
+    context: {
+      convexPreloader: { ensureQueryData },
+    },
+  });
+
+  expect(calls).toEqual(["query-1", "query-2"]);
+  await expect(pending).resolves.toMatchObject({
+    babies: {},
+    onboarding: {},
+  });
 });
 
 test("shows prefetched babies without a spinner", async () => {
