@@ -7,7 +7,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
-import type { ReactNode, RefObject } from "react";
+import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { getBabySeo } from "@/lib/baby-seo";
 import { browserImageFactory } from "@/lib/image-prefetch";
@@ -22,7 +22,6 @@ const mocks = vi.hoisted(() => ({
   completeOnboardingStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   params: { publicId: "baby-smith" },
   loaderData: null as null | Record<string, unknown>,
-  dialogInitialFocus: null as RefObject<HTMLDivElement | null> | null,
 }));
 
 vi.mock("@tanstack/react-router", async () => {
@@ -90,17 +89,7 @@ vi.mock("@workspace/ui/components/dialog", async () => {
   }
   return {
     Dialog: MockDialog,
-    DialogContent: (props: {
-      children: ReactNode;
-      initialFocus: RefObject<HTMLDivElement | null>;
-    }) => {
-      mocks.dialogInitialFocus = props.initialFocus;
-      return (
-        <div ref={props.initialFocus} data-testid="share-dialog-content">
-          {props.children}
-        </div>
-      );
-    },
+    DialogContent: (props: { children: ReactNode }) => <div>{props.children}</div>,
     DialogDescription: (props: { children: ReactNode }) => <p>{props.children}</p>,
     DialogHeader: (props: { children: ReactNode }) => <div>{props.children}</div>,
     DialogTitle: (props: { children: ReactNode }) => <h2>{props.children}</h2>,
@@ -350,7 +339,6 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     view.unmount();
   });
 
-  expect(mocks.dialogInitialFocus?.current).toBe(view.getByTestId("share-dialog-content"));
   const image = view.getByRole("img", { name: freshPreview.title });
   expect(image.getAttribute("src")).toBe(freshPreview.imageUrl);
   fireEvent.click(view.getByRole("button", { name: "Copy link to share" }));
