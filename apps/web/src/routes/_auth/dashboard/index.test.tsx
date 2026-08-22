@@ -48,8 +48,10 @@ test("shows the empty state once the list has loaded with no babies", async () =
 test("dashboard header keeps only add baby and profile settings actions", async () => {
   await using view = renderResource(<DashboardHeader />);
 
-  expect(view.getByRole("link", { name: "Add Baby" }).getAttribute("href")).toBe("/dashboard/add");
-  expect(view.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe(
+  expect(view.getByRole("button", { name: "Add Baby" }).getAttribute("href")).toBe(
+    "/dashboard/add",
+  );
+  expect(view.getByRole("button", { name: "Settings" }).getAttribute("href")).toBe(
     "/dashboard/settings",
   );
   expect(view.queryByText("Admin")).toBeNull();
