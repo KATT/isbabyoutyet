@@ -21,6 +21,7 @@ import { Route as BabyPublicIdRouteRouteImport } from './routes/baby/$publicId/r
 import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard/index'
 import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
 import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
+import { Route as AuthDashboardSettingsRouteImport } from './routes/_auth/dashboard/settings'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCachePurgeRouteImport } from './routes/api/cache/purge'
 import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
@@ -91,6 +92,11 @@ const AuthDashboardAdminRoute = AuthDashboardAdminRouteImport.update({
   path: '/dashboard/admin',
   getParentRoute: () => AuthRouteRoute,
 } as any)
+const AuthDashboardSettingsRoute = AuthDashboardSettingsRouteImport.update({
+  id: '/dashboard/settings',
+  path: '/dashboard/settings',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
@@ -176,6 +183,7 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
@@ -201,6 +209,7 @@ export interface FileRoutesById {
   '/auth/signup': typeof AuthSignupRoute
   '/_auth/dashboard/add': typeof AuthDashboardAddRoute
   '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/_auth/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
@@ -226,6 +235,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/add'
     | '/dashboard/admin'
+    | '/dashboard/settings'
     | '/api/auth/$'
     | '/api/cache/purge'
     | '/baby/$publicId/photo'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/dashboard/add'
     | '/dashboard/admin'
+    | '/dashboard/settings'
     | '/api/auth/$'
     | '/api/cache/purge'
     | '/baby/$publicId/photo'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/_auth/dashboard/add'
     | '/_auth/dashboard/admin'
+    | '/_auth/dashboard/settings'
     | '/api/auth/$'
     | '/api/cache/purge'
     | '/baby/$publicId/photo'
@@ -386,6 +398,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthDashboardAdminRouteImport
       parentRoute: typeof AuthRouteRoute
     }
+    '/_auth/dashboard/settings': {
+      id: '/_auth/dashboard/settings'
+      path: '/dashboard/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthDashboardSettingsRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -462,12 +481,14 @@ declare module '@tanstack/react-router' {
 interface AuthRouteRouteChildren {
   AuthDashboardAddRoute: typeof AuthDashboardAddRoute
   AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute
+  AuthDashboardSettingsRoute: typeof AuthDashboardSettingsRoute
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
 }
 
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
   AuthDashboardAddRoute: AuthDashboardAddRoute,
   AuthDashboardAdminRoute: AuthDashboardAdminRoute,
+  AuthDashboardSettingsRoute: AuthDashboardSettingsRoute,
   AuthDashboardIndexRoute: AuthDashboardIndexRoute,
 }
 

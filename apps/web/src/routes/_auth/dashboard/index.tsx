@@ -1,26 +1,20 @@
 import { Button } from "@workspace/ui/components/button";
-import { ModeToggle } from "@workspace/ui/components/mode-toggle";
-import { cn } from "@workspace/ui/lib/utils";
-import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
+import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { useMutation } from "convex/react";
-import { Baby as BabyIcon, Plus, Shield, SignOut, Sparkle } from "@phosphor-icons/react";
+import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
+import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { BirthJourney } from "@workspace/convex/src/types";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import { LanguageSettings } from "@/components/language-settings";
 import { useI18n } from "@/lib/i18n";
-import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
-
-const authRoute = getRouteApi("/_auth");
+import { openOverlayLink } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
-  component: DashboardPage,
+  component: DashboardIndexPage,
   loader: async (opts) => {
     const preloader = opts.context.convexPreloader;
     return await allKeyed({
@@ -30,107 +24,37 @@ export const Route = createFileRoute("/_auth/dashboard/")({
   },
 });
 
-function DashboardPage() {
+export type DashboardLoaderData = {
+  babies:
+    | PreloadedConvexQuery<typeof api.baby.listByUser>
+    | InitiatedConvexQuery<typeof api.baby.listByUser>;
+  onboarding:
+    | PreloadedConvexQuery<typeof api.onboarding.getMine>
+    | InitiatedConvexQuery<typeof api.onboarding.getMine>;
+};
+
+function DashboardIndexPage() {
+  return <DashboardPage loaderData={Route.useLoaderData()} />;
+}
+
+export function DashboardPage(props: { loaderData: DashboardLoaderData }) {
   const { t } = useI18n();
-  const loaderData = Route.useLoaderData();
-  const authContext = authRoute.useRouteContext();
-  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, loaderData.babies);
-  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, loaderData.onboarding);
-  const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
+  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, props.loaderData.babies);
+  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.loaderData.onboarding);
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
-  const profile = profileQuery.data;
-
-  const restartTour = useMutation(api.onboarding.restart);
 
   return (
     <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
         surface="dashboard"
-        onboarding={loaderData.onboarding}
+        onboarding={props.loaderData.onboarding}
         enabled={undefined}
         spotlight={undefined}
         babyPublicId={undefined}
         onGoToStep={undefined}
       />
-      {/* Floating header */}
-      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
-          <Link
-            to="/"
-            className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-              <BabyIcon className="h-4 w-4 text-primary" />
-            </span>
-            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
-          </Link>
-          <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
-            {profile?.isAdmin ? (
-              <Button
-                size="sm"
-                variant="outline"
-                className="rounded-full font-bold"
-                render={
-                  <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
-                }
-                nativeButton={false}
-              >
-                <Shield className="w-4 h-4" />
-                {t("Admin")}
-              </Button>
-            ) : null}
-            <Button
-              size="sm"
-              className="rounded-full font-bold"
-              render={<Link to="/dashboard/add" />}
-              nativeButton={false}
-            >
-              <Plus className="w-4 h-4" />
-              {t("Add Baby")}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "rounded-full text-muted-foreground",
-                progress.checklistDismissed &&
-                  "ring-2 ring-primary ring-offset-2 ring-offset-background",
-              )}
-              aria-label={t("Restart getting started tour")}
-              title={t("Restart tour")}
-              data-tour-id="restart_tour"
-              onClick={async () => {
-                await restartTour({});
-              }}
-            >
-              <Sparkle className="w-4 h-4" />
-            </Button>
-            <ModeToggle className="rounded-full" />
-            <Button
-              size="sm"
-              variant="ghost"
-              className="rounded-full font-bold"
-              onClick={async () => {
-                // expectAuth: reload so auth is re-resolved from a clean slate
-                await authClient.signOut({
-                  fetchOptions: {
-                    onSuccess: () => {
-                      window.location.href = "/";
-                    },
-                    onError: (error) => {
-                      toast.error(error.error.message);
-                    },
-                  },
-                });
-              }}
-            >
-              <SignOut className="w-4 h-4" />
-              {t("Logout")}
-            </Button>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-10">
         <div className="mb-10 text-center">
@@ -148,13 +72,52 @@ function DashboardPage() {
 
         <DashboardBabyList babies={babies} tourBabyPublicId={progress.tourBaby?.publicId} />
       </main>
-
-      <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8">
-        <div className="mx-auto flex max-w-5xl justify-center">
-          <LanguageSettings profile={authContext.profile} />
-        </div>
-      </footer>
     </div>
+  );
+}
+
+export function DashboardHeader() {
+  const { t } = useI18n();
+
+  return (
+    <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+        <Link
+          to="/"
+          className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm backdrop-blur-md transition-transform hover:-rotate-2"
+        >
+          <span className="flex size-7 items-center justify-center rounded-full bg-primary/15">
+            <BabyIcon className="size-4 text-primary" />
+          </span>
+          <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+        </Link>
+        <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 shadow-sm backdrop-blur-md">
+          <Button
+            size="sm"
+            className="rounded-full font-bold"
+            render={<Link to="/dashboard/add" />}
+            nativeButton={false}
+          >
+            <Plus data-icon="inline-start" />
+            {t("Add Baby")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full"
+            render={<Link {...openOverlayLink({ to: "/dashboard/settings" })} />}
+            nativeButton={false}
+            aria-label={t("Settings")}
+          >
+            <Avatar size="sm">
+              <AvatarFallback>
+                <User />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </div>
+      </div>
+    </header>
   );
 }
 

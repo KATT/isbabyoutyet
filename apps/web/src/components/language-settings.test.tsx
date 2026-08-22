@@ -50,7 +50,7 @@ function renderResource(handle = profileHandle) {
   const view = render(
     <QueryClientProvider client={queryClient}>
       <LocaleProvider locale="en-GB">
-        <LanguageSettings profile={handle} />
+        <LanguageSettings profile={handle} className={undefined} />
       </LocaleProvider>
     </QueryClientProvider>,
   );

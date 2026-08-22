@@ -38,6 +38,7 @@ import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { cn } from "@workspace/ui/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
@@ -115,6 +116,7 @@ export function LanguageSettings(props: {
   profile:
     | PreloadedConvexQuery<typeof api.profile.get>
     | InitiatedConvexQuery<typeof api.profile.get>;
+  className: string | undefined;
 }) {
   const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
@@ -130,7 +132,7 @@ export function LanguageSettings(props: {
   );
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-2">
+    <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
       <Combobox
         items={timeZoneOptions}
         itemToStringValue={(option) => option.label}

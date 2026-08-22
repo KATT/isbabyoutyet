@@ -30,7 +30,7 @@ vi.mock("@/lib/auth-server", () => ({
   },
 }));
 
-const { DashboardBabyList } = await import("@/routes/_auth/dashboard/index");
+const { DashboardBabyList, DashboardHeader } = await import("@/routes/_auth/dashboard/index");
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -43,6 +43,18 @@ test("shows the empty state once the list has loaded with no babies", async () =
   await using view = renderResource(<DashboardBabyList babies={[]} tourBabyPublicId={undefined} />);
 
   expect(view.getByText("No baby pages yet")).toBeTruthy();
+});
+
+test("dashboard header keeps only add baby and profile settings actions", async () => {
+  await using view = renderResource(<DashboardHeader />);
+
+  expect(view.getByRole("link", { name: "Add Baby" }).getAttribute("href")).toBe("/dashboard/add");
+  expect(view.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe(
+    "/dashboard/settings",
+  );
+  expect(view.queryByText("Admin")).toBeNull();
+  expect(view.queryByText("Log out")).toBeNull();
+  expect(view.queryByLabelText("Restart getting started tour")).toBeNull();
 });
 
 test("shows prefetched babies without a spinner", async () => {
