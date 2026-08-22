@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
@@ -24,12 +24,16 @@ function renderResource(ui: React.ReactElement) {
 test("groups owner actions separately from page actions", async () => {
   await using view = renderResource(
     <BabyNav
-      shareLink="https://example.com/baby/demo"
-      onPostUpdate={() => {}}
-      onShareCopied={null}
+      shareButton={{ to: "/baby/$publicId/share" }}
+      shareOpen={false}
+      onDismissShare={null}
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}
       settingsOpen={false}
+      onDismissSettings={null}
     />,
   );
 
@@ -37,7 +41,7 @@ test("groups owner actions separately from page actions", async () => {
   const pageGroup = view.getByRole("group", { name: "Page actions" });
   const postUpdate = view.getByRole("button", { name: /post update/i });
   const settings = view.getByRole("button", { name: /settings/i });
-  const share = view.getByRole("button", { name: /copy link to share/i });
+  const share = view.getByRole("button", { name: /share the link/i });
   const theme = view.getByRole("button", { name: /toggle theme/i });
 
   expect(ownerGroup.contains(postUpdate)).toBe(true);
@@ -49,12 +53,16 @@ test("groups owner actions separately from page actions", async () => {
 test("hides the owner group when the visitor has no owner actions", async () => {
   await using view = renderResource(
     <BabyNav
-      shareLink="https://example.com/baby/demo"
-      onPostUpdate={null}
-      onShareCopied={null}
+      shareButton={{ to: "/baby/$publicId/share" }}
+      shareOpen={false}
+      onDismissShare={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onSettingsOpened={null}
       settingsButton={null}
       settingsOpen={false}
+      onDismissSettings={null}
     />,
   );
 
@@ -65,16 +73,49 @@ test("hides the owner group when the visitor has no owner actions", async () => 
 test("disables sharing when the share link is empty", async () => {
   await using view = renderResource(
     <BabyNav
-      shareLink=""
-      onPostUpdate={null}
-      onShareCopied={null}
+      shareButton={null}
+      shareOpen={false}
+      onDismissShare={null}
+      postUpdateButton={null}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
       onSettingsOpened={null}
       settingsButton={{ to: "/" }}
       settingsOpen={true}
+      onDismissSettings={() => {}}
     />,
   );
 
-  const share = view.getByRole("button", { name: /copy link to share/i }) as HTMLButtonElement;
+  const share = view.getByRole("button", { name: /share the link/i }) as HTMLButtonElement;
   expect(share.disabled).toBe(true);
   expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
+});
+
+test("calls dismiss handlers when overlay owner actions are open", async () => {
+  const onDismissShare = vi.fn<() => void>();
+  const onDismissPostUpdate = vi.fn<() => void>();
+  const onDismissSettings = vi.fn<() => void>();
+
+  await using view = renderResource(
+    <BabyNav
+      shareButton={{ to: "/baby/$publicId/share" }}
+      shareOpen={true}
+      onDismissShare={onDismissShare}
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={true}
+      onDismissPostUpdate={onDismissPostUpdate}
+      onSettingsOpened={null}
+      settingsButton={{ to: "/baby/$publicId/settings" }}
+      settingsOpen={true}
+      onDismissSettings={onDismissSettings}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: /close share preview/i }));
+  fireEvent.click(view.getByRole("button", { name: /post update/i }));
+  fireEvent.click(view.getByRole("button", { name: /close settings/i }));
+
+  expect(onDismissShare).toHaveBeenCalledOnce();
+  expect(onDismissPostUpdate).toHaveBeenCalledOnce();
+  expect(onDismissSettings).toHaveBeenCalledOnce();
 });

@@ -4,11 +4,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { authClient } from "./auth-client";
 
-type SessionSnapshot = {
-  data: unknown;
-  isPending: boolean;
-};
-
 /**
  * Establishes Convex auth state on the browser client at creation time.
  *
@@ -36,7 +31,7 @@ export function setupClientConvexAuth(
     return result?.data?.token ?? null;
   });
 
-  authClient.$store.atoms.session?.subscribe((session: SessionSnapshot | undefined) => {
+  authClient.$store.atoms.session?.subscribe((session) => {
     if (session && !session.isPending && !session.data) {
       queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, null);
     }

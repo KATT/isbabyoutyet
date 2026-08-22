@@ -11,42 +11,40 @@ async function setup() {
   return t;
 }
 
-test("a profile defaults from the browser and persists an explicit locale", async () => {
+test("a missing authenticated profile defaults to British English", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
-  expect(await asAlice.query(api.profile.get, {})).toBeNull();
-  expect(
-    await asAlice.mutation(api.profile.ensure, {
-      browserLocale: "sv-SE",
-    }),
-  ).toEqual({ locale: "sv", isAdmin: false });
-
-  expect(
-    await asAlice.mutation(api.profile.ensure, {
-      browserLocale: "es-MX",
-    }),
-  ).toEqual({ locale: "sv", isAdmin: false });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({
+    locale: "en-GB",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "es" });
-  expect(await asAlice.query(api.profile.get, {})).toEqual({ locale: "es", isAdmin: false });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({
+    locale: "es",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
 
   await asAlice.mutation(api.profile.updateLocale, { locale: "pt-BR" });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
     locale: "pt-BR",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
 });
 
-test("unsupported browser locales fall back while language requests are stored", async () => {
+test("anonymous callers have no profile", async () => {
+  const t = await setup();
+
+  expect(await t.query(api.profile.get, {})).toBeNull();
+});
+
+test("language requests are stored for authenticated users", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
-
-  expect(
-    await asAlice.mutation(api.profile.ensure, {
-      browserLocale: "fr-FR",
-    }),
-  ).toEqual({ locale: "en-GB", isAdmin: false });
 
   const requestId = await asAlice.mutation(api.profile.requestLanguage, {
     requestedLocale: "French (fr-FR)",
@@ -58,25 +56,26 @@ test("unsupported browser locales fall back while language requests are stored",
   });
 });
 
-test("admin profiles preserve their flag across ensure and locale updates", async () => {
+test("admin profiles preserve their flag across locale updates", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
   await t.run(async (ctx) => {
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", "https://convex.test|alice"))
-      .unique();
-    if (!profile) throw new Error("Profile missing");
-    await ctx.db.patch(profile._id, { isAdmin: true });
+    await ctx.db.insert("userProfiles", {
+      userId: "alice",
+      tokenIdentifier: "https://convex.test|alice",
+      locale: "en-GB",
+      isAdmin: true,
+    });
   });
 
-  expect(await asAlice.mutation(api.profile.ensure, { browserLocale: "sv" })).toEqual({
+  expect(await asAlice.query(api.profile.get, {})).toEqual({
     locale: "en-GB",
+    timeZone: "Europe/London",
     isAdmin: true,
   });
   expect(await asAlice.mutation(api.profile.updateLocale, { locale: "sv" })).toEqual({
     locale: "sv",
+    timeZone: "Europe/London",
     isAdmin: true,
   });
 });
@@ -87,10 +86,45 @@ test("locale updates create a missing profile", async () => {
 
   expect(await asAlice.mutation(api.profile.updateLocale, { locale: "es" })).toEqual({
     locale: "es",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
   expect(await asAlice.query(api.profile.get, {})).toEqual({
     locale: "es",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
+});
+
+test("time zone updates are inherited by profile reads", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  expect(await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "Asia/Tokyo" })).toEqual({
+    locale: "en-GB",
+    timeZone: "Asia/Tokyo",
+    isAdmin: false,
+  });
+  expect(await asAlice.query(api.profile.get, {})).toEqual({
+    locale: "en-GB",
+    timeZone: "Asia/Tokyo",
+    isAdmin: false,
+  });
+  await expect(
+    asAlice.mutation(api.profile.updateTimeZone, { timeZone: "Not/A_Time_Zone" }),
+  ).rejects.toThrow("Choose a valid time zone");
+});
+
+test("time zone updates preserve an existing profile's locale", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  await asAlice.mutation(api.profile.updateLocale, { locale: "sv" });
+
+  expect(
+    await asAlice.mutation(api.profile.updateTimeZone, { timeZone: "America/New_York" }),
+  ).toEqual({
+    locale: "sv",
+    timeZone: "America/New_York",
     isAdmin: false,
   });
 });
@@ -113,6 +147,9 @@ test("profile mutations require authentication", async () => {
   await expect(t.mutation(api.profile.updateLocale, { locale: "es" })).rejects.toThrow(
     "Not authenticated",
   );
+  await expect(
+    t.mutation(api.profile.updateTimeZone, { timeZone: "Europe/London" }),
+  ).rejects.toThrow("Not authenticated");
 });
 
 test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alone", async () => {

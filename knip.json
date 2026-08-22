@@ -8,7 +8,9 @@
     "oxlint-plugins/**"
   ],
   "workspaces": {
-    ".": {},
+    ".": {
+      "entry": ["scripts/compareCoverage.ts!"]
+    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -22,7 +24,7 @@
       ]
     },
     "packages/convex": {
-      "entry": ["scripts/seedHomepageDemo.ts!"]
+      "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
     },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},

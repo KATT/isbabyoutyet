@@ -63,7 +63,6 @@ type AutoProgress = {
   hasBaby: boolean;
   hasUpdate: boolean;
   tourBaby: null | { publicId: string; name: string };
-  encouragementsDisabled: boolean;
 };
 
 async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIdentity) {
@@ -79,10 +78,9 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
 
   const first = babies[0];
   const tourBaby = first ? { publicId: first.publicId, name: first.name } : null;
-  const encouragementsDisabled = first?.encouragementsDisabled === true;
 
   if (babies.length === 0) {
-    return { hasBaby: false, hasUpdate: false, tourBaby, encouragementsDisabled };
+    return { hasBaby: false, hasUpdate: false, tourBaby };
   }
 
   for (const baby of babies) {
@@ -91,18 +89,17 @@ async function computeAutoProgress(ctx: QueryCtx | MutationCtx, identity: AppIde
       .withIndex("by_babyId", (q) => q.eq("babyId", baby._id))
       .first();
     if (update && isActive(update)) {
-      return { hasBaby: true, hasUpdate: true, tourBaby, encouragementsDisabled };
+      return { hasBaby: true, hasUpdate: true, tourBaby };
     }
   }
 
-  return { hasBaby: true, hasUpdate: false, tourBaby, encouragementsDisabled };
+  return { hasBaby: true, hasUpdate: false, tourBaby };
 }
 
 function mergeEffectiveSteps(opts: {
   completedSteps: string[];
   hasBaby: boolean;
   hasUpdate: boolean;
-  encouragementsDisabled: boolean;
 }) {
   const set = new Set(opts.completedSteps);
   if (opts.hasBaby) {
@@ -110,9 +107,6 @@ function mergeEffectiveSteps(opts: {
   }
   if (opts.hasUpdate) {
     set.add("post_update");
-  }
-  if (opts.encouragementsDisabled) {
-    set.add("learn_encouragements");
   }
   return ONBOARDING_STEP_IDS.filter((id) => set.has(id));
 }
@@ -123,7 +117,6 @@ function toClientState(doc: Doc<"userOnboarding"> | null, auto: AutoProgress) {
     completedSteps,
     hasBaby: auto.hasBaby,
     hasUpdate: auto.hasUpdate,
-    encouragementsDisabled: auto.encouragementsDisabled,
   });
   return {
     welcomeDismissed: doc?.welcomeDismissed ?? false,
@@ -246,11 +239,19 @@ export const restart = mutation({
  */
 export const SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL = "migration:skipTourForExistingUsers";
 
-/**
- * Marks the demo user as fully onboarded so preview/local demos aren't
- * interrupted by the first-run tour.
- */
-export async function markUserOnboardingComplete(ctx: MutationCtx, userId: string) {
+/** Deletes any `userOnboarding` row so the first-run tour shows again. */
+export async function clearUserOnboarding(ctx: MutationCtx, userId: string) {
+  const existing = await ctx.db
+    .query("userOnboarding")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .unique();
+  if (existing) {
+    await ctx.db.delete(existing._id);
+  }
+}
+
+/** Skips the first-run tour while preserving the normal per-step model. */
+export async function skipUserOnboarding(ctx: MutationCtx, userId: string) {
   const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userOnboarding")

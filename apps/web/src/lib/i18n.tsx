@@ -69,25 +69,56 @@ const enGB = {
     "Having a baby? Send those non-stop texters to your own page →",
   "Post update": "Post update",
   Settings: "Settings",
+  "Manage your profile and app preferences.": "Manage your profile and app preferences.",
+  "Language and time zone": "Language and time zone",
+  "Page details": "Page details",
+  "Birth journey": "Birth journey",
+  Appearance: "Appearance",
+  Visitors: "Visitors",
+  Access: "Access",
+  "Danger zone": "Danger zone",
   "Close settings": "Close settings",
+  "Close share preview": "Close share preview",
   "Copy link to share": "Copy link to share",
   "Copied!": "Copied!",
   "Copied to clipboard": "Copied to clipboard",
+  "This is how your page will look when shared.": "This is how your page will look when shared.",
   "Owner actions": "Owner actions",
   "Page actions": "Page actions",
   "Baby Name": "Baby name",
   "Due Date": "Due date",
+  "Show exact due date": "Show exact due date",
+  "Visitors see only your message.": "Visitors see only your message.",
+  "Public due date message": "Public due date message",
+  "September baby": "September baby",
+  "Enter a message for visitors": "Enter a message for visitors",
+  "Visitors see “{{text}}”.": "Visitors see “{{text}}”.",
+  "Due date hidden from visitors.": "Due date hidden from visitors.",
+  "Due date hidden": "Due date hidden",
+  "Visitors see the exact date and countdown.": "Visitors see the exact date and countdown.",
+  "Keep this under 80 characters": "Keep this under 80 characters",
+  "Choose a journey": "Choose a journey",
+  Journey: "Journey",
+  "Edit journey": "Edit journey",
+  "Failed to update journey": "Failed to update journey",
+  Labour: "Labour",
+  "Home birth": "Home birth",
+  "Planned C-section": "Planned C-section",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitors see: Labour started → At hospital → Baby born",
+  "Visitors see: Labour started → Baby born": "Visitors see: Labour started → Baby born",
+  "Visitors see: At hospital → Baby born": "Visitors see: At hospital → Baby born",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "We save this choice for your settings, but we don't show it to anyone.",
   "Status date and time": "Status date and time",
   Theme: "Theme",
   Encouragements: "Messages",
-  "Visitors can send messages": "Visitors can send messages",
-  "Form disabled": "Form disabled",
   Language: "Language",
   "Use my profile language ({{language}})": "Use my profile language ({{language}})",
   "All visitors see this page in {{language}}.": "All visitors see this page in {{language}}.",
-  Default: "Default",
+  Mango: "Mango",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -115,6 +146,7 @@ const enGB = {
   Update: "Update",
   "Page photo": "Page photo",
   "Photo added": "Photo added",
+  "Update posted": "Update posted",
   "Get Notifications": "Get Notifications",
   Unsubscribe: "Unsubscribe",
   "Get notified when the baby's status changes": "Get notified when the baby's status changes",
@@ -129,6 +161,10 @@ const enGB = {
   "Add Your First Baby": "Add Your First Baby",
   "Due today!": "Due today!",
   "Profile language": "Profile language",
+  "Profile time zone": "Profile time zone",
+  "Search time zones": "Search time zones",
+  "No time zones found": "No time zones found",
+  "Time zone saved": "Time zone saved",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "We start with your browser language. New baby pages use it too.",
   "Request another language": "Request another language",
@@ -382,6 +418,10 @@ const enGB = {
   "Add a": "Add a",
   baby: "baby",
   "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
+  "A name, a date, and a journey — that's all it takes!":
+    "A name, a date, and a journey. That's it!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "A name, how to display the due date, and a journey. That's it!",
   "Add Baby 🍼": "Add Baby 🍼",
   "Welcome back!": "Welcome back!",
   "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
@@ -410,8 +450,8 @@ const enGB = {
   "Open the live page →": "Open the live page →",
   "Or preview how each stage looks": "Or preview how each stage looks",
   "This is a demo baby": "This is a demo page",
-  "Feel free to post test messages — they get cleared on each deploy.":
-    "Go wild with test messages. We clear them whenever the demo resets.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Feel free to post test messages — we reset this demo daily.",
   "How it works": "How it works",
   "Get Started Free 🎉": "Get Started Free 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -445,7 +485,6 @@ const enGB = {
   "Baby born!": "Baby born!",
   "Restart getting started tour": "Restart getting started tour",
   "Restart tour": "Restart tour",
-  "Tour restarted": "Tour restarted",
   "Getting started": "Getting started",
   "Getting started checklist": "Getting started checklist",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -454,6 +493,10 @@ const enGB = {
   "Tap a step to jump there": "Tap a step to jump there",
   Minimize: "Minimize",
   "Dismiss tour": "Dismiss tour",
+  "Dismiss guide": "Dismiss guide",
+  "Guide dismissed": "Guide dismissed",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use this sparkle button to bring the guide back anytime.",
   "Tour progress": "Tour progress",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Nice work. Share your page and enjoy fewer 'any news?' texts.",
@@ -469,35 +512,21 @@ const enGB = {
   "Add your first baby": "Add your first baby",
   "Give them a name and due date — that creates a public page friends can open.":
     "Give them a name and due date. That creates a public page friends can open.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
   "Add a baby": "Add a baby",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "One link for everyone. Tap Share on the baby page to copy it. No group-chat spam.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Post milestones and everyday notes from the menu. Only status updates notify subscribers.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Post milestones and everyday notes from the menu. Only enabled status updates notify subscribers.",
   "Peek at settings": "Peek at settings",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Change the name, theme and visitor messages in Settings.",
+  "Themes, names, and language — all in Settings.":
+    "Change the name, theme, and language in Settings.",
   "Encouragements from visitors": "Messages from visitors",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Anyone with the link can leave a short message without an account. It appears in your timeline.",
-  "Welcome — here's the idea": "Welcome! Here's the idea",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "One page for labour updates, so friends and family stop texting you for news.",
-  "Create a baby page": "Create a baby page",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Add a name and due date. We'll make a public link that shows the latest status.",
-  "Share once, update as you go": "Share once, update as you go",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Post milestones and messages from the menu. Status updates notify subscribers. Other posts stay quiet.",
-  "Skip anytime": "Skip anytime",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "A small checklist stays with you. Tap a step to jump to it. Dismiss the tour any time and restart it later from the ✨ on your dashboard.",
-  "Welcome tour": "Welcome tour",
-  "A short overview of how the app works": "A short overview of how the app works",
-  "Go to slide {{number}}": "Go to slide {{number}}",
-  Skip: "Skip",
-  "Let's go": "Let's go",
-  Next: "Next",
   "Go Home": "Go Home",
   "Something went wrong": "Something went wrong",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -580,25 +609,57 @@ const sv: Record<TranslationKey, string> = {
     "Väntar du barn? Trillar frågorna in hela tiden? Skapa en egen sida →",
   "Post update": "Publicera uppdatering",
   Settings: "Inställningar",
+  "Manage your profile and app preferences.": "Hantera dina profil- och appinställningar.",
+  "Language and time zone": "Språk och tidszon",
+  "Page details": "Sidinformation",
+  "Birth journey": "Förlossningsresa",
+  Appearance: "Utseende",
+  Visitors: "Besökare",
+  Access: "Åtkomst",
+  "Danger zone": "Farozon",
   "Close settings": "Stäng inställningar",
+  "Close share preview": "Stäng delningsförhandsvisning",
   "Copy link to share": "Kopiera delningslänk",
   "Copied!": "Kopierat!",
   "Copied to clipboard": "Kopierat till urklipp",
+  "This is how your page will look when shared.": "Så här ser sidan ut när du delar den.",
   "Owner actions": "Dina åtgärder",
   "Page actions": "Åtgärder för sidan",
   "Baby Name": "Bäbisens namn",
   "Due Date": "Beräknat datum",
+  "Show exact due date": "Visa exakt beräknat datum",
+  "Visitors see only your message.": "Besökare ser bara ditt meddelande.",
+  "Public due date message": "Offentligt meddelande om beräknat datum",
+  "September baby": "Septemberbäbis",
+  "Enter a message for visitors": "Skriv ett meddelande till besökarna",
+  "Visitors see “{{text}}”.": "Besökare ser ”{{text}}”.",
+  "Due date hidden from visitors.": "Beräknat datum dolt för besökare.",
+  "Due date hidden": "Beräknat datum dolt",
+  "Visitors see the exact date and countdown.": "Besökare ser exakt datum och nedräkning.",
+  "Keep this under 80 characters": "Håll texten under 80 tecken",
+  "Choose a journey": "Välj en resa",
+  Journey: "Resa",
+  "Edit journey": "Redigera resa",
+  "Failed to update journey": "Det gick inte att uppdatera resan",
+  Labour: "Förlossning",
+  "Home birth": "Hemförlossning",
+  "Planned C-section": "Planerat kejsarsnitt",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Besökare ser: Förlossningen är igång → På sjukhuset → Bäbisen är född",
+  "Visitors see: Labour started → Baby born":
+    "Besökare ser: Förlossningen är igång → Bäbisen är född",
+  "Visitors see: At hospital → Baby born": "Besökare ser: På sjukhuset → Bäbisen är född",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Vi sparar valet i dina inställningar, men visar det inte för någon.",
   "Status date and time": "När statusen ändrades",
   Theme: "Tema",
   Encouragements: "Hälsningar",
-  "Visitors can send messages": "Besökare kan lämna hälsningar",
-  "Form disabled": "Formuläret är avstängt",
   Language: "Språk",
   "Use my profile language ({{language}})": "Använd språket i min profil ({{language}})",
   "All visitors see this page in {{language}}.": "Alla besökare ser sidan på {{language}}.",
-  Default: "Standard",
+  Mango: "Mango",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -626,6 +687,7 @@ const sv: Record<TranslationKey, string> = {
   Update: "Uppdatering",
   "Page photo": "Sidfoto",
   "Photo added": "Foto tillagt",
+  "Update posted": "Uppdatering publicerad",
   "Get Notifications": "Få notiser",
   Unsubscribe: "Stäng av notiser",
   "Get notified when the baby's status changes": "Få en notis när bäbisens status ändras",
@@ -640,6 +702,10 @@ const sv: Record<TranslationKey, string> = {
   "Add Your First Baby": "Lägg till din första bäbis",
   "Due today!": "Beräknad idag!",
   "Profile language": "Profilspråk",
+  "Profile time zone": "Profiltidszon",
+  "Search time zones": "Sök tidszoner",
+  "No time zones found": "Inga tidszoner hittades",
+  "Time zone saved": "Tidszonen har sparats",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "Vi börjar med språket i din webbläsare. Nya bäbissidor använder samma språk.",
   "Request another language": "Önska ett annat språk",
@@ -895,6 +961,10 @@ const sv: Record<TranslationKey, string> = {
   baby: "bäbis",
   "A name and a due date — that's all it takes!":
     "Ett namn och ett beräknat datum. Mer behövs inte!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Ett namn, ett datum och en resa. Mer behövs inte!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Ett namn, hur det beräknade datumet ska visas och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
@@ -921,8 +991,8 @@ const sv: Record<TranslationKey, string> = {
   "Open the live page →": "Öppna livesidan →",
   "Or preview how each stage looks": "Eller se hur varje steg ser ut",
   "This is a demo baby": "Det här är en demobäbis",
-  "Feel free to post test messages — they get cleared on each deploy.":
-    "Skriv gärna testmeddelanden. De rensas vid varje ny version.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Skriv gärna testmeddelanden — vi återställer demon varje dag.",
   "How it works": "Så funkar det",
   "Get Started Free 🎉": "Kom igång gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -956,7 +1026,6 @@ const sv: Record<TranslationKey, string> = {
   "Baby born!": "Bäbisen är född!",
   "Restart getting started tour": "Starta om introduktionsguiden",
   "Restart tour": "Starta om guiden",
-  "Tour restarted": "Guiden startades om",
   "Getting started": "Kom igång",
   "Getting started checklist": "Checklista för att komma igång",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -965,6 +1034,10 @@ const sv: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Tryck på ett steg för att hoppa dit",
   Minimize: "Fäll ihop",
   "Dismiss tour": "Stäng guiden",
+  "Dismiss guide": "Stäng guiden",
+  "Guide dismissed": "Guiden är stängd",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Använd den här gnistknappen för att ta fram guiden igen när du vill.",
   "Tour progress": "Hur långt du har kommit i guiden",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Snyggt! Dela sidan och njut av att slippa alla frågor om det hänt något.",
@@ -980,35 +1053,21 @@ const sv: Record<TranslationKey, string> = {
   "Add your first baby": "Lägg till din första bäbis",
   "Give them a name and due date — that creates a public page friends can open.":
     "Lägg till ett namn och beräknat datum, så skapas en publik sida som vänner kan öppna.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Lägg till namn och datum och välj sedan en resa. Den bestämmer bara vilka statusar besökare kan se.",
   "Add a baby": "Lägg till bäbis",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "En länk räcker. Tryck på Dela på bäbissidan för att kopiera den, så slipper du spamma gruppchatten.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Lägg upp milstolpar och små vardagsnotiser från menyn. Bara prenumeranter får pushnotiser, och bara när du markerar att förlossningen är igång, att ni åkt in eller att bäbisen är född.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Lägg upp milstolpar och små vardagsnotiser från menyn. Bara aktiverade statusuppdateringar aviserar prenumeranter.",
   "Peek at settings": "Titta i inställningarna",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Teman, namn och om besökare får lämna hälsningar. Allt finns under Inställningar.",
+  "Themes, names, and language — all in Settings.":
+    "Teman, namn och språk. Allt finns under Inställningar.",
   "Encouragements from visitors": "Hälsningar från besökare",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Alla med länken kan lämna en kort pepphälsning utan konto. Den dyker upp i tidslinjen.",
-  "Welcome — here's the idea": "Välkommen! Så här funkar det",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "Appen samlar alla förlossningsuppdateringar på en lugn sida, så familj och vänner slipper skriva och fråga.",
-  "Create a baby page": "Skapa en bäbissida",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Lägg till namn och beräknat datum. Då får du en länk, till exempel isbabyoutyet.com/baby/…, som visar aktuell status.",
-  "Share once, update as you go": "Dela en gång, uppdatera när det händer",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Lägg upp milstolpar och meddelanden från menyn. Prenumeranterna får notiser om statusändringar, men inte om vardagsinlägg eller hälsningar.",
-  "Skip anytime": "Hoppa över när som helst",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "En liten checklista följer med. Tryck på ett steg för att hoppa rätt eller markera det du ska använda. Du kan stänga den när du vill och starta om den via gnistan på översikten.",
-  "Welcome tour": "Välkomstguide",
-  "A short overview of how the app works": "En snabb titt på hur appen funkar",
-  "Go to slide {{number}}": "Gå till bild {{number}}",
-  Skip: "Hoppa över",
-  "Let's go": "Nu kör vi",
-  Next: "Nästa",
   "Go Home": "Gå hem",
   "Something went wrong": "Något gick fel",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1072,26 +1131,59 @@ const es: Record<TranslationKey, string> = {
     "¿Esperas un bebé y no paran de pedirte novedades? Crea tu propia página →",
   "Post update": "Publicar novedad",
   Settings: "Configuración",
+  "Manage your profile and app preferences.":
+    "Gestiona las preferencias de tu perfil y de la aplicación.",
+  "Language and time zone": "Idioma y zona horaria",
+  "Page details": "Detalles de la página",
+  "Birth journey": "Recorrido del parto",
+  Appearance: "Apariencia",
+  Visitors: "Visitantes",
+  Access: "Acceso",
+  "Danger zone": "Zona de peligro",
   "Close settings": "Cerrar configuración",
+  "Close share preview": "Cerrar vista previa para compartir",
   "Copy link to share": "Copiar enlace para compartir",
   "Copied!": "¡Copiado!",
   "Copied to clipboard": "Copiado al portapapeles",
+  "This is how your page will look when shared.": "Así se verá tu página cuando la compartas.",
   "Owner actions": "Acciones del propietario",
   "Page actions": "Acciones de la página",
   "Baby Name": "Nombre del bebé",
   "Due Date": "Fecha prevista",
+  "Show exact due date": "Mostrar la fecha prevista exacta",
+  "Visitors see only your message.": "Los visitantes solo ven tu mensaje.",
+  "Public due date message": "Mensaje público sobre la fecha prevista",
+  "September baby": "Bebé de septiembre",
+  "Enter a message for visitors": "Escribe un mensaje para los visitantes",
+  "Visitors see “{{text}}”.": "Los visitantes ven «{{text}}».",
+  "Due date hidden from visitors.": "Fecha prevista oculta para los visitantes.",
+  "Due date hidden": "Fecha prevista oculta",
+  "Visitors see the exact date and countdown.":
+    "Los visitantes ven la fecha exacta y la cuenta atrás.",
+  "Keep this under 80 characters": "Usa menos de 80 caracteres",
+  "Choose a journey": "Elige un recorrido",
+  Journey: "Recorrido",
+  "Edit journey": "Editar recorrido",
+  "Failed to update journey": "No se pudo actualizar el recorrido",
+  Labour: "Parto",
+  "Home birth": "Parto en casa",
+  "Planned C-section": "Cesárea programada",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Los visitantes ven: Comenzó el parto → En el hospital → Ya nació",
+  "Visitors see: Labour started → Baby born": "Los visitantes ven: Comenzó el parto → Ya nació",
+  "Visitors see: At hospital → Baby born": "Los visitantes ven: En el hospital → Ya nació",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
   "Status date and time": "Fecha y hora del estado",
   Theme: "Tema",
   Encouragements: "Mensajes de ánimo",
-  "Visitors can send messages": "Los visitantes pueden enviar mensajes",
-  "Form disabled": "Formulario desactivado",
   Language: "Idioma",
   "Use my profile language ({{language}})": "Usar el idioma de mi perfil ({{language}})",
   "All visitors see this page in {{language}}.":
     "Todos los visitantes ven esta página en {{language}}.",
-  Default: "Predeterminado",
+  Mango: "Mango",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -1120,6 +1212,7 @@ const es: Record<TranslationKey, string> = {
   Update: "Novedad",
   "Page photo": "Foto de la página",
   "Photo added": "Foto añadida",
+  "Update posted": "Novedad publicada",
   "Get Notifications": "Recibir notificaciones",
   Unsubscribe: "Cancelar suscripción",
   "Get notified when the baby's status changes": "Recibe una notificación cuando cambie el estado",
@@ -1134,6 +1227,10 @@ const es: Record<TranslationKey, string> = {
   "Add Your First Baby": "Añade tu primer bebé",
   "Due today!": "¡Fecha prevista hoy!",
   "Profile language": "Idioma del perfil",
+  "Profile time zone": "Zona horaria del perfil",
+  "Search time zones": "Buscar zonas horarias",
+  "No time zones found": "No se encontraron zonas horarias",
+  "Time zone saved": "Zona horaria guardada",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "Al principio usamos el idioma de tu navegador. Las páginas nuevas usarán ese mismo idioma.",
   "Request another language": "Solicitar otro idioma",
@@ -1390,6 +1487,10 @@ const es: Record<TranslationKey, string> = {
   "Add a": "Añadir un",
   baby: "bebé",
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
+  "A name, a date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, una fecha y un recorrido.",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Solo necesitas un nombre, cómo mostrar la fecha prevista y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -1418,8 +1519,8 @@ const es: Record<TranslationKey, string> = {
   "Open the live page →": "Abrir la demo →",
   "Or preview how each stage looks": "O mira cómo queda cada etapa",
   "This is a demo baby": "Esta página es una demo",
-  "Feel free to post test messages — they get cleared on each deploy.":
-    "Puedes dejar mensajes de prueba. Se borran con cada nueva versión.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Deja los mensajes de prueba que quieras — restablecemos esta demo cada día.",
   "How it works": "Cómo funciona",
   "Get Started Free 🎉": "Empieza gratis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1453,7 +1554,6 @@ const es: Record<TranslationKey, string> = {
   "Baby born!": "¡El bebé ha nacido!",
   "Restart getting started tour": "Reiniciar el recorrido de primeros pasos",
   "Restart tour": "Reiniciar recorrido",
-  "Tour restarted": "Recorrido reiniciado",
   "Getting started": "Primeros pasos",
   "Getting started checklist": "Lista de primeros pasos",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -1462,6 +1562,10 @@ const es: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toca un paso para abrirlo",
   Minimize: "Minimizar",
   "Dismiss tour": "Cerrar el recorrido",
+  "Dismiss guide": "Cerrar guía",
+  "Guide dismissed": "Guía cerrada",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Usa este botón de destellos para volver a abrir la guía cuando quieras.",
   "Tour progress": "Progreso del recorrido",
   "Nice work — share your page and enjoy the quiet inbox.":
     "¡Bien hecho! Comparte tu página y despídete del bombardeo de mensajes.",
@@ -1477,35 +1581,21 @@ const es: Record<TranslationKey, string> = {
   "Add your first baby": "Añade tu primer bebé",
   "Give them a name and due date — that creates a public page friends can open.":
     "Ponle un nombre y una fecha prevista. Así crearás una página pública que podrán abrir tus amigos.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Añade un nombre y una fecha y después elige un recorrido. Solo define qué estados pueden ver los visitantes.",
   "Add a baby": "Añadir un bebé",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Un enlace para todos. Toca Compartir en la página del bebé para copiarlo y olvídate del bombardeo en el chat de grupo.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Publica hitos y notas desde el menú. Solo quienes se hayan suscrito recibirán notificaciones push, y únicamente cuando marques un cambio de estado: parto, hospital o nacimiento.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Publica hitos y notas desde el menú. Solo los estados activados avisan a quienes se suscribieron.",
   "Peek at settings": "Echa un vistazo a Configuración",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Temas, nombres y mensajes de los visitantes: todo está en Configuración.",
+  "Themes, names, and language — all in Settings.":
+    "Temas, nombres e idioma: todo está en Configuración.",
   "Encouragements from visitors": "Mensajes de los visitantes",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Cualquiera con el enlace puede dejar un mensaje breve de apoyo, sin crear una cuenta. Los mensajes aparecerán en el historial.",
-  "Welcome — here's the idea": "Te damos la bienvenida. Así funciona.",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "Con ¿Ya nació el bebé? tienes una página tranquila para compartir las novedades del parto y evitar que familiares y amigos te escriban a cada rato.",
-  "Create a baby page": "Crea una página del bebé",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Añade un nombre y una fecha prevista. Tendrás un enlace como isbabyoutyet.com/baby/… para compartir y mostrar el estado actual.",
-  "Share once, update as you go": "Comparte una vez, actualiza sobre la marcha",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Publica hitos y mensajes desde el menú. Los cambios de estado avisan a quienes se suscribieron; las notas del día a día y los mensajes de ánimo no envían notificaciones.",
-  "Skip anytime": "Sáltalo cuando quieras",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "Tendrás a mano una lista breve. Toca un paso para ir directamente o destacar el botón. Puedes cerrarla cuando quieras y volver a abrirla desde la estrella del panel.",
-  "Welcome tour": "Recorrido de bienvenida",
-  "A short overview of how the app works": "Un vistazo rápido a cómo funciona la app",
-  "Go to slide {{number}}": "Ir a la diapositiva {{number}}",
-  Skip: "Omitir",
-  "Let's go": "Empecemos",
-  Next: "Siguiente",
   "Go Home": "Ir al inicio",
   "Something went wrong": "Algo salió mal",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -1570,26 +1660,61 @@ const ptBR: Record<TranslationKey, string> = {
     "Está esperando um bebê e não para de receber mensagens? Crie sua página →",
   "Post update": "Publicar novidade",
   Settings: "Configurações",
+  "Manage your profile and app preferences.":
+    "Gerencie as preferências do seu perfil e do aplicativo.",
+  "Language and time zone": "Idioma e fuso horário",
+  "Page details": "Detalhes da página",
+  "Birth journey": "Jornada do parto",
+  Appearance: "Aparência",
+  Visitors: "Visitantes",
+  Access: "Acesso",
+  "Danger zone": "Zona de perigo",
   "Close settings": "Fechar configurações",
+  "Close share preview": "Fechar prévia de compartilhamento",
   "Copy link to share": "Copiar link para compartilhar",
   "Copied!": "Copiado!",
   "Copied to clipboard": "Copiado para a área de transferência",
+  "This is how your page will look when shared.":
+    "É assim que sua página vai aparecer ao ser compartilhada.",
   "Owner actions": "Ações do responsável",
   "Page actions": "Ações da página",
   "Baby Name": "Nome do bebê",
   "Due Date": "Data prevista",
+  "Show exact due date": "Mostrar a data prevista exata",
+  "Visitors see only your message.": "Visitantes veem apenas a sua mensagem.",
+  "Public due date message": "Mensagem pública sobre a data prevista",
+  "September baby": "Bebê de setembro",
+  "Enter a message for visitors": "Digite uma mensagem para os visitantes",
+  "Visitors see “{{text}}”.": "Visitantes veem “{{text}}”.",
+  "Due date hidden from visitors.": "Data prevista oculta para visitantes.",
+  "Due date hidden": "Data prevista oculta",
+  "Visitors see the exact date and countdown.":
+    "Visitantes veem a data exata e a contagem regressiva.",
+  "Keep this under 80 characters": "Use menos de 80 caracteres",
+  "Choose a journey": "Escolha uma jornada",
+  Journey: "Jornada",
+  "Edit journey": "Editar jornada",
+  "Failed to update journey": "Não foi possível atualizar a jornada",
+  Labour: "Trabalho de parto",
+  "Home birth": "Parto em casa",
+  "Planned C-section": "Cesárea programada",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitantes veem: Trabalho de parto começou → No hospital → O bebê nasceu",
+  "Visitors see: Labour started → Baby born":
+    "Visitantes veem: Trabalho de parto começou → O bebê nasceu",
+  "Visitors see: At hospital → Baby born": "Visitantes veem: No hospital → O bebê nasceu",
+  "We save this choice for your settings, but we don't show it to anyone.":
+    "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
   "Status date and time": "Data e hora do status",
   Theme: "Tema",
   Encouragements: "Mensagens de carinho",
-  "Visitors can send messages": "Visitantes podem enviar mensagens",
-  "Form disabled": "Formulário desativado",
   Language: "Idioma",
   "Use my profile language ({{language}})": "Usar o idioma do meu perfil ({{language}})",
   "All visitors see this page in {{language}}.":
     "Todos os visitantes veem esta página em {{language}}.",
-  Default: "Padrão",
+  Mango: "Mango",
   "Violet Bloom": "Violet Bloom",
-  "Twitter Blue": "Twitter Blue",
+  "Baby Blue": "Baby Blue",
   Bubblegum: "Bubblegum",
   Catppuccin: "Catppuccin",
   "Mocha Mousse": "Mocha Mousse",
@@ -1618,6 +1743,7 @@ const ptBR: Record<TranslationKey, string> = {
   Update: "Novidade",
   "Page photo": "Foto da página",
   "Photo added": "Foto adicionada",
+  "Update posted": "Novidade publicada",
   "Get Notifications": "Ativar notificações",
   Unsubscribe: "Desativar notificações",
   "Get notified when the baby's status changes":
@@ -1633,6 +1759,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Add Your First Baby": "Adicionar seu primeiro bebê",
   "Due today!": "É para hoje!",
   "Profile language": "Idioma do perfil",
+  "Profile time zone": "Fuso horário do perfil",
+  "Search time zones": "Buscar fusos horários",
+  "No time zones found": "Nenhum fuso horário encontrado",
+  "Time zone saved": "Fuso horário salvo",
   "This is initially chosen from your browser. New baby pages inherit it.":
     "O idioma inicial vem do navegador. Novas páginas de bebê herdam essa escolha.",
   "Request another language": "Pedir outro idioma",
@@ -1890,6 +2020,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a": "Adicionar um",
   baby: "bebê",
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
+  "A name, a date, and a journey — that's all it takes!":
+    "Um nome, uma data e uma jornada. Só isso!",
+  "A name, how to display the due date, and a journey — that's all it takes!":
+    "Um nome, como mostrar a data prevista e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
   "Welcome back!": "Que bom te ver de novo!",
   "Sign in to keep everyone in the loop": "Entre para deixar todo mundo por dentro",
@@ -1918,8 +2052,8 @@ const ptBR: Record<TranslationKey, string> = {
   "Open the live page →": "Abrir a página ao vivo →",
   "Or preview how each stage looks": "Ou veja como cada etapa fica",
   "This is a demo baby": "Esta é uma página de demonstração",
-  "Feel free to post test messages — they get cleared on each deploy.":
-    "Pode mandar mensagens de teste à vontade. Elas são apagadas a cada nova versão.",
+  "Feel free to post test messages — we reset this demo daily.":
+    "Pode mandar mensagens de teste à vontade — redefinimos esta demo diariamente.",
   "How it works": "Como funciona",
   "Get Started Free 🎉": "Comece grátis 🎉",
   "Join families who've already shared their special moments. Takes less than a minute.":
@@ -1953,7 +2087,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Baby born!": "O bebê nasceu!",
   "Restart getting started tour": "Reiniciar o tour de primeiros passos",
   "Restart tour": "Reiniciar o tour",
-  "Tour restarted": "Tour reiniciado",
   "Getting started": "Primeiros passos",
   "Getting started checklist": "Lista de primeiros passos",
   "Getting started: {{completed}} of {{total}} done. Expand.":
@@ -1962,6 +2095,10 @@ const ptBR: Record<TranslationKey, string> = {
   "Tap a step to jump there": "Toque em um passo para ir até lá",
   Minimize: "Minimizar",
   "Dismiss tour": "Fechar o tour",
+  "Dismiss guide": "Fechar guia",
+  "Guide dismissed": "Guia fechado",
+  "Use this sparkle button to bring the guide back anytime.":
+    "Use este botão de brilho para reabrir o guia quando quiser.",
   "Tour progress": "Progresso do tour",
   "Nice work — share your page and enjoy the quiet inbox.":
     "Mandou bem! Agora compartilhe sua página e aproveite o sossego nas mensagens.",
@@ -1977,35 +2114,21 @@ const ptBR: Record<TranslationKey, string> = {
   "Add your first baby": "Adicione seu primeiro bebê",
   "Give them a name and due date — that creates a public page friends can open.":
     "Dê um nome e uma data prevista. Isso cria uma página pública que os amigos podem abrir.",
+  "Add a name and date, then choose a journey. It only sets which statuses visitors can see.":
+    "Adicione um nome e uma data e depois escolha uma jornada. Ela só define quais status os visitantes podem ver.",
   "Add a baby": "Adicionar um bebê",
   "One link for everyone. Tap Share on the baby page to copy it — no group chat spam.":
     "Um link para todo mundo. Na página do bebê, toque em Compartilhar para copiar. Chega de spam no grupo.",
   "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).":
     "Publique etapas e recados do dia a dia pelo menu. As notificações vão só para quem ativou e somente quando você marcar uma mudança de status: trabalho de parto, hospital ou nascimento.",
+  "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.":
+    "Publique etapas e recados do dia a dia pelo menu. Só os status ativados avisam quem acompanha.",
   "Peek at settings": "Dê uma olhada nas configurações",
-  "Themes, names, and whether visitors can leave encouragements — all in Settings.":
-    "Temas, nomes e permissão para visitantes deixarem mensagens de carinho: tudo nas Configurações.",
+  "Themes, names, and language — all in Settings.":
+    "Temas, nomes e idioma: tudo nas Configurações.",
   "Encouragements from visitors": "Mensagens de carinho dos visitantes",
   "Anyone with the link can leave a short supportive note — no account needed. They show up in your timeline.":
     "Qualquer pessoa com o link pode deixar um recadinho de apoio, sem precisar de conta. O recado aparece na sua linha do tempo.",
-  "Welcome — here's the idea": "Boas-vindas! É assim que funciona:",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    '"O bebê já nasceu?" reúne as novidades do parto numa página tranquila. Assim, amigos e familiares param de perguntar toda hora.',
-  "Create a baby page": "Crie uma página do bebê",
-  "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.":
-    "Adicione um nome e uma data prevista. Você recebe um link para compartilhar, como isbabyoutyet.com/baby/…, que mostra o status atual.",
-  "Share once, update as you go": "Compartilhe uma vez e vá atualizando",
-  "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.":
-    "Publique etapas e mensagens pelo menu. Mudanças de status avisam quem ativou as notificações. Os outros recados e mensagens de carinho entram na linha do tempo sem notificação.",
-  "Skip anytime": "Pule quando quiser",
-  "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.":
-    "Uma listinha acompanha você pelo app. Toque em uma etapa para ir até ela ou destacar o botão. Feche quando quiser e, se mudar de ideia, recomece pelo ícone de brilho no painel.",
-  "Welcome tour": "Tour de boas-vindas",
-  "A short overview of how the app works": "Uma visão rápida de como o app funciona",
-  "Go to slide {{number}}": "Ir para o slide {{number}}",
-  Skip: "Pular",
-  "Let's go": "Vamos lá",
-  Next: "Próximo",
   "Go Home": "Ir para o início",
   "Something went wrong": "Algo deu errado",
   "An unexpected error occurred. Reloading usually fixes it.":
@@ -2016,6 +2139,11 @@ const ptBR: Record<TranslationKey, string> = {
 const enUS: Partial<Record<TranslationKey, string>> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
+  Labour: "Labor",
+  "Visitors see: Labour started → At hospital → Baby born":
+    "Visitors see: Labor started → At the hospital → Baby born",
+  "Visitors see: Labour started → Baby born": "Visitors see: Labor started → Baby born",
+  "Visitors see: At hospital → Baby born": "Visitors see: At the hospital → Baby born",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
@@ -2037,8 +2165,6 @@ const enUS: Partial<Record<TranslationKey, string>> = {
     "Two days of labor, photos and family messages. Add a test note and take a look around.",
   "Pick a theme that matches your style. From soft pastels to bold colours — your page, your vibe.":
     "Pick soft pastels, bold colors or whatever feels like you.",
-  "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.":
-    "One page for labor updates, so friends and family stop texting you for news.",
 };
 
 const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {

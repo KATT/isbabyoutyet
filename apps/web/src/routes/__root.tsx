@@ -9,16 +9,15 @@ import {
   useRouteContext,
   useRouterState,
 } from "@tanstack/react-router";
-import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
-import { api } from "@workspace/convex/convex/_generated/api";
+import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import * as React from "react";
 import { useEffect } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
-import { createServerFn } from "@tanstack/react-start";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -28,11 +27,11 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
-import { authServer } from "@/lib/auth-server";
 import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
@@ -41,47 +40,22 @@ import { detectRequestLocale } from "@/lib/detect-locale";
 import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
-
-// Cookie-authenticated token for SSR (and client navigations via server fn)
-const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
+import { privateCacheHeaders } from "@/lib/cachePolicy";
+import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
   convexClient: ConvexReactClient;
+  convexPreloader: ConvexQueryPreloader;
   locale: SupportedLocale;
   isAuthenticated: boolean;
   token: string | null | undefined;
 }>()({
-  beforeLoad: async (ctx) => {
-    // SSR: detect the locale from request headers and exchange the session
-    // cookie for a Convex token so ensureQueryData / useSuspenseQuery run as
-    // the signed-in user.
-    if (typeof window === "undefined") {
-      const [locale, token] = await Promise.all([detectRequestLocale(), getAuth()]);
-      if (token) {
-        ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
-      }
-      return {
-        locale,
-        isAuthenticated: !!token,
-        token,
-      };
-    }
-
-    // Client navigations: zero network — beforeLoad re-runs on every
-    // navigation (back button included), so a server round-trip here would
-    // tax them all. The locale resolves locally, live auth belongs to
-    // ConvexBetterAuthProvider (initialToken only matters at hydration), and
-    // the cached profile tells us whether a session exists.
-    const cachedProfile = ctx.context.queryClient.getQueryData(
-      convexQuery(api.profile.get, {}).queryKey,
-    );
+  beforeLoad: async () => {
     return {
-      locale: getDetectedLocale(),
-      isAuthenticated: cachedProfile != null,
+      locale: await detectRequestLocale(),
+      isAuthenticated: false,
       token: null,
     };
   },
@@ -176,8 +150,7 @@ export const Route = createRootRouteWithContext<{
   },
   headers() {
     return {
-      "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
-      Vary: "Accept-Language, Cookie",
+      ...privateCacheHeaders(),
       ...aiNoTrainHeaders(),
     };
   },
@@ -198,34 +171,32 @@ export function contextLocale(context: unknown): SupportedLocale | undefined {
   return context.locale;
 }
 
-function isAuthClient(value: unknown): value is AuthClient {
+function contextToken(context: unknown) {
   return (
-    typeof value === "object" &&
-    value !== null &&
-    "useSession" in value &&
-    typeof value.useSession === "function" &&
-    "getSession" in value &&
-    typeof value.getSession === "function" &&
-    "convex" in value &&
-    typeof value.convex === "object" &&
-    value.convex !== null &&
-    "token" in value.convex &&
-    typeof value.convex.token === "function"
-  );
+    typeof context === "object" &&
+    context !== null &&
+    "token" in context &&
+    (typeof context.token === "string" || context.token === null)
+  )
+    ? context.token
+    : undefined;
 }
 
-export function requireAuthClient(value: unknown): AuthClient {
-  if (!isAuthClient(value)) {
-    throw new Error("Better Auth client is missing its Convex integration");
-  }
-  return value;
+// better-auth and @convex-dev/better-auth currently expose structurally
+// incompatible client types despite supporting the same peer-version range.
+function compatibleAuthClient(client: typeof authClient): AuthClient;
+function compatibleAuthClient(client: unknown) {
+  return client;
 }
 
-const convexAuthClient = requireAuthClient(authClient);
+const convexAuthClient = compatibleAuthClient(authClient);
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
+  const token = matches.reduce<string | null | undefined>((currentToken, match) => {
+    return contextToken(match.context) ?? currentToken;
+  }, context.token);
   const locale = matches.reduce((currentLocale, match) => {
     return contextLocale(match.context) ?? currentLocale;
   }, context.locale);
@@ -248,8 +219,9 @@ function RootComponent() {
       <ConvexBetterAuthProvider
         client={context.convexQueryClient.convexClient}
         authClient={convexAuthClient}
-        initialToken={context.token}
+        initialToken={token}
       >
+        <ProviderAuthObserver />
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>
@@ -263,6 +235,22 @@ function RootComponent() {
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );
+}
+
+function ProviderAuthObserver() {
+  const auth = useConvexAuth();
+
+  useEffect(() => {
+    // Better Auth exposes its session before Convex has validated the token.
+    // useConvexAuth is the documented server-confirmed signal:
+    // https://labs.convex.dev/better-auth/basic-usage/authorization
+    reportConvexAuthState({
+      isAuthenticated: auth.isAuthenticated,
+      isLoading: auth.isLoading,
+    });
+  }, [auth.isAuthenticated, auth.isLoading]);
+
+  return null;
 }
 
 // Router-wide error fallback (registered as defaultErrorComponent): residual
@@ -348,7 +336,11 @@ export function NavigationProgress() {
     <Progress
       value={null}
       aria-label={t("Loading")}
-      className="pointer-events-none fixed inset-x-0 top-0 z-50"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 top-0 z-50",
+        "[&_[data-slot=progress-indicator]]:w-1/4 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:animate-progress-indeterminate",
+        "motion-reduce:[&_[data-slot=progress-indicator]]:w-full motion-reduce:[&_[data-slot=progress-indicator]]:animate-none",
+      )}
     />
   );
 }

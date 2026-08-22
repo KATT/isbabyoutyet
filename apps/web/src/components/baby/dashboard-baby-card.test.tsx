@@ -36,8 +36,11 @@ function renderResource(ui: ReactElement) {
 
 const alma: DashboardBabyCardBaby = {
   name: "Alma Simone Petra Darvill",
+  timeZone: "Europe/London",
   publicId: "alma-simone-petra-darvill",
   dueDate: "2025-12-31",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: "2026-01-10T12:00:00.000Z",
   wentToHospital: "2026-01-10T18:00:00.000Z",
   babyBorn: "2026-01-11T04:14:00.000Z",
@@ -61,8 +64,11 @@ test("an unborn baby past the due date still shows overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
@@ -81,8 +87,11 @@ test("labour in progress beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const inLabor: DashboardBabyCardBaby = {
     name: "Frankie",
+    timeZone: "Europe/London",
     publicId: "baby-in-labor",
     dueDate: "2025-12-31",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     laborStarted: "2026-08-13T08:00:00.000Z",
     wentToHospital: null,
     babyBorn: null,
@@ -109,8 +118,11 @@ test("an unborn baby before the due date shows days remaining", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact",
+    publicDueDateText: null,
     role: "coParent",
   };
   await using view = renderResource(
@@ -119,4 +131,41 @@ test("an unborn baby before the due date shows days remaining", async () => {
 
   expect(view.getByText("Shared with you")).toBeTruthy();
   expect(view.getByText("19 days until due date")).toBeTruthy();
+});
+
+test("a message-mode baby card does not show a due date", async () => {
+  const waiting: DashboardBabyCardBaby = {
+    name: "Avery",
+    timeZone: "Europe/London",
+    publicId: "baby-waiting",
+    dueDate: null,
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+    role: "owner",
+  };
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
+
+  expect(view.getByText("Any day now")).toBeTruthy();
+  expect(view.getByText("Not yet")).toBeTruthy();
+  expect(view.queryByText(/Due /)).toBeNull();
+});
+
+test("a message-mode baby card with no text shows a hidden label", async () => {
+  const waiting: DashboardBabyCardBaby = {
+    name: "Avery",
+    timeZone: "Europe/London",
+    publicId: "baby-waiting",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: null,
+    role: "owner",
+  };
+  await using view = renderResource(
+    <DashboardBabyCard baby={waiting} index={0} dataTourId={undefined} />,
+  );
+
+  expect(view.getByText("Due date hidden")).toBeTruthy();
+  expect(view.queryByText(/Due 1 September/)).toBeNull();
 });

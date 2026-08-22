@@ -16,7 +16,10 @@ async function setupWithBaby() {
       ownerTokenIdentifier: "https://convex.test|alice",
       name: "Baby Smith",
       dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: "baby-smith",
+      birthJourney: "labor",
       lastActivityAt: 1,
       subscriptionCount: 0,
     });

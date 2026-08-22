@@ -1,6 +1,5 @@
 import { authServer } from "@/lib/auth-server";
 import { convexQuery } from "@convex-dev/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -14,6 +13,7 @@ const getAuthToken = createServerFn({ method: "GET" }).handler(async () => {
 export const Route = createFileRoute("/_auth")({
   headers() {
     return {
+      "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
       Vary: "Cookie",
       // Prefer header over route `head` — TanStack's head+beforeLoad typing
       // currently collapses child beforeLoad to `never` when the layout sets head.
@@ -21,27 +21,26 @@ export const Route = createFileRoute("/_auth")({
     };
   },
   beforeLoad: async (opts) => {
-    const preloader = getConvexQueryPreloader(opts.context.queryClient);
+    const preloader = opts.context.convexPreloader;
 
     if (typeof window === "undefined") {
       const token = opts.context.token ?? (await getAuthToken());
       if (!token) {
         throw redirect({ to: "/" });
       }
-      // Mutations via the Convex React client during SSR need setAuth too
+      opts.context.convexQueryClient.serverHttpClient?.setAuth(token);
       opts.context.convexClient.setAuth(async () => token);
-
       const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-      const existingProfile = profileHandle.initialData;
-      const profile =
-        existingProfile ??
-        (await opts.context.convexClient.mutation(api.profile.ensure, {
-          browserLocale: opts.context.locale,
-        }));
-      if (!existingProfile) {
-        opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
+      const profile = profileHandle.initialData;
+      if (!profile) {
+        throw redirect({ to: "/" });
       }
-      return { locale: profile.locale, token, isAuthenticated: true };
+      return {
+        locale: profile.locale,
+        token,
+        isAuthenticated: true,
+        profile: profileHandle,
+      };
     }
 
     // Client navigations: the cached profile IS the auth signal — no token
@@ -50,29 +49,33 @@ export const Route = createFileRoute("/_auth")({
     // cache self-heals: the live profile.get subscription flips to null (all
     // dashboard queries return empty for anonymous callers rather than
     // throwing), so the next navigation lands in the fallback below and
-    // redirects home. A null profile means logged out or a first-ever visit
-    // before ensure ran: confirm with the server function once, then ensure
-    // the profile row exists.
-    const profileHandle = await preloader.ensureQueryData(api.profile.get, {});
-    const existingProfile = profileHandle.initialData;
-    if (existingProfile) {
-      return { locale: existingProfile.locale, token: opts.context.token, isAuthenticated: true };
+    // redirects home. A null profile means logged out or the websocket has not
+    // re-authenticated after sign-in, so confirm with the server once.
+    let profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+    let profile = profileHandle.initialData;
+    if (!profile) {
+      const token = await getAuthToken();
+      if (!token) {
+        throw redirect({ to: "/" });
+      }
+      // The mounted provider exclusively owns browser Convex authentication.
+      // A fresh session can invalidate a cached anonymous profile, so retry
+      // once without replacing the provider's token callback.
+      opts.context.queryClient.removeQueries({
+        queryKey: convexQuery(api.profile.get, {}).queryKey,
+      });
+      profileHandle = await preloader.ensureQueryData(api.profile.get, {});
+      profile = profileHandle.initialData;
+      if (!profile) {
+        throw redirect({ to: "/" });
+      }
     }
-
-    const token = await getAuthToken();
-    if (!token) {
-      throw redirect({ to: "/" });
-    }
-    // Right after login the auth provider may not have re-authenticated the
-    // websocket yet, so ensure (and the route loaders after it) would throw
-    // "Not authenticated". Authenticate it with the fresh token; the
-    // provider's own setAuth supersedes this once its session effect runs.
-    opts.context.convexClient.setAuth(async () => token);
-    const profile = await opts.context.convexClient.mutation(api.profile.ensure, {
-      browserLocale: opts.context.locale,
-    });
-    opts.context.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, profile);
-    return { locale: profile.locale, token, isAuthenticated: true };
+    return {
+      locale: profile.locale,
+      token: opts.context.token,
+      isAuthenticated: true,
+      profile: profileHandle,
+    };
   },
   component: AuthLayout,
 });

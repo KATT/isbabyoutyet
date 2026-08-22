@@ -44,6 +44,51 @@ function aliasUseSyncExternalStoreShim(): Plugin {
 }
 
 /**
+ * `@resvg/resvg-js` loads a NAPI `.node` binary. Rolldown (Vite 8 dep
+ * optimization + SSR) tries to parse that file as UTF-8 and crashes
+ * (`UNLOADABLE_DEPENDENCY` / "stream did not contain valid UTF-8"). Keep the
+ * package as a Node builtin-style require so OG PNG rendering still works.
+ */
+function skipNativeNodeAddons(): Plugin {
+  return {
+    name: "skip-native-node-addons",
+    enforce: "pre",
+    resolveId(source) {
+      if (!source.endsWith(".node")) {
+        return null;
+      }
+      return { id: source, external: true };
+    },
+  };
+}
+
+/**
+ * Nitro's Vite dev middleware classifies every `Sec-Fetch-Dest: image`
+ * request as a static asset before TanStack Start can dispatch extensionless
+ * server routes. Keep generated `/og` images on the SSR path in development.
+ */
+function routeGeneratedImagesThroughSsr(): Plugin {
+  return {
+    name: "route-generated-images-through-ssr",
+    enforce: "pre",
+    configureServer(server) {
+      server.middlewares.use((...args) => {
+        const request = args[0];
+        const next = args[2];
+        const pathname = request.url?.split(/[?#]/, 1)[0];
+        if (
+          request.headers["sec-fetch-dest"] === "image" &&
+          (pathname === "/og" || pathname?.startsWith("/og/"))
+        ) {
+          delete request.headers["sec-fetch-dest"];
+        }
+        next();
+      });
+    },
+  };
+}
+
+/**
  * Belt-and-suspenders for any remaining leaked `__require("react")` after the
  * shim alias (same rewrite as discussed on nitro#4171).
  */
@@ -72,6 +117,8 @@ const config = defineConfig({
     // https://tanstack.com/devtools/latest/docs/quick-start#vite-plugin
     devtools(),
     aliasUseSyncExternalStoreShim(),
+    skipNativeNodeAddons(),
+    routeGeneratedImagesThroughSsr(),
     paraglideVitePlugin({
       project: "./project.inlang",
       outdir: "./src/paraglide",
@@ -125,8 +172,15 @@ const config = defineConfig({
       presets: [reactCompilerPreset()],
     }),
   ],
+  optimizeDeps: {
+    exclude: ["@resvg/resvg-js"],
+  },
   ssr: {
     noExternal: ["@convex-dev/better-auth"],
+    external: ["@resvg/resvg-js"],
+    optimizeDeps: {
+      exclude: ["@resvg/resvg-js"],
+    },
   },
 });
 

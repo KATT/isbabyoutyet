@@ -41,6 +41,14 @@ vi.mock("@convex-dev/better-auth/react", () => ({
   ConvexBetterAuthProvider: (props: { children: React.ReactNode }) => props.children,
 }));
 
+vi.mock("convex/react", () => ({
+  useConvexAuth: () => ({
+    isAuthenticated: false,
+    isLoading: false,
+    isRefreshing: false,
+  }),
+}));
+
 vi.mock("@vercel/analytics/react", () => ({
   Analytics: () => null,
 }));
@@ -57,12 +65,8 @@ vi.mock("@/lib/auth-client", () => ({
   },
 }));
 
-vi.mock("@tanstack/react-start", () => ({
-  createServerFn: () => ({ handler: (fn: unknown) => fn }),
-}));
-
-vi.mock("@/lib/auth-server", () => ({
-  authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
+vi.mock("@/lib/detect-locale", () => ({
+  detectRequestLocale: () => Promise.resolve("en-GB"),
 }));
 
 const {
@@ -71,7 +75,6 @@ const {
   RootErrorComponent,
   Route,
   contextLocale,
-  requireAuthClient,
 } = await import("@/routes/__root");
 
 function renderResource(ui: ReactElement) {
@@ -89,54 +92,16 @@ test("route context locales are narrowed to supported values", () => {
   expect(contextLocale(null)).toBeUndefined();
 });
 
-test("the Convex auth adapter validates its required client surface", () => {
-  const validClient = {
-    useSession: vi.fn(),
-    getSession: vi.fn(),
-    convex: { token: vi.fn() },
-  };
-  expect(requireAuthClient(validClient)).toBe(validClient);
-
-  const invalidClients = [
-    null,
-    {},
-    { useSession: "not a function" },
-    { useSession: vi.fn(), getSession: "not a function" },
-    { useSession: vi.fn(), getSession: vi.fn(), convex: null },
-    { useSession: vi.fn(), getSession: vi.fn(), convex: {} },
-    { useSession: vi.fn(), getSession: vi.fn(), convex: { token: "not a function" } },
-  ];
-  for (const invalidClient of invalidClients) {
-    expect(() => requireAuthClient(invalidClient)).toThrow(
-      "Better Auth client is missing its Convex integration",
-    );
-  }
-});
-
-test("beforeLoad resolves locale and auth locally on the client, without a server round-trip", async () => {
-  const { QueryClient } = await import("@tanstack/react-query");
-  const { convexQuery } = await import("@convex-dev/react-query");
-  const { api } = await import("@workspace/convex/convex/_generated/api");
-  const queryClient = new QueryClient();
+test("beforeLoad keeps shared document rendering anonymous", async () => {
   // With createRootRouteWithContext mocked, Route is the options object.
   const options = Route as unknown as {
-    beforeLoad: (ctx: {
-      context: { queryClient: unknown; convexQueryClient: { serverHttpClient: undefined } };
-    }) => Promise<{ locale: string; isAuthenticated: boolean; token: string | null }>;
+    beforeLoad: () => Promise<{ locale: string; isAuthenticated: boolean; token: string | null }>;
   };
-  const ctx = { context: { queryClient, convexQueryClient: { serverHttpClient: undefined } } };
 
-  const anonymous = await options.beforeLoad(ctx);
+  const anonymous = await options.beforeLoad();
   expect(anonymous.locale).toBeTruthy();
   expect(anonymous.isAuthenticated).toBe(false);
-
-  // A cached profile is the session signal for client navigations.
-  queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
-    locale: "sv",
-    isAdmin: false,
-  });
-  const authed = await options.beforeLoad(ctx);
-  expect(authed.isAuthenticated).toBe(true);
+  expect(anonymous.token).toBeNull();
 });
 
 test("the root component renders the document shell", async () => {
@@ -198,4 +163,5 @@ test("an indeterminate progress bar renders while the router loads the next page
 
   const progressbar = view.getByRole("progressbar", { name: "Loading" });
   expect(progressbar.dataset.indeterminate).toBeDefined();
+  expect(progressbar.className).toContain("animate-progress-indeterminate");
 });
