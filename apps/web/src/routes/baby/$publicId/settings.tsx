@@ -12,10 +12,9 @@ import {
 } from "@tanstack/react-router";
 import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
-import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabySettingsOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -81,6 +80,7 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
@@ -95,17 +95,7 @@ export function BabySettingsOverlay() {
   const navigate = useNavigate({ from: Route.fullPath });
   const router = useRouter();
   const loaderData = Route.useLoaderData();
-  const [open, setOpen] = useState(true);
-  const settings = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/settings",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const settings = useBabySettingsOverlayNav(params.publicId);
   const updateBaby = useMutation(api.baby.update);
   const removeBaby = useMutation(api.baby.remove);
   const redateMilestone = useMutation(api.updates.redateMilestone);
@@ -152,17 +142,9 @@ export function BabySettingsOverlay() {
         isOwner,
         listing: loaderData.coParentsList,
       }}
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          settings.dismiss();
-        }
-      }}
+      open={settings.open}
+      onOpenChange={settings.onOpenChange}
+      onOpenChangeComplete={settings.onOpenChangeComplete}
     />
   );
 }

@@ -73,7 +73,7 @@ type BabyRow = {
   managerEmails: string[];
 };
 
-export const Route = createFileRoute("/_auth/dashboard/admin")({
+export const Route = createFileRoute("/_auth/dashboard_/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,

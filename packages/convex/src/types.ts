@@ -45,8 +45,10 @@ export type BabyData = Omit<
   | "_id"
   | "_creationTime"
   | "birthJourney"
-> &
-  MilestoneDates &
+> & {
+  /** IANA time zone inherited from the owning profile. */
+  timeZone: string;
+} & MilestoneDates &
   Partial<{ milestoneVisibility: MilestoneVisibility }>;
 
 export type PreviewBabyData = BabyData & BabyPreviewMessages;

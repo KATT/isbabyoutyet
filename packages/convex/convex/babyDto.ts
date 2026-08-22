@@ -2,9 +2,13 @@ import type { Doc } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { milestoneVisibilityForPreset } from "../src/types";
 import { loadMilestoneDates } from "./timeline";
+import { resolveBabyPreferences } from "./babyPreferences";
 
 async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
-  const milestoneDates = await loadMilestoneDates(ctx, baby._id);
+  const [milestoneDates, preferences] = await Promise.all([
+    loadMilestoneDates(ctx, baby._id),
+    resolveBabyPreferences(ctx.db, baby),
+  ]);
   const {
     userId: _userId,
     ownerTokenIdentifier: _ownerTokenIdentifier,
@@ -19,6 +23,7 @@ async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
   return {
     ...publicBaby,
     ...milestoneDates,
+    ...preferences,
     milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
   };
 }

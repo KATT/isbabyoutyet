@@ -15,12 +15,14 @@ import { Route as OgRouteImport } from './routes/og'
 import { Route as PreviewRouteImport } from './routes/preview'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as AuthDashboardRouteRouteImport } from './routes/_auth/dashboard/route'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as BabyPublicIdRouteRouteImport } from './routes/baby/$publicId/route'
 import { Route as AuthDashboardIndexRouteImport } from './routes/_auth/dashboard/index'
-import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard/add'
-import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard/admin'
+import { Route as AuthDashboardSettingsRouteImport } from './routes/_auth/dashboard/settings'
+import { Route as AuthDashboardAddRouteImport } from './routes/_auth/dashboard_.add'
+import { Route as AuthDashboardAdminRouteImport } from './routes/_auth/dashboard_.admin'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiCachePurgeRouteImport } from './routes/api/cache/purge'
 import { Route as BabyPublicIdIndexRouteImport } from './routes/baby/$publicId/index'
@@ -61,6 +63,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthDashboardRouteRoute = AuthDashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthRouteRoute,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -77,17 +84,22 @@ const BabyPublicIdRouteRoute = BabyPublicIdRouteRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthDashboardIndexRoute = AuthDashboardIndexRouteImport.update({
-  id: '/dashboard/',
-  path: '/dashboard/',
-  getParentRoute: () => AuthRouteRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthDashboardRouteRoute,
+} as any)
+const AuthDashboardSettingsRoute = AuthDashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthDashboardRouteRoute,
 } as any)
 const AuthDashboardAddRoute = AuthDashboardAddRouteImport.update({
-  id: '/dashboard/add',
+  id: '/dashboard_/add',
   path: '/dashboard/add',
   getParentRoute: () => AuthRouteRoute,
 } as any)
 const AuthDashboardAdminRoute = AuthDashboardAdminRouteImport.update({
-  id: '/dashboard/admin',
+  id: '/dashboard_/admin',
   path: '/dashboard/admin',
   getParentRoute: () => AuthRouteRoute,
 } as any)
@@ -149,9 +161,11 @@ export interface FileRoutesByFullPath {
   '/preview': typeof PreviewRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/dashboard': typeof AuthDashboardRouteRouteWithChildren
   '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -174,6 +188,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
+  '/dashboard/settings': typeof AuthDashboardSettingsRoute
   '/dashboard/add': typeof AuthDashboardAddRoute
   '/dashboard/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -196,11 +211,13 @@ export interface FileRoutesById {
   '/preview': typeof PreviewRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/_auth/dashboard': typeof AuthDashboardRouteRouteWithChildren
   '/baby/$publicId': typeof BabyPublicIdRouteRouteWithChildren
   '/auth/login': typeof AuthLoginRoute
   '/auth/signup': typeof AuthSignupRoute
-  '/_auth/dashboard/add': typeof AuthDashboardAddRoute
-  '/_auth/dashboard/admin': typeof AuthDashboardAdminRoute
+  '/_auth/dashboard/settings': typeof AuthDashboardSettingsRoute
+  '/_auth/dashboard_/add': typeof AuthDashboardAddRoute
+  '/_auth/dashboard_/admin': typeof AuthDashboardAdminRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cache/purge': typeof ApiCachePurgeRoute
   '/baby/$publicId/photo': typeof BabyPublicIdPhotoRoute
@@ -221,9 +238,11 @@ export interface FileRouteTypes {
     | '/preview'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/dashboard'
     | '/baby/$publicId'
     | '/auth/login'
     | '/auth/signup'
+    | '/dashboard/settings'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
@@ -246,6 +265,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/auth/login'
     | '/auth/signup'
+    | '/dashboard/settings'
     | '/dashboard/add'
     | '/dashboard/admin'
     | '/api/auth/$'
@@ -267,11 +287,13 @@ export interface FileRouteTypes {
     | '/preview'
     | '/robots.txt'
     | '/sitemap.xml'
+    | '/_auth/dashboard'
     | '/baby/$publicId'
     | '/auth/login'
     | '/auth/signup'
-    | '/_auth/dashboard/add'
-    | '/_auth/dashboard/admin'
+    | '/_auth/dashboard/settings'
+    | '/_auth/dashboard_/add'
+    | '/_auth/dashboard_/admin'
     | '/api/auth/$'
     | '/api/cache/purge'
     | '/baby/$publicId/photo'
@@ -344,6 +366,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_auth/dashboard': {
+      id: '/_auth/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthDashboardRouteRouteImport
+      parentRoute: typeof AuthRouteRoute
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -367,20 +396,27 @@ declare module '@tanstack/react-router' {
     }
     '/_auth/dashboard/': {
       id: '/_auth/dashboard/'
-      path: '/dashboard'
+      path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof AuthDashboardIndexRouteImport
-      parentRoute: typeof AuthRouteRoute
+      parentRoute: typeof AuthDashboardRouteRoute
     }
-    '/_auth/dashboard/add': {
-      id: '/_auth/dashboard/add'
+    '/_auth/dashboard/settings': {
+      id: '/_auth/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthDashboardSettingsRouteImport
+      parentRoute: typeof AuthDashboardRouteRoute
+    }
+    '/_auth/dashboard_/add': {
+      id: '/_auth/dashboard_/add'
       path: '/dashboard/add'
       fullPath: '/dashboard/add'
       preLoaderRoute: typeof AuthDashboardAddRouteImport
       parentRoute: typeof AuthRouteRoute
     }
-    '/_auth/dashboard/admin': {
-      id: '/_auth/dashboard/admin'
+    '/_auth/dashboard_/admin': {
+      id: '/_auth/dashboard_/admin'
       path: '/dashboard/admin'
       fullPath: '/dashboard/admin'
       preLoaderRoute: typeof AuthDashboardAdminRouteImport
@@ -459,16 +495,29 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthRouteRouteChildren {
-  AuthDashboardAddRoute: typeof AuthDashboardAddRoute
-  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute
+interface AuthDashboardRouteRouteChildren {
+  AuthDashboardSettingsRoute: typeof AuthDashboardSettingsRoute
   AuthDashboardIndexRoute: typeof AuthDashboardIndexRoute
 }
 
+const AuthDashboardRouteRouteChildren: AuthDashboardRouteRouteChildren = {
+  AuthDashboardSettingsRoute: AuthDashboardSettingsRoute,
+  AuthDashboardIndexRoute: AuthDashboardIndexRoute,
+}
+
+const AuthDashboardRouteRouteWithChildren =
+  AuthDashboardRouteRoute._addFileChildren(AuthDashboardRouteRouteChildren)
+
+interface AuthRouteRouteChildren {
+  AuthDashboardRouteRoute: typeof AuthDashboardRouteRouteWithChildren
+  AuthDashboardAddRoute: typeof AuthDashboardAddRoute
+  AuthDashboardAdminRoute: typeof AuthDashboardAdminRoute
+}
+
 const AuthRouteRouteChildren: AuthRouteRouteChildren = {
+  AuthDashboardRouteRoute: AuthDashboardRouteRouteWithChildren,
   AuthDashboardAddRoute: AuthDashboardAddRoute,
   AuthDashboardAdminRoute: AuthDashboardAdminRoute,
-  AuthDashboardIndexRoute: AuthDashboardIndexRoute,
 }
 
 const AuthRouteRouteWithChildren = AuthRouteRoute._addFileChildren(

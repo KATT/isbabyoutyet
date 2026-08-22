@@ -14,6 +14,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import { previewCacheHeaders } from "@/lib/cachePolicy";
 
 function getDefaultBabyData(): PreviewBabyData {
@@ -29,6 +30,7 @@ function getDefaultBabyData(): PreviewBabyData {
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
     theme: null,
+    timeZone: DEFAULT_TIME_ZONE,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,

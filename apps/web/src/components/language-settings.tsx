@@ -22,13 +22,23 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@workspace/ui/components/combobox";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { cn } from "@workspace/ui/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
@@ -81,20 +91,89 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
+function formatTimeZoneLabel(timeZone: string) {
+  const [firstPart, ...locationParts] = timeZone.split("/");
+  const area = firstPart ?? timeZone;
+  const location = locationParts.join(" / ").replaceAll("_", " ");
+  return location ? `${location} (${area})` : area;
+}
+
+const timeZoneOptions = Array.from(
+  new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")]),
+)
+  .sort()
+  .map((timeZone) => ({
+    label: formatTimeZoneLabel(timeZone),
+    value: timeZone,
+  }));
+
+const defaultTimeZoneOption = {
+  label: formatTimeZoneLabel(DEFAULT_TIME_ZONE),
+  value: DEFAULT_TIME_ZONE,
+};
+
 export function LanguageSettings(props: {
   profile:
     | PreloadedConvexQuery<typeof api.profile.get>
     | InitiatedConvexQuery<typeof api.profile.get>;
+  className: string | undefined;
 }) {
   const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const profile = profileQuery.data;
   const updateLocale = useMutation(api.profile.updateLocale);
+  const updateTimeZone = useMutation(api.profile.updateTimeZone);
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
+  const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
+  const [selectedTimeZoneOption, setSelectedTimeZoneOption] = useState(
+    () =>
+      timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption,
+  );
 
   return (
-    <div className="flex items-center gap-2">
+    <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
+      <Combobox
+        items={timeZoneOptions}
+        itemToStringValue={(option) => option.label}
+        value={selectedTimeZoneOption}
+        onValueChange={(option) => {
+          if (!option || option.value === selectedTimeZoneOption.value) {
+            return;
+          }
+          const previousOption = selectedTimeZoneOption;
+          setSelectedTimeZoneOption(option);
+          void updateTimeZone({ timeZone: option.value })
+            .then(() => {
+              toast.success(t("Time zone saved"));
+            })
+            .catch((error) => {
+              setSelectedTimeZoneOption(previousOption);
+              toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
+            });
+        }}
+        disabled={!profile}
+      >
+        <ComboboxInput
+          className="w-56"
+          aria-label={t("Profile time zone")}
+          placeholder={t("Search time zones")}
+          onFocus={(event) => {
+            event.currentTarget.select();
+          }}
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
+          <ComboboxList>
+            {(option) => (
+              <ComboboxItem key={option.value} value={option}>
+                {option.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+
       <LanguagePicker
         value={selectedLocale}
         disabled={!profile}

@@ -201,6 +201,8 @@ const managerBabyDoc = {
   publicDueDateText: null,
   theme: null,
   locale: null,
+  resolvedLocale: "en-GB" as const,
+  timeZone: "Europe/London",
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -226,7 +228,7 @@ function ownerLoaderData() {
     }),
     profile: testPreloadedConvexQuery<typeof api.profile.get>({
       input: {},
-      initialData: { locale: "en-GB", isAdmin: false },
+      initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
     }),
   };
 }

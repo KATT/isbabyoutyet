@@ -18,6 +18,7 @@ export function getBabySeo(doc: PublicBabyDoc, routePublicId: string) {
     publicId: routePublicId,
     theme: doc.theme,
     locale: doc.resolvedLocale,
+    timeZone: doc.timeZone,
     babyBorn: doc.babyBorn,
     wentToHospital: doc.wentToHospital,
     laborStarted: doc.laborStarted,

@@ -7,6 +7,7 @@ import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from ".
 import type { Milestone } from "../src/types";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
+import { DEFAULT_TIME_ZONE } from "../src/timeZone";
 import { internalMutationWithTriggers } from "./triggers";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
@@ -75,11 +76,16 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
       userId,
       tokenIdentifier,
       locale: "en-GB",
+      timeZone: DEFAULT_TIME_ZONE,
       isAdmin: true,
     });
     return;
   }
-  await ctx.db.patch(existing._id, { tokenIdentifier, isAdmin: true });
+  await ctx.db.patch(existing._id, {
+    tokenIdentifier,
+    timeZone: existing.timeZone ?? DEFAULT_TIME_ZONE,
+    isAdmin: true,
+  });
 }
 
 /**

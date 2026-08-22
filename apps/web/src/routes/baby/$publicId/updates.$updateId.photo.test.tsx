@@ -328,6 +328,9 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
   });
 
   expect(view.getByAltText("Photo of Baby Smith")).toBeTruthy();
+  await vi.waitFor(() => {
+    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  });
   fireEvent.click(view.getByRole("button", { name: "dismiss" }));
   await vi.waitFor(() => {
     expect(mocks.historyBack).toHaveBeenCalled();

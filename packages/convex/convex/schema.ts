@@ -42,6 +42,7 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
+    timeZone: v.optional(v.string()), // IANA zone; legacy profiles fall back to Europe/London
     // Platform staff flag, backfilled before this final schema tightening.
     isAdmin: v.boolean(),
   })

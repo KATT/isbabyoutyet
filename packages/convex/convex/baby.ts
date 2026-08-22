@@ -5,7 +5,6 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
-import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
 import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
 import { internalMutationWithTriggers, mutationWithTriggers } from "./triggers";
@@ -17,6 +16,7 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { resolveBabyPreferences } from "./babyPreferences";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -82,14 +82,12 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const blurDataUrl = baby.blurDataUrl ?? null;
-    const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
       ...(await toBabyDto(ctx, baby)),
       photoUrl,
       thumbnailUrl,
       blurDataUrl,
-      resolvedLocale,
     };
   },
 });
@@ -171,6 +169,7 @@ export async function schedulePushNotification(
     createdAt: Date.now(),
   });
 
+  const preferences = await resolveBabyPreferences(ctx.db, baby);
   const scheduledId = await ctx.scheduler.runAt(
     scheduledFor,
     internal.pushNotifications.sendNotification,
@@ -183,7 +182,7 @@ export async function schedulePushNotification(
       customMessage: opts.customMessage,
       photoId: opts.photoId,
       updateId: opts.updateId,
-      locale: await resolveBabyLocale(ctx.db, baby),
+      locale: preferences.resolvedLocale,
     },
   );
 
@@ -292,17 +291,6 @@ async function generateUniquePublicId(opts: {
   }
 
   return publicId;
-}
-
-async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
-  if (baby.locale) {
-    return resolveSupportedLocale(baby.locale);
-  }
-  const profile = await db
-    .query("userProfiles")
-    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", baby.ownerTokenIdentifier))
-    .unique();
-  return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
 }
 
 export const create = mutationWithTriggers({

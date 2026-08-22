@@ -7,7 +7,10 @@ import { LocaleProvider } from "@/lib/i18n";
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signUpEmail: vi.fn<
-    (opts: { email: string; password: string; name: string }) => Promise<{
+    (
+      opts: { email: string; password: string; name: string },
+      fetchOptions: { headers: Record<string, string> },
+    ) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
@@ -23,9 +26,13 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/lib/auth-client", () => ({
+  getBrowserAuthHeaders: () => ({ "x-time-zone": "Asia/Tokyo" }),
   authClient: {
     signUp: {
-      email: (opts: { email: string; password: string; name: string }) => mocks.signUpEmail(opts),
+      email: (
+        opts: { email: string; password: string; name: string },
+        fetchOptions: { headers: Record<string, string> },
+      ) => mocks.signUpEmail(opts, fetchOptions),
     },
   },
 }));
@@ -80,11 +87,14 @@ test("waits for provider-confirmed Convex auth before SPA navigation after signu
   fireEvent.click(screen.getByRole("button", { name: "Sign Up" }));
 
   await vi.waitFor(() => {
-    expect(mocks.signUpEmail).toHaveBeenCalledWith({
-      email: "parent@example.com",
-      password: "password",
-      name: "Test Parent",
-    });
+    expect(mocks.signUpEmail).toHaveBeenCalledWith(
+      {
+        email: "parent@example.com",
+        password: "password",
+        name: "Test Parent",
+      },
+      { headers: { "x-time-zone": "Asia/Tokyo" } },
+    );
   });
   expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
   expect(mocks.navigate).not.toHaveBeenCalled();

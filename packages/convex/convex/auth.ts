@@ -7,6 +7,7 @@ import { components, internal } from "./_generated/api";
 import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
+import { TIME_ZONE_HINT_HEADER } from "../src/timeZone";
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -101,6 +102,10 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
             localeHint:
               ctx.headers?.get("accept-language") ??
               ctx.request?.headers.get("accept-language") ??
+              null,
+            timeZoneHint:
+              ctx.headers?.get(TIME_ZONE_HINT_HEADER) ??
+              ctx.request?.headers.get(TIME_ZONE_HINT_HEADER) ??
               null,
           },
         );

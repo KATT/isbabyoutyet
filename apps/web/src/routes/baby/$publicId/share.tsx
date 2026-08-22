@@ -26,7 +26,7 @@ import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-ho
 import { getBabySeo } from "@/lib/baby-seo";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 
@@ -80,7 +80,6 @@ export function BabyShareOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const [open, setOpen] = useState(true);
   const [copied, setCopied] = useState(false);
   const completeOnboardingStep = useCompleteOnboardingStep();
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
@@ -96,16 +95,7 @@ export function BabyShareOverlay() {
       );
     }),
   );
-  const share = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/share",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const share = useBabyShareOverlayNav(params.publicId);
   if (!sharePreview) {
     throw notFound();
   }
@@ -145,17 +135,9 @@ export function BabyShareOverlay() {
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          share.dismiss();
-        }
-      }}
+      open={share.open}
+      onOpenChange={share.onOpenChange}
+      onOpenChangeComplete={share.onOpenChangeComplete}
     >
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>

@@ -36,6 +36,7 @@ function renderResource(ui: ReactElement) {
 
 const alma: DashboardBabyCardBaby = {
   name: "Alma Simone Petra Darvill",
+  timeZone: "Europe/London",
   publicId: "alma-simone-petra-darvill",
   dueDate: "2025-12-31",
   dueDateDisplayMode: "exact",
@@ -63,6 +64,7 @@ test("an unborn baby past the due date still shows overdue", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: "2025-12-31",
     dueDateDisplayMode: "exact",
@@ -85,6 +87,7 @@ test("labour in progress beats a past due date", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const inLabor: DashboardBabyCardBaby = {
     name: "Frankie",
+    timeZone: "Europe/London",
     publicId: "baby-in-labor",
     dueDate: "2025-12-31",
     dueDateDisplayMode: "exact",
@@ -115,6 +118,7 @@ test("an unborn baby before the due date shows days remaining", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-13T12:00:00.000Z"));
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
@@ -132,6 +136,7 @@ test("an unborn baby before the due date shows days remaining", async () => {
 test("a message-mode baby card does not show a due date", async () => {
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: null,
     dueDateDisplayMode: "message",
@@ -150,6 +155,7 @@ test("a message-mode baby card does not show a due date", async () => {
 test("a message-mode baby card with no text shows a hidden label", async () => {
   const waiting: DashboardBabyCardBaby = {
     name: "Avery",
+    timeZone: "Europe/London",
     publicId: "baby-waiting",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "message",

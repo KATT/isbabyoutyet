@@ -5,10 +5,9 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
-import { useState } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyPostOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -65,18 +64,8 @@ export function BabyPostUpdateOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const [open, setOpen] = useState(true);
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const post = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/post",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const post = useBabyPostOverlayNav(params.publicId);
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc) {
@@ -86,17 +75,9 @@ export function BabyPostUpdateOverlay() {
 
   return (
     <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        if (!nextOpen) {
-          setOpen(false);
-        }
-      }}
-      onOpenChangeComplete={(nextOpen) => {
-        if (!nextOpen) {
-          post.dismiss();
-        }
-      }}
+      open={post.open}
+      onOpenChange={post.onOpenChange}
+      onOpenChangeComplete={post.onOpenChangeComplete}
     >
       <DialogContent className="sm:max-w-lg">
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
@@ -106,7 +87,7 @@ export function BabyPostUpdateOverlay() {
           babyName={managerBabyDoc.name}
           onPosted={() => {
             void completeOnboardingStep({ stepId: "post_update" });
-            setOpen(false);
+            post.close();
           }}
         />
       </DialogContent>

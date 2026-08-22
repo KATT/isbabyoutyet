@@ -9,7 +9,7 @@ import {
   formatDueDate,
 } from "./utils";
 import { useI18n } from "@/lib/i18n";
-import { openOverlayLink } from "@/lib/overlay-nav";
+import { useBabyPhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 
 type PhotoAvatarProps = {
@@ -24,6 +24,7 @@ type PhotoAvatarProps = {
 
 function PhotoAvatar(props: PhotoAvatarProps) {
   const { t } = useI18n();
+  const photo = useBabyPhotoOverlayNav(props.publicId ?? "");
 
   const baseClasses =
     "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
@@ -59,10 +60,7 @@ function PhotoAvatar(props: PhotoAvatarProps) {
   if (props.photoUrl && props.publicId) {
     return (
       <Link
-        {...openOverlayLink({
-          to: "/baby/$publicId/photo",
-          params: { publicId: props.publicId },
-        })}
+        {...photo.openLink}
         aria-label={t("Photo of {{name}}", { name: props.babyName })}
         className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
       >
@@ -143,8 +141,10 @@ export function StatusDisplay(props: StatusDisplayProps) {
   const showDueDateBox =
     props.currentStatus.type === "not_yet" &&
     (publicDueDateText.length > 0 || exactDueDate !== null);
-  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
-  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate, props.baby.timeZone) : 0;
+  const daysUntilDueDate = exactDueDate
+    ? getDaysUntilDueDate(exactDueDate, props.baby.timeZone)
+    : 0;
   const meta = STATUS_META[props.currentStatus.type];
   const isBorn = props.currentStatus.type === "born";
   const sublineKey =
@@ -177,8 +177,11 @@ export function StatusDisplay(props: StatusDisplayProps) {
             : props.currentStatus.type === "labor_started"
               ? t("Started")
               : t("Since")}{" "}
-          {formatDate(props.currentStatus.date, locale)} (
-          {getRelativeTime(props.currentStatus.date, locale)})
+          {formatDate(props.currentStatus.date, {
+            locale,
+            timeZone: props.baby.timeZone,
+          })}{" "}
+          ({getRelativeTime(props.currentStatus.date, locale)})
         </p>
       )}
 

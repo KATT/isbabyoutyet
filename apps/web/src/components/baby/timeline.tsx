@@ -58,7 +58,7 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { openOverlayLink } from "@/lib/overlay-nav";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
@@ -100,6 +100,7 @@ function composerSchema(opts: {
   t: TranslationFunction;
   allowedMilestones: readonly Milestone[];
   babyId: Id<"baby">;
+  timeZone: string;
 }) {
   return z
     .object({
@@ -110,7 +111,7 @@ function composerSchema(opts: {
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(opts.t),
+      occurredAt: optionalHtmlDateTime(opts.t, opts.timeZone),
       photo: z.custom<File>().nullable(),
     })
     .refine(
@@ -167,9 +168,12 @@ function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale
   return rtf.format(0, "second");
 }
 
-/** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
-function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): string {
-  return new Date(timestamp).toLocaleString(locale, {
+function formatOccurredAt(
+  timestamp: number,
+  opts: { locale: SupportedLocale; timeZone: string },
+): string {
+  return new Date(timestamp).toLocaleString(opts.locale, {
+    timeZone: opts.timeZone,
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -207,6 +211,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     t,
     allowedMilestones: futureMilestones,
     babyId: props.babyId,
+    timeZone: props.baby.timeZone,
   });
 
   const form = useZodForm({
@@ -392,7 +397,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={htmlDateTimeNow()}
+                              max={htmlDateTimeNow(props.baby.timeZone)}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -530,14 +535,23 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               <Badge
                 className="shrink-0"
                 title={
-                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
+                  update.occurredAt
+                    ? formatOccurredAt(update.occurredAt, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })
+                    : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
                 {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt, locale)}
+                    ·{" "}
+                    {formatOccurredAt(update.occurredAt, {
+                      locale,
+                      timeZone: props.baby.timeZone,
+                    })}
                   </span>
                 )}
               </Badge>
@@ -560,7 +574,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={t("Posted {{date}}", {
-                date: new Date(props.item.postedAt).toLocaleString(locale),
+                date: new Date(props.item.postedAt).toLocaleString(locale, {
+                  timeZone: props.baby.timeZone,
+                }),
               })}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
@@ -668,13 +684,14 @@ type TimelinePhotoProps = {
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
 
   return (
     <Link
-      {...openOverlayLink({
-        to: "/baby/$publicId/updates/$updateId/photo",
-        params: { publicId: props.publicId, updateId: props.updateId },
-      })}
+      {...photo.openLink}
       aria-label={t("View photo full size")}
       className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
     >
@@ -692,6 +709,7 @@ function TimelinePhoto(props: TimelinePhotoProps) {
 type EncouragementTimelineItemProps = {
   item: EncouragementItemData;
   isOwner: boolean;
+  timeZone: string;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
@@ -804,7 +822,9 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               </span>
               <span
                 className="text-xs text-muted-foreground shrink-0"
-                title={new Date(encouragement.createdAt).toLocaleString(locale)}
+                title={new Date(encouragement.createdAt).toLocaleString(locale, {
+                  timeZone: props.timeZone,
+                })}
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
@@ -1046,6 +1066,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               key={item._id}
               item={item}
               isOwner={props.isOwner}
+              timeZone={props.baby.timeZone}
               currentVisitorId={currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}

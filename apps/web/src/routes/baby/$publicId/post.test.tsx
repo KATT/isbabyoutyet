@@ -169,6 +169,8 @@ const managerBabyDoc = {
   publicDueDateText: null,
   theme: null,
   locale: null,
+  resolvedLocale: "en-GB" as const,
+  timeZone: "Europe/London",
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -222,15 +224,19 @@ test("post overlay closes to the baby page after dismiss", async () => {
   };
 
   await using view = renderResource(<BabyPostUpdateOverlay />);
-
+  await vi.waitFor(() => {
+    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  });
   fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
   expect(mocks.historyBack).not.toHaveBeenCalled();
-  expect(mocks.navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
-    params: { publicId: "baby-smith" },
-    replace: true,
-    resetScroll: false,
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/baby/$publicId",
+      params: { publicId: "baby-smith" },
+      replace: true,
+      resetScroll: false,
+    });
   });
 });
 
@@ -251,10 +257,14 @@ test("post overlay prefers history.back when opened via push", async () => {
   };
 
   await using view = renderResource(<BabyPostUpdateOverlay />);
-
+  await vi.waitFor(() => {
+    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  });
   fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
-  expect(mocks.historyBack).toHaveBeenCalledOnce();
+  await vi.waitFor(() => {
+    expect(mocks.historyBack).toHaveBeenCalledOnce();
+  });
   expect(mocks.navigate).not.toHaveBeenCalled();
 });
 
@@ -276,14 +286,18 @@ test("successful post completes onboarding and closes the overlay", async () => 
   };
 
   await using view = renderResource(<BabyPostUpdateOverlay />);
-
+  await vi.waitFor(() => {
+    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  });
   fireEvent.click(view.getByRole("button", { name: "post for Baby Smith" }));
 
   expect(mocks.completeStep).toHaveBeenCalledWith({ stepId: "post_update" });
-  expect(mocks.navigate).toHaveBeenCalledWith({
-    to: "/baby/$publicId",
-    params: { publicId: "baby-smith" },
-    replace: true,
-    resetScroll: false,
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/baby/$publicId",
+      params: { publicId: "baby-smith" },
+      replace: true,
+      resetScroll: false,
+    });
   });
 });

@@ -82,7 +82,7 @@ type BabyOgImageBase = {
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
   photoUrl: string | null;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+} & Partial<{ milestoneVisibility: MilestoneVisibility | null; timeZone: string }>;
 
 export type BabyOgImageInput = BabyOgImageBase &
   Partial<
@@ -131,6 +131,7 @@ export async function createBabyOgImage(baby: BabyOgImageInput) {
           publicId: "",
           theme: baby.theme,
           locale: baby.locale,
+          timeZone: baby.timeZone,
           babyBorn: baby.babyBorn,
           wentToHospital: baby.wentToHospital,
           laborStarted: baby.laborStarted,

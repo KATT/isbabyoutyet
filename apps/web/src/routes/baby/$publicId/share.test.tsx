@@ -116,6 +116,7 @@ function babyDoc(opts: {
     theme: opts.theme,
     locale: "en-GB",
     resolvedLocale: "en-GB",
+    timeZone: "Europe/London",
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,

@@ -33,7 +33,11 @@ import { getBabySeo } from "@/lib/baby-seo";
 import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import {
+  useBabyPostOverlayNav,
+  useBabySettingsOverlayNav,
+  useBabyShareOverlayNav,
+} from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
 
@@ -202,6 +206,7 @@ export function docToBabyData(
     name: doc.name,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
@@ -233,6 +238,7 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
@@ -272,36 +278,9 @@ function BabyPageLayout() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const share = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/share",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
-  const post = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/post",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
-  const settings = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/settings",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const share = useBabyShareOverlayNav(params.publicId);
+  const post = useBabyPostOverlayNav(params.publicId);
+  const settings = useBabySettingsOverlayNav(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;

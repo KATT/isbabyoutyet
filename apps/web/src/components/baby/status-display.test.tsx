@@ -5,6 +5,14 @@ import type { BabyData } from "@workspace/convex/src/types";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({
+    history: {
+      location: { state: { overlay: undefined } },
+      canGoBack: () => false,
+      back: vi.fn<() => void>(),
+    },
+    navigate: vi.fn<() => Promise<void>>(async () => {}),
+  }),
   Link: (
     props: React.ComponentProps<"a"> & {
       to: string | undefined;
@@ -34,6 +42,7 @@ function useFakeTimersResource(now: Date) {
 
 const baby: BabyData = {
   name: "Nova",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,

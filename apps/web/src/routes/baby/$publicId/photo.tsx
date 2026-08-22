@@ -1,7 +1,7 @@
 import { PhotoLightbox } from "@/components/baby/photo-lightbox";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyPhotoOverlayNav } from "@/lib/overlay-nav";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
@@ -55,23 +55,14 @@ export function BabyPhotoOverlay() {
   if (!babyDoc?.photoUrl) {
     throw notFound();
   }
-  const photo = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/photo",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const photo = useBabyPhotoOverlayNav(params.publicId);
 
   return (
     <PhotoLightbox
       photoUrl={babyDoc.photoUrl}
       blurDataUrl={babyDoc.blurDataUrl ?? null}
       alt={t("Photo of {{name}}", { name: babyDoc.name })}
-      onDismiss={photo.dismiss}
+      overlay={photo}
     />
   );
 }

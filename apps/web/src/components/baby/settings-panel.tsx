@@ -236,8 +236,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Labour started")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.laborStarted, locale)} (
-                      {getRelativeTime(props.baby.laborStarted, locale)})
+                      {formatDate(props.baby.laborStarted, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.laborStarted, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -263,8 +266,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Gone to hospital")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.wentToHospital, locale)} (
-                      {getRelativeTime(props.baby.wentToHospital, locale)})
+                      {formatDate(props.baby.wentToHospital, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.wentToHospital, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -290,8 +296,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Baby born")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.babyBorn, locale)} (
-                      {getRelativeTime(props.baby.babyBorn, locale)})
+                      {formatDate(props.baby.babyBorn, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.babyBorn, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>

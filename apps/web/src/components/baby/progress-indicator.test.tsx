@@ -22,6 +22,7 @@ function renderResource(ui: ReactElement) {
 
 const waitingBaby: BabyData = {
   name: "Baby Smith",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,

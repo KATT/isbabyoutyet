@@ -72,6 +72,7 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
 
@@ -92,7 +93,7 @@ test("a fresh login retries the profile without taking auth ownership from the p
   const guard = makeGuardCtx();
   guard.queryFn
     .mockResolvedValueOnce(null)
-    .mockResolvedValueOnce({ locale: "en-US", isAdmin: false });
+    .mockResolvedValueOnce({ locale: "en-US", timeZone: "Europe/London", isAdmin: false });
   guard.ctx.context.convexClient = { setAuth };
 
   const result = await guard.beforeLoad(guard.ctx);
@@ -134,7 +135,7 @@ test("client navigations redirect when an authenticated profile cannot be read",
 
 test("client navigations keep the cached profile", async () => {
   getToken.mockReset();
-  const cachedProfile = { locale: "sv", isAdmin: false };
+  const cachedProfile = { locale: "sv", timeZone: "Europe/London", isAdmin: false };
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
 
@@ -175,7 +176,11 @@ test("server render reuses the layout token without calling getAuthToken", async
   getToken.mockReset();
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
-  guard.queryFn.mockResolvedValueOnce({ locale: "en-GB", isAdmin: false });
+  guard.queryFn.mockResolvedValueOnce({
+    locale: "en-GB",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
   guard.ctx.context.token = "ssr-token";
   guard.ctx.context.convexClient = { setAuth };
 

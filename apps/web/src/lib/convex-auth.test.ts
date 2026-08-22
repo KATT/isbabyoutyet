@@ -98,7 +98,11 @@ test("setup tolerates a missing session atom", async () => {
 test("a session resolving to none clears the cached profile; pending or signed-in leaves it", () => {
   const clients = makeClients();
   setupClientConvexAuth(clients.convexQueryClient as never, clients.queryClient);
-  clients.queryClient.setQueryData(profileKey, { locale: "sv", isAdmin: false });
+  clients.queryClient.setQueryData(profileKey, {
+    locale: "sv",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
 
   emitSession({ data: null, isPending: true });
   expect(clients.queryClient.getQueryData(profileKey)).not.toBeNull();
