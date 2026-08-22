@@ -116,7 +116,7 @@ export type OverlayControl = Pick<
   "open" | "close" | "onOpenChange" | "onOpenChangeComplete"
 >;
 
-export function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
+function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useEffect(() => {

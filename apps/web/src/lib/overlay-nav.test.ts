@@ -4,7 +4,7 @@ import {
   closeOverlayLink,
   dismissOverlay,
   openOverlayLink,
-  useOverlayNav,
+  useBabyPostOverlayNav,
 } from "@/lib/overlay-nav";
 
 const router = vi.hoisted(() => ({
@@ -118,10 +118,7 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
 test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
   router.history.back.mockClear();
   const hook = renderHook(() =>
-    useOverlayNav({
-      open: { to: "/baby/$publicId/post", params: { publicId: "baby-smith" } },
-      close: { to: "/baby/$publicId", params: { publicId: "baby-smith" } },
-    }),
+    useBabyPostOverlayNav("baby-smith"),
   );
 
   expect(hook.result.current.open).toBe(false);
