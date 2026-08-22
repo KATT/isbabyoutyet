@@ -1,5 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
   closeOverlayLink,
   dismissOverlay,
@@ -115,14 +116,27 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
   expect(navigate).toHaveBeenCalledWith(closeLink);
 });
 
-test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
+test("useOverlayNav owns enter/exit state and dismisses after animation", () => {
   router.history.back.mockClear();
+  const frames: FrameRequestCallback[] = [];
+  const requestFrame = vi
+    .spyOn(globalThis, "requestAnimationFrame")
+    .mockImplementation((callback) => {
+      frames.push(callback);
+      return frames.length;
+    });
+  const cancelFrame = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
+  using _animationFrame = makeResource({}, () => {
+    requestFrame.mockRestore();
+    cancelFrame.mockRestore();
+  });
   const hook = renderHook(() => useBabyPostOverlayNav("baby-smith"));
 
   expect(hook.result.current.open).toBe(false);
-  await vi.waitFor(() => {
-    expect(hook.result.current.open).toBe(true);
+  act(() => {
+    frames[0]?.(0);
   });
+  expect(hook.result.current.open).toBe(true);
   act(() => {
     hook.result.current.close();
   });
