@@ -1,12 +1,8 @@
-import { fireEvent, render } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import type { ReactElement, ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
-
-const mocks = vi.hoisted(() => ({
-  restartTour: vi.fn<(args: Record<string, never>) => Promise<void>>(async () => {}),
-}));
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: { component: unknown }) => ({
@@ -24,10 +20,6 @@ vi.mock("@tanstack/react-router", () => ({
   Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
   ),
-}));
-
-vi.mock("convex/react", () => ({
-  useMutation: () => mocks.restartTour,
 }));
 
 vi.mock("@workspace/convex-prefetch", () => ({
@@ -81,7 +73,6 @@ function renderResource(ui: ReactElement) {
 }
 
 test("profile sheet groups preferences and secondary dashboard actions", async () => {
-  mocks.restartTour.mockClear();
   await using view = renderResource(<DashboardSettingsSheet />);
 
   expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
@@ -91,9 +82,5 @@ test("profile sheet groups preferences and secondary dashboard actions", async (
     "/dashboard/admin",
   );
   expect(view.getByRole("button", { name: "Log out" })).toBeTruthy();
-
-  fireEvent.click(view.getByRole("button", { name: "Restart tour" }));
-  await vi.waitFor(() => {
-    expect(mocks.restartTour).toHaveBeenCalledWith({});
-  });
+  expect(view.queryByText("Restart tour")).toBeNull();
 });

@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Palette, Shield, SignOut, Sparkle, User } from "@phosphor-icons/react";
+import { Palette, Shield, SignOut, User } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
-import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -60,7 +59,6 @@ export function DashboardSettingsSheet() {
   const { t } = useI18n();
   const authContext = authRoute.useRouteContext();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
-  const restartTour = useMutation(api.onboarding.restart);
   const [open, setOpen] = useState(true);
   const settings = useOverlayNav({
     open: { to: "/dashboard/settings" },
@@ -120,26 +118,6 @@ export function DashboardSettingsSheet() {
               </ItemContent>
               <ItemActions>
                 <ModeToggle className="rounded-full border-0" />
-              </ItemActions>
-            </Item>
-
-            <Item variant="muted">
-              <ItemMedia variant="icon">
-                <Sparkle />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Restart tour")}</ItemTitle>
-              </ItemContent>
-              <ItemActions>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={async () => {
-                    await restartTour({});
-                  }}
-                >
-                  {t("Restart tour")}
-                </Button>
               </ItemActions>
             </Item>
 
