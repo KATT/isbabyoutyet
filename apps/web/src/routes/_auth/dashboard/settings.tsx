@@ -31,10 +31,7 @@ import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { useOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
-import {
-  DashboardPage,
-  type DashboardLoaderData,
-} from "@/routes/_auth/dashboard/index";
+import { DashboardPage, type DashboardLoaderData } from "@/routes/_auth/dashboard/index";
 
 const authRoute = getRouteApi("/_auth");
 
@@ -53,7 +50,7 @@ function DashboardSettingsRoute() {
 
   return (
     <>
-      <DashboardPage loaderData={loaderData} />
+      <DashboardPage babies={loaderData.babies} onboarding={loaderData.onboarding} />
       <DashboardSettingsSheet />
     </>
   );
@@ -150,11 +147,7 @@ export function DashboardSettingsSheet() {
               <Item
                 variant="outline"
                 render={
-                  <Link
-                    to="/dashboard/admin"
-                    search={ADMIN_DEFAULT_SEARCH}
-                    preload="viewport"
-                  />
+                  <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
                 }
               >
                 <ItemMedia variant="icon">

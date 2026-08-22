@@ -34,13 +34,14 @@ export type DashboardLoaderData = {
 };
 
 function DashboardIndexPage() {
-  return <DashboardPage loaderData={Route.useLoaderData()} />;
+  const loaderData = Route.useLoaderData();
+  return <DashboardPage babies={loaderData.babies} onboarding={loaderData.onboarding} />;
 }
 
-export function DashboardPage(props: { loaderData: DashboardLoaderData }) {
+export function DashboardPage(props: DashboardLoaderData) {
   const { t } = useI18n();
-  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, props.loaderData.babies);
-  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.loaderData.onboarding);
+  const babiesQuery = usePreloadedConvexQuery(api.baby.listByUser, props.babies);
+  const onboardingQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
   const babies = babiesQuery.data;
   const progress = onboardingQuery.data;
 
@@ -48,7 +49,7 @@ export function DashboardPage(props: { loaderData: DashboardLoaderData }) {
     <div className="flex min-h-screen flex-col bg-background bg-dots">
       <OnboardingHost
         surface="dashboard"
-        onboarding={props.loaderData.onboarding}
+        onboarding={props.onboarding}
         enabled={undefined}
         spotlight={undefined}
         babyPublicId={undefined}
