@@ -85,14 +85,14 @@ export function DashboardHeader() {
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
         <Link
           to="/"
-          className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm backdrop-blur-md transition-transform hover:-rotate-2"
+          className="flex items-center gap-2 rounded-full bg-background/85 py-1.5 pl-2 pr-4 shadow-sm backdrop-blur-md transition-transform hover:-rotate-2"
         >
           <span className="flex size-7 items-center justify-center rounded-full bg-primary/15">
             <BabyIcon className="size-4 text-primary" />
           </span>
           <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
         </Link>
-        <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 shadow-sm backdrop-blur-md">
+        <div className="flex items-center gap-1 rounded-full bg-background/85 p-1 shadow-sm backdrop-blur-md">
           <Button
             size="sm"
             className="rounded-full font-bold"
@@ -110,7 +110,7 @@ export function DashboardHeader() {
             nativeButton={false}
             aria-label={t("Settings")}
           >
-            <Avatar size="sm">
+            <Avatar size="sm" className="after:border-0">
               <AvatarFallback>
                 <User />
               </AvatarFallback>

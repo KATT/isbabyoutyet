@@ -81,15 +81,15 @@ export function DashboardSettingsSheet() {
         }
       }}
     >
-      <SheetContent side="right" className="w-full sm:max-w-sm">
-        <SheetHeader className="border-b">
+      <SheetContent side="right" className="w-full border-0 sm:max-w-sm">
+        <SheetHeader>
           <SheetTitle>{t("Settings")}</SheetTitle>
           <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
           <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-            <Avatar size="lg">
+            <Avatar size="lg" className="after:border-0">
               <AvatarFallback>
                 <User />
               </AvatarFallback>
@@ -110,7 +110,7 @@ export function DashboardSettingsSheet() {
           </section>
 
           <ItemGroup className="gap-2">
-            <Item variant="outline">
+            <Item variant="muted">
               <ItemMedia variant="icon">
                 <Palette />
               </ItemMedia>
@@ -119,11 +119,11 @@ export function DashboardSettingsSheet() {
                 <ItemDescription>{t("Theme")}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <ModeToggle className="rounded-full" />
+                <ModeToggle className="rounded-full border-0" />
               </ItemActions>
             </Item>
 
-            <Item variant="outline">
+            <Item variant="muted">
               <ItemMedia variant="icon">
                 <Sparkle />
               </ItemMedia>
@@ -132,7 +132,7 @@ export function DashboardSettingsSheet() {
               </ItemContent>
               <ItemActions>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={async () => {
                     await restartTour({});
@@ -145,7 +145,7 @@ export function DashboardSettingsSheet() {
 
             {profileQuery.data?.isAdmin ? (
               <Item
-                variant="outline"
+                variant="muted"
                 render={
                   <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
                 }
@@ -161,9 +161,9 @@ export function DashboardSettingsSheet() {
           </ItemGroup>
         </div>
 
-        <SheetFooter className="border-t">
+        <SheetFooter>
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={async () => {
               await authClient.signOut({
                 fetchOptions: {
