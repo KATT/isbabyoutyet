@@ -1,8 +1,12 @@
 import { render } from "@testing-library/react";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode, RefObject } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
+
+const mocks = vi.hoisted(() => ({
+  sheetInitialFocus: null as RefObject<HTMLDivElement | null> | null,
+}));
 
 vi.mock("@tanstack/react-router", () => ({
   createFileRoute: () => (options: { component: unknown }) => ({
@@ -36,7 +40,13 @@ vi.mock("@workspace/ui/components/mode-toggle", () => ({
 
 vi.mock("@workspace/ui/components/sheet", () => ({
   Sheet: (props: { children: ReactNode }) => <div>{props.children}</div>,
-  SheetContent: (props: { children: ReactNode }) => <aside>{props.children}</aside>,
+  SheetContent: (props: {
+    children: ReactNode;
+    initialFocus: RefObject<HTMLDivElement | null>;
+  }) => {
+    mocks.sheetInitialFocus = props.initialFocus;
+    return <aside ref={props.initialFocus}>{props.children}</aside>;
+  },
   SheetDescription: (props: { children: ReactNode }) => <p>{props.children}</p>,
   SheetFooter: (props: { children: ReactNode }) => <footer>{props.children}</footer>,
   SheetHeader: (props: { children: ReactNode }) => <header>{props.children}</header>,
@@ -76,6 +86,7 @@ function renderResource(ui: ReactElement) {
 test("profile sheet groups preferences and secondary dashboard actions", async () => {
   await using view = renderResource(<DashboardSettingsSheet />);
 
+  expect(mocks.sheetInitialFocus?.current).toBe(view.getByRole("complementary"));
   expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
   expect(view.getByText("Language and timezone controls")).toBeTruthy();
   expect(view.getByRole("button", { name: "Toggle theme" })).toBeTruthy();
