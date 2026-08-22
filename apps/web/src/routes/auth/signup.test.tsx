@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
+  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -34,6 +35,10 @@ vi.mock("@/lib/auth-client", () => ({
       ) => mocks.signUpEmail(opts, fetchOptions),
     },
   },
+}));
+
+vi.mock("@/lib/convexAuthHandoff", () => ({
+  waitForConvexAuth: () => mocks.waitForConvexAuth(),
 }));
 
 vi.mock("sonner", () => ({
@@ -63,32 +68,41 @@ test("signup has no test-account picker and starts empty", async () => {
   expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
 });
 
-test("signup sends browser preference hints", async () => {
+test("waits for provider-confirmed Convex auth before SPA navigation after signup", async () => {
   mocks.navigate.mockClear();
   mocks.signUpEmail.mockClear();
+  mocks.waitForConvexAuth.mockClear();
   mocks.signUpEmail.mockResolvedValueOnce({ error: null });
+  let confirmAuth = () => {};
+  const authConfirmation = new Promise<void>((resolve) => {
+    confirmAuth = resolve;
+  });
+  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
+
   await using _view = renderSignup();
 
-  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Alice" } });
-  fireEvent.change(screen.getByLabelText("Email"), {
-    target: { value: "alice@example.com" },
-  });
-  fireEvent.change(screen.getByLabelText("Password"), {
-    target: { value: "password123" },
-  });
-  const form = screen.getByLabelText("Email").closest("form");
-  if (!form) throw new Error("signup form missing");
-  fireEvent.submit(form);
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Test Parent" } });
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "parent@example.com" } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password" } });
+  fireEvent.click(screen.getByRole("button", { name: "Sign Up" }));
 
   await vi.waitFor(() => {
     expect(mocks.signUpEmail).toHaveBeenCalledWith(
       {
-        email: "alice@example.com",
-        password: "password123",
-        name: "Alice",
+        email: "parent@example.com",
+        password: "password",
+        name: "Test Parent",
       },
       { headers: { "x-time-zone": "Asia/Tokyo" } },
     );
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
+  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/dashboard",
+    });
+  });
 });

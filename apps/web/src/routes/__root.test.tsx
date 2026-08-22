@@ -41,6 +41,14 @@ vi.mock("@convex-dev/better-auth/react", () => ({
   ConvexBetterAuthProvider: (props: { children: React.ReactNode }) => props.children,
 }));
 
+vi.mock("convex/react", () => ({
+  useConvexAuth: () => ({
+    isAuthenticated: false,
+    isLoading: false,
+    isRefreshing: false,
+  }),
+}));
+
 vi.mock("@vercel/analytics/react", () => ({
   Analytics: () => null,
 }));

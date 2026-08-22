@@ -58,9 +58,9 @@ export const Route = createFileRoute("/_auth")({
       if (!token) {
         throw redirect({ to: "/" });
       }
-      // Right after login, authenticate the Convex client with the fresh token
-      // before reading the profile created by the auth hook.
-      opts.context.convexClient.setAuth(async () => token);
+      // The mounted provider exclusively owns browser Convex authentication.
+      // A fresh session can invalidate a cached anonymous profile, so retry
+      // once without replacing the provider's token callback.
       opts.context.queryClient.removeQueries({
         queryKey: convexQuery(api.profile.get, {}).queryKey,
       });

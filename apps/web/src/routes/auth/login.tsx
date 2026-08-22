@@ -26,6 +26,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
+import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -110,6 +111,7 @@ function LoginPage() {
                   throw new Error(result.error.message || t("Failed to sign in"));
                 }
 
+                await waitForConvexAuth();
                 await router.navigate({ to: "/dashboard" });
               }}
             >
