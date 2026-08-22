@@ -1,10 +1,9 @@
-import { Palette, Shield, SignOut, User } from "@phosphor-icons/react";
+import { Palette, Shield, SignOut } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed } from "@workspace/query-prefetch";
-import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
 import {
   Item,

@@ -15,6 +15,14 @@ import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { FunctionReturnType } from "convex/server";
 
 vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({
+    history: {
+      location: { state: { overlay: undefined } },
+      canGoBack: () => false,
+      back: vi.fn<() => void>(),
+    },
+    navigate: vi.fn<() => Promise<void>>(async () => {}),
+  }),
   Link: (
     props: React.ComponentProps<"a"> & {
       to: string | undefined;

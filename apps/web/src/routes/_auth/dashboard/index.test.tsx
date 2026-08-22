@@ -5,6 +5,14 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 
 vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({
+    history: {
+      location: { state: { overlay: undefined } },
+      canGoBack: () => false,
+      back: vi.fn<() => void>(),
+    },
+    navigate: vi.fn<() => Promise<void>>(async () => {}),
+  }),
   Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
     <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
   ),
