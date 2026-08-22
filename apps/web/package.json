@@ -70,7 +70,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitest/browser-playwright": "^4.1.11",
     "babel-plugin-react-compiler": "^1.0.0",
-    "convex-test": "^0.0.55",
+    "convex-test": "^0.0.56",
     "jsdom": "^30.0.1",
     "nitro": "latest",
     "oxfmt": "catalog:",
