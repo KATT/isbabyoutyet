@@ -21,6 +21,7 @@ import type * as babyThumbnails from "../babyThumbnails.js";
 import type * as cacheInvalidation from "../cacheInvalidation.js";
 import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
+import type * as crons from "../crons.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   cacheInvalidation: typeof cacheInvalidation;
   coParentInviteClaims: typeof coParentInviteClaims;
   coParents: typeof coParents;
+  crons: typeof crons;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;

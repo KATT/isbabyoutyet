@@ -103,6 +103,8 @@ export default defineSchema({
     timelineItemId: v.id("timelineItems"), // Binding to the timeline feed
     // Metadata
     visitorId: v.string(), // Unique visitor ID (stored in localStorage)
+    // Server-controlled marker for seeded homepage-demo encouragements.
+    demoFixture: v.optional(v.boolean()),
     userAgent: v.optional(v.string()), // User agent string
     locale: v.optional(v.string()), // Browser locale (e.g., "en-US")
     timezone: v.optional(v.string()), // Timezone (e.g., "America/New_York")

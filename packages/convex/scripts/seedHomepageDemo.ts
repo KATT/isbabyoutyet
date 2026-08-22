@@ -167,6 +167,18 @@ function refreshHomepageDemoLocales(opts: {
   return results;
 }
 
+function hasCompleteHomepageDemoPhotoSet(extraConvexArgs: string[]) {
+  const result = convexRun({
+    functionName: "homepageDemo:hasCompletePhotoSet",
+    args: {},
+    extraConvexArgs,
+  });
+  if (typeof result !== "boolean") {
+    throw new Error(`Expected homepage photo sentinel boolean, got ${JSON.stringify(result)}`);
+  }
+  return result;
+}
+
 /** Fixture babies + timeline text only — no sharp work or storage uploads. */
 export async function seedHomepageDemoContent(opts: { extraConvexArgs?: string[] }) {
   const extraConvexArgs = opts.extraConvexArgs ?? [];
@@ -225,12 +237,20 @@ async function uploadHomepageDemoPhotos(opts: { extraConvexArgs: string[] }) {
 /** Resize, upload, and attach homepage demo photos to every locale baby. */
 export async function seedHomepageDemoPhotos(opts: { extraConvexArgs?: string[] }) {
   const extraConvexArgs = opts.extraConvexArgs ?? [];
+  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+    console.log("Homepage demo photos already stored — skipping uploads.");
+    return [];
+  }
   const photos = await uploadHomepageDemoPhotos({ extraConvexArgs });
   return refreshHomepageDemoLocales({ extraConvexArgs, photos });
 }
 
 export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
   const extraConvexArgs = opts.extraConvexArgs ?? [];
+  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+    console.log("Homepage demo already initialized — daily cron handles resets.");
+    return [];
+  }
   await seedHomepageDemoContent({ extraConvexArgs });
   return await seedHomepageDemoPhotos({ extraConvexArgs });
 }
