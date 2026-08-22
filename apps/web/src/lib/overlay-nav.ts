@@ -159,3 +159,48 @@ export function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
     dismiss,
   };
 }
+
+export function useDashboardSettingsOverlayNav() {
+  return useOverlayNav({
+    open: { to: "/dashboard/settings" },
+    close: { to: "/dashboard" },
+  });
+}
+
+export function useBabySettingsOverlayNav(publicId: string) {
+  return useOverlayNav({
+    open: { to: "/baby/$publicId/settings", params: { publicId } },
+    close: { to: "/baby/$publicId", params: { publicId } },
+  });
+}
+
+export function useBabyPostOverlayNav(publicId: string) {
+  return useOverlayNav({
+    open: { to: "/baby/$publicId/post", params: { publicId } },
+    close: { to: "/baby/$publicId", params: { publicId } },
+  });
+}
+
+export function useBabyShareOverlayNav(publicId: string) {
+  return useOverlayNav({
+    open: { to: "/baby/$publicId/share", params: { publicId } },
+    close: { to: "/baby/$publicId", params: { publicId } },
+  });
+}
+
+export function useBabyPhotoOverlayNav(publicId: string) {
+  return useOverlayNav({
+    open: { to: "/baby/$publicId/photo", params: { publicId } },
+    close: { to: "/baby/$publicId", params: { publicId } },
+  });
+}
+
+export function useBabyUpdatePhotoOverlayNav(opts: { publicId: string; updateId: string }) {
+  return useOverlayNav({
+    open: {
+      to: "/baby/$publicId/updates/$updateId/photo",
+      params: { publicId: opts.publicId, updateId: opts.updateId },
+    },
+    close: { to: "/baby/$publicId", params: { publicId: opts.publicId } },
+  });
+}

@@ -27,7 +27,7 @@ import {
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard/admin";
 import { DashboardPage, type DashboardLoaderData } from "@/routes/_auth/dashboard/index";
 
@@ -58,10 +58,7 @@ export function DashboardSettingsSheet() {
   const { t } = useI18n();
   const authContext = authRoute.useRouteContext();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
-  const settings = useOverlayNav({
-    open: { to: "/dashboard/settings" },
-    close: { to: "/dashboard" },
-  });
+  const settings = useDashboardSettingsOverlayNav();
 
   return (
     <Sheet
@@ -76,20 +73,6 @@ export function DashboardSettingsSheet() {
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
-          <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-            <Avatar size="lg">
-              <AvatarFallback>
-                <User />
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="font-bold">{t("Settings")}</p>
-              <p className="text-sm text-muted-foreground">
-                {t("Manage your profile and app preferences.")}
-              </p>
-            </div>
-          </div>
-
           <section className="flex flex-col gap-2">
             <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t("Language and time zone")}

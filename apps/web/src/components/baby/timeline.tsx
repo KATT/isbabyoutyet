@@ -58,7 +58,7 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { openOverlayLink } from "@/lib/overlay-nav";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
@@ -684,13 +684,14 @@ type TimelinePhotoProps = {
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
 
   return (
     <Link
-      {...openOverlayLink({
-        to: "/baby/$publicId/updates/$updateId/photo",
-        params: { publicId: props.publicId, updateId: props.updateId },
-      })}
+      {...photo.openLink}
       aria-label={t("View photo full size")}
       className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
     >

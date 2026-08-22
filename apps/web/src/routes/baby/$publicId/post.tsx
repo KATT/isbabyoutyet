@@ -7,7 +7,7 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyPostOverlayNav } from "@/lib/overlay-nav";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/post")({
@@ -65,16 +65,7 @@ export function BabyPostUpdateOverlay() {
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const post = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/post",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const post = useBabyPostOverlayNav(params.publicId);
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc) {

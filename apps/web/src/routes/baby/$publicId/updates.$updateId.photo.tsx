@@ -1,7 +1,7 @@
 import { PhotoLightbox } from "@/components/baby/photo-lightbox";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
@@ -62,15 +62,9 @@ export function BabyUpdatePhotoOverlay() {
   if (!updatePhoto) {
     throw notFound();
   }
-  const photo = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/updates/$updateId/photo",
-      params: { publicId: params.publicId, updateId: params.updateId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: params.publicId,
+    updateId: params.updateId,
   });
 
   return (

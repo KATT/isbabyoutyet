@@ -26,7 +26,7 @@ import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-ho
 import { getBabySeo } from "@/lib/baby-seo";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
-import { useOverlayNav } from "@/lib/overlay-nav";
+import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 
@@ -95,16 +95,7 @@ export function BabyShareOverlay() {
       );
     }),
   );
-  const share = useOverlayNav({
-    open: {
-      to: "/baby/$publicId/share",
-      params: { publicId: params.publicId },
-    },
-    close: {
-      to: "/baby/$publicId",
-      params: { publicId: params.publicId },
-    },
-  });
+  const share = useBabyShareOverlayNav(params.publicId);
   if (!sharePreview) {
     throw notFound();
   }

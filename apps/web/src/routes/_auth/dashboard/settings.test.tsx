@@ -44,7 +44,7 @@ vi.mock("@workspace/ui/components/sheet", () => ({
 }));
 
 vi.mock("@/lib/overlay-nav", () => ({
-  useOverlayNav: () => ({
+  useDashboardSettingsOverlayNav: () => ({
     open: true,
     onOpenChange: vi.fn<(open: boolean) => void>(),
     onOpenChangeComplete: vi.fn<(open: boolean) => void>(),

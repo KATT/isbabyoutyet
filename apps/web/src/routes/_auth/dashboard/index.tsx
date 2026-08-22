@@ -11,7 +11,7 @@ import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { useI18n } from "@/lib/i18n";
-import { openOverlayLink } from "@/lib/overlay-nav";
+import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 
 export const Route = createFileRoute("/_auth/dashboard/")({
   component: DashboardIndexPage,
@@ -79,6 +79,7 @@ export function DashboardPage(props: DashboardLoaderData) {
 
 export function DashboardHeader() {
   const { t } = useI18n();
+  const settings = useDashboardSettingsOverlayNav();
 
   return (
     <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
@@ -106,7 +107,7 @@ export function DashboardHeader() {
             variant="ghost"
             size="icon"
             className="rounded-full"
-            render={<Link {...openOverlayLink({ to: "/dashboard/settings" })} />}
+            render={<Link {...settings.openLink} />}
             nativeButton={false}
             aria-label={t("Settings")}
           >
