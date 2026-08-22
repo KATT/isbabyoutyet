@@ -120,6 +120,9 @@ function useOverlayNav(opts: UseOverlayNavOptions): OverlayNav {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   useEffect(() => {
+    // Defer open until after the first paint so Base UI sees closed→open and
+    // applies `data-starting-style` enter transitions. Must stay async (rAF),
+    // not useLayoutEffect — the browser needs one closed frame first.
     const frame = requestAnimationFrame(() => {
       setOpen(true);
     });
