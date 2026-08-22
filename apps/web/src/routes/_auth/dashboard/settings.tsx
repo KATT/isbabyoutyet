@@ -1,5 +1,6 @@
 import { Palette, Shield, SignOut } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -53,6 +54,19 @@ function DashboardSettingsRoute() {
   );
 }
 
+function SettingsSection(props: { title: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+        {props.title}
+      </h3>
+      <div className="overflow-hidden rounded-xl border border-border bg-card/50">
+        <ItemGroup className="gap-0">{props.children}</ItemGroup>
+      </div>
+    </section>
+  );
+}
+
 export function DashboardSettingsSheet() {
   const { t } = useI18n();
   const authContext = authRoute.useRouteContext();
@@ -72,14 +86,15 @@ export function DashboardSettingsSheet() {
         </SheetHeader>
 
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
-          <section className="flex flex-col gap-2">
-            <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              {t("Language and time zone")}
-            </h3>
-            <LanguageSettings profile={authContext.profile} className="justify-start" />
-          </section>
+          <SettingsSection title={t("Language and time zone")}>
+            <Item>
+              <ItemContent>
+                <LanguageSettings profile={authContext.profile} className="justify-start" />
+              </ItemContent>
+            </Item>
+          </SettingsSection>
 
-          <ItemGroup className="gap-2">
+          <SettingsSection title={t("Appearance")}>
             <Item>
               <ItemMedia variant="icon">
                 <Palette />
@@ -92,8 +107,10 @@ export function DashboardSettingsSheet() {
                 <ModeToggle />
               </ItemActions>
             </Item>
+          </SettingsSection>
 
-            {profileQuery.data?.isAdmin ? (
+          {profileQuery.data?.isAdmin ? (
+            <SettingsSection title={t("Admin")}>
               <Item
                 render={
                   <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
@@ -106,8 +123,8 @@ export function DashboardSettingsSheet() {
                   <ItemTitle>{t("Admin dashboard")}</ItemTitle>
                 </ItemContent>
               </Item>
-            ) : null}
-          </ItemGroup>
+            </SettingsSection>
+          ) : null}
         </div>
 
         <SheetFooter>
