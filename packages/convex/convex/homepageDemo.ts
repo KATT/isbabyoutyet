@@ -97,6 +97,12 @@ async function storageObjectExists(ctx: MutationCtx | QueryCtx, storageId: Id<"_
   return (await ctx.db.system.get(storageId)) !== null;
 }
 
+function isCompleteDemoPhotos(
+  photos: Partial<CompleteDemoPhotos>,
+): photos is CompleteDemoPhotos {
+  return HOMEPAGE_DEMO_PHOTO_KEYS.every((key) => photos[key] !== undefined);
+}
+
 async function reusablePhotosForBaby(
   ctx: MutationCtx | QueryCtx,
   opts: { baby: Doc<"baby">; locale: SupportedLocale },
@@ -105,7 +111,7 @@ async function reusablePhotosForBaby(
     .query("updates")
     .withIndex("by_babyId", (q) => q.eq("babyId", opts.baby._id))
     .take(HOMEPAGE_DEMO_FEED_SLOTS.length);
-  const photos = {} as Partial<CompleteDemoPhotos>;
+  const photos: Partial<CompleteDemoPhotos> = {};
 
   for (const item of homepageDemoFeedFor(opts.locale)) {
     if (item.kind !== "update" || !item.photo) continue;
@@ -128,10 +134,10 @@ async function reusablePhotosForBaby(
     };
   }
 
-  if (!HOMEPAGE_DEMO_PHOTO_KEYS.every((key) => photos[key] !== undefined)) {
+  if (!isCompleteDemoPhotos(photos)) {
     return null;
   }
-  return photos as CompleteDemoPhotos;
+  return photos;
 }
 
 async function loadReusablePhotos(ctx: MutationCtx | QueryCtx) {

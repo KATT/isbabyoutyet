@@ -56,12 +56,12 @@ export function getConvexQueryPreloader(queryClient: QueryClient) {
       funcRef: TQuery,
       args: FunctionArgs<TQuery>,
     ): Promise<PreloadedConvexQuery<TQuery>> {
-      const options = convexQuery(funcRef, args as never);
+      const options = convexQuery(funcRef, args);
       const initialData = await queryClient.fetchQuery({
         ...options,
         staleTime: 0,
-      } as unknown as Parameters<QueryClient["fetchQuery"]>[0]);
-      return { input: args, initialData } as PreloadedConvexQuery<TQuery>;
+      });
+      return { input: args, initialData };
     },
 
     /**
