@@ -117,9 +117,7 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
 
 test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
   router.history.back.mockClear();
-  const hook = renderHook(() =>
-    useBabyPostOverlayNav("baby-smith"),
-  );
+  const hook = renderHook(() => useBabyPostOverlayNav("baby-smith"));
 
   expect(hook.result.current.open).toBe(false);
   await vi.waitFor(() => {
