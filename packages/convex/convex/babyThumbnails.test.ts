@@ -318,9 +318,9 @@ test("push image backfill only schedules photo updates that still need a derivat
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
     if (!done || !gone || !text) throw new Error("expected fixture updates");
-    await generatePushImagesForExistingPhotosDoc(ctx, done);
-    await generatePushImagesForExistingPhotosDoc(ctx, gone);
-    await generatePushImagesForExistingPhotosDoc(ctx, text);
+    expect(await generatePushImagesForExistingPhotosDoc(ctx, done)).toBeUndefined();
+    expect(await generatePushImagesForExistingPhotosDoc(ctx, gone)).toBeUndefined();
+    expect(await generatePushImagesForExistingPhotosDoc(ctx, text)).toBeUndefined();
   });
 });
 
@@ -380,9 +380,9 @@ test("blur data URL backfill only schedules photo updates that still need a plac
     const gone = await ctx.db.get(deleted);
     const text = await ctx.db.get(messageOnly);
     if (!done || !gone || !text) throw new Error("expected fixture updates");
-    await generateBlurDataUrlsForExistingPhotosDoc(ctx, done);
-    await generateBlurDataUrlsForExistingPhotosDoc(ctx, gone);
-    await generateBlurDataUrlsForExistingPhotosDoc(ctx, text);
+    expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, done)).toBeUndefined();
+    expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, gone)).toBeUndefined();
+    expect(await generateBlurDataUrlsForExistingPhotosDoc(ctx, text)).toBeUndefined();
   });
 });
 

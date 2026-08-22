@@ -23,8 +23,6 @@ export function useLiveConvexInfinitePages(opts: {
 }) {
   const queryClient = useQueryClient();
   const convex = useConvex();
-  const pageParamsKey = JSON.stringify(opts.pageParams);
-  const argsKey = JSON.stringify(opts.args);
 
   useEffect(() => {
     const unsubscribers = opts.pageParams.map((pageParam, index) => {
@@ -61,14 +59,5 @@ export function useLiveConvexInfinitePages(opts: {
         unsubscribe();
       }
     };
-  }, [
-    argsKey,
-    convex,
-    opts.args,
-    opts.funcRef,
-    opts.pageParams,
-    opts.queryKey,
-    pageParamsKey,
-    queryClient,
-  ]);
+  }, [convex, opts.args, opts.funcRef, opts.pageParams, opts.queryKey, queryClient]);
 }

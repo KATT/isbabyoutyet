@@ -21,11 +21,11 @@ If you remove an enum literal or field from the schema in the same deploy as the
 
 ## Three-phase pattern (removing fields or enum values)
 
-| Phase | Action | Schema | Migration | Stack PR |
-| --- | --- | --- | --- | --- |
-| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc | None yet (or register idempotent strip migration in same PR) | **1/N** |
-| **2. Migrate** | Strip legacy data from all rows | Same permissive schema as phase 1 | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
-| **3. Remove** | Tighten schema and delete dead code | Drop field from `schema.ts` / remove enum literal from validators | Migration already ran; no new migration | **2/N** |
+| Phase                       | Action                                 | Schema                                                                                   | Migration                                                                                                              | Stack PR                         |
+| --------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc | None yet (or register idempotent strip migration in same PR)                                                           | **1/N**                          |
+| **2. Migrate**              | Strip legacy data from all rows        | Same permissive schema as phase 1                                                        | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
+| **3. Remove**               | Tighten schema and delete dead code    | Drop field from `schema.ts` / remove enum literal from validators                        | Migration already ran; no new migration                                                                                | **2/N**                          |
 
 **Never tighten before backfill/strip completes** — same rule as adding required fields, applied in reverse for removal.
 
@@ -87,11 +87,11 @@ Removal migration:
 
 ## Pattern examples
 
-| Change | PR 1/N | PR 2/N |
-| --- | --- | --- |
-| Remove optional boolean flag | Keep `v.optional(...)` + strip migration | Drop field from `schema.ts` |
+| Change                         | PR 1/N                                             | PR 2/N                      |
+| ------------------------------ | -------------------------------------------------- | --------------------------- |
+| Remove optional boolean flag   | Keep `v.optional(...)` + strip migration           | Drop field from `schema.ts` |
 | Remove enum literal from union | Keep literal with `@deprecated` + filter migration | Drop literal from validator |
-| Add required field | Optional field + backfill migration | Make field required |
+| Add required field             | Optional field + backfill migration                | Make field required         |
 
 ## References
 

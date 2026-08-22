@@ -273,12 +273,6 @@ const HOW_IT_WORKS = [
   description: TranslationKey;
 }>;
 
-async function selectLocale(value: SupportedLocale) {
-  // Paraglide's configured cookie strategy persists explicit choices, then
-  // reloads so SSR and the hydrated page use the same locale.
-  await setLocale(value);
-}
-
 export function HomePage() {
   const { t, locale } = useI18n();
   const demoBaby = homepageDemoBabyFor(locale);

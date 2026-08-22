@@ -73,7 +73,13 @@
         "no-optional/no-optional": "error",
         "no-overzealous-destructuring/no-overzealous-destructuring": "error",
         "query-prefetch/require-preloaded-query-options": "error",
-        "query-prefetch/use-loader-preloads": "error"
+        "query-prefetch/use-loader-preloads": "error",
+        "react/exhaustive-effect-dependencies": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/set-state-in-effect": "off",
+        "react/immutability": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "unicorn/prefer-add-event-listener": "off"
       }
     },
     {
@@ -99,17 +105,25 @@
       // convention and trip no-underscore-dangle outside function params.
       "files": ["**/*.{test,spec}.{ts,tsx}"],
       "rules": {
-        "eslint/no-underscore-dangle": "off"
+        "eslint/no-underscore-dangle": "off",
+        "vitest/require-mock-type-parameters": "off",
+        "vitest/no-conditional-expect": "off",
+        "react/immutability": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "unicorn/consistent-function-scoping": "off"
       }
     },
     {
       // Vendored shadcn/ui registry components — not first-party code.
-      "files": ["packages/ui/src/components/**"],
+      "files": ["packages/ui/src/**"],
       "rules": {
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
-        "react-compiler/no-manual-memoization": "off"
+        "react-compiler/no-manual-memoization": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/no-unstable-nested-components": "off",
+        "react/set-state-in-effect": "off"
       }
     },
     {

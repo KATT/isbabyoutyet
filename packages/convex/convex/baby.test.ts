@@ -164,12 +164,11 @@ test("custom public due date text hides the exact day from visitors", async () =
     publicDueDateText: "   ",
   });
   const publicBlankMessage = await t.query(api.baby.getByPublicId, { id: created.publicId });
+  if (!publicBlankMessage) throw new Error("expected public baby");
   expect(publicBlankMessage).toMatchObject({
     dueDateDisplayMode: "message",
   });
-  if (publicBlankMessage && "publicDueDateText" in publicBlankMessage) {
-    expect(publicBlankMessage.publicDueDateText ?? "").toBe("");
-  }
+  expect(publicBlankMessage).not.toHaveProperty("publicDueDateText");
   expect(publicBlankMessage).not.toHaveProperty("dueDate");
   await expect(
     asAlice.mutation(api.baby.update, {
@@ -221,10 +220,9 @@ test("public DTO rejects exact mode without a due date", async () => {
     "Exact due date display requires a due date",
   );
   const blankMessage = await t.query(api.baby.getByPublicId, { id: "blank-message" });
+  if (!blankMessage) throw new Error("expected blank message baby");
   expect(blankMessage).toMatchObject({ dueDateDisplayMode: "message" });
-  if (blankMessage && "publicDueDateText" in blankMessage) {
-    expect(blankMessage.publicDueDateText).toBeUndefined();
-  }
+  expect(blankMessage).not.toHaveProperty("publicDueDateText");
   expect(blankMessage).not.toHaveProperty("dueDate");
 });
 

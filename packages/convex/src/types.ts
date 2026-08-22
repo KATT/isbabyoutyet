@@ -175,7 +175,7 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
   const visibleMilestones = MILESTONES.filter(isVisible);
 
   let currentStatus: BabyStatus = { type: "not_yet" };
-  for (const milestone of [...visibleMilestones].reverse()) {
+  for (const milestone of [...visibleMilestones].toReversed()) {
     const date = baby[MILESTONE_FIELDS[milestone].date];
     if (typeof date === "string" && date) {
       currentStatus = { type: milestone, date };
