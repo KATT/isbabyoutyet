@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -14,6 +13,36 @@ import { LocaleProvider } from "@/lib/i18n";
 import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
 import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { FunctionReturnType } from "convex/server";
+
+vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({
+    history: {
+      location: { state: { overlay: undefined } },
+      canGoBack: () => false,
+      back: vi.fn<() => void>(),
+    },
+    navigate: vi.fn<() => Promise<void>>(async () => {}),
+  }),
+  Link: (
+    props: React.ComponentProps<"a"> & {
+      to: string | undefined;
+      params: { publicId: string; updateId: string | undefined } | undefined;
+    },
+  ) => {
+    let href = typeof props.to === "string" ? props.to : "#";
+    if (props.params?.publicId) {
+      href = href.replace("$publicId", props.params.publicId);
+    }
+    if (props.params?.updateId) {
+      href = href.replace("$updateId", props.params.updateId);
+    }
+    return (
+      <a href={href} aria-label={props["aria-label"]} className={props.className}>
+        {props.children}
+      </a>
+    );
+  },
+}));
 
 // Observe what the composer submits: every useMutation hook in the component
 // returns this mock (only updates.post is actually invoked in these tests)
@@ -55,6 +84,8 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
   };
 });
 
+const { TimelineFeed, UpdateComposer } = await import("@/components/baby/timeline");
+
 {
   class MockIntersectionObserver {
     observe() {}
@@ -73,7 +104,10 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
+  dueDateDisplayMode: "exact",
+  publicDueDateText: null,
   laborStarted: null,
   wentToHospital: null,
   babyBorn: null,
@@ -101,6 +135,11 @@ function timelineHandle(page: TimelinePage) {
   });
 }
 
+type ComposerResourceValue = {
+  view: ReturnType<typeof render>;
+  setBaby: (currentBaby: BabyData) => void;
+};
+
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
   const client = new ConvexReactClient("https://example.convex.cloud", {
     unsavedChangesWarning: false,
@@ -118,16 +157,14 @@ function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
-  return makeResource(
-    {
-      view,
-      setBaby: (currentBaby: BabyData) => view.rerender(withProvider(currentBaby)),
-    },
-    async () => {
-      view.unmount();
-      await client.close();
-    },
-  );
+  const value: ComposerResourceValue = {
+    view,
+    setBaby: (currentBaby) => view.rerender(withProvider(currentBaby)),
+  };
+  return makeResource(value, async () => {
+    view.unmount();
+    await client.close();
+  });
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {
@@ -159,6 +196,19 @@ test("the milestone metadata resolves through the Swedish catalog", async () => 
   expect(view.getByRole("radio", { name: "Förlossningen är igång" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Åkt in till förlossningen" })).toBeTruthy();
   expect(view.getByRole("radio", { name: "Bäbisen är född" })).toBeTruthy();
+});
+
+test("the composer only offers visible future milestones", async () => {
+  await using composer = renderComposerResource({
+    ...notYetBaby,
+    milestoneVisibility: { showLabor: false, showHospital: true },
+    laborStarted: "2026-08-20T08:00:00.000Z",
+  });
+  const view = composer.view;
+
+  expect(view.queryByRole("radio", { name: "Labour started" })).toBeNull();
+  expect(view.getByRole("radio", { name: "Gone to hospital" })).toBeTruthy();
+  expect(view.getByRole("radio", { name: "Baby born" })).toBeTruthy();
 });
 
 test("a stale milestone selection is cleared when the status advances elsewhere", async () => {
@@ -221,7 +271,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
-    occurredAt: new Date(backdated).getTime(),
+    occurredAt: Date.parse("2026-08-10T07:30:00.000Z"),
   });
 });
 
@@ -263,6 +313,7 @@ function renderFeed(opts: { baby: BabyData; isOwner: boolean; page: TimelinePage
           <TooltipProvider>
             <TimelineFeed
               babyId={babyId}
+              publicId="baby-smith"
               baby={opts.baby}
               babyName={opts.baby.name}
               isOwner={opts.isOwner}
@@ -302,6 +353,7 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
             occurredAt: Date.now(),
             photoUrl: null,
             thumbnailUrl: null,
+            blurDataUrl: null,
             isCurrentPagePhoto: false,
           },
         },
@@ -357,4 +409,72 @@ test("shows the empty feed, not a spinner, when the prefetched first page is emp
 
   expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Nothing here yet")).toBeTruthy();
+});
+
+test("renders historical milestone badges regardless of current selection", async () => {
+  await using view = renderFeed({
+    baby: {
+      ...notYetBaby,
+      milestoneVisibility: { showLabor: false, showHospital: true },
+      laborStarted: "2026-08-20T08:00:00.000Z",
+    },
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-id" as Id<"updates">,
+            message: "A family update",
+            milestone: "labor_started",
+            occurredAt: Date.now(),
+            photoUrl: null,
+            thumbnailUrl: null,
+            blurDataUrl: null,
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  expect(view.getByText("A family update")).toBeTruthy();
+  expect(view.getByText("Labour started")).toBeTruthy();
+});
+
+test("timeline photos link to the update photo overlay", async () => {
+  await using view = renderFeed({
+    baby: notYetBaby,
+    isOwner: false,
+    page: {
+      page: [
+        {
+          _id: "timeline-item-id" as Id<"timelineItems">,
+          kind: "update",
+          postedAt: Date.now(),
+          update: {
+            _id: "update-photo-id" as Id<"updates">,
+            message: "Smile!",
+            milestone: null,
+            occurredAt: null,
+            photoUrl: "https://example.com/full.jpg",
+            thumbnailUrl: "https://example.com/thumb.jpg",
+            blurDataUrl: "data:image/jpeg;base64,abc",
+            isCurrentPagePhoto: false,
+          },
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  });
+
+  const photoLink = view.getByRole("link", { name: "View photo full size" });
+  expect(photoLink.getAttribute("href")).toBe("/baby/baby-smith/updates/update-photo-id/photo");
+  const inline = view.getByAltText("Baby update") as HTMLImageElement;
+  expect(inline.src).toContain("thumb.jpg");
 });

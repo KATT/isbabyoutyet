@@ -15,8 +15,13 @@ import type * as authIdentity from "../authIdentity.js";
 import type * as baby from "../baby.js";
 import type * as babyAccess from "../babyAccess.js";
 import type * as babyDto from "../babyDto.js";
+import type * as babyLookup from "../babyLookup.js";
+import type * as babyPreferences from "../babyPreferences.js";
 import type * as babyThumbnails from "../babyThumbnails.js";
+import type * as cacheInvalidation from "../cacheInvalidation.js";
+import type * as coParentInviteClaims from "../coParentInviteClaims.js";
 import type * as coParents from "../coParents.js";
+import type * as crons from "../crons.js";
 import type * as encouragements from "../encouragements.js";
 import type * as homepageDemo from "../homepageDemo.js";
 import type * as http from "../http.js";
@@ -25,8 +30,10 @@ import type * as migrations from "../migrations.js";
 import type * as onboarding from "../onboarding.js";
 import type * as onboardingValidators from "../onboardingValidators.js";
 import type * as profile from "../profile.js";
+import type * as profileBootstrap from "../profileBootstrap.js";
 import type * as pushNotifications from "../pushNotifications.js";
 import type * as pushSubscriptions from "../pushSubscriptions.js";
+import type * as pushValidators from "../pushValidators.js";
 import type * as requiredEnv from "../requiredEnv.js";
 import type * as seed from "../seed.js";
 import type * as softDelete from "../softDelete.js";
@@ -34,7 +41,11 @@ import type * as timeline from "../timeline.js";
 import type * as triggers from "../triggers.js";
 import type * as updates from "../updates.js";
 
-import type { ApiFromModules, FilterApi, FunctionReference } from "convex/server";
+import type {
+  ApiFromModules,
+  FilterApi,
+  FunctionReference,
+} from "convex/server";
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
@@ -44,8 +55,13 @@ declare const fullApi: ApiFromModules<{
   baby: typeof baby;
   babyAccess: typeof babyAccess;
   babyDto: typeof babyDto;
+  babyLookup: typeof babyLookup;
+  babyPreferences: typeof babyPreferences;
   babyThumbnails: typeof babyThumbnails;
+  cacheInvalidation: typeof cacheInvalidation;
+  coParentInviteClaims: typeof coParentInviteClaims;
   coParents: typeof coParents;
+  crons: typeof crons;
   encouragements: typeof encouragements;
   homepageDemo: typeof homepageDemo;
   http: typeof http;
@@ -54,8 +70,10 @@ declare const fullApi: ApiFromModules<{
   onboarding: typeof onboarding;
   onboardingValidators: typeof onboardingValidators;
   profile: typeof profile;
+  profileBootstrap: typeof profileBootstrap;
   pushNotifications: typeof pushNotifications;
   pushSubscriptions: typeof pushSubscriptions;
+  pushValidators: typeof pushValidators;
   requiredEnv: typeof requiredEnv;
   seed: typeof seed;
   softDelete: typeof softDelete;
@@ -72,7 +90,10 @@ declare const fullApi: ApiFromModules<{
  * const myFunctionReference = api.myModule.myFunction;
  * ```
  */
-export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "public">>;
+export declare const api: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "public">
+>;
 
 /**
  * A utility for referencing Convex functions in your app's internal API.
@@ -82,7 +103,10 @@ export declare const api: FilterApi<typeof fullApi, FunctionReference<any, "publ
  * const myFunctionReference = internal.myModule.myFunction;
  * ```
  */
-export declare const internal: FilterApi<typeof fullApi, FunctionReference<any, "internal">>;
+export declare const internal: FilterApi<
+  typeof fullApi,
+  FunctionReference<any, "internal">
+>;
 
 export declare const components: {
   betterAuth: import("@convex-dev/better-auth/_generated/component.js").ComponentApi<"betterAuth">;

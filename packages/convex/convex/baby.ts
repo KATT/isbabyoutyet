@@ -1,31 +1,60 @@
 import { v } from "convex/values";
-import { env, internalMutation, mutation, query } from "./_generated/server";
+import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { DatabaseReader, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
-import {
-  getBlockingLaterMilestone,
-  getCurrentStatus,
-  isStatusForward,
-  MILESTONE_FIELDS,
-  MILESTONE_LABELS,
-  MILESTONES,
-} from "../src/types";
-import type { BabyStatus, Milestone } from "../src/types";
-import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
+import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
+import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
-import { mutationWithTriggers } from "./triggers";
-import {
-  deleteUpdateWithTimelineItem,
-  findMilestoneUpdate,
-  insertUpdateWithTimelineItem,
-} from "./timeline";
+import { internalMutationWithTriggers, mutationWithTriggers } from "./triggers";
+import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
-import { requireBabyManager, requireBabyOwner } from "./babyAccess";
+import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
 import { listBabiesForUser } from "./coParents";
 import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
-import { toBabyDto } from "./babyDto";
+import { toBabyDto, toManagerBabyDto } from "./babyDto";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { resolveBabyPreferences } from "./babyPreferences";
+
+const birthJourneyValidator = v.union(
+  v.literal("labor"),
+  v.literal("home_birth"),
+  v.literal("planned_c_section"),
+);
+
+const dueDateDisplayModeValidator = v.union(v.literal("exact"), v.literal("message"));
+
+type DueDateDisplayMode = "exact" | "message";
+
+const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
+
+function normalizePublicDueDateText(value: string | null | undefined) {
+  const normalized = value?.trim() ?? "";
+  if (normalized.length > MAX_PUBLIC_DUE_DATE_TEXT_LENGTH) {
+    throw new Error("Public due date message must be 80 characters or fewer");
+  }
+  return normalized || null;
+}
+
+function normalizeDueDateDisplay(opts: {
+  dueDate: string | null | undefined;
+  mode: DueDateDisplayMode | undefined;
+  text: string | null | undefined;
+}) {
+  const normalizedText = normalizePublicDueDateText(opts.text);
+  const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  const dueDate = opts.dueDate ?? null;
+  if (mode === "exact" && !dueDate) {
+    throw new Error("A due date is required when the exact date is shown");
+  }
+  return {
+    dueDate,
+    mode,
+    text: normalizedText,
+  };
+}
 
 export const listByUser = query({
   args: {},
@@ -41,34 +70,10 @@ export const listByUser = query({
 
 export const getByPublicId = query({
   args: {
-    id: v.union(v.id("baby"), v.string()),
+    id: babyIdOrPublicIdValidator,
   },
   handler: async (ctx, args) => {
-    // Check if it's a valid Convex ID and try to fetch directly
-    const normalizedId = ctx.db.normalizeId("baby", args.id);
-    let baby: Doc<"baby"> | null = null;
-    if (normalizedId) {
-      baby = await ctx.db.get(normalizedId);
-    }
-
-    // Fall back to publicId lookup
-    if (!baby) {
-      baby = await ctx.db
-        .query("baby")
-        .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-        .first();
-    }
-
-    // If not found, check historical publicIds
-    const latestHistoryEntry = await ctx.db
-      .query("babyPublicIdHistory")
-      .withIndex("by_publicId", (q) => q.eq("publicId", args.id))
-      .order("desc")
-      .first();
-
-    if (latestHistoryEntry) {
-      baby = await ctx.db.get(latestHistoryEntry.babyId);
-    }
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.id);
 
     if (!baby || !isActive(baby)) {
       return null;
@@ -76,14 +81,30 @@ export const getByPublicId = query({
 
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
-    const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
+    const blurDataUrl = baby.blurDataUrl ?? null;
 
     return {
-      ...toBabyDto(baby),
+      ...(await toBabyDto(ctx, baby)),
       photoUrl,
       thumbnailUrl,
-      resolvedLocale,
+      blurDataUrl,
     };
+  },
+});
+
+export const getManagerBaby = query({
+  args: { babyId: babyIdOrPublicIdValidator },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? await toManagerBabyDto(ctx, access.baby) : FORBIDDEN;
+  },
+});
+
+export const getBirthJourney = query({
+  args: { babyId: v.id("baby") },
+  handler: async (ctx, args) => {
+    const access = await findBabyManager(ctx, args.babyId);
+    return access ? access.baby.birthJourney : FORBIDDEN;
   },
 });
 
@@ -100,58 +121,75 @@ export const generateUploadUrl = mutation({
 
 /**
  * Applies the side effects of a new photo attached to an update row: points
- * the baby doc at it (current photo), schedules thumbnail generation for both
- * the baby and the update row, and pushes a notification for the first photo.
+ * the baby doc at it (current photo) and schedules thumbnail generation for
+ * both the baby and the update row. Push notifications are scheduled by the
+ * caller so a milestone+photo post is one notification, not two.
  */
 export async function applyPhotoSideEffects(
   ctx: MutationCtx,
   opts: { baby: Doc<"baby">; photoId: Id<"_storage">; updateId: Id<"updates"> },
 ) {
   const baby = opts.baby;
-  const hadPhotoBeforeUpdate = !!baby.photoId;
 
   // Update the current photo (retain old photos in storage + feed for history)
-  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null });
+  await ctx.db.patch(baby._id, { photoId: opts.photoId, thumbnailId: null, blurDataUrl: null });
 
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
     babyId: baby._id,
     photoId: opts.photoId,
     updateId: opts.updateId,
   });
-
-  // Send notification only if this is the first photo
-  if (!hadPhotoBeforeUpdate) {
-    const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
-    const scheduledFor = Date.now() + scheduleDelay;
-
-    const notificationId = await ctx.db.insert("scheduledNotifications", {
-      babyId: baby._id,
-      status: "pending",
-      scheduledFor,
-      notificationType: "photo_added",
-      customMessage: null,
-      createdAt: Date.now(),
-    });
-
-    const scheduledId = await ctx.scheduler.runAt(
-      scheduledFor,
-      internal.pushNotifications.sendNotification,
-      {
-        notificationId,
-        babyId: baby._id,
-        babyName: baby.name,
-        publicId: baby.publicId,
-        status: "photo_added",
-        customMessage: null,
-        locale: await resolveBabyLocale(ctx.db, baby),
-      },
-    );
-
-    await ctx.db.patch(notificationId, { scheduledId });
-  }
 }
 
-// Update baby photo and optionally send notification
+/**
+ * Schedules one delayed Web Push for this baby. Does not cancel other pending
+ * jobs — callers that replace a pending status notification do that first.
+ */
+export async function schedulePushNotification(
+  ctx: MutationCtx,
+  opts: {
+    baby: Doc<"baby">;
+    notificationType: NotifiableStatus;
+    customMessage: string | null;
+    photoId: Id<"_storage"> | null;
+    updateId: Id<"updates"> | null;
+  },
+) {
+  const baby = opts.baby;
+  const scheduledFor = Date.now() + notificationScheduleDelayMs(env.VERCEL_ENV, env.NODE_ENV);
+
+  const notificationId = await ctx.db.insert("scheduledNotifications", {
+    babyId: baby._id,
+    status: "pending",
+    scheduledFor,
+    notificationType: opts.notificationType,
+    customMessage: opts.customMessage,
+    photoId: opts.photoId,
+    updateId: opts.updateId,
+    createdAt: Date.now(),
+  });
+
+  const preferences = await resolveBabyPreferences(ctx.db, baby);
+  const scheduledId = await ctx.scheduler.runAt(
+    scheduledFor,
+    internal.pushNotifications.sendNotification,
+    {
+      notificationId,
+      babyId: baby._id,
+      babyName: baby.name,
+      publicId: baby.publicId,
+      status: opts.notificationType,
+      customMessage: opts.customMessage,
+      photoId: opts.photoId,
+      updateId: opts.updateId,
+      locale: preferences.resolvedLocale,
+    },
+  );
+
+  await ctx.db.patch(notificationId, { scheduledId });
+}
+
+// Update baby photo and send a photo_added notification
 export const updatePhoto = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
@@ -163,7 +201,7 @@ export const updatePhoto = mutationWithTriggers({
     if (!args.photoId) {
       // Removing the current photo only affects the baby doc; photo updates
       // already posted to the timeline keep their own copies.
-      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null });
+      await ctx.db.patch(args.babyId, { photoId: null, thumbnailId: null, blurDataUrl: null });
       return;
     }
 
@@ -175,6 +213,13 @@ export const updatePhoto = mutationWithTriggers({
     });
 
     await applyPhotoSideEffects(ctx, { baby, photoId: args.photoId, updateId });
+    await schedulePushNotification(ctx, {
+      baby,
+      notificationType: "photo_added",
+      customMessage: null,
+      photoId: args.photoId,
+      updateId,
+    });
   },
 });
 
@@ -248,21 +293,14 @@ async function generateUniquePublicId(opts: {
   return publicId;
 }
 
-async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
-  if (baby.locale) {
-    return resolveSupportedLocale(baby.locale);
-  }
-  const profile = await db
-    .query("userProfiles")
-    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", baby.ownerTokenIdentifier))
-    .unique();
-  return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
-}
-
 export const create = mutationWithTriggers({
   args: {
     name: v.string(),
-    dueDate: v.string(),
+    dueDate: v.union(v.string(), v.null()),
+    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
+    // Optional for stale clients; the document always stores a concrete selection.
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -270,6 +308,11 @@ export const create = mutationWithTriggers({
       throw new Error("Not authenticated");
     }
     const caller = appIdentity(identity);
+    const dueDateDisplay = normalizeDueDateDisplay({
+      dueDate: args.dueDate,
+      mode: args.dueDateDisplayMode,
+      text: args.publicDueDateText,
+    });
 
     const publicId = await generateUniquePublicId({
       db: ctx.db,
@@ -281,14 +324,11 @@ export const create = mutationWithTriggers({
       userId: caller.authUserId,
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
-      dueDate: args.dueDate,
+      dueDate: dueDateDisplay.dueDate,
+      dueDateDisplayMode: dueDateDisplay.mode,
+      publicDueDateText: dueDateDisplay.text,
       publicId,
-      hospitalMessage: null,
-      babyBornMessage: null,
-      laborStartedMessage: null,
-      laborStarted: null,
-      wentToHospital: null,
-      babyBorn: null,
+      birthJourney: args.birthJourney ?? "labor",
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });
@@ -327,13 +367,18 @@ export const remove = mutationWithTriggers({
 });
 
 export const getScheduledNotifications = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
-    await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
 
     const notifications = await ctx.db
       .query("scheduledNotifications")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId", (q) => q.eq("babyId", access.baby._id))
       .order("desc")
       .take(100);
 
@@ -383,34 +428,92 @@ export const markNotificationSent = internalMutation({
   },
 });
 
-// Internal mutation to update thumbnail ID (called from action)
-export const updateThumbnail = internalMutation({
+export const updateThumbnail = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
-    photoId: v.optional(v.id("_storage")), // photo the thumbnail was generated from
+    pushImageId: v.union(v.id("_storage"), v.null()),
+    photoId: v.optional(v.id("_storage")), // photo the derivatives were generated from
     updateId: v.optional(v.id("updates")), // timeline update row to also patch
+    blurDataUrl: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
     // Skip the baby doc if its current photo changed while the thumbnail was
     // generating — a newer generation owns the field now.
+    const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(args.babyId, { thumbnailId: args.thumbnailId });
+      await ctx.db.patch(args.babyId, {
+        thumbnailId: args.thumbnailId,
+        ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
+      });
     }
 
     if (args.updateId) {
       const update = await ctx.db.get(args.updateId);
       if (update && (!args.photoId || update.photoId === args.photoId)) {
-        await ctx.db.patch(args.updateId, { thumbnailId: args.thumbnailId });
+        await ctx.db.patch(args.updateId, {
+          thumbnailId: args.thumbnailId,
+          pushImageId: args.pushImageId ?? update.pushImageId ?? null,
+          ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
+        });
       }
     }
   },
 });
 
 /**
- * Cancels pending push notifications and schedules a new one when the derived
- * status moved forward. No-op when the status type is unchanged.
+ * Backfill-only write for the inline blur placeholder. Same stale-photo
+ * guard as `updateThumbnail`.
+ */
+export const updateBlurDataUrl = internalMutationWithTriggers({
+  args: {
+    babyId: v.id("baby"),
+    photoId: v.id("_storage"),
+    blurDataUrl: v.string(),
+    updateId: v.optional(v.id("updates")),
+  },
+  handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (baby && baby.photoId === args.photoId) {
+      await ctx.db.patch(args.babyId, { blurDataUrl: args.blurDataUrl });
+    }
+
+    if (args.updateId) {
+      const update = await ctx.db.get(args.updateId);
+      if (update && update.photoId === args.photoId) {
+        await ctx.db.patch(args.updateId, { blurDataUrl: args.blurDataUrl });
+      }
+    }
+  },
+});
+
+/**
+ * Storage id to attach as Notification.image. Prefer the 1350×675 push
+ * derivative, then the page thumbnail, then the original photo.
+ */
+export const resolveNotificationImage = internalQuery({
+  args: {
+    updateId: v.union(v.id("updates"), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
+  },
+  returns: v.union(v.id("_storage"), v.null()),
+  handler: async (ctx, args) => {
+    if (args.updateId) {
+      const update = await ctx.db.get(args.updateId);
+      if (update) {
+        return update.pushImageId ?? update.thumbnailId ?? update.photoId ?? args.photoId;
+      }
+    }
+    return args.photoId;
+  },
+});
+
+/**
+ * Cancels pending status push notifications when the derived status changes,
+ * and schedules a new one when it moved forward. Generic/photo pending jobs
+ * are left alone on a forward move; a rollback still cancels every pending
+ * job (same as deleting the baby).
  */
 export async function syncStatusNotifications(
   ctx: MutationCtx,
@@ -419,17 +522,20 @@ export async function syncStatusNotifications(
     updatedBaby: Doc<"baby">;
     /** Message to attach to the push, per notifiable milestone. */
     customMessageByMilestone: Record<Milestone, string | null>;
+    photoId: Id<"_storage"> | null;
+    updateId: Id<"updates"> | null;
   },
 ) {
   const updatedBaby = opts.updatedBaby;
-  const statusAfter = getCurrentStatus(updatedBaby);
+  const statusAfter = await loadCurrentStatus(ctx, updatedBaby._id);
 
   if (opts.statusBefore.type === statusAfter.type) {
     // no notification change as status didn't change
     return;
   }
 
-  // Cancel any existing pending notifications
+  const movedForward = isStatusForward(opts.statusBefore, statusAfter);
+
   const pendingNotifications = await ctx.db
     .query("scheduledNotifications")
     .withIndex("by_babyId_and_status", (q) =>
@@ -438,6 +544,9 @@ export async function syncStatusNotifications(
     .take(100);
 
   for (const notification of pendingNotifications) {
+    if (movedForward && !isMilestoneNotificationType(notification.notificationType)) {
+      continue;
+    }
     if (notification.scheduledId) {
       try {
         await ctx.scheduler.cancel(notification.scheduledId);
@@ -448,198 +557,68 @@ export async function syncStatusNotifications(
     await ctx.db.patch(notification._id, { status: "cancelled" });
   }
 
-  // Only handle notifications if status moved forward
-  if (!isStatusForward(opts.statusBefore, statusAfter)) return;
+  if (!movedForward) return;
 
-  const customMessage = opts.customMessageByMilestone[statusAfter.type];
-
-  const scheduleDelay = env.NODE_ENV === "production" ? 60_000 : 3_000;
-  const scheduledFor = Date.now() + scheduleDelay;
-
-  const notificationId = await ctx.db.insert("scheduledNotifications", {
-    babyId: updatedBaby._id,
-    status: "pending",
-    scheduledFor,
+  await schedulePushNotification(ctx, {
+    baby: updatedBaby,
     notificationType: statusAfter.type,
-    customMessage,
-    createdAt: Date.now(),
+    customMessage: opts.customMessageByMilestone[statusAfter.type],
+    photoId: opts.photoId,
+    updateId: opts.updateId,
   });
-
-  const scheduledId = await ctx.scheduler.runAt(
-    scheduledFor,
-    internal.pushNotifications.sendNotification,
-    {
-      notificationId,
-      babyId: updatedBaby._id,
-      babyName: updatedBaby.name,
-      publicId: updatedBaby.publicId,
-      status: statusAfter.type,
-      customMessage,
-      locale: await resolveBabyLocale(ctx.db, updatedBaby),
-    },
-  );
-
-  await ctx.db.patch(notificationId, { scheduledId });
-}
-
-/**
- * Keeps the timeline's milestone update rows in sync with the canonical
- * status fields on the baby doc:
- * - marking a milestone creates its update row (postedAt = now, occurredAt = event)
- * - redating a milestone updates `occurredAt` only — feed position stays put
- * - unmarking a milestone deletes its update + timeline rows
- * - a legacy stage-message arg (stale-client compat) lands on the row's message
- */
-async function syncMilestoneUpdates(
-  ctx: MutationCtx,
-  opts: {
-    baby: Doc<"baby">;
-    patch: {
-      laborStarted?: string | null;
-      wentToHospital?: string | null;
-      babyBorn?: string | null;
-    };
-    legacyMessages: Partial<Record<Milestone, string | null>>;
-    postedByUserId: string;
-  },
-) {
-  const baby = opts.baby;
-  for (const milestone of MILESTONES) {
-    const fields = MILESTONE_FIELDS[milestone];
-    const dateArg = opts.patch[fields.date];
-    const messageArg = opts.legacyMessages[milestone];
-    if (dateArg === undefined && messageArg === undefined) continue;
-    const existing = await findMilestoneUpdate(ctx, { babyId: baby._id, milestone: milestone });
-
-    if (dateArg === null) {
-      // Unmarked: the milestone leaves the feed
-      if (existing) {
-        await deleteUpdateWithTimelineItem(ctx, existing);
-      }
-      continue;
-    }
-
-    if (typeof dateArg === "string") {
-      // Validated parseable by the update handler
-      const occurredAt = Date.parse(dateArg);
-      if (existing) {
-        // Redate: update the event clock only — do not reshuffle the feed
-        await ctx.db.patch(existing._id, {
-          occurredAt,
-          ...(messageArg !== undefined ? { message: messageArg } : {}),
-        });
-      } else {
-        await insertUpdateWithTimelineItem(ctx, {
-          babyId: baby._id,
-          // Announced now (settings mark), even if the event clock is historical
-          postedAt: Date.now(),
-          occurredAt,
-          milestone,
-          message: messageArg ?? null,
-          postedByUserId: opts.postedByUserId,
-        });
-      }
-      continue;
-    }
-
-    // Date untouched: a stale client edited just the stage message
-    if (messageArg !== undefined && existing) {
-      await ctx.db.patch(existing._id, { message: messageArg });
-    }
-  }
 }
 
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    laborStarted: v.optional(v.union(v.string(), v.null())),
-    wentToHospital: v.optional(v.union(v.string(), v.null())),
-    babyBorn: v.optional(v.union(v.string(), v.null())),
-    dueDate: v.optional(v.string()),
+    dueDate: v.optional(v.union(v.string(), v.null())),
+    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
     name: v.optional(v.string()),
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    encouragementsDisabled: v.optional(v.boolean()),
-    // DEPRECATED stale-client compat (the pre-cleanup UI still sends these
-    // during the deploy window): mapped onto the milestone update rows, never
-    // written to the baby doc. Remove in a later tidy-up once stale tabs are
-    // realistically gone.
-    laborStartedMessage: v.optional(v.union(v.string(), v.null())),
-    hospitalMessage: v.optional(v.union(v.string(), v.null())),
-    babyBornMessage: v.optional(v.union(v.string(), v.null())),
+    birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {
-    const { babyId, laborStartedMessage, hospitalMessage, babyBornMessage, ...rest } = args;
+    const { babyId, ...patch } = args;
     const { identity, baby } = await requireBabyManager(ctx, babyId);
-    const legacyMessages = {
-      labor_started: laborStartedMessage,
-      gone_to_hospital: hospitalMessage,
-      born: babyBornMessage,
-    };
-
-    // Milestone dates are event clocks: they must parse and cannot be in the
-    // future (mirrors the `updates.post` occurredAt guard, so settings
-    // redating can't bypass it)
-    for (const milestone of MILESTONES) {
-      const dateArg = rest[MILESTONE_FIELDS[milestone].date];
-      if (typeof dateArg !== "string") continue;
-      const parsed = Date.parse(dateArg);
-      if (Number.isNaN(parsed)) {
-        throw new Error("Invalid date");
-      }
-      if (parsed > Date.now() + 60_000) {
-        throw new Error("The event time cannot be in the future");
-      }
+    if (
+      patch.dueDate !== undefined ||
+      patch.dueDateDisplayMode !== undefined ||
+      patch.publicDueDateText !== undefined
+    ) {
+      const dueDateDisplay = normalizeDueDateDisplay({
+        dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+        mode: patch.dueDateDisplayMode ?? baby.dueDateDisplayMode,
+        text:
+          patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
+      });
+      patch.dueDate = dueDateDisplay.dueDate;
+      patch.dueDateDisplayMode = dueDateDisplay.mode;
+      patch.publicDueDateText = dueDateDisplay.text;
     }
 
-    for (const milestone of MILESTONES) {
-      if (rest[MILESTONE_FIELDS[milestone].date] !== null) continue;
-      const blocker = getBlockingLaterMilestone(baby, milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(baby);
-
-    const patch: Partial<typeof baby> = rest;
+    let publicId: string | undefined;
     // If name changed and the slugified name would result in a different publicId
     if (patch.name && patch.name !== baby.name) {
       const newSlugifiedName = slugify(patch.name);
       // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
-        patch.publicId = await generateUniquePublicId({
+        publicId = await generateUniquePublicId({
           db: ctx.db,
           baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
-        await ctx.db.insert("babyPublicIdHistory", { babyId, publicId: oldPublicId });
+        await ctx.db.insert("babyPublicIdHistory", {
+          babyId,
+          publicId: oldPublicId,
+        });
       }
     }
 
-    await ctx.db.patch(babyId, patch);
-
-    await syncMilestoneUpdates(ctx, {
-      baby,
-      patch: rest,
-      legacyMessages,
-      postedByUserId: identity.authUserId,
-    });
-
-    const updatedBaby = await ctx.db.get(babyId);
-    if (!updatedBaby) throw new Error("Baby not found after update");
-
-    // Settings status changes don't carry a message (attach one by posting an
-    // update); a stale client's legacy message arg still rides along
-    await syncStatusNotifications(ctx, {
-      statusBefore,
-      updatedBaby,
-      customMessageByMilestone: {
-        labor_started: legacyMessages.labor_started ?? null,
-        gone_to_hospital: legacyMessages.gone_to_hospital ?? null,
-        born: legacyMessages.born ?? null,
-      },
-    });
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(babyId, { ...patch, ...(publicId ? { publicId } : {}) });
+    }
   },
 });

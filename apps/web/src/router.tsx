@@ -6,8 +6,11 @@ import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
 import {
   convexInfiniteQueryFn,
+  getConvexQueryPreloader,
   registerConvexInfiniteQueryClient,
 } from "@workspace/convex-prefetch";
+import { RootErrorComponent } from "./routes/__root";
+import { setupClientConvexAuth } from "./lib/convex-auth";
 import { getDetectedLocale } from "./lib/i18n";
 
 export function getRouter() {
@@ -33,6 +36,13 @@ export function getRouter() {
     },
   });
   convexQueryClient.connect(queryClient);
+  const convexPreloader = getConvexQueryPreloader(queryClient);
+
+  // Resolve auth (signed-in or anonymous) before React mounts — see the
+  // function's doc comment for why the auth provider alone is not enough.
+  if (typeof window !== "undefined") {
+    setupClientConvexAuth(convexQueryClient, queryClient);
+  }
 
   const router = createRouter({
     routeTree,
@@ -40,10 +50,13 @@ export function getRouter() {
     // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
     // pages via the ensureQueryData prefetchers.
     defaultPreload: "viewport",
+    // Friendly recoverable fallback for any route error (reload / go home).
+    defaultErrorComponent: RootErrorComponent,
     context: {
       queryClient,
       convexQueryClient,
       convexClient: convexQueryClient.convexClient,
+      convexPreloader,
       locale: getDetectedLocale(),
       isAuthenticated: false,
       token: null,

@@ -1,4 +1,5 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
@@ -36,7 +37,14 @@ test("shows a persistent demo toast on the homepage demo baby", async () => {
     duration: Infinity,
     closeButton: true,
   });
-  expect(typeof renderToast).toBe("function");
+  if (typeof renderToast !== "function") throw new Error("expected a custom toast renderer");
+  const content = render(renderToast() as ReactElement);
+  await using _content = makeResource(content, () => {
+    content.unmount();
+  });
+  expect(
+    screen.getByText("Feel free to post test messages — we reset this demo daily."),
+  ).toBeTruthy();
 });
 
 test("does not toast on a real baby page, and dismisses when leaving the demo", async () => {

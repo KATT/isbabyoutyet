@@ -3,7 +3,9 @@ import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
-import { requireBabyManager } from "./babyAccess";
+import { findBabyManager } from "./babyAccess";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { FORBIDDEN } from "../src/types";
 import { requiredEnv } from "./requiredEnv";
 import schema from "./schema";
 import { isActive } from "./softDelete";
@@ -32,6 +34,7 @@ export const subscribe = mutation({
     endpoint: v.string(),
     p256dh: v.string(),
     auth: v.string(),
+    userAgent: v.string(),
   },
   handler: async (ctx, args) => {
     const baby = await ctx.db.get(args.babyId);
@@ -52,6 +55,7 @@ export const subscribe = mutation({
       await ctx.db.patch(existing._id, {
         p256dh: args.p256dh,
         auth: args.auth,
+        userAgent: args.userAgent,
       });
       return existing._id;
     }
@@ -63,6 +67,7 @@ export const subscribe = mutation({
       p256dh: args.p256dh,
       auth: args.auth,
       createdAt: Date.now(),
+      userAgent: args.userAgent,
     });
     await ctx.db.patch(args.babyId, {
       subscriptionCount: (baby.subscriptionCount ?? 0) + 1,
@@ -117,11 +122,16 @@ export const getSubscriptionsPage = internalQuery({
 
 export const getSubscriptionCount = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
   },
-  returns: v.number(),
+  returns: v.union(v.number(), v.literal(FORBIDDEN)),
   handler: async (ctx, args) => {
-    const access = await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
     return access.baby.subscriptionCount ?? 0;
   },
 });
@@ -136,14 +146,19 @@ export const getPublicKey = query({
 
 export const isSubscribed = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
     endpoint: v.string(),
   },
   handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby) {
+      return false;
+    }
+
     const subscription = await ctx.db
       .query("pushSubscriptions")
       .withIndex("by_babyId_and_endpoint", (q) =>
-        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+        q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
       )
       .first();
 

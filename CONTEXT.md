@@ -26,6 +26,16 @@ A message and/or photo the owner or a co-parent posts to the baby page feed,
 optionally marking a milestone.
 _Avoid_: Post (except as a verb), status update
 
+**Milestone**:
+Labour started, gone to hospital, or born — a stage marked on an update. The
+baby's current status is inferred from the latest marked milestones.
+_Avoid_: Status field, stage (except in UI copy)
+
+**Status**:
+The current stage of a baby page (not yet, labour started, gone to hospital, or
+born), inferred from marked milestone updates rather than stored separately.
+_Avoid_: State (except as a verb)
+
 **Encouragement**:
 A message a visitor leaves on a baby page.
 _Avoid_: Comment, well-wish

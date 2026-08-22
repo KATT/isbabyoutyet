@@ -24,6 +24,10 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
       title: (name) => `${name}: New photo! 📸`,
       body: "Tap to have a look!",
     },
+    update_posted: {
+      title: (name) => `${name}: New update`,
+      body: "Tap for the latest.",
+    },
   },
   "en-US": {
     labor_started: {
@@ -41,6 +45,10 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
     photo_added: {
       title: (name) => `${name}: New photo! 📸`,
       body: "Tap to take a look!",
+    },
+    update_posted: {
+      title: (name) => `${name}: New update`,
+      body: "Tap for the latest.",
     },
   },
   sv: {
@@ -60,6 +68,10 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
       title: (name) => `Nytt foto på ${name}! 📸`,
       body: "Kika in och ta en titt!",
     },
+    update_posted: {
+      title: (name) => `${name}: Ny uppdatering`,
+      body: "Kika in för senaste nytt!",
+    },
   },
   es: {
     labor_started: {
@@ -78,6 +90,10 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
       title: (name) => `${name}: ¡nueva foto! 📸`,
       body: "Hay una foto nueva. ¡Entra a verla!",
     },
+    update_posted: {
+      title: (name) => `${name}: nueva novedad`,
+      body: "Entra para ver las novedades.",
+    },
   },
   "pt-BR": {
     labor_started: {
@@ -95,6 +111,10 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
     photo_added: {
       title: (name) => `Foto nova de ${name}! 📸`,
       body: "Acabaram de postar uma foto nova. Vem ver!",
+    },
+    update_posted: {
+      title: (name) => `${name}: novidade nova`,
+      body: "Vem ver as novidades!",
     },
   },
 };

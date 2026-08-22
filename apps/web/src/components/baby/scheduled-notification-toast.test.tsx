@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { FORBIDDEN } from "@workspace/convex/src/types";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 
 const mocks = vi.hoisted(() => ({
@@ -57,6 +58,32 @@ test("runs with empty notifications and no subscriptions", async () => {
   >({
     input: { babyId },
     initialData: 0,
+  });
+  mocks.useSuspenseQuery.mockImplementation((options) => ({
+    data: options.initialData,
+  }));
+
+  await using view = renderResource(
+    <ScheduledNotificationToast
+      notifications={notifications}
+      subscriptionCount={subscriptionCount}
+    />,
+  );
+
+  expect(view.container.firstChild).toBeNull();
+  expect(mocks.custom).not.toHaveBeenCalled();
+});
+
+test("treats forbidden notification data as empty", async () => {
+  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
+    input: { babyId },
+    initialData: FORBIDDEN,
+  });
+  const subscriptionCount = testPreloadedConvexQuery<
+    typeof api.pushSubscriptions.getSubscriptionCount
+  >({
+    input: { babyId },
+    initialData: FORBIDDEN,
   });
   mocks.useSuspenseQuery.mockImplementation((options) => ({
     data: options.initialData,

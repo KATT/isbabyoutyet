@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -12,6 +12,7 @@ import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
 import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
+import { homepageCacheHeaders } from "@/lib/cachePolicy";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -19,6 +20,7 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  headers: homepageCacheHeaders,
   head: (opts) => {
     const locale = opts.match.context.locale;
     const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");
@@ -196,7 +198,7 @@ function RotatingBabyName(props: { words: readonly string[] }) {
 }
 
 function useCurrentDate() {
-  const clientDate = useMemo(() => new Date().toISOString(), []);
+  const [clientDate] = useState(() => new Date().toISOString());
   return useSyncExternalStore<string>(
     () => () => {}, // No-op subscribe for demo dates
     () => clientDate, // Client snapshot (cached)
@@ -605,7 +607,11 @@ export function HomePage() {
             value={locale}
             disabled={false}
             label={t("Language")}
-            onValueChange={selectLocale}
+            onValueChange={async (value) => {
+              // Paraglide's configured cookie strategy persists explicit choices, then
+              // reloads so SSR and the hydrated page use the same locale.
+              await setLocale(value);
+            }}
           />
           <a
             href="https://github.com/KATT/isbabyoutyet"

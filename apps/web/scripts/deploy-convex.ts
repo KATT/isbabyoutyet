@@ -17,9 +17,9 @@
  *    environment variables" in the Convex dashboard; SITE_URL is the only
  *    per-preview value.
  * 3. Pending migrations are run.
- * 4. The public homepage demo baby is refreshed (dates shifted to now,
- *    visitor comments wiped, fixture photos/feed restored). Runs in every
- *    environment, including production.
+ * 4. The public homepage demos are bootstrapped when their complete photo
+ *    sentinel is absent. Existing demos are left untouched; a daily Convex
+ *    cron handles inactivity-gated resets.
  */
 import { execFileSync } from "node:child_process";
 import * as path from "node:path";

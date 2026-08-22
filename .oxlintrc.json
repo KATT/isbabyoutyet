@@ -2,7 +2,7 @@
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
   // Closely matches `oxlint --init`, plus the stricter `suspicious` category.
   // Pedantic/style/restriction stay off — too noisy for a blanket enable.
-  "plugins": ["typescript", "unicorn", "oxc", "vitest"],
+  "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
   "categories": {
     "correctness": "error",
     "suspicious": "error"
@@ -24,6 +24,22 @@
     {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
+    },
+    {
+      "name": "no-overzealous-destructuring",
+      "specifier": "./oxlint-plugins/no-overzealous-destructuring.mjs"
+    },
+    {
+      "name": "inline-jsx-callback",
+      "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
+    },
+    {
+      "name": "react-compiler",
+      "specifier": "./oxlint-plugins/react-compiler.mjs"
+    },
+    {
+      "name": "infer-callback-params",
+      "specifier": "./oxlint-plugins/infer-callback-params.mjs"
     }
   ],
   "settings": {
@@ -42,16 +58,20 @@
     "eslint/max-params": ["error", 2],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
+    "react-compiler/no-manual-memoization": "error",
     "query-prefetch/no-convex-query-hooks": "error"
   },
   "overrides": [
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
+        "infer-callback-params/infer-callback-params": "error",
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
+        "inline-jsx-callback/inline-jsx-callback": "error",
         "no-optional/no-optional": "error",
+        "no-overzealous-destructuring/no-overzealous-destructuring": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error"
       }
@@ -61,6 +81,7 @@
         "apps/web/src/routes/demo/**/*.{ts,tsx}",
         "apps/web/src/**/*.test.{ts,tsx}",
         "apps/web/src/components/dev-bar.tsx",
+        "apps/web/src/components/demo-account-picker.tsx",
         "apps/web/src/lib/robots.ts",
         "apps/web/src/routes/robots[.]txt.ts",
         "apps/web/src/routes/sitemap[.]xml.ts"
@@ -87,7 +108,8 @@
       "rules": {
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
-        "eslint/no-underscore-dangle": "off"
+        "eslint/no-underscore-dangle": "off",
+        "react-compiler/no-manual-memoization": "off"
       }
     },
     {

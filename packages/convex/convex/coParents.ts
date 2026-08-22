@@ -6,8 +6,11 @@ import type { Id } from "./_generated/dataModel";
 import type { AppIdentity } from "./authIdentity";
 import { authComponent } from "./auth";
 import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
-import { findActiveCoParent, requireBabyManager, requireBabyOwner } from "./babyAccess";
-import { toBabyDto } from "./babyDto";
+import { claimPendingInvitesForAuthUser } from "./coParentInviteClaims";
+import { findActiveCoParent, findBabyManager, requireBabyOwner } from "./babyAccess";
+import { FORBIDDEN } from "../src/types";
+import { toManagerBabyDto } from "./babyDto";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
 
 function normalizeEmail(email: string) {
@@ -79,7 +82,7 @@ async function listActiveInvites(ctx: QueryCtx | MutationCtx, babyId: Id<"baby">
  * Anonymous callers get canManage/isOwner false.
  */
 export const myAccess = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {
@@ -87,15 +90,15 @@ export const myAccess = query({
     }
     const caller = appIdentity(identity);
 
-    const baby = await ctx.db.get(args.babyId);
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
     if (!baby || !isActive(baby)) {
       return { isOwner: false, isCoParent: false, canManage: false };
     }
 
+    const babyId = baby._id;
     const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
     const isCoParent =
-      !isOwner &&
-      (await findActiveCoParent(ctx, { babyId: args.babyId, identity: caller })) != null;
+      !isOwner && (await findActiveCoParent(ctx, { babyId, identity: caller })) != null;
     return { isOwner, isCoParent, canManage: isOwner || isCoParent };
   },
 });
@@ -104,13 +107,19 @@ export const myAccess = query({
  * Owner/co-parent view of current co-parents and pending invites.
  */
 export const listForBaby = query({
-  args: { babyId: v.id("baby") },
+  args: { babyId: babyIdOrPublicIdValidator },
   handler: async (ctx, args) => {
-    await requireBabyManager(ctx, args.babyId);
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
 
+    const babyId = access.baby._id;
     const [coParents, invites] = await Promise.all([
-      listActiveCoParents(ctx, args.babyId),
-      listActiveInvites(ctx, args.babyId),
+      listActiveCoParents(ctx, babyId),
+      listActiveInvites(ctx, babyId),
     ]);
 
     return {
@@ -248,10 +257,27 @@ export const leave = mutation({
 
 /**
  * Turns pending email invites for the signed-in user into co-parent rows.
- * Safe to call repeatedly from the authenticated layout.
+ * Idempotent — also runs from Better Auth sign-up / sign-in hooks.
+ */
+export async function claimPendingInvitesForCaller(ctx: MutationCtx, caller: AppIdentity) {
+  const profile = await resolveCallerProfile(ctx, caller.authUserId);
+  if (!profile) {
+    return 0;
+  }
+  return await claimPendingInvitesForAuthUser(ctx, {
+    userId: caller.authUserId,
+    email: profile.email,
+    name: profile.name,
+  });
+}
+
+/**
+ * Explicit invite claim — pending invites are claimed automatically on
+ * sign-up and sign-in hooks.
  */
 export const claimPendingInvites = mutation({
   args: {},
+  returns: v.object({ claimed: v.number() }),
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     // After signup the first dashboard load can race the session cookie —
@@ -259,58 +285,7 @@ export const claimPendingInvites = mutation({
     if (!identity) {
       return { claimed: 0 };
     }
-    const caller = appIdentity(identity);
-
-    const profile = await resolveCallerProfile(ctx, caller.authUserId);
-    if (!profile) {
-      return { claimed: 0 };
-    }
-
-    const email = profile.email;
-    const name = profile.name;
-
-    const invites = await ctx.db
-      .query("babyCoParentInvites")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .order("desc")
-      .take(100);
-
-    let claimed = 0;
-    for (const inviteRow of invites) {
-      if (!isActive(inviteRow)) continue;
-
-      const baby = await ctx.db.get(inviteRow.babyId);
-      if (!baby || !isActive(baby)) {
-        await ctx.db.patch(inviteRow._id, softDeletePatch());
-        continue;
-      }
-
-      // Never make the owner a co-parent of their own page
-      const isOwner = baby.ownerTokenIdentifier === caller.tokenIdentifier;
-      if (isOwner) {
-        await ctx.db.patch(inviteRow._id, softDeletePatch());
-        continue;
-      }
-
-      const existing = await findActiveCoParent(ctx, {
-        babyId: inviteRow.babyId,
-        identity: caller,
-      });
-      if (!existing) {
-        await ctx.db.insert("babyCoParents", {
-          babyId: inviteRow.babyId,
-          userId: caller.authUserId,
-          tokenIdentifier: caller.tokenIdentifier,
-          email,
-          name,
-          addedByUserId: inviteRow.invitedByUserId,
-          addedAt: Date.now(),
-        });
-        claimed += 1;
-      }
-      await ctx.db.patch(inviteRow._id, softDeletePatch());
-    }
-
+    const claimed = await claimPendingInvitesForCaller(ctx, appIdentity(identity));
     return { claimed };
   },
 });
@@ -333,12 +308,14 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     .order("desc")
     .take(100);
 
-  const shared: Array<ReturnType<typeof toBabyDto> & { role: "owner" | "coParent" }> = [];
+  const shared: Array<
+    Awaited<ReturnType<typeof toManagerBabyDto>> & { role: "owner" | "coParent" }
+  > = [];
   const seen = new Set<string>();
 
   for (const baby of owned.filter(isActive)) {
     seen.add(baby._id);
-    shared.push({ ...toBabyDto(baby), role: "owner" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "owner" });
   }
 
   for (const membership of memberships.filter(isActive)) {
@@ -346,7 +323,7 @@ export async function listBabiesForUser(ctx: QueryCtx, identity: AppIdentity) {
     const baby = await ctx.db.get(membership.babyId);
     if (!baby || !isActive(baby)) continue;
     seen.add(baby._id);
-    shared.push({ ...toBabyDto(baby), role: "coParent" });
+    shared.push({ ...(await toManagerBabyDto(ctx, baby)), role: "coParent" });
   }
 
   // Newest first across both sources

@@ -50,6 +50,22 @@ test("getConvexQueryPreloader awaits queries and returns handles with initialDat
   expect(handle.initialData).toEqual({ locale: "sv", isAdmin: false });
 });
 
+test("fetchQueryData replaces cached data with a fresh snapshot", async () => {
+  const queryFn = vi.fn<() => Promise<{ name: string }>>(async () => ({ name: "Fresh baby" }));
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, queryFn } },
+  });
+  const queryKey = ["convexQuery", "baby:getByPublicId", { id: "baby-smith" }];
+  queryClient.setQueryData(queryKey, { name: "Cached baby" });
+
+  const preloader = getConvexQueryPreloader(queryClient);
+  const handle = await preloader.fetchQueryData(babyByPublicId, { id: "baby-smith" });
+
+  expect(queryFn).toHaveBeenCalledOnce();
+  expect(handle.input).toEqual({ id: "baby-smith" });
+  expect(handle.initialData).toEqual({ name: "Fresh baby" });
+});
+
 test("getConvexQueryPreloader ensures infinite pages and stores numItems", async () => {
   registerConvexInfiniteQueryClient({
     convexClient: {
@@ -75,6 +91,48 @@ test("getConvexQueryPreloader ensures infinite pages and stores numItems", async
     page: ["row"],
     isDone: true,
     continueCursor: "",
+  });
+});
+
+test("initiateQueryData starts the fetch without awaiting and returns a data-less handle", async () => {
+  const queryFn = vi.fn<() => Promise<Profile>>(async () => ({ locale: "sv", isAdmin: false }));
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, queryFn } },
+  });
+
+  const preloader = getConvexQueryPreloader(queryClient);
+  const handle = preloader.initiateQueryData(profileGet, {});
+
+  expect(handle.input).toEqual({});
+  expect("initialData" in handle).toBe(false);
+  await waitFor(() => {
+    expect(queryFn).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("initiateInfiniteQueryData starts the first page without awaiting", async () => {
+  const convexClientQuery = vi.fn<() => Promise<unknown>>(async () => ({
+    page: ["row"],
+    isDone: true,
+    continueCursor: "",
+  }));
+  registerConvexInfiniteQueryClient({
+    convexClient: { query: convexClientQuery },
+    serverHttpClient: undefined,
+  } as never);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+  const preloader = getConvexQueryPreloader(queryClient);
+  const handle = preloader.initiateInfiniteQueryData("admin:listBabies" as never, {
+    args: { hideDemo: true } as never,
+    numItems: 20,
+  });
+
+  expect(handle.input).toEqual({ hideDemo: true });
+  expect(handle.numItems).toBe(20);
+  expect("initialData" in handle).toBe(false);
+  await waitFor(() => {
+    expect(convexClientQuery).toHaveBeenCalledTimes(1);
   });
 });
 

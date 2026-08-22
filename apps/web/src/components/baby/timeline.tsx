@@ -11,7 +11,6 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -33,20 +32,23 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
-import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
+import type {
+  InitiatedConvexInfiniteQuery,
+  PreloadedConvexInfiniteQuery,
+} from "@workspace/convex-prefetch";
+import type { BabyData, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
-  getCurrentStatus,
+  getMilestonePolicy,
   MILESTONE_LABELS,
-  STATUS_ORDER,
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
@@ -56,6 +58,8 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
+import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -67,6 +71,23 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
+function usePhotoPreviewUrl(photo: File | null) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!photo) {
+      setUrl(null);
+      return;
+    }
+
+    const nextUrl = URL.createObjectURL(photo);
+    setUrl(nextUrl);
+    return () => URL.revokeObjectURL(nextUrl);
+  }, [photo]);
+
+  return url;
+}
+
 /**
  * A post's three fields are mutually inclusive: any combination works, as
  * long as at least one is present. The message is trimmed BEFORE validation,
@@ -77,8 +98,9 @@ type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
 function composerSchema(opts: {
   t: TranslationFunction;
-  currentStatus: BabyStatus["type"];
+  allowedMilestones: readonly Milestone[];
   babyId: Id<"baby">;
+  timeZone: string;
 }) {
   return z
     .object({
@@ -89,7 +111,7 @@ function composerSchema(opts: {
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(opts.t),
+      occurredAt: optionalHtmlDateTime(opts.t, opts.timeZone),
       photo: z.custom<File>().nullable(),
     })
     .refine(
@@ -97,9 +119,7 @@ function composerSchema(opts: {
       { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
+      (draft) => draft.milestone === "none" || opts.allowedMilestones.includes(draft.milestone),
       {
         error: opts.t("That status has already been marked"),
         path: ["milestone"],
@@ -148,9 +168,12 @@ function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale
   return rtf.format(0, "second");
 }
 
-/** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
-function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): string {
-  return new Date(timestamp).toLocaleString(locale, {
+function formatOccurredAt(
+  timestamp: number,
+  opts: { locale: SupportedLocale; timeZone: string },
+): string {
+  return new Date(timestamp).toLocaleString(opts.locale, {
+    timeZone: opts.timeZone,
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -181,19 +204,15 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
-  const currentStatus = getCurrentStatus(props.baby);
-  const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
-    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[currentStatus.type],
-  );
-  const schema = useMemo(
-    () =>
-      composerSchema({
-        t,
-        currentStatus: currentStatus.type,
-        babyId: props.babyId,
-      }),
-    [t, currentStatus.type, props.babyId],
-  );
+  const milestonePolicy = getMilestonePolicy(props.baby);
+  const currentStatus = milestonePolicy.currentStatus;
+  const futureMilestones = milestonePolicy.visibleMilestones.filter(milestonePolicy.canMark);
+  const schema = composerSchema({
+    t,
+    allowedMilestones: futureMilestones,
+    babyId: props.babyId,
+    timeZone: props.baby.timeZone,
+  });
 
   const form = useZodForm({
     schema,
@@ -221,21 +240,13 @@ export function UpdateComposer(props: UpdateComposerProps) {
       : null;
   useEffect(() => {
     const value = form.getValues("milestone");
-    if (value !== "none" && STATUS_ORDER[value] <= STATUS_ORDER[currentStatus.type]) {
+    if (value !== "none" && !futureMilestones.includes(value)) {
       form.setValue("milestone", "none");
       form.resetField("occurredAt");
     }
-  }, [form, currentStatus.type]);
+  }, [form, currentStatus.type, milestonePolicy.visibility]);
 
-  const photoPreviewUrl = useMemo(
-    () => (draft.photo ? URL.createObjectURL(draft.photo) : null),
-    [draft.photo],
-  );
-  useEffect(() => {
-    return () => {
-      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
-    };
-  }, [photoPreviewUrl]);
+  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
 
   const canPost = !isPosting && schema.safeParse(draft).success;
 
@@ -331,12 +342,12 @@ export function UpdateComposer(props: UpdateComposerProps) {
               <FormField
                 control={form.control}
                 name="milestone"
-                render={({ field }) => (
+                render={(renderProps) => (
                   <RadioGroup
                     aria-labelledby="composer-status-label"
                     value={selectedMilestone ?? "none"}
                     onValueChange={(value) => {
-                      field.onChange(value);
+                      renderProps.field.onChange(value);
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}
@@ -386,7 +397,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={htmlDateTimeNow()}
+                              max={htmlDateTimeNow(props.baby.timeZone)}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -465,6 +476,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -523,14 +535,23 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               <Badge
                 className="shrink-0"
                 title={
-                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
+                  update.occurredAt
+                    ? formatOccurredAt(update.occurredAt, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })
+                    : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
                 {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt, locale)}
+                    ·{" "}
+                    {formatOccurredAt(update.occurredAt, {
+                      locale,
+                      timeZone: props.baby.timeZone,
+                    })}
                   </span>
                 )}
               </Badge>
@@ -553,7 +574,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={t("Posted {{date}}", {
-                date: new Date(props.item.postedAt).toLocaleString(locale),
+                date: new Date(props.item.postedAt).toLocaleString(locale, {
+                  timeZone: props.baby.timeZone,
+                }),
               })}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
@@ -631,7 +654,13 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         {/* Photo first when present; the caption/message sits last so long
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
-          <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
+          <TimelinePhoto
+            publicId={props.publicId}
+            updateId={update._id}
+            photoUrl={update.photoUrl}
+            thumbnailUrl={update.thumbnailUrl}
+            blurDataUrl={update.blurDataUrl}
+          />
         )}
 
         {update.message && (
@@ -645,53 +674,42 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 }
 
 type TimelinePhotoProps = {
+  publicId: string;
+  updateId: Id<"updates">;
   photoUrl: string;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
 };
 
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            aria-label={t("View photo full size")}
-            className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <img
-              src={inlineUrl}
-              alt={t("Baby update")}
-              className="max-h-64 w-full object-cover"
-              loading="lazy"
-            />
-          </button>
-        }
+    <Link
+      {...photo.openLink}
+      aria-label={t("View photo full size")}
+      className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <BlurImage
+        src={inlineUrl}
+        alt={t("Baby update")}
+        blurDataUrl={props.blurDataUrl}
+        className="aspect-square max-h-64 w-full object-cover"
+        loading="lazy"
       />
-      <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-        <button
-          onClick={() => setIsOpen(false)}
-          aria-label={t("Close photo")}
-          className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <img
-          src={props.photoUrl}
-          alt={t("Baby update")}
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-        />
-      </DialogContent>
-    </Dialog>
+    </Link>
   );
 }
 
 type EncouragementTimelineItemProps = {
   item: EncouragementItemData;
   isOwner: boolean;
+  timeZone: string;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
@@ -804,7 +822,9 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               </span>
               <span
                 className="text-xs text-muted-foreground shrink-0"
-                title={new Date(encouragement.createdAt).toLocaleString(locale)}
+                title={new Date(encouragement.createdAt).toLocaleString(locale, {
+                  timeZone: props.timeZone,
+                })}
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
@@ -894,11 +914,14 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
   /** Prefetched infinite timeline handle from the route loader (SSR first page). */
-  timeline: PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
+  timeline:
+    | PreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>
+    | InitiatedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
 export function TimelineFeed(props: TimelineFeedProps) {
@@ -1031,6 +1054,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              publicId={props.publicId}
               baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
@@ -1042,6 +1066,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               key={item._id}
               item={item}
               isOwner={props.isOwner}
+              timeZone={props.baby.timeZone}
               currentVisitorId={currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}

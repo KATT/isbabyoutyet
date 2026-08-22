@@ -1,6 +1,8 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import {
+  backfillBabyBirthJourneyDoc,
+  backfillBabyDueDateDisplayDoc,
   backfillBabyLastActivityAtDoc,
   backfillBabyOwnerTokenIdentifierDoc,
   backfillBabySubscriptionCountDoc,
@@ -21,7 +23,10 @@ test("auth identity migrations remain idempotent after backfill", async () => {
       ownerTokenIdentifier: "https://convex.test|alice",
       name: "Migration Baby",
       dueDate: "2026-09-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: "migration-baby",
+      birthJourney: "labor",
       lastActivityAt: 1,
       subscriptionCount: 99,
     });
@@ -60,6 +65,8 @@ test("auth identity migrations remain idempotent after backfill", async () => {
     }
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyBirthJourneyDoc(ctx, baby);
+    await backfillBabyDueDateDisplayDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
@@ -68,6 +75,8 @@ test("auth identity migrations remain idempotent after backfill", async () => {
     await sanitizeOnboardingStepsDoc(ctx, onboarding);
 
     await backfillBabyOwnerTokenIdentifierDoc(ctx, baby);
+    await backfillBabyBirthJourneyDoc(ctx, baby);
+    await backfillBabyDueDateDisplayDoc(ctx, baby);
     await backfillBabyLastActivityAtDoc(ctx, baby);
     await backfillBabySubscriptionCountDoc(ctx, baby);
     await backfillProfileTokenIdentifierDoc(ctx, profile);
@@ -86,10 +95,46 @@ test("auth identity migrations remain idempotent after backfill", async () => {
   });
 
   expect(migrated.baby?.ownerTokenIdentifier).toBe("https://convex.test|alice");
+  expect(migrated.baby?.birthJourney).toBe("labor");
+  expect(migrated.baby?.dueDateDisplayMode).toBe("exact");
+  expect(migrated.baby?.publicDueDateText).toBeNull();
   expect(migrated.baby?.lastActivityAt).toBe(1);
   expect(migrated.baby?.subscriptionCount).toBe(0);
   expect(migrated.profile?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.tokenIdentifier).toBe("https://convex.test|alice");
   expect(migrated.onboarding?.completedSteps).toEqual(["share_link"]);
   expect(migrated.coParent?.tokenIdentifier).toBe("https://convex.test|bob");
+});
+
+test("due date display migration preserves and normalizes existing messages", async () => {
+  const t = convexTest(schema, modules);
+  const babyId = await t.run(async (ctx) => {
+    return await ctx.db.insert("baby", {
+      userId: "alice",
+      ownerTokenIdentifier: "https://convex.test|alice",
+      name: "Migration Baby",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "message",
+      publicDueDateText: "  Any day now  ",
+      publicId: "message-migration-baby",
+      birthJourney: "labor",
+      lastActivityAt: 1,
+      subscriptionCount: 0,
+    });
+  });
+
+  await t.run(async (ctx) => {
+    const baby = await ctx.db.get(babyId);
+    if (!baby) throw new Error("Migration fixture missing");
+    await backfillBabyDueDateDisplayDoc(ctx, baby);
+    const migrated = await ctx.db.get(babyId);
+    if (!migrated) throw new Error("Migrated baby missing");
+    await backfillBabyDueDateDisplayDoc(ctx, migrated);
+  });
+
+  expect(await t.run(async (ctx) => await ctx.db.get(babyId))).toMatchObject({
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+  });
 });
