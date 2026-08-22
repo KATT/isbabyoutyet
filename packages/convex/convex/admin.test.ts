@@ -16,7 +16,7 @@ async function setup() {
 test("admin queries refuse non-admins and anonymous callers", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
-  await asAlice.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asAlice.mutation(api.profile.updateLocale, { locale: "en-GB" });
 
   await expect(
     asAlice.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
@@ -64,7 +64,7 @@ test("admins can list language requests with requester emails", async () => {
   const asDemo = t.withIdentity({ subject: seeded.userId });
 
   const asBob = t.withIdentity({ subject: "bob" });
-  await asBob.mutation(api.profile.ensure, { browserLocale: "en-GB" });
+  await asBob.mutation(api.profile.updateLocale, { locale: "en-GB" });
   await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "French" });
 
   const requests = await asDemo.query(api.admin.listLanguageRequests, {

@@ -14,6 +14,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
+import { previewCacheHeaders } from "@/lib/cachePolicy";
 
 function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
@@ -28,6 +30,7 @@ function getDefaultBabyData(): PreviewBabyData {
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
     theme: null,
+    timeZone: DEFAULT_TIME_ZONE,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
@@ -59,6 +62,7 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
   validateSearch: searchSchema,
+  headers: previewCacheHeaders,
   head: (opts) => ({
     meta: [
       {
@@ -122,6 +126,7 @@ export function PreviewPage() {
               ...update,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         onMilestoneRedate={(milestone, occurredAt) => {
@@ -131,6 +136,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: occurredAt,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         onMilestoneRemove={(milestone) => {
@@ -140,6 +146,7 @@ export function PreviewPage() {
               [MILESTONE_FIELDS[milestone].date]: null,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
         open={!!search.settings}
@@ -150,8 +157,10 @@ export function PreviewPage() {
               settings: open || undefined,
             },
             replace: true,
+            resetScroll: false,
           });
         }}
+        onOpenChangeComplete={null}
         profileLocale={locale}
         onDelete={null}
         coParents={null}
@@ -170,9 +179,12 @@ export function PreviewPage() {
               <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
             </Link>
             <BabyNav
-              shareLink=""
-              onPostUpdate={null}
-              onShareCopied={null}
+              shareButton={null}
+              shareOpen={false}
+              onDismissShare={null}
+              postUpdateButton={null}
+              postUpdateOpen={false}
+              onDismissPostUpdate={null}
               onSettingsOpened={null}
               settingsButton={{
                 to: "/preview",
@@ -180,8 +192,11 @@ export function PreviewPage() {
                   ...search,
                   settings: search.settings ? undefined : true,
                 },
+                replace: true,
+                resetScroll: false,
               }}
               settingsOpen={!!search.settings}
+              onDismissSettings={null}
             />
           </div>
         </header>
@@ -193,6 +208,7 @@ export function PreviewPage() {
 
           <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
             <StatusDisplay
+              publicId={null}
               baby={baby}
               currentStatus={currentStatus}
               latestUpdate={latestUpdate}

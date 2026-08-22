@@ -77,8 +77,6 @@ export function getThemeColors(theme: string | null | undefined) {
   return getThemeOption(theme)?.colors ?? THEME_OPTIONS[0].colors;
 }
 
-const TIMEZONE = "Europe/Stockholm";
-
 /** Raw CSS for a theme preset, or null for the default (app) theme. */
 export function getThemeCss(theme: string | null | undefined): string | null {
   if (!theme) return null;
@@ -93,10 +91,20 @@ function parseDate(dateString: string): Date {
   return parseISO(dateString);
 }
 
-export function formatDate(dateString: string, locale: SupportedLocale): string {
+function parseCalendarDate(dateString: string): Date {
+  const calendarDate = dateString.slice(0, 10);
+  return new Date(`${calendarDate}T00:00:00.000Z`);
+}
+
+type DateTimeFormatOptions = {
+  locale: SupportedLocale;
+  timeZone: string;
+};
+
+export function formatDate(dateString: string, opts: DateTimeFormatOptions): string {
   const date = parseDate(dateString);
-  const formatter = new Intl.DateTimeFormat(locale, {
-    timeZone: TIMEZONE,
+  const formatter = new Intl.DateTimeFormat(opts.locale, {
+    timeZone: opts.timeZone,
     dateStyle: "long",
     timeStyle: "short",
   });
@@ -131,54 +139,44 @@ export function getRelativeTime(dateString: string, locale: SupportedLocale): st
 
 export function formatDueDate(dateString: string, locale: SupportedLocale): string {
   return new Intl.DateTimeFormat(locale, {
-    timeZone: TIMEZONE,
+    timeZone: "UTC",
     dateStyle: "long",
-  }).format(parseDate(dateString));
+  }).format(parseCalendarDate(dateString));
 }
 
-export function getDaysUntilDueDate(dueDate: string): number {
-  const now = new Date();
-  const due = parseDate(dueDate);
-
-  const formatter = new Intl.DateTimeFormat("en-US", {
-    timeZone: TIMEZONE,
+function datePartsInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  });
-
-  const nowParts = formatter.formatToParts(now);
-  const currentYearPart = nowParts.find((p) => p.type === "year");
-  const currentMonthPart = nowParts.find((p) => p.type === "month");
-  const currentDayPart = nowParts.find((p) => p.type === "day");
-  if (!currentYearPart || !currentMonthPart || !currentDayPart) {
-    return 0;
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (!year || !month || !day) {
+    return null;
   }
-  const currentYear = parseInt(currentYearPart.value);
-  const currentMonth = parseInt(currentMonthPart.value);
-  const currentDay = parseInt(currentDayPart.value);
-
-  const dueParts = formatter.formatToParts(due);
-  const dueYearPart = dueParts.find((p) => p.type === "year");
-  const dueMonthPart = dueParts.find((p) => p.type === "month");
-  const dueDayPart = dueParts.find((p) => p.type === "day");
-  if (!dueYearPart || !dueMonthPart || !dueDayPart) {
-    return 0;
-  }
-  const dueYear = parseInt(dueYearPart.value);
-  const dueMonth = parseInt(dueMonthPart.value);
-  const dueDay = parseInt(dueDayPart.value);
-
-  const currentDate = new Date(currentYear, currentMonth - 1, currentDay);
-  const dueDateObj = new Date(dueYear, dueMonth - 1, dueDay);
-
-  const diffInMs = dueDateObj.getTime() - currentDate.getTime();
-  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-
-  return diffInDays;
+  return {
+    year: Number.parseInt(year),
+    month: Number.parseInt(month),
+    day: Number.parseInt(day),
+  };
 }
 
-export function getOverdueDays(dueDate: string): number {
-  const daysUntil = getDaysUntilDueDate(dueDate);
+export function getDaysUntilDueDate(dueDate: string, timeZone: string): number {
+  const now = new Date();
+  const current = datePartsInTimeZone(now, timeZone);
+  const due = datePartsInTimeZone(parseCalendarDate(dueDate), "UTC");
+  if (!current || !due) {
+    return 0;
+  }
+  const currentDate = Date.UTC(current.year, current.month - 1, current.day);
+  const dueDateUtc = Date.UTC(due.year, due.month - 1, due.day);
+  return Math.round((dueDateUtc - currentDate) / (1000 * 60 * 60 * 24));
+}
+
+export function getOverdueDays(dueDate: string, timeZone: string): number {
+  const daysUntil = getDaysUntilDueDate(dueDate, timeZone);
   return Math.max(0, -daysUntil);
 }

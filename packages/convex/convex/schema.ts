@@ -42,6 +42,7 @@ export default defineSchema({
     userId: v.string(), // Better Auth user ID
     tokenIdentifier: v.string(), // Stable Convex auth identity
     locale: supportedLocaleValidator,
+    timeZone: v.optional(v.string()), // IANA zone; legacy profiles fall back to Europe/London
     // Platform staff flag, backfilled before this final schema tightening.
     isAdmin: v.boolean(),
   })
@@ -54,6 +55,13 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_createdAt", ["createdAt"]),
+  cacheInvalidationJobs: defineTable({
+    key: v.string(),
+    tags: v.array(v.string()),
+    version: v.number(),
+    attempts: v.number(),
+    createdAt: v.number(),
+  }).index("by_key", ["key"]),
   babyPublicIdHistory: defineTable({
     babyId: v.id("baby"),
     publicId: v.string(), // Historical publicId

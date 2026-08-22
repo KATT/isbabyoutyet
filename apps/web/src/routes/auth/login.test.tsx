@@ -9,10 +9,14 @@ const mocks = vi.hoisted(() => ({
   hasDemoLogin: true,
   navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
   signInEmail: vi.fn<
-    (opts: { email: string; password: string; rememberMe: boolean }) => Promise<{
+    (
+      opts: { email: string; password: string; rememberMe: boolean },
+      fetchOptions: { headers: Record<string, string> },
+    ) => Promise<{
       error: { message: string } | null;
     }>
   >(async () => ({ error: null })),
+  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
 }));
 
 vi.mock("@/lib/has-demo-login", () => ({
@@ -30,12 +34,19 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 vi.mock("@/lib/auth-client", () => ({
+  getBrowserAuthHeaders: () => ({ "x-time-zone": "Asia/Tokyo" }),
   authClient: {
     signIn: {
-      email: (opts: { email: string; password: string; rememberMe: boolean }) =>
-        mocks.signInEmail(opts),
+      email: (
+        opts: { email: string; password: string; rememberMe: boolean },
+        fetchOptions: { headers: Record<string, string> },
+      ) => mocks.signInEmail(opts, fetchOptions),
     },
   },
+}));
+
+vi.mock("@/lib/convexAuthHandoff", () => ({
+  waitForConvexAuth: () => mocks.waitForConvexAuth(),
 }));
 
 vi.mock("sonner", () => ({
@@ -56,11 +67,17 @@ function renderLogin() {
   });
 }
 
-test("prefills and signs in when a test account is chosen", async () => {
+test("waits for provider-confirmed Convex auth before SPA navigation", async () => {
   mocks.hasDemoLogin = true;
   mocks.navigate.mockClear();
   mocks.signInEmail.mockClear();
+  mocks.waitForConvexAuth.mockClear();
   mocks.signInEmail.mockResolvedValueOnce({ error: null });
+  let confirmAuth = () => {};
+  const authConfirmation = new Promise<void>((resolve) => {
+    confirmAuth = resolve;
+  });
+  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
 
   await using _view = renderLogin();
 
@@ -76,13 +93,24 @@ test("prefills and signs in when a test account is chosen", async () => {
   );
 
   await vi.waitFor(() => {
-    expect(mocks.signInEmail).toHaveBeenCalledWith({
-      email: DEMO_EMPTY_USER.email,
-      password: DEMO_EMPTY_USER.password,
-      rememberMe: true,
+    expect(mocks.signInEmail).toHaveBeenCalledWith(
+      {
+        email: DEMO_EMPTY_USER.email,
+        password: DEMO_EMPTY_USER.password,
+        rememberMe: true,
+      },
+      { headers: { "x-time-zone": "Asia/Tokyo" } },
+    );
+  });
+  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
+  expect(mocks.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await vi.waitFor(() => {
+    expect(mocks.navigate).toHaveBeenCalledWith({
+      to: "/dashboard",
     });
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
 });
 
 test("hides the test-account picker when demo login is disabled", async () => {

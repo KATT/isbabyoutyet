@@ -19,9 +19,30 @@ import {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
+import { getBabySeo } from "@/lib/baby-seo";
 
-const routeModule = await import("@/routes/baby/$publicId");
+const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
+
+test("parent route caches public overlays and keeps manager overlays private", () => {
+  const headers = routeModule.Route.options.headers as unknown as (opts: {
+    params: { publicId: string };
+    matches: Array<{ routeId: string }>;
+  }) => Record<string, string>;
+  const publicHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/share" }],
+  });
+  const privateHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
+  });
+
+  expect(publicHeaders["Cache-Control"]).toContain("public");
+  expect(publicHeaders["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
+  expect(privateHeaders["Cache-Control"]).toContain("private");
+  expect(privateHeaders["Cache-Control"]).toContain("no-store");
+});
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -44,6 +65,7 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
     <div>
       <h1>Is {baby.name} out yet?</h1>
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={currentStatus}
         photoUrl={null}
@@ -199,6 +221,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
     name: "Nova",
+    timeZone: "Europe/London",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
@@ -210,6 +233,7 @@ test("renders the public baby status in the baby's Swedish override", async () =
   await using view = renderResource(
     <LocaleProvider locale="sv">
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
@@ -229,6 +253,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby: BabyData = {
     name: "Nova",
+    timeZone: "Europe/London",
     dueDate: "2026-09-01",
     dueDateDisplayMode: "exact",
     publicDueDateText: null,
@@ -240,6 +265,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
   await using view = renderResource(
     <LocaleProvider locale="pt-BR">
       <StatusDisplay
+        publicId={null}
         baby={baby}
         currentStatus={getCurrentStatus(baby)}
         photoUrl={null}
@@ -435,7 +461,7 @@ test("beforeLoad redirects legacy settings links", async () => {
   });
 });
 
-test("loader does not call profile.ensure for authenticated visitors", async () => {
+test("loader does not mutate profiles for authenticated visitors", async () => {
   const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
   const result = await runBabyLoader(
     {
@@ -483,6 +509,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
       theme: "baby-blue",
       locale: "en-GB",
       resolvedLocale: "en-GB",
+      timeZone: "Europe/London",
       laborStarted: null,
       wentToHospital: null,
       babyBorn: null,
@@ -496,4 +523,32 @@ test("docToBabyData coalesces missing public due date text to null", () => {
     dueDateDisplayMode: "message",
     publicDueDateText: null,
   });
+});
+
+test("share preview uses the canonical route slug while reactive baby data changes", () => {
+  const seo = getBabySeo(
+    {
+      _id: "baby-1" as Id<"baby">,
+      _creationTime: 1,
+      name: "Juniper Hale",
+      dueDateDisplayMode: "message",
+      publicDueDateText: undefined,
+      theme: "baby-blue",
+      locale: "en-GB",
+      resolvedLocale: "en-GB",
+      timeZone: "Europe/London",
+      laborStarted: null,
+      wentToHospital: null,
+      babyBorn: null,
+      milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
+      publicId: "juniper-hale-1",
+      photoUrl: null,
+      thumbnailUrl: null,
+      blurDataUrl: null,
+    },
+    "juniper-hale",
+  );
+
+  expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
+  expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });

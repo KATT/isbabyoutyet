@@ -27,6 +27,7 @@ vi.mock("sonner", () => ({
 
 const baby: BabyData = {
   name: "Nova",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,
@@ -220,10 +221,7 @@ test("status editor saves the matching milestone instant", async () => {
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() =>
-    expect(onRedate).toHaveBeenCalledWith(
-      "labor_started",
-      new Date("2026-08-10T09:30").toISOString(),
-    ),
+    expect(onRedate).toHaveBeenCalledWith("labor_started", "2026-08-10T08:30:00.000Z"),
   );
 });
 

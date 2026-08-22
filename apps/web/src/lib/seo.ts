@@ -5,6 +5,7 @@ import { getDaysUntilDueDate, getOverdueDays, getThemePrimaryColor } from "@/com
 import { translate } from "@/lib/i18n";
 import { isIndexableBabyPublicId, searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 
 export const OG_IMAGE_WIDTH = 1200;
 export const OG_IMAGE_HEIGHT = 630;
@@ -17,7 +18,11 @@ type BabySeoBase = {
   babyBorn: string | null | undefined;
   wentToHospital: string | null | undefined;
   laborStarted: string | null | undefined;
-} & Partial<{ milestoneVisibility: MilestoneVisibility | null }>;
+} & Partial<{
+  milestoneVisibility: MilestoneVisibility | null;
+  photoId: string | null;
+  timeZone: string;
+}>;
 
 type BabyDueDateDisplay =
   | { dueDateDisplayMode: "exact"; dueDate: string }
@@ -27,8 +32,9 @@ type BabySeoInput = BabySeoBase & Partial<BabyDueDateDisplay>;
 
 function babyPageTitle(baby: BabySeoInput) {
   const exactDueDate = baby.dueDateDisplayMode === "exact" && baby.dueDate ? baby.dueDate : null;
-  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate) : 0;
-  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate) : 0;
+  const timeZone = baby.timeZone ?? DEFAULT_TIME_ZONE;
+  const overdueDays = exactDueDate ? getOverdueDays(exactDueDate, timeZone) : 0;
+  const daysUntilDueDate = exactDueDate ? getDaysUntilDueDate(exactDueDate, timeZone) : 0;
   const isBorn = !!baby.babyBorn;
   const locale = baby.locale;
 
@@ -104,7 +110,7 @@ export function babyStatusLabel(opts: { status: BabyStatus; locale: SupportedLoc
 }
 
 export function babyStatusDetail(opts: {
-  baby: Pick<BabySeoBase, "babyBorn" | "locale"> & Partial<BabyDueDateDisplay>;
+  baby: Pick<BabySeoBase, "babyBorn" | "locale" | "timeZone"> & Partial<BabyDueDateDisplay>;
   status: BabyStatus;
 }) {
   const locale = opts.baby.locale;
@@ -122,7 +128,8 @@ export function babyStatusDetail(opts: {
     return babyStatusLabel({ status: opts.status, locale });
   }
   if (opts.baby.dueDateDisplayMode === "exact" && opts.baby.dueDate) {
-    const overdueDays = getOverdueDays(opts.baby.dueDate);
+    const timeZone = opts.baby.timeZone ?? DEFAULT_TIME_ZONE;
+    const overdueDays = getOverdueDays(opts.baby.dueDate, timeZone);
     if (overdueDays > 0) {
       return translate(
         locale,
@@ -130,7 +137,7 @@ export function babyStatusDetail(opts: {
         { count: overdueDays },
       );
     }
-    const daysUntil = getDaysUntilDueDate(opts.baby.dueDate);
+    const daysUntil = getDaysUntilDueDate(opts.baby.dueDate, timeZone);
     return translate(
       locale,
       daysUntil === 1 ? "{{count}} day until due date" : "{{count}} days until due date",
@@ -142,6 +149,42 @@ export function babyStatusDetail(opts: {
 
 function babyOgImagePath(publicId: string) {
   return `/og/baby/${publicId}`;
+}
+
+function babyOgImageVersion(opts: { baby: BabySeoInput; title: string; description: string }) {
+  const source = JSON.stringify([
+    "baby-og-v2",
+    opts.title,
+    opts.description,
+    opts.baby.name,
+    opts.baby.dueDateDisplayMode ?? null,
+    opts.baby.dueDateDisplayMode === "exact" ? opts.baby.dueDate : null,
+    opts.baby.dueDateDisplayMode === "message" ? (opts.baby.publicDueDateText ?? null) : null,
+    opts.baby.theme ?? null,
+    opts.baby.locale,
+    opts.baby.babyBorn ?? null,
+    opts.baby.wentToHospital ?? null,
+    opts.baby.laborStarted ?? null,
+    opts.baby.milestoneVisibility?.showLabor ?? null,
+    opts.baby.milestoneVisibility?.showHospital ?? null,
+    opts.baby.photoId ?? null,
+  ]);
+  let first = 0x811c9dc5;
+  let second = 0x9e3779b9;
+  for (let index = 0; index < source.length; index++) {
+    const code = source.charCodeAt(index);
+    first = Math.imul(first ^ code, 0x01000193);
+    second = Math.imul(second ^ code, 0x85ebca6b);
+  }
+  return `${(first >>> 0).toString(36)}${(second >>> 0).toString(36)}`;
+}
+
+export function babyOgImageUrl(publicId: string, version: string | undefined) {
+  const url = new URL(absoluteUrl(babyOgImagePath(publicId)));
+  if (version) {
+    url.searchParams.set("v", version);
+  }
+  return url.toString();
 }
 
 export function homepageOgImagePath() {
@@ -164,7 +207,8 @@ export function babySeoHead(baby: BabySeoInput) {
   const title = babyPageTitle(baby);
   const description = babyPageDescription(baby);
   const pagePath = `/baby/${baby.publicId}`;
-  const imageUrl = absoluteUrl(babyOgImagePath(baby.publicId));
+  const imageVersion = babyOgImageVersion({ baby, title, description });
+  const imageUrl = babyOgImageUrl(baby.publicId, imageVersion);
   const themeColor = getThemePrimaryColor(baby.theme);
 
   return {

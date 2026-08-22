@@ -15,6 +15,7 @@ vi.mock("sonner", () => ({
 
 const baby: BabyData = {
   name: "Nova",
+  timeZone: "Europe/London",
   dueDate: "2026-09-01T00:00:00.000Z",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,
@@ -33,6 +34,7 @@ const absentSettingsProps = {
   coParents: null,
   onMilestoneRedate: () => undefined,
   onMilestoneRemove: () => undefined,
+  onOpenChangeComplete: null,
 };
 
 function renderResource(ui: React.ReactElement) {
@@ -120,6 +122,7 @@ test("delete page control appears when onDelete is provided", async () => {
       birthJourney="labor"
       open={true}
       onOpenChange={onOpenChange}
+      onOpenChangeComplete={null}
       profileLocale="en-GB"
       coParents={null}
       onMilestoneRedate={() => undefined}
@@ -265,6 +268,7 @@ test("theme constants render through the active translation catalog", async () =
         onUpdate={onUpdate}
         open
         onOpenChange={onOpenChange}
+        onOpenChangeComplete={null}
         profileLocale="sv"
         onDelete={null}
         coParents={null}

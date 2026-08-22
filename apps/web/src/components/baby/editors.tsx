@@ -185,8 +185,8 @@ type StatusDateEditorProps = {
   onRemove: MilestoneRemoveHandler;
 };
 
-function statusDateSchema(t: TranslationFunction) {
-  return z.object({ dateTime: htmlDateTime(t) });
+function statusDateSchema(t: TranslationFunction, timeZone: string) {
+  return z.object({ dateTime: htmlDateTime(t, timeZone) });
 }
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
@@ -227,9 +227,9 @@ function StatusDateForm(props: {
 }) {
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
-  const dateTimeCodec = htmlDateTime(t);
+  const dateTimeCodec = htmlDateTime(t, props.baby.timeZone);
   const form = useZodForm({
-    schema: statusDateSchema(t),
+    schema: statusDateSchema(t, props.baby.timeZone),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
@@ -259,7 +259,7 @@ function StatusDateForm(props: {
               <Input
                 type="datetime-local"
                 aria-label={t("Status date and time")}
-                max={htmlDateTimeNow()}
+                max={htmlDateTimeNow(props.baby.timeZone)}
                 {...field}
               />
             </FormControl>

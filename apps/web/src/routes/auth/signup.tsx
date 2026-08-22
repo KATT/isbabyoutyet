@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { authClient } from "@/lib/auth-client";
+import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -22,6 +22,8 @@ import { Baby } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
+import { authPageCacheHeaders } from "@/lib/cachePolicy";
+import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -33,6 +35,7 @@ function signupSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
+  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {
@@ -82,16 +85,20 @@ function SignupPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await authClient.signUp.email({
-                  email: values.email,
-                  password: values.password,
-                  name: values.name,
-                });
+                const result = await authClient.signUp.email(
+                  {
+                    email: values.email,
+                    password: values.password,
+                    name: values.name,
+                  },
+                  { headers: getBrowserAuthHeaders() },
+                );
 
                 if (result.error) {
                   throw new Error(result.error.message || t("Failed to sign up"));
                 }
 
+                await waitForConvexAuth();
                 await router.navigate({ to: "/dashboard" });
               }}
             >

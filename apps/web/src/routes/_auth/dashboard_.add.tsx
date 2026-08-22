@@ -53,7 +53,7 @@ function addBabySchema(t: TranslationFunction) {
     }));
 }
 
-export const Route = createFileRoute("/_auth/dashboard/add")({
+export const Route = createFileRoute("/_auth/dashboard_/add")({
   component: AddBabyPage,
 });
 

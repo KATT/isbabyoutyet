@@ -3,6 +3,7 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
+import { resolveTimeZone } from "../src/timeZone";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import {
   claimPendingInvitesForAuthUser,
@@ -11,6 +12,7 @@ import {
 
 export type ProfileResult = {
   locale: SupportedLocale;
+  timeZone: string;
   isAdmin: boolean;
 };
 
@@ -29,25 +31,36 @@ export function localeFromAcceptLanguage(acceptLanguage: string | null | undefin
 /** Creates the app profile row on first auth; idempotent on later calls. */
 export async function ensureUserProfileForAuthUser(
   ctx: MutationCtx,
-  opts: { userId: string; localeHint: string | null | undefined },
+  opts: {
+    userId: string;
+    localeHint: string | null | undefined;
+    timeZoneHint: string | null | undefined;
+  },
 ): Promise<ProfileResult> {
   const tokenIdentifier = tokenIdentifierForAuthUserId(opts.userId);
   const existing = await getProfileByTokenIdentifier(ctx, tokenIdentifier);
   if (existing) {
+    const timeZone = resolveTimeZone(existing.timeZone ?? opts.timeZoneHint);
+    if (existing.timeZone === undefined) {
+      await ctx.db.patch(existing._id, { timeZone });
+    }
     return {
       locale: resolveSupportedLocale(existing.locale),
+      timeZone,
       isAdmin: existing.isAdmin,
     };
   }
 
   const locale = resolveSupportedLocale(opts.localeHint);
+  const timeZone = resolveTimeZone(opts.timeZoneHint);
   await ctx.db.insert("userProfiles", {
     userId: opts.userId,
     tokenIdentifier,
     locale,
+    timeZone,
     isAdmin: false,
   });
-  return { locale, isAdmin: false };
+  return { locale, timeZone, isAdmin: false };
 }
 
 export async function claimInvitesForAuthUser(
@@ -74,6 +87,7 @@ export const ensureUserProfileForAuthUserMutation = internalMutation({
   args: {
     userId: v.string(),
     localeHint: v.union(v.string(), v.null()),
+    timeZoneHint: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     return await ensureUserProfileForAuthUser(ctx, args);

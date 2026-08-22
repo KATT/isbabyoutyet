@@ -11,7 +11,6 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -33,6 +32,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -58,6 +58,7 @@ import { getVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
@@ -99,6 +100,7 @@ function composerSchema(opts: {
   t: TranslationFunction;
   allowedMilestones: readonly Milestone[];
   babyId: Id<"baby">;
+  timeZone: string;
 }) {
   return z
     .object({
@@ -109,7 +111,7 @@ function composerSchema(opts: {
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(opts.t),
+      occurredAt: optionalHtmlDateTime(opts.t, opts.timeZone),
       photo: z.custom<File>().nullable(),
     })
     .refine(
@@ -166,9 +168,12 @@ function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale
   return rtf.format(0, "second");
 }
 
-/** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
-function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): string {
-  return new Date(timestamp).toLocaleString(locale, {
+function formatOccurredAt(
+  timestamp: number,
+  opts: { locale: SupportedLocale; timeZone: string },
+): string {
+  return new Date(timestamp).toLocaleString(opts.locale, {
+    timeZone: opts.timeZone,
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -206,6 +211,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
     t,
     allowedMilestones: futureMilestones,
     babyId: props.babyId,
+    timeZone: props.baby.timeZone,
   });
 
   const form = useZodForm({
@@ -391,7 +397,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={htmlDateTimeNow()}
+                              max={htmlDateTimeNow(props.baby.timeZone)}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -470,6 +476,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -528,14 +535,23 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               <Badge
                 className="shrink-0"
                 title={
-                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
+                  update.occurredAt
+                    ? formatOccurredAt(update.occurredAt, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })
+                    : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
                 {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt, locale)}
+                    ·{" "}
+                    {formatOccurredAt(update.occurredAt, {
+                      locale,
+                      timeZone: props.baby.timeZone,
+                    })}
                   </span>
                 )}
               </Badge>
@@ -558,7 +574,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={t("Posted {{date}}", {
-                date: new Date(props.item.postedAt).toLocaleString(locale),
+                date: new Date(props.item.postedAt).toLocaleString(locale, {
+                  timeZone: props.baby.timeZone,
+                }),
               })}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
@@ -637,6 +655,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
           <TimelinePhoto
+            publicId={props.publicId}
+            updateId={update._id}
             photoUrl={update.photoUrl}
             thumbnailUrl={update.thumbnailUrl}
             blurDataUrl={update.blurDataUrl}
@@ -654,6 +674,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 }
 
 type TimelinePhotoProps = {
+  publicId: string;
+  updateId: Id<"updates">;
   photoUrl: string;
   thumbnailUrl: string | null;
   blurDataUrl: string | null;
@@ -661,49 +683,33 @@ type TimelinePhotoProps = {
 
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            aria-label={t("View photo full size")}
-            className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <BlurImage
-              src={inlineUrl}
-              alt={t("Baby update")}
-              blurDataUrl={props.blurDataUrl}
-              className="aspect-square max-h-64 w-full object-cover"
-              loading="lazy"
-            />
-          </button>
-        }
+    <Link
+      {...photo.openLink}
+      aria-label={t("View photo full size")}
+      className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <BlurImage
+        src={inlineUrl}
+        alt={t("Baby update")}
+        blurDataUrl={props.blurDataUrl}
+        className="aspect-square max-h-64 w-full object-cover"
+        loading="lazy"
       />
-      <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-        <button
-          onClick={() => setIsOpen(false)}
-          aria-label={t("Close photo")}
-          className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <BlurImage
-          src={props.photoUrl}
-          alt={t("Baby update")}
-          blurDataUrl={props.blurDataUrl}
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-        />
-      </DialogContent>
-    </Dialog>
+    </Link>
   );
 }
 
 type EncouragementTimelineItemProps = {
   item: EncouragementItemData;
   isOwner: boolean;
+  timeZone: string;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
@@ -816,7 +822,9 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               </span>
               <span
                 className="text-xs text-muted-foreground shrink-0"
-                title={new Date(encouragement.createdAt).toLocaleString(locale)}
+                title={new Date(encouragement.createdAt).toLocaleString(locale, {
+                  timeZone: props.timeZone,
+                })}
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
@@ -906,6 +914,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -1045,6 +1054,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              publicId={props.publicId}
               baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
@@ -1056,6 +1066,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               key={item._id}
               item={item}
               isOwner={props.isOwner}
+              timeZone={props.baby.timeZone}
               currentVisitorId={currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}

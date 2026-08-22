@@ -22,6 +22,7 @@ import { DEFAULT_LOCALE } from "../src/i18n";
 import { supportedLocaleValidator } from "./i18n";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
+import { internalMutationWithTriggers } from "./triggers";
 
 const CLEAR_BATCH_SIZE = 32;
 const RESET_INACTIVITY_MS = 60 * 60_000;
@@ -155,33 +156,20 @@ async function hasCompleteHomepageDemoSeed(ctx: QueryCtx) {
 
 async function hasRecentVisitorEncouragement(
   ctx: MutationCtx,
-  opts: { babies: Doc<"baby">[]; since: number },
+  opts: { baby: Doc<"baby">; since: number },
 ) {
-  for (const baby of opts.babies) {
-    const recent = ctx.db
-      .query("encouragements")
-      .withIndex("by_babyId_and_createdAt", (q) =>
-        q.eq("babyId", baby._id).gte("createdAt", opts.since),
-      )
-      .order("desc");
-    for await (const encouragement of recent) {
-      if (encouragement.demoFixture !== true) {
-        return true;
-      }
+  const recent = ctx.db
+    .query("encouragements")
+    .withIndex("by_babyId_and_createdAt", (q) =>
+      q.eq("babyId", opts.baby._id).gte("createdAt", opts.since),
+    )
+    .order("desc");
+  for await (const encouragement of recent) {
+    if (encouragement.demoFixture !== true) {
+      return true;
     }
   }
   return false;
-}
-
-async function managedHomepageDemoBabies(ctx: MutationCtx) {
-  const babies: Doc<"baby">[] = [];
-  for (const locale of homepageDemoLocales()) {
-    const baby = await findBabyByPublicId(ctx, HOMEPAGE_DEMO_BABIES[locale].publicId);
-    if (baby && isManagedHomepageDemo(baby)) {
-      babies.push(baby);
-    }
-  }
-  return babies;
 }
 
 async function requireManagedDemoBaby(ctx: MutationCtx, babyId: Id<"baby">) {
@@ -395,7 +383,7 @@ export const hasCompletePhotoSet = internalQuery({
   },
 });
 
-export const ensureBaby = internalMutation({
+export const ensureBaby = internalMutationWithTriggers({
   args: { locale: localeArg },
   handler: async (ctx, args) => {
     return await ensureBabyDoc(ctx, {
@@ -405,7 +393,7 @@ export const ensureBaby = internalMutation({
   },
 });
 
-export const clearFeedBatch = internalMutation({
+export const clearFeedBatch = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
   },
@@ -414,7 +402,7 @@ export const clearFeedBatch = internalMutation({
   },
 });
 
-export const insertFeed = internalMutation({
+export const insertFeed = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photos: v.optional(photosValidator),
@@ -441,7 +429,7 @@ export const insertFeed = internalMutation({
  * objects are retained because Convex storage IDs have no ownership metadata;
  * deleting one here could invalidate a non-demo update that reused the ID.
  */
-export const refresh = internalMutation({
+export const refresh = internalMutationWithTriggers({
   args: {
     photos: v.optional(photosValidator),
     locale: localeArg,
@@ -459,11 +447,12 @@ export const refresh = internalMutation({
 /**
  * Daily reset for the public demo pages. Only server-marked fixture
  * encouragements are excluded from activity, so a client cannot spoof the
- * guard through visitorId. The activity check, photo lookup, and all resets
- * share one transaction so an encouragement cannot arrive between the check
- * and the wipe.
+ * guard through visitorId. Each baby has its own activity gate, so one active
+ * locale does not block inactive demos from resetting. The checks, photo
+ * lookup, and resets share one transaction so an encouragement cannot arrive
+ * between a baby's check and wipe.
  */
-export const resetIfInactive = internalMutation({
+export const resetIfInactive = internalMutationWithTriggers({
   args: {},
   returns: v.object({
     status: v.union(
@@ -475,27 +464,33 @@ export const resetIfInactive = internalMutation({
   }),
   handler: async (ctx) => {
     const now = Date.now();
-    const babies = await managedHomepageDemoBabies(ctx);
-    if (
-      await hasRecentVisitorEncouragement(ctx, {
-        babies,
-        since: now - RESET_INACTIVITY_MS,
-      })
-    ) {
-      return { status: "skipped_recent_encouragement" as const, resetBabies: 0 };
-    }
-
     const photos = await loadReusablePhotos(ctx);
     if (!photos) {
       return { status: "skipped_missing_photos" as const, resetBabies: 0 };
     }
 
+    let resetBabies = 0;
     for (const locale of homepageDemoLocales()) {
+      const existing = await findBabyByPublicId(ctx, HOMEPAGE_DEMO_BABIES[locale].publicId);
+      if (
+        existing &&
+        isManagedHomepageDemo(existing) &&
+        (await hasRecentVisitorEncouragement(ctx, {
+          baby: existing,
+          since: now - RESET_INACTIVITY_MS,
+        }))
+      ) {
+        continue;
+      }
       const babyId = await ensureBabyDoc(ctx, { now, locale });
       await clearAllFeed(ctx, babyId);
       await insertFeedDocs(ctx, { babyId, photos, now, locale });
+      resetBabies += 1;
     }
 
-    return { status: "reset" as const, resetBabies: homepageDemoLocales().length };
+    if (resetBabies === 0) {
+      return { status: "skipped_recent_encouragement" as const, resetBabies };
+    }
+    return { status: "reset" as const, resetBabies };
   },
 });

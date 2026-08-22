@@ -54,6 +54,30 @@ test("baby SEO head includes countdown title, description, and dynamic OG image"
   expect(seo.indexable).toBe(true);
 });
 
+test("baby OG image URL version changes with rendered baby data", () => {
+  const baby = {
+    name: "Avery",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "exact" as const,
+    publicId: "baby-waiting",
+    theme: null,
+    locale: "en-GB" as const,
+    babyBorn: null,
+    wentToHospital: null,
+    laborStarted: null,
+    photoId: null,
+  };
+  const mangoUrl = new URL(babySeoHead(baby).imageUrl);
+  const babyBlueUrl = new URL(babySeoHead({ ...baby, theme: "baby-blue" }).imageUrl);
+  const photoUrl = new URL(babySeoHead({ ...baby, photoId: "storage-photo-id" }).imageUrl);
+
+  expect(mangoUrl.pathname).toBe("/og/baby/baby-waiting");
+  expect(mangoUrl.searchParams.get("v")).toBeTruthy();
+  expect(babyBlueUrl.searchParams.get("v")).not.toBe(mangoUrl.searchParams.get("v"));
+  expect(photoUrl.searchParams.get("v")).not.toBe(mangoUrl.searchParams.get("v"));
+  expect(babySeoHead(baby).imageUrl).toBe(mangoUrl.toString());
+});
+
 test("custom due date text replaces countdown metadata", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
   const baby = {

@@ -16,6 +16,17 @@ function numericDimension(value: BlurImageProps["width"] | BlurImageProps["heigh
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
+function placeholderObjectFit(props: BlurImageProps) {
+  if (props.style?.objectFit) return props.style.objectFit;
+
+  const className = ` ${props.className ?? ""} `;
+  if (className.includes(" object-contain ")) return "contain";
+  if (className.includes(" object-fill ")) return "fill";
+  if (className.includes(" object-none ")) return "none";
+  if (className.includes(" object-scale-down ")) return "scale-down";
+  return "cover";
+}
+
 type BlurSvgOptions = {
   width: number | undefined;
   height: number | undefined;
@@ -113,11 +124,10 @@ function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
 const useNonWarningLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 /**
- * Drop-in `<img>` implementing Next.js' `blurDataURL` mechanics. SSR puts both
- * the real `src` and a blurred SVG background on the same element. The request
- * starts immediately; decoded replaced-image pixels naturally paint over the
- * background without waiting for hydration. TanStack Start/Router has no Image
- * component of its own.
+ * Drop-in `<img>` implementing Next.js' `blurDataURL` lifecycle. SSR keeps the
+ * real `src` on the accessible image so loading starts immediately, while a
+ * separate foreground layer prevents progressive JPEG scans from painting
+ * over the placeholder before the full image has decoded.
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
@@ -139,28 +149,18 @@ export function BlurImage(props: BlurImageProps) {
     });
   }, [props.onLoad, srcKey]);
 
-  const objectFit = props.style?.objectFit;
-  const backgroundImage =
+  const objectFit = placeholderObjectFit(props);
+  const placeholderSrc =
     props.blurDataUrl && !loaded
-      ? `url("data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
+      ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
           width: numericDimension(props.width),
           height: numericDimension(props.height),
           blurDataUrl: props.blurDataUrl,
           objectFit,
-        })}")`
-      : undefined;
-  const backgroundSize =
-    objectFit === "fill" ? "100% 100%" : objectFit === "contain" ? "contain" : "cover";
-  const placeholderStyle = backgroundImage
-    ? {
-        backgroundSize,
-        backgroundPosition: props.style?.objectPosition ?? "50% 50%",
-        backgroundRepeat: "no-repeat",
-        backgroundImage,
-      }
-    : {};
+        })}`
+      : null;
 
-  return (
+  const image = (
     <img
       {...imgPropsWithoutBlur(props)}
       ref={imgRef}
@@ -169,7 +169,6 @@ export function BlurImage(props: BlurImageProps) {
       style={{
         color: showAltText ? undefined : "transparent",
         ...props.style,
-        ...placeholderStyle,
       }}
       onLoad={(event) => {
         handleLoading(event.currentTarget, {
@@ -186,5 +185,36 @@ export function BlurImage(props: BlurImageProps) {
       }}
       src={props.src}
     />
+  );
+
+  if (!props.blurDataUrl) return image;
+
+  return (
+    <span
+      className={props.className}
+      data-blur-image-wrapper=""
+      style={{ display: "inline-grid", position: "relative" }}
+    >
+      {image}
+      {placeholderSrc ? (
+        <img
+          aria-hidden="true"
+          alt=""
+          className={props.className}
+          data-blur-image-placeholder=""
+          src={placeholderSrc}
+          style={{
+            borderRadius: "inherit",
+            height: "100%",
+            inset: 0,
+            objectFit,
+            objectPosition: props.style?.objectPosition ?? "50% 50%",
+            pointerEvents: "none",
+            position: "absolute",
+            width: "100%",
+          }}
+        />
+      ) : null}
+    </span>
   );
 }

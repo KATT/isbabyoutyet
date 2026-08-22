@@ -1,8 +1,7 @@
-import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { Baby } from "@phosphor-icons/react";
 import { EncouragementForm } from "@/components/baby/encouragements";
-import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
+import { TimelineFeed } from "@/components/baby/timeline";
 import {
   NotificationSubscribe,
   prefetchBrowserPushCapability,
@@ -15,22 +14,35 @@ import { OnboardingHost, useCompleteOnboardingStep } from "@/components/onboardi
 import type { BabyData } from "@workspace/convex/src/types";
 import { FORBIDDEN, getCurrentStatus } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
-import { createFileRoute, Link, notFound, redirect, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  notFound,
+  Outlet,
+  redirect,
+  useMatchRoute,
+  useNavigate,
+} from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { z } from "zod";
 import type { FunctionReturnType } from "convex/server";
-import { useState } from "react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { babySeoHead, openGraphImageMeta } from "@/lib/seo";
+import { openGraphImageMeta } from "@/lib/seo";
+import { getBabySeo } from "@/lib/baby-seo";
+import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
-import { canonicalUrl } from "@/lib/site-url";
+import {
+  useBabyPostOverlayNav,
+  useBabySettingsOverlayNav,
+  useBabyShareOverlayNav,
+} from "@/lib/overlay-nav";
 
 const TIMELINE_PAGE_SIZE = 20;
 
 export const Route = createFileRoute("/baby/$publicId")({
-  component: BabyPage,
+  component: BabyPageLayout,
   validateSearch: z.object({
     settings: z.boolean().optional(),
     beta: z.boolean().optional(),
@@ -103,22 +115,7 @@ export const Route = createFileRoute("/baby/$publicId")({
       return {};
     }
 
-    const seo = babySeoHead({
-      name: babyDoc.name,
-      ...(babyDoc.dueDateDisplayMode === "exact"
-        ? { dueDateDisplayMode: "exact" as const, dueDate: babyDoc.dueDate }
-        : {
-            dueDateDisplayMode: "message" as const,
-            publicDueDateText: babyDoc.publicDueDateText,
-          }),
-      publicId: babyDoc.publicId,
-      theme: babyDoc.theme,
-      locale: babyDoc.resolvedLocale,
-      babyBorn: babyDoc.babyBorn,
-      wentToHospital: babyDoc.wentToHospital,
-      laborStarted: babyDoc.laborStarted,
-      milestoneVisibility: babyDoc.milestoneVisibility,
-    });
+    const seo = getBabySeo(babyDoc, opts.params.publicId);
     // Inline via `styles` (not `links`): TanStack Asset forces React 19
     // `precedence` on stylesheet links, which can leave theme CSS stuck after
     // navigating away. Inline head styles still paint before body (no FOUC)
@@ -190,7 +187,13 @@ export const Route = createFileRoute("/baby/$publicId")({
       ],
     };
   },
-  headers: (opts) => babyPageRobotsHeaders(opts.params.publicId),
+  headers: (opts) => ({
+    ...babyRouteCacheHeaders({
+      publicId: opts.params.publicId,
+      routeIds: opts.matches.map((match) => match.routeId),
+    }),
+    ...babyPageRobotsHeaders(opts.params.publicId),
+  }),
 });
 
 /**
@@ -203,6 +206,7 @@ export function docToBabyData(
     name: doc.name,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
@@ -234,6 +238,7 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
     publicDueDateText: doc.publicDueDateText,
     theme: doc.theme ?? null,
     locale: doc.locale ?? null,
+    timeZone: doc.timeZone,
     laborStarted: doc.laborStarted ?? null,
     wentToHospital: doc.wentToHospital ?? null,
     babyBorn: doc.babyBorn ?? null,
@@ -242,10 +247,17 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-function BabyPage() {
+function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
   const navigate = useNavigate({ from: Route.fullPath });
+  const matchRoute = useMatchRoute();
+  const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
+  const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
+  const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
+  const photoOpen =
+    !!matchRoute({ to: "/baby/$publicId/photo" }) ||
+    !!matchRoute({ to: "/baby/$publicId/updates/$updateId/photo" });
   const loaderData = Route.useLoaderData();
   if (!loaderData) {
     throw notFound();
@@ -266,7 +278,9 @@ function BabyPage() {
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
 
   const completeOnboardingStep = useCompleteOnboardingStep();
-  const [composerOpen, setComposerOpen] = useState(false);
+  const share = useBabyShareOverlayNav(params.publicId);
+  const post = useBabyPostOverlayNav(params.publicId);
+  const settings = useBabySettingsOverlayNav(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -287,43 +301,24 @@ function BabyPage() {
           onboarding={loaderData.onboarding}
           enabled={undefined}
           babyPublicId={babyDoc.publicId}
-          spotlight={!composerOpen}
+          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
-              setComposerOpen(true);
+              void navigate(post.openLink);
               return;
             }
             if (stepId === "explore_settings") {
-              void navigate({
-                to: "/baby/$publicId/settings",
-                params: { publicId: babyDoc.publicId },
-              });
+              void navigate(settings.openLink);
             }
           }}
         />
       ) : null}
 
       {canManage && birthJourney && managerBaby ? (
-        <>
-          <ScheduledNotificationToast
-            notifications={loaderData.scheduledNotifications}
-            subscriptionCount={loaderData.subscriptionCount}
-          />
-          <Dialog open={composerOpen} onOpenChange={setComposerOpen}>
-            <DialogContent className="sm:max-w-lg">
-              <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-              <UpdateComposer
-                babyId={babyDoc._id}
-                baby={baby}
-                babyName={baby.name}
-                onPosted={() => {
-                  setComposerOpen(false);
-                  void completeOnboardingStep({ stepId: "post_update" });
-                }}
-              />
-            </DialogContent>
-          </Dialog>
-        </>
+        <ScheduledNotificationToast
+          notifications={loaderData.scheduledNotifications}
+          subscriptionCount={loaderData.subscriptionCount}
+        />
       ) : null}
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
@@ -339,24 +334,15 @@ function BabyPage() {
             <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
           </Link>
           <BabyNav
-            shareLink={canonicalUrl(`/baby/${babyDoc.publicId}`)}
-            onShareCopied={
-              canManage
-                ? () => {
-                    void completeOnboardingStep({ stepId: "share_link" });
-                  }
-                : null
-            }
-            onPostUpdate={canManage ? () => setComposerOpen(true) : null}
-            settingsButton={
-              canManage
-                ? {
-                    to: "/baby/$publicId/settings",
-                    params: { publicId: params.publicId },
-                  }
-                : null
-            }
-            settingsOpen={false}
+            shareButton={share.openLink}
+            shareOpen={shareOpen}
+            onDismissShare={shareOpen ? share.dismiss : null}
+            postUpdateButton={canManage ? post.openLink : null}
+            postUpdateOpen={postUpdateOpen}
+            onDismissPostUpdate={canManage && postUpdateOpen ? post.dismiss : null}
+            settingsButton={canManage ? settings.openLink : null}
+            settingsOpen={settingsOpen}
+            onDismissSettings={canManage && settingsOpen ? settings.dismiss : null}
             onSettingsOpened={
               canManage
                 ? () => {
@@ -378,6 +364,7 @@ function BabyPage() {
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
           <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
             <StatusDisplay
+              publicId={babyDoc.publicId}
               baby={baby}
               currentStatus={currentStatus}
               photoUrl={babyDoc.photoUrl}
@@ -419,6 +406,7 @@ function BabyPage() {
             <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
               <TimelineFeed
                 babyId={babyDoc._id}
+                publicId={babyDoc.publicId}
                 baby={baby}
                 babyName={baby.name}
                 isOwner={canManage}
@@ -437,6 +425,8 @@ function BabyPage() {
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
         </Link>
       </footer>
+
+      <Outlet />
     </div>
   );
 }

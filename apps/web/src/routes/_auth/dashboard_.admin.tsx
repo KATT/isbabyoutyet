@@ -73,7 +73,7 @@ type BabyRow = {
   managerEmails: string[];
 };
 
-export const Route = createFileRoute("/_auth/dashboard/admin")({
+export const Route = createFileRoute("/_auth/dashboard_/admin")({
   component: AdminDashboardPage,
   validateSearch: adminSearchSchema,
   loaderDeps: (opts) => opts.search,
@@ -214,6 +214,7 @@ function SortableHeaderLink(props: {
           hideDemo: props.hideDemo,
         }}
         replace
+        resetScroll={false}
         className={cn(
           "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
           active ? "text-foreground" : "text-muted-foreground",
@@ -408,11 +409,11 @@ export function AdminDashboardPage() {
   const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
-
   function setTab(tab: AdminTab) {
     void navigate({
       search: (prev) => ({ ...prev, tab }),
       replace: true,
+      resetScroll: false,
     });
   }
 
@@ -469,14 +470,28 @@ export function AdminDashboardPage() {
                   <TabsTrigger
                     value="babies"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("babies")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("babies")}
+                        replace
+                        resetScroll={false}
+                      />
+                    }
                   >
                     {t("All babies")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="languages"
                     nativeButton={false}
-                    render={<Link to="/dashboard/admin" search={tabSearch("languages")} replace />}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("languages")}
+                        replace
+                        resetScroll={false}
+                      />
+                    }
                   >
                     {t("Requested languages")}
                   </TabsTrigger>
@@ -491,6 +506,7 @@ export function AdminDashboardPage() {
                         void navigate({
                           search: (prev) => ({ ...prev, hideDemo }),
                           replace: true,
+                          resetScroll: false,
                         });
                       }}
                     />

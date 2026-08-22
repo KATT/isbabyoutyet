@@ -5,9 +5,9 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { FORBIDDEN, isMilestoneNotificationType, isStatusForward } from "../src/types";
 import type { BabyStatus, Milestone, NotifiableStatus } from "../src/types";
-import { DEFAULT_LOCALE, resolveSupportedLocale } from "../src/i18n";
+import { notificationScheduleDelayMs } from "../src/notificationTiming";
 import { supportedLocaleValidator } from "./i18n";
-import { mutationWithTriggers } from "./triggers";
+import { internalMutationWithTriggers, mutationWithTriggers } from "./triggers";
 import { insertUpdateWithTimelineItem, loadCurrentStatus } from "./timeline";
 import { isActive, softDeletePatch } from "./softDelete";
 import { findBabyManager, requireBabyManager, requireBabyOwner } from "./babyAccess";
@@ -16,6 +16,7 @@ import { isHomepageDemoPublicId } from "../src/seedCredentials";
 import { appIdentity } from "./authIdentity";
 import { toBabyDto, toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { resolveBabyPreferences } from "./babyPreferences";
 
 const birthJourneyValidator = v.union(
   v.literal("labor"),
@@ -81,14 +82,12 @@ export const getByPublicId = query({
     const photoUrl = baby.photoId ? await ctx.storage.getUrl(baby.photoId) : null;
     const thumbnailUrl = baby.thumbnailId ? await ctx.storage.getUrl(baby.thumbnailId) : null;
     const blurDataUrl = baby.blurDataUrl ?? null;
-    const resolvedLocale = await resolveBabyLocale(ctx.db, baby);
 
     return {
       ...(await toBabyDto(ctx, baby)),
       photoUrl,
       thumbnailUrl,
       blurDataUrl,
-      resolvedLocale,
     };
   },
 });
@@ -142,10 +141,6 @@ export async function applyPhotoSideEffects(
   });
 }
 
-function notificationScheduleDelayMs() {
-  return env.NODE_ENV === "production" ? 60_000 : 3_000;
-}
-
 /**
  * Schedules one delayed Web Push for this baby. Does not cancel other pending
  * jobs — callers that replace a pending status notification do that first.
@@ -161,7 +156,7 @@ export async function schedulePushNotification(
   },
 ) {
   const baby = opts.baby;
-  const scheduledFor = Date.now() + notificationScheduleDelayMs();
+  const scheduledFor = Date.now() + notificationScheduleDelayMs(env.VERCEL_ENV, env.NODE_ENV);
 
   const notificationId = await ctx.db.insert("scheduledNotifications", {
     babyId: baby._id,
@@ -174,6 +169,7 @@ export async function schedulePushNotification(
     createdAt: Date.now(),
   });
 
+  const preferences = await resolveBabyPreferences(ctx.db, baby);
   const scheduledId = await ctx.scheduler.runAt(
     scheduledFor,
     internal.pushNotifications.sendNotification,
@@ -186,7 +182,7 @@ export async function schedulePushNotification(
       customMessage: opts.customMessage,
       photoId: opts.photoId,
       updateId: opts.updateId,
-      locale: await resolveBabyLocale(ctx.db, baby),
+      locale: preferences.resolvedLocale,
     },
   );
 
@@ -295,17 +291,6 @@ async function generateUniquePublicId(opts: {
   }
 
   return publicId;
-}
-
-async function resolveBabyLocale(db: DatabaseReader, baby: Doc<"baby">) {
-  if (baby.locale) {
-    return resolveSupportedLocale(baby.locale);
-  }
-  const profile = await db
-    .query("userProfiles")
-    .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", baby.ownerTokenIdentifier))
-    .unique();
-  return profile ? resolveSupportedLocale(profile.locale) : DEFAULT_LOCALE;
 }
 
 export const create = mutationWithTriggers({
@@ -441,8 +426,7 @@ export const markNotificationSent = internalMutation({
   },
 });
 
-// Internal mutation to attach generated page/push images (called from action)
-export const updateThumbnail = internalMutation({
+export const updateThumbnail = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
@@ -480,7 +464,7 @@ export const updateThumbnail = internalMutation({
  * Backfill-only write for the inline blur placeholder. Same stale-photo
  * guard as `updateThumbnail`.
  */
-export const updateBlurDataUrl = internalMutation({
+export const updateBlurDataUrl = internalMutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     photoId: v.id("_storage"),

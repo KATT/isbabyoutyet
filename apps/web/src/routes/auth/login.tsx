@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
-import { authClient } from "@/lib/auth-client";
+import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -25,6 +25,8 @@ import { hasDemoLogin } from "@/lib/has-demo-login";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
+import { authPageCacheHeaders } from "@/lib/cachePolicy";
+import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
 
 function loginSchema(t: TranslationFunction) {
   return z.object({
@@ -35,6 +37,7 @@ function loginSchema(t: TranslationFunction) {
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
+  headers: authPageCacheHeaders,
   head: (opts) => ({
     meta: [
       {
@@ -95,16 +98,20 @@ function LoginPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await authClient.signIn.email({
-                  email: values.email,
-                  password: values.password,
-                  rememberMe: true,
-                });
+                const result = await authClient.signIn.email(
+                  {
+                    email: values.email,
+                    password: values.password,
+                    rememberMe: true,
+                  },
+                  { headers: getBrowserAuthHeaders() },
+                );
 
                 if (result.error) {
                   throw new Error(result.error.message || t("Failed to sign in"));
                 }
 
+                await waitForConvexAuth();
                 await router.navigate({ to: "/dashboard" });
               }}
             >

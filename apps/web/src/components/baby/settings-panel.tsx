@@ -73,6 +73,8 @@ type SettingsPanelProps = {
   onMilestoneRemove: MilestoneRemoveHandler;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Called after open/close animations finish (used for route-driven close). */
+  onOpenChangeComplete: ((open: boolean) => void) | null;
   profileLocale: SupportedLocale;
   /** Owner-only soft delete. Null on the preview page / for co-parents. */
   onDelete: (() => void | Promise<void>) | null;
@@ -154,7 +156,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const coParents = props.coParents;
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+    <Dialog
+      open={props.open}
+      onOpenChange={props.onOpenChange}
+      onOpenChangeComplete={props.onOpenChangeComplete ?? undefined}
+    >
       <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t("Settings")}</DialogTitle>
@@ -230,8 +236,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Labour started")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.laborStarted, locale)} (
-                      {getRelativeTime(props.baby.laborStarted, locale)})
+                      {formatDate(props.baby.laborStarted, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.laborStarted, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -257,8 +266,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Gone to hospital")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.wentToHospital, locale)} (
-                      {getRelativeTime(props.baby.wentToHospital, locale)})
+                      {formatDate(props.baby.wentToHospital, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.wentToHospital, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>
@@ -284,8 +296,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemContent>
                     <ItemTitle>{t("Baby born")}</ItemTitle>
                     <ItemDescription>
-                      {formatDate(props.baby.babyBorn, locale)} (
-                      {getRelativeTime(props.baby.babyBorn, locale)})
+                      {formatDate(props.baby.babyBorn, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })}{" "}
+                      ({getRelativeTime(props.baby.babyBorn, locale)})
                     </ItemDescription>
                   </ItemContent>
                   <ItemActions>

@@ -231,7 +231,7 @@ test("daily reset reuses stored photos and ignores recent fixture encouragements
   }
 });
 
-test("daily reset preserves a recent visitor even when its visitorId spoofs the fixture prefix", async () => {
+test("daily reset protects only the baby with a recent visitor encouragement", async () => {
   await using _timers = useFakeTimersResource();
   vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
   const t = await setup();
@@ -247,9 +247,10 @@ test("daily reset preserves a recent visitor even when its visitorId spoofs the 
   vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
   const result = await t.mutation(internal.homepageDemo.resetIfInactive, {});
   expect(result).toEqual({
-    status: "skipped_recent_encouragement",
-    resetBabies: 0,
+    status: "reset",
+    resetBabies: SUPPORTED_LOCALES.length - 1,
   });
+  expect(await t.query(internal.homepageDemo.hasCompletePhotoSet, {})).toBe(true);
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId: demo.babyId,
@@ -260,6 +261,29 @@ test("daily reset preserves a recent visitor even when its visitorId spoofs the 
       (item) => item.kind === "encouragement" && item.encouragement.authorName === "Recent Visitor",
     ),
   ).toBe(true);
+});
+
+test("daily reset skips when every demo baby has a recent visitor encouragement", async () => {
+  await using _timers = useFakeTimersResource();
+  vi.setSystemTime(new Date("2026-08-20T03:00:00.000Z"));
+  const t = await setup();
+  const photos = await storeCompletePhotoSet(t);
+
+  for (const locale of SUPPORTED_LOCALES) {
+    const demo = await t.mutation(internal.homepageDemo.refresh, { locale, photos });
+    await t.mutation(api.encouragements.create, {
+      babyId: demo.babyId,
+      authorName: `Recent Visitor ${locale}`,
+      message: "Still here!",
+      visitorId: `visitor-${locale}`,
+    });
+  }
+
+  vi.setSystemTime(new Date("2026-08-20T03:59:00.000Z"));
+  await expect(t.mutation(internal.homepageDemo.resetIfInactive, {})).resolves.toEqual({
+    status: "skipped_recent_encouragement",
+    resetBabies: 0,
+  });
 });
 
 test("daily reset clears visitor encouragements once they are older than one hour", async () => {

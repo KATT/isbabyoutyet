@@ -32,6 +32,7 @@ after `pnpm dev` starts (`dev:seed-photos-deferred`). Production/preview
 deploys run `seed:homepage` as an idempotent bootstrap: an existing complete
 fixture feed is the photo sentinel, so builds do not reset dates, wipe visitor
 encouragements, or reupload photos. `crons.ts` checks daily and resets every
-locale only when no real visitor encouragement was posted in the previous hour.
+locale independently when that baby has no real visitor encouragement from the
+previous hour.
 When opening PRs, follow the root
 [`AGENTS.md`](../../AGENTS.md) and link each seeded baby on the Vercel preview.
