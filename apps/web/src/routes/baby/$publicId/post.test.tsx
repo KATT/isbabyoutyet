@@ -6,7 +6,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DEFAULT_MILESTONE_VISIBILITY } from "@workspace/convex/src/types";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement, ReactNode, RefObject } from "react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 
@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   completeStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
   params: { publicId: "baby-smith" },
   loaderData: null as null | Record<string, unknown>,
+  dialogInitialFocus: null as RefObject<HTMLDivElement | null> | null,
 }));
 
 vi.mock("@tanstack/react-router", async () => {
@@ -105,7 +106,17 @@ vi.mock("@workspace/ui/components/dialog", async () => {
   }
   return {
     Dialog: MockDialog,
-    DialogContent: (props: { children: ReactNode }) => <div>{props.children}</div>,
+    DialogContent: (props: {
+      children: ReactNode;
+      initialFocus: RefObject<HTMLDivElement | null>;
+    }) => {
+      mocks.dialogInitialFocus = props.initialFocus;
+      return (
+        <div ref={props.initialFocus} data-testid="dialog-content">
+          {props.children}
+        </div>
+      );
+    },
     DialogTitle: (props: { children: ReactNode }) => <h2>{props.children}</h2>,
   };
 });
@@ -227,6 +238,7 @@ test("post overlay closes to the baby page after dismiss", async () => {
   await vi.waitFor(() => {
     expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
   });
+  expect(mocks.dialogInitialFocus?.current).toBe(view.getByTestId("dialog-content"));
   fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
   expect(mocks.historyBack).not.toHaveBeenCalled();
