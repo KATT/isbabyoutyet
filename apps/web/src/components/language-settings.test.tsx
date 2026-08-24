@@ -100,6 +100,15 @@ test("changing the profile time zone persists it", async () => {
   await vi.waitFor(() => {
     expect(mocks.updateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
   });
+
+  // Reselecting the same zone is a no-op (early return in onValueChange).
+  mocks.updateTimeZone.mockClear();
+  fireEvent.click(trigger);
+  fireEvent.input(picker, { target: { value: "Tokyo" } });
+  const tokyoAgain = screen.getByRole("option", { name: "Tokyo (Asia)" });
+  fireEvent.pointerDown(tokyoAgain, { pointerType: "mouse" });
+  fireEvent.click(tokyoAgain);
+  expect(mocks.updateTimeZone).not.toHaveBeenCalled();
 });
 
 test.each([

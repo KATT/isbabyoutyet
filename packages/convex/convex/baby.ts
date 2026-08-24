@@ -404,9 +404,7 @@ export const cancelScheduledNotification = mutation({
       try {
         await ctx.scheduler.cancel(notification.scheduledId);
       } catch (error) {
-        throw new Error("Failed to cancel scheduled notification: " + (error as Error).message, {
-          cause: error,
-        });
+        throw new Error("Failed to cancel scheduled notification: " + (error as Error).message, { cause: error });
       }
     }
 
