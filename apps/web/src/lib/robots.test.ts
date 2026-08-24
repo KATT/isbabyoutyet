@@ -29,6 +29,15 @@ test("robots.txt blocks family baby pages and allows live demos", () => {
   }
 });
 
+test("indexable pages do not opt out of AI crawlers in meta tags", () => {
+  const indexed = searchRobotsMeta({ index: true });
+  expect(indexed.some((tag) => tag.content.includes("noai"))).toBe(false);
+});
+
+test("robots.txt allows homepage OG images", () => {
+  expect(robotsTxt()).toContain("Allow: /og");
+});
+
 test("robots.txt lets model-training crawlers index the homepage and live demos", () => {
   const body = robotsTxt();
   expect(body).toContain("User-agent: GPTBot\nAllow: /");
