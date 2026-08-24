@@ -15,7 +15,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import * as React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -52,8 +52,22 @@ export const Route = createRootRouteWithContext<{
   token: string | null | undefined;
 }>()({
   beforeLoad: async () => {
+    // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
+    // then Accept-Language) via the server function.
+    if (typeof window === "undefined") {
+      return {
+        locale: await detectRequestLocale(),
+        isAuthenticated: false,
+        token: null,
+      };
+    }
+    // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
+    // (back button included) and the router blocks on it, so a server-function
+    // round-trip here would tax them all — that's what made cached navigations
+    // show the top progress bar. Paraglide resolves the same cookie →
+    // preferredLanguage chain locally.
     return {
-      locale: await detectRequestLocale(),
+      locale: getDetectedLocale(),
       isAuthenticated: false,
       token: null,
     };
@@ -291,6 +305,13 @@ export function NotFoundComponent() {
   );
 }
 
+// The router flips isLoading true on every navigation — including instant
+// ones served entirely from the React Query cache — so an undelayed bar
+// flashes on every click and makes fast navigations look slow. Only show it
+// once loading has persisted past this threshold (same idea as TanStack's
+// defaultPendingMs for pending components).
+export const NAVIGATION_PROGRESS_DELAY_MS = 200;
+
 // Global pending indicator: the URL updates immediately on navigation, but on
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
@@ -299,8 +320,22 @@ export function NotFoundComponent() {
 export function NavigationProgress() {
   const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
+  const [showBar, setShowBar] = useState(false);
 
-  if (!isNavigating) {
+  useEffect(() => {
+    if (!isNavigating) {
+      setShowBar(false);
+      return;
+    }
+    const delay = setTimeout(() => {
+      setShowBar(true);
+    }, NAVIGATION_PROGRESS_DELAY_MS);
+    return () => {
+      clearTimeout(delay);
+    };
+  }, [isNavigating]);
+
+  if (!showBar) {
     return null;
   }
   return (

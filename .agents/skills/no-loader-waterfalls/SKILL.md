@@ -47,6 +47,17 @@ Do **not** duplicate `throw notFound()` in the loader when `beforeLoad` already 
 
 `beforeLoad` may fetch one record for routing, but **must not** be the only way the loader gets IDs for sibling prefetches. The loader passes **route params** (slug, id from URL) directly to every related query.
 
+### beforeLoad blocks every navigation
+
+`beforeLoad` re-runs serially (root → leaf) on **every** navigation, back button
+included, and the router blocks on each one. On the client path it may only do
+zero-network work (cache reads via `ensureQueryData`, local locale detection).
+Never call a `createServerFn` on the client branch of a `beforeLoad` — that
+adds an HTTP round-trip to every navigation and defeats viewport preloading
+(regression history: PR #108 fixed this, PR #112 reintroduced it in the root
+route). Guard with `typeof window === "undefined"` and resolve locally on the
+client, e.g. `getDetectedLocale()` instead of `detectRequestLocale()`.
+
 ❌ Resolve entity in `beforeLoad`, pass `babyId` into loader, then prefetch baby-scoped queries sequentially or gated on that id.
 
 ✅ Loader passes `opts.params.publicId` (or equivalent) to all baby-scoped queries at once.
@@ -106,6 +117,7 @@ Before merging loader work, verify:
 
 - [ ] No `await` chain where step N+1 only needs something available from the URL or static args
 - [ ] All independent prefetches are inside one `allKeyed`
+- [ ] No server-function calls on the client branch of any `beforeLoad`
 - [ ] Loader tests assert parallel prefetch inputs (e.g. slug passed to every baby query, not only after a prior fetch)
 - [ ] No auth/profile side effects duplicated from root SSR
 - [ ] Client-only queries use initiated handles, not blocking loader awaits on server
