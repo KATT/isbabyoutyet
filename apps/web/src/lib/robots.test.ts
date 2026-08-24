@@ -1,8 +1,6 @@
 import { expect, test } from "vitest";
 import { HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCredentials";
 import {
-  aiNoTrainHeaders,
-  aiNoTrainMeta,
   babyPageRobotsHeaders,
   isIndexableBabyPublicId,
   noIndexHeaders,
@@ -31,36 +29,43 @@ test("robots.txt blocks family baby pages and allows live demos", () => {
   }
 });
 
-test("robots.txt forbids model-training crawlers from every path", () => {
+test("indexable pages do not opt out of AI crawlers in meta tags", () => {
+  const indexed = searchRobotsMeta({ index: true });
+  expect(indexed.some((tag) => tag.content.includes("noai"))).toBe(false);
+});
+
+test("robots.txt allows homepage OG images", () => {
+  expect(robotsTxt()).toContain("Allow: /og");
+});
+
+test("robots.txt lets model-training crawlers index the homepage and live demos", () => {
   const body = robotsTxt();
-  expect(body).toContain("User-agent: GPTBot\nDisallow: /");
-  expect(body).toContain("User-agent: Google-Extended\nDisallow: /");
-  expect(body).toContain("User-agent: CCBot\nDisallow: /");
-  expect(body).toContain("User-agent: ClaudeBot\nDisallow: /");
-  expect(body).toContain("User-agent: Applebot-Extended\nDisallow: /");
+  expect(body).toContain("User-agent: GPTBot\nAllow: /");
+  expect(body).toContain("User-agent: Google-Extended\nAllow: /");
+  expect(body).toContain("User-agent: CCBot\nAllow: /");
+  expect(body).toContain("User-agent: ClaudeBot\nAllow: /");
+  expect(body).toContain("User-agent: Applebot-Extended\nAllow: /");
+  expect(body).not.toContain("User-agent: GPTBot\nDisallow: /");
+  for (const baby of Object.values(HOMEPAGE_DEMO_BABIES)) {
+    expect(body).toContain(`Allow: /baby/${baby.publicId}`);
+  }
 });
 
 test("search robots meta keeps Google indexing off family pages", () => {
   const indexed = searchRobotsMeta({ index: true });
   const hidden = searchRobotsMeta({ index: false });
-  expect(indexed.some((tag) => tag.content.includes("noai"))).toBe(true);
-  expect(indexed.some((tag) => tag.name === "googlebot" && tag.content === "index, follow")).toBe(
-    true,
-  );
+  expect(indexed).toEqual([
+    { name: "robots", content: "index, follow" },
+    { name: "googlebot", content: "index, follow" },
+  ]);
   expect(hidden.some((tag) => tag.content.includes("noindex"))).toBe(true);
   expect(hidden.some((tag) => tag.name === "googlebot" && tag.content.includes("noindex"))).toBe(
     true,
   );
 });
 
-test("AI training opt-out tags apply site-wide and with noindex", () => {
-  expect(aiNoTrainMeta()).toEqual([{ name: "robots", content: "noai, noimageai" }]);
-  expect(aiNoTrainHeaders()["X-Robots-Tag"]).toBe("noai, noimageai");
-  expect(noIndexHeaders()["X-Robots-Tag"]).toContain("noindex");
-  expect(noIndexHeaders()["X-Robots-Tag"]).toContain("noai");
-});
-
-test("baby page X-Robots-Tag is noindex except live demos", () => {
+test("noindex headers apply to private pages without blocking public demos", () => {
+  expect(noIndexHeaders()).toEqual({ "X-Robots-Tag": "noindex, nofollow" });
   expect(babyPageRobotsHeaders("juniper-hale")).toEqual({});
   expect(babyPageRobotsHeaders("a-real-family-page")).toEqual(noIndexHeaders());
 });

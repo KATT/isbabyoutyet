@@ -1,9 +1,8 @@
 import type { Plugin } from "vite";
 import { defineConfig } from "vite";
-import babel from "@rolldown/plugin-babel";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
-import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react";
+import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
 import tailwindcss from "@tailwindcss/vite";
 import { nitro } from "nitro/vite";
@@ -167,10 +166,7 @@ const config = defineConfig({
         entry: "./src/server.ts",
       },
     }),
-    viteReact(),
-    babel({
-      presets: [reactCompilerPreset()],
-    }),
+    viteReact({ compiler: true }),
   ],
   optimizeDeps: {
     exclude: ["@resvg/resvg-js"],

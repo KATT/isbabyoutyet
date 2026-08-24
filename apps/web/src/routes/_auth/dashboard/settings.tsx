@@ -1,5 +1,6 @@
 import { Palette, Shield, SignOut } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
+import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -57,6 +58,7 @@ export function DashboardSettingsSheet() {
   const authContext = authRoute.useRouteContext();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
   const settings = useDashboardSettingsOverlayNav();
+  const contentRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <Sheet
@@ -64,7 +66,12 @@ export function DashboardSettingsSheet() {
       onOpenChange={settings.onOpenChange}
       onOpenChangeComplete={settings.onOpenChangeComplete}
     >
-      <SheetContent side="right" className="w-full sm:max-w-sm">
+      <SheetContent
+        ref={contentRef}
+        initialFocus={contentRef}
+        side="right"
+        className="w-full sm:max-w-sm"
+      >
         <SheetHeader>
           <SheetTitle>{t("Settings")}</SheetTitle>
           <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>

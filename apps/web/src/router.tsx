@@ -50,6 +50,12 @@ export function getRouter() {
     // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
     // pages via the ensureQueryData prefetchers.
     defaultPreload: "viewport",
+    // React Query is the cache of record, so preloaded loader data must be
+    // immediately stale to the router: loaders re-run (as cheap ensureQueryData
+    // cache hits) instead of the router serving its own ≤30s-old snapshot.
+    // Navigation still commits instantly — stale matches revalidate in the
+    // background. https://tanstack.com/router/latest/docs/guide/data-loading
+    defaultPreloadStaleTime: 0,
     // Friendly recoverable fallback for any route error (reload / go home).
     defaultErrorComponent: RootErrorComponent,
     context: {
