@@ -1,6 +1,11 @@
 import { expect, test, vi } from "vitest";
 import { cookieName, getLocale } from "@/paraglide/runtime";
+import { getDetectedLocale } from "@/lib/i18n";
 import { setLocale } from "./paraglide-setup";
+
+test("getDetectedLocale resolves to a supported locale", () => {
+  expect(["en-GB", "en-US", "sv", "es", "pt-BR"]).toContain(getDetectedLocale());
+});
 
 function clearLocaleCookie() {
   document.cookie = `${cookieName}=; path=/; max-age=0`;
