@@ -132,6 +132,13 @@
       "rules": {
         "eslint/max-params": "off"
       }
+    },
+    {
+      // Stable JSON.stringify keys coexist with the object deps they summarize.
+      "files": ["packages/convex-prefetch/src/**"],
+      "rules": {
+        "react/exhaustive-effect-dependencies": "off"
+      }
     }
   ]
 }

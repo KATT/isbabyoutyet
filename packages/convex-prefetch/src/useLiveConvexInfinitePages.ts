@@ -23,6 +23,10 @@ export function useLiveConvexInfinitePages(opts: {
 }) {
   const queryClient = useQueryClient();
   const convex = useConvex();
+  // Stringify so effect deps stay stable when callers pass new object identities
+  // with the same contents (React's exhaustive-deps still wants the objects too).
+  const pageParamsKey = JSON.stringify(opts.pageParams);
+  const argsKey = JSON.stringify(opts.args);
 
   useEffect(() => {
     const unsubscribers = opts.pageParams.map((pageParam, index) => {
@@ -59,5 +63,14 @@ export function useLiveConvexInfinitePages(opts: {
         unsubscribe();
       }
     };
-  }, [convex, opts.args, opts.funcRef, opts.pageParams, opts.queryKey, queryClient]);
+  }, [
+    argsKey,
+    convex,
+    opts.args,
+    opts.funcRef,
+    opts.pageParams,
+    opts.queryKey,
+    pageParamsKey,
+    queryClient,
+  ]);
 }
