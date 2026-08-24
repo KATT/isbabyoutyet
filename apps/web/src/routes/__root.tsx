@@ -36,7 +36,6 @@ import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
-import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
@@ -113,7 +112,6 @@ export const Route = createRootRouteWithContext<{
           name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
         },
-        ...aiNoTrainMeta(),
       ],
       links: [
         {
@@ -148,10 +146,7 @@ export const Route = createRootRouteWithContext<{
     };
   },
   headers() {
-    return {
-      ...privateCacheHeaders(),
-      ...aiNoTrainHeaders(),
-    };
+    return privateCacheHeaders();
   },
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
