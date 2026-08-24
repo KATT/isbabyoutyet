@@ -61,7 +61,9 @@ vi.mock("@/lib/auth-client", () => ({
   authClient: { useSession: () => session.value },
 }));
 
-const detectRequestLocale = vi.hoisted(() => vi.fn(() => Promise.resolve("sv")));
+const detectRequestLocale = vi.hoisted(() =>
+  vi.fn<() => Promise<string>>(() => Promise.resolve("sv")),
+);
 
 vi.mock("@/lib/detect-locale", () => ({
   detectRequestLocale,
@@ -237,6 +239,9 @@ test("the progress bar hides as soon as loading resolves", async () => {
 
   routerState.isLoading = false;
   view.rerender(<NavigationProgress />);
+  act(() => {
+    vi.advanceTimersByTime(0);
+  });
 
   expect(view.queryByRole("progressbar")).toBeNull();
 });

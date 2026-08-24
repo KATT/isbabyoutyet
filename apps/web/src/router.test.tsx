@@ -1,8 +1,10 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
+type RouterOptions = Record<string, unknown>;
+
 const createRouter = vi.hoisted(() =>
-  vi.fn((options: Record<string, unknown>) => ({ options })),
+  vi.fn<(options: RouterOptions) => { options: RouterOptions }>((options) => ({ options })),
 );
 
 vi.mock("@tanstack/react-router", () => ({

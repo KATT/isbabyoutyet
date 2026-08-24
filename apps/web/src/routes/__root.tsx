@@ -323,13 +323,14 @@ export function NavigationProgress() {
   const [showBar, setShowBar] = useState(false);
 
   useEffect(() => {
-    if (!isNavigating) {
-      setShowBar(false);
-      return;
-    }
-    const delay = setTimeout(() => {
-      setShowBar(true);
-    }, NAVIGATION_PROGRESS_DELAY_MS);
+    // Show only after the delay; hide on the next tick (a 0ms timeout keeps
+    // the setState out of the synchronous effect body).
+    const delay = setTimeout(
+      () => {
+        setShowBar(isNavigating);
+      },
+      isNavigating ? NAVIGATION_PROGRESS_DELAY_MS : 0,
+    );
     return () => {
       clearTimeout(delay);
     };
