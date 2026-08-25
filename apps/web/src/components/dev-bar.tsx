@@ -129,11 +129,13 @@ export function DevBar() {
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
             <DropdownMenuItem
-              render={
-                <Link to="/dashboard" aria-current={currentPage(onDashboard)} />
-              }
+              render={<Link to="/dashboard" aria-current={currentPage(onDashboard)} />}
             >
-              {onDashboard ? <Check data-icon="inline-start" /> : <House data-icon="inline-start" />}
+              {onDashboard ? (
+                <Check data-icon="inline-start" />
+              ) : (
+                <House data-icon="inline-start" />
+              )}
               Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -142,9 +144,7 @@ export function DevBar() {
               {onLogin ? <Check data-icon="inline-start" /> : <SignIn data-icon="inline-start" />}
               Login
             </DropdownMenuItem>
-            <DropdownMenuItem
-              render={<Link to="/preview" aria-current={currentPage(onPreview)} />}
-            >
+            <DropdownMenuItem render={<Link to="/preview" aria-current={currentPage(onPreview)} />}>
               {onPreview ? <Check data-icon="inline-start" /> : <Code data-icon="inline-start" />}
               Preview
             </DropdownMenuItem>

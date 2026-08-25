@@ -21,7 +21,7 @@ type ManagerOverlayAuthContext = {
  * `createServerFn`-wrapped one by {@link authenticateManagerOverlaySsr}) so
  * tests can inject a stub — the real server function throws outside an
  * actual TanStack Start request ("No Start context found").
-  *
+ *
  * @internal Exported for tests.
  */
 export async function authenticateManagerOverlaySsrWithToken(opts: {
