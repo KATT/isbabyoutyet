@@ -128,6 +128,11 @@ export function AddBabyPage() {
                       <FormControl>
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
+                      <FormDescription>
+                        {t(
+                          "Don't worry if you don't know it yet. A nickname is fine — you can change it later.",
+                        )}
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
