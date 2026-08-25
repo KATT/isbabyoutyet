@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -8,7 +9,11 @@ import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
-import { browserPushQueryOptions, prefetchBrowserPushCapability } from "./notification-subscribe";
+import {
+  browserPushQueryOptions,
+  NotificationSubscribe,
+  prefetchBrowserPushCapability,
+} from "./notification-subscribe";
 
 const IPHONE_SAFARI_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
@@ -32,23 +37,6 @@ type BrowserPushStub = {
   subscription: PushSubscription | null;
   serviceWorkerReady: Promise<ServiceWorkerRegistration>;
 };
-
-vi.mock("@convex-dev/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@convex-dev/react-query")>();
-  return {
-    ...actual,
-    useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
-  };
-});
-
-vi.mock("sonner", () => ({
-  toast: {
-    promise: vi.fn<(...args: unknown[]) => void>(),
-    error: vi.fn<(message: string) => void>(),
-  },
-}));
-
-const { NotificationSubscribe } = await import("./notification-subscribe");
 
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
@@ -173,21 +161,28 @@ function renderSubscribe(capability: BrowserPushCapability) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
+  // `useConvexMutation` needs a real client in context; the unreachable URL
+  // keeps the smoke render from dialing a Convex deployment.
+  const convexClient = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <TooltipProvider>
-          <NotificationSubscribe
-            babyId={babyId}
-            vapidPublicKey={vapidPublicKey}
-            browserPush={testPreloadedQuery(
-              (ref) => browserPushQueryOptions(queryClient, ref),
-              capability,
-              babyRef,
-            )}
-          />
-        </TooltipProvider>
-      </LocaleProvider>
+      <ConvexProvider client={convexClient}>
+        <LocaleProvider locale="en-GB">
+          <TooltipProvider>
+            <NotificationSubscribe
+              babyId={babyId}
+              vapidPublicKey={vapidPublicKey}
+              browserPush={testPreloadedQuery(
+                (ref) => browserPushQueryOptions(queryClient, ref),
+                capability,
+                babyRef,
+              )}
+            />
+          </TooltipProvider>
+        </LocaleProvider>
+      </ConvexProvider>
     </QueryClientProvider>,
   );
   return makeResource(view, () => {

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation } from "convex/react";
-import type { FunctionArgs } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -32,6 +32,7 @@ import {
 } from "@workspace/ui/components/combobox";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
@@ -52,9 +53,12 @@ function languageRequestSchema(t: TranslationFunction) {
     .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
 }
 
-function LanguageRequestForm(props: { onSaved: () => void }) {
+function LanguageRequestForm(props: {
+  onSaved: () => void;
+  onRequestLanguage: RequestLanguageHandler;
+}) {
   const { t } = useI18n();
-  const requestLanguage = useMutation(api.profile.requestLanguage);
+  const requestLanguage = props.onRequestLanguage;
   const form = useZodForm({
     schema: languageRequestSchema(t),
     defaultValues: { requestedLocale: "" },
@@ -112,17 +116,57 @@ const defaultTimeZoneOption = {
   value: DEFAULT_TIME_ZONE,
 };
 
+type UpdateLocaleHandler = (
+  args: FunctionArgs<typeof api.profile.updateLocale>,
+) => Promise<unknown>;
+type UpdateTimeZoneHandler = (
+  args: FunctionArgs<typeof api.profile.updateTimeZone>,
+) => Promise<unknown>;
+type RequestLanguageHandler = (
+  args: FunctionArgs<typeof api.profile.requestLanguage>,
+) => Promise<unknown>;
+
 export function LanguageSettings(props: {
   profile:
     | PreloadedConvexQuery<typeof api.profile.get>
     | InitiatedConvexQuery<typeof api.profile.get>;
   className: string | undefined;
 }) {
-  const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
-  const profile = profileQuery.data;
-  const updateLocale = useMutation(api.profile.updateLocale);
-  const updateTimeZone = useMutation(api.profile.updateTimeZone);
+  const onUpdateLocale = useMutation(api.profile.updateLocale);
+  const onUpdateTimeZone = useMutation(api.profile.updateTimeZone);
+  const onRequestLanguage = useMutation(api.profile.requestLanguage);
+
+  return (
+    <LanguageSettingsView
+      profile={profileQuery.data}
+      className={props.className}
+      onUpdateLocale={onUpdateLocale}
+      onUpdateTimeZone={onUpdateTimeZone}
+      onRequestLanguage={onRequestLanguage}
+      onApplyLocale={setLocale}
+    />
+  );
+}
+
+/**
+ * Presentational half of {@link LanguageSettings}: every side effect arrives as
+ * a prop so tests can drive the pickers without a Convex deployment or a real
+ * locale cookie reload.
+ *
+ * @internal exported for tests
+ */
+export function LanguageSettingsView(props: {
+  profile: FunctionReturnType<typeof api.profile.get>;
+  className: string | undefined;
+  onUpdateLocale: UpdateLocaleHandler;
+  onUpdateTimeZone: UpdateTimeZoneHandler;
+  onRequestLanguage: RequestLanguageHandler;
+  onApplyLocale: (locale: SupportedLocale) => Promise<void>;
+}) {
+  const { locale, t } = useI18n();
+  const profile = props.profile;
+  const updateTimeZone = props.onUpdateTimeZone;
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
@@ -179,8 +223,8 @@ export function LanguageSettings(props: {
         disabled={!profile}
         label={t("Profile language")}
         onValueChange={async (value) => {
-          await updateLocale({ locale: value });
-          await setLocale(value);
+          await props.onUpdateLocale({ locale: value });
+          await props.onApplyLocale(value);
         }}
       />
 
@@ -199,7 +243,12 @@ export function LanguageSettings(props: {
               {t("Tell us which language you would like us to add.")}
             </DialogDescription>
           </DialogHeader>
-          {requestOpen ? <LanguageRequestForm onSaved={() => setRequestOpen(false)} /> : null}
+          {requestOpen ? (
+            <LanguageRequestForm
+              onSaved={() => setRequestOpen(false)}
+              onRequestLanguage={props.onRequestLanguage}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

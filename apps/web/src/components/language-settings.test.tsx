@@ -1,69 +1,64 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { LocaleProvider } from "@/lib/i18n";
+import { LanguageSettingsView } from "./language-settings";
 
-const mocks = vi.hoisted(() => ({
-  updateLocale: vi.fn<(args: unknown) => Promise<unknown>>(),
-  updateTimeZone: vi.fn<(args: unknown) => Promise<unknown>>(),
-  requestLanguage: vi.fn<(args: unknown) => Promise<unknown>>(),
-  setLocale: vi.fn<(locale: string) => Promise<void>>(),
-  toastError: vi.fn<(message: string) => void>(),
-  toastSuccess: vi.fn<(message: string) => void>(),
-}));
+type Profile = FunctionReturnType<typeof api.profile.get>;
 
-vi.mock("convex/react", async () => {
-  const { getFunctionName } = await import("convex/server");
-  return {
-    useMutation: (ref: never) => {
-      const functionName = getFunctionName(ref);
-      if (functionName === "profile:requestLanguage") {
-        return mocks.requestLanguage;
-      }
-      return functionName === "profile:updateTimeZone" ? mocks.updateTimeZone : mocks.updateLocale;
-    },
-  };
-});
+const profile: NonNullable<Profile> = {
+  locale: "en-GB",
+  timeZone: "Europe/London",
+  isAdmin: false,
+};
 
-vi.mock("@/lib/paraglide-setup", () => ({
-  setLocale: mocks.setLocale,
-}));
-
-vi.mock("sonner", () => ({
-  toast: { success: mocks.toastSuccess, error: mocks.toastError },
-}));
-
-const { LanguageSettings } = await import("./language-settings");
-
-const profileHandle = testPreloadedConvexQuery<typeof api.profile.get>({
-  input: {},
-  initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-});
-
-function renderResource(handle = profileHandle) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
-  });
+function renderViewResource(opts: {
+  profile: Profile;
+  onUpdateLocale: (args: { locale: string }) => Promise<unknown>;
+  onUpdateTimeZone: (args: { timeZone: string }) => Promise<unknown>;
+  onRequestLanguage: (args: { requestedLocale: string }) => Promise<unknown>;
+  onApplyLocale: (locale: "en-GB" | "sv" | "en-US" | "es" | "pt-BR") => Promise<void>;
+}) {
   const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <LanguageSettings profile={handle} className={undefined} />
-      </LocaleProvider>
-    </QueryClientProvider>,
+    <LocaleProvider locale="en-GB">
+      <LanguageSettingsView
+        profile={opts.profile}
+        className={undefined}
+        onUpdateLocale={opts.onUpdateLocale}
+        onUpdateTimeZone={opts.onUpdateTimeZone}
+        onRequestLanguage={opts.onRequestLanguage}
+        onApplyLocale={opts.onApplyLocale}
+      />
+    </LocaleProvider>,
   );
   return makeResource(view, () => {
     view.unmount();
-    queryClient.clear();
   });
 }
 
+function defaultHandlers() {
+  return {
+    onUpdateLocale: vi
+      .fn<(args: { locale: string }) => Promise<unknown>>()
+      .mockResolvedValue(null),
+    onUpdateTimeZone: vi
+      .fn<(args: { timeZone: string }) => Promise<unknown>>()
+      .mockResolvedValue(null),
+    onRequestLanguage: vi
+      .fn<(args: { requestedLocale: string }) => Promise<unknown>>()
+      .mockResolvedValue(null),
+    onApplyLocale: vi
+      .fn<(locale: "en-GB" | "sv" | "en-US" | "es" | "pt-BR") => Promise<void>>()
+      .mockResolvedValue(undefined),
+  };
+}
+
 test("changing the profile language persists it and applies the locale", async () => {
-  mocks.updateLocale.mockResolvedValue(null);
-  mocks.setLocale.mockResolvedValue(undefined);
-  await using _view = renderResource();
+  const handlers = defaultHandlers();
+  await using _view = renderViewResource({ profile, ...handlers });
 
   fireEvent.click(screen.getByRole("combobox", { name: "Profile language" }));
   const swedish = screen.getByRole("option", { name: /^svenska$/i });
@@ -71,16 +66,16 @@ test("changing the profile language persists it and applies the locale", async (
   fireEvent.click(swedish);
 
   await vi.waitFor(() => {
-    expect(mocks.updateLocale).toHaveBeenCalledWith({ locale: "sv" });
+    expect(handlers.onUpdateLocale).toHaveBeenCalledWith({ locale: "sv" });
   });
   await vi.waitFor(() => {
-    expect(mocks.setLocale).toHaveBeenCalledWith("sv");
+    expect(handlers.onApplyLocale).toHaveBeenCalledWith("sv");
   });
 });
 
 test("changing the profile time zone persists it", async () => {
-  mocks.updateTimeZone.mockResolvedValue(null);
-  await using _view = renderResource();
+  const handlers = defaultHandlers();
+  await using _view = renderViewResource({ profile, ...handlers });
 
   const picker = screen.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
@@ -98,25 +93,30 @@ test("changing the profile time zone persists it", async () => {
 
   expect((picker as HTMLInputElement).value).toBe("Tokyo (Asia)");
   await vi.waitFor(() => {
-    expect(mocks.updateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
+    expect(handlers.onUpdateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
   });
 
   // Reselecting the same zone is a no-op (early return in onValueChange).
-  mocks.updateTimeZone.mockClear();
+  handlers.onUpdateTimeZone.mockClear();
   fireEvent.click(trigger);
   fireEvent.input(picker, { target: { value: "Tokyo" } });
   const tokyoAgain = screen.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyoAgain, { pointerType: "mouse" });
   fireEvent.click(tokyoAgain);
-  expect(mocks.updateTimeZone).not.toHaveBeenCalled();
+  expect(handlers.onUpdateTimeZone).not.toHaveBeenCalled();
 });
 
 test.each([
   { failure: new Error("Could not save time zone"), expectedMessage: "Could not save time zone" },
   { failure: "offline", expectedMessage: "Something went wrong. Try again." },
 ])("a failed time zone save rolls back for $expectedMessage", async (testCase) => {
-  mocks.updateTimeZone.mockRejectedValueOnce(testCase.failure);
-  await using _view = renderResource();
+  const handlers = defaultHandlers();
+  handlers.onUpdateTimeZone.mockRejectedValueOnce(testCase.failure);
+  const toastError = vi.spyOn(toast, "error");
+  await using _toast = makeResource({}, () => {
+    toastError.mockRestore();
+  });
+  await using _view = renderViewResource({ profile, ...handlers });
 
   const picker = screen.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
@@ -130,23 +130,20 @@ test.each([
   await vi.waitFor(() => {
     expect((picker as HTMLInputElement).value).toBe("London (Europe)");
   });
-  expect(mocks.toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
+  expect(toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
 });
 
 test("disables the picker and falls back to the UI locale without a profile", async () => {
-  const anonymousHandle = testPreloadedConvexQuery<typeof api.profile.get>({
-    input: {},
-    initialData: null,
-  });
-  await using _view = renderResource(anonymousHandle);
+  const handlers = defaultHandlers();
+  await using _view = renderViewResource({ profile: null, ...handlers });
 
   const picker = screen.getByRole("combobox", { name: "Profile language" });
   expect(picker.getAttribute("aria-disabled") ?? picker.getAttribute("disabled")).not.toBeNull();
 });
 
 test("requesting another language submits the request form", async () => {
-  mocks.requestLanguage.mockResolvedValue(null);
-  await using view = renderResource();
+  const handlers = defaultHandlers();
+  await using view = renderViewResource({ profile, ...handlers });
 
   fireEvent.click(view.getByRole("button", { name: "Request another language" }));
   const input = screen.getByLabelText("Language name or code");
@@ -158,6 +155,8 @@ test("requesting another language submits the request form", async () => {
   fireEvent.submit(form);
 
   await vi.waitFor(() => {
-    expect(mocks.requestLanguage).toHaveBeenCalledWith({ requestedLocale: "French / fr-FR" });
+    expect(handlers.onRequestLanguage).toHaveBeenCalledWith({
+      requestedLocale: "French / fr-FR",
+    });
   });
 });
