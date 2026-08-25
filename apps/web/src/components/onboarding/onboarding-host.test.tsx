@@ -78,7 +78,7 @@ function plantTourTarget(targetId: string) {
 }
 
 test("returns null for anonymous visitors", async () => {
-  await using view = await renderWithTestRouter(
+  await using _view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <OnboardingHostWithSession
         surface="dashboard"

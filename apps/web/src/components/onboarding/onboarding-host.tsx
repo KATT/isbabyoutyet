@@ -131,7 +131,7 @@ export function OnboardingHostView(props: OnboardingHostViewProps) {
       void props.onDismissChecklist({});
     }, 4000);
     return () => window.clearTimeout(timeout);
-  }, [progress.allDone, progress.checklistDismissed, props.onDismissChecklist]);
+  }, [progress.allDone, progress.checklistDismissed, props]);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 

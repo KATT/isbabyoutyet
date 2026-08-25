@@ -162,7 +162,7 @@ export function LanguageSettingsView(props: {
   onUpdateLocale: UpdateLocaleHandler;
   onUpdateTimeZone: UpdateTimeZoneHandler;
   onRequestLanguage: RequestLanguageHandler;
-  onApplyLocale: (locale: SupportedLocale) => Promise<void>;
+  onApplyLocale: (locale: SupportedLocale) => void | Promise<void>;
 }) {
   const { locale, t } = useI18n();
   const profile = props.profile;

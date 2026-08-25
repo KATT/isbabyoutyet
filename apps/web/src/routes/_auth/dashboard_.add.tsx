@@ -58,20 +58,13 @@ export const Route = createFileRoute("/_auth/dashboard_/add")({
   component: AddBabyPage,
 });
 
-type CreateBaby = (
-  args: FunctionArgs<typeof api.baby.create>,
-) => Promise<{ publicId: string }>;
+type CreateBaby = (args: FunctionArgs<typeof api.baby.create>) => Promise<{ publicId: string }>;
 
 export function AddBabyPage() {
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
 
-  return (
-    <AddBabyPageView
-      createBaby={createBaby}
-      navigate={(opts) => router.navigate(opts)}
-    />
-  );
+  return <AddBabyPageView createBaby={createBaby} navigate={(opts) => router.navigate(opts)} />;
 }
 
 /**

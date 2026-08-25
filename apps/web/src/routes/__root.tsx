@@ -42,8 +42,7 @@ import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
 
 /** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
-const showDevBar =
-  import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 /**
  * Root `beforeLoad` with locale detection injected so tests can drive the SSR

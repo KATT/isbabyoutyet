@@ -4,7 +4,6 @@ import { isRedirect } from "@tanstack/react-router";
 import type { ReactElement } from "react";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { expect, test, vi } from "vitest";
-import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";

@@ -38,10 +38,7 @@ function makeGuardCtx() {
   return { context, queryClient, queryFn, setServerAuth };
 }
 
-async function runGuard(opts: {
-  context: GuardCtx;
-  fetchToken: () => Promise<string | null>;
-}) {
+async function runGuard(opts: { context: GuardCtx; fetchToken: () => Promise<string | null> }) {
   return await resolveAuthGuard({
     context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
     fetchToken: opts.fetchToken,

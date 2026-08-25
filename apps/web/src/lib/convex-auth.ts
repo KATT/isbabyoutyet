@@ -43,6 +43,8 @@ export type ConvexAuthClient = {
  * {@link setupClientConvexAuth}) so tests can inject a stub without mocking
  * the `@/lib/auth-client` module — the real client's `convex.token()` is a
  * better-auth proxy method that can't be `vi.spyOn`-ed.
+  *
+ * @internal Exported for tests.
  */
 export function setupClientConvexAuthWithClient(opts: {
   convexQueryClient: ConvexQueryClient;

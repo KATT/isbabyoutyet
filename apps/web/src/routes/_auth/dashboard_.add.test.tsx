@@ -10,10 +10,7 @@ function renderAddBaby(opts: {
 }) {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <AddBabyPageView
-        createBaby={opts.createBaby as never}
-        navigate={opts.navigate as never}
-      />
+      <AddBabyPageView createBaby={opts.createBaby as never} navigate={opts.navigate as never} />
     </LocaleProvider>,
     { path: "/dashboard/add" },
   );

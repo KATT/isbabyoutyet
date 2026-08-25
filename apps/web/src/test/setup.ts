@@ -37,6 +37,7 @@ if (typeof window.ResizeObserver !== "function") {
 
 // jsdom leaves Element#scrollIntoView unimplemented; coachmarks / tour targets
 // call it and would otherwise throw into the router error boundary.
+function stubScrollIntoView(this: Element) {}
 if (typeof Element.prototype.scrollIntoView !== "function") {
-  Element.prototype.scrollIntoView = function scrollIntoView() {};
+  Element.prototype.scrollIntoView = stubScrollIntoView;
 }

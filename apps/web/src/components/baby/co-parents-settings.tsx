@@ -125,7 +125,7 @@ export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
                   void props
                     .onRemoveCoParent({ coParentId: row._id })
                     .then(() => toast.success(t("Co-parent removed")))
-                    .catch((error: unknown) => {
+                    .catch((error) => {
                       toast.error(error instanceof Error ? error.message : t("Could not remove"));
                     });
                 }}
@@ -151,7 +151,7 @@ export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
                   void props
                     .onCancelInvite({ inviteId: row._id })
                     .then(() => toast.success(t("Invite cancelled")))
-                    .catch((error: unknown) => {
+                    .catch((error) => {
                       toast.error(error instanceof Error ? error.message : t("Could not cancel"));
                     });
                 }}
