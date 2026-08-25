@@ -58,6 +58,9 @@
   "rules": {
     // Project-specific (keep):
     "vitest/no-hooks": "error",
+    // Ban module mocking everywhere — tests *and* shared test helpers, so a
+    // helper cannot reintroduce it behind a seam.
+    "no-mock/no-mock": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
@@ -80,15 +83,6 @@
         "query-prefetch/use-loader-preloads": "error",
         // Automatic JSX runtime — no React import required.
         "react/react-in-jsx-scope": "off"
-      }
-    },
-    {
-      // Ban module mocking across apps/web (tests *and* shared test helpers,
-      // so a helper cannot reintroduce it) — package tests (e.g.
-      // convex-prefetch) may still use vi.mock until separately migrated.
-      "files": ["apps/web/src/**/*.{ts,tsx}"],
-      "rules": {
-        "no-mock/no-mock": "error"
       }
     },
     {
