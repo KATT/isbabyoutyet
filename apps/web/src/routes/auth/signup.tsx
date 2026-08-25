@@ -87,6 +87,19 @@ export const Route = createFileRoute("/auth/signup")({
 });
 
 /**
+ * Mutable auth adapters so route smoke tests can swap the network-backed
+ * better-auth client without `vi.mock`.
+ *
+ * @internal
+ */
+export const signupAuthAdapter = {
+  signUpEmail: (body: NewAccount, fetchOptions: { headers: Record<string, string> }) =>
+    authClient.signUp.email(body, fetchOptions),
+  headers: () => getBrowserAuthHeaders(),
+  waitForAuth: () => waitForConvexAuth(),
+};
+
+/**
  * @internal Exported for smoke tests; production mounts it via `Route`.
  */
 export function SignupPage() {
@@ -98,11 +111,11 @@ export function SignupPage() {
       onSignUp={(values) =>
         signUpAndHandoff(values, {
           signUp: async (body, fetchOptions) => {
-            const result = await authClient.signUp.email(body, fetchOptions);
+            const result = await signupAuthAdapter.signUpEmail(body, fetchOptions);
             return { errorMessage: result.error ? (result.error.message ?? "") : null };
           },
-          headers: () => getBrowserAuthHeaders(),
-          waitForAuth: () => waitForConvexAuth(),
+          headers: () => signupAuthAdapter.headers(),
+          waitForAuth: () => signupAuthAdapter.waitForAuth(),
           navigate: () => router.navigate({ to: "/dashboard" }),
           failedMessage: t("Failed to sign up"),
         })

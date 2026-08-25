@@ -1,7 +1,14 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
-import { SignupCard, SignupPage, Route, signUpAndHandoff } from "@/routes/auth/signup";
+import {
+  SignupCard,
+  SignupPage,
+  signupAuthAdapter,
+  Route,
+  signUpAndHandoff,
+} from "@/routes/auth/signup";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type NewAccount = { name: string; email: string; password: string };
@@ -102,7 +109,6 @@ test("submitting the form hands the new account to the signup flow", async () =>
   });
 });
 
-
 test("SignupPage wires the real auth client into SignupCard", async () => {
   await using _view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
@@ -118,12 +124,31 @@ test("SignupPage wires the real auth client into SignupCard", async () => {
 });
 
 test("SignupPage sign-up path invokes the wired auth client", async () => {
-  await using _view = await renderWithTestRouter(
+  const signUpEmail = vi.fn().mockResolvedValue({ data: null, error: null });
+  const original = {
+    signUpEmail: signupAuthAdapter.signUpEmail,
+    headers: signupAuthAdapter.headers,
+    waitForAuth: signupAuthAdapter.waitForAuth,
+  };
+  signupAuthAdapter.signUpEmail = signUpEmail as typeof signupAuthAdapter.signUpEmail;
+  signupAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
+  signupAuthAdapter.waitForAuth = async () => undefined;
+  await using _adapter = makeResource({}, () => {
+    signupAuthAdapter.signUpEmail = original.signUpEmail;
+    signupAuthAdapter.headers = original.headers;
+    signupAuthAdapter.waitForAuth = original.waitForAuth;
+  });
+
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <SignupPage />
     </LocaleProvider>,
     { path: "/auth/signup" },
   );
+  const navigate = vi.spyOn(view.router, "navigate").mockResolvedValue(undefined);
+  await using _navigate = makeResource({}, () => {
+    navigate.mockRestore();
+  });
 
   fireEvent.change(screen.getByLabelText("Name"), { target: { value: NEW_ACCOUNT.name } });
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: NEW_ACCOUNT.email } });
@@ -133,9 +158,10 @@ test("SignupPage sign-up path invokes the wired auth client", async () => {
   fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
 
   await vi.waitFor(() => {
-    expect(
-      (screen.getByRole("button", { name: /sign up/i }) as HTMLButtonElement).disabled,
-    ).toBe(false);
+    expect(signUpEmail).toHaveBeenCalled();
+  });
+  await vi.waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith({ to: "/dashboard" });
   });
 });
 

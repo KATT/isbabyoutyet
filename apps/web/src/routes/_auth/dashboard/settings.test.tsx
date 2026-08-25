@@ -12,6 +12,7 @@ import {
   DashboardSettingsSheet,
   DashboardSettingsSheetView,
   Route,
+  settingsAuthAdapter,
 } from "./settings";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
@@ -121,4 +122,58 @@ test("settings sheet log-out button invokes the injected handler", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
   expect(onSignOut).toHaveBeenCalledTimes(1);
+});
+
+test("DashboardSettingsSheet signs out through the auth adapter", async () => {
+  const client = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+
+  const signOut = vi.fn(async (opts: {
+    fetchOptions:
+      | {
+          onSuccess: ((ctx: unknown) => void) | undefined;
+          onError: ((error: { error: { message: string } }) => void) | undefined;
+        }
+      | undefined;
+  }) => {
+    opts.fetchOptions?.onSuccess?.({});
+    return { data: null, error: null };
+  });
+  const originalSignOut = settingsAuthAdapter.signOut;
+  settingsAuthAdapter.signOut = signOut as typeof settingsAuthAdapter.signOut;
+  await using _adapter = makeResource({}, () => {
+    settingsAuthAdapter.signOut = originalSignOut;
+  });
+
+  const profile = testPreloadedConvexQuery<typeof api.profile.get>({
+    input: {},
+    initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: true },
+  });
+
+  await using view = await renderWithTestRouter(
+    <QueryClientProvider client={queryClient}>
+      <ConvexProvider client={client}>
+        <LocaleProvider locale="en-GB">
+          <DashboardSettingsSheet profile={profile} />
+        </LocaleProvider>
+      </ConvexProvider>
+    </QueryClientProvider>,
+    { path: "/dashboard/settings" },
+  );
+
+  await vi.waitFor(() => {
+    expect(view.getByRole("dialog")).toBeTruthy();
+  });
+  fireEvent.click(view.getByRole("button", { name: "Log out" }));
+  await vi.waitFor(() => {
+    expect(signOut).toHaveBeenCalled();
+  });
 });

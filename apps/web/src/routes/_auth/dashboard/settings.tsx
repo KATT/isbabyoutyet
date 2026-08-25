@@ -62,6 +62,16 @@ type OverlayControl = {
 };
 
 /**
+ * Mutable sign-out adapter so sheet tests can avoid the Proxy-backed
+ * better-auth client without `vi.mock`.
+ *
+ * @internal
+ */
+export const settingsAuthAdapter = {
+  signOut: (opts: Parameters<typeof authClient.signOut>[0]) => authClient.signOut(opts),
+};
+
+/**
  * Convex-wired sheet: resolves the admin flag from the preloaded profile and
  * owns sign-out.
  *
@@ -81,7 +91,7 @@ export function DashboardSettingsSheet(props: {
       overlay={settings}
       languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
       onSignOut={async () => {
-        await authClient.signOut({
+        await settingsAuthAdapter.signOut({
           fetchOptions: {
             onSuccess: () => {
               window.location.href = "/";
