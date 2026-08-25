@@ -180,9 +180,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   laborStarted={props.baby.laborStarted}
                   wentToHospital={props.baby.wentToHospital}
                   idPrefix="settings-journey"
-                  onBirthJourneyChange={(birthJourney) =>
-                    props.onUpdate({ birthJourney })
-                  }
+                  onBirthJourneyChange={(birthJourney) => props.onUpdate({ birthJourney })}
                   onMilestoneRemove={props.onMilestoneRemove}
                 />
               </ItemContent>

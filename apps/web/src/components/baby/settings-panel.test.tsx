@@ -2,7 +2,11 @@ import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { BabyData, BabyUpdateHandler, MilestoneRemoveHandler } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
@@ -78,7 +82,7 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(
     open.getByText("1 September 2026 · Visitors see the exact date and countdown."),
   ).toBeTruthy();
-  expect(open.getByText("Labour started")).toBeTruthy();
+  expect(open.getAllByText("Labour started").length).toBeGreaterThan(0);
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
@@ -234,8 +238,8 @@ test("turning off a marked milestone warns before removing it", async () => {
       onUpdate={onUpdate}
       open
       onOpenChange={vi.fn<(open: boolean) => void>()}
-      onMilestoneRemove={onMilestoneRemove}
       {...absentSettingsProps}
+      onMilestoneRemove={onMilestoneRemove}
     />,
   );
 
@@ -257,7 +261,7 @@ test("journey selection stays changeable after milestone updates", async () => {
 
   await using view = renderResource(
     <SettingsPanel
-      baby={{ ...baby, wentToHospital: "2026-08-10T12:00:00.000Z" }}
+      baby={{ ...baby, laborStarted: null, wentToHospital: "2026-08-10T12:00:00.000Z" }}
       onUpdate={onUpdate}
       open
       onOpenChange={onOpenChange}
@@ -266,7 +270,7 @@ test("journey selection stays changeable after milestone updates", async () => {
     />,
   );
 
-  expect(view.getByText("Gone to hospital")).toBeTruthy();
+  expect(view.getAllByText("Gone to hospital").length).toBeGreaterThan(0);
   expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Planned C-section" }));
   await vi.waitFor(() => {
@@ -299,5 +303,5 @@ test("theme constants render through the active translation catalog", async () =
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
-  expect(view.getByText("Förlossning")).toBeTruthy();
+  expect(view.getByRole("button", { name: "Förlossning" })).toBeTruthy();
 });

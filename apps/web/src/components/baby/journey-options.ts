@@ -23,9 +23,6 @@ export const JOURNEY_PRESET_OPTIONS = [
   descriptionKey: TranslationKey;
 }>;
 
-/** @deprecated Use JOURNEY_PRESET_OPTIONS */
-export const JOURNEY_OPTIONS = JOURNEY_PRESET_OPTIONS;
-
 export const JOURNEY_OPTION_BY_VALUE = {
   labor: JOURNEY_PRESET_OPTIONS[0],
   home_birth: JOURNEY_PRESET_OPTIONS[1],

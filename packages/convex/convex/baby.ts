@@ -302,6 +302,7 @@ export const create = mutationWithTriggers({
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
     // Optional for stale clients; the document always stores a concrete selection.
     birthJourney: v.optional(birthJourneyValidator),
+    theme: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -330,6 +331,7 @@ export const create = mutationWithTriggers({
       publicDueDateText: dueDateDisplay.text,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
+      ...(args.theme !== undefined ? { theme: args.theme } : {}),
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
     });

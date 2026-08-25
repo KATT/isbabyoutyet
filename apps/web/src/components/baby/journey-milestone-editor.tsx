@@ -41,16 +41,16 @@ type JourneyMilestoneEditorProps = {
   idPrefix: string;
 };
 
-function milestonesToRemoveForVisibility(
-  visibility: MilestoneVisibility,
-  laborStarted: string | null,
-  wentToHospital: string | null,
-): Milestone[] {
+function milestonesToRemoveForVisibility(opts: {
+  visibility: MilestoneVisibility;
+  laborStarted: string | null;
+  wentToHospital: string | null;
+}): Milestone[] {
   const milestones: Milestone[] = [];
-  if (!visibility.showLabor && laborStarted) {
+  if (!opts.visibility.showLabor && opts.laborStarted) {
     milestones.push("labor_started");
   }
-  if (!visibility.showHospital && wentToHospital) {
+  if (!opts.visibility.showHospital && opts.wentToHospital) {
     milestones.push("gone_to_hospital");
   }
   return milestones;
@@ -81,11 +81,11 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
     const birthJourney = birthJourneyForVisibility(nextVisibility);
-    const milestonesToRemove = milestonesToRemoveForVisibility(
-      nextVisibility,
-      props.laborStarted,
-      props.wentToHospital,
-    );
+    const milestonesToRemove = milestonesToRemoveForVisibility({
+      visibility: nextVisibility,
+      laborStarted: props.laborStarted,
+      wentToHospital: props.wentToHospital,
+    });
 
     if (milestonesToRemove.length > 0 && props.onMilestoneRemove) {
       setPendingChange({ visibility: nextVisibility, birthJourney, milestonesToRemove });
@@ -102,15 +102,7 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
     requestVisibilityChange(milestoneVisibilityForPreset(preset));
   }
 
-  function handleLaborToggle(checked: boolean) {
-    requestVisibilityChange({ ...visibility, showLabor: checked });
-  }
-
-  function handleHospitalToggle(checked: boolean) {
-    requestVisibilityChange({ ...visibility, showHospital: checked });
-  }
-
-  const pendingMilestoneLabels = pendingChange?.milestonesToRemove
+  const pendingMilestoneLabels = (pendingChange?.milestonesToRemove ?? [])
     .map((milestone) => {
       if (milestone === "labor_started") {
         return t("Labour started");
@@ -180,7 +172,9 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
             id={`${props.idPrefix}-show-labor`}
             checked={visibility.showLabor}
             disabled={isSaving}
-            onCheckedChange={handleLaborToggle}
+            onCheckedChange={(checked) => {
+              requestVisibilityChange({ ...visibility, showLabor: checked });
+            }}
           />
         </label>
 
@@ -193,7 +187,9 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
             id={`${props.idPrefix}-show-hospital`}
             checked={visibility.showHospital}
             disabled={isSaving}
-            onCheckedChange={handleHospitalToggle}
+            onCheckedChange={(checked) => {
+              requestVisibilityChange({ ...visibility, showHospital: checked });
+            }}
           />
         </label>
 
@@ -224,7 +220,7 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
             <AlertDialogDescription>
               {pendingMilestoneLabels.length === 1
                 ? t(
-                    "Turning this off will remove the “{{milestone}}” milestone from your page. Visitors will no longer see it.",
+                    'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.',
                     { milestone: pendingMilestoneLabels[0] ?? "" },
                   )
                 : t(

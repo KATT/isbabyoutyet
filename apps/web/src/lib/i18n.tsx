@@ -106,7 +106,7 @@ const enGB = {
   "Failed to update journey": "Failed to update journey",
   "Remove marked milestones?": "Remove marked milestones?",
   'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
-    'Turning this off will remove the “{{milestone}}” milestone from your page. Visitors will no longer see it.',
+    "Turning this off will remove the “{{milestone}}” milestone from your page. Visitors will no longer see it.",
   "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
     "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.",
   "Remove and continue": "Remove and continue",
@@ -431,11 +431,12 @@ const enGB = {
   babies: "babies",
   "Add a": "Add a",
   baby: "baby",
-  "A name and a due date — that's all it takes!": "Just a name and due date. That's it!",
+  "A name and a due date — that's all it takes!": "A name and a due date — that's all it takes!",
   "A name, a date, and a journey — that's all it takes!":
     "A name, a date, and a journey. That's it!",
-  "A name, how to display the due date, and a journey — that's all it takes!":
-    "A name, how to display the due date, and a journey. That's it!",
+  "Customize your page (optional)": "Customize your page (optional)",
+  "You can change journey, theme, and other settings anytime after creating your page.":
+    "You can change journey, theme, and other settings anytime after creating your page.",
   "Add Baby 🍼": "Add Baby 🍼",
   "Welcome back!": "Welcome back!",
   "Sign in to keep everyone in the loop": "Sign in to keep everyone in the loop",
@@ -671,7 +672,8 @@ const sv: Record<TranslationKey, string> = {
     "Besökare ser: Förlossningen är igång → På väg till sjukhuset → Bäbisen är född",
   "Visitors see: Labour started → Baby born":
     "Besökare ser: Förlossningen är igång → Bäbisen är född",
-  "Visitors see: Gone to hospital → Baby born": "Besökare ser: På väg till sjukhuset → Bäbisen är född",
+  "Visitors see: Gone to hospital → Baby born":
+    "Besökare ser: På väg till sjukhuset → Bäbisen är född",
   "Visitors see: Baby born": "Besökare ser: Bäbisen är född",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Vi sparar valet i dina inställningar, men visar det inte för någon.",
@@ -989,10 +991,11 @@ const sv: Record<TranslationKey, string> = {
   baby: "bäbis",
   "A name and a due date — that's all it takes!":
     "Ett namn och ett beräknat datum. Mer behövs inte!",
+  "Customize your page (optional)": "Anpassa sidan (valfritt)",
+  "You can change journey, theme, and other settings anytime after creating your page.":
+    "Du kan ändra resa, tema och andra inställningar när som helst efter att sidan skapats.",
   "A name, a date, and a journey — that's all it takes!":
     "Ett namn, ett datum och en resa. Mer behövs inte!",
-  "A name, how to display the due date, and a journey — that's all it takes!":
-    "Ett namn, hur det beräknade datumet ska visas och en resa. Mer behövs inte!",
   "Add Baby 🍼": "Lägg till bäbis 🍼",
   "Welcome back!": "Välkommen tillbaka!",
   "Sign in to keep everyone in the loop": "Logga in för att hålla alla uppdaterade",
@@ -1529,10 +1532,11 @@ const es: Record<TranslationKey, string> = {
   "Add a": "Añadir un",
   baby: "bebé",
   "A name and a due date — that's all it takes!": "Solo necesitas un nombre y una fecha prevista.",
+  "Customize your page (optional)": "Personalizar la página (opcional)",
+  "You can change journey, theme, and other settings anytime after creating your page.":
+    "Puedes cambiar el recorrido, el tema y otros ajustes en cualquier momento después de crear la página.",
   "A name, a date, and a journey — that's all it takes!":
     "Solo necesitas un nombre, una fecha y un recorrido.",
-  "A name, how to display the due date, and a journey — that's all it takes!":
-    "Solo necesitas un nombre, cómo mostrar la fecha prevista y un recorrido.",
   "Add Baby 🍼": "Añadir bebé 🍼",
   "Welcome back!": "¡Qué bueno verte!",
   "Sign in to keep everyone in the loop": "Inicia sesión para mantener a todos al tanto",
@@ -2077,10 +2081,11 @@ const ptBR: Record<TranslationKey, string> = {
   "Add a": "Adicionar um",
   baby: "bebê",
   "A name and a due date — that's all it takes!": "Um nome e uma data prevista. Só isso!",
+  "Customize your page (optional)": "Personalizar a página (opcional)",
+  "You can change journey, theme, and other settings anytime after creating your page.":
+    "Você pode alterar a jornada, o tema e outras configurações a qualquer momento depois de criar a página.",
   "A name, a date, and a journey — that's all it takes!":
     "Um nome, uma data e uma jornada. Só isso!",
-  "A name, how to display the due date, and a journey — that's all it takes!":
-    "Um nome, como mostrar a data prevista e uma jornada. Só isso!",
   "Add Baby 🍼": "Adicionar bebê 🍼",
   "Welcome back!": "Que bom te ver de novo!",
   "Sign in to keep everyone in the loop": "Entre para deixar todo mundo por dentro",

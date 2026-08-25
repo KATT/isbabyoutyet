@@ -6,17 +6,16 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
+import { AddBabyOptionalSettings } from "@/components/baby/add-baby-optional-settings";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { JourneyMilestoneEditor } from "@/components/baby/journey-milestone-editor";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -35,6 +34,7 @@ function addBabySchema(t: TranslationFunction) {
         z.literal("planned_c_section"),
         z.literal("custom"),
       ]),
+      theme: z.union([z.string(), z.null()]),
     })
     .superRefine((values, ctx) => {
       if (values.showExactDueDate && !values.dueDate) {
@@ -51,6 +51,7 @@ function addBabySchema(t: TranslationFunction) {
       dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
       publicDueDateText: values.publicDueDateText || null,
       birthJourney: values.birthJourney,
+      theme: values.theme,
     }));
 }
 
@@ -71,6 +72,7 @@ export function AddBabyPage() {
       showExactDueDate: true,
       publicDueDateText: "",
       birthJourney: "labor" as const,
+      theme: null,
     },
   });
 
@@ -99,7 +101,7 @@ export function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name, how to display the due date, and a journey — that's all it takes!")}
+            {t("A name and a due date — that's all it takes!")}
           </p>
         </div>
 
@@ -139,25 +141,10 @@ export function AddBabyPage() {
                   stopPopoverPropagation={false}
                 />
 
-                <FormField
+                <AddBabyOptionalSettings
                   control={form.control}
-                  name="birthJourney"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Birth journey")}</FormLabel>
-                      <FormControl>
-                        <JourneyMilestoneEditor
-                          birthJourney={renderProps.field.value}
-                          laborStarted={null}
-                          wentToHospital={null}
-                          idPrefix="add-journey"
-                          onBirthJourneyChange={renderProps.field.onChange}
-                          onMilestoneRemove={null}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  birthJourneyFieldName="birthJourney"
+                  themeFieldName="theme"
                 />
 
                 <Button

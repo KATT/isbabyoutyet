@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { getMilestonePolicy, milestoneVisibilityForPreset, birthJourneyForVisibility } from "../src/types";
+import {
+  getMilestonePolicy,
+  milestoneVisibilityForPreset,
+  birthJourneyForVisibility,
+} from "../src/types";
 
 test("saved journey selections derive their available milestones", () => {
   expect(milestoneVisibilityForPreset("labor")).toEqual({
