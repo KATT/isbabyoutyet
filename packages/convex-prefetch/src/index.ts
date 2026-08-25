@@ -21,5 +21,4 @@ export {
   useInitiateConvexQuery,
   usePreloadedConvexQuery,
 } from "./usePreloadedConvexQuery.js";
-export { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages.js";
 export { usePreloadedConvexInfiniteQuery } from "./usePreloadedConvexInfiniteQuery.js";

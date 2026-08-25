@@ -9,5 +9,3 @@ declare module "@tanstack/history" {
     overlay: true | undefined;
   }
 }
-
-export {};

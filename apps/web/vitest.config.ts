@@ -53,7 +53,7 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
             right: rect.right,
           };
         })
-        .sort((left, right) => right.right - left.right)[0] ?? null;
+        .toSorted((left, right) => right.right - left.right)[0] ?? null;
 
     return {
       documentWidth: document.documentElement.scrollWidth,

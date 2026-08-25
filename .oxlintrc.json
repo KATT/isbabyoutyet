@@ -1,6 +1,17 @@
 {
   "$schema": "./packages/convex/node_modules/oxlint/configuration_schema.json",
+  // Closely matches `oxlint --init`, plus the stricter `suspicious` category.
+  // Pedantic/style/restriction stay off — too noisy for a blanket enable.
   "plugins": ["typescript", "unicorn", "oxc", "vitest", "react"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error"
+  },
+  "env": {
+    "builtin": true
+  },
+  // Generated code is not ours to lint
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "oxlint-plugins/**"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -41,9 +52,12 @@
     }
   },
   "rules": {
+    // Project-specific (keep):
     "vitest/no-hooks": "error",
     // Prefer an options object over long positional argument lists.
     "eslint/max-params": ["error", 2],
+    // Convex system fields use leading underscores (`_id`, `_creationTime`).
+    "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
     "query-prefetch/no-convex-query-hooks": "error"
   },
@@ -59,7 +73,9 @@
         "no-optional/no-optional": "error",
         "no-overzealous-destructuring/no-overzealous-destructuring": "error",
         "query-prefetch/require-preloaded-query-options": "error",
-        "query-prefetch/use-loader-preloads": "error"
+        "query-prefetch/use-loader-preloads": "error",
+        // Automatic JSX runtime — no React import required.
+        "react/react-in-jsx-scope": "off"
       }
     },
     {
@@ -81,11 +97,35 @@
       }
     },
     {
+      // Unused `await using _foo = …` bindings follow the project unused-var
+      // convention and trip no-underscore-dangle outside function params.
+      "files": ["**/*.{test,spec}.{ts,tsx}"],
+      "rules": {
+        "eslint/no-underscore-dangle": "off",
+        "vitest/require-mock-type-parameters": "off",
+        "vitest/no-conditional-expect": "off",
+        "react/immutability": "off",
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-effect-dependencies": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/prefer-add-event-listener": "off"
+      }
+    },
+    {
       // Vendored shadcn/ui registry components — not first-party code.
-      "files": ["packages/ui/src/components/**"],
+      "files": ["packages/ui/src/**"],
       "rules": {
         "eslint/max-params": "off",
-        "react-compiler/no-manual-memoization": "off"
+        "eslint/no-shadow": "off",
+        "eslint/no-underscore-dangle": "off",
+        "react-compiler/no-manual-memoization": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/no-unstable-nested-components": "off",
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-effect-dependencies": "off",
+        "react/immutability": "off",
+        "react-hooks/exhaustive-deps": "off"
       }
     },
     {

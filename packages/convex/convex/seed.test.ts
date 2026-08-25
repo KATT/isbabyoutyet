@@ -40,7 +40,7 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
   for (const baby of docs) {
     publicBabies.push(await t.query(api.baby.getByPublicId, { id: baby.publicId }));
   }
-  const statuses = publicBabies.map((baby) => getCurrentStatus(baby!).type).sort();
+  const statuses = publicBabies.map((baby) => getCurrentStatus(baby!).type).toSorted();
   expect(statuses).toEqual(["born", "gone_to_hospital", "labor_started", "not_yet"]);
 
   const born = publicBabies.find((baby) => baby?.publicId === "baby-born");
@@ -55,7 +55,7 @@ test("seedBabiesForUser creates one baby per status with timeline content", asyn
       .withIndex("by_babyId", (q) => q.eq("babyId", born._id))
       .collect();
   });
-  expect(updates.map((update) => update.milestone).sort()).toEqual([
+  expect(updates.map((update) => update.milestone).toSorted()).toEqual([
     "born",
     "gone_to_hospital",
     "labor_started",

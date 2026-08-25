@@ -26,15 +26,18 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
     defaultValues: DefaultValues<NoInfer<TInput>>;
   },
 ): UseZodForm<TInput, TContext, TOutput> {
+  const id = useId();
+  const formRef = useRef<HTMLFormElement>(null);
   const form = useForm<TInput, TContext, TOutput>({
     ...props,
     resolver: zodResolver(props.schema) as never,
-  }) as UseZodForm<TInput, TContext, TOutput>;
+  });
 
-  form.id = useId();
-  form.formRef = useRef<HTMLFormElement>(null);
-
-  return form;
+  return {
+    ...form,
+    id,
+    formRef,
+  };
 }
 
 export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {

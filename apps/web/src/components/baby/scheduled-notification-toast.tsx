@@ -12,6 +12,7 @@ import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
@@ -21,6 +22,13 @@ import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/conv
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
+
+type ScheduledNotificationsResult = Exclude<
+  FunctionReturnType<typeof api.baby.getScheduledNotifications>,
+  typeof FORBIDDEN
+>;
+
+const EMPTY_NOTIFICATIONS: ScheduledNotificationsResult = [];
 
 type ScheduledNotificationToastProps = {
   notifications:
@@ -40,10 +48,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   // FORBIDDEN only happens for non-managers, who never render this component —
   // treat it like "nothing scheduled" so the types stay honest.
   const notificationsData = notificationsQuery.data;
-  const notifications = notificationsData === FORBIDDEN ? [] : notificationsData;
-  const pendingNotifications = notifications.filter(
-    (notification) => notification.status === "pending",
-  );
+  const notifications = notificationsData === FORBIDDEN ? EMPTY_NOTIFICATIONS : notificationsData;
   const subscriptionCountQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getSubscriptionCount,
     props.subscriptionCount,
@@ -56,6 +61,10 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   const previousPendingIds = useRef(new Set<Id<"scheduledNotifications">>());
 
   useEffect(() => {
+    const pendingNotifications = notifications.filter(
+      (notification) => notification.status === "pending",
+    );
+
     // Don't show any toasts if there are no subscribers
     if (subscriptionCount === 0) {
       // Dismiss any existing toasts
@@ -127,7 +136,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
         );
       }
     }
-  }, [notifications, pendingNotifications, subscriptionCount, t]);
+  }, [notifications, subscriptionCount, t]);
 
   // Cleanup on unmount
   useEffect(() => {

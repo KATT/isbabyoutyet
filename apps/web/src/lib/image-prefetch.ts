@@ -35,13 +35,13 @@ export function prefetchBrowserImage(
 function loadBrowserImage(imageUrl: string) {
   return new Promise<{ url: string; ok: boolean }>((resolve) => {
     const image = new Image();
-    image.onload = () => {
+    image.addEventListener("load", () => {
       resolve({ url: imageUrl, ok: true });
-    };
-    image.onerror = () => {
+    });
+    image.addEventListener("error", () => {
       // Soft-fail: the lightbox still opens; BlurImage shows the broken state.
       resolve({ url: imageUrl, ok: false });
-    };
+    });
     image.src = imageUrl;
   });
 }
