@@ -1,7 +1,12 @@
 import { useEffect } from "react";
 import { useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
 import { useConvex } from "convex/react";
-import type { FunctionReference, PaginationOptions } from "convex/server";
+import {
+  getFunctionName,
+  makeFunctionReference,
+  type FunctionReference,
+  type PaginationOptions,
+} from "convex/server";
 
 type LivePage = {
   page: unknown[];
@@ -23,14 +28,21 @@ export function useLiveConvexInfinitePages(opts: {
 }) {
   const queryClient = useQueryClient();
   const convex = useConvex();
-  // Stringify so effect deps stay stable when callers pass new object identities
-  // with the same contents.
+  // Serialize every identity-unstable input so the effect resubscribes only
+  // when contents change: callers rebuild `args`/`pageParams`/`queryKey` each
+  // render, and `funcRef` from the generated `api` proxy is a new object per
+  // property access. `getFunctionName` gives a stable string for the same
+  // function; `makeFunctionReference` rebuilds an equivalent ref inside.
   const pageParamsKey = JSON.stringify(opts.pageParams);
   const argsKey = JSON.stringify(opts.args);
-  const funcRef = opts.funcRef;
-  const queryKey = opts.queryKey;
+  const queryKeyKey = JSON.stringify(opts.queryKey);
+  const funcName = getFunctionName(opts.funcRef);
 
   useEffect(() => {
+    const funcRef = makeFunctionReference<"query">(funcName);
+    // TanStack hashes keys structurally, so a parsed clone targets the same
+    // cache entry as the caller's original key.
+    const queryKey = JSON.parse(queryKeyKey) as QueryKey;
     const pageParams = JSON.parse(pageParamsKey) as PaginationOptions[];
     const args = JSON.parse(argsKey) as Record<string, unknown>;
     const unsubscribers = pageParams.map((pageParam, index) => {
@@ -54,6 +66,9 @@ export function useLiveConvexInfinitePages(opts: {
             if (!previous) {
               return previous;
             }
+            if (index >= previous.pages.length) {
+              return previous;
+            }
             const pages = [...previous.pages];
             pages[index] = value;
             return { ...previous, pages };
@@ -67,5 +82,5 @@ export function useLiveConvexInfinitePages(opts: {
         unsubscribe();
       }
     };
-  }, [argsKey, convex, funcRef, pageParamsKey, queryClient, queryKey]);
+  }, [argsKey, convex, funcName, pageParamsKey, queryClient, queryKeyKey]);
 }
