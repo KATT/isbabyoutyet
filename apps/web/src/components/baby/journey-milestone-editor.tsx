@@ -1,22 +1,7 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Switch } from "@workspace/ui/components/switch";
 import { cn } from "@workspace/ui/lib/utils";
-import type {
-  BirthJourney,
-  Milestone,
-  MilestoneRemoveHandler,
-  MilestoneVisibility,
-} from "@workspace/convex/src/types";
+import type { BirthJourney, MilestoneVisibility } from "@workspace/convex/src/types";
 import {
   birthJourneyForVisibility,
   milestoneVisibilityForPreset,
@@ -26,73 +11,30 @@ import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-optio
 import { useState } from "react";
 import { toast } from "sonner";
 
-type PendingToggleChange = {
-  visibility: MilestoneVisibility;
-  birthJourney: BirthJourney;
-  milestonesToRemove: Milestone[];
-};
-
 type JourneyMilestoneEditorProps = {
   birthJourney: BirthJourney;
-  laborStarted: string | null;
-  wentToHospital: string | null;
   onBirthJourneyChange: (birthJourney: BirthJourney) => void | Promise<void>;
-  onMilestoneRemove: MilestoneRemoveHandler | null;
   idPrefix: string;
 };
-
-function milestonesToRemoveForVisibility(opts: {
-  visibility: MilestoneVisibility;
-  laborStarted: string | null;
-  wentToHospital: string | null;
-}): Milestone[] {
-  const milestones: Milestone[] = [];
-  if (!opts.visibility.showLabor && opts.laborStarted) {
-    milestones.push("labor_started");
-  }
-  if (!opts.visibility.showHospital && opts.wentToHospital) {
-    milestones.push("gone_to_hospital");
-  }
-  return milestones;
-}
 
 export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   const { t } = useI18n();
   const visibility = milestoneVisibilityForPreset(props.birthJourney);
-  const [pendingChange, setPendingChange] = useState<PendingToggleChange | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  async function applyBirthJourneyChange(change: PendingToggleChange) {
+  async function applyBirthJourneyChange(birthJourney: BirthJourney) {
     setIsSaving(true);
     try {
-      for (const milestone of change.milestonesToRemove) {
-        if (props.onMilestoneRemove) {
-          await props.onMilestoneRemove(milestone);
-        }
-      }
-      await props.onBirthJourneyChange(change.birthJourney);
+      await props.onBirthJourneyChange(birthJourney);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to update journey"));
     } finally {
       setIsSaving(false);
-      setPendingChange(null);
     }
   }
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
-    const birthJourney = birthJourneyForVisibility(nextVisibility);
-    const milestonesToRemove = milestonesToRemoveForVisibility({
-      visibility: nextVisibility,
-      laborStarted: props.laborStarted,
-      wentToHospital: props.wentToHospital,
-    });
-
-    if (milestonesToRemove.length > 0 && props.onMilestoneRemove) {
-      setPendingChange({ visibility: nextVisibility, birthJourney, milestonesToRemove });
-      return;
-    }
-
-    void applyBirthJourneyChange({ visibility: nextVisibility, birthJourney, milestonesToRemove });
+    void applyBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
   }
 
   function handlePresetSelect(preset: BirthJourney) {
@@ -101,18 +43,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
     }
     requestVisibilityChange(milestoneVisibilityForPreset(preset));
   }
-
-  const pendingMilestoneLabels = (pendingChange?.milestonesToRemove ?? [])
-    .map((milestone) => {
-      if (milestone === "labor_started") {
-        return t("Labour started");
-      }
-      if (milestone === "gone_to_hospital") {
-        return t("Gone to hospital");
-      }
-      return null;
-    })
-    .filter((label): label is string => label !== null);
 
   return (
     <div className="flex flex-col gap-4">
@@ -205,44 +135,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
       <p className="text-sm text-muted-foreground">
         {t(JOURNEY_OPTION_BY_VALUE[props.birthJourney].descriptionKey)}
       </p>
-
-      <AlertDialog
-        open={pendingChange !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setPendingChange(null);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("Remove marked milestones?")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingMilestoneLabels.length === 1
-                ? t(
-                    'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.',
-                    { milestone: pendingMilestoneLabels[0] ?? "" },
-                  )
-                : t(
-                    "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.",
-                  )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSaving}>{t("Cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isSaving}
-              onClick={() => {
-                if (pendingChange) {
-                  void applyBirthJourneyChange(pendingChange);
-                }
-              }}
-            >
-              {t("Remove and continue")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

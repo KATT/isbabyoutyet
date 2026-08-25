@@ -60,11 +60,8 @@ export function AddBabyOptionalSettings<
               <FormControl>
                 <JourneyMilestoneEditor
                   birthJourney={renderProps.field.value}
-                  laborStarted={null}
-                  wentToHospital={null}
                   idPrefix="add-journey"
                   onBirthJourneyChange={renderProps.field.onChange}
-                  onMilestoneRemove={null}
                 />
               </FormControl>
               <FormMessage />

@@ -180,13 +180,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <ItemDescription>{t(journeyOption.descriptionKey)}</ItemDescription>
               </ItemContent>
               <ItemActions>
-                <JourneyEditor
-                  birthJourney={props.birthJourney}
-                  laborStarted={props.baby.laborStarted}
-                  wentToHospital={props.baby.wentToHospital}
-                  onUpdate={props.onUpdate}
-                  onMilestoneRemove={props.onMilestoneRemove}
-                />
+                <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />
               </ItemActions>
             </Item>
 

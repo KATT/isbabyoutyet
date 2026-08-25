@@ -413,10 +413,7 @@ function NameForm(props: EditorFormProps) {
 
 type JourneyEditorProps = {
   birthJourney: BirthJourney;
-  laborStarted: string | null;
-  wentToHospital: string | null;
   onUpdate: BabyUpdateHandler;
-  onMilestoneRemove: MilestoneRemoveHandler;
 };
 
 export function JourneyEditor(props: JourneyEditorProps) {
@@ -435,11 +432,8 @@ export function JourneyEditor(props: JourneyEditorProps) {
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
         <JourneyMilestoneEditor
           birthJourney={props.birthJourney}
-          laborStarted={props.laborStarted}
-          wentToHospital={props.wentToHospital}
           idPrefix="settings-journey"
           onBirthJourneyChange={(birthJourney) => props.onUpdate({ birthJourney })}
-          onMilestoneRemove={props.onMilestoneRemove}
         />
       </PopoverContent>
     </Popover>

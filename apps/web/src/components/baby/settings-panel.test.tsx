@@ -239,7 +239,7 @@ test("journey editor reports a failed save", async () => {
   });
 });
 
-test("turning off a marked milestone warns before removing it", async () => {
+test("turning off visitor visibility does not remove a marked milestone", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   const onMilestoneRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
 
@@ -257,15 +257,12 @@ test("turning off a marked milestone warns before removing it", async () => {
   openJourneyEditor(view);
 
   fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
-  expect(view.getByRole("heading", { name: "Remove marked milestones?" })).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Remove and continue" }));
 
-  await vi.waitFor(() => {
-    expect(onMilestoneRemove).toHaveBeenCalledWith("labor_started");
-  });
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
   });
+  expect(onMilestoneRemove).not.toHaveBeenCalled();
+  expect(view.queryByRole("heading", { name: "Remove marked milestones?" })).toBeNull();
 });
 
 test("journey selection stays changeable after milestone updates", async () => {

@@ -104,12 +104,6 @@ const enGB = {
   "Milestones visitors see": "Milestones visitors see",
   "Edit journey": "Edit journey",
   "Failed to update journey": "Failed to update journey",
-  "Remove marked milestones?": "Remove marked milestones?",
-  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
-    "Turning this off will remove the “{{milestone}}” milestone from your page. Visitors will no longer see it.",
-  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
-    "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.",
-  "Remove and continue": "Remove and continue",
   Labour: "Labour",
   "Home birth": "Home birth",
   "Planned C-section": "Planned C-section",
@@ -661,12 +655,6 @@ const sv: Record<TranslationKey, string> = {
   "Milestones visitors see": "Milstolpar som besökare ser",
   "Edit journey": "Redigera resa",
   "Failed to update journey": "Det gick inte att uppdatera resan",
-  "Remove marked milestones?": "Ta bort markerade milstolpar?",
-  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
-    "Att stänga av detta tar bort milstolpen ”{{milestone}}” från sidan. Besökare ser den inte längre.",
-  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
-    "Att stänga av detta tar bort de markerade milstolparna från sidan. Besökare ser dem inte längre.",
-  "Remove and continue": "Ta bort och fortsätt",
   Labour: "Förlossning",
   "Home birth": "Hemförlossning",
   "Planned C-section": "Planerat kejsarsnitt",
@@ -1203,12 +1191,6 @@ const es: Record<TranslationKey, string> = {
   "Milestones visitors see": "Hitos que ven los visitantes",
   "Edit journey": "Editar recorrido",
   "Failed to update journey": "No se pudo actualizar el recorrido",
-  "Remove marked milestones?": "¿Eliminar hitos marcados?",
-  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
-    "Desactivar esto eliminará el hito «{{milestone}}» de tu página. Los visitantes ya no lo verán.",
-  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
-    "Desactivar esto eliminará los hitos marcados de tu página. Los visitantes ya no los verán.",
-  "Remove and continue": "Eliminar y continuar",
   Labour: "Parto",
   "Home birth": "Parto en casa",
   "Planned C-section": "Cesárea programada",
@@ -1750,12 +1732,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Milestones visitors see": "Marcos que os visitantes veem",
   "Edit journey": "Editar jornada",
   "Failed to update journey": "Não foi possível atualizar a jornada",
-  "Remove marked milestones?": "Remover marcos marcados?",
-  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
-    "Desativar isso removerá o marco “{{milestone}}” da sua página. Os visitantes não o verão mais.",
-  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
-    "Desativar isso removerá os marcos marcados da sua página. Os visitantes não os verão mais.",
-  "Remove and continue": "Remover e continuar",
   Labour: "Trabalho de parto",
   "Home birth": "Parto em casa",
   "Planned C-section": "Cesárea programada",
