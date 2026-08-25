@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import type { NavigateOptions } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
@@ -57,10 +58,33 @@ export const Route = createFileRoute("/_auth/dashboard_/add")({
   component: AddBabyPage,
 });
 
+type CreateBaby = (
+  args: FunctionArgs<typeof api.baby.create>,
+) => Promise<{ publicId: string }>;
+
 export function AddBabyPage() {
-  const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
+
+  return (
+    <AddBabyPageView
+      createBaby={createBaby}
+      navigate={(opts) => router.navigate(opts)}
+    />
+  );
+}
+
+/**
+ * Presentational add-baby form. Mutation + navigate arrive as props so tests
+ * can drive submit without mocking Convex or the router module.
+ *
+ * @internal exported for tests
+ */
+export function AddBabyPageView(props: {
+  createBaby: CreateBaby;
+  navigate: (opts: NavigateOptions) => Promise<void>;
+}) {
+  const { t } = useI18n();
 
   const form = useZodForm({
     schema: addBabySchema(t),
@@ -107,9 +131,9 @@ export function AddBabyPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await createBaby(values);
+                const result = await props.createBaby(values);
 
-                await router.navigate({
+                await props.navigate({
                   to: "/baby/$publicId",
                   params: { publicId: result.publicId },
                 });

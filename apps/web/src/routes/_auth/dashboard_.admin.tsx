@@ -408,22 +408,55 @@ function AdminLanguagesTab() {
 }
 
 export function AdminDashboardPage() {
-  const { t } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/dashboard/admin" });
-  function setTab(tab: AdminTab) {
-    void navigate({
-      search: (prev) => ({ ...prev, tab }),
-      replace: true,
-      resetScroll: false,
-    });
-  }
+
+  return (
+    <AdminDashboardView
+      tab={search.tab}
+      sort={search.sort}
+      order={search.order}
+      hideDemo={search.hideDemo}
+      onTabChange={(tab) => {
+        void navigate({ search: (prev) => ({ ...prev, tab }), replace: true, resetScroll: false });
+      }}
+      onHideDemoChange={(hideDemo) => {
+        void navigate({
+          search: (prev) => ({ ...prev, hideDemo }),
+          replace: true,
+          resetScroll: false,
+        });
+      }}
+      babiesTab={<AdminBabiesTab />}
+      languagesTab={<AdminLanguagesTab />}
+    />
+  );
+}
+
+/**
+ * Admin chrome: tab links, the hide-demo filter, and whichever tab body is
+ * active. Tab bodies arrive as nodes and URL state as plain props, so tests can
+ * render it without the route's search params or Convex pagination.
+ *
+ * @internal Exported for tests; production uses `AdminDashboardPage`.
+ */
+export function AdminDashboardView(props: {
+  tab: AdminTab;
+  sort: SortBy;
+  order: SortOrder;
+  hideDemo: boolean;
+  onTabChange: (tab: AdminTab) => void;
+  onHideDemoChange: (hideDemo: boolean) => void;
+  babiesTab: ReactNode;
+  languagesTab: ReactNode;
+}) {
+  const { t } = useI18n();
 
   const tabSearch = (tab: AdminTab): AdminSearch => ({
     tab,
-    sort: search.sort,
-    order: search.order,
-    hideDemo: search.hideDemo,
+    sort: props.sort,
+    order: props.order,
+    hideDemo: props.hideDemo,
   });
 
   return (
@@ -458,12 +491,12 @@ export function AdminDashboardPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4 pt-(--card-spacing)">
             <Tabs
-              value={search.tab}
+              value={props.tab}
               orientation="horizontal"
               className="flex w-full flex-col gap-4"
               onValueChange={(value) => {
                 if (value === "babies" || value === "languages") {
-                  setTab(value);
+                  props.onTabChange(value);
                 }
               }}
             >
@@ -499,17 +532,13 @@ export function AdminDashboardPage() {
                   </TabsTrigger>
                 </TabsList>
 
-                {search.tab === "babies" ? (
+                {props.tab === "babies" ? (
                   <Field orientation="horizontal" className="w-auto">
                     <Switch
                       id="admin-hide-demo"
-                      checked={search.hideDemo}
+                      checked={props.hideDemo}
                       onCheckedChange={(hideDemo) => {
-                        void navigate({
-                          search: (prev) => ({ ...prev, hideDemo }),
-                          replace: true,
-                          resetScroll: false,
-                        });
+                        props.onHideDemoChange(hideDemo);
                       }}
                     />
                     <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
@@ -520,11 +549,11 @@ export function AdminDashboardPage() {
               </div>
 
               <TabsContent value="babies" className="mt-0">
-                {search.tab === "babies" ? <AdminBabiesTab /> : null}
+                {props.tab === "babies" ? props.babiesTab : null}
               </TabsContent>
 
               <TabsContent value="languages" className="mt-0">
-                {search.tab === "languages" ? <AdminLanguagesTab /> : null}
+                {props.tab === "languages" ? props.languagesTab : null}
               </TabsContent>
             </Tabs>
           </CardContent>

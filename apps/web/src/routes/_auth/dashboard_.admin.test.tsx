@@ -1,97 +1,22 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { isRedirect } from "@tanstack/react-router";
 import type { ReactElement } from "react";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
-import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(opts: unknown) => void>(),
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      search: Record<string, string> | undefined;
-      replace: boolean | undefined;
-    },
-  ) => {
-    const { to, search, children, replace: _replace, ...rest } = props;
-    const query = search
-      ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
-      : "";
-    return (
-      <a href={`${typeof to === "string" ? to : "#"}${query}`} {...rest}>
-        {children}
-      </a>
-    );
-  },
-  createFileRoute: (routeId: string) => (opts: Record<string, unknown>) => ({
-    ...opts,
-    routeId,
-    useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
-    useLoaderData: () => ({
-      babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
-        input: { sortBy: "updated", sortOrder: "desc", hideDemo: true },
-        numItems: 20,
-        initialData: {
-          pages: [{ page: [], isDone: true, continueCursor: "" }],
-          pageParams: [{ numItems: 20, cursor: null }],
-        },
-      }),
-      languages: testPreloadedConvexInfiniteQuery<typeof api.admin.listLanguageRequests>({
-        input: {},
-        numItems: 20,
-        initialData: {
-          pages: [{ page: [], isDone: true, continueCursor: "" }],
-          pageParams: [{ numItems: 20, cursor: null }],
-        },
-      }),
-    }),
-  }),
-  redirect: (opts: unknown) => {
-    throw { isRedirect: true, ...(opts as object) };
-  },
-  useNavigate: () => mocks.navigate,
-}));
-
-vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
-  return {
-    ...actual,
-    usePreloadedConvexInfiniteQuery: () => ({
-      data: {
-        pages: [{ page: [], isDone: true, continueCursor: "" }],
-        pageParams: [{ numItems: 20, cursor: null }],
-      },
-      hasNextPage: false,
-      isFetchingNextPage: false,
-      fetchNextPage: vi.fn<() => Promise<unknown>>(),
-    }),
-  };
-});
-
-const {
-  Route: AdminRoute,
-  AdminDashboardPage,
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import {
+  AdminDashboardView,
   BabiesSection,
   LanguageRequestsSection,
+  Route as AdminRoute,
   formatWhen,
   nextSortSearch,
   statusLabel,
-} = await import("@/routes/_auth/dashboard_.admin");
-
-function renderResource(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+} from "@/routes/_auth/dashboard_.admin";
 
 const t = ((key: string) => key) as TranslationFunction;
 
@@ -106,10 +31,15 @@ const sampleBaby = {
   managerEmails: ["owner@example.com", "co@example.com"],
 };
 
+function renderAdmin(ui: ReactElement) {
+  return renderWithTestRouter(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>, {
+    path: "/dashboard/admin",
+  });
+}
+
 test("admin remains a standalone non-nested dashboard route", () => {
-  const route = AdminRoute as unknown as { routeId: string; component: unknown };
-  expect(route.routeId).toBe("/_auth/dashboard_/admin");
-  expect(route.component).toBe(AdminDashboardPage);
+  expect(AdminRoute.id).toBe("/_auth/dashboard_/admin");
+  expect(AdminRoute.options.component).toBeTypeOf("function");
 });
 
 test("statusLabel covers every baby status", () => {
@@ -139,7 +69,7 @@ test("nextSortSearch defaults to desc and only toggles to asc on the active desc
 });
 
 test("language requests section shows empty and rows", async () => {
-  await using empty = renderResource(
+  await using empty = await renderAdmin(
     <LanguageRequestsSection
       requests={[]}
       hasNextPage={false}
@@ -149,7 +79,7 @@ test("language requests section shows empty and rows", async () => {
   );
   expect(empty.getByText("No language requests yet")).toBeTruthy();
 
-  await using filled = renderResource(
+  await using filled = await renderAdmin(
     <LanguageRequestsSection
       hasNextPage={false}
       isFetchingNextPage={false}
@@ -178,7 +108,7 @@ test("language requests section shows empty and rows", async () => {
 });
 
 test("babies section sorts via clickable header links", async () => {
-  await using view = renderResource(
+  await using view = await renderAdmin(
     <BabiesSection
       sort="updated"
       order="desc"
@@ -218,7 +148,7 @@ test("babies section sorts via clickable header links", async () => {
 });
 
 test("babies section shows a spinner while loading more", async () => {
-  await using loadingMore = renderResource(
+  await using loadingMore = await renderAdmin(
     <BabiesSection
       sort="created"
       order="desc"
@@ -235,7 +165,7 @@ test("babies section shows a spinner while loading more", async () => {
 });
 
 test("language requests section shows loading-more spinner", async () => {
-  await using view = renderResource(
+  await using view = await renderAdmin(
     <LanguageRequestsSection
       hasNextPage={true}
       isFetchingNextPage={true}
@@ -285,7 +215,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
   globalThis.IntersectionObserver =
     MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
-  await using _view = renderResource(
+  await using _view = await renderAdmin(
     <BabiesSection
       sort="updated"
       order="desc"
@@ -304,7 +234,21 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
-  await using view = renderResource(<AdminDashboardPage />);
+  const onTabChange = vi.fn<(tab: "babies" | "languages") => void>();
+  const onHideDemoChange = vi.fn<(hideDemo: boolean) => void>();
+
+  await using view = await renderAdmin(
+    <AdminDashboardView
+      tab="babies"
+      sort="updated"
+      order="desc"
+      hideDemo={true}
+      onTabChange={onTabChange}
+      onHideDemoChange={onHideDemoChange}
+      babiesTab={<div>babies body</div>}
+      languagesTab={<div>languages body</div>}
+    />,
+  );
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
@@ -317,10 +261,11 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
   const hideDemo = view.getByRole("switch", { name: "Hide demo babies" });
   expect(hideDemo.getAttribute("aria-checked")).toBe("true");
   fireEvent.click(hideDemo);
-  expect(mocks.navigate).toHaveBeenCalled();
+  expect(onHideDemoChange).toHaveBeenCalledWith(false);
 
   fireEvent.click(languagesTab);
-  expect(mocks.navigate).toHaveBeenCalled();
+  // Tab Links navigate via href; onValueChange also fires for the Tabs control.
+  expect(onTabChange).toHaveBeenCalled();
 });
 
 const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
@@ -352,17 +297,19 @@ async function runAdminLoader(
     serverHttpClient: undefined,
   } as never);
   const route = AdminRoute as unknown as {
-    loader: (opts: {
-      context: {
-        queryClient: QueryClient;
-        convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-        profile: { input: Record<string, never>; initialData: typeof profile };
-      };
-      deps: { tab: string; sort: string; order: string; hideDemo: boolean };
-    }) => Promise<Record<string, unknown>>;
+    options: {
+      loader: (opts: {
+        context: {
+          queryClient: QueryClient;
+          convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+          profile: { input: Record<string, never>; initialData: typeof profile };
+        };
+        deps: { tab: string; sort: string; order: string; hideDemo: boolean };
+      }) => Promise<Record<string, unknown>>;
+    };
   };
   const queryClient = makeAdminLoaderQueryClient(handlers);
-  return await route.loader({
+  return await route.options.loader({
     context: {
       queryClient,
       convexPreloader: getConvexQueryPreloader(queryClient),
@@ -389,17 +336,23 @@ test("loader prefetches babies and language requests in parallel for admins", as
 });
 
 test("loader redirects non-admins without prefetching admin queries", async () => {
-  const pending = runAdminLoader(
-    {
-      "admin:listBabies": () => {
-        throw new Error("admin:listBabies should not run for non-admins");
+  try {
+    await runAdminLoader(
+      {
+        "admin:listBabies": () => {
+          throw new Error("admin:listBabies should not run for non-admins");
+        },
+        "admin:listLanguageRequests": () => {
+          throw new Error("admin:listLanguageRequests should not run for non-admins");
+        },
       },
-      "admin:listLanguageRequests": () => {
-        throw new Error("admin:listLanguageRequests should not run for non-admins");
-      },
-    },
-    { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-  );
-
-  await expect(pending).rejects.toMatchObject({ isRedirect: true, to: "/dashboard" });
+      { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
+    );
+    expect.unreachable("expected a redirect");
+  } catch (error) {
+    expect(isRedirect(error)).toBe(true);
+    if (isRedirect(error)) {
+      expect(error.options.to).toBe("/dashboard");
+    }
+  }
 });
