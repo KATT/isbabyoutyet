@@ -1,4 +1,4 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { DEMO_BABIES, HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCredentials";
 import { activeBabyPublicId, DevBar } from "@/components/dev-bar";
@@ -34,7 +34,11 @@ test("closes when the route changes", async () => {
   await using view = await renderWithTestRouter(<DevBar />, { path: "/dashboard" });
   await openDevBar();
 
-  await view.router.navigate({ to: "/baby/baby-waiting" });
+  // The test tree registers only a root route, so drive the location through
+  // history instead of a typed `navigate({ to })`.
+  act(() => {
+    view.router.history.push("/baby/baby-waiting");
+  });
 
   await vi.waitFor(() => {
     expect(screen.queryByRole("menu")).toBeNull();
@@ -61,7 +65,9 @@ test("marks the current baby when opened on a baby page", async () => {
   expect(
     screen.getByRole("menuitem", { name: /labour started/i }).getAttribute("aria-current"),
   ).toBe("page");
-  expect(screen.getByRole("menuitem", { name: /not yet/i }).getAttribute("aria-current")).toBeNull();
+  expect(
+    screen.getByRole("menuitem", { name: /not yet/i }).getAttribute("aria-current"),
+  ).toBeNull();
 });
 
 test("marks the current homepage demo baby", async () => {

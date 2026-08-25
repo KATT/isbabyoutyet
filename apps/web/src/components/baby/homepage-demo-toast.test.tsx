@@ -33,7 +33,7 @@ test("shows a persistent demo toast on the homepage demo baby", async () => {
     closeButton: true,
   });
   if (typeof renderToast !== "function") throw new Error("expected a custom toast renderer");
-  const content = render(renderToast() as ReactElement);
+  const content = render(renderToast("toast-id") as ReactElement);
   await using _content = makeResource(content, () => {
     content.unmount();
   });
