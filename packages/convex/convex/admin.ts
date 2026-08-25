@@ -39,6 +39,22 @@ const babyRowValidator = v.object({
   managerEmails: v.array(v.string()),
 });
 
+const userRowValidator = v.object({
+  _id: v.string(),
+  email: v.string(),
+  name: v.string(),
+  createdAt: v.number(),
+});
+
+function authUserRow(user: Record<string, unknown>) {
+  return {
+    _id: String(user._id),
+    email: String(user.email),
+    name: String(user.name),
+    createdAt: Number(user.createdAt),
+  };
+}
+
 /**
  * Resolve a Better Auth user's email. Sentinel / non-document owners
  * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
@@ -156,5 +172,27 @@ export const listBabies = query({
       });
     }
     return { ...result, page: rows };
+  },
+});
+
+/** Newest Better Auth signups first — staff review of recent registrations. */
+export const listUsers = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(userRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: "user",
+      sortBy: { field: "createdAt", direction: "desc" },
+      paginationOpts: args.paginationOpts,
+    });
+    // findMany is typed as `any`; rebuild the page so the query return stays typed.
+    return {
+      page: (result.page as Record<string, unknown>[]).map(authUserRow),
+      isDone: result.isDone as boolean,
+      continueCursor: result.continueCursor as string,
+    };
   },
 });
