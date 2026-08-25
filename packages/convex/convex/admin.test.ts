@@ -4,6 +4,7 @@ import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { modules, registerComponents } from "./test.setup";
+import { parseAuthUserPage } from "./admin";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
 
@@ -12,6 +13,31 @@ async function setup() {
   await registerComponents(t);
   return t;
 }
+
+test("Better Auth user pagination validates adapter output", () => {
+  expect(
+    parseAuthUserPage({
+      page: [{ _id: "user-1", email: "user@example.com" }],
+      isDone: true,
+      continueCursor: "cursor",
+    }),
+  ).toEqual({
+    page: [{ _id: "user-1", email: "user@example.com" }],
+    isDone: true,
+    continueCursor: "cursor",
+  });
+
+  for (const invalid of [
+    null,
+    "not an object",
+    {},
+    { page: [null], isDone: true, continueCursor: "cursor" },
+    { page: [], isDone: "yes", continueCursor: "cursor" },
+    { page: [], isDone: true, continueCursor: null },
+  ]) {
+    expect(() => parseAuthUserPage(invalid)).toThrow(/invalid user (page|pagination)/);
+  }
+});
 
 test("admin queries refuse non-admins and anonymous callers", async () => {
   const t = await setup();
@@ -279,6 +305,21 @@ test("admins can list recently signed up users newest first", async () => {
   const t = await setup();
   const seeded = await t.mutation(internal.seed.seedDemoData, {});
   const asDemo = t.withIdentity({ subject: seeded.userId });
+  await t.run(async (ctx) => {
+    await ctx.db.insert("baby", {
+      userId: seeded.userId,
+      ownerTokenIdentifier: `https://convex.test|${seeded.userId}`,
+      name: "Deleted owned baby",
+      dueDate: "2026-12-01",
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      publicId: "deleted-owned-baby",
+      birthJourney: "labor",
+      lastActivityAt: Date.now(),
+      subscriptionCount: 0,
+      deletedAt: Date.now(),
+    });
+  });
 
   const users = await asDemo.query(api.admin.listUsers, {
     paginationOpts: FIRST_PAGE,
@@ -288,6 +329,7 @@ test("admins can list recently signed up users newest first", async () => {
   const demoParent = users.page.find((row) => row.email === DEMO_USER.email);
   expect(demoParent?.babies.length).toBeGreaterThanOrEqual(4);
   expect(demoParent?.babies.some((baby) => baby.publicId === "baby-waiting")).toBe(true);
+  expect(demoParent?.babies.some((baby) => baby.publicId === "deleted-owned-baby")).toBe(false);
   const newParent = users.page.find((row) => row.email === DEMO_EMPTY_USER.email);
   expect(newParent?.babies).toEqual([]);
   for (const row of users.page) {
