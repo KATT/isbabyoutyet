@@ -22,6 +22,10 @@
       "specifier": "./oxlint-plugins/no-optional.mjs"
     },
     {
+      "name": "no-mock",
+      "specifier": "./oxlint-plugins/no-mock.mjs"
+    },
+    {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
     },
@@ -76,6 +80,14 @@
         "query-prefetch/use-loader-preloads": "error",
         // Automatic JSX runtime — no React import required.
         "react/react-in-jsx-scope": "off"
+      }
+    },
+    {
+      // Ban module mocking in apps/web tests only — package tests (e.g.
+      // convex-prefetch) may still use vi.mock until separately migrated.
+      "files": ["apps/web/src/**/*.{test,spec}.{ts,tsx}"],
+      "rules": {
+        "no-mock/no-mock": "error"
       }
     },
     {
