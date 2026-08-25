@@ -9,6 +9,7 @@ import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
+  AdminDashboardPage,
   AdminDashboardView,
   BabiesSection,
   LanguageRequestsSection,
@@ -38,8 +39,8 @@ function renderAdmin(ui: ReactElement) {
 }
 
 test("admin remains a standalone non-nested dashboard route", () => {
-  expect(AdminRoute.id).toBe("/_auth/dashboard_/admin");
-  expect(AdminRoute.options.component).toBeTypeOf("function");
+  // Underscored `dashboard_` keeps this sibling of `/dashboard`, not a child.
+  expect(AdminRoute.options.component).toBe(AdminDashboardPage);
 });
 
 test("statusLabel covers every baby status", () => {

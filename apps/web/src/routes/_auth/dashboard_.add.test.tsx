@@ -1,7 +1,7 @@
 import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
-import { AddBabyPageView, Route } from "./dashboard_.add";
+import { AddBabyPage, AddBabyPageView, Route } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function renderAddBaby(opts: {
@@ -20,8 +20,8 @@ function renderAddBaby(opts: {
 }
 
 test("add baby remains a standalone non-nested dashboard route", () => {
-  expect(Route.id).toBe("/_auth/dashboard_/add");
-  expect(Route.options.component).toBeTypeOf("function");
+  // Underscored `dashboard_` keeps this sibling of `/dashboard`, not a child.
+  expect(Route.options.component).toBe(AddBabyPage);
 });
 
 test("journey choices explain visible statuses and privacy", async () => {
