@@ -1042,7 +1042,9 @@ type TimelineFeedViewProps = {
 export function TimelineFeedView(props: TimelineFeedViewProps) {
   const { t } = useI18n();
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const { items, hasNextPage, isFetchingNextPage, fetchNextPage } = props;
+  const hasNextPage = props.hasNextPage;
+  const isFetchingNextPage = props.isFetchingNextPage;
+  const fetchNextPage = props.fetchNextPage;
 
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
@@ -1111,7 +1113,7 @@ export function TimelineFeedView(props: TimelineFeedViewProps) {
     }
   };
 
-  if (items.length === 0) {
+  if (props.items.length === 0) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
@@ -1143,7 +1145,7 @@ export function TimelineFeedView(props: TimelineFeedViewProps) {
       </div>
 
       <div className="space-y-4">
-        {items.map((item) =>
+        {props.items.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
               key={item._id}
