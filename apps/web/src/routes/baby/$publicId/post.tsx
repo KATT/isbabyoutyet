@@ -3,8 +3,12 @@ import { UpdateComposer } from "@/components/baby/timeline";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { FORBIDDEN } from "@workspace/convex/src/types";
+import type { BabyData } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import type { FunctionReturnType } from "convex/server";
+import type { ReactNode } from "react";
 import { useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
@@ -61,19 +65,32 @@ export const Route = createFileRoute("/baby/$publicId/post")({
   component: BabyPostUpdateOverlay,
 });
 
-export function BabyPostUpdateOverlay() {
+type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
+
+type ComposerSlotOpts = {
+  babyId: Id<"baby">;
+  baby: BabyData;
+  babyName: string;
+  onPosted: () => void;
+};
+
+export type BabyPostUpdateOverlayViewProps = {
+  publicId: string;
+  managerBabyDoc: ManagerBabyDoc;
+  completeOnboardingStep: (args: { stepId: "post_update" }) => void | Promise<void>;
+  /** Injected so tests can stub the composer without `vi.mock`. */
+  renderComposer: (opts: ComposerSlotOpts) => ReactNode;
+};
+
+/**
+ * Presentational post-update overlay. Takes injected onboarding + composer so
+ * route tests exercise dialog / overlay-nav wiring without Convex mutations.
+ */
+export function BabyPostUpdateOverlayView(props: BabyPostUpdateOverlayViewProps) {
   const { t } = useI18n();
-  const params = Route.useParams();
-  const loaderData = Route.useLoaderData();
-  const completeOnboardingStep = useCompleteOnboardingStep();
-  const post = useBabyPostOverlayNav(params.publicId);
+  const post = useBabyPostOverlayNav(props.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const managerBabyDoc =
-    loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
-  if (!managerBabyDoc) {
-    throw notFound();
-  }
-  const baby = managerDocToBabyData(managerBabyDoc);
+  const baby = managerDocToBabyData(props.managerBabyDoc);
 
   return (
     <Dialog
@@ -83,16 +100,38 @@ export function BabyPostUpdateOverlay() {
     >
       <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-lg">
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-        <UpdateComposer
-          babyId={managerBabyDoc._id}
-          baby={baby}
-          babyName={managerBabyDoc.name}
-          onPosted={() => {
-            void completeOnboardingStep({ stepId: "post_update" });
+        {props.renderComposer({
+          babyId: props.managerBabyDoc._id,
+          baby,
+          babyName: props.managerBabyDoc.name,
+          onPosted: () => {
+            void props.completeOnboardingStep({ stepId: "post_update" });
             post.close();
-          }}
-        />
+          },
+        })}
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function BabyPostUpdateOverlay() {
+  const params = Route.useParams();
+  const loaderData = Route.useLoaderData();
+  const completeOnboardingStep = useCompleteOnboardingStep();
+  const managerBabyDoc =
+    loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
+  if (!managerBabyDoc) {
+    throw notFound();
+  }
+
+  return (
+    <BabyPostUpdateOverlayView
+      publicId={params.publicId}
+      managerBabyDoc={managerBabyDoc}
+      completeOnboardingStep={(args) => {
+        void completeOnboardingStep(args);
+      }}
+      renderComposer={(opts) => <UpdateComposer {...opts} />}
+    />
   );
 }

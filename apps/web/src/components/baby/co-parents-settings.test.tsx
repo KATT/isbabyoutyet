@@ -59,9 +59,7 @@ test("CoParentsSettings wires the preloaded listing and mutations into the view"
   const listing = testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
     input: { babyId },
     initialData: {
-      coParents: [
-        { _id: coParentId, email: "bob@example.com", name: "Bob", addedAt: Date.now() },
-      ],
+      coParents: [{ _id: coParentId, email: "bob@example.com", name: "Bob", addedAt: Date.now() }],
       invites: [],
     },
   });

@@ -76,42 +76,39 @@ export const Route = createFileRoute("/baby/$publicId/share")({
   component: BabyShareOverlay,
 });
 
-export function BabyShareOverlay() {
+export type BabyShareOverlayViewProps = {
+  publicId: string;
+  shareLink: string;
+  sharePreview: {
+    imageUrl: string;
+    title: string;
+    description: string;
+  };
+  canManage: boolean;
+  completeOnboardingStep: (args: { stepId: "share_link" }) => void | Promise<void>;
+};
+
+/**
+ * Presentational share overlay. Query wiring stays in the route component so
+ * tests can drive copy + dismiss without Convex/`vi.mock`.
+ */
+export function BabyShareOverlayView(props: BabyShareOverlayViewProps) {
   const { t } = useI18n();
-  const params = Route.useParams();
-  const loaderData = Route.useLoaderData();
   const [copied, setCopied] = useState(false);
-  const completeOnboardingStep = useCompleteOnboardingStep();
-  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
-  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
-  const babyDoc = babyQuery.data;
-  const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
-  useQuery(
-    preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch, () => {
-      return (
-        sharePreview?.imageUrl ??
-        loaderData.imagePrefetch.input ??
-        babyOgImageUrl(params.publicId, undefined)
-      );
-    }),
-  );
-  const share = useBabyShareOverlayNav(params.publicId);
-  if (!sharePreview) {
-    throw notFound();
-  }
+  const share = useBabyShareOverlayNav(props.publicId);
 
   async function copyShareLink() {
     try {
-      await navigator.clipboard.writeText(loaderData.shareLink);
+      await navigator.clipboard.writeText(props.shareLink);
       setCopied(true);
       toast.success(t("Copied to clipboard"));
-      if (myAccessQuery.data.canManage) {
-        void completeOnboardingStep({ stepId: "share_link" });
+      if (props.canManage) {
+        void props.completeOnboardingStep({ stepId: "share_link" });
       }
     } catch {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
-      textArea.value = loaderData.shareLink;
+      textArea.value = props.shareLink;
       textArea.style.position = "fixed";
       textArea.style.opacity = "0";
       document.body.appendChild(textArea);
@@ -120,8 +117,8 @@ export function BabyShareOverlay() {
         document.execCommand("copy");
         setCopied(true);
         toast.success(t("Copied to clipboard"));
-        if (myAccessQuery.data.canManage) {
-          void completeOnboardingStep({ stepId: "share_link" });
+        if (props.canManage) {
+          void props.completeOnboardingStep({ stepId: "share_link" });
         }
       } catch (cause) {
         toast.error(
@@ -146,18 +143,20 @@ export function BabyShareOverlay() {
         </DialogHeader>
         <Card>
           <img
-            src={sharePreview.imageUrl}
-            alt={sharePreview.title}
+            src={props.sharePreview.imageUrl}
+            alt={props.sharePreview.title}
             width={1200}
             height={630}
             className="aspect-[1200/630] w-full object-cover"
           />
           <CardHeader>
-            <CardTitle className="line-clamp-2">{sharePreview.title}</CardTitle>
-            <CardDescription className="line-clamp-2">{sharePreview.description}</CardDescription>
+            <CardTitle className="line-clamp-2">{props.sharePreview.title}</CardTitle>
+            <CardDescription className="line-clamp-2">
+              {props.sharePreview.description}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="truncate text-xs text-muted-foreground">{loaderData.shareLink}</p>
+            <p className="truncate text-xs text-muted-foreground">{props.shareLink}</p>
           </CardContent>
           <CardFooter>
             <Button
@@ -173,5 +172,39 @@ export function BabyShareOverlay() {
         </Card>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export function BabyShareOverlay() {
+  const params = Route.useParams();
+  const loaderData = Route.useLoaderData();
+  const completeOnboardingStep = useCompleteOnboardingStep();
+  const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
+  const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
+  const babyDoc = babyQuery.data;
+  const sharePreview = babyDoc ? getBabySeo(babyDoc, params.publicId) : null;
+  useQuery(
+    preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch, () => {
+      return (
+        sharePreview?.imageUrl ??
+        loaderData.imagePrefetch.input ??
+        babyOgImageUrl(params.publicId, undefined)
+      );
+    }),
+  );
+  if (!sharePreview) {
+    throw notFound();
+  }
+
+  return (
+    <BabyShareOverlayView
+      publicId={params.publicId}
+      shareLink={loaderData.shareLink}
+      sharePreview={sharePreview}
+      canManage={myAccessQuery.data.canManage}
+      completeOnboardingStep={(args) => {
+        void completeOnboardingStep(args);
+      }}
+    />
   );
 }

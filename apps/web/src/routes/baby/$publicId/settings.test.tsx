@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
@@ -11,129 +11,15 @@ import type {
   MilestoneRedateHandler,
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
-import type { ReactElement, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
-import { LocaleProvider } from "@/lib/i18n";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  historyBack: vi.fn<() => void>(),
-  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { overlay: undefined as true | undefined },
-  invalidate: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
-  updateBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  removeBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  redateMilestone: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  unmarkMilestone: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  params: { publicId: "baby-smith" },
-  loaderData: null as null | Record<string, unknown>,
-  settingsPanel: null as null | {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: ((open: boolean) => void) | null;
-    onUpdate: BabyUpdateHandler;
-    onMilestoneRedate: MilestoneRedateHandler;
-    onMilestoneRemove: MilestoneRemoveHandler;
-    onDelete: (() => void | Promise<void>) | null;
-  },
-}));
-
-vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
-  return {
-    ...actual,
-    createFileRoute: () => (options: Record<string, unknown>) => ({
-      options,
-      ...options,
-      fullPath: "/baby/$publicId/settings",
-      useParams: () => mocks.params,
-      useLoaderData: () => mocks.loaderData,
-    }),
-    useNavigate: () => mocks.navigate,
-    useRouter: () => ({
-      invalidate: mocks.invalidate,
-      history: {
-        location: { state: mocks.historyState },
-        canGoBack: mocks.canGoBack,
-        back: mocks.historyBack,
-      },
-      navigate: mocks.navigate,
-    }),
-    notFound: () => {
-      throw { isNotFound: true };
-    },
-    redirect: (opts: unknown) => {
-      throw { options: opts };
-    },
-  };
-});
-
-vi.mock("convex/react", () => ({
-  useMutation: (() => {
-    let call = 0;
-    return () => {
-      const index = call;
-      call += 1;
-      if (index % 4 === 0) return mocks.updateBaby;
-      if (index % 4 === 1) return mocks.removeBaby;
-      if (index % 4 === 2) return mocks.redateMilestone;
-      return mocks.unmarkMilestone;
-    };
-  })(),
-}));
-
-vi.mock("@/components/baby/settings-panel", () => ({
-  SettingsPanel: (props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: ((open: boolean) => void) | null;
-    onUpdate: BabyUpdateHandler;
-    onMilestoneRedate: MilestoneRedateHandler;
-    onMilestoneRemove: MilestoneRemoveHandler;
-    onDelete: (() => void | Promise<void>) | null;
-    children: ReactNode | undefined;
-  }) => {
-    mocks.settingsPanel = props;
-    return (
-      <>
-        <button type="button" onClick={() => props.onUpdate({ name: "Nova Rae" })}>
-          update settings
-        </button>
-        <button
-          type="button"
-          onClick={() => props.onMilestoneRedate("gone_to_hospital", "2026-08-10T12:00:00.000Z")}
-        >
-          redate milestone
-        </button>
-        <button type="button" onClick={() => props.onMilestoneRemove("labor_started")}>
-          remove milestone
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            props.onOpenChange(false);
-            props.onOpenChangeComplete?.(false);
-          }}
-        >
-          close settings
-        </button>
-        {props.onDelete ? (
-          <button type="button" onClick={() => void props.onDelete?.()}>
-            delete page
-          </button>
-        ) : null}
-      </>
-    );
-  },
-}));
-
-vi.mock("@/lib/managerOverlayAuth", () => ({
-  authenticateManagerOverlaySsr: () => Promise.resolve(null),
-}));
-
-const routeModule = await import("@/routes/baby/$publicId/settings");
-const { BabySettingsOverlay, managerDocToBabyData } = routeModule;
+import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
+import {
+  BabySettingsOverlayView,
+  managerDocToBabyData,
+  Route,
+  type BabySettingsOverlayDeps,
+} from "@/routes/baby/$publicId/settings";
 
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
@@ -151,7 +37,10 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 
 async function runSettingsLoader(handlers: Record<string, unknown>) {
   const queryClient = makeLoaderQueryClient(handlers);
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+  const loader = Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -169,7 +58,10 @@ async function runSettingsLoader(handlers: Record<string, unknown>) {
 
 async function runSettingsBeforeLoad(handlers: Record<string, unknown>) {
   const queryClient = makeLoaderQueryClient(handlers);
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+  const beforeLoad = Route.options.beforeLoad as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -182,13 +74,6 @@ async function runSettingsBeforeLoad(handlers: Record<string, unknown>) {
       convexPreloader: getConvexQueryPreloader(queryClient),
     },
     params: { publicId: "baby-smith" },
-  });
-}
-
-function renderResource(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
   });
 }
 
@@ -212,24 +97,61 @@ const managerBabyDoc = {
   publicId: "baby-smith",
 };
 
-function ownerLoaderData() {
+const coParentsList = testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
+  input: { babyId: "baby-smith" },
+  initialData: { coParents: [], invites: [] },
+});
+
+function stubSettingsPanel(props: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete: ((open: boolean) => void) | null;
+  onUpdate: BabyUpdateHandler;
+  onMilestoneRedate: MilestoneRedateHandler;
+  onMilestoneRemove: MilestoneRemoveHandler;
+  onDelete: (() => void | Promise<void>) | null;
+}): ReactNode {
+  return (
+    <>
+      <button type="button" onClick={() => props.onUpdate({ name: "Nova Rae" })}>
+        update settings
+      </button>
+      <button
+        type="button"
+        onClick={() => props.onMilestoneRedate("gone_to_hospital", "2026-08-10T12:00:00.000Z")}
+      >
+        redate milestone
+      </button>
+      <button type="button" onClick={() => props.onMilestoneRemove("labor_started")}>
+        remove milestone
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          props.onOpenChange(false);
+          props.onOpenChangeComplete?.(false);
+        }}
+      >
+        close settings
+      </button>
+      {props.onDelete ? (
+        <button type="button" onClick={() => void props.onDelete?.()}>
+          delete page
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+function makeDeps(overrides: Partial<BabySettingsOverlayDeps> = {}): BabySettingsOverlayDeps {
   return {
-    managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
-      input: { babyId: "baby-smith" },
-      initialData: managerBabyDoc,
-    }),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: true, isOwner: true, isCoParent: false },
-    }),
-    coParentsList: testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
-      input: { babyId: "baby-smith" },
-      initialData: { coParents: [], invites: [] },
-    }),
-    profile: testPreloadedConvexQuery<typeof api.profile.get>({
-      input: {},
-      initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-    }),
+    updateBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+    removeBaby: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+    redateMilestone: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+    unmarkMilestone: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+    invalidate: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
+    navigateToDashboard: vi.fn<() => void>(),
+    ...overrides,
   };
 }
 
@@ -310,18 +232,26 @@ test("managerDocToBabyData maps manager fields for the settings panel", () => {
 });
 
 test("settings overlay closes to the baby page after the dialog exit animation", async () => {
-  mocks.navigate.mockReset();
-  mocks.historyBack.mockReset();
-  mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.overlay = undefined;
-  mocks.loaderData = ownerLoaderData();
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabySettingsOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        isOwner={true}
+        profileLocale="en-GB"
+        coParentsList={coParentsList}
+        deps={makeDeps()}
+        renderSettingsPanel={stubSettingsPanel}
+      />
+    ),
+  });
 
-  await using view = renderResource(<BabySettingsOverlay />);
+  fireEvent.click(ctx.view.getByRole("button", { name: "close settings" }));
 
-  fireEvent.click(view.getByRole("button", { name: "close settings" }));
-
-  expect(mocks.historyBack).not.toHaveBeenCalled();
-  expect(mocks.navigate).toHaveBeenCalledWith({
+  expect(ctx.back).not.toHaveBeenCalled();
+  expect(ctx.navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
     replace: true,
@@ -330,66 +260,88 @@ test("settings overlay closes to the baby page after the dialog exit animation",
 });
 
 test("settings overlay prefers history.back when opened via push", async () => {
-  mocks.navigate.mockReset();
-  mocks.historyBack.mockReset();
-  mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.overlay = true;
-  mocks.loaderData = ownerLoaderData();
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: true,
+    wrap: null,
+    ui: (
+      <BabySettingsOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        isOwner={true}
+        profileLocale="en-GB"
+        coParentsList={coParentsList}
+        deps={makeDeps()}
+        renderSettingsPanel={stubSettingsPanel}
+      />
+    ),
+  });
 
-  await using view = renderResource(<BabySettingsOverlay />);
+  fireEvent.click(ctx.view.getByRole("button", { name: "close settings" }));
 
-  fireEvent.click(view.getByRole("button", { name: "close settings" }));
-
-  expect(mocks.historyBack).toHaveBeenCalledOnce();
-  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(ctx.back).toHaveBeenCalledOnce();
+  expect(ctx.navigate).not.toHaveBeenCalled();
 });
 
 test("settings overlay routes panel edits through mutations and invalidation", async () => {
-  mocks.navigate.mockReset();
-  mocks.updateBaby.mockClear();
-  mocks.redateMilestone.mockClear();
-  mocks.unmarkMilestone.mockClear();
-  mocks.removeBaby.mockClear();
-  mocks.invalidate.mockClear();
-  mocks.loaderData = ownerLoaderData();
+  const deps = makeDeps();
 
-  await using view = renderResource(<BabySettingsOverlay />);
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabySettingsOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        isOwner={true}
+        profileLocale="en-GB"
+        coParentsList={coParentsList}
+        deps={deps}
+        renderSettingsPanel={stubSettingsPanel}
+      />
+    ),
+  });
 
-  fireEvent.click(view.getByRole("button", { name: "update settings" }));
-  fireEvent.click(view.getByRole("button", { name: "redate milestone" }));
-  fireEvent.click(view.getByRole("button", { name: "remove milestone" }));
-  fireEvent.click(view.getByRole("button", { name: "delete page" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "update settings" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "redate milestone" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "remove milestone" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "delete page" }));
 
   await vi.waitFor(() => {
-    expect(mocks.updateBaby).toHaveBeenCalledWith({
+    expect(deps.updateBaby).toHaveBeenCalledWith({
       babyId: "baby-id",
       name: "Nova Rae",
     });
   });
-  expect(mocks.redateMilestone).toHaveBeenCalledWith({
+  expect(deps.redateMilestone).toHaveBeenCalledWith({
     babyId: "baby-id",
     milestone: "gone_to_hospital",
     occurredAt: Date.parse("2026-08-10T12:00:00.000Z"),
   });
-  expect(mocks.unmarkMilestone).toHaveBeenCalledWith({
+  expect(deps.unmarkMilestone).toHaveBeenCalledWith({
     babyId: "baby-id",
     milestone: "labor_started",
   });
-  expect(mocks.removeBaby).toHaveBeenCalledWith({ babyId: "baby-id" });
-  expect(mocks.navigate).toHaveBeenCalledWith({ to: "/dashboard" });
-  expect(mocks.invalidate).toHaveBeenCalled();
+  expect(deps.removeBaby).toHaveBeenCalledWith({ babyId: "baby-id" });
+  expect(deps.navigateToDashboard).toHaveBeenCalled();
+  expect(deps.invalidate).toHaveBeenCalled();
 });
 
 test("settings overlay hides delete for co-parents", async () => {
-  mocks.loaderData = {
-    ...ownerLoaderData(),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: true, isOwner: false, isCoParent: true },
-    }),
-  };
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabySettingsOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        isOwner={false}
+        profileLocale="en-GB"
+        coParentsList={coParentsList}
+        deps={makeDeps()}
+        renderSettingsPanel={stubSettingsPanel}
+      />
+    ),
+  });
 
-  await using view = renderResource(<BabySettingsOverlay />);
-
-  expect(view.queryByRole("button", { name: "delete page" })).toBeNull();
+  expect(ctx.view.queryByRole("button", { name: "delete page" })).toBeNull();
 });

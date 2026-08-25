@@ -34,3 +34,9 @@ if (typeof window.IntersectionObserver !== "function") {
 if (typeof window.ResizeObserver !== "function") {
   window.ResizeObserver = StubObserver as unknown as typeof ResizeObserver;
 }
+
+// jsdom leaves Element#scrollIntoView unimplemented; coachmarks / tour targets
+// call it and would otherwise throw into the router error boundary.
+if (typeof Element.prototype.scrollIntoView !== "function") {
+  Element.prototype.scrollIntoView = function scrollIntoView() {};
+}

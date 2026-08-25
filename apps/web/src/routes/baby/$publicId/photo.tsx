@@ -46,6 +46,27 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
   component: BabyPhotoOverlay,
 });
 
+export type BabyPhotoOverlayViewProps = {
+  publicId: string;
+  photoUrl: string;
+  blurDataUrl: string | null;
+  alt: string;
+};
+
+/** Presentational page-photo lightbox; overlay-nav is the only router dependency. */
+export function BabyPhotoOverlayView(props: BabyPhotoOverlayViewProps) {
+  const photo = useBabyPhotoOverlayNav(props.publicId);
+
+  return (
+    <PhotoLightbox
+      photoUrl={props.photoUrl}
+      blurDataUrl={props.blurDataUrl}
+      alt={props.alt}
+      overlay={photo}
+    />
+  );
+}
+
 export function BabyPhotoOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
@@ -55,14 +76,13 @@ export function BabyPhotoOverlay() {
   if (!babyDoc?.photoUrl) {
     throw notFound();
   }
-  const photo = useBabyPhotoOverlayNav(params.publicId);
 
   return (
-    <PhotoLightbox
+    <BabyPhotoOverlayView
+      publicId={params.publicId}
       photoUrl={babyDoc.photoUrl}
       blurDataUrl={babyDoc.blurDataUrl ?? null}
       alt={t("Photo of {{name}}", { name: babyDoc.name })}
-      overlay={photo}
     />
   );
 }

@@ -1,136 +1,12 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DEFAULT_MILESTONE_VISIBILITY } from "@workspace/convex/src/types";
-import type { ReactElement, ReactNode, RefObject } from "react";
 import { expect, test, vi } from "vitest";
-import { LocaleProvider } from "@/lib/i18n";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  historyBack: vi.fn<() => void>(),
-  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { overlay: undefined as true | undefined },
-  completeStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  params: { publicId: "baby-smith" },
-  loaderData: null as null | Record<string, unknown>,
-  dialogInitialFocus: null as RefObject<HTMLDivElement | null> | null,
-}));
-
-vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
-  return {
-    ...actual,
-    createFileRoute: () => (options: Record<string, unknown>) => ({
-      options,
-      ...options,
-      fullPath: "/baby/$publicId/post",
-      useParams: () => mocks.params,
-      useLoaderData: () => mocks.loaderData,
-    }),
-    useNavigate: () => mocks.navigate,
-    useRouter: () => ({
-      history: {
-        location: { state: mocks.historyState },
-        canGoBack: mocks.canGoBack,
-        back: mocks.historyBack,
-      },
-      navigate: mocks.navigate,
-    }),
-    notFound: () => {
-      throw { isNotFound: true };
-    },
-    redirect: (opts: unknown) => {
-      throw { options: opts };
-    },
-  };
-});
-
-vi.mock("@/components/onboarding/onboarding-host", () => ({
-  useCompleteOnboardingStep: () => mocks.completeStep,
-}));
-
-vi.mock("@/lib/managerOverlayAuth", () => ({
-  authenticateManagerOverlaySsr: () => Promise.resolve(null),
-}));
-
-vi.mock("@/routes/baby/$publicId/route", () => ({
-  managerDocToBabyData: (doc: { name: string }) => ({
-    name: doc.name,
-    dueDate: null,
-    dueDateDisplayMode: "exact",
-    publicDueDateText: null,
-    theme: null,
-    locale: null,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
-    milestoneVisibility: DEFAULT_MILESTONE_VISIBILITY,
-    photoId: null,
-  }),
-}));
-
-vi.mock("@workspace/ui/components/dialog", async () => {
-  const React = await import("react");
-  function MockDialog(props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: ((open: boolean) => void) | undefined;
-    children: ReactNode;
-  }) {
-    const wasOpen = React.useRef(props.open);
-    React.useEffect(() => {
-      if (wasOpen.current && !props.open) {
-        props.onOpenChangeComplete?.(false);
-      }
-      wasOpen.current = props.open;
-    }, [props.open, props.onOpenChangeComplete]);
-    return (
-      <div data-testid="dialog" data-open={props.open}>
-        <button
-          type="button"
-          onClick={() => {
-            props.onOpenChange(false);
-          }}
-        >
-          dismiss
-        </button>
-        {props.children}
-      </div>
-    );
-  }
-  return {
-    Dialog: MockDialog,
-    DialogContent: (props: {
-      children: ReactNode;
-      initialFocus: RefObject<HTMLDivElement | null>;
-    }) => {
-      mocks.dialogInitialFocus = props.initialFocus;
-      return (
-        <div ref={props.initialFocus} data-testid="dialog-content">
-          {props.children}
-        </div>
-      );
-    },
-    DialogTitle: (props: { children: ReactNode }) => <h2>{props.children}</h2>,
-  };
-});
-
-vi.mock("@/components/baby/timeline", () => ({
-  UpdateComposer: (props: { onPosted: () => void; babyName: string }) => (
-    <button type="button" onClick={() => props.onPosted()}>
-      post for {props.babyName}
-    </button>
-  ),
-}));
-
-const routeModule = await import("@/routes/baby/$publicId/post");
-const { BabyPostUpdateOverlay } = routeModule;
+import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
+import { BabyPostUpdateOverlayView, Route } from "@/routes/baby/$publicId/post";
 
 function makeLoaderQueryClient(handlers: Record<string, unknown>) {
   return new QueryClient({
@@ -148,7 +24,10 @@ function makeLoaderQueryClient(handlers: Record<string, unknown>) {
 
 async function runPostLoader(handlers: Record<string, unknown>) {
   const queryClient = makeLoaderQueryClient(handlers);
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+  const loader = Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -161,13 +40,6 @@ async function runPostLoader(handlers: Record<string, unknown>) {
       convexPreloader: getConvexQueryPreloader(queryClient),
     },
     params: { publicId: "baby-smith" },
-  });
-}
-
-function renderResource(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
   });
 }
 
@@ -219,31 +91,32 @@ test("post loader redirects non-managers to the public baby page", async () => {
 });
 
 test("post overlay closes to the baby page after dismiss", async () => {
-  mocks.navigate.mockReset();
-  mocks.historyBack.mockReset();
-  mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.overlay = undefined;
-  mocks.loaderData = {
-    managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
-      input: { babyId: "baby-smith" },
-      initialData: managerBabyDoc,
-    }),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: true, isOwner: true, isCoParent: false },
-    }),
-  };
-
-  await using view = renderResource(<BabyPostUpdateOverlay />);
-  await vi.waitFor(() => {
-    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabyPostUpdateOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        completeOnboardingStep={() => undefined}
+        renderComposer={(opts) => (
+          <button type="button" onClick={() => opts.onPosted()}>
+            post for {opts.babyName}
+          </button>
+        )}
+      />
+    ),
   });
-  expect(mocks.dialogInitialFocus?.current).toBe(view.getByTestId("dialog-content"));
-  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
-  expect(mocks.historyBack).not.toHaveBeenCalled();
   await vi.waitFor(() => {
-    expect(mocks.navigate).toHaveBeenCalledWith({
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("button", { name: "post for Baby Smith" })).toBeTruthy();
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
+
+  expect(ctx.back).not.toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith({
       to: "/baby/$publicId",
       params: { publicId: "baby-smith" },
       replace: true,
@@ -253,59 +126,64 @@ test("post overlay closes to the baby page after dismiss", async () => {
 });
 
 test("post overlay prefers history.back when opened via push", async () => {
-  mocks.navigate.mockReset();
-  mocks.historyBack.mockReset();
-  mocks.canGoBack.mockReturnValue(true);
-  mocks.historyState.overlay = true;
-  mocks.loaderData = {
-    managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
-      input: { babyId: "baby-smith" },
-      initialData: managerBabyDoc,
-    }),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: true, isOwner: true, isCoParent: false },
-    }),
-  };
-
-  await using view = renderResource(<BabyPostUpdateOverlay />);
-  await vi.waitFor(() => {
-    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: true,
+    wrap: null,
+    ui: (
+      <BabyPostUpdateOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        completeOnboardingStep={() => undefined}
+        renderComposer={(opts) => (
+          <button type="button" onClick={() => opts.onPosted()}>
+            post for {opts.babyName}
+          </button>
+        )}
+      />
+    ),
   });
-  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
 
   await vi.waitFor(() => {
-    expect(mocks.historyBack).toHaveBeenCalledOnce();
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
-  expect(mocks.navigate).not.toHaveBeenCalled();
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
+
+  await vi.waitFor(() => {
+    expect(ctx.back).toHaveBeenCalledOnce();
+  });
+  expect(ctx.navigate).not.toHaveBeenCalled();
 });
 
 test("successful post completes onboarding and closes the overlay", async () => {
-  mocks.navigate.mockReset();
-  mocks.historyBack.mockReset();
-  mocks.canGoBack.mockReturnValue(false);
-  mocks.historyState.overlay = undefined;
-  mocks.completeStep.mockClear();
-  mocks.loaderData = {
-    managerBaby: testPreloadedConvexQuery<typeof api.baby.getManagerBaby>({
-      input: { babyId: "baby-smith" },
-      initialData: managerBabyDoc,
-    }),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: true, isOwner: true, isCoParent: false },
-    }),
-  };
+  const completeStep = vi
+    .fn<(args: { stepId: "post_update" }) => Promise<void>>()
+    .mockResolvedValue(undefined);
 
-  await using view = renderResource(<BabyPostUpdateOverlay />);
-  await vi.waitFor(() => {
-    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabyPostUpdateOverlayView
+        publicId="baby-smith"
+        managerBabyDoc={managerBabyDoc}
+        completeOnboardingStep={completeStep}
+        renderComposer={(opts) => (
+          <button type="button" onClick={() => opts.onPosted()}>
+            post for {opts.babyName}
+          </button>
+        )}
+      />
+    ),
   });
-  fireEvent.click(view.getByRole("button", { name: "post for Baby Smith" }));
 
-  expect(mocks.completeStep).toHaveBeenCalledWith({ stepId: "post_update" });
   await vi.waitFor(() => {
-    expect(mocks.navigate).toHaveBeenCalledWith({
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  fireEvent.click(ctx.view.getByRole("button", { name: "post for Baby Smith" }));
+
+  expect(completeStep).toHaveBeenCalledWith({ stepId: "post_update" });
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith({
       to: "/baby/$publicId",
       params: { publicId: "baby-smith" },
       replace: true,

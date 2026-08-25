@@ -41,9 +41,7 @@ function renderViewResource(opts: {
 
 function defaultHandlers() {
   return {
-    onUpdateLocale: vi
-      .fn<(args: { locale: string }) => Promise<unknown>>()
-      .mockResolvedValue(null),
+    onUpdateLocale: vi.fn<(args: { locale: string }) => Promise<unknown>>().mockResolvedValue(null),
     onUpdateTimeZone: vi
       .fn<(args: { timeZone: string }) => Promise<unknown>>()
       .mockResolvedValue(null),

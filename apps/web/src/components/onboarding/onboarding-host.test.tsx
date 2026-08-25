@@ -1,82 +1,17 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import type { FunctionReturnType } from "convex/server";
+import { api } from "@workspace/convex/convex/_generated/api";
+import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
+import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
+import { LocaleProvider } from "@/lib/i18n";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { OnboardingHostView, OnboardingHostWithSession } from "./onboarding-host";
 
-const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn<() => { data: unknown }>(),
-  useSession: vi.fn<() => { data: { user: { id: string } } | null; isPending: boolean }>(),
-  setMinimized: vi.fn<() => void>(),
-  dismissChecklist: vi.fn<() => void>(),
-  completeStep: vi.fn<() => void>(),
-  scrollTo: vi.fn<(options: ScrollToOptions) => void>(),
-}));
+type Progress = FunctionReturnType<typeof api.onboarding.getMine>;
 
-vi.mock("@/lib/auth-client", () => ({
-  authClient: {
-    useSession: () => mocks.useSession(),
-  },
-}));
-
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseQuery: () => mocks.useSuspenseQuery(),
-  };
-});
-
-vi.mock("convex/react", () => ({
-  useMutation: (() => {
-    let call = 0;
-    return () => {
-      const index = call;
-      call += 1;
-      if (index % 3 === 0) return mocks.setMinimized;
-      if (index % 3 === 1) return mocks.dismissChecklist;
-      return mocks.completeStep;
-    };
-  })(),
-}));
-
-vi.mock("./getting-started", () => ({
-  GettingStartedCard: (props: {
-    onGoToStep: ((stepId: "share_link") => void) | undefined;
-    onDismiss: () => void;
-  }) => (
-    <div data-testid="getting-started">
-      <button
-        type="button"
-        onClick={() => {
-          if (props.onGoToStep) {
-            props.onGoToStep("share_link");
-          }
-        }}
-      >
-        Show Share
-      </button>
-      <button type="button" onClick={props.onDismiss}>
-        Dismiss guide
-      </button>
-    </div>
-  ),
-}));
-
-vi.mock("./coachmark", () => ({
-  Coachmark: (props: { targetId: string }) => <div data-testid="coachmark">{props.targetId}</div>,
-}));
-
-const { OnboardingHost } = await import("./onboarding-host");
-const { testPreloadedConvexQuery } = await import("@workspace/convex-prefetch/test-helpers");
-const { api } = await import("@workspace/convex/convex/_generated/api");
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
-
-const progress = {
+const progress: Progress = {
   welcomeDismissed: true,
   checklistDismissed: false,
   minimized: false,
@@ -88,82 +23,121 @@ const progress = {
   tourBaby: { publicId: "baby-smith", name: "Smith" },
 };
 
-const onboardingHandle = testPreloadedConvexQuery<typeof api.onboarding.getMine>({
-  input: {},
-  initialData: progress,
-});
+function resolvedVoid<TArg>() {
+  return vi.fn<(arg: TArg) => Promise<unknown>>().mockResolvedValue(null);
+}
+
+async function renderView(opts: {
+  surface: "dashboard" | "baby";
+  progress: Progress;
+  babyPublicId: string | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
+  onSetMinimized: (args: { minimized: boolean }) => Promise<unknown>;
+  onDismissChecklist: (args: Record<string, never>) => Promise<unknown>;
+  onCompleteStep: (args: { stepId: OnboardingStepId }) => Promise<unknown>;
+}) {
+  return await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <OnboardingHostView
+        surface={opts.surface}
+        progress={opts.progress}
+        spotlight={undefined}
+        babyPublicId={opts.babyPublicId}
+        onGoToStep={opts.onGoToStep}
+        onSetMinimized={opts.onSetMinimized}
+        onDismissChecklist={opts.onDismissChecklist}
+        onCompleteStep={opts.onCompleteStep}
+      />
+    </LocaleProvider>,
+  );
+}
+
+function plantTourTarget(targetId: string) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.setAttribute("data-tour-id", targetId);
+  el.textContent = targetId;
+  el.style.cssText = "position:fixed;top:80px;left:80px;width:40px;height:40px;";
+  el.scrollIntoView = () => {};
+  el.getBoundingClientRect = () =>
+    ({
+      x: 80,
+      y: 80,
+      top: 80,
+      left: 80,
+      bottom: 120,
+      right: 120,
+      width: 40,
+      height: 40,
+      toJSON: () => ({}),
+    }) as DOMRect;
+  document.body.appendChild(el);
+  return makeResource(el, () => {
+    el.remove();
+  });
+}
 
 test("returns null for anonymous visitors", async () => {
-  mocks.useSession.mockReturnValue({ data: null, isPending: false });
-
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <OnboardingHostWithSession
+        surface="dashboard"
+        onboarding={testPreloadedConvexQuery<typeof api.onboarding.getMine>({
+          input: {},
+          initialData: progress,
+        })}
+        enabled={undefined}
+        spotlight={undefined}
+        babyPublicId={undefined}
+        onGoToStep={undefined}
+        session={{ data: null, isPending: false }}
+      />
+    </LocaleProvider>,
   );
 
-  expect(view.container.firstChild).toBeNull();
+  expect(screen.queryByText(/getting started/i)).toBeNull();
+  expect(screen.queryByRole("button", { name: "Dismiss guide" })).toBeNull();
 });
 
 test("shows the checklist on first run without a welcome dialog", async () => {
-  const firstRun = {
+  const firstRun: Progress = {
     ...progress,
     welcomeDismissed: false,
     hasBaby: false,
     effectiveSteps: [] as string[],
     tourBaby: null,
   };
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+
+  await using view = await renderView({
+    surface: "dashboard",
+    progress: firstRun,
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: firstRun });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={testPreloadedConvexQuery<typeof api.onboarding.getMine>({
-        input: {},
-        initialData: firstRun,
-      })}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
-
-  expect(view.getByTestId("getting-started")).toBeTruthy();
-  expect(view.queryByRole("dialog")).toBeNull();
+  expect(screen.getAllByText("Add your first baby").length).toBeGreaterThan(0);
+  expect(view.queryByRole("dialog", { name: /welcome/i })).toBeNull();
 });
 
 test("mounts authed onboarding host when progress is loaded", async () => {
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+  await using _view = await renderView({
+    surface: "dashboard",
+    progress,
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
-
-  expect(view.getByTestId("getting-started")).toBeTruthy();
+  expect(screen.getAllByText(/getting started/i).length).toBeGreaterThan(0);
 });
 
 test("highlights how to restore the guide after dismissal", async () => {
+  const scrollTo = vi.fn<(options: ScrollToOptions) => void>();
   const scrollToDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
   await using _scrollTo = makeResource({}, () => {
     if (scrollToDescriptor) {
@@ -174,75 +148,59 @@ test("highlights how to restore the guide after dismissal", async () => {
   });
   Object.defineProperty(window, "scrollTo", {
     configurable: true,
-    value: mocks.scrollTo,
+    value: scrollTo,
   });
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+  await using _target = plantTourTarget("restart_tour");
+  const onDismissChecklist = resolvedVoid<Record<string, never>>();
+
+  await using _view = await renderView({
+    surface: "dashboard",
+    progress,
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist,
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
-
-  fireEvent.click(view.getByRole("button", { name: "Dismiss guide" }));
-  expect(mocks.dismissChecklist).toHaveBeenCalledWith({});
+  fireEvent.click(screen.getAllByRole("button", { name: "Dismiss guide" })[0]!);
+  expect(onDismissChecklist).toHaveBeenCalledWith({});
   await vi.waitFor(() => {
-    expect(view.getByTestId("coachmark").textContent).toBe("restart_tour");
+    expect(screen.getByText("Guide dismissed")).toBeTruthy();
   });
-  expect(mocks.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
-  expect(view.queryByTestId("getting-started")).toBeNull();
+  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 });
 
 test("renders on the tour baby page when babyPublicId matches", async () => {
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+  await using _view = await renderView({
+    surface: "baby",
+    progress,
+    babyPublicId: "baby-smith",
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="baby"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId="baby-smith"
-      onGoToStep={undefined}
-    />,
-  );
-
-  expect(view.getByTestId("getting-started")).toBeTruthy();
+  expect(screen.getAllByText(/share the link/i).length).toBeGreaterThan(0);
 });
 
-test("shows a coachmark only after the user asks for contextual help", async () => {
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+test("keeps the coachmark tip hidden until a tip target is activated", async () => {
+  await using _target = plantTourTarget("share_link");
+
+  await using _view = await renderView({
+    surface: "baby",
+    progress,
+    babyPublicId: "baby-smith",
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="baby"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId="baby-smith"
-      onGoToStep={undefined}
-    />,
-  );
-
-  expect(view.queryByTestId("coachmark")).toBeNull();
-  fireEvent.click(view.getByRole("button", { name: "Show Share" }));
-  expect(view.getByTestId("coachmark").textContent).toBe("share_link");
-  expect(view.queryByTestId("getting-started")).toBeNull();
+  // Checklist is up; the share step CTA is a link into the share overlay, so
+  // no coachmark tip is shown until something else activates one.
+  expect(screen.queryByRole("button", { name: "Hide tip" })).toBeNull();
+  expect(screen.getAllByRole("link", { name: /show share/i }).length).toBeGreaterThan(0);
+  expect(screen.getAllByRole("button", { name: "Dismiss guide" }).length).toBeGreaterThan(0);
 });

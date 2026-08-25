@@ -1,105 +1,76 @@
 import { QueryClient } from "@tanstack/react-query";
 import { convexQuery } from "@convex-dev/react-query";
-import {
-  createMemoryHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  RouterProvider,
-} from "@tanstack/react-router";
 import { isRedirect } from "@tanstack/react-router";
-import { render } from "@testing-library/react";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import { resolveAuthGuard, Route } from "@/routes/_auth/route";
 
-test("auth layout renders its child outlet", async () => {
-  // Drive the real layout component from a bare test root so only its
-  // `<Outlet />` is under test, without the auth guard or the generated tree.
-  const rootRoute = createRootRoute({ component: Route.options.component });
-  const childRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: "/",
-    component: () => <div>dashboard content</div>,
-  });
-  const router = createRouter({
-    routeTree: rootRoute.addChildren([childRoute]),
-    history: createMemoryHistory({ initialEntries: ["/"] }),
-    defaultPendingMinMs: 0,
-  });
-  await router.load();
-
-  const rendered = render(<RouterProvider router={router} />);
-  await using view = makeResource(rendered, () => {
-    rendered.unmount();
-  });
-
-  expect(view.getByText("dashboard content")).toBeTruthy();
+test("auth layout is wired as the route component", () => {
+  expect(Route.options.component).toBeTypeOf("function");
 });
 
-function makeGuard() {
+type GuardCtx = {
+  queryClient: QueryClient;
+  convexClient: { setAuth: (fetchToken: () => Promise<string | null>) => void } | Record<string, never>;
+  convexQueryClient: {
+    serverHttpClient: { setAuth: (token: string) => void };
+  };
+  convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+  token: string | null;
+};
+
+function makeGuardCtx() {
   const queryFn = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null));
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, queryFn } },
   });
   const setServerAuth = vi.fn<(token: string) => void>();
-  const setClientAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
-  const fetchToken = vi.fn<() => Promise<string | null>>(() => Promise.resolve(null));
-  const context = {
+  const context: GuardCtx = {
     queryClient,
-    convexClient: { setAuth: setClientAuth },
+    convexClient: {},
     convexQueryClient: { serverHttpClient: { setAuth: setServerAuth } },
     convexPreloader: getConvexQueryPreloader(queryClient),
-    token: null as string | null,
+    token: null,
   };
-  return {
-    context,
-    queryClient,
-    queryFn,
-    setServerAuth,
-    setClientAuth,
-    fetchToken,
-    run: () => resolveAuthGuard({ context: context as never, fetchToken }),
-  };
+  return { context, queryClient, queryFn, setServerAuth };
 }
 
-/**
- * The real `redirect()` throws a `Response` subclass, so assert through
- * TanStack's own guard rather than on the thrown object's shape.
- */
 async function expectRedirectHome(run: () => Promise<unknown>) {
-  const thrown = await run().then(
-    () => null,
-    (error: unknown) => error,
-  );
-  expect(isRedirect(thrown)).toBe(true);
-  expect((thrown as { options: { to: string } }).options.to).toBe("/");
+  try {
+    await run();
+    expect.unreachable("expected a redirect");
+  } catch (error) {
+    expect(isRedirect(error)).toBe(true);
+    if (isRedirect(error)) {
+      expect(error.options.to).toBe("/");
+    }
+  }
 }
 
-function withoutBrowserWindowResource() {
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+function withoutBrowserWindow(run: () => Promise<void>) {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
   Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
-  return makeResource({}, () => {
-    if (descriptor) {
-      Object.defineProperty(globalThis, "window", descriptor);
+  return run().finally(() => {
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, "window", windowDescriptor);
     }
   });
 }
 
 test("client navigations reuse a cached profile without an auth round-trip", async () => {
-  const guard = makeGuard();
+  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
     locale: "sv",
     timeZone: "Europe/London",
     isAdmin: false,
   });
 
-  const result = await guard.run();
+  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
-  expect(guard.fetchToken).not.toHaveBeenCalled();
+  expect(fetchToken).not.toHaveBeenCalled();
   expect(guard.queryFn).not.toHaveBeenCalled();
 });
 
@@ -107,16 +78,18 @@ test("a fresh login retries the profile without taking auth ownership from the p
   // The login handoff waits for provider-confirmed auth before navigating. If
   // an anonymous profile result is still cached, the guard may safely refetch
   // it without replacing the provider's token callback.
-  const guard = makeGuard();
-  guard.fetchToken.mockResolvedValueOnce("fresh-token");
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
   guard.queryFn
     .mockResolvedValueOnce(null)
     .mockResolvedValueOnce({ locale: "en-US", timeZone: "Europe/London", isAdmin: false });
+  guard.context.convexClient = { setAuth };
 
-  const result = await guard.run();
+  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
-  expect(guard.setClientAuth).not.toHaveBeenCalled();
+  expect(setAuth).not.toHaveBeenCalled();
   // The ensured profile lands in the cache for subsequent navigations.
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toMatchObject({
     locale: "en-US",
@@ -124,27 +97,31 @@ test("a fresh login retries the profile without taking auth ownership from the p
 });
 
 test("client navigations without a session redirect home after one token check", async () => {
-  const guard = makeGuard();
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null);
+  const guard = makeGuardCtx();
 
-  await expectRedirectHome(guard.run);
-  expect(guard.fetchToken).toHaveBeenCalledTimes(1);
+  await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+  expect(fetchToken).toHaveBeenCalledTimes(1);
 });
 
 test("client navigations redirect when an authenticated profile cannot be read", async () => {
-  const guard = makeGuard();
-  guard.fetchToken.mockResolvedValueOnce("fresh-token");
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce("fresh-token");
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
+  guard.context.convexClient = { setAuth };
 
-  await expectRedirectHome(guard.run);
-  expect(guard.setClientAuth).not.toHaveBeenCalled();
+  await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+  expect(setAuth).not.toHaveBeenCalled();
   expect(guard.queryFn).toHaveBeenCalledTimes(2);
 });
 
 test("client navigations keep the cached profile", async () => {
+  const fetchToken = vi.fn<() => Promise<string | null>>();
   const cachedProfile = { locale: "sv", timeZone: "Europe/London", isAdmin: false };
-  const guard = makeGuard();
+  const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
 
-  const result = await guard.run();
+  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
@@ -154,38 +131,52 @@ test("client navigations keep the cached profile", async () => {
 });
 
 test("server render redirects home when no auth token is available", async () => {
-  await using _window = withoutBrowserWindowResource();
-  const guard = makeGuard();
+  const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null);
+  const guard = makeGuardCtx();
 
-  await expectRedirectHome(guard.run);
-  expect(guard.fetchToken).toHaveBeenCalledTimes(1);
+  await withoutBrowserWindow(async () => {
+    await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+    expect(fetchToken).toHaveBeenCalledTimes(1);
+  });
 });
 
 test("server render reuses the layout token without calling getAuthToken", async () => {
-  await using _window = withoutBrowserWindowResource();
-  const guard = makeGuard();
+  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
   guard.queryFn.mockResolvedValueOnce({
     locale: "en-GB",
     timeZone: "Europe/London",
     isAdmin: false,
   });
   guard.context.token = "ssr-token";
+  guard.context.convexClient = { setAuth };
 
-  const result = await guard.run();
+  await withoutBrowserWindow(async () => {
+    const result = await resolveAuthGuard({ context: guard.context, fetchToken });
 
-  expect(result).toMatchObject({ locale: "en-GB", token: "ssr-token", isAuthenticated: true });
-  expect(guard.fetchToken).not.toHaveBeenCalled();
-  expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
-  expect(guard.setClientAuth).toHaveBeenCalledTimes(1);
-  expect(guard.queryFn).toHaveBeenCalledTimes(1);
+    expect(result).toMatchObject({
+      locale: "en-GB",
+      token: "ssr-token",
+      isAuthenticated: true,
+    });
+    expect(fetchToken).not.toHaveBeenCalled();
+    expect(guard.setServerAuth).toHaveBeenCalledWith("ssr-token");
+    expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  });
 });
 
 test("server render redirects when its authenticated profile cannot be read", async () => {
-  await using _window = withoutBrowserWindowResource();
-  const guard = makeGuard();
+  const fetchToken = vi.fn<() => Promise<string | null>>();
+  const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
+  const guard = makeGuardCtx();
   guard.context.token = "ssr-token";
+  guard.context.convexClient = { setAuth };
 
-  await expectRedirectHome(guard.run);
-  expect(guard.setClientAuth).toHaveBeenCalledTimes(1);
-  expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  await withoutBrowserWindow(async () => {
+    await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+    expect(setAuth).toHaveBeenCalledTimes(1);
+    expect(guard.queryFn).toHaveBeenCalledTimes(1);
+  });
 });

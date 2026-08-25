@@ -12,11 +12,12 @@ const profileKey = convexQuery(api.profile.get, {}).queryKey;
 
 function makeAuthClient() {
   const listeners: SessionListener[] = [];
-  const token = vi.fn<
-    (opts: {
-      fetchOptions: { throw: boolean };
-    }) => Promise<{ data: { token: string } | null } | null>
-  >();
+  const token =
+    vi.fn<
+      (opts: {
+        fetchOptions: { throw: boolean };
+      }) => Promise<{ data: { token: string } | null } | null>
+    >();
   const authClient: ConvexAuthClient = {
     convex: { token },
     $store: {

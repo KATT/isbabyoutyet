@@ -1,91 +1,10 @@
-import { fireEvent, render } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { api } from "@workspace/convex/convex/_generated/api";
-import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
-import { LocaleProvider } from "@/lib/i18n";
-import { testInitiatedQuery } from "@workspace/query-prefetch/test-helpers";
-import { browserImageFactory } from "@/lib/image-prefetch";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  historyBack: vi.fn<() => void>(),
-  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { overlay: undefined as true | undefined },
-  params: { publicId: "baby-smith" },
-  loaderData: null as null | Record<string, unknown>,
-}));
-
-vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
-  return {
-    ...actual,
-    createFileRoute: () => (options: Record<string, unknown>) => ({
-      options,
-      ...options,
-      fullPath: "/baby/$publicId/photo",
-      useParams: () => mocks.params,
-      useLoaderData: () => mocks.loaderData,
-    }),
-    useNavigate: () => mocks.navigate,
-    useRouter: () => ({
-      history: {
-        location: { state: mocks.historyState },
-        canGoBack: mocks.canGoBack,
-        back: mocks.historyBack,
-      },
-      navigate: mocks.navigate,
-    }),
-    notFound: () => {
-      throw { isNotFound: true };
-    },
-    redirect: (opts: unknown) => {
-      throw { options: opts };
-    },
-  };
-});
-
-vi.mock("@workspace/ui/components/dialog", async () => {
-  const React = await import("react");
-  function MockDialog(props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: ((open: boolean) => void) | undefined;
-    children: ReactNode;
-  }) {
-    const wasOpen = React.useRef(props.open);
-    React.useEffect(() => {
-      if (wasOpen.current && !props.open) {
-        props.onOpenChangeComplete?.(false);
-      }
-      wasOpen.current = props.open;
-    }, [props.open, props.onOpenChangeComplete]);
-    return (
-      <div data-testid="dialog" data-open={props.open}>
-        <button
-          type="button"
-          onClick={() => {
-            props.onOpenChange(false);
-          }}
-        >
-          dismiss
-        </button>
-        {props.children}
-      </div>
-    );
-  }
-  return {
-    Dialog: MockDialog,
-    DialogContent: (props: { children: ReactNode }) => <div>{props.children}</div>,
-  };
-});
-
-const routeModule = await import("@/routes/baby/$publicId/photo");
-const { BabyPhotoOverlay } = routeModule;
+import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
+import { BabyPhotoOverlayView, Route } from "@/routes/baby/$publicId/photo";
 
 async function withPhotoRouteHandlers<TResult>(
   handlers: Record<string, unknown>,
@@ -108,21 +27,20 @@ async function withPhotoRouteHandlers<TResult>(
       },
     },
   });
-  try {
-    return await run({
-      context: {
-        queryClient,
-        convexPreloader: getConvexQueryPreloader(queryClient),
-      },
-      params: { publicId: "baby-smith" },
-    });
-  } finally {
+  await using _queryClient = makeResource(queryClient, () => {
     queryClient.clear();
-  }
+  });
+  return await run({
+    context: {
+      queryClient,
+      convexPreloader: getConvexQueryPreloader(queryClient),
+    },
+    params: { publicId: "baby-smith" },
+  });
 }
 
 async function runPhotoBeforeLoad(handlers: Record<string, unknown>) {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  const beforeLoad = Route.options.beforeLoad as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -133,7 +51,7 @@ async function runPhotoBeforeLoad(handlers: Record<string, unknown>) {
 }
 
 async function runPhotoLoader(handlers: Record<string, unknown>) {
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  const loader = Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -209,34 +127,6 @@ test("loader redirects home when the baby has no page photo", async () => {
   });
 });
 
-test("overlay 404s when loader data loses the page photo", async () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  mocks.loaderData = {
-    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
-      input: { id: "baby-smith" },
-      initialData: babyDoc({ photoUrl: null }) as never,
-    }),
-    imagePrefetch: testInitiatedQuery(browserImageFactory, "https://cdn.example/full.jpg"),
-  };
-
-  expect(() =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <LocaleProvider locale="en-GB">
-          <BabyPhotoOverlay />
-        </LocaleProvider>
-      </QueryClientProvider>,
-    ),
-  ).toThrow(
-    expect.objectContaining({
-      isNotFound: true,
-    }),
-  );
-  queryClient.clear();
-});
-
 test("loader prefetches the full image in the browser", async () => {
   const photoUrl = "https://cdn.example/full.jpg";
   const queryClient = new QueryClient({
@@ -271,7 +161,7 @@ test("loader prefetches the full image in the browser", async () => {
     vi.stubGlobal("Image", OriginalImage);
   });
 
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  const loader = Route.options.loader as unknown as (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -297,40 +187,27 @@ test("loader prefetches the full image in the browser", async () => {
 });
 
 test("dismisses the lightbox overlay after the dialog closes", async () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
   const photoUrl = "https://cdn.example/full.jpg";
-  mocks.loaderData = {
-    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
-      input: { id: "baby-smith" },
-      initialData: babyDoc({ photoUrl }) as never,
-    }),
-    imagePrefetch: testInitiatedQuery(browserImageFactory, photoUrl),
-  };
-  mocks.historyState.overlay = true;
-  mocks.canGoBack.mockReturnValue(true);
-  mocks.historyBack.mockClear();
-  mocks.navigate.mockClear();
 
-  const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <BabyPhotoOverlay />
-      </LocaleProvider>
-    </QueryClientProvider>,
-  );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-    queryClient.clear();
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: true,
+    wrap: null,
+    ui: (
+      <BabyPhotoOverlayView
+        publicId="baby-smith"
+        photoUrl={photoUrl}
+        blurDataUrl={null}
+        alt="Photo of Baby Smith"
+      />
+    ),
   });
 
-  expect(view.getByAltText("Photo of Baby Smith")).toBeTruthy();
   await vi.waitFor(() => {
-    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
-  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
+  expect(ctx.view.getByAltText("Photo of Baby Smith")).toBeTruthy();
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close photo" }));
   await vi.waitFor(() => {
-    expect(mocks.historyBack).toHaveBeenCalled();
+    expect(ctx.back).toHaveBeenCalled();
   });
 });

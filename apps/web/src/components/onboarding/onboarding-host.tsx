@@ -1,4 +1,5 @@
 import { useMutation } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useEffect, useState } from "react";
@@ -9,6 +10,13 @@ import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
 import { Coachmark } from "./coachmark";
 import { ONBOARDING_STEPS } from "./steps";
+
+type OnboardingProgress = FunctionReturnType<typeof api.onboarding.getMine>;
+
+type OnboardingSession = {
+  data: { user: { id: string } } | null;
+  isPending: boolean;
+};
 
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
@@ -27,7 +35,7 @@ type OnboardingHostProps = {
 
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement)) {
+  if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
     return;
   }
   el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
@@ -41,11 +49,30 @@ function scrollToTourTarget(targetId: string) {
  * anonymous visitors never suspend on `onboarding.getMine`.
  */
 export function OnboardingHost(props: OnboardingHostProps) {
-  const enabled = props.enabled !== false;
   const session = authClient.useSession();
-  const isAuthed = !!session.data?.user;
+  return (
+    <OnboardingHostWithSession
+      {...props}
+      session={{
+        data: session.data?.user ? { user: { id: session.data.user.id } } : null,
+        isPending: session.isPending,
+      }}
+    />
+  );
+}
 
-  if (!enabled || !isAuthed || session.isPending) {
+/**
+ * Session-injected gate used by tests. Production goes through {@link OnboardingHost}.
+ *
+ * @internal exported for tests
+ */
+export function OnboardingHostWithSession(
+  props: OnboardingHostProps & { session: OnboardingSession },
+) {
+  const enabled = props.enabled !== false;
+  const isAuthed = !!props.session.data?.user;
+
+  if (!enabled || !isAuthed || props.session.isPending) {
     return null;
   }
 
@@ -53,13 +80,46 @@ export function OnboardingHost(props: OnboardingHostProps) {
 }
 
 function OnboardingHostAuthed(props: OnboardingHostProps) {
-  const { t } = useI18n();
-  const spotlight = props.spotlight !== false;
   const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
-  const progress = progressQuery.data;
   const setMinimized = useMutation(api.onboarding.setMinimized);
   const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
   const completeStep = useMutation(api.onboarding.completeStep);
+
+  return (
+    <OnboardingHostView
+      surface={props.surface}
+      progress={progressQuery.data}
+      spotlight={props.spotlight}
+      babyPublicId={props.babyPublicId}
+      onGoToStep={props.onGoToStep}
+      onSetMinimized={setMinimized}
+      onDismissChecklist={dismissChecklist}
+      onCompleteStep={completeStep}
+    />
+  );
+}
+
+type OnboardingHostViewProps = {
+  surface: "dashboard" | "baby";
+  progress: OnboardingProgress;
+  spotlight: boolean | undefined;
+  babyPublicId: string | undefined;
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
+  onSetMinimized: (args: { minimized: boolean }) => Promise<unknown>;
+  onDismissChecklist: (args: Record<string, never>) => Promise<unknown>;
+  onCompleteStep: (args: { stepId: OnboardingStepId }) => Promise<unknown>;
+};
+
+/**
+ * Presentational onboarding host. Takes progress + mutation callbacks so tests
+ * can drive the checklist without auth or a Convex provider.
+ *
+ * @internal exported for tests
+ */
+export function OnboardingHostView(props: OnboardingHostViewProps) {
+  const { t } = useI18n();
+  const spotlight = props.spotlight !== false;
+  const progress = props.progress;
 
   const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
   const [restartHintVisible, setRestartHintVisible] = useState(false);
@@ -68,10 +128,10 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   useEffect(() => {
     if (!progress.allDone || progress.checklistDismissed) return;
     const timeout = window.setTimeout(() => {
-      void dismissChecklist({});
+      void props.onDismissChecklist({});
     }, 4000);
     return () => window.clearTimeout(timeout);
-  }, [progress.allDone, progress.checklistDismissed, dismissChecklist]);
+  }, [progress.allDone, progress.checklistDismissed, props.onDismissChecklist]);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 
@@ -103,11 +163,11 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           effectiveSteps={progress.effectiveSteps}
           minimized={progress.minimized}
           onMinimize={(minimized) => {
-            void setMinimized({ minimized });
+            void props.onSetMinimized({ minimized });
           }}
           onDismiss={() => {
             void (async () => {
-              await dismissChecklist({});
+              await props.onDismissChecklist({});
               if (props.surface === "dashboard") {
                 window.scrollTo({ top: 0, behavior: "auto" });
                 setRestartHintVisible(true);
@@ -115,7 +175,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             })();
           }}
           onAcknowledgeStep={(stepId) => {
-            void completeStep({ stepId });
+            void props.onCompleteStep({ stepId });
           }}
           onGoToStep={(stepId) => {
             if (stepId === "post_update") {
@@ -124,7 +184,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             }
             if (stepId === "explore_settings") {
               props.onGoToStep?.(stepId);
-              void completeStep({ stepId });
+              void props.onCompleteStep({ stepId });
               return;
             }
             const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
@@ -146,7 +206,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           description={coachmarkDescription}
           completeOnDismiss={nextStep.id === "learn_encouragements"}
           onComplete={() => {
-            void completeStep({ stepId: nextStep.id });
+            void props.onCompleteStep({ stepId: nextStep.id });
           }}
           onDismiss={() => setActiveCoachmarkStepId(null)}
         />

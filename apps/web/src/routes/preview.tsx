@@ -11,6 +11,8 @@ import {
 } from "@workspace/convex/src/types";
 import { getThemeCss } from "@/components/baby/utils";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import type { NavigateOptions } from "@tanstack/react-router";
+import type { ComponentProps, ReactNode } from "react";
 import { z } from "zod";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
@@ -41,6 +43,7 @@ function getDefaultBabyData(): PreviewBabyData {
     photoId: null,
   };
 }
+
 const searchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().nullable().optional(),
@@ -58,6 +61,8 @@ const searchSchema = z.object({
     .optional(),
   settings: z.boolean().optional(),
 });
+
+export type PreviewSearch = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
@@ -85,10 +90,22 @@ export const Route = createFileRoute("/preview")({
   }),
 });
 
-export function PreviewPage() {
+type SettingsPanelProps = ComponentProps<typeof SettingsPanel>;
+
+export type PreviewPageViewProps = {
+  search: PreviewSearch;
+  navigate: (opts: NavigateOptions) => unknown;
+  /** Injected so tests can stub SettingsPanel without `vi.mock`. */
+  renderSettingsPanel: (props: SettingsPanelProps) => ReactNode;
+};
+
+/**
+ * Presentational preview page. Search + navigate are props so tests drive the
+ * URL seam without mocking `createFileRoute` / `useNavigate`.
+ */
+export function PreviewPageView(props: PreviewPageViewProps) {
   const { t, locale } = useI18n();
-  const search = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const search = props.search;
   const birthJourney = search.birthJourney ?? "labor";
 
   const baby: PreviewBabyData = {
@@ -116,11 +133,11 @@ export function PreviewPage() {
   return (
     <div>
       {themeCss ? <style dangerouslySetInnerHTML={{ __html: themeCss }} /> : null}
-      <SettingsPanel
-        baby={baby}
-        birthJourney={birthJourney}
-        onUpdate={(update) => {
-          navigate({
+      {props.renderSettingsPanel({
+        baby,
+        birthJourney,
+        onUpdate: (update) => {
+          props.navigate({
             search: {
               ...search,
               ...update,
@@ -128,9 +145,9 @@ export function PreviewPage() {
             replace: true,
             resetScroll: false,
           });
-        }}
-        onMilestoneRedate={(milestone, occurredAt) => {
-          void navigate({
+        },
+        onMilestoneRedate: (milestone, occurredAt) => {
+          void props.navigate({
             search: {
               ...search,
               [MILESTONE_FIELDS[milestone].date]: occurredAt,
@@ -138,9 +155,9 @@ export function PreviewPage() {
             replace: true,
             resetScroll: false,
           });
-        }}
-        onMilestoneRemove={(milestone) => {
-          void navigate({
+        },
+        onMilestoneRemove: (milestone) => {
+          void props.navigate({
             search: {
               ...search,
               [MILESTONE_FIELDS[milestone].date]: null,
@@ -148,10 +165,10 @@ export function PreviewPage() {
             replace: true,
             resetScroll: false,
           });
-        }}
-        open={!!search.settings}
-        onOpenChange={(open) => {
-          void navigate({
+        },
+        open: !!search.settings,
+        onOpenChange: (open) => {
+          void props.navigate({
             search: {
               ...search,
               settings: open || undefined,
@@ -159,12 +176,12 @@ export function PreviewPage() {
             replace: true,
             resetScroll: false,
           });
-        }}
-        onOpenChangeComplete={null}
-        profileLocale={locale}
-        onDelete={null}
-        coParents={null}
-      />
+        },
+        onOpenChangeComplete: null,
+        profileLocale: locale,
+        onDelete: null,
+        coParents: null,
+      })}
 
       <div className="min-h-screen bg-background bg-dots">
         <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
@@ -231,5 +248,18 @@ export function PreviewPage() {
         </footer>
       </div>
     </div>
+  );
+}
+
+export function PreviewPage() {
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  return (
+    <PreviewPageView
+      search={search}
+      navigate={navigate}
+      renderSettingsPanel={(panelProps) => <SettingsPanel {...panelProps} />}
+    />
   );
 }

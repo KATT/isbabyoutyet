@@ -53,6 +53,16 @@ function languageRequestSchema(t: TranslationFunction) {
     .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
 }
 
+type UpdateLocaleHandler = (
+  args: FunctionArgs<typeof api.profile.updateLocale>,
+) => Promise<unknown>;
+type UpdateTimeZoneHandler = (
+  args: FunctionArgs<typeof api.profile.updateTimeZone>,
+) => Promise<unknown>;
+type RequestLanguageHandler = (
+  args: FunctionArgs<typeof api.profile.requestLanguage>,
+) => Promise<unknown>;
+
 function LanguageRequestForm(props: {
   onSaved: () => void;
   onRequestLanguage: RequestLanguageHandler;
@@ -115,16 +125,6 @@ const defaultTimeZoneOption = {
   label: formatTimeZoneLabel(DEFAULT_TIME_ZONE),
   value: DEFAULT_TIME_ZONE,
 };
-
-type UpdateLocaleHandler = (
-  args: FunctionArgs<typeof api.profile.updateLocale>,
-) => Promise<unknown>;
-type UpdateTimeZoneHandler = (
-  args: FunctionArgs<typeof api.profile.updateTimeZone>,
-) => Promise<unknown>;
-type RequestLanguageHandler = (
-  args: FunctionArgs<typeof api.profile.requestLanguage>,
-) => Promise<unknown>;
 
 export function LanguageSettings(props: {
   profile:

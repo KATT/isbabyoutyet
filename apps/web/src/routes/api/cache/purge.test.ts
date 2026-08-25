@@ -47,8 +47,7 @@ test("deletes matching Vercel cache tags in the foreground", async () => {
   );
 
   expect(response.status).toBe(200);
-  expect(deleteByTag).toHaveBeenCalledWith(
-    ["baby-id:123", "baby-public-id:baby-smith"],
-    { revalidationDeadlineSeconds: 0 },
-  );
+  expect(deleteByTag).toHaveBeenCalledWith(["baby-id:123", "baby-public-id:baby-smith"], {
+    revalidationDeadlineSeconds: 0,
+  });
 });

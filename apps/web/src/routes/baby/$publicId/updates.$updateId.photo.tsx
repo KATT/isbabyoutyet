@@ -53,6 +53,31 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
   component: BabyUpdatePhotoOverlay,
 });
 
+export type BabyUpdatePhotoOverlayViewProps = {
+  publicId: string;
+  updateId: string;
+  photoUrl: string;
+  blurDataUrl: string | null;
+  alt: string;
+};
+
+/** Presentational update-photo lightbox; overlay-nav is the only router dependency. */
+export function BabyUpdatePhotoOverlayView(props: BabyUpdatePhotoOverlayViewProps) {
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
+
+  return (
+    <PhotoLightbox
+      photoUrl={props.photoUrl}
+      blurDataUrl={props.blurDataUrl}
+      alt={props.alt}
+      overlay={photo}
+    />
+  );
+}
+
 export function BabyUpdatePhotoOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
@@ -62,17 +87,14 @@ export function BabyUpdatePhotoOverlay() {
   if (!updatePhoto) {
     throw notFound();
   }
-  const photo = useBabyUpdatePhotoOverlayNav({
-    publicId: params.publicId,
-    updateId: params.updateId,
-  });
 
   return (
-    <PhotoLightbox
+    <BabyUpdatePhotoOverlayView
+      publicId={params.publicId}
+      updateId={params.updateId}
       photoUrl={updatePhoto.photoUrl}
       blurDataUrl={updatePhoto.blurDataUrl}
       alt={t("Photo of {{name}}", { name: updatePhoto.babyName })}
-      overlay={photo}
     />
   );
 }
