@@ -58,9 +58,6 @@ export async function renderMountedFileRoute(opts: {
   const convexClient = new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,
   });
-  await using _convexClient = makeAsyncResource(convexClient, async () => {
-    await convexClient.close();
-  });
 
   const context = {
     queryClient,
@@ -101,9 +98,12 @@ export async function renderMountedFileRoute(opts: {
   await router.load();
 
   const view = render(<RouterProvider router={router} />);
-  return makeResource({ view, router, queryClient }, () => {
+  // Keep the Convex client open for the lifetime of the mounted route; close
+  // it when the caller disposes the returned resource.
+  return makeAsyncResource({ view, router, queryClient }, async () => {
     view.unmount();
     queryClient.clear();
+    await convexClient.close();
   });
 }
 
@@ -115,7 +115,8 @@ export function stubBrowserImageResource() {
     addEventListener(type: string, listener: () => void) {
       if (type === "load") this.#load = listener;
     }
-    set src(_value: string) {
+    set src(value: string) {
+      void value;
       queueMicrotask(() => {
         this.#load?.();
       });

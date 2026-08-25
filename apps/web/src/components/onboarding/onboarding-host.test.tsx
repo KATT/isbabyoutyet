@@ -273,7 +273,6 @@ test("checklist CTAs complete steps and open baby overlays", async () => {
   expect(onSetMinimized).toHaveBeenCalledWith({ minimized: true });
 });
 
-
 test("authed onboarding host wires Convex mutations into the view", async () => {
   const client = new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,
@@ -320,9 +319,9 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
     await client.close();
   });
 
-  let completeStep: unknown = null;
+  const holder: { completeStep: unknown } = { completeStep: null };
   function Probe() {
-    completeStep = useCompleteOnboardingStep();
+    holder.completeStep = useCompleteOnboardingStep();
     return null;
   }
 
@@ -335,5 +334,5 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
     view.unmount();
   });
 
-  expect(typeof completeStep).toBe("function");
+  expect(typeof holder.completeStep).toBe("function");
 });

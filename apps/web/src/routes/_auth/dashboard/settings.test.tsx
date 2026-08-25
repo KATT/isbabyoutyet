@@ -75,7 +75,6 @@ test("settings sheet omits the admin link for non-admins", async () => {
   expect(view.queryByRole("heading", { name: /Your babies/ })).toBeNull();
 });
 
-
 test("DashboardSettingsSheet wires the preloaded profile into the view", async () => {
   const client = new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,
@@ -136,19 +135,12 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
     queryClient.clear();
   });
 
-  const signOut = vi.fn(async (opts: {
-    fetchOptions:
-      | {
-          onSuccess: ((ctx: unknown) => void) | undefined;
-          onError: ((error: { error: { message: string } }) => void) | undefined;
-        }
-      | undefined;
-  }) => {
-    opts.fetchOptions?.onSuccess?.({});
-    return { data: null, error: null };
+  const signOut = vi.fn<typeof settingsAuthAdapter.signOut>(async (opts) => {
+    opts?.fetchOptions?.onSuccess?.({} as never);
+    return { data: null, error: null } as never;
   });
   const originalSignOut = settingsAuthAdapter.signOut;
-  settingsAuthAdapter.signOut = signOut as typeof settingsAuthAdapter.signOut;
+  settingsAuthAdapter.signOut = signOut;
   await using _adapter = makeResource({}, () => {
     settingsAuthAdapter.signOut = originalSignOut;
   });
