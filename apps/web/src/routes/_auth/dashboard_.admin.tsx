@@ -78,6 +78,11 @@ type UserRow = {
   email: string;
   name: string;
   createdAt: number;
+  babies: Array<{
+    name: string;
+    publicId: string;
+    demo: boolean;
+  }>;
 };
 
 export const Route = createFileRoute("/_auth/dashboard_/admin")({
@@ -325,6 +330,7 @@ export function UsersSection(props: {
           <TableRow>
             <TableHead>{t("Name")}</TableHead>
             <TableHead>{t("Email")}</TableHead>
+            <TableHead>{t("Babies")}</TableHead>
             <TableHead>{t("Signed up")}</TableHead>
           </TableRow>
         </TableHeader>
@@ -333,6 +339,25 @@ export function UsersSection(props: {
             <TableRow key={user._id}>
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
+              <TableCell className="max-w-xs whitespace-normal">
+                {user.babies.length === 0 ? (
+                  <span className="text-muted-foreground">—</span>
+                ) : (
+                  user.babies.map((baby, index) => (
+                    <span key={baby.publicId}>
+                      {index > 0 ? ", " : null}
+                      <Link
+                        to="/baby/$publicId"
+                        params={{ publicId: baby.publicId }}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {baby.name}
+                      </Link>
+                      {baby.demo ? ` (${t("Demo")})` : null}
+                    </span>
+                  ))
+                )}
+              </TableCell>
               <TableCell>{formatWhen(user.createdAt, locale)}</TableCell>
             </TableRow>
           ))}
