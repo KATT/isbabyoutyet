@@ -1,5 +1,10 @@
-import { useEffect } from "react";
-import { useQueryClient, type InfiniteData, type QueryKey } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import {
+  replaceEqualDeep,
+  useQueryClient,
+  type InfiniteData,
+  type QueryKey,
+} from "@tanstack/react-query";
 import { useConvex } from "convex/react";
 import {
   getFunctionName,
@@ -12,6 +17,12 @@ type LivePage = {
   page: unknown[];
   isDone: boolean;
   continueCursor: string;
+};
+
+type LivePagesSnapshot = {
+  queryKey: QueryKey;
+  args: Record<string, unknown>;
+  pageParams: PaginationOptions[];
 };
 
 /**
@@ -28,23 +39,38 @@ export function useLiveConvexInfinitePages(opts: {
 }) {
   const queryClient = useQueryClient();
   const convex = useConvex();
-  // Serialize every identity-unstable input so the effect resubscribes only
-  // when contents change: callers rebuild `args`/`pageParams`/`queryKey` each
-  // render, and `funcRef` from the generated `api` proxy is a new object per
-  // property access. `getFunctionName` gives a stable string for the same
-  // function; `makeFunctionReference` rebuilds an equivalent ref inside.
-  const pageParamsKey = JSON.stringify(opts.pageParams);
-  const argsKey = JSON.stringify(opts.args);
-  const queryKeyKey = JSON.stringify(opts.queryKey);
+  // Callers rebuild `args`/`pageParams`/`queryKey` each render, and `funcRef`
+  // from the generated `api` proxy is a new object per property access.
+  // `replaceEqualDeep` keeps the previous identity when contents match so the
+  // effect resubscribes only on real changes (no JSON stringify/parse).
+  // `getFunctionName` / `makeFunctionReference` stabilize the function ref.
   const funcName = getFunctionName(opts.funcRef);
+  const [snapshot, setSnapshot] = useState<LivePagesSnapshot>(() => ({
+    queryKey: opts.queryKey,
+    args: opts.args,
+    pageParams: opts.pageParams,
+  }));
+  const nextQueryKey = replaceEqualDeep(snapshot.queryKey, opts.queryKey);
+  const nextArgs = replaceEqualDeep(snapshot.args, opts.args);
+  const nextPageParams = replaceEqualDeep(snapshot.pageParams, opts.pageParams);
+  if (
+    nextQueryKey !== snapshot.queryKey ||
+    nextArgs !== snapshot.args ||
+    nextPageParams !== snapshot.pageParams
+  ) {
+    setSnapshot({
+      queryKey: nextQueryKey,
+      args: nextArgs,
+      pageParams: nextPageParams,
+    });
+  }
+
+  const queryKey = snapshot.queryKey;
+  const args = snapshot.args;
+  const pageParams = snapshot.pageParams;
 
   useEffect(() => {
     const funcRef = makeFunctionReference<"query">(funcName);
-    // TanStack hashes keys structurally, so a parsed clone targets the same
-    // cache entry as the caller's original key.
-    const queryKey = JSON.parse(queryKeyKey) as QueryKey;
-    const pageParams = JSON.parse(pageParamsKey) as PaginationOptions[];
-    const args = JSON.parse(argsKey) as Record<string, unknown>;
     const unsubscribers = pageParams.map((pageParam, index) => {
       const watch = convex.watchQuery(funcRef, {
         ...args,
@@ -82,5 +108,5 @@ export function useLiveConvexInfinitePages(opts: {
         unsubscribe();
       }
     };
-  }, [argsKey, convex, funcName, pageParamsKey, queryClient, queryKeyKey]);
+  }, [args, convex, funcName, pageParams, queryClient, queryKey]);
 }

@@ -243,8 +243,8 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
     {
       wrapper: wrapperFor(client),
       initialProps: {
-        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }],
-        args: { babyId: "b1" },
+        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
+        args: { babyId: "b1", tag: "x" } as Record<string, unknown>,
         pageParams: [{ numItems: 20, cursor: null }],
       },
     },
@@ -254,9 +254,19 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
   expect(unsubscribers).toHaveLength(1);
 
   rerender({
-    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }],
-    args: { babyId: "b1" },
+    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
+    args: { babyId: "b1", tag: "x" },
     pageParams: [{ numItems: 20, cursor: null }],
+  });
+
+  expect(mocks.watchQuery).toHaveBeenCalledTimes(1);
+  expect(unsubscribers[0]).not.toHaveBeenCalled();
+
+  // Object key insertion order must not force a resubscribe.
+  rerender({
+    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { tag: "x", babyId: "b1" }],
+    args: { tag: "x", babyId: "b1" },
+    pageParams: [{ cursor: null, numItems: 20 }],
   });
 
   expect(mocks.watchQuery).toHaveBeenCalledTimes(1);
