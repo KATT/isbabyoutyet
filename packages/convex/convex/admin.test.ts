@@ -98,17 +98,26 @@ test("admins can list language requests with requester emails", async () => {
   const asBob = t.withIdentity({ subject: "bob" });
   await asBob.mutation(api.profile.updateLocale, { locale: "en-GB" });
   await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "French" });
+  await asBob.mutation(api.profile.requestLanguage, { requestedLocale: "German" });
 
   const requests = await asDemo.query(api.admin.listLanguageRequests, {
     paginationOpts: FIRST_PAGE,
   });
-  expect(requests.page).toEqual([
-    expect.objectContaining({
-      requestedLocale: "French",
-      userId: "bob",
-      userEmail: null,
-    }),
-  ]);
+  expect(requests.page).toHaveLength(2);
+  expect(requests.page).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        requestedLocale: "French",
+        userId: "bob",
+        userEmail: null,
+      }),
+      expect.objectContaining({
+        requestedLocale: "German",
+        userId: "bob",
+        userEmail: null,
+      }),
+    ]),
+  );
   expect(requests.isDone).toBe(true);
 });
 
@@ -241,7 +250,6 @@ test("admins can list babies sorted by created or updated with manager emails", 
     dueDateDisplayMode: "message",
     publicDueDateText: "Any day now",
   });
-
   const byUpdated = await asDemo.query(api.admin.listBabies, {
     sortBy: "updated",
     sortOrder: "desc",

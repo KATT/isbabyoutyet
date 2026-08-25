@@ -215,7 +215,7 @@ export const listBabies = query({
         status: (await loadCurrentStatus(ctx, baby._id)).type,
         demo: baby.demo === true,
         createdAt,
-        updatedAt: Math.max(createdAt, baby.lastActivityAt ?? createdAt),
+        updatedAt: Math.max(createdAt, baby.lastActivityAt),
         managerEmails: await managerEmailsForBaby(ctx, baby),
       });
     }
