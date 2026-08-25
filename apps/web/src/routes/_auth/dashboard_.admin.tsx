@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CaretDown, CaretUp, Shield, Translate } from "@phosphor-icons/react";
+import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { allKeyed } from "@workspace/query-prefetch";
 import { Badge } from "@workspace/ui/components/badge";
@@ -35,8 +35,8 @@ import { useI18n } from "@/lib/i18n";
 const ADMIN_PAGE_SIZE = 20;
 
 const adminSearchSchema = z.object({
-  tab: z.enum(["babies", "languages"]).default("babies"),
-  sort: z.enum(["created", "updated"]).default("updated"),
+  tab: z.enum(["babies", "languages", "users"]).default("babies"),
+  sort: z.enum(["created", "updated"]).default("created"),
   order: z.enum(["asc", "desc"]).default("desc"),
   hideDemo: z.boolean().default(true),
 });
@@ -46,10 +46,10 @@ type SortBy = z.infer<typeof adminSearchSchema>["sort"];
 type SortOrder = z.infer<typeof adminSearchSchema>["order"];
 type AdminSearch = z.infer<typeof adminSearchSchema>;
 
-/** Default admin babies list: newest updates first, demos hidden. */
+/** Default admin babies list: newest created first, demos hidden. */
 export const ADMIN_DEFAULT_SEARCH = {
   tab: "babies",
-  sort: "updated",
+  sort: "created",
   order: "desc",
   hideDemo: true,
 } as const satisfies AdminSearch;
@@ -71,6 +71,13 @@ type BabyRow = {
   createdAt: number;
   updatedAt: number;
   managerEmails: string[];
+};
+
+type UserRow = {
+  _id: string;
+  email: string;
+  name: string;
+  createdAt: number;
 };
 
 export const Route = createFileRoute("/_auth/dashboard_/admin")({
@@ -96,6 +103,10 @@ export const Route = createFileRoute("/_auth/dashboard_/admin")({
         numItems: ADMIN_PAGE_SIZE,
       }),
       languages: preloader.ensureInfiniteQueryData(api.admin.listLanguageRequests, {
+        args: {},
+        numItems: ADMIN_PAGE_SIZE,
+      }),
+      users: preloader.ensureInfiniteQueryData(api.admin.listUsers, {
         args: {},
         numItems: ADMIN_PAGE_SIZE,
       }),
@@ -282,6 +293,55 @@ export function LanguageRequestsSection(props: {
   );
 }
 
+export function UsersSection(props: {
+  users: UserRow[];
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  onLoadMore: () => void;
+}) {
+  const { t, locale } = useI18n();
+
+  if (props.users.length === 0) {
+    return (
+      <Empty className="border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <Users />
+          </EmptyMedia>
+          <EmptyTitle>{t("No users yet")}</EmptyTitle>
+        </EmptyHeader>
+      </Empty>
+    );
+  }
+
+  return (
+    <AdminTableCard
+      canLoadMore={props.hasNextPage && !props.isFetchingNextPage}
+      isLoadingMore={props.isFetchingNextPage}
+      onLoadMore={props.onLoadMore}
+    >
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t("Name")}</TableHead>
+            <TableHead>{t("Email")}</TableHead>
+            <TableHead>{t("Signed up")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {props.users.map((user) => (
+            <TableRow key={user._id}>
+              <TableCell className="font-medium">{user.name}</TableCell>
+              <TableCell>{user.email}</TableCell>
+              <TableCell>{formatWhen(user.createdAt, locale)}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </AdminTableCard>
+  );
+}
+
 export function BabiesSection(props: {
   babies: BabyRow[];
   hasNextPage: boolean;
@@ -407,6 +467,31 @@ function AdminLanguagesTab() {
   );
 }
 
+function AdminUsersTab() {
+  const loaderData = Route.useLoaderData();
+  const usersQuery = usePreloadedConvexInfiniteQuery(api.admin.listUsers, {
+    handle: loaderData.users,
+    remixArgs: null,
+  });
+
+  const users = usersQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <UsersSection
+      users={users}
+      hasNextPage={usersQuery.hasNextPage}
+      isFetchingNextPage={usersQuery.isFetchingNextPage}
+      onLoadMore={() => {
+        void usersQuery.fetchNextPage();
+      }}
+    />
+  );
+}
+
+function isAdminTab(value: string): value is AdminTab {
+  return value === "babies" || value === "languages" || value === "users";
+}
+
 export function AdminDashboardPage() {
   const { t } = useI18n();
   const search = Route.useSearch();
@@ -451,7 +536,7 @@ export function AdminDashboardPage() {
                   {t("Admin dashboard")}
                 </CardTitle>
                 <CardDescription>
-                  {t("Review babies and language requests across the platform.")}
+                  {t("Review babies, users, and language requests across the platform.")}
                 </CardDescription>
               </div>
             </div>
@@ -462,7 +547,7 @@ export function AdminDashboardPage() {
               orientation="horizontal"
               className="flex w-full flex-col gap-4"
               onValueChange={(value) => {
-                if (value === "babies" || value === "languages") {
+                if (isAdminTab(value)) {
                   setTab(value);
                 }
               }}
@@ -482,6 +567,20 @@ export function AdminDashboardPage() {
                     }
                   >
                     {t("All babies")}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="users"
+                    nativeButton={false}
+                    render={
+                      <Link
+                        to="/dashboard/admin"
+                        search={tabSearch("users")}
+                        replace
+                        resetScroll={false}
+                      />
+                    }
+                  >
+                    {t("Recent users")}
                   </TabsTrigger>
                   <TabsTrigger
                     value="languages"
@@ -521,6 +620,10 @@ export function AdminDashboardPage() {
 
               <TabsContent value="babies" className="mt-0">
                 {search.tab === "babies" ? <AdminBabiesTab /> : null}
+              </TabsContent>
+
+              <TabsContent value="users" className="mt-0">
+                {search.tab === "users" ? <AdminUsersTab /> : null}
               </TabsContent>
 
               <TabsContent value="languages" className="mt-0">

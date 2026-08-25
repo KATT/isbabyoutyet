@@ -34,10 +34,10 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: (routeId: string) => (opts: Record<string, unknown>) => ({
     ...opts,
     routeId,
-    useSearch: () => ({ tab: "babies", sort: "updated", order: "desc", hideDemo: true }),
+    useSearch: () => ({ tab: "babies", sort: "created", order: "desc", hideDemo: true }),
     useLoaderData: () => ({
       babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
-        input: { sortBy: "updated", sortOrder: "desc", hideDemo: true },
+        input: { sortBy: "created", sortOrder: "desc", hideDemo: true },
         numItems: 20,
         initialData: {
           pages: [{ page: [], isDone: true, continueCursor: "" }],
@@ -45,6 +45,14 @@ vi.mock("@tanstack/react-router", () => ({
         },
       }),
       languages: testPreloadedConvexInfiniteQuery<typeof api.admin.listLanguageRequests>({
+        input: {},
+        numItems: 20,
+        initialData: {
+          pages: [{ page: [], isDone: true, continueCursor: "" }],
+          pageParams: [{ numItems: 20, cursor: null }],
+        },
+      }),
+      users: testPreloadedConvexInfiniteQuery<typeof api.admin.listUsers>({
         input: {},
         numItems: 20,
         initialData: {
@@ -81,6 +89,7 @@ const {
   AdminDashboardPage,
   BabiesSection,
   LanguageRequestsSection,
+  UsersSection,
   formatWhen,
   nextSortSearch,
   statusLabel,
@@ -255,6 +264,63 @@ test("language requests section shows loading-more spinner", async () => {
   expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
 });
 
+test("users section shows empty and rows", async () => {
+  await using empty = renderResource(
+    <UsersSection
+      users={[]}
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+    />,
+  );
+  expect(empty.getByText("No users yet")).toBeTruthy();
+
+  await using filled = renderResource(
+    <UsersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      users={[
+        {
+          _id: "user-1",
+          name: "Ada",
+          email: "ada@example.com",
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+        },
+        {
+          _id: "user-2",
+          name: "Bob",
+          email: "bob@example.com",
+          createdAt: Date.UTC(2026, 0, 16, 12, 0),
+        },
+      ]}
+    />,
+  );
+  expect(filled.getByText("Ada")).toBeTruthy();
+  expect(filled.getByText("ada@example.com")).toBeTruthy();
+  expect(filled.getByText("Bob")).toBeTruthy();
+});
+
+test("users section shows loading-more spinner", async () => {
+  await using view = renderResource(
+    <UsersSection
+      hasNextPage={true}
+      isFetchingNextPage={true}
+      onLoadMore={() => undefined}
+      users={[
+        {
+          _id: "user-1",
+          name: "Ada",
+          email: "ada@example.com",
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+        },
+      ]}
+    />,
+  );
+  expect(view.getByText("Ada")).toBeTruthy();
+  expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
+});
+
 test("infinite scroll sentinel requests another page when visible", async () => {
   const onLoadMore = vi.fn<() => void>();
   type ObserverCallback = IntersectionObserverCallback;
@@ -308,10 +374,13 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
+  const usersTab = view.getByRole("tab", { name: "Recent users" });
   const languagesTab = view.getByRole("tab", { name: "Requested languages" });
   expect(babiesTab.tagName).toBe("A");
+  expect(usersTab.tagName).toBe("A");
   expect(languagesTab.tagName).toBe("A");
   expect(babiesTab.getAttribute("href")).toContain("tab=babies");
+  expect(usersTab.getAttribute("href")).toContain("tab=users");
   expect(languagesTab.getAttribute("href")).toContain("tab=languages");
 
   const hideDemo = view.getByRole("switch", { name: "Hide demo babies" });
@@ -368,24 +437,26 @@ async function runAdminLoader(
       convexPreloader: getConvexQueryPreloader(queryClient),
       profile: { input: {}, initialData: profile },
     },
-    deps: { tab: "babies", sort: "updated", order: "desc", hideDemo: true },
+    deps: { tab: "babies", sort: "created", order: "desc", hideDemo: true },
   });
 }
 
-test("loader prefetches babies and language requests in parallel for admins", async () => {
+test("loader prefetches babies, users, and language requests in parallel for admins", async () => {
   const result = await runAdminLoader(
     {
       "admin:listBabies": ADMIN_EMPTY_PAGE,
       "admin:listLanguageRequests": ADMIN_EMPTY_PAGE,
+      "admin:listUsers": ADMIN_EMPTY_PAGE,
     },
     { locale: "en-GB", timeZone: "Europe/London", isAdmin: true },
   );
 
   expect(result.babies).toMatchObject({
-    input: { sortBy: "updated", sortOrder: "desc", hideDemo: true },
+    input: { sortBy: "created", sortOrder: "desc", hideDemo: true },
     numItems: 20,
   });
   expect(result.languages).toMatchObject({ input: {}, numItems: 20 });
+  expect(result.users).toMatchObject({ input: {}, numItems: 20 });
 });
 
 test("loader redirects non-admins without prefetching admin queries", async () => {
@@ -396,6 +467,9 @@ test("loader redirects non-admins without prefetching admin queries", async () =
       },
       "admin:listLanguageRequests": () => {
         throw new Error("admin:listLanguageRequests should not run for non-admins");
+      },
+      "admin:listUsers": () => {
+        throw new Error("admin:listUsers should not run for non-admins");
       },
     },
     { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },

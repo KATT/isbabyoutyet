@@ -39,6 +39,37 @@ const babyRowValidator = v.object({
   managerEmails: v.array(v.string()),
 });
 
+const userRowValidator = v.object({
+  _id: v.string(),
+  email: v.string(),
+  name: v.string(),
+  createdAt: v.number(),
+});
+
+function authUserRow(user: unknown) {
+  if (!user || typeof user !== "object") {
+    throw new Error("Better Auth user is missing");
+  }
+  if (!("_id" in user) || (typeof user._id !== "string" && typeof user._id !== "number")) {
+    throw new Error("Better Auth user is missing _id");
+  }
+  if (!("email" in user) || typeof user.email !== "string") {
+    throw new Error("Better Auth user is missing email");
+  }
+  if (!("name" in user) || typeof user.name !== "string") {
+    throw new Error("Better Auth user is missing name");
+  }
+  if (!("createdAt" in user) || typeof user.createdAt !== "number") {
+    throw new Error("Better Auth user is missing createdAt");
+  }
+  return {
+    _id: String(user._id),
+    email: user.email,
+    name: user.name,
+    createdAt: user.createdAt,
+  };
+}
+
 /**
  * Resolve a Better Auth user's email. Sentinel / non-document owners
  * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
@@ -156,5 +187,25 @@ export const listBabies = query({
       });
     }
     return { ...result, page: rows };
+  },
+});
+
+/** Newest Better Auth signups first — staff review of recent registrations. */
+export const listUsers = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(userRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: "user",
+      sortBy: { field: "createdAt", direction: "desc" },
+      paginationOpts: args.paginationOpts,
+    });
+    return {
+      ...result,
+      page: result.page.map(authUserRow),
+    };
   },
 });
