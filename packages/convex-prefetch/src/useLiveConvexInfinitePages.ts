@@ -30,6 +30,8 @@ type LivePagesSnapshot = {
  * Each loaded `pageParam` gets its own `watchQuery`; updates patch that page
  * in the infinite-query cache (SSR-friendly infinite queries aren't covered
  * by ConvexQueryClient yet).
+ *
+ * Package-internal — used by {@link usePreloadedConvexInfiniteQuery} only.
  */
 export function useLiveConvexInfinitePages(opts: {
   queryKey: QueryKey;
