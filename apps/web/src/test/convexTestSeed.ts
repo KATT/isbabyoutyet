@@ -42,3 +42,48 @@ export async function signUpTestUser(
     return result.user.id;
   });
 }
+
+export async function storeTestBlob(harness: ConvexTestHarness) {
+  return await harness.t.run(async (ctx) => {
+    const buffer = new ArrayBuffer(8);
+    new Uint8Array(buffer).set([137, 80, 78, 71, 13, 10, 26, 10]);
+    return await ctx.storage.store(new Blob([buffer], { type: "image/png" }));
+  });
+}
+
+/** Creates a baby with a page photo stored in the in-memory Convex backend. */
+export async function seedBabyWithPhoto(
+  harness: ConvexTestHarness,
+  opts: {
+    name: string;
+    dueDate: string | null;
+  },
+) {
+  const baby = await seedOwnedBaby(harness, opts);
+  const photoId = await storeTestBlob(harness);
+  await harness.client.mutation(api.baby.updatePhoto, {
+    babyId: baby.babyId,
+    photoId,
+  });
+  return {
+    ...baby,
+    photoId,
+  };
+}
+
+/** Posts a timeline update with a photo and returns the update id. */
+export async function seedTimelineUpdateWithPhoto(
+  harness: ConvexTestHarness,
+  opts: {
+    babyId: Id<"baby">;
+    message: string;
+  },
+) {
+  const photoId = await storeTestBlob(harness);
+  const updateId = await harness.client.mutation(api.updates.post, {
+    babyId: opts.babyId,
+    message: opts.message,
+    photoId,
+  });
+  return { updateId, photoId };
+}

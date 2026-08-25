@@ -8,6 +8,8 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { expect, test, vi } from "vitest";
 import { getBabySeo } from "@/lib/baby-seo";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyShareOverlayView, Route } from "@/routes/baby/$publicId/share";
@@ -242,18 +244,20 @@ test("copies from the route overlay and dismisses through overlay history", asyn
 });
 
 test("BabyShareOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
+  });
   await using _image = stubBrowserImageResource();
-  const baby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
 
   await using ctx = await renderMountedFileRoute({
+    harness,
     route: Route,
     path: "/baby/$publicId/share",
-    initialEntry: "/baby/baby-smith/share",
+    initialEntry: `/baby/${baby.publicId}/share`,
     wrap: null,
-    handlers: {
-      "baby:getByPublicId": baby,
-      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
-    },
   });
 
   await vi.waitFor(() => {

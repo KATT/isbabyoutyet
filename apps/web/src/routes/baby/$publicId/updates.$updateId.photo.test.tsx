@@ -4,6 +4,8 @@ import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { expect, test, vi } from "vitest";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, seedTimelineUpdateWithPhoto } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyUpdatePhotoOverlayView, Route } from "@/routes/baby/$publicId/updates.$updateId.photo";
@@ -215,26 +217,20 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
 });
 
 test("BabyUpdatePhotoOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const update = await seedTimelineUpdateWithPhoto(harness, {
+    babyId: baby.babyId,
+    message: "Photo update",
+  });
   await using _image = stubBrowserImageResource();
-  const photoUrl = "https://cdn.example/update.jpg";
 
   await using ctx = await renderMountedFileRoute({
+    harness,
     route: Route,
     path: "/baby/$publicId/updates/$updateId/photo",
-    initialEntry: `/baby/baby-smith/updates/${updateId}/photo`,
+    initialEntry: `/baby/${baby.publicId}/updates/${update.updateId}/photo`,
     wrap: null,
-    handlers: {
-      "baby:getByPublicId": {
-        _id: "jd7baby000000000000000000",
-        publicId: "baby-smith",
-        name: "Baby Smith",
-      },
-      "timeline:getUpdatePhoto": {
-        photoUrl,
-        blurDataUrl: null,
-        babyName: "Baby Smith",
-      },
-    },
   });
 
   await vi.waitFor(() => {

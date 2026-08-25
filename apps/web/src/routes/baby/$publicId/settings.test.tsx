@@ -13,6 +13,8 @@ import type {
 } from "@workspace/convex/src/types";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import {
@@ -348,18 +350,15 @@ test("settings overlay hides delete for co-parents", async () => {
 });
 
 test("BabySettingsOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
   await using ctx = await renderMountedFileRoute({
+    harness,
     route: Route,
     path: "/baby/$publicId/settings",
-    initialEntry: "/baby/baby-smith/settings",
+    initialEntry: `/baby/${baby.publicId}/settings`,
     wrap: null,
-    handlers: {
-      "baby:getByPublicId": managerBabyDoc,
-      "baby:getManagerBaby": managerBabyDoc,
-      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
-      "coParents:listForBaby": { coParents: [], invites: [] },
-      "profile:get": { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-    },
   });
 
   await vi.waitFor(() => {

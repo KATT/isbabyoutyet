@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import type { AnyRoute } from "@tanstack/react-router";
 import {
   createMemoryHistory,
@@ -8,14 +8,15 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { render } from "@testing-library/react";
-import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { ConvexProvider, type ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { vi } from "vitest";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
+import type { ConvexTestHarness } from "@/test/convexTestHarness";
+import { routeContextFromHarness } from "@/test/routeTestContext";
 
 /**
  * `Route.update()` is typed for non-structural option tweaks only, so widen it
@@ -32,43 +33,23 @@ function reparentRoute<TRoute extends AnyRoute>(
 
 /**
  * Mounts a real file-route component end-to-end: beforeLoad + loader + the
- * production wrapper, with Convex query data stubbed through a QueryClient
- * `queryFn` map (same pattern as the overlay loader unit tests).
+ * production wrapper, backed by `convex-test` through the shared harness.
  */
 export async function renderMountedFileRoute(opts: {
+  harness: ConvexTestHarness;
   route: AnyRoute;
   path: string;
   initialEntry: string;
-  handlers: Record<string, unknown>;
   /** Extra providers around the route outlet. */
   wrap: ((children: ReactNode) => ReactNode) | null;
 }) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        staleTime: Infinity,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(opts.handlers[name] ?? null);
-        },
-      },
-    },
-  });
-  const convexClient = new ConvexReactClient("https://example.invalid", {
-    unsavedChangesWarning: false,
-  });
-
-  const context = {
-    queryClient,
-    convexPreloader: getConvexQueryPreloader(queryClient),
-  };
+  const context = routeContextFromHarness(opts.harness);
 
   const rootRoute = createRootRoute({
     component: function TestRoot() {
       const outlet = (
-        <QueryClientProvider client={queryClient}>
-          <ConvexProvider client={convexClient}>
+        <QueryClientProvider client={opts.harness.queryClient}>
+          <ConvexProvider client={opts.harness.convexClient as unknown as ConvexReactClient}>
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               <TooltipProvider>
                 <LocaleProvider locale="en-GB">
@@ -98,12 +79,8 @@ export async function renderMountedFileRoute(opts: {
   await router.load();
 
   const view = render(<RouterProvider router={router} />);
-  // Keep the Convex client open for the lifetime of the mounted route; close
-  // it when the caller disposes the returned resource.
-  return makeAsyncResource({ view, router, queryClient }, async () => {
+  return makeAsyncResource({ view, router, harness: opts.harness }, async () => {
     view.unmount();
-    queryClient.clear();
-    await convexClient.close();
   });
 }
 

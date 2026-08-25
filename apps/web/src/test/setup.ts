@@ -5,6 +5,24 @@
  * them globally so components can run unmocked under test.
  */
 
+import { webcrypto } from "node:crypto";
+
+// jsdom's SubtleCrypto rejects ArrayBuffers from Blob#arrayBuffer(); route storage
+// hashing in convex-test through Node's webcrypto instead.
+const nodeDigest = webcrypto.subtle.digest.bind(webcrypto.subtle);
+const subtle = globalThis.crypto.subtle;
+subtle.digest = (algorithm, data) => {
+  const view =
+    data instanceof ArrayBuffer
+      ? new Uint8Array(data)
+      : ArrayBuffer.isView(data)
+        ? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
+        : new Uint8Array(data as ArrayBufferLike);
+  const bytes = new Uint8Array(view.byteLength);
+  bytes.set(view);
+  return nodeDigest(algorithm, bytes);
+};
+
 if (typeof window.matchMedia !== "function") {
   window.matchMedia = (query: string) => ({
     matches: false,

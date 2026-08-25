@@ -1,48 +1,13 @@
 import { fireEvent } from "@testing-library/react";
-import { QueryClient } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DEFAULT_MILESTONE_VISIBILITY } from "@workspace/convex/src/types";
 import { expect, test, vi } from "vitest";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
+import { runRouteLoader } from "@/test/routeTestContext";
 import { BabyPostUpdateOverlayView, Route } from "@/routes/baby/$publicId/post";
-
-function makeLoaderQueryClient(handlers: Record<string, unknown>) {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(handlers[name] ?? null);
-        },
-      },
-    },
-  });
-}
-
-async function runPostLoader(handlers: Record<string, unknown>) {
-  const queryClient = makeLoaderQueryClient(handlers);
-  await using _queryClient = makeResource(queryClient, () => {
-    queryClient.clear();
-  });
-  const loader = Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<Record<string, unknown>>;
-  return await loader({
-    context: {
-      queryClient,
-      convexPreloader: getConvexQueryPreloader(queryClient),
-    },
-    params: { publicId: "baby-smith" },
-  });
-}
 
 const managerBabyDoc = {
   _id: "baby-id" as Id<"baby">,
@@ -65,27 +30,48 @@ const managerBabyDoc = {
 };
 
 test("post loader fetches manager access data", async () => {
-  const result = await runPostLoader({
-    "baby:getManagerBaby": { _id: "baby-id", name: "Baby Smith" },
-    "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  const result = await runRouteLoader<{
+    managerBaby: { input: { babyId: string }; initialData: { name: string } };
+    myAccess: { initialData: { canManage: boolean; isOwner: boolean; isCoParent: boolean } };
+  }>({
+    harness,
+    route: Route,
+    params: { publicId: baby.publicId },
   });
 
   expect(result.managerBaby).toMatchObject({
-    input: { babyId: "baby-smith" },
+    input: { babyId: baby.publicId },
     initialData: { name: "Baby Smith" },
+  });
+  expect(result.myAccess).toMatchObject({
+    initialData: { canManage: true, isOwner: true, isCoParent: false },
   });
 });
 
 test("post loader redirects non-managers to the public baby page", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const aliceId = await signUpTestUser(harness, {
+    email: "alice@example.com",
+    password: "password123",
+    name: "Alice",
+  });
+  harness.withIdentity({ subject: aliceId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  harness.withIdentity(null);
+
   await expect(
-    runPostLoader({
-      "baby:getManagerBaby": "forbidden",
-      "coParents:myAccess": { canManage: false, isOwner: false, isCoParent: false },
+    runRouteLoader({
+      harness,
+      route: Route,
+      params: { publicId: baby.publicId },
     }),
   ).rejects.toMatchObject({
     options: {
       to: "/baby/$publicId",
-      params: { publicId: "baby-smith" },
+      params: { publicId: baby.publicId },
       resetScroll: false,
     },
   });
@@ -194,16 +180,15 @@ test("successful post completes onboarding and closes the overlay", async () => 
 });
 
 test("BabyPostUpdateOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
   await using ctx = await renderMountedFileRoute({
+    harness,
     route: Route,
     path: "/baby/$publicId/post",
-    initialEntry: "/baby/baby-smith/post",
+    initialEntry: `/baby/${baby.publicId}/post`,
     wrap: null,
-    handlers: {
-      "baby:getByPublicId": managerBabyDoc,
-      "baby:getManagerBaby": managerBabyDoc,
-      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
-    },
   });
 
   await vi.waitFor(() => {
