@@ -956,9 +956,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
-  const hasNextPage = timelineQuery.hasNextPage;
-  const isFetchingNextPage = timelineQuery.isFetchingNextPage;
-  const fetchNextPage = timelineQuery.fetchNextPage;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = timelineQuery;
 
   const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
