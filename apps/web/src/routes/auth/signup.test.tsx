@@ -1,108 +1,103 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
+import { SignupCard, signUpAndHandoff } from "@/routes/auth/signup";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
-  signUpEmail: vi.fn<
-    (
-      opts: { email: string; password: string; name: string },
-      fetchOptions: { headers: Record<string, string> },
-    ) => Promise<{
-      error: { message: string } | null;
-    }>
-  >(async () => ({ error: null })),
-  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
-}));
+type NewAccount = { name: string; email: string; password: string };
+type SignUpResult = { errorMessage: string | null };
 
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (opts: { component: () => ReactElement }) => opts,
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
-  ),
-  useRouter: () => ({ navigate: mocks.navigate }),
-}));
+const NEW_ACCOUNT: NewAccount = {
+  name: "Test Parent",
+  email: "parent@example.com",
+  password: "password",
+};
 
-vi.mock("@/lib/auth-client", () => ({
-  getBrowserAuthHeaders: () => ({ "x-time-zone": "Asia/Tokyo" }),
-  authClient: {
-    signUp: {
-      email: (
-        opts: { email: string; password: string; name: string },
-        fetchOptions: { headers: Record<string, string> },
-      ) => mocks.signUpEmail(opts, fetchOptions),
-    },
-  },
-}));
-
-vi.mock("@/lib/convexAuthHandoff", () => ({
-  waitForConvexAuth: () => mocks.waitForConvexAuth(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: vi.fn<(message: string) => void>() },
-}));
-
-const { Route } = await import("./signup");
-const SignupPage = (Route as unknown as { component: () => ReactElement }).component;
-
-function renderSignup() {
-  const view = render(
+function renderSignup(onSignUp: (values: NewAccount) => Promise<void>) {
+  return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <SignupPage />
+      <SignupCard onSignUp={onSignUp} />
     </LocaleProvider>,
+    { path: "/auth/signup" },
   );
-  return makeResource(view, () => {
-    view.unmount();
-  });
 }
 
+function handoffDeps() {
+  const signUp = vi
+    .fn<
+      (body: NewAccount, fetchOptions: { headers: Record<string, string> }) => Promise<SignUpResult>
+    >()
+    .mockResolvedValue({ errorMessage: null });
+  const waitForAuth = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const navigate = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  return {
+    signUp,
+    waitForAuth,
+    navigate,
+    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
+    failedMessage: "Failed to sign up",
+  };
+}
+
+test("waits for provider-confirmed Convex auth before navigating", async () => {
+  const deps = handoffDeps();
+  let confirmAuth = () => {};
+  deps.waitForAuth.mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      confirmAuth = resolve;
+    }),
+  );
+
+  const handoff = signUpAndHandoff(NEW_ACCOUNT, deps);
+
+  await vi.waitFor(() => {
+    expect(deps.signUp).toHaveBeenCalledWith(NEW_ACCOUNT, {
+      headers: { "x-time-zone": "Asia/Tokyo" },
+    });
+  });
+  await vi.waitFor(() => {
+    expect(deps.waitForAuth).toHaveBeenCalledTimes(1);
+  });
+  expect(deps.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await handoff;
+  expect(deps.navigate).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  { errorMessage: "Email already in use", expectedMessage: "Email already in use" },
+  { errorMessage: "", expectedMessage: "Failed to sign up" },
+])("a rejected signup throws $expectedMessage and never navigates", async (testCase) => {
+  const deps = handoffDeps();
+  deps.signUp.mockResolvedValueOnce({ errorMessage: testCase.errorMessage });
+
+  await expect(signUpAndHandoff(NEW_ACCOUNT, deps)).rejects.toThrow(testCase.expectedMessage);
+  expect(deps.waitForAuth).not.toHaveBeenCalled();
+  expect(deps.navigate).not.toHaveBeenCalled();
+});
+
 test("signup has no test-account picker and starts empty", async () => {
-  await using _view = renderSignup();
+  const onSignUp = vi.fn<(values: NewAccount) => Promise<void>>().mockResolvedValue(undefined);
+  await using _view = await renderSignup(onSignUp);
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
   expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("");
   expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
   expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+  expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/auth/login");
 });
 
-test("waits for provider-confirmed Convex auth before SPA navigation after signup", async () => {
-  mocks.navigate.mockClear();
-  mocks.signUpEmail.mockClear();
-  mocks.waitForConvexAuth.mockClear();
-  mocks.signUpEmail.mockResolvedValueOnce({ error: null });
-  let confirmAuth = () => {};
-  const authConfirmation = new Promise<void>((resolve) => {
-    confirmAuth = resolve;
-  });
-  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
+test("submitting the form hands the new account to the signup flow", async () => {
+  const onSignUp = vi.fn<(values: NewAccount) => Promise<void>>().mockResolvedValue(undefined);
+  await using _view = await renderSignup(onSignUp);
 
-  await using _view = renderSignup();
-
-  fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Test Parent" } });
-  fireEvent.change(screen.getByLabelText("Email"), { target: { value: "parent@example.com" } });
-  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password" } });
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: NEW_ACCOUNT.name } });
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: NEW_ACCOUNT.email } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: NEW_ACCOUNT.password } });
   fireEvent.click(screen.getByRole("button", { name: "Sign Up" }));
 
   await vi.waitFor(() => {
-    expect(mocks.signUpEmail).toHaveBeenCalledWith(
-      {
-        email: "parent@example.com",
-        password: "password",
-        name: "Test Parent",
-      },
-      { headers: { "x-time-zone": "Asia/Tokyo" } },
-    );
-  });
-  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
-  expect(mocks.navigate).not.toHaveBeenCalled();
-
-  confirmAuth();
-  await vi.waitFor(() => {
-    expect(mocks.navigate).toHaveBeenCalledWith({
-      to: "/dashboard",
-    });
+    expect(onSignUp).toHaveBeenCalledWith(NEW_ACCOUNT);
   });
 });

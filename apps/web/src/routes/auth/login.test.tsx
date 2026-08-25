@@ -1,85 +1,90 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_EMPTY_USER, DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
+import { LoginCard, signInAndHandoff } from "@/routes/auth/login";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-const mocks = vi.hoisted(() => ({
-  hasDemoLogin: true,
-  navigate: vi.fn<(opts: { to: string }) => Promise<void>>(async () => {}),
-  signInEmail: vi.fn<
-    (
-      opts: { email: string; password: string; rememberMe: boolean },
-      fetchOptions: { headers: Record<string, string> },
-    ) => Promise<{
-      error: { message: string } | null;
-    }>
-  >(async () => ({ error: null })),
-  waitForConvexAuth: vi.fn<() => Promise<void>>(async () => {}),
-}));
+type SignInResult = { errorMessage: string | null };
 
-vi.mock("@/lib/has-demo-login", () => ({
-  get hasDemoLogin() {
-    return mocks.hasDemoLogin;
-  },
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (opts: { component: () => ReactElement }) => opts,
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
-  ),
-  useRouter: () => ({ navigate: mocks.navigate }),
-}));
-
-vi.mock("@/lib/auth-client", () => ({
-  getBrowserAuthHeaders: () => ({ "x-time-zone": "Asia/Tokyo" }),
-  authClient: {
-    signIn: {
-      email: (
-        opts: { email: string; password: string; rememberMe: boolean },
-        fetchOptions: { headers: Record<string, string> },
-      ) => mocks.signInEmail(opts, fetchOptions),
-    },
-  },
-}));
-
-vi.mock("@/lib/convexAuthHandoff", () => ({
-  waitForConvexAuth: () => mocks.waitForConvexAuth(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: vi.fn<(message: string) => void>() },
-}));
-
-const { Route } = await import("./login");
-const LoginPage = (Route as unknown as { component: () => ReactElement }).component;
-
-function renderLogin() {
-  const view = render(
+function renderLogin(props: {
+  demoLoginEnabled: boolean;
+  onSignIn: (values: { email: string; password: string }) => Promise<void>;
+}) {
+  return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <LoginPage />
+      <LoginCard demoLoginEnabled={props.demoLoginEnabled} onSignIn={props.onSignIn} />
     </LocaleProvider>,
+    { path: "/auth/login" },
   );
-  return makeResource(view, () => {
-    view.unmount();
-  });
 }
 
-test("waits for provider-confirmed Convex auth before SPA navigation", async () => {
-  mocks.hasDemoLogin = true;
-  mocks.navigate.mockClear();
-  mocks.signInEmail.mockClear();
-  mocks.waitForConvexAuth.mockClear();
-  mocks.signInEmail.mockResolvedValueOnce({ error: null });
-  let confirmAuth = () => {};
-  const authConfirmation = new Promise<void>((resolve) => {
-    confirmAuth = resolve;
-  });
-  mocks.waitForConvexAuth.mockReturnValueOnce(authConfirmation);
+function handoffDeps() {
+  const signIn = vi
+    .fn<
+      (
+        body: { email: string; password: string; rememberMe: boolean },
+        fetchOptions: { headers: Record<string, string> },
+      ) => Promise<SignInResult>
+    >()
+    .mockResolvedValue({ errorMessage: null });
+  const waitForAuth = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  const navigate = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+  return {
+    signIn,
+    waitForAuth,
+    navigate,
+    headers: () => ({ "x-time-zone": "Asia/Tokyo" }),
+    failedMessage: "Failed to sign in",
+  };
+}
 
-  await using _view = renderLogin();
+test("waits for provider-confirmed Convex auth before navigating", async () => {
+  const deps = handoffDeps();
+  let confirmAuth = () => {};
+  deps.waitForAuth.mockReturnValueOnce(
+    new Promise<void>((resolve) => {
+      confirmAuth = resolve;
+    }),
+  );
+
+  const handoff = signInAndHandoff({ email: DEMO_USER.email, password: DEMO_USER.password }, deps);
+
+  await vi.waitFor(() => {
+    expect(deps.signIn).toHaveBeenCalledWith(
+      { email: DEMO_USER.email, password: DEMO_USER.password, rememberMe: true },
+      { headers: { "x-time-zone": "Asia/Tokyo" } },
+    );
+  });
+  await vi.waitFor(() => {
+    expect(deps.waitForAuth).toHaveBeenCalledTimes(1);
+  });
+  expect(deps.navigate).not.toHaveBeenCalled();
+
+  confirmAuth();
+  await handoff;
+  expect(deps.navigate).toHaveBeenCalledTimes(1);
+});
+
+test.each([
+  { errorMessage: "Invalid password", expectedMessage: "Invalid password" },
+  { errorMessage: "", expectedMessage: "Failed to sign in" },
+])("a rejected sign-in throws $expectedMessage and never navigates", async (testCase) => {
+  const deps = handoffDeps();
+  deps.signIn.mockResolvedValueOnce({ errorMessage: testCase.errorMessage });
+
+  await expect(
+    signInAndHandoff({ email: DEMO_USER.email, password: "nope" }, deps),
+  ).rejects.toThrow(testCase.expectedMessage);
+  expect(deps.waitForAuth).not.toHaveBeenCalled();
+  expect(deps.navigate).not.toHaveBeenCalled();
+});
+
+test("picking a test account prefills the form and submits it", async () => {
+  const onSignIn = vi
+    .fn<(values: { email: string; password: string }) => Promise<void>>()
+    .mockResolvedValue(undefined);
+  await using _view = await renderLogin({ demoLoginEnabled: true, onSignIn });
 
   expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(DEMO_USER.email);
 
@@ -93,31 +98,20 @@ test("waits for provider-confirmed Convex auth before SPA navigation", async () 
   );
 
   await vi.waitFor(() => {
-    expect(mocks.signInEmail).toHaveBeenCalledWith(
-      {
-        email: DEMO_EMPTY_USER.email,
-        password: DEMO_EMPTY_USER.password,
-        rememberMe: true,
-      },
-      { headers: { "x-time-zone": "Asia/Tokyo" } },
-    );
-  });
-  expect(mocks.waitForConvexAuth).toHaveBeenCalledTimes(1);
-  expect(mocks.navigate).not.toHaveBeenCalled();
-
-  confirmAuth();
-  await vi.waitFor(() => {
-    expect(mocks.navigate).toHaveBeenCalledWith({
-      to: "/dashboard",
+    expect(onSignIn).toHaveBeenCalledWith({
+      email: DEMO_EMPTY_USER.email,
+      password: DEMO_EMPTY_USER.password,
     });
   });
 });
 
 test("hides the test-account picker when demo login is disabled", async () => {
-  mocks.hasDemoLogin = false;
-
-  await using _view = renderLogin();
+  const onSignIn = vi
+    .fn<(values: { email: string; password: string }) => Promise<void>>()
+    .mockResolvedValue(undefined);
+  await using _view = await renderLogin({ demoLoginEnabled: false, onSignIn });
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
   expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
+  expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/auth/signup");
 });
