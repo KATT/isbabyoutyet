@@ -74,12 +74,8 @@
         "no-overzealous-destructuring/no-overzealous-destructuring": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error",
-        "react/exhaustive-effect-dependencies": "off",
-        "react/react-in-jsx-scope": "off",
-        "react/set-state-in-effect": "off",
-        "react/immutability": "off",
-        "react-hooks/exhaustive-deps": "off",
-        "unicorn/prefer-add-event-listener": "off"
+        // Automatic JSX runtime — no React import required.
+        "react/react-in-jsx-scope": "off"
       }
     },
     {
@@ -109,8 +105,11 @@
         "vitest/require-mock-type-parameters": "off",
         "vitest/no-conditional-expect": "off",
         "react/immutability": "off",
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-effect-dependencies": "off",
         "react-hooks/exhaustive-deps": "off",
-        "unicorn/consistent-function-scoping": "off"
+        "unicorn/consistent-function-scoping": "off",
+        "unicorn/prefer-add-event-listener": "off"
       }
     },
     {
@@ -123,7 +122,10 @@
         "react-compiler/no-manual-memoization": "off",
         "react/react-in-jsx-scope": "off",
         "react/no-unstable-nested-components": "off",
-        "react/set-state-in-effect": "off"
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-effect-dependencies": "off",
+        "react/immutability": "off",
+        "react-hooks/exhaustive-deps": "off"
       }
     },
     {
@@ -131,13 +133,6 @@
       "files": ["packages/query-prefetch/src/**"],
       "rules": {
         "eslint/max-params": "off"
-      }
-    },
-    {
-      // Stable JSON.stringify keys coexist with the object deps they summarize.
-      "files": ["packages/convex-prefetch/src/**"],
-      "rules": {
-        "react/exhaustive-effect-dependencies": "off"
       }
     }
   ]

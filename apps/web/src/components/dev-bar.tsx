@@ -17,7 +17,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 function activeBabyPublicId(pathname: string) {
   const match = pathname.match(/^\/baby\/([^/]+)/);
@@ -35,12 +35,13 @@ export function DevBar() {
 
 function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const currentPublicId = activeBabyPublicId(pathname);
-  const [open, setOpen] = useState(false);
+  // Remount on navigation so the menu closes without setState-in-effect.
+  return <DevBarMenu key={pathname} pathname={pathname} />;
+}
 
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
+function DevBarMenu(props: { pathname: string }) {
+  const currentPublicId = activeBabyPublicId(props.pathname);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
@@ -105,7 +106,7 @@ function DevBarPanel() {
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
             <DropdownMenuItem render={<Link to="/dashboard" />}>
-              {pathname.startsWith("/dashboard") ? (
+              {props.pathname.startsWith("/dashboard") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <House data-icon="inline-start" />
@@ -113,7 +114,7 @@ function DevBarPanel() {
               Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link to="/auth/login" />}>
-              {pathname.startsWith("/auth/login") ? (
+              {props.pathname.startsWith("/auth/login") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <SignIn data-icon="inline-start" />
@@ -121,7 +122,7 @@ function DevBarPanel() {
               Login
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link to="/preview" />}>
-              {pathname.startsWith("/preview") ? (
+              {props.pathname.startsWith("/preview") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <Code data-icon="inline-start" />

@@ -256,11 +256,13 @@ test("loader prefetches the full image in the browser", async () => {
 
   const OriginalImage = globalThis.Image;
   class MockImage {
-    onload: (() => void) | null = null;
-    onerror: (() => void) | null = null;
+    #load: (() => void) | null = null;
+    addEventListener(type: string, listener: () => void) {
+      if (type === "load") this.#load = listener;
+    }
     set src(_value: string) {
       queueMicrotask(() => {
-        this.onload?.();
+        this.#load?.();
       });
     }
   }

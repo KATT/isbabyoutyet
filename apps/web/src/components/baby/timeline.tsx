@@ -33,7 +33,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -72,18 +72,25 @@ const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 
 function usePhotoPreviewUrl(photo: File | null) {
-  const [url, setUrl] = useState<string | null>(null);
+  const [cached, setCached] = useState<{ photo: File | null; url: string | null }>({
+    photo: null,
+    url: null,
+  });
+
+  let url = cached.url;
+  if (cached.photo !== photo) {
+    if (cached.url) {
+      URL.revokeObjectURL(cached.url);
+    }
+    url = photo ? URL.createObjectURL(photo) : null;
+    setCached({ photo, url });
+  }
 
   useEffect(() => {
-    if (!photo) {
-      setUrl(null);
-      return;
-    }
-
-    const nextUrl = URL.createObjectURL(photo);
-    setUrl(nextUrl);
-    return () => URL.revokeObjectURL(nextUrl);
-  }, [photo]);
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
 
   return url;
 }
@@ -244,7 +251,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
       form.setValue("milestone", "none");
       form.resetField("occurredAt");
     }
-  }, [form, currentStatus.type, milestonePolicy.visibility]);
+  }, [form, futureMilestones]);
 
   const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
 
@@ -926,7 +933,13 @@ type TimelineFeedProps = {
 
 export function TimelineFeed(props: TimelineFeedProps) {
   const { t } = useI18n();
-  const [currentVisitorId, setCurrentVisitorId] = useState("");
+  // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
+  // the loader handle (no visitorId), then remixArgs picks it up on the client.
+  const currentVisitorId = useSyncExternalStore(
+    () => () => {},
+    getVisitorId,
+    () => "",
+  );
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
@@ -942,22 +955,20 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const hasNextPage = timelineQuery.hasNextPage;
+  const isFetchingNextPage = timelineQuery.isFetchingNextPage;
+  const fetchNextPage = timelineQuery.fetchNextPage;
 
   const items = timelineQuery.data.pages.flatMap((page) => page.page);
 
-  // Get visitor ID on client side
-  useEffect(() => {
-    setCurrentVisitorId(getVisitorId());
-  }, []);
-
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
-    if (!timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage) return;
+    if (!hasNextPage || isFetchingNextPage) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          void timelineQuery.fetchNextPage();
+          void fetchNextPage();
         }
       },
       { threshold: 0.1 },
@@ -973,7 +984,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
         observer.unobserve(currentRef);
       }
     };
-  }, [timelineQuery.hasNextPage, timelineQuery.isFetchingNextPage, timelineQuery.fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {

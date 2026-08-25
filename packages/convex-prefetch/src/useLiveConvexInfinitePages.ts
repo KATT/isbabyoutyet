@@ -24,14 +24,18 @@ export function useLiveConvexInfinitePages(opts: {
   const queryClient = useQueryClient();
   const convex = useConvex();
   // Stringify so effect deps stay stable when callers pass new object identities
-  // with the same contents (React's exhaustive-deps still wants the objects too).
+  // with the same contents.
   const pageParamsKey = JSON.stringify(opts.pageParams);
   const argsKey = JSON.stringify(opts.args);
+  const funcRef = opts.funcRef;
+  const queryKey = opts.queryKey;
 
   useEffect(() => {
-    const unsubscribers = opts.pageParams.map((pageParam, index) => {
-      const watch = convex.watchQuery(opts.funcRef, {
-        ...opts.args,
+    const pageParams = JSON.parse(pageParamsKey) as PaginationOptions[];
+    const args = JSON.parse(argsKey) as Record<string, unknown>;
+    const unsubscribers = pageParams.map((pageParam, index) => {
+      const watch = convex.watchQuery(funcRef, {
+        ...args,
         paginationOpts: pageParam,
       });
       return watch.onUpdate(() => {
@@ -45,7 +49,7 @@ export function useLiveConvexInfinitePages(opts: {
           return;
         }
         queryClient.setQueryData(
-          opts.queryKey,
+          queryKey,
           (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
             if (!previous) {
               return previous;
@@ -63,14 +67,5 @@ export function useLiveConvexInfinitePages(opts: {
         unsubscribe();
       }
     };
-  }, [
-    argsKey,
-    convex,
-    opts.args,
-    opts.funcRef,
-    opts.pageParams,
-    opts.queryKey,
-    pageParamsKey,
-    queryClient,
-  ]);
+  }, [argsKey, convex, funcRef, pageParamsKey, queryClient, queryKey]);
 }

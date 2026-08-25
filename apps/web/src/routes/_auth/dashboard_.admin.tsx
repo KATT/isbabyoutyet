@@ -145,16 +145,18 @@ export function nextSortSearch(opts: {
 
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const canLoadMore = props.canLoadMore;
+  const onLoadMore = props.onLoadMore;
 
   useEffect(() => {
-    if (!props.canLoadMore) return;
+    if (!canLoadMore) return;
     const node = loadMoreRef.current;
     if (!node) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          props.onLoadMore();
+          onLoadMore();
         }
       },
       { threshold: 0.1 },
@@ -163,7 +165,7 @@ function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () =>
     return () => {
       observer.unobserve(node);
     };
-  }, [props.canLoadMore, props.onLoadMore]);
+  }, [canLoadMore, onLoadMore]);
 
   return <div ref={loadMoreRef} className="h-8 w-full" aria-hidden="true" />;
 }
