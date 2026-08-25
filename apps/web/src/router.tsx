@@ -25,19 +25,13 @@ export function getRouter() {
     expectAuth: true,
   });
   registerConvexInfiniteQueryClient(convexQueryClient);
-  const queryFn = convexInfiniteQueryFn(convexQueryClient);
 
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
-        // Wraps ConvexQueryClient.queryFn so infinite/paginated keys work too.
-        queryFn: (context) =>
-          queryFn({
-            ...context,
-            pageParam: context.pageParam,
-            direction: context.direction === "backward" ? "backward" : "forward",
-          }),
+        // Handles both regular Convex queries and infinite/paginated keys.
+        queryFn: convexInfiniteQueryFn(convexQueryClient),
       },
     },
   });

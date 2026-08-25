@@ -1,8 +1,10 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import type { QueryClient } from "@tanstack/react-query";
 
 type RouterOptions = Record<string, unknown>;
 
+const defaultQueryFn = vi.hoisted(() => vi.fn(() => Promise.resolve(null)));
 const createRouter = vi.hoisted(() =>
   vi.fn<(options: RouterOptions) => { options: RouterOptions }>((options) => ({ options })),
 );
@@ -33,7 +35,7 @@ vi.mock("convex/react", () => ({
 }));
 
 vi.mock("@workspace/convex-prefetch", () => ({
-  convexInfiniteQueryFn: () => () => Promise.resolve(null),
+  convexInfiniteQueryFn: () => defaultQueryFn,
   getConvexQueryPreloader: () => ({}),
   registerConvexInfiniteQueryClient: () => {},
 }));
@@ -68,4 +70,6 @@ test("the router preloads on viewport and lets React Query own preload freshness
     defaultPreloadStaleTime: 0,
     scrollRestoration: true,
   });
+  const context = options?.context as { queryClient: QueryClient } | undefined;
+  expect(context?.queryClient.getDefaultOptions().queries?.queryFn).toBe(defaultQueryFn);
 });
