@@ -97,7 +97,7 @@ test("getQueryInitiator forwards ensureQueryData errors to onError", async () =>
 
 test("getQueryInitiator safely ignores background errors without an onError handler", async () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  const failingFactory = () =>
+  const ignoredFailureFactory = () =>
     queryOptions({
       queryKey: ["posts", "ignored-failure"] as const,
       queryFn: async () => {
@@ -105,7 +105,7 @@ test("getQueryInitiator safely ignores background errors without an onError hand
       },
     });
 
-  getQueryInitiator(queryClient).ensureQueryData(failingFactory);
+  getQueryInitiator(queryClient).ensureQueryData(ignoredFailureFactory);
 
   await vi.waitFor(() => {
     expect(queryClient.getQueryState(["posts", "ignored-failure"])?.status).toBe("error");
