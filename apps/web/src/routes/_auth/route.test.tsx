@@ -12,7 +12,9 @@ test("auth layout is wired as the route component", () => {
 
 type GuardCtx = {
   queryClient: QueryClient;
-  convexClient: { setAuth: (fetchToken: () => Promise<string | null>) => void } | Record<string, never>;
+  convexClient:
+    | { setAuth: (fetchToken: () => Promise<string | null>) => void }
+    | Record<string, never>;
   convexQueryClient: {
     serverHttpClient: { setAuth: (token: string) => void };
   };
@@ -34,6 +36,16 @@ function makeGuardCtx() {
     token: null,
   };
   return { context, queryClient, queryFn, setServerAuth };
+}
+
+async function runGuard(opts: {
+  context: GuardCtx;
+  fetchToken: () => Promise<string | null>;
+}) {
+  return await resolveAuthGuard({
+    context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
+    fetchToken: opts.fetchToken,
+  });
 }
 
 async function expectRedirectHome(run: () => Promise<unknown>) {
@@ -67,7 +79,7 @@ test("client navigations reuse a cached profile without an auth round-trip", asy
     isAdmin: false,
   });
 
-  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
+  const result = await runGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(fetchToken).not.toHaveBeenCalled();
@@ -86,7 +98,7 @@ test("a fresh login retries the profile without taking auth ownership from the p
     .mockResolvedValueOnce({ locale: "en-US", timeZone: "Europe/London", isAdmin: false });
   guard.context.convexClient = { setAuth };
 
-  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
+  const result = await runGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
   expect(setAuth).not.toHaveBeenCalled();
@@ -100,7 +112,7 @@ test("client navigations without a session redirect home after one token check",
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce(null);
   const guard = makeGuardCtx();
 
-  await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+  await expectRedirectHome(() => runGuard({ context: guard.context, fetchToken }));
   expect(fetchToken).toHaveBeenCalledTimes(1);
 });
 
@@ -110,7 +122,7 @@ test("client navigations redirect when an authenticated profile cannot be read",
   const guard = makeGuardCtx();
   guard.context.convexClient = { setAuth };
 
-  await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+  await expectRedirectHome(() => runGuard({ context: guard.context, fetchToken }));
   expect(setAuth).not.toHaveBeenCalled();
   expect(guard.queryFn).toHaveBeenCalledTimes(2);
 });
@@ -121,7 +133,7 @@ test("client navigations keep the cached profile", async () => {
   const guard = makeGuardCtx();
   guard.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, cachedProfile);
 
-  const result = await resolveAuthGuard({ context: guard.context, fetchToken });
+  const result = await runGuard({ context: guard.context, fetchToken });
 
   expect(result).toMatchObject({ locale: "sv", isAuthenticated: true });
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toEqual(
@@ -135,7 +147,7 @@ test("server render redirects home when no auth token is available", async () =>
   const guard = makeGuardCtx();
 
   await withoutBrowserWindow(async () => {
-    await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+    await expectRedirectHome(() => runGuard({ context: guard.context, fetchToken }));
     expect(fetchToken).toHaveBeenCalledTimes(1);
   });
 });
@@ -153,7 +165,7 @@ test("server render reuses the layout token without calling getAuthToken", async
   guard.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
-    const result = await resolveAuthGuard({ context: guard.context, fetchToken });
+    const result = await runGuard({ context: guard.context, fetchToken });
 
     expect(result).toMatchObject({
       locale: "en-GB",
@@ -175,7 +187,7 @@ test("server render redirects when its authenticated profile cannot be read", as
   guard.context.convexClient = { setAuth };
 
   await withoutBrowserWindow(async () => {
-    await expectRedirectHome(() => resolveAuthGuard({ context: guard.context, fetchToken }));
+    await expectRedirectHome(() => runGuard({ context: guard.context, fetchToken }));
     expect(setAuth).toHaveBeenCalledTimes(1);
     expect(guard.queryFn).toHaveBeenCalledTimes(1);
   });

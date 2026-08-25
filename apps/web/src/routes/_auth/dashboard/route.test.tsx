@@ -53,9 +53,14 @@ const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
  * Stands in for `convexPreloader` so the real loader runs without a Convex
  * deployment, recording call order to prove the prefetches are not serialised.
  */
+type EnsureQueryData = (
+  query: Parameters<typeof getFunctionName>[0],
+  input: Record<string, never>,
+) => Promise<{ input: Record<string, never>; initialData: unknown }>;
+
 function stubPreloader(babies: (typeof babySmith)[]) {
   const calls: string[] = [];
-  const ensureQueryData = vi.fn((query: never, input: never) => {
+  const ensureQueryData = vi.fn<EnsureQueryData>((query, input) => {
     const name = getFunctionName(query);
     calls.push(name);
     return Promise.resolve({
