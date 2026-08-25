@@ -80,6 +80,21 @@ test("hides marked milestones from visitors without deleting them", async () => 
   expect(view.queryByRole("heading", { name: "Remove marked milestones?" })).toBeNull();
 });
 
+test("applies hospital visibility toggle", async () => {
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => Promise<void>>().mockResolvedValue(undefined);
+
+  await using view = renderEditor({
+    birthJourney: "labor",
+    onBirthJourneyChange,
+  });
+
+  fireEvent.click(view.getByRole("switch", { name: "Gone to hospital" }));
+
+  await vi.waitFor(() => {
+    expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
+  });
+});
+
 test("reports a failed journey save from the editor", async () => {
   mocks.toastError.mockReset();
   const onBirthJourneyChange = vi
