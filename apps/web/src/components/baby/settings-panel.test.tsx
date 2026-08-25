@@ -1,17 +1,17 @@
 import { fireEvent, render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
-const mocks = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError },
-}));
+function spyOnToastErrorResource() {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  return makeResource(toastError, () => {
+    toastError.mockRestore();
+  });
+}
 
 const baby: BabyData = {
   name: "Nova",
@@ -209,7 +209,7 @@ test("journey selection saves the chosen option", async () => {
 });
 
 test("journey editor reports a failed save and remains open", async () => {
-  mocks.toastError.mockReset();
+  await using toastError = spyOnToastErrorResource();
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
@@ -227,7 +227,7 @@ test("journey editor reports a failed save and remains open", async () => {
   fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
 
   await vi.waitFor(() => {
-    expect(mocks.toastError).toHaveBeenCalledWith("Could not save journey");
+    expect(toastError).toHaveBeenCalledWith("Could not save journey");
   });
   expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
 });

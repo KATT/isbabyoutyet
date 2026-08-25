@@ -1,4 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import {
   DueDateEditor,
@@ -17,13 +18,12 @@ import type {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
-const mocks = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError },
-}));
+function spyOnToastErrorResource() {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  return makeResource(toastError, () => {
+    toastError.mockRestore();
+  });
+}
 
 const baby: BabyData = {
   name: "Nova",
@@ -267,6 +267,7 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
 });
 
 test("theme selector reports a failed update and remains open", async () => {
+  await using toastError = spyOnToastErrorResource();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue(new Error("Theme update failed"));
   await using view = renderResource(
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
@@ -275,7 +276,7 @@ test("theme selector reports a failed update and remains open", async () => {
   fireEvent.click(view.getByRole("button", { name: "Change" }));
   fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
 
-  await vi.waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("Theme update failed"));
+  await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Theme update failed"));
   expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
 });
 

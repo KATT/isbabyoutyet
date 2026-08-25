@@ -1,50 +1,35 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
-import { CoParentsSettings } from "@/components/baby/co-parents-settings";
+import {
+  CoParentsSettings,
+  CoParentsSettingsView,
+  type CoParentsListing,
+} from "@/components/baby/co-parents-settings";
 
-function listingHandle(listingData: { coParents: unknown[]; invites: unknown[] }) {
-  return testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
-    input: { babyId },
-    initialData: listingData as never,
-  });
+const babyId = "jd7baby000000000000000000" as Id<"baby">;
+const coParentId = "jd7coparent00000000000000" as Id<"babyCoParents">;
+const inviteId = "jd7invite0000000000000000" as Id<"babyCoParentInvites">;
+
+function resolvedInvite() {
+  return vi
+    .fn<(args: { babyId: Id<"baby">; email: string }) => Promise<{ status: "added" | "invited" }>>()
+    .mockResolvedValue({ status: "added" });
 }
 
-const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
-  invite: vi.fn<(...args: unknown[]) => Promise<{ status: "added" | "invited" }>>(),
-  removeCoParent: vi.fn<(...args: unknown[]) => Promise<null>>(),
-  cancelInvite: vi.fn<(...args: unknown[]) => Promise<null>>(),
-}));
+function resolvedVoid<TArg>() {
+  return vi.fn<(arg: TArg) => Promise<unknown>>().mockResolvedValue(null);
+}
 
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
-  };
-});
-
-vi.mock("convex/react", () => ({
-  // CoParentsSettings calls useMutation in fixed order: invite, remove, cancel
-  useMutation: (() => {
-    let call = 0;
-    return () => {
-      const index = call;
-      call += 1;
-      if (index % 3 === 0) return mocks.invite;
-      if (index % 3 === 1) return mocks.removeCoParent;
-      return mocks.cancelInvite;
-    };
-  })(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn<(message: string) => void>(), error: vi.fn<(message: string) => void>() },
-}));
+function rejectedVoid<TArg>(message: string) {
+  return vi.fn<(arg: TArg) => Promise<unknown>>().mockRejectedValue(new Error(message));
+}
 
 function renderResource(ui: React.ReactElement) {
   const view = render(ui);
@@ -53,16 +38,61 @@ function renderResource(ui: React.ReactElement) {
   });
 }
 
-const babyId = "jd7baby000000000000000000" as Id<"baby">;
+/** Unreachable deployment URL so the smoke test never dials a real Convex backend. */
+function unreachableConvexClient() {
+  return new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+}
+
+test("CoParentsSettings wires the preloaded listing and mutations into the view", async () => {
+  const client = unreachableConvexClient();
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  await using _queryClient = makeResource({}, () => {
+    queryClient.clear();
+  });
+  const listing = testPreloadedConvexQuery<typeof api.coParents.listForBaby>({
+    input: { babyId },
+    initialData: {
+      coParents: [
+        { _id: coParentId, email: "bob@example.com", name: "Bob", addedAt: Date.now() },
+      ],
+      invites: [],
+    },
+  });
+
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <QueryClientProvider client={queryClient}>
+        <CoParentsSettings babyId={babyId} isOwner={true} listing={listing} />
+      </QueryClientProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
+
+  expect(view.getByText("Bob")).toBeTruthy();
+});
 
 test("owner can invite a co-parent by email", async () => {
-  const listingData = { coParents: [], invites: [] };
-  const listing = listingHandle(listingData);
-  mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
-  mocks.invite.mockResolvedValue({ status: "added" });
+  const onInvite = resolvedInvite();
+  const listing: CoParentsListing = { coParents: [], invites: [] };
 
   await using view = renderResource(
-    <CoParentsSettings babyId={babyId} isOwner={true} listing={listing} />,
+    <CoParentsSettingsView
+      babyId={babyId}
+      isOwner={true}
+      listing={listing}
+      onInvite={onInvite}
+      onRemoveCoParent={resolvedVoid<{ coParentId: Id<"babyCoParents"> }>()}
+      onCancelInvite={resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>()}
+    />,
   );
 
   expect(view.getByText(/No co-parents yet/)).toBeTruthy();
@@ -71,8 +101,8 @@ test("owner can invite a co-parent by email", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: "Add" }));
 
-  await waitFor(() => {
-    expect(mocks.invite).toHaveBeenCalledWith({
+  await vi.waitFor(() => {
+    expect(onInvite).toHaveBeenCalledWith({
       babyId,
       email: "partner@example.com",
     });
@@ -80,68 +110,126 @@ test("owner can invite a co-parent by email", async () => {
 });
 
 test("lists co-parents and pending invites; owner can remove them", async () => {
-  const listingData = {
+  const onRemoveCoParent = resolvedVoid<{ coParentId: Id<"babyCoParents"> }>();
+  const onCancelInvite = resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>();
+
+  const listing: CoParentsListing = {
     coParents: [
       {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
+        _id: coParentId,
         email: "bob@example.com",
         name: "Bob",
-        userId: "bob",
         addedAt: Date.now(),
       },
     ],
     invites: [
       {
-        _id: "jd7invite0000000000000000" as Id<"babyCoParentInvites">,
+        _id: inviteId,
         email: "new@example.com",
         createdAt: Date.now(),
       },
     ],
   };
-  const listing = listingHandle(listingData);
-  mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
-  mocks.removeCoParent.mockResolvedValue(null);
-  mocks.cancelInvite.mockResolvedValue(null);
 
   await using view = renderResource(
-    <CoParentsSettings babyId={babyId} isOwner={true} listing={listing} />,
+    <CoParentsSettingsView
+      babyId={babyId}
+      isOwner={true}
+      listing={listing}
+      onInvite={resolvedInvite()}
+      onRemoveCoParent={onRemoveCoParent}
+      onCancelInvite={onCancelInvite}
+    />,
   );
 
   expect(view.getByText("Bob")).toBeTruthy();
   expect(view.getByText("Invite pending")).toBeTruthy();
 
   fireEvent.click(view.getByRole("button", { name: "Remove bob@example.com" }));
-  await waitFor(() => {
-    expect(mocks.removeCoParent).toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(onRemoveCoParent).toHaveBeenCalledWith({ coParentId });
   });
 
   fireEvent.click(view.getByRole("button", { name: "Cancel invite to new@example.com" }));
-  await waitFor(() => {
-    expect(mocks.cancelInvite).toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(onCancelInvite).toHaveBeenCalledWith({ inviteId });
+  });
+});
+
+test("surfaces errors when remove or cancel invite fails", async () => {
+  const onRemoveCoParent = rejectedVoid<{ coParentId: Id<"babyCoParents"> }>("remove failed");
+  const onCancelInvite = rejectedVoid<{ inviteId: Id<"babyCoParentInvites"> }>("cancel failed");
+  const toastError = vi.spyOn(toast, "error");
+  await using _toast = makeResource({}, () => {
+    toastError.mockRestore();
+  });
+
+  const listing: CoParentsListing = {
+    coParents: [
+      {
+        _id: coParentId,
+        email: "bob@example.com",
+        name: "Bob",
+        addedAt: Date.now(),
+      },
+    ],
+    invites: [
+      {
+        _id: inviteId,
+        email: "new@example.com",
+        createdAt: Date.now(),
+      },
+    ],
+  };
+
+  await using view = renderResource(
+    <CoParentsSettingsView
+      babyId={babyId}
+      isOwner={true}
+      listing={listing}
+      onInvite={resolvedInvite()}
+      onRemoveCoParent={onRemoveCoParent}
+      onCancelInvite={onCancelInvite}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Remove bob@example.com" }));
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("remove failed");
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Cancel invite to new@example.com" }));
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("cancel failed");
   });
 });
 
 test("co-parents see a read-only list without invite form", async () => {
-  const listingData = {
+  const listing: CoParentsListing = {
     coParents: [
       {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
+        _id: coParentId,
         email: "bob@example.com",
         name: null,
-        userId: "bob",
         addedAt: Date.now(),
       },
     ],
     invites: [],
   };
-  const listing = listingHandle(listingData);
-  mocks.useSuspenseQuery.mockReturnValue({ data: listingData });
 
   await using view = renderResource(
-    <CoParentsSettings babyId={babyId} isOwner={false} listing={listing} />,
+    <CoParentsSettingsView
+      babyId={babyId}
+      isOwner={false}
+      listing={listing}
+      onInvite={resolvedInvite()}
+      onRemoveCoParent={resolvedVoid<{ coParentId: Id<"babyCoParents"> }>()}
+      onCancelInvite={resolvedVoid<{ inviteId: Id<"babyCoParentInvites"> }>()}
+    />,
   );
 
   expect(view.getByText("bob@example.com")).toBeTruthy();
   expect(view.queryByPlaceholderText("partner@example.com")).toBeNull();
   expect(view.queryByRole("button", { name: "Add" })).toBeNull();
+  expect(view.queryByRole("button", { name: /^Remove / })).toBeNull();
 });

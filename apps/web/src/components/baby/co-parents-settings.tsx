@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import type { FunctionArgs } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
@@ -15,21 +15,22 @@ import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-type CoParentsSettingsProps = {
-  babyId: Id<"baby">;
-  /** Only the owner can invite/remove; co-parents see a read-only list. */
-  isOwner: boolean;
-  listing:
-    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
-    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
-};
+/** @internal Presentational listing type — exported for tests. */
+export type CoParentsListing = Exclude<
+  FunctionReturnType<typeof api.coParents.listForBaby>,
+  typeof FORBIDDEN
+>;
+
+type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
+type RemoveCoParentArgs = FunctionArgs<typeof api.coParents.removeCoParent>;
+type CancelInviteArgs = FunctionArgs<typeof api.coParents.cancelInvite>;
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
     .object({
       email: z.string().trim().email(t("Invalid email address")),
     })
-    .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
+    .transform((values): InviteArgs => ({
       babyId,
       email: values.email,
     }));
@@ -37,9 +38,7 @@ function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
 
 function InviteCoParentForm(props: {
   babyId: Id<"baby">;
-  invite: (
-    args: FunctionArgs<typeof api.coParents.invite>,
-  ) => Promise<{ status: "added" | "invited" }>;
+  onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -52,7 +51,7 @@ function InviteCoParentForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const result = await props.invite(values);
+        const result = await props.onInvite(values);
         form.reset({ email: "" });
         toast.success(
           result.status === "added"
@@ -86,20 +85,26 @@ function InviteCoParentForm(props: {
   );
 }
 
+type CoParentsSettingsViewProps = {
+  babyId: Id<"baby">;
+  /** Only the owner can invite/remove; co-parents see a read-only list. */
+  isOwner: boolean;
+  listing: CoParentsListing;
+  onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
+  onRemoveCoParent: (args: RemoveCoParentArgs) => Promise<unknown>;
+  onCancelInvite: (args: CancelInviteArgs) => Promise<unknown>;
+};
+
 /**
- * Settings section for inviting co-parents by email and managing membership.
- * Prefetched via the baby route loader when settings are open.
+ * Presentational settings section for inviting co-parents by email and
+ * managing membership. Takes all data + actions as props so it can be
+ * rendered in tests without a Convex provider.
+ *
+ * @internal Exported for tests; production uses `CoParentsSettings`.
  */
-export function CoParentsSettings(props: CoParentsSettingsProps) {
+export function CoParentsSettingsView(props: CoParentsSettingsViewProps) {
   const { t } = useI18n();
-  const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
-  // FORBIDDEN only happens for non-managers, who never render this component —
-  // treat it like an empty listing so the types stay honest.
-  const listing =
-    listingQuery.data === FORBIDDEN ? { coParents: [], invites: [] } : listingQuery.data;
-  const invite = useMutation(api.coParents.invite);
-  const removeCoParent = useMutation(api.coParents.removeCoParent);
-  const cancelInvite = useMutation(api.coParents.cancelInvite);
+  const listing = props.listing;
 
   return (
     <div className="space-y-3 w-full">
@@ -117,9 +122,10 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
                 size="icon-sm"
                 aria-label={t("Remove {{email}}", { email: row.email })}
                 onClick={() => {
-                  void removeCoParent({ coParentId: row._id })
+                  void props
+                    .onRemoveCoParent({ coParentId: row._id })
                     .then(() => toast.success(t("Co-parent removed")))
-                    .catch((error) => {
+                    .catch((error: unknown) => {
                       toast.error(error instanceof Error ? error.message : t("Could not remove"));
                     });
                 }}
@@ -142,9 +148,10 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
                 size="icon-sm"
                 aria-label={t("Cancel invite to {{email}}", { email: row.email })}
                 onClick={() => {
-                  void cancelInvite({ inviteId: row._id })
+                  void props
+                    .onCancelInvite({ inviteId: row._id })
                     .then(() => toast.success(t("Invite cancelled")))
-                    .catch((error) => {
+                    .catch((error: unknown) => {
                       toast.error(error instanceof Error ? error.message : t("Could not cancel"));
                     });
                 }}
@@ -161,7 +168,44 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
         ) : null}
       </ul>
 
-      {props.isOwner ? <InviteCoParentForm babyId={props.babyId} invite={invite} /> : null}
+      {props.isOwner ? (
+        <InviteCoParentForm babyId={props.babyId} onInvite={props.onInvite} />
+      ) : null}
     </div>
+  );
+}
+
+type CoParentsSettingsProps = {
+  babyId: Id<"baby">;
+  /** Only the owner can invite/remove; co-parents see a read-only list. */
+  isOwner: boolean;
+  listing:
+    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
+    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
+};
+
+/**
+ * Settings section for inviting co-parents by email and managing membership.
+ * Prefetched via the baby route loader when settings are open.
+ */
+export function CoParentsSettings(props: CoParentsSettingsProps) {
+  const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
+  // FORBIDDEN only happens for non-managers, who never render this component —
+  // treat it like an empty listing so the types stay honest.
+  const listing =
+    listingQuery.data === FORBIDDEN ? { coParents: [], invites: [] } : listingQuery.data;
+  const invite = useMutation(api.coParents.invite);
+  const removeCoParent = useMutation(api.coParents.removeCoParent);
+  const cancelInvite = useMutation(api.coParents.cancelInvite);
+
+  return (
+    <CoParentsSettingsView
+      babyId={props.babyId}
+      isOwner={props.isOwner}
+      listing={listing}
+      onInvite={invite}
+      onRemoveCoParent={removeCoParent}
+      onCancelInvite={cancelInvite}
+    />
   );
 }
