@@ -1,3 +1,4 @@
+import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
@@ -108,4 +109,16 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
   });
   expect(view.getByRole("heading", { name: "Settings" })).toBeTruthy();
   expect(view.getByRole("button", { name: "Log out" })).toBeTruthy();
+});
+
+test("settings sheet log-out button invokes the injected handler", async () => {
+  const onSignOut = vi.fn<() => void>();
+  await using view = await renderSettings({
+    isAdmin: false,
+    languageSettings: <div>Language and timezone controls</div>,
+    onSignOut,
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Log out" }));
+  expect(onSignOut).toHaveBeenCalledTimes(1);
 });

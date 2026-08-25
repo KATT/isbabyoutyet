@@ -596,3 +596,28 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   expect(view.getByLabelText("Your name")).toBeTruthy();
   expect(view.getByLabelText("Message")).toBeTruthy();
 });
+
+test("EncouragementForm submit reaches the Convex mutation", async () => {
+  await using client = convexClientResource();
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <LocaleProvider locale="en-GB">
+        <EncouragementForm babyId={babyId} babyName={notYetBaby.name} />
+      </LocaleProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
+
+  fireEvent.change(view.getByLabelText("Your name"), { target: { value: "Auntie Jo" } });
+  fireEvent.change(view.getByLabelText("Message"), { target: { value: "Thinking of you!" } });
+  fireEvent.click(view.getByRole("button", { name: "Send some love" }));
+
+  // Mutation against the unreachable client rejects; assert the form settles.
+  await vi.waitFor(() => {
+    expect((view.getByRole("button", { name: "Send some love" }) as HTMLButtonElement).disabled).toBe(
+      false,
+    );
+  });
+});

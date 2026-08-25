@@ -1,8 +1,9 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
+import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_EMPTY_USER, DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
-import { LoginCard, LoginPage, signInAndHandoff } from "@/routes/auth/login";
+import { LoginCard, LoginPage, loginAuthAdapter, Route, signInAndHandoff } from "@/routes/auth/login";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type SignInResult = { errorMessage: string | null };
@@ -127,4 +128,51 @@ test("LoginPage wires the real auth client into LoginCard", async () => {
   expect(screen.getByLabelText("Email")).toBeTruthy();
   expect(screen.getByLabelText("Password")).toBeTruthy();
   expect(screen.getByRole("button", { name: /sign in/i })).toBeTruthy();
+});
+
+test("login route head sets the document title", () => {
+  const head = Route.options.head as unknown as (opts: {
+    match: { context: { locale: "en-GB" } };
+  }) => { meta: Array<{ title: string | undefined }> };
+  const result = head({ match: { context: { locale: "en-GB" } } });
+  expect(result.meta.some((entry) => entry.title?.includes("Log in"))).toBe(true);
+});
+
+test("LoginPage sign-in path invokes the wired auth client", async () => {
+  const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
+  const original = {
+    signInEmail: loginAuthAdapter.signInEmail,
+    headers: loginAuthAdapter.headers,
+    waitForAuth: loginAuthAdapter.waitForAuth,
+  };
+  loginAuthAdapter.signInEmail = signInEmail as typeof loginAuthAdapter.signInEmail;
+  loginAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
+  loginAuthAdapter.waitForAuth = async () => undefined;
+  await using _adapter = makeResource({}, () => {
+    loginAuthAdapter.signInEmail = original.signInEmail;
+    loginAuthAdapter.headers = original.headers;
+    loginAuthAdapter.waitForAuth = original.waitForAuth;
+  });
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <LoginPage />
+    </LocaleProvider>,
+    { path: "/auth/login" },
+  );
+  const navigate = vi.spyOn(view.router, "navigate").mockResolvedValue(undefined);
+  await using _navigate = makeResource({}, () => {
+    navigate.mockRestore();
+  });
+
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: DEMO_USER.email } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: DEMO_USER.password } });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  await vi.waitFor(() => {
+    expect(signInEmail).toHaveBeenCalled();
+  });
+  await vi.waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith({ to: "/dashboard" });
+  });
 });

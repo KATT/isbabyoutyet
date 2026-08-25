@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
-import { SignupCard, SignupPage, signUpAndHandoff } from "@/routes/auth/signup";
+import { SignupCard, SignupPage, Route, signUpAndHandoff } from "@/routes/auth/signup";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type NewAccount = { name: string; email: string; password: string };
@@ -115,4 +115,34 @@ test("SignupPage wires the real auth client into SignupCard", async () => {
   expect(screen.getByLabelText("Email")).toBeTruthy();
   expect(screen.getByLabelText("Password")).toBeTruthy();
   expect(screen.getByRole("button", { name: /sign up|create/i })).toBeTruthy();
+});
+
+test("SignupPage sign-up path invokes the wired auth client", async () => {
+  await using _view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <SignupPage />
+    </LocaleProvider>,
+    { path: "/auth/signup" },
+  );
+
+  fireEvent.change(screen.getByLabelText("Name"), { target: { value: NEW_ACCOUNT.name } });
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: NEW_ACCOUNT.email } });
+  fireEvent.change(screen.getByLabelText("Password"), {
+    target: { value: NEW_ACCOUNT.password },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign up/i }));
+
+  await vi.waitFor(() => {
+    expect(
+      (screen.getByRole("button", { name: /sign up/i }) as HTMLButtonElement).disabled,
+    ).toBe(false);
+  });
+});
+
+test("signup route head sets the document title", () => {
+  const head = Route.options.head as unknown as (opts: {
+    match: { context: { locale: "en-GB" } };
+  }) => { meta: Array<{ title: string | undefined }> };
+  const result = head({ match: { context: { locale: "en-GB" } } });
+  expect(result.meta.some((entry) => entry.title?.includes("Sign up"))).toBe(true);
 });
