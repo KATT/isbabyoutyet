@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { JourneySelector } from "@/components/baby/journey-selector";
+import { JourneyMilestoneEditor } from "@/components/baby/journey-milestone-editor";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -33,6 +33,7 @@ function addBabySchema(t: TranslationFunction) {
         z.literal("labor"),
         z.literal("home_birth"),
         z.literal("planned_c_section"),
+        z.literal("custom"),
       ]),
     })
     .superRefine((values, ctx) => {
@@ -143,19 +144,17 @@ export function AddBabyPage() {
                   name="birthJourney"
                   render={(renderProps) => (
                     <FormItem>
-                      <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
+                      <FormLabel className="font-bold">{t("Birth journey")}</FormLabel>
                       <FormControl>
-                        <JourneySelector
-                          value={renderProps.field.value}
-                          onValueChange={renderProps.field.onChange}
+                        <JourneyMilestoneEditor
+                          birthJourney={renderProps.field.value}
+                          laborStarted={null}
+                          wentToHospital={null}
                           idPrefix="add-journey"
+                          onBirthJourneyChange={renderProps.field.onChange}
+                          onMilestoneRemove={null}
                         />
                       </FormControl>
-                      <FormDescription>
-                        {t(
-                          "We save this choice for your settings, but we don't show it to anyone.",
-                        )}
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

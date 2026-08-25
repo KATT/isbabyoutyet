@@ -42,13 +42,22 @@ test("add baby remains a standalone non-nested dashboard route", () => {
 test("journey choices explain visible statuses and privacy", async () => {
   await using view = renderResource(<AddBabyPage />);
 
-  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Planned C-section" })).toBeTruthy();
-  expect(view.getByRole("radiogroup", { name: "Choose a journey" }).className).not.toContain(
-    "grid-cols",
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Planned C-section" })).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
+    "true",
   );
-  expect(view.getByText("Visitors see: Labour started → Baby born")).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Gone to hospital" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(view.getByRole("switch", { name: "Baby born" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(view.getByRole("switch", { name: "Baby born" }).hasAttribute("disabled")).toBe(true);
+  expect(
+    view.getByText("Visitors see: Labour started → Gone to hospital → Baby born"),
+  ).toBeTruthy();
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
@@ -80,7 +89,7 @@ test.each([
   fireEvent.change(view.getByLabelText("Due date"), {
     target: { value: "2026-09-09" },
   });
-  fireEvent.click(view.getByRole("radio", { name: testCase.label }));
+  fireEvent.click(view.getByRole("button", { name: testCase.label }));
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {

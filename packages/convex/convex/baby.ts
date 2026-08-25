@@ -22,6 +22,7 @@ const birthJourneyValidator = v.union(
   v.literal("labor"),
   v.literal("home_birth"),
   v.literal("planned_c_section"),
+  v.literal("custom"),
 );
 
 const dueDateDisplayModeValidator = v.union(v.literal("exact"), v.literal("message"));

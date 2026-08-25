@@ -2,7 +2,7 @@ import { fireEvent, render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type { BabyData, BabyUpdateHandler, MilestoneRemoveHandler } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
 const mocks = vi.hoisted(() => ({
@@ -180,7 +180,7 @@ test("page language selection saves the locale override", async () => {
   expect(onUpdate).toHaveBeenCalledWith({ locale: null });
 });
 
-test("journey selection saves the chosen option", async () => {
+test("journey selection saves the chosen preset", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
@@ -195,20 +195,14 @@ test("journey selection saves the chosen option", async () => {
   );
 
   expect(view.getByText("Journey")).toBeTruthy();
-  expect(view.getByText("Labour")).toBeTruthy();
-  expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
-  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
   });
-  await vi.waitFor(() => {
-    expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
-  });
 });
 
-test("journey editor reports a failed save and remains open", async () => {
+test("journey editor reports a failed save", async () => {
   mocks.toastError.mockReset();
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
@@ -223,13 +217,38 @@ test("journey editor reports a failed save and remains open", async () => {
     />,
   );
 
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
+  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
   await vi.waitFor(() => {
     expect(mocks.toastError).toHaveBeenCalledWith("Could not save journey");
   });
-  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
+});
+
+test("turning off a marked milestone warns before removing it", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onMilestoneRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      onMilestoneRemove={onMilestoneRemove}
+      {...absentSettingsProps}
+    />,
+  );
+
+  fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
+  expect(view.getByRole("heading", { name: "Remove marked milestones?" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Remove and continue" }));
+
+  await vi.waitFor(() => {
+    expect(onMilestoneRemove).toHaveBeenCalledWith("labor_started");
+  });
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
+  });
 });
 
 test("journey selection stays changeable after milestone updates", async () => {
@@ -248,9 +267,8 @@ test("journey selection stays changeable after milestone updates", async () => {
   );
 
   expect(view.getByText("Gone to hospital")).toBeTruthy();
-  expect(view.getByText("Home birth")).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  fireEvent.click(view.getByRole("radio", { name: "Planned C-section" }));
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Planned C-section" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
   });

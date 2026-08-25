@@ -99,15 +99,25 @@ const enGB = {
   "Keep this under 80 characters": "Keep this under 80 characters",
   "Choose a journey": "Choose a journey",
   Journey: "Journey",
+  Custom: "Custom",
+  Presets: "Presets",
+  "Milestones visitors see": "Milestones visitors see",
   "Edit journey": "Edit journey",
   "Failed to update journey": "Failed to update journey",
+  "Remove marked milestones?": "Remove marked milestones?",
+  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
+    'Turning this off will remove the “{{milestone}}” milestone from your page. Visitors will no longer see it.',
+  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
+    "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.",
+  "Remove and continue": "Remove and continue",
   Labour: "Labour",
   "Home birth": "Home birth",
   "Planned C-section": "Planned C-section",
-  "Visitors see: Labour started → At hospital → Baby born":
-    "Visitors see: Labour started → At hospital → Baby born",
+  "Visitors see: Labour started → Gone to hospital → Baby born":
+    "Visitors see: Labour started → Gone to hospital → Baby born",
   "Visitors see: Labour started → Baby born": "Visitors see: Labour started → Baby born",
-  "Visitors see: At hospital → Baby born": "Visitors see: At hospital → Baby born",
+  "Visitors see: Gone to hospital → Baby born": "Visitors see: Gone to hospital → Baby born",
+  "Visitors see: Baby born": "Visitors see: Baby born",
   "We save this choice for your settings, but we don't show it to anyone.":
     "We save this choice for your settings, but we don't show it to anyone.",
   "Status date and time": "Status date and time",
@@ -342,7 +352,7 @@ const enGB = {
   Waiting: "Waiting",
   "Before labour starts": "Before labour starts",
   "Things are happening!": "Things are happening!",
-  "At Hospital": "At Hospital",
+  "At Hospital": "Gone to hospital",
   "Almost there!": "Almost there!",
   "Baby Born!": "Baby Born!",
   "Celebrate the arrival": "Celebrate the arrival",
@@ -485,7 +495,7 @@ const enGB = {
   "Update as you go": "Update as you go",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Post a status update and everyone subscribed gets the news.",
-  "At hospital": "At hospital",
+  "At hospital": "Gone to hospital",
   "Baby born!": "Baby born!",
   "Restart getting started tour": "Restart getting started tour",
   "Restart tour": "Restart tour",
@@ -643,16 +653,26 @@ const sv: Record<TranslationKey, string> = {
   "Keep this under 80 characters": "Håll texten under 80 tecken",
   "Choose a journey": "Välj en resa",
   Journey: "Resa",
+  Custom: "Anpassad",
+  Presets: "Förval",
+  "Milestones visitors see": "Milstolpar som besökare ser",
   "Edit journey": "Redigera resa",
   "Failed to update journey": "Det gick inte att uppdatera resan",
+  "Remove marked milestones?": "Ta bort markerade milstolpar?",
+  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
+    "Att stänga av detta tar bort milstolpen ”{{milestone}}” från sidan. Besökare ser den inte längre.",
+  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
+    "Att stänga av detta tar bort de markerade milstolparna från sidan. Besökare ser dem inte längre.",
+  "Remove and continue": "Ta bort och fortsätt",
   Labour: "Förlossning",
   "Home birth": "Hemförlossning",
   "Planned C-section": "Planerat kejsarsnitt",
-  "Visitors see: Labour started → At hospital → Baby born":
-    "Besökare ser: Förlossningen är igång → På sjukhuset → Bäbisen är född",
+  "Visitors see: Labour started → Gone to hospital → Baby born":
+    "Besökare ser: Förlossningen är igång → På väg till sjukhuset → Bäbisen är född",
   "Visitors see: Labour started → Baby born":
     "Besökare ser: Förlossningen är igång → Bäbisen är född",
-  "Visitors see: At hospital → Baby born": "Besökare ser: På sjukhuset → Bäbisen är född",
+  "Visitors see: Gone to hospital → Baby born": "Besökare ser: På väg till sjukhuset → Bäbisen är född",
+  "Visitors see: Baby born": "Besökare ser: Bäbisen är född",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Vi sparar valet i dina inställningar, men visar det inte för någon.",
   "Status date and time": "När statusen ändrades",
@@ -888,7 +908,7 @@ const sv: Record<TranslationKey, string> = {
   Waiting: "Inte än",
   "Before labour starts": "Innan förlossningen börjar",
   "Things are happening!": "Nu händer det!",
-  "At Hospital": "På förlossningen",
+  "At Hospital": "På väg till sjukhuset",
   "Almost there!": "Snart är det dags!",
   "Baby Born!": "Bäbisen är född!",
   "Celebrate the arrival": "Fira att bäbisen är här",
@@ -1030,7 +1050,7 @@ const sv: Record<TranslationKey, string> = {
   "Update as you go": "Uppdatera när det händer",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "När det börjar hända saker uppdaterar du statusen. Alla får en notis automatiskt.",
-  "At hospital": "På förlossningen",
+  "At hospital": "På väg till sjukhuset",
   "Baby born!": "Bäbisen är född!",
   "Restart getting started tour": "Starta om introduktionsguiden",
   "Restart tour": "Starta om guiden",
@@ -1171,15 +1191,25 @@ const es: Record<TranslationKey, string> = {
   "Keep this under 80 characters": "Usa menos de 80 caracteres",
   "Choose a journey": "Elige un recorrido",
   Journey: "Recorrido",
+  Custom: "Personalizado",
+  Presets: "Preajustes",
+  "Milestones visitors see": "Hitos que ven los visitantes",
   "Edit journey": "Editar recorrido",
   "Failed to update journey": "No se pudo actualizar el recorrido",
+  "Remove marked milestones?": "¿Eliminar hitos marcados?",
+  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
+    "Desactivar esto eliminará el hito «{{milestone}}» de tu página. Los visitantes ya no lo verán.",
+  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
+    "Desactivar esto eliminará los hitos marcados de tu página. Los visitantes ya no los verán.",
+  "Remove and continue": "Eliminar y continuar",
   Labour: "Parto",
   "Home birth": "Parto en casa",
   "Planned C-section": "Cesárea programada",
-  "Visitors see: Labour started → At hospital → Baby born":
-    "Los visitantes ven: Comenzó el parto → En el hospital → Ya nació",
+  "Visitors see: Labour started → Gone to hospital → Baby born":
+    "Los visitantes ven: Comenzó el parto → Fueron al hospital → Ya nació",
   "Visitors see: Labour started → Baby born": "Los visitantes ven: Comenzó el parto → Ya nació",
-  "Visitors see: At hospital → Baby born": "Los visitantes ven: En el hospital → Ya nació",
+  "Visitors see: Gone to hospital → Baby born": "Los visitantes ven: Fueron al hospital → Ya nació",
+  "Visitors see: Baby born": "Los visitantes ven: Ya nació",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Guardamos esta elección en tu configuración, pero no se la mostramos a nadie.",
   "Status date and time": "Fecha y hora del estado",
@@ -1418,7 +1448,7 @@ const es: Record<TranslationKey, string> = {
   Waiting: "En espera",
   "Before labour starts": "Antes de que comience el parto",
   "Things are happening!": "¡Esto ya empezó!",
-  "At Hospital": "En el hospital",
+  "At Hospital": "Fueron al hospital",
   "Almost there!": "¡Ya falta poco!",
   "Baby Born!": "¡El bebé ha nacido!",
   "Celebrate the arrival": "Celebra la llegada",
@@ -1562,7 +1592,7 @@ const es: Record<TranslationKey, string> = {
   "Update as you go": "Actualiza sobre la marcha",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Cuando empiece todo, actualiza el estado. Todos recibirán un aviso automáticamente.",
-  "At hospital": "En el hospital",
+  "At hospital": "Fueron al hospital",
   "Baby born!": "¡El bebé ha nacido!",
   "Restart getting started tour": "Reiniciar el recorrido de primeros pasos",
   "Restart tour": "Reiniciar recorrido",
@@ -1705,16 +1735,27 @@ const ptBR: Record<TranslationKey, string> = {
   "Keep this under 80 characters": "Use menos de 80 caracteres",
   "Choose a journey": "Escolha uma jornada",
   Journey: "Jornada",
+  Custom: "Personalizado",
+  Presets: "Predefinições",
+  "Milestones visitors see": "Marcos que os visitantes veem",
   "Edit journey": "Editar jornada",
   "Failed to update journey": "Não foi possível atualizar a jornada",
+  "Remove marked milestones?": "Remover marcos marcados?",
+  'Turning this off will remove the "{{milestone}}" milestone from your page. Visitors will no longer see it.':
+    "Desativar isso removerá o marco “{{milestone}}” da sua página. Os visitantes não o verão mais.",
+  "Turning these off will remove the marked milestones from your page. Visitors will no longer see them.":
+    "Desativar isso removerá os marcos marcados da sua página. Os visitantes não os verão mais.",
+  "Remove and continue": "Remover e continuar",
   Labour: "Trabalho de parto",
   "Home birth": "Parto em casa",
   "Planned C-section": "Cesárea programada",
-  "Visitors see: Labour started → At hospital → Baby born":
-    "Visitantes veem: Trabalho de parto começou → No hospital → O bebê nasceu",
+  "Visitors see: Labour started → Gone to hospital → Baby born":
+    "Visitantes veem: Trabalho de parto começou → Foram para o hospital → O bebê nasceu",
   "Visitors see: Labour started → Baby born":
     "Visitantes veem: Trabalho de parto começou → O bebê nasceu",
-  "Visitors see: At hospital → Baby born": "Visitantes veem: No hospital → O bebê nasceu",
+  "Visitors see: Gone to hospital → Baby born":
+    "Visitantes veem: Foram para o hospital → O bebê nasceu",
+  "Visitors see: Baby born": "Visitantes veem: O bebê nasceu",
   "We save this choice for your settings, but we don't show it to anyone.":
     "Salvamos esta escolha nas suas configurações, mas não a mostramos para ninguém.",
   "Status date and time": "Data e hora do status",
@@ -1955,7 +1996,7 @@ const ptBR: Record<TranslationKey, string> = {
   Waiting: "Aguardando",
   "Before labour starts": "Antes do trabalho de parto começar",
   "Things are happening!": "Agora vai!",
-  "At Hospital": "No hospital",
+  "At Hospital": "Foram para o hospital",
   "Almost there!": "Está quase na hora!",
   "Baby Born!": "O bebê nasceu!",
   "Celebrate the arrival": "Comemore a chegada",
@@ -2099,7 +2140,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Update as you go": "Vá atualizando",
   "When things start happening, update your status. Everyone gets notified automatically.":
     "Quando as coisas começarem a acontecer, atualize o status. Todo mundo é avisado automaticamente.",
-  "At hospital": "No hospital",
+  "At hospital": "Foram para o hospital",
   "Baby born!": "O bebê nasceu!",
   "Restart getting started tour": "Reiniciar o tour de primeiros passos",
   "Restart tour": "Reiniciar o tour",
@@ -2156,10 +2197,11 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
   Labour: "Labor",
-  "Visitors see: Labour started → At hospital → Baby born":
-    "Visitors see: Labor started → At the hospital → Baby born",
+  "Visitors see: Labour started → Gone to hospital → Baby born":
+    "Visitors see: Labor started → Gone to the hospital → Baby born",
   "Visitors see: Labour started → Baby born": "Visitors see: Labor started → Baby born",
-  "Visitors see: At hospital → Baby born": "Visitors see: At the hospital → Baby born",
+  "Visitors see: Gone to hospital → Baby born": "Visitors see: Gone to the hospital → Baby born",
+  "Visitors see: Baby born": "Visitors see: Baby born",
   "Labour started": "Labor started",
   "Labour started!": "Labor started!",
   "{{name}}'s labour has started — follow live updates on the baby page.":
@@ -2170,8 +2212,8 @@ const enUS: Partial<Record<TranslationKey, string>> = {
   "Not gone to hospital yet": "Not at the hospital yet",
   "Gone to hospital": "Gone to the hospital",
   "Gone to hospital!": "Gone to the hospital!",
-  "At Hospital": "At the Hospital",
-  "At hospital": "At the hospital",
+  "At Hospital": "Gone to the hospital",
+  "At hospital": "Gone to the hospital",
   "One tap updates everyone — labour started, at the hospital, baby's here. No group texts or repeated calls.":
     "Mark labor, hospital or born once. Everyone subscribed gets the news.",
   "One tap to update everyone — labour started, at the hospital, baby's here! No group texts, no repeated calls.":
