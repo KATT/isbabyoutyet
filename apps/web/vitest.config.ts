@@ -86,6 +86,10 @@ export const webUnitProject = defineProject({
       VITE_SITE_URL: "https://example.test",
       VITE_CONVEX_URL: "https://example.invalid",
       VITE_CONVEX_SITE_URL: "https://example.invalid",
+      // convex-test runs real Convex functions (including scheduled cache purge).
+      SITE_URL: "http://localhost:3000",
+      BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",
+      CONVEX_SITE_URL: "https://convex.test",
     },
     server: {
       deps: {

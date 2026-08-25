@@ -20,6 +20,9 @@
         "public/sw.js!",
         "src/server.ts!",
         "src/test/setup.ts!",
+        "src/test/convexTestHarness.ts!",
+        "src/test/convexTestSeed.ts!",
+        "src/test/renderWithConvexTest.tsx!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"

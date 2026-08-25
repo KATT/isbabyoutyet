@@ -39,7 +39,11 @@ repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
   `resolveAuthGuard({ context, fetchToken })`).
 - **Routing:** render under a real memory router — `renderWithTestRouter` /
   `renderWithOverlayRouter` — rather than stubbing `@tanstack/react-router`.
-- **Convex / React Query:** wrap in the real `ConvexProvider` /
+- **Convex / React Query:** prefer `createConvexTestHarness` +
+  `renderWithConvexTest` so components hit the in-memory `convex-test` backend
+  (seed with `seedOwnedBaby` / `signUpTestUser`, switch callers via
+  `harness.withIdentity`). File-route tests should migrate to the same harness
+  instead of hand-built handler maps. Wrap in the real `ConvexProvider` /
   `QueryClientProvider`; a context-only provider accepts a stub client.
 - **Everything else:** `vi.fn` and `vi.spyOn` are still fine (e.g. spying on
   `sonner`'s `toast` methods). Browser API gaps belong in
