@@ -37,6 +37,7 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
+import { hasDemoLogin } from "@/lib/has-demo-login";
 import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
@@ -356,7 +357,7 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
-        <DevBar />
+        <DevBar enabled={hasDemoLogin} />
         <Toaster />
         <Analytics />
         <TanStackDevtools

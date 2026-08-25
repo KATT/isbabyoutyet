@@ -27,9 +27,12 @@ function activeBabyPublicId(pathname: string) {
 /**
  * Floating shortcuts to seeded demo babies. Only mounts in local DEV and
  * Vercel preview (same gate as demo login autofill).
+ *
+ * `enabled` is injected so tests can exercise both branches without module
+ * mocks; production passes `hasDemoLogin`.
  */
-export function DevBar() {
-  if (!hasDemoLogin) return null;
+export function DevBar(props: { enabled: boolean }) {
+  if (!props.enabled) return null;
   return <DevBarPanel />;
 }
 

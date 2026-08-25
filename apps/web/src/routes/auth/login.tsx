@@ -89,6 +89,7 @@ function LoginPage() {
           </CardHeader>
           <CardContent>
             <DemoAccountPicker
+              enabled={hasDemoLogin}
               onPrefill={(account) => {
                 form.setValue("email", account.email);
                 form.setValue("password", account.password);
