@@ -42,19 +42,6 @@ export function DashboardSettingsRoute() {
   return <DashboardSettingsSheet profile={authContext.profile} />;
 }
 
-async function signOutToHome() {
-  await authClient.signOut({
-    fetchOptions: {
-      onSuccess: () => {
-        window.location.href = "/";
-      },
-      onError: (error) => {
-        toast.error(error.error.message);
-      },
-    },
-  });
-}
-
 function SettingsSection(props: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-2">
@@ -93,7 +80,18 @@ export function DashboardSettingsSheet(props: {
       isAdmin={profileQuery.data?.isAdmin === true}
       overlay={settings}
       languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
-      onSignOut={signOutToHome}
+      onSignOut={async () => {
+        await authClient.signOut({
+          fetchOptions: {
+            onSuccess: () => {
+              window.location.href = "/";
+            },
+            onError: (error) => {
+              toast.error(error.error.message);
+            },
+          },
+        });
+      }}
     />
   );
 }

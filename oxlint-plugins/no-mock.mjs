@@ -19,9 +19,11 @@ const BANNED = new Set([
 const MESSAGE =
   "Module mocking is not allowed. Prefer convex-test, real providers, or prop injection instead of vi.mock / vi.hoisted.";
 
-function isVitestOrJestIdentifier(name) {
-  return name === "vi" || name === "jest";
-}
+/** Modules whose exports carry the module-mocking API. */
+const MOCK_API_MODULES = new Set(["vitest", "@jest/globals", "vitest/node"]);
+
+/** Names that hold the mocking API even without an import (globals: true). */
+const GLOBAL_MOCK_NAMESPACES = ["vi", "jest"];
 
 function reportMockCall(context, node, methodName) {
   context.report({
@@ -44,7 +46,7 @@ function memberName(property, computed) {
   return null;
 }
 
-function checkMemberCall(context, node) {
+function checkMemberCall(context, node, namespaces) {
   if (node.callee.type !== "MemberExpression") {
     return;
   }
@@ -53,7 +55,7 @@ function checkMemberCall(context, node) {
   if (object.type !== "Identifier") {
     return;
   }
-  if (!isVitestOrJestIdentifier(object.name)) {
+  if (!namespaces.has(object.name)) {
     return;
   }
   const name = memberName(property, node.callee.computed);
@@ -61,6 +63,53 @@ function checkMemberCall(context, node) {
     return;
   }
   reportMockCall(context, node, `${object.name}.${name}`);
+}
+
+/**
+ * Records the local names that hold the mocking API, so `import { vi as v }`
+ * and `import * as vitest from "vitest"` cannot slip past the member check.
+ */
+function collectImportedNamespaces(node, namespaces) {
+  if (node.source.type !== "Literal" || !MOCK_API_MODULES.has(node.source.value)) {
+    return;
+  }
+  for (const specifier of node.specifiers) {
+    if (specifier.type === "ImportNamespaceSpecifier") {
+      namespaces.add(specifier.local.name);
+      continue;
+    }
+    if (
+      specifier.type === "ImportSpecifier" &&
+      specifier.imported.type === "Identifier" &&
+      GLOBAL_MOCK_NAMESPACES.includes(specifier.imported.name)
+    ) {
+      namespaces.add(specifier.local.name);
+    }
+  }
+}
+
+/**
+ * Flags `const { mock } = vi` at the destructure, since the resulting local
+ * call is an ordinary identifier call the member check cannot recognise.
+ */
+function checkDestructuredMock(context, node, namespaces) {
+  if (
+    node.init == null ||
+    node.init.type !== "Identifier" ||
+    !namespaces.has(node.init.name) ||
+    node.id.type !== "ObjectPattern"
+  ) {
+    return;
+  }
+  for (const property of node.id.properties) {
+    if (property.type !== "Property") {
+      continue;
+    }
+    const name = memberName(property.key, property.computed);
+    if (name != null && BANNED.has(name)) {
+      reportMockCall(context, property, `${node.init.name}.${name}`);
+    }
+  }
 }
 
 const noMock = {
@@ -74,9 +123,16 @@ const noMock = {
   },
 
   create(context) {
+    const namespaces = new Set(GLOBAL_MOCK_NAMESPACES);
     return {
+      ImportDeclaration(node) {
+        collectImportedNamespaces(node, namespaces);
+      },
+      VariableDeclarator(node) {
+        checkDestructuredMock(context, node, namespaces);
+      },
       CallExpression(node) {
-        checkMemberCall(context, node);
+        checkMemberCall(context, node, namespaces);
       },
     };
   },

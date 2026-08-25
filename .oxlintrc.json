@@ -83,9 +83,10 @@
       }
     },
     {
-      // Ban module mocking in apps/web tests only — package tests (e.g.
+      // Ban module mocking across apps/web (tests *and* shared test helpers,
+      // so a helper cannot reintroduce it) — package tests (e.g.
       // convex-prefetch) may still use vi.mock until separately migrated.
-      "files": ["apps/web/src/**/*.{test,spec}.{ts,tsx}"],
+      "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
         "no-mock/no-mock": "error"
       }

@@ -19,6 +19,10 @@ tester.run("no-mock", plugin.rules["no-mock"], {
      spy.mockRestore();`,
     `import { expect } from "vitest";
      expect(true).toBe(true);`,
+    // A local named `mock` that never came from the mocking API is fine.
+    `import { vi } from "vitest";
+     const { mock } = vi.fn();
+     mock();`,
   ],
   invalid: [
     {
@@ -45,6 +49,23 @@ tester.run("no-mock", plugin.rules["no-mock"], {
       code: `import { jest } from "@jest/globals";
              jest.mock("./mod");`,
       errors: [{ message: /banned: jest\.mock/ }],
+    },
+    {
+      code: `import { vi as v } from "vitest";
+             v.mock("./mod", () => ({}));`,
+      errors: [{ message: /banned: v\.mock/ }],
+    },
+    {
+      code: `import * as vitest from "vitest";
+             vitest.mock("./mod", () => ({}));`,
+      errors: [{ message: /banned: vitest\.mock/ }],
+    },
+    {
+      code: `import { vi } from "vitest";
+             const { mock, hoisted } = vi;
+             hoisted(() => ({}));
+             mock("./mod");`,
+      errors: [{ message: /banned: vi\.mock/ }, { message: /banned: vi\.hoisted/ }],
     },
   ],
 });
