@@ -45,6 +45,24 @@ const accountSettings = () =>
     queryFn: async () => ({ theme: "dark" as const }),
   });
 
+const failingFactory = (input: { postId: string }) =>
+  queryOptions({
+    queryKey: ["posts", "fail", input] as const,
+    queryFn: async () => {
+      throw new Error("boom");
+    },
+  });
+
+const failingInfinite = (input: { tag: string }) =>
+  infiniteQueryOptions({
+    queryKey: ["posts", "infinite-fail", input] as const,
+    queryFn: async () => {
+      throw new Error("infinite boom");
+    },
+    initialPageParam: null as string | null,
+    getNextPageParam: () => null,
+  });
+
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper(props: { children: React.ReactNode }) {
     return React.createElement(QueryClientProvider, { client: queryClient }, props.children);
@@ -68,13 +86,6 @@ test("getQueryInitiator starts ensureQueryData without awaiting and returns a ha
 test("getQueryInitiator forwards ensureQueryData errors to onError", async () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const onError = vi.fn<(options: { error: unknown }) => void>();
-  const failingFactory = (input: { postId: string }) =>
-    queryOptions({
-      queryKey: ["posts", "fail", input] as const,
-      queryFn: async () => {
-        throw new Error("boom");
-      },
-    });
 
   const initiator = getQueryInitiator(queryClient, { onError });
   initiator.ensureQueryData(failingFactory, { postId: "x" });
@@ -190,15 +201,6 @@ test("preloadedInfiniteQueryOptions preserves initialData for preloaded handles"
 test("getQueryInitiator forwards infinite query errors to onError", async () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const onError = vi.fn<(options: { error: unknown }) => void>();
-  const failingInfinite = (input: { tag: string }) =>
-    infiniteQueryOptions({
-      queryKey: ["posts", "infinite-fail", input] as const,
-      queryFn: async () => {
-        throw new Error("infinite boom");
-      },
-      initialPageParam: null as string | null,
-      getNextPageParam: () => null,
-    });
 
   const initiator = getQueryInitiator(queryClient, { onError });
   initiator.ensureInfiniteQueryData(failingInfinite, { tag: "x" });

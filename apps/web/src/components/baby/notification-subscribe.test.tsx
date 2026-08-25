@@ -138,7 +138,7 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
   }
 
   return makeResource({}, () => {
-    for (const fn of restore.reverse()) {
+    for (const fn of restore.toReversed()) {
       fn();
     }
   });

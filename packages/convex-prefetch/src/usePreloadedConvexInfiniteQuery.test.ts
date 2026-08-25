@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+import { makeFunctionReference } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
@@ -13,11 +14,12 @@ const mocks = vi.hoisted(() => {
     onUpdate: (_cb: () => void) => () => undefined,
     localQueryResult: () => undefined,
   }));
-  return { watchQuery };
+  const convexClient = { watchQuery };
+  return { watchQuery, convexClient };
 });
 
 vi.mock("convex/react", () => ({
-  useConvex: () => ({ watchQuery: mocks.watchQuery }),
+  useConvex: () => mocks.convexClient,
 }));
 
 const { registerConvexInfiniteQueryClient } = await import("./convexInfiniteQuery");
@@ -65,7 +67,7 @@ test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", a
   });
   expect(result.current.hasNextPage).toBe(false);
   // Built-in live sync: each loaded page gets a Convex watch
-  expect(mocks.watchQuery).toHaveBeenCalledWith("posts:list", {
+  expect(mocks.watchQuery).toHaveBeenCalledWith(makeFunctionReference("posts:list"), {
     tag: "news",
     paginationOpts: { numItems: 20, cursor: null },
   });
@@ -136,7 +138,7 @@ test("usePreloadedConvexInfiniteQuery remixes args from local state", async () =
     expect(result.current.data.pages).toHaveLength(1);
   });
   // Live watch uses the remixed args
-  expect(mocks.watchQuery).toHaveBeenCalledWith("posts:list", {
+  expect(mocks.watchQuery).toHaveBeenCalledWith(makeFunctionReference("posts:list"), {
     tag: "news",
     visitor: "v1",
     paginationOpts: { numItems: 20, cursor: null },

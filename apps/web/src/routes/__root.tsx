@@ -15,7 +15,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import * as React from "react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -37,7 +37,6 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
-import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
@@ -53,8 +52,22 @@ export const Route = createRootRouteWithContext<{
   token: string | null | undefined;
 }>()({
   beforeLoad: async () => {
+    // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
+    // then Accept-Language) via the server function.
+    if (typeof window === "undefined") {
+      return {
+        locale: await detectRequestLocale(),
+        isAuthenticated: false,
+        token: null,
+      };
+    }
+    // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
+    // (back button included) and the router blocks on it, so a server-function
+    // round-trip here would tax them all — that's what made cached navigations
+    // show the top progress bar. Paraglide resolves the same cookie →
+    // preferredLanguage chain locally.
     return {
-      locale: await detectRequestLocale(),
+      locale: getDetectedLocale(),
       isAuthenticated: false,
       token: null,
     };
@@ -114,7 +127,6 @@ export const Route = createRootRouteWithContext<{
           name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
         },
-        ...aiNoTrainMeta(),
       ],
       links: [
         {
@@ -149,10 +161,7 @@ export const Route = createRootRouteWithContext<{
     };
   },
   headers() {
-    return {
-      ...privateCacheHeaders(),
-      ...aiNoTrainHeaders(),
-    };
+    return privateCacheHeaders();
   },
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -318,6 +327,13 @@ export function NotFoundComponent() {
   );
 }
 
+// The router flips isLoading true on every navigation — including instant
+// ones served entirely from the React Query cache — so an undelayed bar
+// flashes on every click and makes fast navigations look slow. Only show it
+// once loading has persisted past this threshold (same idea as TanStack's
+// defaultPendingMs for pending components).
+export const NAVIGATION_PROGRESS_DELAY_MS = 200;
+
 // Global pending indicator: the URL updates immediately on navigation, but on
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
@@ -326,8 +342,23 @@ export function NotFoundComponent() {
 export function NavigationProgress() {
   const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
+  const [showBar, setShowBar] = useState(false);
 
-  if (!isNavigating) {
+  useEffect(() => {
+    // Show only after the delay; hide on the next tick (a 0ms timeout keeps
+    // the setState out of the synchronous effect body).
+    const delay = setTimeout(
+      () => {
+        setShowBar(isNavigating);
+      },
+      isNavigating ? NAVIGATION_PROGRESS_DELAY_MS : 0,
+    );
+    return () => {
+      clearTimeout(delay);
+    };
+  }, [isNavigating]);
+
+  if (!showBar) {
     return null;
   }
   return (

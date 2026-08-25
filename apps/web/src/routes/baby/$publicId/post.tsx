@@ -5,6 +5,7 @@ import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
+import { useRef } from "react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useBabyPostOverlayNav } from "@/lib/overlay-nav";
@@ -66,6 +67,7 @@ export function BabyPostUpdateOverlay() {
   const loaderData = Route.useLoaderData();
   const completeOnboardingStep = useCompleteOnboardingStep();
   const post = useBabyPostOverlayNav(params.publicId);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
   if (!managerBabyDoc) {
@@ -79,7 +81,7 @@ export function BabyPostUpdateOverlay() {
       onOpenChange={post.onOpenChange}
       onOpenChangeComplete={post.onOpenChangeComplete}
     >
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-lg">
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
         <UpdateComposer
           babyId={managerBabyDoc._id}

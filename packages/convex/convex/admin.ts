@@ -39,6 +39,47 @@ const babyRowValidator = v.object({
   managerEmails: v.array(v.string()),
 });
 
+const userBabySummaryValidator = v.object({
+  name: v.string(),
+  publicId: v.string(),
+  demo: v.boolean(),
+});
+
+const userRowValidator = v.object({
+  _id: v.string(),
+  email: v.string(),
+  name: v.string(),
+  createdAt: v.number(),
+  babies: v.array(userBabySummaryValidator),
+});
+
+function authUserRow(user: Record<string, unknown>) {
+  return {
+    _id: String(user._id),
+    email: String(user.email),
+    name: String(user.name),
+    createdAt: Number(user.createdAt),
+  };
+}
+
+async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
+  const babies = await ctx.db
+    .query("baby")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .order("desc")
+    .take(100);
+  const rows = [];
+  for (const baby of babies) {
+    if (!isActive(baby)) continue;
+    rows.push({
+      name: baby.name,
+      publicId: baby.publicId,
+      demo: baby.demo === true,
+    });
+  }
+  return rows;
+}
+
 /**
  * Resolve a Better Auth user's email. Sentinel / non-document owners
  * (homepage live demos use `homepage-demo`) are not Better Auth rows — looking
@@ -156,5 +197,34 @@ export const listBabies = query({
       });
     }
     return { ...result, page: rows };
+  },
+});
+
+/** Newest Better Auth signups first — staff review of recent registrations. */
+export const listUsers = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(userRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: "user",
+      sortBy: { field: "createdAt", direction: "desc" },
+      paginationOpts: args.paginationOpts,
+    });
+    const page = [];
+    for (const user of result.page as Record<string, unknown>[]) {
+      const row = authUserRow(user);
+      page.push({
+        ...row,
+        babies: await ownedBabiesForUser(ctx, row._id),
+      });
+    }
+    return {
+      page,
+      isDone: result.isDone as boolean,
+      continueCursor: result.continueCursor as string,
+    };
   },
 });

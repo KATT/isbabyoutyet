@@ -355,7 +355,7 @@ export const remove = mutationWithTriggers({
       if (notification.scheduledId) {
         try {
           await ctx.scheduler.cancel(notification.scheduledId);
-        } catch (_error) {
+        } catch {
           // Already sent or missing — still mark cancelled below
         }
       }
@@ -405,7 +405,9 @@ export const cancelScheduledNotification = mutation({
         await ctx.scheduler.cancel(notification.scheduledId);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        throw new Error("Failed to cancel scheduled notification: " + message);
+        throw new Error("Failed to cancel scheduled notification: " + message, {
+          cause: error,
+        });
       }
     }
 
@@ -549,7 +551,7 @@ export async function syncStatusNotifications(
     if (notification.scheduledId) {
       try {
         await ctx.scheduler.cancel(notification.scheduledId);
-      } catch (_error) {
+      } catch {
         // Ignore errors if notification was already sent or doesn't exist
       }
     }

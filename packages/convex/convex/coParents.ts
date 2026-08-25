@@ -225,11 +225,11 @@ export const removeCoParent = mutation({
 export const cancelInvite = mutation({
   args: { inviteId: v.id("babyCoParentInvites") },
   handler: async (ctx, args) => {
-    const invite = await ctx.db.get(args.inviteId);
-    if (!invite || !isActive(invite)) {
+    const inviteRow = await ctx.db.get(args.inviteId);
+    if (!inviteRow || !isActive(inviteRow)) {
       throw new Error("Invite not found");
     }
-    await requireBabyOwner(ctx, invite.babyId);
+    await requireBabyOwner(ctx, inviteRow.babyId);
     await ctx.db.patch(args.inviteId, softDeletePatch());
   },
 });

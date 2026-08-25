@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
-import { DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
+import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { modules, registerComponents } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
@@ -29,9 +29,15 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
       paginationOpts: FIRST_PAGE,
     }),
   ).rejects.toThrow("Not authorized");
+  await expect(asAlice.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
+    "Not authorized",
+  );
   await expect(
     t.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
   ).rejects.toThrow("Not authenticated");
+  await expect(t.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
+    "Not authenticated",
+  );
 });
 
 test("seedDemoData marks the demo user as admin", async () => {
@@ -194,7 +200,7 @@ test("admins can list babies sorted by created or updated with manager emails", 
     paginationOpts: FIRST_PAGE,
   });
   expect(byCreatedAsc.page.map((row) => row._id)).toEqual(
-    [...byCreated.page].reverse().map((row) => row._id),
+    [...byCreated.page].toReversed().map((row) => row._id),
   );
 
   const waitingRow = byCreated.page.find((row) => row.publicId === "baby-waiting");
@@ -267,4 +273,39 @@ test("admins can list babies sorted by created or updated with manager emails", 
     where: [{ field: "email", value: DEMO_USER.email }],
   });
   expect(authUser).toBeTruthy();
+});
+
+test("admins can list recently signed up users newest first", async () => {
+  const t = await setup();
+  const seeded = await t.mutation(internal.seed.seedDemoData, {});
+  const asDemo = t.withIdentity({ subject: seeded.userId });
+
+  const users = await asDemo.query(api.admin.listUsers, {
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(users.page.length).toBeGreaterThanOrEqual(2);
+  expect(users.page.some((row) => row.email === DEMO_USER.email)).toBe(true);
+  const demoParent = users.page.find((row) => row.email === DEMO_USER.email);
+  expect(demoParent?.babies.length).toBeGreaterThanOrEqual(4);
+  expect(demoParent?.babies.some((baby) => baby.publicId === "baby-waiting")).toBe(true);
+  const newParent = users.page.find((row) => row.email === DEMO_EMPTY_USER.email);
+  expect(newParent?.babies).toEqual([]);
+  for (const row of users.page) {
+    expect(row.name.length).toBeGreaterThan(0);
+    expect(row.email).toContain("@");
+  }
+  for (let i = 1; i < users.page.length; i++) {
+    expect(users.page[i - 1]!.createdAt).toBeGreaterThanOrEqual(users.page[i]!.createdAt);
+  }
+
+  const page1 = await asDemo.query(api.admin.listUsers, {
+    paginationOpts: { numItems: 1, cursor: null },
+  });
+  expect(page1.page).toHaveLength(1);
+  expect(page1.isDone).toBe(false);
+  const page2 = await asDemo.query(api.admin.listUsers, {
+    paginationOpts: { numItems: 1, cursor: page1.continueCursor },
+  });
+  expect(page2.page).toHaveLength(1);
+  expect(page2.page[0]!._id).not.toBe(page1.page[0]!._id);
 });
