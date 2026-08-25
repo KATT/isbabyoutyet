@@ -39,11 +39,18 @@ const babyRowValidator = v.object({
   managerEmails: v.array(v.string()),
 });
 
+const userBabySummaryValidator = v.object({
+  name: v.string(),
+  publicId: v.string(),
+  demo: v.boolean(),
+});
+
 const userRowValidator = v.object({
   _id: v.string(),
   email: v.string(),
   name: v.string(),
   createdAt: v.number(),
+  babies: v.array(userBabySummaryValidator),
 });
 
 function authUserRow(user: Record<string, unknown>) {
@@ -53,6 +60,24 @@ function authUserRow(user: Record<string, unknown>) {
     name: String(user.name),
     createdAt: Number(user.createdAt),
   };
+}
+
+async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
+  const babies = await ctx.db
+    .query("baby")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .order("desc")
+    .take(100);
+  const rows = [];
+  for (const baby of babies) {
+    if (!isActive(baby)) continue;
+    rows.push({
+      name: baby.name,
+      publicId: baby.publicId,
+      demo: baby.demo === true,
+    });
+  }
+  return rows;
 }
 
 /**
@@ -188,9 +213,16 @@ export const listUsers = query({
       sortBy: { field: "createdAt", direction: "desc" },
       paginationOpts: args.paginationOpts,
     });
-    // findMany is typed as `any`; rebuild the page so the query return stays typed.
+    const page = [];
+    for (const user of result.page as Record<string, unknown>[]) {
+      const row = authUserRow(user);
+      page.push({
+        ...row,
+        babies: await ownedBabiesForUser(ctx, row._id),
+      });
+    }
     return {
-      page: (result.page as Record<string, unknown>[]).map(authUserRow),
+      page,
       isDone: result.isDone as boolean,
       continueCursor: result.continueCursor as string,
     };
