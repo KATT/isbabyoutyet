@@ -34,18 +34,12 @@ function currentPage(isActive: boolean) {
 }
 
 /**
- * Floating shortcuts to seeded demo babies. Only mounts in local DEV and
- * Vercel preview (same gate as demo login autofill).
- *
- * `enabled` is injected so tests can exercise both branches without module
- * mocks; production passes `hasDemoLogin`.
+ * Floating shortcuts to seeded demo babies. Call sites must gate on
+ * `hasDemoLogin` (`import.meta.env.DEV` / `VITE_HAS_DEMO_LOGIN`) so production
+ * builds never mount this component — do not render `{false && <DevBar />}`
+ * wrappers that still evaluate an `enabled` prop at runtime.
  */
-export function DevBar(props: { enabled: boolean }) {
-  if (!props.enabled) return null;
-  return <DevBarPanel />;
-}
-
-function DevBarPanel() {
+export function DevBar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const currentPublicId = activeBabyPublicId(pathname);
   const onDashboard = pathname.startsWith("/dashboard");

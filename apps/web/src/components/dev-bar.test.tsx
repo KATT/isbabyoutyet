@@ -14,7 +14,7 @@ async function openDevBar() {
 }
 
 test("opens a menu of seeded baby shortcuts", async () => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={true} />, {
+  await using _view = await renderWithTestRouter(<DevBar />, {
     path: "/dashboard",
   });
 
@@ -30,14 +30,8 @@ test("opens a menu of seeded baby shortcuts", async () => {
   expect(juniper.getAttribute("href")).toBe(`/baby/${HOMEPAGE_DEMO.publicId}`);
 });
 
-test("hides entirely when demo login is disabled", async () => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={false} />, { path: "/" });
-
-  expect(screen.queryByRole("button", { name: /developer shortcuts/i })).toBeNull();
-});
-
 test("closes when the route changes", async () => {
-  await using view = await renderWithTestRouter(<DevBar enabled={true} />, { path: "/dashboard" });
+  await using view = await renderWithTestRouter(<DevBar />, { path: "/dashboard" });
   await openDevBar();
 
   await view.router.navigate({ to: "/baby/baby-waiting" });
@@ -48,7 +42,7 @@ test("closes when the route changes", async () => {
 });
 
 test("page shortcut links point at dashboard, login, and preview", async () => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={true} />, { path: "/" });
+  await using _view = await renderWithTestRouter(<DevBar />, { path: "/" });
   await openDevBar();
 
   expect(screen.getByRole("menuitem", { name: /dashboard/i }).getAttribute("href")).toBe(
@@ -59,7 +53,7 @@ test("page shortcut links point at dashboard, login, and preview", async () => {
 });
 
 test("marks the current baby when opened on a baby page", async () => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={true} />, {
+  await using _view = await renderWithTestRouter(<DevBar />, {
     path: "/baby/baby-in-labor",
   });
   await openDevBar();
@@ -71,7 +65,7 @@ test("marks the current baby when opened on a baby page", async () => {
 });
 
 test("marks the current homepage demo baby", async () => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={true} />, {
+  await using _view = await renderWithTestRouter(<DevBar />, {
     path: `/baby/${HOMEPAGE_DEMO.publicId}`,
   });
   await openDevBar();
@@ -88,7 +82,7 @@ test.each([
   { path: "/auth/login", name: /login/i },
   { path: "/preview", name: /preview/i },
 ])("marks the current page shortcut on $path", async (testCase) => {
-  await using _view = await renderWithTestRouter(<DevBar enabled={true} />, {
+  await using _view = await renderWithTestRouter(<DevBar />, {
     path: testCase.path,
   });
   await openDevBar();

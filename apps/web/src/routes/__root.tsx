@@ -37,10 +37,13 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
-import { hasDemoLogin } from "@/lib/has-demo-login";
 import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
+
+/** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
+const showDevBar =
+  import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -357,7 +360,8 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
-        <DevBar enabled={hasDemoLogin} />
+        {/* Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar in prod. */}
+        {showDevBar ? <DevBar /> : null}
         <Toaster />
         <Analytics />
         <TanStackDevtools
