@@ -27,6 +27,24 @@ Use `@/lib/overlay-nav` for open/close (TanStack has `history.back` /
 Keep `replace: true` for slug canonicalize and auth redirects. Admin tab switches
 still use `resetScroll: false` (not overlay history).
 
+## Tests
+
+`vi.mock` / `vi.hoisted` / `vi.doMock` (and the `jest` equivalents) are banned
+repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
+
+- **Components:** export a presentational `…View` marked `@internal` and pass
+  data plus handlers as props; keep query/mutation wiring in the container.
+- **Server handlers / guards:** take the effectful dependency as a parameter
+  (`handleCachePurge(request, { deleteByTag })`,
+  `resolveAuthGuard({ context, fetchToken })`).
+- **Routing:** render under a real memory router — `renderWithTestRouter` /
+  `renderWithOverlayRouter` — rather than stubbing `@tanstack/react-router`.
+- **Convex / React Query:** wrap in the real `ConvexProvider` /
+  `QueryClientProvider`; a context-only provider accepts a stub client.
+- **Everything else:** `vi.fn` and `vi.spyOn` are still fine (e.g. spying on
+  `sonner`'s `toast` methods). Browser API gaps belong in
+  `apps/web/src/test/setup.ts`.
+
 ## Convex
 
 When working under `packages/convex/`, also follow
