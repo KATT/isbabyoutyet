@@ -2,7 +2,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
-import { DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
+import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { modules, registerComponents } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
@@ -285,6 +285,11 @@ test("admins can list recently signed up users newest first", async () => {
   });
   expect(users.page.length).toBeGreaterThanOrEqual(2);
   expect(users.page.some((row) => row.email === DEMO_USER.email)).toBe(true);
+  const demoParent = users.page.find((row) => row.email === DEMO_USER.email);
+  expect(demoParent?.babies.length).toBeGreaterThanOrEqual(4);
+  expect(demoParent?.babies.some((baby) => baby.publicId === "baby-waiting")).toBe(true);
+  const newParent = users.page.find((row) => row.email === DEMO_EMPTY_USER.email);
+  expect(newParent?.babies).toEqual([]);
   for (const row of users.page) {
     expect(row.name.length).toBeGreaterThan(0);
     expect(row.email).toContain("@");

@@ -296,19 +296,28 @@ test("users section shows empty and rows", async () => {
           name: "Ada",
           email: "ada@example.com",
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          babies: [
+            { name: "River", publicId: "baby-river", demo: false },
+            { name: "Sky", publicId: "baby-sky", demo: true },
+          ],
         },
         {
           _id: "user-2",
           name: "Bob",
           email: "bob@example.com",
           createdAt: Date.UTC(2026, 0, 16, 12, 0),
+          babies: [],
         },
       ]}
     />,
   );
   expect(filled.getByText("Ada")).toBeTruthy();
   expect(filled.getByText("ada@example.com")).toBeTruthy();
+  expect(filled.getByRole("link", { name: "River" })).toBeTruthy();
+  expect(filled.getByRole("link", { name: "Sky" })).toBeTruthy();
+  expect(filled.getByText(/Demo/)).toBeTruthy();
   expect(filled.getByText("Bob")).toBeTruthy();
+  expect(filled.getByText("—")).toBeTruthy();
 });
 
 test("users section shows loading-more spinner", async () => {
@@ -323,6 +332,7 @@ test("users section shows loading-more spinner", async () => {
           name: "Ada",
           email: "ada@example.com",
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          babies: [{ name: "River", publicId: "baby-river", demo: false }],
         },
       ]}
     />,
@@ -427,6 +437,7 @@ test("users tab renders recent signup rows from the infinite query", async () =>
           name: "Ada",
           email: "ada@example.com",
           createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          babies: [{ name: "River", publicId: "baby-river", demo: false }],
         },
       ],
       isDone: true,
