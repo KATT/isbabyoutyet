@@ -111,6 +111,33 @@ test("journey choices explain visible statuses and privacy", async () => {
   expect(view.queryByLabelText("Public due date message")).toBeNull();
 });
 
+test("submits optional theme selection", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  expandOptionalSettings(view);
+  fireEvent.click(view.getByRole("button", { name: "Violet Bloom" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-09"),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      birthJourney: "labor",
+      theme: "violet-bloom",
+    });
+  });
+});
+
 test.each([
   { label: "Labour", birthJourney: "labor" },
   { label: "Home birth", birthJourney: "home_birth" },

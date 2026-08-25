@@ -48,6 +48,10 @@ function renderResource(ui: React.ReactElement) {
   });
 }
 
+function openJourneyEditor(view: ReturnType<typeof render>) {
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
+}
+
 test("settings dialog shows page fields when open and stays closed when not", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
@@ -87,6 +91,11 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
+  expect(
+    open.getByText("Visitors see: Labour started → Gone to hospital → Baby born"),
+  ).toBeTruthy();
+  expect(open.queryByRole("button", { name: "Labour" })).toBeNull();
+
   expect(open.queryByText("Delete page")).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
@@ -199,6 +208,7 @@ test("journey selection saves the chosen preset", async () => {
   );
 
   expect(view.getByText("Journey")).toBeTruthy();
+  openJourneyEditor(view);
   expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Home birth" }));
   await vi.waitFor(() => {
@@ -221,6 +231,7 @@ test("journey editor reports a failed save", async () => {
     />,
   );
 
+  openJourneyEditor(view);
   fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
   await vi.waitFor(() => {
@@ -242,6 +253,8 @@ test("turning off a marked milestone warns before removing it", async () => {
       onMilestoneRemove={onMilestoneRemove}
     />,
   );
+
+  openJourneyEditor(view);
 
   fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
   expect(view.getByRole("heading", { name: "Remove marked milestones?" })).toBeTruthy();
@@ -271,6 +284,7 @@ test("journey selection stays changeable after milestone updates", async () => {
   );
 
   expect(view.getAllByText("Gone to hospital").length).toBeGreaterThan(0);
+  openJourneyEditor(view);
   expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Planned C-section" }));
   await vi.waitFor(() => {
@@ -303,5 +317,6 @@ test("theme constants render through the active translation catalog", async () =
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Redigera resa" }));
   expect(view.getByRole("button", { name: "Förlossning" })).toBeTruthy();
 });

@@ -26,10 +26,12 @@ import { getBlockingLaterMilestone, MILESTONE_LABELS } from "@workspace/convex/s
 import type {
   BabyData,
   BabyUpdateHandler,
+  BirthJourney,
   Milestone,
   MilestoneRedateHandler,
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
+import { JourneyMilestoneEditor } from "./journey-milestone-editor";
 import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -406,6 +408,41 @@ function NameForm(props: EditorFormProps) {
         isDirty={form.formState.isDirty}
       />
     </Form>
+  );
+}
+
+type JourneyEditorProps = {
+  birthJourney: BirthJourney;
+  laborStarted: string | null;
+  wentToHospital: string | null;
+  onUpdate: BabyUpdateHandler;
+  onMilestoneRemove: MilestoneRemoveHandler;
+};
+
+export function JourneyEditor(props: JourneyEditorProps) {
+  const { t } = useI18n();
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger
+        render={
+          <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
+            {t("Edit")}
+          </Button>
+        }
+      />
+      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
+        <JourneyMilestoneEditor
+          birthJourney={props.birthJourney}
+          laborStarted={props.laborStarted}
+          wentToHospital={props.wentToHospital}
+          idPrefix="settings-journey"
+          onBirthJourneyChange={(birthJourney) => props.onUpdate({ birthJourney })}
+          onMilestoneRemove={props.onMilestoneRemove}
+        />
+      </PopoverContent>
+    </Popover>
   );
 }
 

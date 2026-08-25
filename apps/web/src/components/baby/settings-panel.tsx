@@ -50,7 +50,13 @@ import type {
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
+import {
+  DueDateEditor,
+  JourneyEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
 import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
@@ -60,7 +66,6 @@ import {
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
-import { JourneyMilestoneEditor } from "./journey-milestone-editor";
 import type { ReactNode } from "react";
 
 type SettingsPanelProps = {
@@ -166,24 +171,23 @@ export function SettingsPanel(props: SettingsPanelProps) {
           </SettingsSection>
 
           <SettingsSection title={t("Birth journey")}>
-            <Item className="items-start">
+            <Item>
               <ItemMedia variant="icon">
                 <Heartbeat className="w-4 h-4" />
               </ItemMedia>
-              <ItemContent className="gap-4">
-                <div>
-                  <ItemTitle>{t("Journey")}</ItemTitle>
-                  <ItemDescription>{t(journeyOption.labelKey)}</ItemDescription>
-                </div>
-                <JourneyMilestoneEditor
+              <ItemContent>
+                <ItemTitle>{t("Journey")}</ItemTitle>
+                <ItemDescription>{t(journeyOption.descriptionKey)}</ItemDescription>
+              </ItemContent>
+              <ItemActions>
+                <JourneyEditor
                   birthJourney={props.birthJourney}
                   laborStarted={props.baby.laborStarted}
                   wentToHospital={props.baby.wentToHospital}
-                  idPrefix="settings-journey"
-                  onBirthJourneyChange={(birthJourney) => props.onUpdate({ birthJourney })}
+                  onUpdate={props.onUpdate}
                   onMilestoneRemove={props.onMilestoneRemove}
                 />
-              </ItemContent>
+              </ItemActions>
             </Item>
 
             {/* Marked milestones: correct their date here; mark new ones via
