@@ -18,9 +18,19 @@ import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 
-function activeBabyPublicId(pathname: string) {
+/** @internal Exported for tests. */
+export function activeBabyPublicId(pathname: string) {
   const match = pathname.match(/^\/baby\/([^/]+)/);
   return match?.[1] ?? null;
+}
+
+/**
+ * The shortcut for the page you are already on is marked `aria-current`, which
+ * is also how tests tell an active entry from an inactive one (every entry
+ * renders an icon, so the check mark alone is not observable).
+ */
+function currentPage(isActive: boolean) {
+  return isActive ? ("page" as const) : undefined;
 }
 
 /**
@@ -38,6 +48,9 @@ export function DevBar(props: { enabled: boolean }) {
 function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const currentPublicId = activeBabyPublicId(pathname);
+  const onDashboard = pathname.startsWith("/dashboard");
+  const onLogin = pathname.startsWith("/auth/login");
+  const onPreview = pathname.startsWith("/preview");
   const [open, setOpen] = useState(false);
   const [menuPathname, setMenuPathname] = useState(pathname);
 
@@ -77,7 +90,13 @@ function DevBarPanel() {
             {DEMO_BABIES.map((baby) => (
               <DropdownMenuItem
                 key={baby.publicId}
-                render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
+                render={
+                  <Link
+                    to="/baby/$publicId"
+                    params={{ publicId: baby.publicId }}
+                    aria-current={currentPage(currentPublicId === baby.publicId)}
+                  />
+                }
               >
                 {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
                 <span className="min-w-0 flex-1 truncate">{baby.label}</span>
@@ -95,7 +114,13 @@ function DevBarPanel() {
               return (
                 <DropdownMenuItem
                   key={baby.publicId}
-                  render={<Link to="/baby/$publicId" params={{ publicId: baby.publicId }} />}
+                  render={
+                    <Link
+                      to="/baby/$publicId"
+                      params={{ publicId: baby.publicId }}
+                      aria-current={currentPage(currentPublicId === baby.publicId)}
+                    />
+                  }
                 >
                   {currentPublicId === baby.publicId ? <Check data-icon="inline-start" /> : null}
                   <span className="min-w-0 flex-1 truncate">{baby.name}</span>
@@ -109,28 +134,24 @@ function DevBarPanel() {
 
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
-            <DropdownMenuItem render={<Link to="/dashboard" />}>
-              {pathname.startsWith("/dashboard") ? (
-                <Check data-icon="inline-start" />
-              ) : (
-                <House data-icon="inline-start" />
-              )}
+            <DropdownMenuItem
+              render={
+                <Link to="/dashboard" aria-current={currentPage(onDashboard)} />
+              }
+            >
+              {onDashboard ? <Check data-icon="inline-start" /> : <House data-icon="inline-start" />}
               Dashboard
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/auth/login" />}>
-              {pathname.startsWith("/auth/login") ? (
-                <Check data-icon="inline-start" />
-              ) : (
-                <SignIn data-icon="inline-start" />
-              )}
+            <DropdownMenuItem
+              render={<Link to="/auth/login" aria-current={currentPage(onLogin)} />}
+            >
+              {onLogin ? <Check data-icon="inline-start" /> : <SignIn data-icon="inline-start" />}
               Login
             </DropdownMenuItem>
-            <DropdownMenuItem render={<Link to="/preview" />}>
-              {pathname.startsWith("/preview") ? (
-                <Check data-icon="inline-start" />
-              ) : (
-                <Code data-icon="inline-start" />
-              )}
+            <DropdownMenuItem
+              render={<Link to="/preview" aria-current={currentPage(onPreview)} />}
+            >
+              {onPreview ? <Check data-icon="inline-start" /> : <Code data-icon="inline-start" />}
               Preview
             </DropdownMenuItem>
           </DropdownMenuGroup>

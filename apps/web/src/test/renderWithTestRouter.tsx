@@ -18,9 +18,13 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
  * so callers must `await` this before asserting on the rendered output.
  *
  * A single root route is enough — `Link` still builds the correct `href`
- * from `to` / `params` without registering every destination path.
+ * from `to` / `params` without registering every destination path, and
+ * components reading `useRouterState().location` see `opts.path`.
+ *
+ * The returned view carries the `router`, so tests that assert on
+ * location-derived UI can navigate instead of re-rendering.
  */
-export async function renderWithTestRouter(ui: ReactElement) {
+export async function renderWithTestRouter(ui: ReactElement, opts = { path: "/" }) {
   const rootRoute = createRootRoute({
     component: function TestRoot() {
       return (
@@ -33,7 +37,7 @@ export async function renderWithTestRouter(ui: ReactElement) {
 
   const router = createRouter({
     routeTree: rootRoute,
-    history: createMemoryHistory({ initialEntries: ["/"] }),
+    history: createMemoryHistory({ initialEntries: [opts.path] }),
     defaultPendingMinMs: 0,
   });
 
@@ -42,7 +46,7 @@ export async function renderWithTestRouter(ui: ReactElement) {
   await router.load();
 
   const view = render(<RouterProvider router={router} />);
-  return makeResource(view, () => {
+  return makeResource(Object.assign(view, { router }), () => {
     view.unmount();
   });
 }
