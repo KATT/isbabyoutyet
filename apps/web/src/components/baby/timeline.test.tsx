@@ -423,7 +423,7 @@ test("TimelineFeed renders the prefetched page through the live query", async ()
 test("owners can delete an encouragement and toast success", async () => {
   const removeEncouragement = vi
     .fn<TimelineFeedViewProps["removeEncouragement"]>()
-    .mockResolvedValue(undefined);
+    .mockResolvedValue(null);
   const toastSuccess = vi.spyOn((await import("sonner")).toast, "success");
   await using _toast = makeResource({}, () => {
     toastSuccess.mockRestore();
@@ -463,7 +463,7 @@ test("owners can delete an encouragement and toast success", async () => {
 test("authors can edit their own encouragement within the edit window", async () => {
   const updateEncouragement = vi
     .fn<TimelineFeedViewProps["updateEncouragement"]>()
-    .mockResolvedValue(undefined);
+    .mockResolvedValue(null);
   const toastSuccess = vi.spyOn((await import("sonner")).toast, "success");
   await using _toast = makeResource({}, () => {
     toastSuccess.mockRestore();
@@ -506,11 +506,11 @@ test("authors can edit their own encouragement within the edit window", async ()
 test("update delete and set-as-photo handlers toast on success and error", async () => {
   const removeUpdate = vi
     .fn<TimelineFeedViewProps["removeUpdate"]>()
-    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(null)
     .mockRejectedValueOnce(new Error("nope"));
   const setAsCurrentPhoto = vi
     .fn<TimelineFeedViewProps["setAsCurrentPhoto"]>()
-    .mockResolvedValueOnce(undefined)
+    .mockResolvedValueOnce(null)
     .mockRejectedValueOnce("offline");
   const toast = (await import("sonner")).toast;
   const toastSuccess = vi.spyOn(toast, "success");
