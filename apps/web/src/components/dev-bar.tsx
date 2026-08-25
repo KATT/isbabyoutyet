@@ -35,13 +35,15 @@ export function DevBar() {
 
 function DevBarPanel() {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  // Remount on navigation so the menu closes without setState-in-effect.
-  return <DevBarMenu key={pathname} pathname={pathname} />;
-}
-
-function DevBarMenu(props: { pathname: string }) {
-  const currentPublicId = activeBabyPublicId(props.pathname);
+  const currentPublicId = activeBabyPublicId(pathname);
   const [open, setOpen] = useState(false);
+  const [menuPathname, setMenuPathname] = useState(pathname);
+
+  // Close the menu when the route changes without setState-in-effect.
+  if (pathname !== menuPathname) {
+    setMenuPathname(pathname);
+    setOpen(false);
+  }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
@@ -106,7 +108,7 @@ function DevBarMenu(props: { pathname: string }) {
           <DropdownMenuGroup>
             <DropdownMenuLabel>Pages</DropdownMenuLabel>
             <DropdownMenuItem render={<Link to="/dashboard" />}>
-              {props.pathname.startsWith("/dashboard") ? (
+              {pathname.startsWith("/dashboard") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <House data-icon="inline-start" />
@@ -114,7 +116,7 @@ function DevBarMenu(props: { pathname: string }) {
               Dashboard
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link to="/auth/login" />}>
-              {props.pathname.startsWith("/auth/login") ? (
+              {pathname.startsWith("/auth/login") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <SignIn data-icon="inline-start" />
@@ -122,7 +124,7 @@ function DevBarMenu(props: { pathname: string }) {
               Login
             </DropdownMenuItem>
             <DropdownMenuItem render={<Link to="/preview" />}>
-              {props.pathname.startsWith("/preview") ? (
+              {pathname.startsWith("/preview") ? (
                 <Check data-icon="inline-start" />
               ) : (
                 <Code data-icon="inline-start" />

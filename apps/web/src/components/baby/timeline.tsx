@@ -64,6 +64,10 @@ import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
+function subscribeVisitorId() {
+  return () => {};
+}
+
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
 type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }>;
@@ -935,11 +939,8 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const { t } = useI18n();
   // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
   // the loader handle (no visitorId), then remixArgs picks it up on the client.
-  const currentVisitorId = useSyncExternalStore(
-    () => () => {},
-    getVisitorId,
-    () => "",
-  );
+  // getVisitorId returns "" without window, so it is safe as the SSR snapshot too.
+  const currentVisitorId = useSyncExternalStore(subscribeVisitorId, getVisitorId, getVisitorId);
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
