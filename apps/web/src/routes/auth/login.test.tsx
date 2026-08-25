@@ -2,7 +2,7 @@ import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { DEMO_EMPTY_USER, DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
-import { LoginCard, signInAndHandoff } from "@/routes/auth/login";
+import { LoginCard, LoginPage, signInAndHandoff } from "@/routes/auth/login";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type SignInResult = { errorMessage: string | null };
@@ -114,4 +114,17 @@ test("hides the test-account picker when demo login is disabled", async () => {
   expect(screen.queryByLabelText("Test account")).toBeNull();
   expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
   expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/auth/signup");
+});
+
+test("LoginPage wires the real auth client into LoginCard", async () => {
+  await using _view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <LoginPage />
+    </LocaleProvider>,
+    { path: "/auth/login" },
+  );
+
+  expect(screen.getByLabelText("Email")).toBeTruthy();
+  expect(screen.getByLabelText("Password")).toBeTruthy();
+  expect(screen.getByRole("button", { name: /sign in/i })).toBeTruthy();
 });

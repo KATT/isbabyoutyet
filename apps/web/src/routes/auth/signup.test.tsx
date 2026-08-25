@@ -1,7 +1,7 @@
 import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
-import { SignupCard, signUpAndHandoff } from "@/routes/auth/signup";
+import { SignupCard, SignupPage, signUpAndHandoff } from "@/routes/auth/signup";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type NewAccount = { name: string; email: string; password: string };
@@ -100,4 +100,19 @@ test("submitting the form hands the new account to the signup flow", async () =>
   await vi.waitFor(() => {
     expect(onSignUp).toHaveBeenCalledWith(NEW_ACCOUNT);
   });
+});
+
+
+test("SignupPage wires the real auth client into SignupCard", async () => {
+  await using _view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <SignupPage />
+    </LocaleProvider>,
+    { path: "/auth/signup" },
+  );
+
+  expect(screen.getByLabelText("Name")).toBeTruthy();
+  expect(screen.getByLabelText("Email")).toBeTruthy();
+  expect(screen.getByLabelText("Password")).toBeTruthy();
+  expect(screen.getByRole("button", { name: /sign up|create/i })).toBeTruthy();
 });

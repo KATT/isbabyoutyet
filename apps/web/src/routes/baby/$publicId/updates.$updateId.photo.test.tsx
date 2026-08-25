@@ -4,6 +4,7 @@ import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { expect, test, vi } from "vitest";
+import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyUpdatePhotoOverlayView, Route } from "@/routes/baby/$publicId/updates.$updateId.photo";
 
@@ -211,4 +212,33 @@ test("dismisses the update photo overlay after the dialog closes", async () => {
   await vi.waitFor(() => {
     expect(ctx.back).toHaveBeenCalled();
   });
+});
+
+test("BabyUpdatePhotoOverlay mounts from the real route loader", async () => {
+  await using _image = stubBrowserImageResource();
+  const photoUrl = "https://cdn.example/update.jpg";
+
+  await using ctx = await renderMountedFileRoute({
+    route: Route,
+    path: "/baby/$publicId/updates/$updateId/photo",
+    initialEntry: `/baby/baby-smith/updates/${updateId}/photo`,
+    wrap: null,
+    handlers: {
+      "baby:getByPublicId": {
+        _id: "jd7baby000000000000000000",
+        publicId: "baby-smith",
+        name: "Baby Smith",
+      },
+      "timeline:getUpdatePhoto": {
+        photoUrl,
+        blurDataUrl: null,
+        babyName: "Baby Smith",
+      },
+    },
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByAltText("Photo of Baby Smith")).toBeTruthy();
 });

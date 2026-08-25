@@ -88,7 +88,10 @@ export const Route = createFileRoute("/auth/login")({
   }),
 });
 
-function LoginPage() {
+/**
+ * @internal Exported for smoke tests; production mounts it via `Route`.
+ */
+export function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
 

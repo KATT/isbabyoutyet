@@ -13,6 +13,7 @@ import type {
 } from "@workspace/convex/src/types";
 import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
+import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import {
   BabySettingsOverlayView,
@@ -344,4 +345,25 @@ test("settings overlay hides delete for co-parents", async () => {
   });
 
   expect(ctx.view.queryByRole("button", { name: "delete page" })).toBeNull();
+});
+
+test("BabySettingsOverlay mounts from the real route loader", async () => {
+  await using ctx = await renderMountedFileRoute({
+    route: Route,
+    path: "/baby/$publicId/settings",
+    initialEntry: "/baby/baby-smith/settings",
+    wrap: null,
+    handlers: {
+      "baby:getByPublicId": managerBabyDoc,
+      "baby:getManagerBaby": managerBabyDoc,
+      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
+      "coParents:listForBaby": { coParents: [], invites: [] },
+      "profile:get": { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
+    },
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("heading", { name: "Settings" })).toBeTruthy();
 });

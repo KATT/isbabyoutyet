@@ -3,6 +3,7 @@ import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
+import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyPhotoOverlayView, Route } from "@/routes/baby/$publicId/photo";
 
@@ -210,4 +211,24 @@ test("dismisses the lightbox overlay after the dialog closes", async () => {
   await vi.waitFor(() => {
     expect(ctx.back).toHaveBeenCalled();
   });
+});
+
+test("BabyPhotoOverlay mounts from the real route loader", async () => {
+  await using _image = stubBrowserImageResource();
+  const photoUrl = "https://cdn.example/full.jpg";
+
+  await using ctx = await renderMountedFileRoute({
+    route: Route,
+    path: "/baby/$publicId/photo",
+    initialEntry: "/baby/baby-smith/photo",
+    wrap: null,
+    handlers: {
+      "baby:getByPublicId": babyDoc({ photoUrl }),
+    },
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByAltText("Photo of Baby Smith")).toBeTruthy();
 });

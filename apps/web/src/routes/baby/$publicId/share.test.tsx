@@ -8,6 +8,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { expect, test, vi } from "vitest";
 import { getBabySeo } from "@/lib/baby-seo";
+import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyShareOverlayView, Route } from "@/routes/baby/$publicId/share";
 
@@ -237,5 +238,86 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
   await vi.waitFor(() => {
     expect(ctx.back).toHaveBeenCalledOnce();
+  });
+});
+
+test("BabyShareOverlay mounts from the real route loader", async () => {
+  await using _image = stubBrowserImageResource();
+  const baby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
+
+  await using ctx = await renderMountedFileRoute({
+    route: Route,
+    path: "/baby/$publicId/share",
+    initialEntry: "/baby/baby-smith/share",
+    wrap: null,
+    handlers: {
+      "baby:getByPublicId": baby,
+      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
+    },
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("heading", { name: "Share the Link" })).toBeTruthy();
+});
+
+test("share overlay falls back to execCommand when clipboard.writeText fails", async () => {
+  const preview = getBabySeo(babyDoc({ publicId: "baby-smith", theme: "baby-blue" }), "baby-smith");
+  const writeText = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("denied"));
+  const execCommand = vi.fn<() => boolean>().mockReturnValue(true);
+  const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  await using _clipboard = makeResource({}, () => {
+    if (clipboardDescriptor) {
+      Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+  const hadExecCommand = "execCommand" in document;
+  const originalExecCommand = document.execCommand;
+  Object.defineProperty(document, "execCommand", {
+    configurable: true,
+    writable: true,
+    value: execCommand,
+  });
+  await using _exec = makeResource({}, () => {
+    if (hadExecCommand) {
+      Object.defineProperty(document, "execCommand", {
+        configurable: true,
+        writable: true,
+        value: originalExecCommand,
+      });
+      return;
+    }
+    Reflect.deleteProperty(document, "execCommand");
+  });
+
+  await using ctx = await renderWithOverlayRouter({
+    overlayPush: false,
+    wrap: null,
+    ui: (
+      <BabyShareOverlayView
+        publicId="baby-smith"
+        shareLink="https://isbabyoutyet.com/baby/baby-smith"
+        sharePreview={preview}
+        canManage={false}
+        completeOnboardingStep={() => undefined}
+      />
+    ),
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  fireEvent.click(ctx.view.getByRole("button", { name: "Copy link to share" }));
+  await vi.waitFor(() => {
+    expect(writeText).toHaveBeenCalled();
+    expect(execCommand).toHaveBeenCalledWith("copy");
+    expect(ctx.view.getByRole("button", { name: "Copied!" })).toBeTruthy();
   });
 });

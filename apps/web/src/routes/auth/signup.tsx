@@ -86,7 +86,10 @@ export const Route = createFileRoute("/auth/signup")({
   }),
 });
 
-function SignupPage() {
+/**
+ * @internal Exported for smoke tests; production mounts it via `Route`.
+ */
+export function SignupPage() {
   const { t } = useI18n();
   const router = useRouter();
 

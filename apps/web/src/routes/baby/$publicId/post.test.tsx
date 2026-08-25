@@ -5,6 +5,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { DEFAULT_MILESTONE_VISIBILITY } from "@workspace/convex/src/types";
 import { expect, test, vi } from "vitest";
+import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { renderWithOverlayRouter } from "@/test/renderWithOverlayRouter";
 import { BabyPostUpdateOverlayView, Route } from "@/routes/baby/$publicId/post";
 
@@ -190,4 +191,23 @@ test("successful post completes onboarding and closes the overlay", async () => 
       resetScroll: false,
     });
   });
+});
+
+test("BabyPostUpdateOverlay mounts from the real route loader", async () => {
+  await using ctx = await renderMountedFileRoute({
+    route: Route,
+    path: "/baby/$publicId/post",
+    initialEntry: "/baby/baby-smith/post",
+    wrap: null,
+    handlers: {
+      "baby:getByPublicId": managerBabyDoc,
+      "baby:getManagerBaby": managerBabyDoc,
+      "coParents:myAccess": { canManage: true, isOwner: true, isCoParent: false },
+    },
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getAllByText("Post an update").length).toBeGreaterThan(0);
 });

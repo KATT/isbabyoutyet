@@ -18,6 +18,7 @@ import {
   UpdateComposer,
   UpdateComposerForm,
 } from "@/components/baby/timeline";
+import { EncouragementForm } from "@/components/baby/encouragements";
 
 /** Unreachable deployment URL so smoke renders never dial a real backend. */
 function convexClientResource() {
@@ -417,4 +418,181 @@ test("TimelineFeed renders the prefetched page through the live query", async ()
 
   expect(view.getByText("Grandma")).toBeTruthy();
   expect(view.getByText("Can't wait to meet you!")).toBeTruthy();
+});
+
+test("owners can delete an encouragement and toast success", async () => {
+  const removeEncouragement = vi
+    .fn<TimelineFeedViewProps["removeEncouragement"]>()
+    .mockResolvedValue(undefined);
+  const toastSuccess = vi.spyOn((await import("sonner")).toast, "success");
+  await using _toast = makeResource({}, () => {
+    toastSuccess.mockRestore();
+  });
+
+  await using view = await renderFeedView({
+    isOwner: true,
+    removeEncouragement,
+    items: [
+      {
+        _id: "timeline-enc-id" as Id<"timelineItems">,
+        kind: "encouragement",
+        postedAt: Date.now(),
+        encouragement: {
+          _id: "encouragement-id" as Id<"encouragements">,
+          authorName: "Grandma",
+          message: "Can't wait!",
+          createdAt: Date.now(),
+          isMine: false,
+        },
+      },
+    ],
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Delete message" }));
+  fireEvent.click(view.getByRole("button", { name: "Delete" }));
+
+  await vi.waitFor(() => {
+    expect(removeEncouragement).toHaveBeenCalledWith({
+      encouragementId: "encouragement-id",
+      visitorId: undefined,
+    });
+  });
+  expect(toastSuccess).toHaveBeenCalledWith("Message deleted");
+});
+
+test("authors can edit their own encouragement within the edit window", async () => {
+  const updateEncouragement = vi
+    .fn<TimelineFeedViewProps["updateEncouragement"]>()
+    .mockResolvedValue(undefined);
+  const toastSuccess = vi.spyOn((await import("sonner")).toast, "success");
+  await using _toast = makeResource({}, () => {
+    toastSuccess.mockRestore();
+  });
+
+  await using view = await renderFeedView({
+    currentVisitorId: "visitor-1",
+    updateEncouragement,
+    items: [
+      {
+        _id: "timeline-enc-id" as Id<"timelineItems">,
+        kind: "encouragement",
+        postedAt: Date.now(),
+        encouragement: {
+          _id: "encouragement-id" as Id<"encouragements">,
+          authorName: "Me",
+          message: "Original message",
+          createdAt: Date.now(),
+          isMine: true,
+        },
+      },
+    ],
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Edit message" }));
+  const textarea = view.getByLabelText("Edit your message");
+  fireEvent.change(textarea, { target: { value: "Updated message" } });
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(updateEncouragement).toHaveBeenCalledWith({
+      encouragementId: "encouragement-id",
+      visitorId: "visitor-1",
+      message: "Updated message",
+    });
+  });
+  expect(toastSuccess).toHaveBeenCalledWith("Message updated");
+});
+
+test("update delete and set-as-photo handlers toast on success and error", async () => {
+  const removeUpdate = vi
+    .fn<TimelineFeedViewProps["removeUpdate"]>()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce(new Error("nope"));
+  const setAsCurrentPhoto = vi
+    .fn<TimelineFeedViewProps["setAsCurrentPhoto"]>()
+    .mockResolvedValueOnce(undefined)
+    .mockRejectedValueOnce("offline");
+  const toast = (await import("sonner")).toast;
+  const toastSuccess = vi.spyOn(toast, "success");
+  const toastError = vi.spyOn(toast, "error");
+  await using _toast = makeResource({}, () => {
+    toastSuccess.mockRestore();
+    toastError.mockRestore();
+  });
+
+  const photoUpdate = updateItem({
+    _id: "update-photo-id" as Id<"updates">,
+    message: "Smile!",
+    photoUrl: "https://example.com/full.jpg",
+    thumbnailUrl: "https://example.com/thumb.jpg",
+    blurDataUrl: null,
+  });
+
+  {
+    await using deleteOk = await renderFeedView({
+      isOwner: true,
+      removeUpdate,
+      items: [photoUpdate],
+    });
+    fireEvent.click(deleteOk.getByRole("button", { name: "Delete update" }));
+    fireEvent.click(deleteOk.getByRole("button", { name: /^Delete$/i }));
+    await vi.waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith("Update removed");
+    });
+  }
+
+  {
+    await using pinOk = await renderFeedView({
+      isOwner: true,
+      setAsCurrentPhoto,
+      items: [photoUpdate],
+    });
+    fireEvent.click(pinOk.getByRole("button", { name: "Set as page photo" }));
+    await vi.waitFor(() => {
+      expect(toastSuccess).toHaveBeenCalledWith("Page photo updated");
+    });
+  }
+
+  {
+    await using deleteFail = await renderFeedView({
+      isOwner: true,
+      removeUpdate,
+      items: [photoUpdate],
+    });
+    fireEvent.click(deleteFail.getByRole("button", { name: "Delete update" }));
+    fireEvent.click(deleteFail.getByRole("button", { name: /^Delete$/i }));
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("nope");
+    });
+  }
+
+  {
+    await using pinFail = await renderFeedView({
+      isOwner: true,
+      setAsCurrentPhoto,
+      items: [photoUpdate],
+    });
+    fireEvent.click(pinFail.getByRole("button", { name: "Set as page photo" }));
+    await vi.waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("Failed to set page photo");
+    });
+  }
+});
+
+test("EncouragementForm mounts through the Convex provider", async () => {
+  await using client = convexClientResource();
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <LocaleProvider locale="en-GB">
+        <EncouragementForm babyId={babyId} babyName={notYetBaby.name} />
+      </LocaleProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
+
+  expect(view.getAllByText("Send some love").length).toBeGreaterThan(0);
+  expect(view.getByLabelText("Your name")).toBeTruthy();
+  expect(view.getByLabelText("Message")).toBeTruthy();
 });

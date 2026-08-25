@@ -1,13 +1,19 @@
-import { fireEvent, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { LocaleProvider } from "@/lib/i18n";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
-import { OnboardingHostView, OnboardingHostWithSession } from "./onboarding-host";
+import {
+  OnboardingHostView,
+  OnboardingHostWithSession,
+  useCompleteOnboardingStep,
+} from "./onboarding-host";
 
 type Progress = FunctionReturnType<typeof api.onboarding.getMine>;
 
@@ -203,4 +209,131 @@ test("keeps the coachmark tip hidden until a tip target is activated", async () 
   expect(screen.queryByRole("button", { name: "Hide tip" })).toBeNull();
   expect(screen.getAllByRole("link", { name: /show share/i }).length).toBeGreaterThan(0);
   expect(screen.getAllByRole("button", { name: "Dismiss guide" }).length).toBeGreaterThan(0);
+});
+
+test("returns null on a non-tour baby page", async () => {
+  await using _view = await renderView({
+    surface: "baby",
+    progress,
+    babyPublicId: "other-baby",
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
+  });
+
+  expect(screen.queryByText(/getting started/i)).toBeNull();
+});
+
+test("auto-dismisses the checklist shortly after all steps are done", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  const onDismissChecklist = resolvedVoid<Record<string, never>>();
+
+  await using _view = await renderView({
+    surface: "dashboard",
+    progress: { ...progress, allDone: true, checklistDismissed: false },
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    onSetMinimized: resolvedVoid<{ minimized: boolean }>(),
+    onDismissChecklist,
+    onCompleteStep: resolvedVoid<{ stepId: OnboardingStepId }>(),
+  });
+
+  await vi.advanceTimersByTimeAsync(4000);
+  expect(onDismissChecklist).toHaveBeenCalledWith({});
+});
+
+test("checklist CTAs complete steps and open baby overlays", async () => {
+  const onGoToStep = vi.fn<(stepId: OnboardingStepId) => void>();
+  const onCompleteStep = resolvedVoid<{ stepId: OnboardingStepId }>();
+  const onSetMinimized = resolvedVoid<{ minimized: boolean }>();
+
+  await using _view = await renderView({
+    surface: "baby",
+    progress: {
+      ...progress,
+      effectiveSteps: ["add_baby", "share_link"],
+      hasUpdate: false,
+    },
+    babyPublicId: "baby-smith",
+    onGoToStep,
+    onSetMinimized,
+    onDismissChecklist: resolvedVoid<Record<string, never>>(),
+    onCompleteStep,
+  });
+
+  fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
+  expect(onCompleteStep).toHaveBeenCalledWith({ stepId: "explore_settings" });
+
+  fireEvent.click(screen.getAllByRole("button", { name: "Minimize" })[0]!);
+  expect(onSetMinimized).toHaveBeenCalledWith({ minimized: true });
+});
+
+
+test("authed onboarding host wires Convex mutations into the view", async () => {
+  const client = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+
+  await using _view = await renderWithTestRouter(
+    <QueryClientProvider client={queryClient}>
+      <ConvexProvider client={client}>
+        <LocaleProvider locale="en-GB">
+          <OnboardingHostWithSession
+            surface="dashboard"
+            onboarding={testPreloadedConvexQuery<typeof api.onboarding.getMine>({
+              input: {},
+              initialData: progress,
+            })}
+            enabled={undefined}
+            spotlight={undefined}
+            babyPublicId={undefined}
+            onGoToStep={undefined}
+            session={{ data: { user: { id: "user-1" } }, isPending: false }}
+          />
+        </LocaleProvider>
+      </ConvexProvider>
+    </QueryClientProvider>,
+  );
+
+  expect(screen.getAllByText(/getting started/i).length).toBeGreaterThan(0);
+});
+
+test("useCompleteOnboardingStep returns the Convex mutation", async () => {
+  const client = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+
+  let completeStep: unknown = null;
+  function Probe() {
+    completeStep = useCompleteOnboardingStep();
+    return null;
+  }
+
+  const view = render(
+    <ConvexProvider client={client}>
+      <Probe />
+    </ConvexProvider>,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(typeof completeStep).toBe("function");
 });

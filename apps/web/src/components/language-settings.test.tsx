@@ -1,11 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { LocaleProvider } from "@/lib/i18n";
-import { LanguageSettingsView } from "./language-settings";
+import { LanguageSettings, LanguageSettingsView } from "./language-settings";
 
 type Profile = FunctionReturnType<typeof api.profile.get>;
 
@@ -157,4 +160,41 @@ test("requesting another language submits the request form", async () => {
       requestedLocale: "French / fr-FR",
     });
   });
+});
+
+
+test("LanguageSettings wires Convex mutations into the view", async () => {
+  const client = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  await using _queryClient = makeResource(queryClient, () => {
+    queryClient.clear();
+  });
+
+  const profileHandle = testPreloadedConvexQuery<typeof api.profile.get>({
+    input: {},
+    initialData: profile,
+  });
+
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <ConvexProvider client={client}>
+        <LocaleProvider locale="en-GB">
+          <LanguageSettings profile={profileHandle} className={undefined} />
+        </LocaleProvider>
+      </ConvexProvider>
+    </QueryClientProvider>,
+  );
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(screen.getByRole("combobox", { name: "Profile language" })).toBeTruthy();
+  expect(screen.getByRole("combobox", { name: "Profile time zone" })).toBeTruthy();
 });
