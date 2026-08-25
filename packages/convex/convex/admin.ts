@@ -46,27 +46,12 @@ const userRowValidator = v.object({
   createdAt: v.number(),
 });
 
-function authUserRow(user: unknown) {
-  if (!user || typeof user !== "object") {
-    throw new Error("Better Auth user is missing");
-  }
-  if (!("_id" in user) || (typeof user._id !== "string" && typeof user._id !== "number")) {
-    throw new Error("Better Auth user is missing _id");
-  }
-  if (!("email" in user) || typeof user.email !== "string") {
-    throw new Error("Better Auth user is missing email");
-  }
-  if (!("name" in user) || typeof user.name !== "string") {
-    throw new Error("Better Auth user is missing name");
-  }
-  if (!("createdAt" in user) || typeof user.createdAt !== "number") {
-    throw new Error("Better Auth user is missing createdAt");
-  }
+function authUserRow(user: Record<string, unknown>) {
   return {
     _id: String(user._id),
-    email: user.email,
-    name: user.name,
-    createdAt: user.createdAt,
+    email: String(user.email),
+    name: String(user.name),
+    createdAt: Number(user.createdAt),
   };
 }
 
@@ -205,7 +190,7 @@ export const listUsers = query({
     });
     // findMany is typed as `any`; rebuild the page so the query return stays typed.
     return {
-      page: (result.page as unknown[]).map(authUserRow),
+      page: (result.page as Record<string, unknown>[]).map(authUserRow),
       isDone: result.isDone as boolean,
       continueCursor: result.continueCursor as string,
     };

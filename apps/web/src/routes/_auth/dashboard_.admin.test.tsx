@@ -11,6 +11,14 @@ import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/tes
 
 const mocks = vi.hoisted(() => ({
   navigate: vi.fn<(opts: unknown) => void>(),
+  search: {
+    tab: "babies" as "babies" | "languages" | "users",
+    sort: "created" as "created" | "updated",
+    order: "desc" as "asc" | "desc",
+    hideDemo: true,
+  },
+  fetchNextPage: vi.fn<() => Promise<unknown>>(),
+  infinitePages: [{ page: [] as unknown[], isDone: true, continueCursor: "" }],
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -34,7 +42,7 @@ vi.mock("@tanstack/react-router", () => ({
   createFileRoute: (routeId: string) => (opts: Record<string, unknown>) => ({
     ...opts,
     routeId,
-    useSearch: () => ({ tab: "babies", sort: "created", order: "desc", hideDemo: true }),
+    useSearch: () => mocks.search,
     useLoaderData: () => ({
       babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
         input: { sortBy: "created", sortOrder: "desc", hideDemo: true },
@@ -74,12 +82,12 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
     ...actual,
     usePreloadedConvexInfiniteQuery: () => ({
       data: {
-        pages: [{ page: [], isDone: true, continueCursor: "" }],
+        pages: mocks.infinitePages,
         pageParams: [{ numItems: 20, cursor: null }],
       },
       hasNextPage: false,
       isFetchingNextPage: false,
-      fetchNextPage: vi.fn<() => Promise<unknown>>(),
+      fetchNextPage: mocks.fetchNextPage,
     }),
   };
 });
@@ -87,10 +95,12 @@ vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
 const {
   Route: AdminRoute,
   AdminDashboardPage,
+  ADMIN_DEFAULT_SEARCH,
   BabiesSection,
   LanguageRequestsSection,
   UsersSection,
   formatWhen,
+  isAdminTab,
   nextSortSearch,
   statusLabel,
 } = await import("@/routes/_auth/dashboard_.admin");
@@ -370,6 +380,8 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
+  mocks.search.tab = "babies";
+  mocks.infinitePages = [{ page: [], isDone: true, continueCursor: "" }];
   await using view = renderResource(<AdminDashboardPage />);
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
@@ -390,6 +402,41 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
 
   fireEvent.click(languagesTab);
   expect(mocks.navigate).toHaveBeenCalled();
+});
+
+test("admin defaults to created-desc babies and recognizes every admin tab", () => {
+  expect(ADMIN_DEFAULT_SEARCH).toEqual({
+    tab: "babies",
+    sort: "created",
+    order: "desc",
+    hideDemo: true,
+  });
+  expect(isAdminTab("babies")).toBe(true);
+  expect(isAdminTab("languages")).toBe(true);
+  expect(isAdminTab("users")).toBe(true);
+  expect(isAdminTab("nope")).toBe(false);
+});
+
+test("users tab renders recent signup rows from the infinite query", async () => {
+  mocks.search.tab = "users";
+  mocks.infinitePages = [
+    {
+      page: [
+        {
+          _id: "user-1",
+          name: "Ada",
+          email: "ada@example.com",
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+        },
+      ],
+      isDone: true,
+      continueCursor: "",
+    },
+  ];
+  await using view = renderResource(<AdminDashboardPage />);
+  expect(view.getByText("Ada")).toBeTruthy();
+  expect(view.getByText("ada@example.com")).toBeTruthy();
+  expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
 const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };

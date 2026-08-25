@@ -488,7 +488,7 @@ function AdminUsersTab() {
   );
 }
 
-function isAdminTab(value: string): value is AdminTab {
+export function isAdminTab(value: string): value is AdminTab {
   return value === "babies" || value === "languages" || value === "users";
 }
 
