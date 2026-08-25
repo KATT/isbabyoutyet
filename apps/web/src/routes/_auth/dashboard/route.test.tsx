@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { AnyRoute } from "@tanstack/react-router";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -53,6 +54,19 @@ const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
  * Stands in for `convexPreloader` so the real loader runs without a Convex
  * deployment, recording call order to prove the prefetches are not serialised.
  */
+/**
+ * `Route.update()` is typed for non-structural option tweaks only, so widen it
+ * to re-parent the real route (same instance, so its `useLoaderData` keeps
+ * resolving) onto a test root.
+ */
+function reparentRoute<TRoute extends AnyRoute>(
+  route: TRoute,
+  opts: { path: string; getParentRoute: () => AnyRoute },
+): TRoute {
+  const update = route.update as (options: typeof opts) => TRoute;
+  return update(opts);
+}
+
 type EnsureQueryData = (
   query: Parameters<typeof getFunctionName>[0],
   input: Record<string, never>,
@@ -113,8 +127,7 @@ test("parent dashboard stays mounted while child routes render through its outle
       );
     },
   });
-  const dashboardRoute = Route.update({
-    id: "/dashboard",
+  const dashboardRoute = reparentRoute(Route, {
     path: "/dashboard",
     getParentRoute: () => rootRoute,
   });
