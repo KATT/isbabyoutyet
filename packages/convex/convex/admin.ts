@@ -203,9 +203,11 @@ export const listUsers = query({
       sortBy: { field: "createdAt", direction: "desc" },
       paginationOpts: args.paginationOpts,
     });
+    // findMany is typed as `any`; rebuild the page so the query return stays typed.
     return {
-      ...result,
-      page: result.page.map(authUserRow),
+      page: (result.page as unknown[]).map(authUserRow),
+      isDone: result.isDone as boolean,
+      continueCursor: result.continueCursor as string,
     };
   },
 });
