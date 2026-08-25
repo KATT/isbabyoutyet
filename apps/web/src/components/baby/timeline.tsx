@@ -207,10 +207,36 @@ type UpdateComposerProps = {
   onPosted: () => void;
 };
 
+type PostUpdateFn = (
+  args: FunctionArgs<typeof api.updates.post>,
+) => Promise<FunctionReturnType<typeof api.updates.post>>;
+
+type GenerateUploadUrlFn = (
+  args: FunctionArgs<typeof api.baby.generateUploadUrl>,
+) => Promise<FunctionReturnType<typeof api.baby.generateUploadUrl>>;
+
+type UpdateComposerFormProps = UpdateComposerProps & {
+  postUpdate: PostUpdateFn;
+  generateUploadUrl: GenerateUploadUrlFn;
+};
+
+/** Hooks into Convex, then delegates to the pure `UpdateComposerForm`. */
 export function UpdateComposer(props: UpdateComposerProps) {
-  const { t } = useI18n();
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
+  return (
+    <UpdateComposerForm {...props} postUpdate={postUpdate} generateUploadUrl={generateUploadUrl} />
+  );
+}
+
+/**
+ * Presentational update composer form. Takes the two mutations as props so it
+ * can be rendered in tests without a Convex provider.
+ *
+ * @internal Exported for tests; production uses `UpdateComposer`.
+ */
+export function UpdateComposerForm(props: UpdateComposerFormProps) {
+  const { t } = useI18n();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // The status only moves forward: offer only stages AFTER the current one,
@@ -280,7 +306,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
           const { photo, ...args } = values;
           let photoId: PostUpdateArgs["photoId"];
           if (photo) {
-            const uploadUrl = await generateUploadUrl({ babyId: args.babyId });
+            const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
               method: "POST",
               headers: { "Content-Type": photo.type },
@@ -293,7 +319,7 @@ export function UpdateComposer(props: UpdateComposerProps) {
             photoId = uploaded.storageId;
           }
 
-          await postUpdate({ ...args, photoId });
+          await props.postUpdate({ ...args, photoId });
 
           toast.success(t("Update posted!"));
           // No reset needed: the composer lives in a dialog that unmounts on close
@@ -935,8 +961,21 @@ type TimelineFeedProps = {
     | InitiatedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
+type RemoveUpdateFn = (
+  args: FunctionArgs<typeof api.updates.remove>,
+) => Promise<FunctionReturnType<typeof api.updates.remove>>;
+type SetAsCurrentPhotoFn = (
+  args: FunctionArgs<typeof api.updates.setAsCurrentPhoto>,
+) => Promise<FunctionReturnType<typeof api.updates.setAsCurrentPhoto>>;
+type RemoveEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.remove>,
+) => Promise<FunctionReturnType<typeof api.encouragements.remove>>;
+type UpdateEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.update>,
+) => Promise<FunctionReturnType<typeof api.encouragements.update>>;
+
+/** Hooks into Convex, then delegates to the pure `TimelineFeedView`. */
 export function TimelineFeed(props: TimelineFeedProps) {
-  const { t } = useI18n();
   // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
   // the loader handle (no visitorId), then remixArgs picks it up on the client.
   // getVisitorId returns "" without window, so it is safe as the SSR snapshot too.
@@ -955,10 +994,55 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = timelineQuery;
 
   const items = timelineQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <TimelineFeedView
+      publicId={props.publicId}
+      baby={props.baby}
+      babyName={props.babyName}
+      isOwner={props.isOwner}
+      items={items}
+      hasNextPage={timelineQuery.hasNextPage}
+      isFetchingNextPage={timelineQuery.isFetchingNextPage}
+      fetchNextPage={timelineQuery.fetchNextPage}
+      currentVisitorId={currentVisitorId}
+      removeUpdate={removeUpdate}
+      setAsCurrentPhoto={setAsCurrentPhoto}
+      removeEncouragement={removeEncouragement}
+      updateEncouragement={updateEncouragement}
+    />
+  );
+}
+
+type TimelineFeedViewProps = {
+  publicId: string;
+  baby: BabyData;
+  babyName: string;
+  isOwner: boolean;
+  items: TimelineItemData[];
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => unknown;
+  currentVisitorId: string;
+  removeUpdate: RemoveUpdateFn;
+  setAsCurrentPhoto: SetAsCurrentPhotoFn;
+  removeEncouragement: RemoveEncouragementFn;
+  updateEncouragement: UpdateEncouragementFn;
+};
+
+/**
+ * Presentational timeline feed. Takes the loaded items, pagination state and
+ * mutations as props so it can be rendered in tests without a Convex
+ * provider.
+ *
+ * @internal Exported for tests; production uses `TimelineFeed`.
+ */
+export function TimelineFeedView(props: TimelineFeedViewProps) {
+  const { t } = useI18n();
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const { items, hasNextPage, isFetchingNextPage, fetchNextPage } = props;
 
   // Infinite scroll with IntersectionObserver
   useEffect(() => {
@@ -987,7 +1071,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
-      await removeUpdate({ updateId });
+      await props.removeUpdate({ updateId });
       toast.success(t("Update removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove update"));
@@ -996,7 +1080,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
     try {
-      await setAsCurrentPhoto({ updateId });
+      await props.setAsCurrentPhoto({ updateId });
       toast.success(t("Set as the page photo"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to set page photo"));
@@ -1008,7 +1092,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     visitorId: string | undefined,
   ) => {
     try {
-      await removeEncouragement({ encouragementId, visitorId });
+      await props.removeEncouragement({ encouragementId, visitorId });
       toast.success(t("Encouragement removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove encouragement"));
@@ -1019,7 +1103,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     args: FunctionArgs<typeof api.encouragements.update>,
   ) => {
     try {
-      await updateEncouragement(args);
+      await props.updateEncouragement(args);
       toast.success(t("Encouragement updated"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to update encouragement"));
@@ -1077,7 +1161,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
               item={item}
               isOwner={props.isOwner}
               timeZone={props.baby.timeZone}
-              currentVisitorId={currentVisitorId}
+              currentVisitorId={props.currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}
             />
@@ -1086,7 +1170,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
         {/* Infinite scroll trigger */}
         <div ref={loadMoreRef} className="py-2">
-          {timelineQuery.isFetchingNextPage ? (
+          {isFetchingNextPage ? (
             <div className="text-center text-muted-foreground">
               <Spinner className="mx-auto" />
             </div>

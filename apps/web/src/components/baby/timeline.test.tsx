@@ -1,90 +1,24 @@
 import { fireEvent, render } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
-import type { ReactElement } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider } from "@/lib/i18n";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
-import type { PreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { FunctionReturnType } from "convex/server";
-
-vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => ({
-    history: {
-      location: { state: { overlay: undefined } },
-      canGoBack: () => false,
-      back: vi.fn<() => void>(),
-    },
-    navigate: vi.fn<() => Promise<void>>(async () => {}),
-  }),
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      params: { publicId: string; updateId: string | undefined } | undefined;
-    },
-  ) => {
-    let href = typeof props.to === "string" ? props.to : "#";
-    if (props.params?.publicId) {
-      href = href.replace("$publicId", props.params.publicId);
-    }
-    if (props.params?.updateId) {
-      href = href.replace("$updateId", props.params.updateId);
-    }
-    return (
-      <a href={href} aria-label={props["aria-label"]} className={props.className}>
-        {props.children}
-      </a>
-    );
-  },
-}));
-
-// Observe what the composer submits: every useMutation hook in the component
-// returns this mock (only updates.post is actually invoked in these tests)
-const mocks = vi.hoisted(() => ({
-  mutate: vi.fn<(args: unknown) => Promise<unknown>>(),
-}));
-vi.mock("convex/react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("convex/react")>()),
-  useMutation: () => mocks.mutate,
-}));
-
-// Replace the live Convex page fetch/watch with pure TanStack reads over the
-// handle's initialData (no registered Convex client in these tests).
-vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
-  const { useSuspenseInfiniteQuery } = await import("@tanstack/react-query");
-  return {
-    ...actual,
-    usePreloadedConvexInfiniteQuery: (
-      funcRef: unknown,
-      opts: {
-        handle: PreloadedConvexInfiniteQuery<never>;
-        remixArgs: ((args: Record<string, unknown>) => Record<string, unknown>) | null;
-      },
-    ) => {
-      const input = opts.handle.input as Record<string, unknown>;
-      const args = opts.remixArgs ? opts.remixArgs(input) : input;
-      return useSuspenseInfiniteQuery({
-        queryKey: ["test-infinite", funcRef, args],
-        queryFn: async () => {
-          throw new Error("not fetched in tests");
-        },
-        initialPageParam: { numItems: opts.handle.numItems, cursor: null },
-        getNextPageParam: () => undefined,
-        initialData: opts.handle.initialData,
-        staleTime: Infinity,
-      } as never);
-    },
-  };
-});
-
-const { TimelineFeed, UpdateComposer } = await import("@/components/baby/timeline");
+import {
+  TimelineFeed,
+  TimelineFeedView,
+  UpdateComposer,
+  UpdateComposerForm,
+} from "@/components/baby/timeline";
 
 {
   class MockIntersectionObserver {
@@ -100,6 +34,13 @@ const { TimelineFeed, UpdateComposer } = await import("@/components/baby/timelin
   }
   globalThis.IntersectionObserver =
     MockIntersectionObserver as unknown as typeof IntersectionObserver;
+}
+
+/** Unreachable deployment URL so smoke tests never dial a real Convex backend. */
+function unreachableConvexClient() {
+  return new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
 }
 
 const notYetBaby: BabyData = {
@@ -118,53 +59,37 @@ const laborStartedBaby: BabyData = {
   laborStarted: "2026-08-20T08:00:00.000Z",
 };
 
-// The mutations are never invoked in these tests; the client only needs to
-// exist for the `useMutation` hooks to mount.
 const babyId = "fake-baby-id" as Id<"baby">;
 
-type TimelinePage = FunctionReturnType<typeof api.timeline.listByBaby>;
-
-function timelineHandle(page: TimelinePage) {
-  return testPreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>({
-    input: { babyId },
-    numItems: 20,
-    initialData: {
-      pages: [page],
-      pageParams: [{ numItems: 20, cursor: null }],
-    },
-  });
-}
-
-type ComposerResourceValue = {
-  view: ReturnType<typeof render>;
-  setBaby: (currentBaby: BabyData) => void;
-};
+type UpdateComposerFormProps = ComponentProps<typeof UpdateComposerForm>;
 
 function renderComposerResource(baby: BabyData, locale: SupportedLocale = "en-GB") {
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
+  const postUpdate = vi.fn<UpdateComposerFormProps["postUpdate"]>();
+  const generateUploadUrl = vi.fn<UpdateComposerFormProps["generateUploadUrl"]>();
   const withProvider = (currentBaby: BabyData): ReactElement => (
     <LocaleProvider locale={locale}>
-      <ConvexProvider client={client}>
-        <UpdateComposer
-          babyId={babyId}
-          baby={currentBaby}
-          babyName={currentBaby.name}
-          onPosted={() => {}}
-        />
-      </ConvexProvider>
+      <UpdateComposerForm
+        babyId={babyId}
+        baby={currentBaby}
+        babyName={currentBaby.name}
+        onPosted={() => {}}
+        postUpdate={postUpdate}
+        generateUploadUrl={generateUploadUrl}
+      />
     </LocaleProvider>
   );
   const view = render(withProvider(baby));
-  const value: ComposerResourceValue = {
-    view,
-    setBaby: (currentBaby) => view.rerender(withProvider(currentBaby)),
-  };
-  return makeResource(value, async () => {
-    view.unmount();
-    await client.close();
-  });
+  return makeResource(
+    {
+      view,
+      postUpdate,
+      generateUploadUrl,
+      setBaby: (currentBaby: BabyData) => view.rerender(withProvider(currentBaby)),
+    },
+    () => {
+      view.unmount();
+    },
+  );
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {
@@ -237,8 +162,8 @@ test("a stale milestone selection is cleared when the status advances elsewhere"
 });
 
 test("an empty event-time picker does not post occurredAt", async () => {
-  mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
+  composer.postUpdate.mockResolvedValue("update-id" as Id<"updates">);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
@@ -247,8 +172,8 @@ test("an empty event-time picker does not post occurredAt", async () => {
   expect(picker.value).toBe("");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
-  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
-  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+  await vi.waitFor(() => expect(composer.postUpdate).toHaveBeenCalledTimes(1));
+  expect(composer.postUpdate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
     occurredAt: undefined,
@@ -256,8 +181,8 @@ test("an empty event-time picker does not post occurredAt", async () => {
 });
 
 test("a filled event-time picker posts the backdated occurredAt", async () => {
-  mocks.mutate.mockReset().mockResolvedValue("update-id");
   await using composer = renderComposerResource(notYetBaby);
+  composer.postUpdate.mockResolvedValue("update-id" as Id<"updates">);
   const view = composer.view;
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
@@ -267,8 +192,8 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
-  await vi.waitFor(() => expect(mocks.mutate).toHaveBeenCalledTimes(1));
-  expect(mocks.mutate.mock.calls[0]?.[0]).toMatchObject({
+  await vi.waitFor(() => expect(composer.postUpdate).toHaveBeenCalledTimes(1));
+  expect(composer.postUpdate.mock.calls[0]?.[0]).toMatchObject({
     babyId,
     milestone: "labor_started",
     occurredAt: Date.parse("2026-08-10T07:30:00.000Z"),
@@ -297,37 +222,57 @@ test("the composer previews a selected photo and can remove it", async () => {
   expect(view.queryByAltText("Photo to post")).toBeNull();
 });
 
-function renderFeed(opts: { baby: BabyData; isOwner: boolean; page: TimelinePage }) {
-  const client = new ConvexReactClient("https://example.convex.cloud", {
-    unsavedChangesWarning: false,
-  });
-  const handle = timelineHandle(opts.page);
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-
-  const rendered = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <ConvexProvider client={client}>
-          <TooltipProvider>
-            <TimelineFeed
-              babyId={babyId}
-              publicId="baby-smith"
-              baby={opts.baby}
-              babyName={opts.baby.name}
-              isOwner={opts.isOwner}
-              timeline={handle}
-            />
-          </TooltipProvider>
-        </ConvexProvider>
-      </LocaleProvider>
-    </QueryClientProvider>,
-  );
-  return makeResource(rendered, async () => {
-    rendered.unmount();
+test("UpdateComposer wires useMutation into the form", async () => {
+  const client = unreachableConvexClient();
+  await using _client = makeAsyncResource(client, async () => {
     await client.close();
-    queryClient.clear();
+  });
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <LocaleProvider locale="en-GB">
+        <UpdateComposer
+          babyId={babyId}
+          baby={notYetBaby}
+          babyName={notYetBaby.name}
+          onPosted={() => {}}
+        />
+      </LocaleProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
+  expect(view.getByText("Post an update")).toBeTruthy();
+});
+
+type TimelineFeedViewProps = ComponentProps<typeof TimelineFeedView>;
+
+function renderFeedView(overrides: Partial<TimelineFeedViewProps>) {
+  const defaults: TimelineFeedViewProps = {
+    publicId: "baby-smith",
+    baby: notYetBaby,
+    babyName: notYetBaby.name,
+    isOwner: false,
+    items: [],
+    hasNextPage: false,
+    isFetchingNextPage: false,
+    fetchNextPage: vi.fn<TimelineFeedViewProps["fetchNextPage"]>(),
+    currentVisitorId: "visitor-1",
+    removeUpdate: vi.fn<TimelineFeedViewProps["removeUpdate"]>(),
+    setAsCurrentPhoto: vi.fn<TimelineFeedViewProps["setAsCurrentPhoto"]>(),
+    removeEncouragement: vi.fn<TimelineFeedViewProps["removeEncouragement"]>(),
+    updateEncouragement: vi.fn<TimelineFeedViewProps["updateEncouragement"]>(),
+  };
+  const props = { ...defaults, ...overrides };
+  const rendered = render(
+    <LocaleProvider locale="en-GB">
+      <TooltipProvider>
+        <TimelineFeedView {...props} />
+      </TooltipProvider>
+    </LocaleProvider>,
+  );
+  return makeResource({ view: rendered, props }, () => {
+    rendered.unmount();
   });
 }
 
@@ -337,31 +282,30 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
     wentToHospital: "2026-08-20T12:00:00.000Z",
     babyBorn: "2026-08-21T03:00:00.000Z",
   };
-  await using view = renderFeed({
+
+  await using feed = renderFeedView({
     baby: bornBaby,
+    babyName: bornBaby.name,
     isOwner: true,
-    page: {
-      page: [
-        {
-          _id: "timeline-item-id" as Id<"timelineItems">,
-          kind: "update",
-          postedAt: Date.now(),
-          update: {
-            _id: "update-id" as Id<"updates">,
-            message: null,
-            milestone: "gone_to_hospital",
-            occurredAt: Date.now(),
-            photoUrl: null,
-            thumbnailUrl: null,
-            blurDataUrl: null,
-            isCurrentPagePhoto: false,
-          },
+    items: [
+      {
+        _id: "timeline-item-id" as Id<"timelineItems">,
+        kind: "update",
+        postedAt: Date.now(),
+        update: {
+          _id: "update-id" as Id<"updates">,
+          message: null,
+          milestone: "gone_to_hospital",
+          occurredAt: Date.now(),
+          photoUrl: null,
+          thumbnailUrl: null,
+          blurDataUrl: null,
+          isCurrentPagePhoto: false,
         },
-      ],
-      isDone: true,
-      continueCursor: "",
-    },
+      },
+    ],
   });
+  const view = feed.view;
 
   const deleteButton = view.getByRole("button", { name: "Delete update" }) as HTMLButtonElement;
   expect(deleteButton.disabled).toBe(true);
@@ -371,110 +315,159 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
   expect(view.queryByRole("alertdialog")).toBeNull();
 });
 
-test("shows the prefetched first page instead of a spinner while the live query loads", async () => {
-  await using view = renderFeed({
-    baby: notYetBaby,
-    isOwner: false,
-    page: {
-      page: [
-        {
-          _id: "timeline-item-id" as Id<"timelineItems">,
-          kind: "encouragement",
-          postedAt: Date.now(),
-          encouragement: {
-            _id: "encouragement-id" as Id<"encouragements">,
-            authorName: "Grandma",
-            message: "Can't wait to meet you!",
-            createdAt: Date.now(),
-            isMine: false,
-          },
-        },
-      ],
-      isDone: false,
-      continueCursor: "cursor",
-    },
-  });
+test("shows the empty feed when there are no items", async () => {
+  await using feed = renderFeedView({ items: [] });
+  const view = feed.view;
 
-  expect(view.queryByText("Loading the timeline...")).toBeNull();
-  expect(view.getByText("Grandma")).toBeTruthy();
-  expect(view.getByText("Can't wait to meet you!")).toBeTruthy();
-});
-
-test("shows the empty feed, not a spinner, when the prefetched first page is empty", async () => {
-  await using view = renderFeed({
-    baby: notYetBaby,
-    isOwner: false,
-    page: { page: [], isDone: true, continueCursor: "" },
-  });
-
-  expect(view.queryByText("Loading the timeline...")).toBeNull();
   expect(view.getByText("Nothing here yet")).toBeTruthy();
 });
 
 test("renders historical milestone badges regardless of current selection", async () => {
-  await using view = renderFeed({
+  await using feed = renderFeedView({
     baby: {
       ...notYetBaby,
       milestoneVisibility: { showLabor: false, showHospital: true },
       laborStarted: "2026-08-20T08:00:00.000Z",
     },
     isOwner: false,
-    page: {
-      page: [
-        {
-          _id: "timeline-item-id" as Id<"timelineItems">,
-          kind: "update",
-          postedAt: Date.now(),
-          update: {
-            _id: "update-id" as Id<"updates">,
-            message: "A family update",
-            milestone: "labor_started",
-            occurredAt: Date.now(),
-            photoUrl: null,
-            thumbnailUrl: null,
-            blurDataUrl: null,
-            isCurrentPagePhoto: false,
-          },
+    items: [
+      {
+        _id: "timeline-item-id" as Id<"timelineItems">,
+        kind: "update",
+        postedAt: Date.now(),
+        update: {
+          _id: "update-id" as Id<"updates">,
+          message: "A family update",
+          milestone: "labor_started",
+          occurredAt: Date.now(),
+          photoUrl: null,
+          thumbnailUrl: null,
+          blurDataUrl: null,
+          isCurrentPagePhoto: false,
         },
-      ],
-      isDone: true,
-      continueCursor: "",
-    },
+      },
+    ],
   });
+  const view = feed.view;
 
   expect(view.getByText("A family update")).toBeTruthy();
   expect(view.getByText("Labour started")).toBeTruthy();
 });
 
 test("timeline photos link to the update photo overlay", async () => {
-  await using view = renderFeed({
-    baby: notYetBaby,
-    isOwner: false,
-    page: {
-      page: [
-        {
-          _id: "timeline-item-id" as Id<"timelineItems">,
-          kind: "update",
-          postedAt: Date.now(),
-          update: {
-            _id: "update-photo-id" as Id<"updates">,
-            message: "Smile!",
-            milestone: null,
-            occurredAt: null,
-            photoUrl: "https://example.com/full.jpg",
-            thumbnailUrl: "https://example.com/thumb.jpg",
-            blurDataUrl: "data:image/jpeg;base64,abc",
-            isCurrentPagePhoto: false,
+  const removeUpdate = vi.fn<TimelineFeedViewProps["removeUpdate"]>();
+  const setAsCurrentPhoto = vi.fn<TimelineFeedViewProps["setAsCurrentPhoto"]>();
+  const removeEncouragement = vi.fn<TimelineFeedViewProps["removeEncouragement"]>();
+  const updateEncouragement = vi.fn<TimelineFeedViewProps["updateEncouragement"]>();
+  const fetchNextPage = vi.fn<TimelineFeedViewProps["fetchNextPage"]>();
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <TimelineFeedView
+        publicId="baby-smith"
+        baby={notYetBaby}
+        babyName={notYetBaby.name}
+        isOwner={false}
+        items={[
+          {
+            _id: "timeline-item-id" as Id<"timelineItems">,
+            kind: "update",
+            postedAt: Date.now(),
+            update: {
+              _id: "update-photo-id" as Id<"updates">,
+              message: "Smile!",
+              milestone: null,
+              occurredAt: null,
+              photoUrl: "https://example.com/full.jpg",
+              thumbnailUrl: "https://example.com/thumb.jpg",
+              blurDataUrl: "data:image/jpeg;base64,abc",
+              isCurrentPagePhoto: false,
+            },
           },
-        },
-      ],
-      isDone: true,
-      continueCursor: "",
-    },
-  });
+        ]}
+        hasNextPage={false}
+        isFetchingNextPage={false}
+        fetchNextPage={fetchNextPage}
+        currentVisitorId="visitor-1"
+        removeUpdate={removeUpdate}
+        setAsCurrentPhoto={setAsCurrentPhoto}
+        removeEncouragement={removeEncouragement}
+        updateEncouragement={updateEncouragement}
+      />
+    </LocaleProvider>,
+  );
 
   const photoLink = view.getByRole("link", { name: "View photo full size" });
   expect(photoLink.getAttribute("href")).toBe("/baby/baby-smith/updates/update-photo-id/photo");
   const inline = view.getByAltText("Baby update") as HTMLImageElement;
   expect(inline.src).toContain("thumb.jpg");
+});
+
+type TimelinePage = FunctionReturnType<typeof api.timeline.listByBaby>;
+
+function timelineHandle(page: TimelinePage) {
+  return testPreloadedConvexInfiniteQuery<typeof api.timeline.listByBaby>({
+    input: { babyId },
+    numItems: 20,
+    initialData: {
+      pages: [page],
+      pageParams: [{ numItems: 20, cursor: null }],
+    },
+  });
+}
+
+test("TimelineFeed wires the preloaded infinite query and mutations into the view", async () => {
+  const client = unreachableConvexClient();
+  await using _client = makeAsyncResource(client, async () => {
+    await client.close();
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  await using _queryClient = makeResource({}, () => {
+    queryClient.clear();
+  });
+  const handle = timelineHandle({
+    page: [
+      {
+        _id: "timeline-item-id" as Id<"timelineItems">,
+        kind: "encouragement",
+        postedAt: Date.now(),
+        encouragement: {
+          _id: "encouragement-id" as Id<"encouragements">,
+          authorName: "Grandma",
+          message: "Can't wait to meet you!",
+          createdAt: Date.now(),
+          isMine: false,
+        },
+      },
+    ],
+    isDone: false,
+    continueCursor: "cursor",
+  });
+
+  const rendered = render(
+    <ConvexProvider client={client}>
+      <QueryClientProvider client={queryClient}>
+        <LocaleProvider locale="en-GB">
+          <TooltipProvider>
+            <TimelineFeed
+              babyId={babyId}
+              publicId="baby-smith"
+              baby={notYetBaby}
+              babyName={notYetBaby.name}
+              isOwner={false}
+              timeline={handle}
+            />
+          </TooltipProvider>
+        </LocaleProvider>
+      </QueryClientProvider>
+    </ConvexProvider>,
+  );
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+  });
+
+  expect(view.getByText("Grandma")).toBeTruthy();
+  expect(view.getByText("Can't wait to meet you!")).toBeTruthy();
 });
