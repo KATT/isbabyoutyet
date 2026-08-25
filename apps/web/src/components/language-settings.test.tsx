@@ -162,7 +162,6 @@ test("requesting another language submits the request form", async () => {
   });
 });
 
-
 test("LanguageSettings wires Convex mutations into the view", async () => {
   const client = new ConvexReactClient("https://example.invalid", {
     unsavedChangesWarning: false,

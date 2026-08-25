@@ -616,8 +616,8 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
 
   // Mutation against the unreachable client rejects; assert the form settles.
   await vi.waitFor(() => {
-    expect((view.getByRole("button", { name: "Send some love" }) as HTMLButtonElement).disabled).toBe(
-      false,
-    );
+    expect(
+      (view.getByRole("button", { name: "Send some love" }) as HTMLButtonElement).disabled,
+    ).toBe(false);
   });
 });

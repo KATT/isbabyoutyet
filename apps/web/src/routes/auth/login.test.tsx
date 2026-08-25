@@ -3,7 +3,13 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_EMPTY_USER, DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
-import { LoginCard, LoginPage, loginAuthAdapter, Route, signInAndHandoff } from "@/routes/auth/login";
+import {
+  LoginCard,
+  LoginPage,
+  loginAuthAdapter,
+  Route,
+  signInAndHandoff,
+} from "@/routes/auth/login";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type SignInResult = { errorMessage: string | null };
