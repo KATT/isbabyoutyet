@@ -29,9 +29,9 @@ test("admin queries refuse non-admins and anonymous callers", async () => {
       paginationOpts: FIRST_PAGE,
     }),
   ).rejects.toThrow("Not authorized");
-  await expect(
-    asAlice.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE }),
-  ).rejects.toThrow("Not authorized");
+  await expect(asAlice.query(api.admin.listUsers, { paginationOpts: FIRST_PAGE })).rejects.toThrow(
+    "Not authorized",
+  );
   await expect(
     t.query(api.admin.listLanguageRequests, { paginationOpts: FIRST_PAGE }),
   ).rejects.toThrow("Not authenticated");
