@@ -39,6 +39,17 @@ test("add baby remains a standalone non-nested dashboard route", () => {
   expect(route.component).toBe(AddBabyPage);
 });
 
+test("name field explains a nickname is fine and can be changed later", async () => {
+  await using view = renderResource(<AddBabyPage />);
+
+  expect(view.getByLabelText("Baby name")).toBeTruthy();
+  expect(
+    view.getByText(
+      "Don't worry if you don't know it yet. A nickname is fine — you can change it later.",
+    ),
+  ).toBeTruthy();
+});
+
 test("journey choices explain visible statuses and privacy", async () => {
   await using view = renderResource(<AddBabyPage />);
 
