@@ -41,5 +41,8 @@ export async function authenticateManagerOverlaySsrWithToken(opts: {
 }
 
 export async function authenticateManagerOverlaySsr(context: ManagerOverlayAuthContext) {
-  return authenticateManagerOverlaySsrWithToken({ context, fetchToken: getManagerOverlayToken });
+  return authenticateManagerOverlaySsrWithToken({
+    context,
+    fetchToken: async () => (await getManagerOverlayToken()) ?? null,
+  });
 }
