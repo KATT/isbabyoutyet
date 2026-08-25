@@ -1,16 +1,16 @@
 import { DEMO_ACCOUNTS } from "@workspace/convex/src/seedCredentials";
 import { NativeSelect, NativeSelectOption } from "@workspace/ui/components/native-select";
 import { Label } from "@workspace/ui/components/label";
-import { hasDemoLogin } from "@/lib/has-demo-login";
 
 /**
  * Preview/local-only picker of seeded test accounts. The parent prefills and
- * submits the auth form.
+ * submits the auth form. Pass `enabled` from `hasDemoLogin` at the call site.
  */
 export function DemoAccountPicker(props: {
   onPrefill: (account: (typeof DEMO_ACCOUNTS)[number]) => void;
+  enabled: boolean;
 }) {
-  if (!hasDemoLogin) return null;
+  if (!props.enabled) return null;
 
   return (
     <div className="mb-5 flex flex-col gap-1.5 rounded-2xl border-2 border-dashed border-border bg-muted/40 p-3">

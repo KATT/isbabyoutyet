@@ -1,69 +1,59 @@
-import { render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { FORBIDDEN } from "@workspace/convex/src/types";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import {
+  seedOwnedBaby,
+  seedPendingLaborNotification,
+  seedPushSubscriptions,
+  signUpTestUser,
+} from "@/test/convexTestSeed";
+import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import { ScheduledNotificationToast } from "./scheduled-notification-toast";
 
-const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
-  custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id: string | number | undefined) => void>(),
-}));
-
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
-    useMutation: () => ({ isPending: false, mutate: vi.fn<(args: unknown) => void>() }),
-  };
-});
-
-vi.mock("@convex-dev/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@convex-dev/react-query")>();
-  return {
-    ...actual,
-    useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
-  };
-});
-
-vi.mock("sonner", () => ({
-  toast: {
-    custom: mocks.custom,
-    dismiss: mocks.dismiss,
-    success: vi.fn<(message: string) => void>(),
-  },
-}));
-
-const { ScheduledNotificationToast } = await import("./scheduled-notification-toast");
-
-const babyId = "jd7baby000000000000000000" as Id<"baby">;
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+/**
+ * Sonner queues toasts on a module-level observer with no `<Toaster />`
+ * mounted, so the rendered toast body is only reachable through the render
+ * callback handed to `toast.custom`.
+ */
+function spyOnToastResource() {
+  const custom = vi.spyOn(toast, "custom").mockReturnValue("toast-id");
+  const dismiss = vi.spyOn(toast, "dismiss").mockReturnValue("toast-id");
+  return makeResource({ custom, dismiss }, () => {
+    custom.mockRestore();
+    dismiss.mockRestore();
   });
 }
 
-test("runs with empty notifications and no subscriptions", async () => {
-  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
-    input: { babyId },
-    initialData: [],
-  });
-  const subscriptionCount = testPreloadedConvexQuery<
-    typeof api.pushSubscriptions.getSubscriptionCount
-  >({
-    input: { babyId },
-    initialData: 0,
-  });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
+async function renderToastResource(
+  harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
+  ui: React.ReactElement,
+) {
+  return renderWithConvexTest({ harness, ui, wrap: null });
+}
 
-  await using view = renderResource(
+test("runs with empty notifications and no subscriptions", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const ownerId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: ownerId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const notifications = await harness.convexPreloader.ensureQueryData(
+    api.baby.getScheduledNotifications,
+    { babyId: baby.babyId },
+  );
+  const subscriptionCount = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getSubscriptionCount,
+    { babyId: baby.babyId },
+  );
+
+  await using toastSpy = spyOnToastResource();
+  await using view = await renderToastResource(
+    harness,
     <ScheduledNotificationToast
       notifications={notifications}
       subscriptionCount={subscriptionCount}
@@ -71,25 +61,36 @@ test("runs with empty notifications and no subscriptions", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
+  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("treats forbidden notification data as empty", async () => {
-  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
-    input: { babyId },
-    initialData: FORBIDDEN,
+  await using harness = await createConvexTestHarness({ identity: null });
+  const ownerId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  const subscriptionCount = testPreloadedConvexQuery<
-    typeof api.pushSubscriptions.getSubscriptionCount
-  >({
-    input: { babyId },
-    initialData: FORBIDDEN,
+  harness.withIdentity({ subject: ownerId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const visitorId = await signUpTestUser(harness, {
+    email: "visitor@example.com",
+    password: "password123",
+    name: "Visitor",
   });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
+  harness.withIdentity({ subject: visitorId });
 
-  await using view = renderResource(
+  const notifications = await harness.convexPreloader.ensureQueryData(
+    api.baby.getScheduledNotifications,
+    { babyId: baby.babyId },
+  );
+  const subscriptionCount = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getSubscriptionCount,
+    { babyId: baby.babyId },
+  );
+  await using toastSpy = spyOnToastResource();
+  await using view = await renderToastResource(
+    harness,
     <ScheduledNotificationToast
       notifications={notifications}
       subscriptionCount={subscriptionCount}
@@ -97,38 +98,33 @@ test("treats forbidden notification data as empty", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
+  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
-  const notificationId = "jd7sched0000000000000000" as Id<"scheduledNotifications">;
-  const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
-    input: { babyId },
-    initialData: [
-      {
-        _id: notificationId,
-        _creationTime: Date.now(),
-        babyId,
-        createdAt: Date.now(),
-        status: "pending" as const,
-        notificationType: "labor_started" as const,
-        scheduledFor: Date.now() + 60_000,
-        customMessage: null,
-        scheduledId: "sched-1" as Id<"_scheduled_functions">,
-      },
-    ],
+  await using harness = await createConvexTestHarness({ identity: null });
+  const ownerId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  const subscriptionCount = testPreloadedConvexQuery<
-    typeof api.pushSubscriptions.getSubscriptionCount
-  >({
-    input: { babyId },
-    initialData: 3,
-  });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
+  harness.withIdentity({ subject: ownerId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await seedPendingLaborNotification(harness, { babyId: baby.babyId });
+  await seedPushSubscriptions(harness, { babyId: baby.babyId, count: 3 });
 
-  await using view = renderResource(
+  const notifications = await harness.convexPreloader.ensureQueryData(
+    api.baby.getScheduledNotifications,
+    { babyId: baby.babyId },
+  );
+  const subscriptionCount = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getSubscriptionCount,
+    { babyId: baby.babyId },
+  );
+
+  await using toastSpy = spyOnToastResource();
+  await using view = await renderToastResource(
+    harness,
     <ScheduledNotificationToast
       notifications={notifications}
       subscriptionCount={subscriptionCount}
@@ -136,9 +132,13 @@ test("shows the exact subscriber count in a pending notification toast", async (
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).toHaveBeenCalled();
-  const renderToast = mocks.custom.mock.calls[0]?.[0];
+  expect(toastSpy.custom).toHaveBeenCalled();
+  const renderToast = toastSpy.custom.mock.calls[0]?.[0];
   if (typeof renderToast !== "function") throw new Error("Toast renderer missing");
-  await using toastView = renderResource(renderToast() as React.ReactElement);
+  await using toastView = await renderWithConvexTest({
+    harness,
+    ui: renderToast("toast-id") as React.ReactElement,
+    wrap: null,
+  });
   expect(toastView.container.textContent).toContain("3 people");
 });

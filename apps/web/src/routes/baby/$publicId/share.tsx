@@ -60,7 +60,6 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     });
     const babyDoc = data.baby.initialData;
     const sharePreview = babyDoc ? getBabySeo(babyDoc, publicId) : null;
-    // The browser image identity depends on the fetched public baby fields.
     const imagePrefetch = prefetchBrowserImage(
       opts.context.queryClient,
       sharePreview?.imageUrl ?? imageUrl,
@@ -77,11 +76,12 @@ export const Route = createFileRoute("/baby/$publicId/share")({
 });
 
 export function BabyShareOverlay() {
-  const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
-  const [copied, setCopied] = useState(false);
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+  const share = useBabyShareOverlayNav(params.publicId);
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
   const babyDoc = babyQuery.data;
@@ -95,7 +95,6 @@ export function BabyShareOverlay() {
       );
     }),
   );
-  const share = useBabyShareOverlayNav(params.publicId);
   if (!sharePreview) {
     throw notFound();
   }
@@ -109,7 +108,6 @@ export function BabyShareOverlay() {
         void completeOnboardingStep({ stepId: "share_link" });
       }
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = loaderData.shareLink;
       textArea.style.position = "fixed";

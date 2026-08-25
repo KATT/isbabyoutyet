@@ -52,9 +52,16 @@ function languageRequestSchema(t: TranslationFunction) {
     .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
 }
 
-function LanguageRequestForm(props: { onSaved: () => void }) {
+type RequestLanguageHandler = (
+  args: FunctionArgs<typeof api.profile.requestLanguage>,
+) => Promise<unknown>;
+
+function LanguageRequestForm(props: {
+  onSaved: () => void;
+  onRequestLanguage: RequestLanguageHandler;
+}) {
   const { t } = useI18n();
-  const requestLanguage = useMutation(api.profile.requestLanguage);
+  const requestLanguage = props.onRequestLanguage;
   const form = useZodForm({
     schema: languageRequestSchema(t),
     defaultValues: { requestedLocale: "" },
@@ -118,11 +125,12 @@ export function LanguageSettings(props: {
     | InitiatedConvexQuery<typeof api.profile.get>;
   className: string | undefined;
 }) {
-  const { locale, t } = useI18n();
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
+  const onUpdateLocale = useMutation(api.profile.updateLocale);
+  const onUpdateTimeZone = useMutation(api.profile.updateTimeZone);
+  const onRequestLanguage = useMutation(api.profile.requestLanguage);
+  const { locale, t } = useI18n();
   const profile = profileQuery.data;
-  const updateLocale = useMutation(api.profile.updateLocale);
-  const updateTimeZone = useMutation(api.profile.updateTimeZone);
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
@@ -143,7 +151,7 @@ export function LanguageSettings(props: {
           }
           const previousOption = selectedTimeZoneOption;
           setSelectedTimeZoneOption(option);
-          void updateTimeZone({ timeZone: option.value })
+          void onUpdateTimeZone({ timeZone: option.value })
             .then(() => {
               toast.success(t("Time zone saved"));
             })
@@ -179,7 +187,7 @@ export function LanguageSettings(props: {
         disabled={!profile}
         label={t("Profile language")}
         onValueChange={async (value) => {
-          await updateLocale({ locale: value });
+          await onUpdateLocale({ locale: value });
           await setLocale(value);
         }}
       />
@@ -199,7 +207,12 @@ export function LanguageSettings(props: {
               {t("Tell us which language you would like us to add.")}
             </DialogDescription>
           </DialogHeader>
-          {requestOpen ? <LanguageRequestForm onSaved={() => setRequestOpen(false)} /> : null}
+          {requestOpen ? (
+            <LanguageRequestForm
+              onSaved={() => setRequestOpen(false)}
+              onRequestLanguage={onRequestLanguage}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

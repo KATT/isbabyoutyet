@@ -48,7 +48,7 @@ export function Coachmark(props: CoachmarkProps) {
 
   useEffect(() => {
     const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-    if (!(el instanceof HTMLElement)) {
+    if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
       return;
     }
     el.scrollIntoView({ block: "center", behavior: "auto", inline: "nearest" });

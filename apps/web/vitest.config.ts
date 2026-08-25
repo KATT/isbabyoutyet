@@ -78,6 +78,21 @@ export const webUnitProject = defineProject({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
+    setupFiles: ["./src/test/setup.ts"],
+    // Keep auth/Convex clients off real backends so unit tests never dial the
+    // developer's running `pnpm dev` / Convex backend (ports 3000 / 3210) or
+    // a publicly resolvable Convex host (example.convex.cloud resolves in DNS).
+    env: {
+      VITE_SITE_URL: "https://example.test",
+      VITE_CONVEX_URL: "https://example.invalid",
+      VITE_CONVEX_SITE_URL: "https://example.invalid",
+      // convex-test runs real Convex functions (including scheduled cache purge).
+      SITE_URL: "http://localhost:3000",
+      BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",
+      CONVEX_SITE_URL: "https://convex.test",
+      VAPID_PUBLIC_KEY: "test-vapid-public-key",
+      VAPID_PRIVATE_KEY: "test-vapid-private-key",
+    },
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component

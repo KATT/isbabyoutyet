@@ -41,6 +41,7 @@ function getDefaultBabyData(): PreviewBabyData {
     photoId: null,
   };
 }
+
 const searchSchema = z.object({
   name: z.string().default("Baby"),
   dueDate: z.string().nullable().optional(),
@@ -58,6 +59,8 @@ const searchSchema = z.object({
     .optional(),
   settings: z.boolean().optional(),
 });
+
+export type PreviewSearch = z.infer<typeof searchSchema>;
 
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
@@ -86,9 +89,9 @@ export const Route = createFileRoute("/preview")({
 });
 
 export function PreviewPage() {
-  const { t, locale } = useI18n();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const { t, locale } = useI18n();
   const birthJourney = search.birthJourney ?? "labor";
 
   const baby: PreviewBabyData = {
@@ -99,7 +102,6 @@ export function PreviewPage() {
   const currentStatus = getCurrentStatus(baby);
   const themeCss = getThemeCss(baby.theme);
 
-  // The preview has no timeline; simulate the latest update from the stage message
   const stageMessage =
     currentStatus.type === "born"
       ? baby.babyBornMessage
@@ -120,7 +122,7 @@ export function PreviewPage() {
         baby={baby}
         birthJourney={birthJourney}
         onUpdate={(update) => {
-          navigate({
+          void navigate({
             search: {
               ...search,
               ...update,

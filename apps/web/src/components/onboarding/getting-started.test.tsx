@@ -1,38 +1,12 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { GettingStartedCard } from "./getting-started";
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      params: { publicId: string | undefined } | undefined;
-      search: { settings: boolean | undefined; postUpdate: boolean | undefined } | undefined;
-    },
-  ) => {
-    const href =
-      typeof props.to === "string"
-        ? props.to.replace("$publicId", props.params?.publicId ?? "")
-        : "#";
-    return (
-      <a href={href} aria-label={props["aria-label"]} onClick={props.onClick}>
-        {props.children}
-      </a>
-    );
-  },
-}));
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
 
 test("shows the next incomplete step and an add-baby CTA on the dashboard", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
@@ -53,7 +27,7 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
 
 test("keeps mobile first-use guidance compact until the user opens the checklist", async () => {
   const onDismiss = vi.fn<() => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
@@ -99,7 +73,7 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
 
 test("dismisses the guide from the explicit labeled action", async () => {
   const onDismiss = vi.fn<() => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
@@ -146,7 +120,7 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
     value: visualViewport,
   });
 
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
@@ -184,7 +158,7 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
 });
 
 test("dashboard share step links to the first baby's share overlay", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
       minimized={false}
@@ -205,7 +179,7 @@ test("dashboard share step links to the first baby's share overlay", async () =>
 
 test("baby-page share step links directly to the share overlay", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
       minimized={false}
@@ -228,7 +202,7 @@ test("baby-page share step links directly to the share overlay", async () => {
 
 test("minimized chip shows progress count", async () => {
   const onMinimize = vi.fn<(minimized: boolean) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized
@@ -248,7 +222,7 @@ test("minimized chip shows progress count", async () => {
 
 test("dashboard settings CTA marks the step done while opening the page", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
@@ -268,7 +242,7 @@ test("dashboard settings CTA marks the step done while opening the page", async 
 
 test("baby-page checklist links post update and can open settings", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
@@ -290,7 +264,7 @@ test("baby-page checklist links post update and can open settings", async () => 
 });
 
 test("baby-page post action stays unavailable until a tour baby exists", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
       minimized={false}
@@ -309,7 +283,7 @@ test("baby-page post action stays unavailable until a tour baby exists", async (
 
 test("all-done state offers close checklist", async () => {
   const onDismiss = vi.fn<() => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[
         "add_baby",
@@ -339,7 +313,7 @@ test("all-done state offers close checklist", async () => {
 });
 
 test("dashboard learn encouragements step links to the first baby's page", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
@@ -360,7 +334,7 @@ test("dashboard learn encouragements step links to the first baby's page", async
 
 test("baby-page learn encouragements acknowledges with Got it", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}

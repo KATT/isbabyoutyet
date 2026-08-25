@@ -57,15 +57,15 @@ export function BabyUpdatePhotoOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: params.publicId,
+    updateId: params.updateId,
+  });
   useQuery(preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch));
   const updatePhoto = loaderData.updatePhoto.initialData;
   if (!updatePhoto) {
     throw notFound();
   }
-  const photo = useBabyUpdatePhotoOverlayNav({
-    publicId: params.publicId,
-    updateId: params.updateId,
-  });
 
   return (
     <PhotoLightbox

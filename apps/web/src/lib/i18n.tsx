@@ -201,8 +201,6 @@ const enGB = {
   "Baby Information": "Baby Information",
   "Enter your baby's name and due date to get started": "Add your baby's name and due date.",
   "Enter baby's name": "Enter baby's name",
-  "Don't worry if you don't know it yet. A nickname is fine — you can change it later.":
-    "Don't worry if you don't know it yet. A nickname is fine — you can change it later.",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Renaming may change the page address, but links you have already shared will keep working.",
   "Creating...": "Creating...",
@@ -749,8 +747,6 @@ const sv: Record<TranslationKey, string> = {
   "Baby Information": "Information om bäbisen",
   "Enter your baby's name and due date to get started": "Ange bäbisens namn och beräknade datum",
   "Enter baby's name": "Ange bäbisens namn",
-  "Don't worry if you don't know it yet. A nickname is fine — you can change it later.":
-    "Oroa dig inte om du inte vet namnet än. Ett smeknamn går bra — du kan ändra det senare.",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Ett namnbyte kan ändra sidans adress, men länkar du redan har delat fortsätter att fungera.",
   "Creating...": "Skapar...",
@@ -1280,8 +1276,6 @@ const es: Record<TranslationKey, string> = {
   "Enter your baby's name and due date to get started":
     "Introduce el nombre y la fecha prevista del bebé",
   "Enter baby's name": "Introduce el nombre del bebé",
-  "Don't worry if you don't know it yet. A nickname is fine — you can change it later.":
-    "No te preocupes si aún no lo sabes. Un apodo está bien, y puedes cambiarlo más adelante.",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Cambiar el nombre puede modificar la dirección, pero los enlaces ya compartidos seguirán funcionando.",
   "Creating...": "Creando...",
@@ -1818,8 +1812,6 @@ const ptBR: Record<TranslationKey, string> = {
   "Enter your baby's name and due date to get started":
     "Digite o nome e a data prevista do bebê para começar",
   "Enter baby's name": "Digite o nome do bebê",
-  "Don't worry if you don't know it yet. A nickname is fine — you can change it later.":
-    "Não se preocupe se ainda não souber o nome. Um apelido serve — você pode mudar depois.",
   "Renaming may change the page address, but links you have already shared will keep working.":
     "Se você mudar o nome, o endereço da página também pode mudar. Os links que já foram compartilhados continuam funcionando.",
   "Creating...": "Criando...",

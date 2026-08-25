@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import type { FunctionArgs } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
@@ -15,21 +15,19 @@ import { Form, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
-type CoParentsSettingsProps = {
-  babyId: Id<"baby">;
-  /** Only the owner can invite/remove; co-parents see a read-only list. */
-  isOwner: boolean;
-  listing:
-    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
-    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
-};
+type CoParentsListing = Exclude<
+  FunctionReturnType<typeof api.coParents.listForBaby>,
+  typeof FORBIDDEN
+>;
+
+type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
     .object({
       email: z.string().trim().email(t("Invalid email address")),
     })
-    .transform((values): FunctionArgs<typeof api.coParents.invite> => ({
+    .transform((values): InviteArgs => ({
       babyId,
       email: values.email,
     }));
@@ -37,9 +35,7 @@ function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
 
 function InviteCoParentForm(props: {
   babyId: Id<"baby">;
-  invite: (
-    args: FunctionArgs<typeof api.coParents.invite>,
-  ) => Promise<{ status: "added" | "invited" }>;
+  onInvite: (args: InviteArgs) => Promise<{ status: "added" | "invited" }>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -52,7 +48,7 @@ function InviteCoParentForm(props: {
     <Form
       form={form}
       handleSubmit={async (values) => {
-        const result = await props.invite(values);
+        const result = await props.onInvite(values);
         form.reset({ email: "" });
         toast.success(
           result.status === "added"
@@ -86,6 +82,15 @@ function InviteCoParentForm(props: {
   );
 }
 
+type CoParentsSettingsProps = {
+  babyId: Id<"baby">;
+  /** Only the owner can invite/remove; co-parents see a read-only list. */
+  isOwner: boolean;
+  listing:
+    | PreloadedConvexQuery<typeof api.coParents.listForBaby>
+    | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
+};
+
 /**
  * Settings section for inviting co-parents by email and managing membership.
  * Prefetched via the baby route loader when settings are open.
@@ -95,7 +100,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
   const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
   // FORBIDDEN only happens for non-managers, who never render this component —
   // treat it like an empty listing so the types stay honest.
-  const listing =
+  const listing: CoParentsListing =
     listingQuery.data === FORBIDDEN ? { coParents: [], invites: [] } : listingQuery.data;
   const invite = useMutation(api.coParents.invite);
   const removeCoParent = useMutation(api.coParents.removeCoParent);
@@ -161,7 +166,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
         ) : null}
       </ul>
 
-      {props.isOwner ? <InviteCoParentForm babyId={props.babyId} invite={invite} /> : null}
+      {props.isOwner ? <InviteCoParentForm babyId={props.babyId} onInvite={invite} /> : null}
     </div>
   );
 }
