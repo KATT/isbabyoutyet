@@ -1,4 +1,3 @@
-import { hasDemoLogin } from "@/lib/has-demo-login";
 import {
   DEMO_BABIES,
   DEMO_USER,
