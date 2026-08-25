@@ -1,54 +1,52 @@
 import { render } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, ConvexReactClient } from "convex/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
-
-const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn<(options: { initialData: unknown }) => { data: unknown }>(),
-  custom: vi.fn<(...args: unknown[]) => string | number>(),
-  dismiss: vi.fn<(id: string | number | undefined) => void>(),
-}));
-
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseQuery: (options: { initialData: unknown }) => mocks.useSuspenseQuery(options),
-    useMutation: () => ({ isPending: false, mutate: vi.fn<(args: unknown) => void>() }),
-  };
-});
-
-vi.mock("@convex-dev/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@convex-dev/react-query")>();
-  return {
-    ...actual,
-    useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
-  };
-});
-
-vi.mock("sonner", () => ({
-  toast: {
-    custom: mocks.custom,
-    dismiss: mocks.dismiss,
-    success: vi.fn<(message: string) => void>(),
-  },
-}));
-
-const { ScheduledNotificationToast } = await import("./scheduled-notification-toast");
+import { ScheduledNotificationToast } from "./scheduled-notification-toast";
 
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
+/**
+ * Sonner queues toasts on a module-level observer with no `<Toaster />`
+ * mounted, so the rendered toast body is only reachable through the render
+ * callback handed to `toast.custom`.
+ */
+function spyOnToastResource() {
+  const custom = vi.spyOn(toast, "custom").mockReturnValue("toast-id");
+  const dismiss = vi.spyOn(toast, "dismiss").mockReturnValue("toast-id");
+  return makeResource({ custom, dismiss }, () => {
+    custom.mockRestore();
+    dismiss.mockRestore();
+  });
+}
+
+/** Unreachable deployment URL so the render never dials a real Convex backend. */
 function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
+  const convexClient = new ConvexReactClient("https://example.invalid", {
+    unsavedChangesWarning: false,
+  });
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  const view = render(
+    <ConvexProvider client={convexClient}>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
+    </ConvexProvider>,
+  );
   return makeResource(view, () => {
     view.unmount();
+    queryClient.clear();
   });
 }
 
 test("runs with empty notifications and no subscriptions", async () => {
+  await using toastSpy = spyOnToastResource();
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
     initialData: [],
@@ -59,9 +57,6 @@ test("runs with empty notifications and no subscriptions", async () => {
     input: { babyId },
     initialData: 0,
   });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
 
   await using view = renderResource(
     <ScheduledNotificationToast
@@ -71,10 +66,11 @@ test("runs with empty notifications and no subscriptions", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
+  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("treats forbidden notification data as empty", async () => {
+  await using toastSpy = spyOnToastResource();
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
     initialData: FORBIDDEN,
@@ -85,9 +81,6 @@ test("treats forbidden notification data as empty", async () => {
     input: { babyId },
     initialData: FORBIDDEN,
   });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
 
   await using view = renderResource(
     <ScheduledNotificationToast
@@ -97,10 +90,11 @@ test("treats forbidden notification data as empty", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).not.toHaveBeenCalled();
+  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
+  await using toastSpy = spyOnToastResource();
   const notificationId = "jd7sched0000000000000000" as Id<"scheduledNotifications">;
   const notifications = testPreloadedConvexQuery<typeof api.baby.getScheduledNotifications>({
     input: { babyId },
@@ -124,9 +118,6 @@ test("shows the exact subscriber count in a pending notification toast", async (
     input: { babyId },
     initialData: 3,
   });
-  mocks.useSuspenseQuery.mockImplementation((options) => ({
-    data: options.initialData,
-  }));
 
   await using view = renderResource(
     <ScheduledNotificationToast
@@ -136,9 +127,9 @@ test("shows the exact subscriber count in a pending notification toast", async (
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(mocks.custom).toHaveBeenCalled();
-  const renderToast = mocks.custom.mock.calls[0]?.[0];
+  expect(toastSpy.custom).toHaveBeenCalled();
+  const renderToast = toastSpy.custom.mock.calls[0]?.[0];
   if (typeof renderToast !== "function") throw new Error("Toast renderer missing");
-  await using toastView = renderResource(renderToast() as React.ReactElement);
+  await using toastView = renderResource(renderToast("toast-id") as React.ReactElement);
   expect(toastView.container.textContent).toContain("3 people");
 });
