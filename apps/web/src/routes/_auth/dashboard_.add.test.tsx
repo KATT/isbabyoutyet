@@ -33,10 +33,34 @@ function renderResource(ui: ReactElement) {
   });
 }
 
+function expandOptionalSettings(view: ReturnType<typeof render>) {
+  fireEvent.click(view.getByRole("button", { name: "Customize your page (optional)" }));
+}
+
 test("add baby remains a standalone non-nested dashboard route", () => {
   const route = routeModule.Route as unknown as { routeId: string; component: unknown };
   expect(route.routeId).toBe("/_auth/dashboard_/add");
   expect(route.component).toBe(AddBabyPage);
+});
+
+test("optional settings stay collapsed until expanded", async () => {
+  await using view = renderResource(<AddBabyPage />);
+
+  expect(view.getByRole("button", { name: "Customize your page (optional)" })).toBeTruthy();
+  expect(view.queryByRole("button", { name: "Labour" })).toBeNull();
+  expect(view.queryByText("Birth journey")).toBeNull();
+
+  expandOptionalSettings(view);
+
+  expect(
+    view.getByText(
+      "You can change journey, theme, and other settings anytime after creating your page.",
+    ),
+  ).toBeTruthy();
+
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByText("Birth journey")).toBeTruthy();
+  expect(view.getByText("Theme")).toBeTruthy();
 });
 
 test("name field explains a nickname is fine and can be changed later", async () => {
@@ -53,13 +77,24 @@ test("name field explains a nickname is fine and can be changed later", async ()
 test("journey choices explain visible statuses and privacy", async () => {
   await using view = renderResource(<AddBabyPage />);
 
-  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Planned C-section" })).toBeTruthy();
-  expect(view.getByRole("radiogroup", { name: "Choose a journey" }).className).not.toContain(
-    "grid-cols",
+  expandOptionalSettings(view);
+
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Planned C-section" })).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
+    "true",
   );
-  expect(view.getByText("Visitors see: Labour started → Baby born")).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Gone to hospital" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  const babyBornSwitch = view.getByRole("switch", { name: "Baby born" });
+  expect(
+    babyBornSwitch.getAttribute("aria-disabled") ?? babyBornSwitch.getAttribute("disabled"),
+  ).not.toBeNull();
+  expect(
+    view.getByText("Visitors see: Labour started → Gone to hospital → Baby born"),
+  ).toBeTruthy();
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
@@ -74,6 +109,33 @@ test("journey choices explain visible statuses and privacy", async () => {
   ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
+});
+
+test("submits optional theme selection", async () => {
+  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
+  mocks.navigate.mockReset().mockResolvedValue(undefined);
+  await using view = renderResource(<AddBabyPage />);
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  expandOptionalSettings(view);
+  fireEvent.click(view.getByRole("button", { name: "Violet Bloom" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(mocks.createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-09"),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      birthJourney: "labor",
+      theme: "violet-bloom",
+    });
+  });
 });
 
 test.each([
@@ -91,7 +153,8 @@ test.each([
   fireEvent.change(view.getByLabelText("Due date"), {
     target: { value: "2026-09-09" },
   });
-  fireEvent.click(view.getByRole("radio", { name: testCase.label }));
+  expandOptionalSettings(view);
+  fireEvent.click(view.getByRole("button", { name: testCase.label }));
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
@@ -101,6 +164,7 @@ test.each([
       dueDateDisplayMode: "exact",
       publicDueDateText: null,
       birthJourney: testCase.birthJourney,
+      theme: null,
     });
   });
   expect(mocks.navigate).toHaveBeenCalledWith({
@@ -127,6 +191,7 @@ test("allows a hidden public due date when message mode has no text", async () =
       dueDateDisplayMode: "message",
       publicDueDateText: null,
       birthJourney: "labor",
+      theme: null,
     });
   });
 });
@@ -153,6 +218,7 @@ test("submits a custom public due date message when provided", async () => {
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",
+      theme: null,
     });
   });
 });
@@ -201,6 +267,7 @@ test("keeps entered date and message values while toggling fields", async () => 
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",
+      theme: null,
     });
   });
 });

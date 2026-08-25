@@ -305,7 +305,7 @@ export function HomePage() {
     },
     {
       emoji: "🏥",
-      title: "At hospital",
+      title: "Gone to hospital",
       description: "Almost there!",
       rotate: "group-hover:-rotate-1",
       search: {

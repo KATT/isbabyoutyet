@@ -21,7 +21,6 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import {
   Select,
   SelectContent,
@@ -51,7 +50,13 @@ import type {
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { DueDateEditor, NameEditor, StatusDateEditor, ThemeSelector } from "./editors";
+import {
+  DueDateEditor,
+  JourneyEditor,
+  NameEditor,
+  StatusDateEditor,
+  ThemeSelector,
+} from "./editors";
 import { CoParentsSettings } from "./co-parents-settings";
 import { formatDate, formatDueDate, getRelativeTime, getThemeOption } from "./utils";
 import {
@@ -61,9 +66,7 @@ import {
 } from "@workspace/convex/src/i18n";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
-import { JourneySelector } from "./journey-selector";
-import { useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import type { ReactNode } from "react";
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -87,48 +90,6 @@ type SettingsPanelProps = {
       | InitiatedConvexQuery<typeof api.coParents.listForBaby>;
   } | null;
 };
-
-function JourneyEditor(props: { birthJourney: BirthJourney; onUpdate: BabyUpdateHandler }) {
-  const { t } = useI18n();
-  const [open, setOpen] = useState(false);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
-        render={
-          <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
-            {t("Edit")}
-          </Button>
-        }
-      />
-      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
-        <div className="flex flex-col gap-3">
-          <div>
-            <p className="font-bold">{t("Choose a journey")}</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("We save this choice for your settings, but we don't show it to anyone.")}
-            </p>
-          </div>
-          <JourneySelector
-            value={props.birthJourney}
-            onValueChange={(value) => {
-              void Promise.resolve(props.onUpdate({ birthJourney: value }))
-                .then(() => {
-                  setOpen(false);
-                })
-                .catch((error) => {
-                  toast.error(
-                    error instanceof Error ? error.message : t("Failed to update journey"),
-                  );
-                });
-            }}
-            idPrefix="settings-journey"
-          />
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function SettingsSection(props: { title: string; children: ReactNode }) {
   return (
@@ -216,7 +177,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{t("Journey")}</ItemTitle>
-                <ItemDescription>{t(journeyOption.labelKey)}</ItemDescription>
+                <ItemDescription>{t(journeyOption.descriptionKey)}</ItemDescription>
               </ItemContent>
               <ItemActions>
                 <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />

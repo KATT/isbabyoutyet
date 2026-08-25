@@ -54,7 +54,12 @@ const searchSchema = z.object({
   babyBornMessage: z.string().nullable().optional(),
   laborStartedMessage: z.string().nullable().optional(),
   birthJourney: z
-    .union([z.literal("labor"), z.literal("home_birth"), z.literal("planned_c_section")])
+    .union([
+      z.literal("labor"),
+      z.literal("home_birth"),
+      z.literal("planned_c_section"),
+      z.literal("custom"),
+    ])
     .optional(),
   settings: z.boolean().optional(),
 });

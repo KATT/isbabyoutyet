@@ -1,8 +1,12 @@
 import type { Doc } from "../convex/_generated/dataModel";
 
-export const BIRTH_JOURNEYS = ["labor", "home_birth", "planned_c_section"] as const;
+export const BIRTH_JOURNEYS = ["labor", "home_birth", "planned_c_section", "custom"] as const;
 
 export type BirthJourney = (typeof BIRTH_JOURNEYS)[number];
+
+export const PRESET_BIRTH_JOURNEYS = ["labor", "home_birth", "planned_c_section"] as const;
+
+export type PresetBirthJourney = (typeof PRESET_BIRTH_JOURNEYS)[number];
 
 /**
  * Sentinel returned by manager-only queries when the caller lacks access,
@@ -90,12 +94,30 @@ export const MILESTONE_VISIBILITY_PRESETS = {
   labor: DEFAULT_MILESTONE_VISIBILITY,
   home_birth: { showLabor: true, showHospital: false },
   planned_c_section: { showLabor: false, showHospital: true },
-} as const satisfies Record<string, MilestoneVisibility>;
+  custom: { showLabor: false, showHospital: false },
+} as const satisfies Record<BirthJourney, MilestoneVisibility>;
 
-export type MilestoneVisibilityPreset = keyof typeof MILESTONE_VISIBILITY_PRESETS;
+export type MilestoneVisibilityPreset = PresetBirthJourney;
 
-export function milestoneVisibilityForPreset(preset: MilestoneVisibilityPreset) {
+export function milestoneVisibilityForPreset(preset: BirthJourney) {
   return MILESTONE_VISIBILITY_PRESETS[preset];
+}
+
+export function birthJourneyForVisibility(visibility: MilestoneVisibility): BirthJourney {
+  if (visibility.showLabor && visibility.showHospital) {
+    return "labor";
+  }
+  if (visibility.showLabor && !visibility.showHospital) {
+    return "home_birth";
+  }
+  if (!visibility.showLabor && visibility.showHospital) {
+    return "planned_c_section";
+  }
+  return "custom";
+}
+
+export function isPresetBirthJourney(journey: BirthJourney): journey is PresetBirthJourney {
+  return journey !== "custom";
 }
 
 /**
