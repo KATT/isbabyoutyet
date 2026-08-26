@@ -27,13 +27,13 @@ const base: OnboardingProgress = {
 function createMineStore(seed: OnboardingProgress | undefined) {
   let value = seed;
   const store = {
-    getQuery(_query: unknown, args: unknown) {
-      expect(args).toEqual({});
+    getQuery(...args: [unknown, unknown]) {
+      expect(args[1]).toEqual({});
       return value;
     },
-    setQuery(_query: unknown, args: unknown, next: OnboardingProgress) {
-      expect(args).toEqual({});
-      value = next;
+    setQuery(...args: [unknown, unknown, OnboardingProgress]) {
+      expect(args[1]).toEqual({});
+      value = args[2];
     },
     read() {
       return value;
