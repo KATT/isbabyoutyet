@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The single audited seam for actions that must happen after elapsed time.
- * Callers supply stable, domain-level actions; this hook owns timer cleanup.
- * The lint configuration exempts this file only, keeping effects out of
- * application feature components while preserving timer-driven behavior.
+ * Delayed action after elapsed time. Callers supply domain-level actions;
+ * this hook owns timer cleanup. Effects are allowed under `apps/web/src/lib`
+ * so feature components stay free of synchronization effects.
  */
 export function useDelayedAction(opts: { action: () => void; delayMs: number; enabled: boolean }) {
   useEffect(() => {

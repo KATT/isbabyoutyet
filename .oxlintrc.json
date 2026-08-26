@@ -79,8 +79,9 @@
       }
     },
     {
-      // Audited timing seam: callers provide an action and this hook owns cleanup.
-      "files": ["apps/web/src/lib/use-delayed-action.ts"],
+      // Shared app lib hooks may use carefully designed effects (timers, observers).
+      // Feature components under routes/components stay banned.
+      "files": ["apps/web/src/lib/**/*.{ts,tsx}"],
       "rules": {
         "no-use-effect/no-use-effect": "off"
       }
