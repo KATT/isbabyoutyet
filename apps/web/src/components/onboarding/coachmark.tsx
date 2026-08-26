@@ -3,7 +3,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 import { useCoachmarkSnapshot } from "@/lib/use-coachmark-store";
-import { useVisualViewportMetrics } from "./visual-viewport";
+import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
 
 type CoachmarkProps = {
   /** Matches `data-tour-id` on the highlighted element */

@@ -19,7 +19,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { openOverlayLink } from "@/lib/overlay-nav";
 import { ONBOARDING_STEPS } from "./steps";
-import { useVisualViewportMetrics } from "./visual-viewport";
+import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 

@@ -18,6 +18,7 @@ const BANNED_HOOKS = new Set([
   "useReducer",
   "useActionState",
   "useOptimistic",
+  "useSyncExternalStore",
 ]);
 
 const MESSAGE =

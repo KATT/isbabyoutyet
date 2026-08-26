@@ -1,15 +1,19 @@
 /**
- * Disallow React local-state hooks outside audited seams (vendored UI + app lib).
+ * Disallow React local-state / subscription hooks outside audited seams
+ * (vendored UI + app lib).
  *
  * Feature UI state should live in the URL (search params / nested routes),
  * come from queries/mutations, or use uncontrolled component triggers
- * (PopoverTrigger, DialogTrigger, etc.). Ephemeral timing and observers
- * belong in `apps/web/src/lib`.
+ * (PopoverTrigger, DialogTrigger, etc.). Ephemeral timing, observers, and
+ * external-store subscriptions belong in `apps/web/src/lib`.
  *
  * Also bans useReducer / useActionState / useOptimistic — they are useState
  * with extra steps and would otherwise bypass the rule. Optimistic UI that
  * must clear when server data catches up uses `useOptimisticOverride` in lib
  * (render-time adjustment), not React's `useOptimistic`.
+ *
+ * `useSyncExternalStore` is banned in feature code for the same reason:
+ * subscriptions must live in named lib seams, not ad-hoc in routes/components.
  */
 
 const BANNED_STATE_HOOKS = new Set([
@@ -17,9 +21,10 @@ const BANNED_STATE_HOOKS = new Set([
   "useReducer",
   "useActionState",
   "useOptimistic",
+  "useSyncExternalStore",
 ]);
 const MESSAGE =
-  "Do not use React `{{name}}`. Put shareable UI state in the URL, derive it from queries/mutations, or use an uncontrolled component trigger; audited lib hooks may own local state.";
+  "Do not use React `{{name}}`. Put shareable UI state in the URL, derive it from queries/mutations, or use an uncontrolled component trigger; audited lib hooks may own local state and external-store subscriptions.";
 
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;

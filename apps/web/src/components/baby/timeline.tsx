@@ -40,7 +40,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useRef, useSyncExternalStore } from "react";
+import { useRef } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -61,7 +61,7 @@ import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
-import { getStoredVisitorId, subscribeToStoredVisitorId } from "./encouragements";
+import { useStoredVisitorId } from "@/lib/use-visitor-id";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
@@ -951,11 +951,7 @@ type UpdateEncouragementFn = (
 export function TimelineFeed(props: TimelineFeedProps) {
   // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
   // the loader handle (no visitorId), then remixArgs picks it up on the client.
-  const currentVisitorId = useSyncExternalStore(
-    subscribeToStoredVisitorId,
-    getStoredVisitorId,
-    () => "",
-  );
+  const currentVisitorId = useStoredVisitorId();
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).

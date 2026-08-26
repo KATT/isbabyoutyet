@@ -3,8 +3,9 @@
 ## React hooks policy (`useEffect` / local state)
 
 Feature code under `apps/web/src/components` and `apps/web/src/routes` must not
-use `useEffect` / `useLayoutEffect`, nor local-state hooks (`useState`,
-`useReducer`, `useActionState`, `useOptimistic`). Prefer:
+use `useEffect` / `useLayoutEffect`, local-state hooks (`useState`,
+`useReducer`, `useActionState`, `useOptimistic`), or `useSyncExternalStore`.
+Prefer:
 
 - **URL / nested routes** for shareable UI (overlays, tabs, lightboxes)
 - **Queries / mutations / `useTransition`** for server data and pending UI
@@ -13,13 +14,14 @@ use `useEffect` / `useLayoutEffect`, nor local-state hooks (`useState`,
 
 ### `apps/web/src/lib` audited seams
 
-Lib may use effects and local state when the hook is a **reusable seam** that
-owns cleanup for an external system (timers, observers, blob URLs, module
-stores). Oxlint exemptions apply only to `use-*` hooks plus
+Lib may use effects, local state, and `useSyncExternalStore` when the hook is a
+**reusable seam** that owns cleanup for an external system (timers, observers,
+blob URLs, module stores). Oxlint exemptions apply only to `use-*` hooks plus
 `onboarding-ui-store.ts`, `overlay-nav.ts`, and `convexAuthHandoff.ts` — not
 the whole `lib/` tree.
 
-Checklist before adding a lib hook with `useEffect` / `useState`:
+Checklist before adding a lib hook with `useEffect` / `useState` /
+`useSyncExternalStore`:
 
 1. **Reusable** — at least one clear consumer pattern, not a single feature’s
    private lifecycle parked to dodge the ban

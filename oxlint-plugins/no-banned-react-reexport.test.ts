@@ -11,7 +11,7 @@ const tester = new RuleTester({
 
 tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"], {
   valid: [
-    `export { useRef, useSyncExternalStore } from "react";`,
+    `export { useRef, useTransition } from "react";`,
     `export { Button } from "@workspace/ui/components/button";`,
     `import { useState } from "react"; export function useThing() { return useState(0); }`,
     `import { useRef } from "react"; export { useRef };`,
@@ -55,6 +55,10 @@ tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"],
     },
     {
       code: `import { useEffect } from "react"; export default useEffect;`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export { useSyncExternalStore } from "react";`,
       errors: [{ messageId: "banned" }],
     },
   ],

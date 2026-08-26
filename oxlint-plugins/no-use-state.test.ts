@@ -11,7 +11,7 @@ const tester = new RuleTester({
 
 tester.run("no-use-state", plugin.rules["no-use-state"], {
   valid: [
-    `import { useRef, useSyncExternalStore, useTransition } from "react";`,
+    `import { useRef, useTransition } from "react";`,
     `function useState() { return "a local function"; } useState();`,
     `import * as React from "react"; React.useRef(null);`,
   ],
@@ -30,6 +30,10 @@ tester.run("no-use-state", plugin.rules["no-use-state"], {
     },
     {
       code: `import { useOptimistic } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useSyncExternalStore } from "react";`,
       errors: [{ messageId: "banned" }],
     },
     {
@@ -53,11 +57,19 @@ tester.run("no-use-state", plugin.rules["no-use-state"], {
       errors: [{ messageId: "banned" }],
     },
     {
+      code: `import * as React from "react"; React.useSyncExternalStore(() => () => {}, () => 0);`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
       code: `export { useState } from "react";`,
       errors: [{ messageId: "banned" }],
     },
     {
       code: `export { useOptimistic } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export { useSyncExternalStore } from "react";`,
       errors: [{ messageId: "banned" }],
     },
   ],

@@ -2,7 +2,6 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useRef, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -13,6 +12,7 @@ import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
 import { homepageCacheHeaders } from "@/lib/cachePolicy";
+import { useClientDate } from "@/lib/use-client-date";
 import { useRotatingIndex } from "@/lib/use-delayed-action";
 import { useMeasuredWidth } from "@/lib/use-measured-width";
 
@@ -162,16 +162,7 @@ function RotatingBabyName(props: { words: readonly string[] }) {
 }
 
 function useCurrentDate() {
-  const clientDateRef = useRef<string | null>(null);
-  if (clientDateRef.current === null) {
-    clientDateRef.current = new Date().toISOString();
-  }
-  const clientDate = clientDateRef.current;
-  return useSyncExternalStore<string>(
-    () => () => {}, // No-op subscribe for demo dates
-    () => clientDate, // Client snapshot (cached)
-    () => SERVER_DATE_SNAPSHOT, // Server snapshot for SSR/hydration
-  );
+  return useClientDate({ serverSnapshot: SERVER_DATE_SNAPSHOT });
 }
 
 const FEATURES = [
