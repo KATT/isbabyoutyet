@@ -1,36 +1,10 @@
-import { useRef, useState, useSyncExternalStore } from "react";
-
-type IntersectionDeps = {
-  enabled: boolean;
-  node: HTMLElement | null;
-  threshold: number;
-};
-
-function createSubscribe(deps: IntersectionDeps, onIntersectRef: { current: () => void }) {
-  return (_notify: () => void) => {
-    if (!deps.enabled || deps.node === null || typeof IntersectionObserver === "undefined") {
-      return () => undefined;
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          onIntersectRef.current();
-        }
-      },
-      { threshold: deps.threshold },
-    );
-    observer.observe(deps.node);
-    return () => observer.disconnect();
-  };
-}
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Connects an IntersectionObserver event directly to an action while React
- * owns subscription setup and cleanup through useSyncExternalStore.
- * Subscribe identity is kept stable via render-time state adjustment so the
- * observer is not torn down every render (independent of the React Compiler).
- * `onIntersect` is read through a ref so inline callbacks do not force
- * resubscription.
+ * Connects an IntersectionObserver event directly to an action. Lives in lib
+ * so the effect may own observer setup/cleanup; `onIntersect` is kept fresh
+ * via a latest-callback ref written during render (same idiom as sibling
+ * timing hooks).
  */
 export function useIntersectionAction(opts: {
   enabled: boolean;
@@ -41,29 +15,21 @@ export function useIntersectionAction(opts: {
   const onIntersectRef = useRef(opts.onIntersect);
   onIntersectRef.current = opts.onIntersect;
 
-  const deps: IntersectionDeps = {
-    enabled: opts.enabled,
-    node,
-    threshold: opts.threshold,
-  };
-  const [subscription, setSubscription] = useState(() => ({
-    deps,
-    subscribe: createSubscribe(deps, onIntersectRef),
-  }));
-  if (
-    deps.enabled !== subscription.deps.enabled ||
-    deps.node !== subscription.deps.node ||
-    deps.threshold !== subscription.deps.threshold
-  ) {
-    setSubscription({
-      deps,
-      subscribe: createSubscribe(deps, onIntersectRef),
-    });
-  }
-  useSyncExternalStore(
-    subscription.subscribe,
-    () => 0,
-    () => 0,
-  );
+  useEffect(() => {
+    if (!opts.enabled || node === null || typeof IntersectionObserver === "undefined") {
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          onIntersectRef.current();
+        }
+      },
+      { threshold: opts.threshold },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [opts.enabled, opts.threshold, node]);
+
   return setNode;
 }

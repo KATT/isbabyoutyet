@@ -4,6 +4,7 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import { cn } from "@workspace/ui/lib/utils";
 
 /** Imperative actions exposed via `Popover` `actionsRef` (close / unmount). */
+// local addition — keep on shadcn/Base UI re-sync
 type PopoverActions = PopoverPrimitive.Root.Actions;
 
 function Popover({ ...props }: PopoverPrimitive.Root.Props) {

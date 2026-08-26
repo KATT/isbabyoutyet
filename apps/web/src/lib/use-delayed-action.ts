@@ -7,9 +7,7 @@ import { useEffect, useRef, useState } from "react";
  */
 export function useDelayedAction(opts: { action: () => void; delayMs: number; enabled: boolean }) {
   const actionRef = useRef(opts.action);
-  useEffect(() => {
-    actionRef.current = opts.action;
-  });
+  actionRef.current = opts.action;
   useEffect(() => {
     if (!opts.enabled) return;
     const timeout = window.setTimeout(() => {

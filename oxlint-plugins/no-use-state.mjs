@@ -7,7 +7,9 @@
  * belong in `apps/web/src/lib`.
  *
  * Also bans useReducer / useActionState / useOptimistic — they are useState
- * with extra steps and would otherwise bypass the rule.
+ * with extra steps and would otherwise bypass the rule. Optimistic UI that
+ * must clear when server data catches up uses `useOptimisticOverride` in lib
+ * (render-time adjustment), not React's `useOptimistic`.
  */
 
 const BANNED_STATE_HOOKS = new Set([

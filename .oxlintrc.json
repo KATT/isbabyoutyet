@@ -167,16 +167,19 @@
       }
     },
     {
-      // Shared app lib hooks may use carefully designed effects and local state
-      // (timers, observers, transient flags). Feature components stay banned.
-      "files": ["apps/web/src/lib/**/*.{ts,tsx}"],
+      // Audited React-hook seams under lib (not the whole lib directory).
+      // Timers/observers/stores may use effects, local state, and latest-callback
+      // refs written during render. Feature components stay banned.
+      "files": [
+        "apps/web/src/lib/use-*.{ts,tsx}",
+        "apps/web/src/lib/onboarding-ui-store.ts",
+        "apps/web/src/lib/overlay-nav.ts",
+        "apps/web/src/lib/convexAuthHandoff.ts"
+      ],
       "rules": {
         "no-use-effect/no-use-effect": "off",
         "no-use-state/no-use-state": "off",
-        // Lib effects often mirror external resources into React state (blob
-        // URLs, delayed booleans). That setState-in-effect shape is intentional.
         "react/set-state-in-effect": "off",
-        // Latest-callback refs and mutable boxes for stable subscribe identities.
         "react/refs": "off",
         "react/immutability": "off"
       }

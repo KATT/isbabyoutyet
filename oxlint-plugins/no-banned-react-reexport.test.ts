@@ -14,6 +14,7 @@ tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"],
     `export { useRef, useSyncExternalStore } from "react";`,
     `export { Button } from "@workspace/ui/components/button";`,
     `import { useState } from "react"; export function useThing() { return useState(0); }`,
+    `import { useRef } from "react"; export { useRef };`,
   ],
   invalid: [
     {
@@ -30,6 +31,22 @@ tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"],
     },
     {
       code: `export { useLayoutEffect as afterPaint } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export * from "react";`,
+      errors: [{ messageId: "star" }],
+    },
+    {
+      code: `import { useState } from "react"; export { useState };`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useEffect as runAfterPaint } from "react"; export { runAfterPaint };`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useOptimistic as opt } from "react"; export { opt as useOptimistic };`,
       errors: [{ messageId: "banned" }],
     },
   ],

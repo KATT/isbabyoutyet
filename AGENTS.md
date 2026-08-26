@@ -15,13 +15,20 @@ use `useEffect` / `useLayoutEffect`, nor local-state hooks (`useState`,
 
 Lib may use effects and local state when the hook is a **reusable seam** that
 owns cleanup for an external system (timers, observers, blob URLs, module
-stores). Checklist before adding a lib hook with `useEffect` / `useState`:
+stores). Oxlint exemptions apply only to `use-*` hooks plus
+`onboarding-ui-store.ts`, `overlay-nav.ts`, and `convexAuthHandoff.ts` — not
+the whole `lib/` tree.
+
+Checklist before adding a lib hook with `useEffect` / `useState`:
 
 1. **Reusable** — at least one clear consumer pattern, not a single feature’s
    private lifecycle parked to dodge the ban
 2. **Documented** — file comment states what external system it syncs
 3. **Tested** when timing or subscription behavior is non-trivial
 4. **No re-export** of banned React hooks (`no-banned-react-reexport`)
+5. **Latest-callback refs** — write `ref.current = latest` during render (same
+   idiom across timing/observer hooks); do not use a sync effect solely to
+   refresh the ref
 
 `packages/ui` (vendored shadcn) is exempt. First-party packages stay under the
 rules; rare file overrides need a comment citing the concrete constraint.
