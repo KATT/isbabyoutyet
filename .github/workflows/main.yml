@@ -81,14 +81,15 @@ jobs:
         run: pnpm typecheck
 
       - name: Test coverage
-        run: pnpm exec turbo run test:coverage --summarize
+        run: pnpm exec turbo run test:coverage:merge --summarize
 
       - name: Report Turbo coverage cache
         if: always()
         run: |
           summary="$(ls -t .turbo/runs/*.json | head -1)"
-          jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
+          jq -r '.tasks[] | select(.taskId|startswith("//#test:coverage")) | "::notice title=Turbo \(.taskId)::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
           test -f coverage/coverage-summary.json
+          test -f .vitest-blobs/web.json
 
       - name: Knip
         run: pnpm knip
