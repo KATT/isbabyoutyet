@@ -11,7 +11,7 @@ const tester = new RuleTester({
 
 tester.run("no-use-effect", plugin.rules["no-use-effect"], {
   valid: [
-    `import { useMemo, useSyncExternalStore } from "react";`,
+    `import { useMemo, useRef } from "react";`,
     `function useEffect() { return "a local function"; } useEffect();`,
     `import * as React from "react"; React.useMemo(() => 1, []);`,
   ],
