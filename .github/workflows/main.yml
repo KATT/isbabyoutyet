@@ -67,8 +67,23 @@ jobs:
           restore-keys: |
             coverage-main-
 
-      - name: Run checks
-        run: pnpm checks
+      - name: Typecheck scripts
+        run: pnpm typecheck:scripts
+
+      - name: Format
+        run: pnpm format
+
+      - name: Lint
+        run: pnpm lint-fix
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test coverage
+        run: pnpm test:coverage
+
+      - name: Knip
+        run: pnpm knip
 
       - name: Compare coverage with main
         if: github.event_name == 'pull_request'
