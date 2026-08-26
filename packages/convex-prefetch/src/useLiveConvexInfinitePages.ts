@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import {
   replaceEqualDeep,
   useQueryClient,
@@ -100,26 +100,27 @@ export function useLiveConvexInfinitePages(opts: {
   // resubscribe only on real changes (no JSON stringify/parse).
   // `getFunctionName` / `makeFunctionReference` stabilize the function ref.
   const funcName = getFunctionName(opts.funcRef);
-  const [snapshot, setSnapshot] = useState<LivePagesSnapshot>(() => ({
+  const snapshotRef = useRef<LivePagesSnapshot>({
     queryKey: opts.queryKey,
     args: opts.args,
     pageParams: opts.pageParams,
-  }));
-  const nextQueryKey = replaceEqualDeep(snapshot.queryKey, opts.queryKey);
-  const nextArgs = replaceEqualDeep(snapshot.args, opts.args);
-  const nextPageParams = replaceEqualDeep(snapshot.pageParams, opts.pageParams);
+  });
+  const nextQueryKey = replaceEqualDeep(snapshotRef.current.queryKey, opts.queryKey);
+  const nextArgs = replaceEqualDeep(snapshotRef.current.args, opts.args);
+  const nextPageParams = replaceEqualDeep(snapshotRef.current.pageParams, opts.pageParams);
   if (
-    nextQueryKey !== snapshot.queryKey ||
-    nextArgs !== snapshot.args ||
-    nextPageParams !== snapshot.pageParams
+    nextQueryKey !== snapshotRef.current.queryKey ||
+    nextArgs !== snapshotRef.current.args ||
+    nextPageParams !== snapshotRef.current.pageParams
   ) {
-    setSnapshot({
+    snapshotRef.current = {
       queryKey: nextQueryKey,
       args: nextArgs,
       pageParams: nextPageParams,
-    });
+    };
   }
 
+  const snapshot = snapshotRef.current;
   const watchDeps: WatchDeps = {
     queryKey: snapshot.queryKey,
     args: snapshot.args,
@@ -131,28 +132,28 @@ export function useLiveConvexInfinitePages(opts: {
 
   // Keep a stable `subscribe` identity across renders when watch inputs are
   // unchanged (useSyncExternalStore resubscribes when `subscribe` changes).
-  // Adjust during render — same pattern as the snapshot above — so we do not
-  // need useEffect / useCallback (banned by no-use-effect / no-manual-memo).
-  const [subscription, setSubscription] = useState(() => ({
-    deps: watchDeps,
-    subscribe: createSubscribe(watchDeps),
-  }));
+  // Parent re-renders drive dependency checks — no useState needed.
+  const subscriptionRef = useRef<{
+    deps: WatchDeps;
+    subscribe: (notify: () => void) => () => void;
+  } | null>(null);
   if (
-    watchDeps.queryKey !== subscription.deps.queryKey ||
-    watchDeps.args !== subscription.deps.args ||
-    watchDeps.pageParams !== subscription.deps.pageParams ||
-    watchDeps.funcName !== subscription.deps.funcName ||
-    watchDeps.queryClient !== subscription.deps.queryClient ||
-    watchDeps.convex !== subscription.deps.convex
+    !subscriptionRef.current ||
+    watchDeps.queryKey !== subscriptionRef.current.deps.queryKey ||
+    watchDeps.args !== subscriptionRef.current.deps.args ||
+    watchDeps.pageParams !== subscriptionRef.current.deps.pageParams ||
+    watchDeps.funcName !== subscriptionRef.current.deps.funcName ||
+    watchDeps.queryClient !== subscriptionRef.current.deps.queryClient ||
+    watchDeps.convex !== subscriptionRef.current.deps.convex
   ) {
-    setSubscription({
+    subscriptionRef.current = {
       deps: watchDeps,
       subscribe: createSubscribe(watchDeps),
-    });
+    };
   }
 
   useSyncExternalStore(
-    subscription.subscribe,
+    subscriptionRef.current.subscribe,
     () => 0,
     () => 0,
   );

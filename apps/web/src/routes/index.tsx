@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -14,6 +14,7 @@ import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
 import { homepageCacheHeaders } from "@/lib/cachePolicy";
 import { useRotatingIndex } from "@/lib/use-delayed-action";
+import { useMeasuredWidth } from "@/lib/use-measured-width";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -128,30 +129,6 @@ const HERO_HEADLINES = {
 
 const NAME_ROTATE_INTERVAL_MS = 2400;
 
-function useMeasuredWidth() {
-  const [width, setWidth] = useState<number | null>(null);
-  function ref(node: HTMLSpanElement | null) {
-    if (!node) return;
-    let active = true;
-    const measure = () => {
-      if (active) setWidth(node.offsetWidth);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
-    observer?.observe(node);
-    if (document.fonts) {
-      void document.fonts.ready.then(measure);
-    }
-    return () => {
-      active = false;
-      window.removeEventListener("resize", measure);
-      observer?.disconnect();
-    };
-  }
-  return [ref, width] as const;
-}
-
 function RotatingBabyName(props: { words: readonly string[] }) {
   const indices = useRotatingIndex({
     intervalMs: NAME_ROTATE_INTERVAL_MS,
@@ -185,7 +162,11 @@ function RotatingBabyName(props: { words: readonly string[] }) {
 }
 
 function useCurrentDate() {
-  const [clientDate] = useState(() => new Date().toISOString());
+  const clientDateRef = useRef<string | null>(null);
+  if (clientDateRef.current === null) {
+    clientDateRef.current = new Date().toISOString();
+  }
+  const clientDate = clientDateRef.current;
   return useSyncExternalStore<string>(
     () => () => {}, // No-op subscribe for demo dates
     () => clientDate, // Client snapshot (cached)

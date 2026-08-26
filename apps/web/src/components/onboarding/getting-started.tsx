@@ -1,11 +1,13 @@
 import { Button } from "@workspace/ui/components/button";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerFooter,
   DrawerHeader,
   DrawerTitle,
+  DrawerTrigger,
 } from "@workspace/ui/components/drawer";
 import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
 import { cn } from "@workspace/ui/lib/utils";
@@ -13,7 +15,6 @@ import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useState } from "react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { openOverlayLink } from "@/lib/overlay-nav";
@@ -182,7 +183,6 @@ function getStepAction(opts: {
 
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const visualViewport = useVisualViewportMetrics();
   const done = new Set(props.effectiveSteps);
   const completedCount = ONBOARDING_STEPS.filter((step) => done.has(step.id)).length;
@@ -221,46 +221,49 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
 
   return (
     <>
-      <aside
-        style={visualViewport.style}
-        className={cn(
-          "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
-          "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
-          props.className,
-        )}
-        aria-label={t("Getting started checklist")}
-      >
-        <div className="flex items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-            {NextStepIcon ? <NextStepIcon className="size-5" /> : <Check className="size-5" />}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-muted-foreground">
-              {t("Getting started")} · {completedCount}/{total}
-            </p>
-            <p className="truncate text-sm font-semibold text-foreground">
-              {nextStep ? t(nextStep.title) : t("You're all set")}
-            </p>
+      <Drawer showSwipeHandle>
+        <aside
+          style={visualViewport.style}
+          className={cn(
+            "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
+            "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
+            props.className,
+          )}
+          aria-label={t("Getting started checklist")}
+        >
+          <div className="flex items-center gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+              {NextStepIcon ? <NextStepIcon className="size-5" /> : <Check className="size-5" />}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                {t("Getting started")} · {completedCount}/{total}
+              </p>
+              <p className="truncate text-sm font-semibold text-foreground">
+                {nextStep ? t(nextStep.title) : t("You're all set")}
+              </p>
+            </div>
+            <DrawerTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11"
+                  aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
+                    completed: completedCount,
+                    total,
+                  })}
+                />
+              }
+            >
+              <CaretUp />
+            </DrawerTrigger>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-11"
-            aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
-              completed: completedCount,
-              total,
-            })}
-            onClick={() => setMobileOpen(true)}
-          >
-            <CaretUp />
-          </Button>
-        </div>
-        <Progress value={percent} className="mt-3">
-          <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
-        </Progress>
-      </aside>
+          <Progress value={percent} className="mt-3">
+            <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
+          </Progress>
+        </aside>
 
-      <Drawer open={mobileOpen} onOpenChange={setMobileOpen} showSwipeHandle>
         <DrawerContent
           className="right-auto w-dvw max-w-dvw max-h-[calc(100dvh-2rem)] md:hidden"
           style={{
@@ -281,15 +284,18 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
                 {allDone ? t("You're all set") : t("Tap a step to jump there")}
               </DrawerDescription>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-11"
-              aria-label={t("Close checklist")}
-              onClick={() => setMobileOpen(false)}
+            <DrawerClose
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-11"
+                  aria-label={t("Close checklist")}
+                />
+              }
             >
               <X />
-            </Button>
+            </DrawerClose>
           </DrawerHeader>
           <div className="flex-1 overflow-y-auto p-4 pt-3">
             <ChecklistContents
@@ -298,23 +304,25 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
               nextStep={nextStep}
               percent={percent}
               t={t}
-              onBeforeAction={() => setMobileOpen(false)}
+              onBeforeAction={undefined}
               onRequestDismiss={props.onDismiss}
               showDismissAction={false}
+              closeWithDrawerClose
             />
           </div>
           {nextStep ? (
             <DrawerFooter className="relative bg-popover pt-2">
-              <Button
-                variant="secondary"
-                className="min-h-11 w-full"
-                onClick={() => {
-                  setMobileOpen(false);
-                  props.onDismiss();
-                }}
+              <DrawerClose
+                render={
+                  <Button
+                    variant="secondary"
+                    className="min-h-11 w-full"
+                    onClick={props.onDismiss}
+                  />
+                }
               >
                 {t("Dismiss guide")}
-              </Button>
+              </DrawerClose>
             </DrawerFooter>
           ) : null}
         </DrawerContent>
@@ -358,6 +366,7 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
           onBeforeAction={undefined}
           onRequestDismiss={props.onDismiss}
           showDismissAction
+          closeWithDrawerClose={false}
         />
       </aside>
     </>
@@ -372,6 +381,7 @@ type ChecklistContentsProps = GettingStartedCardProps & {
   onBeforeAction: (() => void) | undefined;
   onRequestDismiss: () => void;
   showDismissAction: boolean;
+  closeWithDrawerClose: boolean;
 };
 
 function ChecklistContents(props: ChecklistContentsProps) {
@@ -408,6 +418,7 @@ function ChecklistContents(props: ChecklistContentsProps) {
                 action={action}
                 title={t(step.title)}
                 onBeforeAction={props.onBeforeAction}
+                closeWithDrawerClose={props.closeWithDrawerClose}
               />
             </li>
           );
@@ -427,6 +438,7 @@ function ChecklistContents(props: ChecklistContentsProps) {
               }
             }}
             onBeforeAction={props.onBeforeAction}
+            closeWithDrawerClose={props.closeWithDrawerClose}
             t={t}
           />
           {props.showDismissAction ? (
@@ -460,6 +472,7 @@ function StepRow(props: {
   action: StepAction | null;
   title: string;
   onBeforeAction: (() => void) | undefined;
+  closeWithDrawerClose: boolean;
 }) {
   const inner = (
     <>
@@ -483,7 +496,7 @@ function StepRow(props: {
 
   if (props.action?.kind === "link") {
     const action = props.action;
-    return (
+    const link = (
       <Link
         {...action.link}
         className={cn(rowClass, "transition hover:bg-primary/6")}
@@ -500,11 +513,15 @@ function StepRow(props: {
         {inner}
       </Link>
     );
+    if (props.closeWithDrawerClose) {
+      return <DrawerClose render={link} nativeButton={false} />;
+    }
+    return link;
   }
 
   if (props.action?.kind === "button") {
     const action = props.action;
-    return (
+    const button = (
       <button
         type="button"
         className={cn(rowClass, "transition hover:bg-primary/6")}
@@ -519,6 +536,10 @@ function StepRow(props: {
         {inner}
       </button>
     );
+    if (props.closeWithDrawerClose) {
+      return <DrawerClose render={button} />;
+    }
+    return button;
   }
 
   return <div className={rowClass}>{inner}</div>;
@@ -531,6 +552,7 @@ function NextStepHint(props: {
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   onAcknowledge: () => void;
   onBeforeAction: (() => void) | undefined;
+  closeWithDrawerClose: boolean;
   t: TranslationFunction;
 }) {
   const { t } = props;
@@ -561,7 +583,12 @@ function NextStepHint(props: {
       </div>
       {action ? (
         <div className="flex flex-wrap gap-2">
-          <StepActionControl action={action} onBeforeAction={props.onBeforeAction} size="sm" />
+          <StepActionControl
+            action={action}
+            onBeforeAction={props.onBeforeAction}
+            size="sm"
+            closeWithDrawerClose={props.closeWithDrawerClose}
+          />
         </div>
       ) : null}
     </div>
@@ -572,10 +599,11 @@ function StepActionControl(props: {
   action: StepAction;
   onBeforeAction: (() => void) | undefined;
   size: "sm" | "default";
+  closeWithDrawerClose: boolean;
 }) {
   if (props.action.kind === "link") {
     const action = props.action;
-    return (
+    const button = (
       <Button
         size={props.size}
         className="min-h-11"
@@ -597,10 +625,14 @@ function StepActionControl(props: {
         {action.label}
       </Button>
     );
+    if (props.closeWithDrawerClose) {
+      return <DrawerClose render={button} nativeButton={false} />;
+    }
+    return button;
   }
 
   const action = props.action;
-  return (
+  const button = (
     <Button
       size={props.size}
       className="min-h-11"
@@ -614,4 +646,8 @@ function StepActionControl(props: {
       {action.label}
     </Button>
   );
+  if (props.closeWithDrawerClose) {
+    return <DrawerClose render={button} />;
+  }
+  return button;
 }

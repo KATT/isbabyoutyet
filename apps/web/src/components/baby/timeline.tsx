@@ -16,6 +16,12 @@ import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -33,7 +39,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -732,15 +738,15 @@ function encouragementEditSchema(
     }));
 }
 /**
- * Mounted only while editing, so the form initializes from the current
- * message on every reveal — no reset bookkeeping.
+ * Mounted only while the edit popover is open, so the form initializes from
+ * the current message on every reveal — no reset bookkeeping.
  */
 function EncouragementEditForm(props: {
   initialMessage: string;
   encouragementId: Id<"encouragements">;
   visitorId: string;
   onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
-  onCancel: () => void;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -757,6 +763,7 @@ function EncouragementEditForm(props: {
       form={form}
       handleSubmit={async (values) => {
         await props.onSave(values);
+        props.onClose();
       }}
     >
       <div className="space-y-2">
@@ -782,16 +789,12 @@ function EncouragementEditForm(props: {
             <Check className="w-3 h-3" />
             {isSaving ? t("Saving...") : t("Save")}
           </Button>
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={props.onCancel}
-            disabled={isSaving}
+          <PopoverClose
+            render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
           >
             <X className="w-3 h-3" />
             {t("Cancel")}
-          </Button>
+          </PopoverClose>
         </div>
       </div>
     </Form>
@@ -801,7 +804,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const [isEditing, setIsEditing] = useState(false);
+  const actionsRef = useRef<{ close: () => void; unmount: () => void } | null>(null);
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
@@ -834,36 +837,39 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
             </div>
 
-            {isEditing ? (
-              <EncouragementEditForm
-                initialMessage={encouragement.message}
-                encouragementId={encouragement._id}
-                visitorId={props.currentVisitorId}
-                onSave={async (args) => {
-                  await props.onUpdate(args);
-                  setIsEditing(false);
-                }}
-                onCancel={() => setIsEditing(false)}
-              />
-            ) : (
-              <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
-                <Streamdown>{encouragement.message}</Streamdown>
-              </div>
-            )}
+            <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
+              <Streamdown>{encouragement.message}</Streamdown>
+            </div>
           </div>
 
-          {!isEditing && (canEdit || canDelete) && (
+          {(canEdit || canDelete) && (
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label={t("Edit encouragement")}
-                  onClick={() => setIsEditing(true)}
-                >
-                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                </Button>
+                <Popover actionsRef={actionsRef}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={t("Edit encouragement")}
+                      />
+                    }
+                  >
+                    <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+                    <EncouragementEditForm
+                      initialMessage={encouragement.message}
+                      encouragementId={encouragement._id}
+                      visitorId={props.currentVisitorId}
+                      onSave={props.onUpdate}
+                      onClose={() => {
+                        actionsRef.current?.close();
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               )}
               {canDelete && (
                 <AlertDialog>

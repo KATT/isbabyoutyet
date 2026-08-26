@@ -1,6 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 import { useVisualViewportMetrics } from "./visual-viewport";
@@ -147,12 +147,14 @@ export function Coachmark(props: CoachmarkProps) {
 function CoachmarkTarget(props: CoachmarkProps) {
   const { t } = useI18n();
   const visualViewport = useVisualViewportMetrics();
-  const [store] = useState(() =>
-    createCoachmarkStore({
+  const storeRef = useRef<ReturnType<typeof createCoachmarkStore> | null>(null);
+  if (!storeRef.current) {
+    storeRef.current = createCoachmarkStore({
       targetId: props.targetId,
       onDismiss: props.onDismiss,
-    }),
-  );
+    });
+  }
+  const store = storeRef.current;
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
 
   if (!snapshot || typeof document === "undefined") {

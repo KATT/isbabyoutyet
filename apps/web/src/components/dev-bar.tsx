@@ -16,7 +16,6 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
 
 /** @internal Exported for tests. */
 export function activeBabyPublicId(pathname: string) {
@@ -45,18 +44,10 @@ export function DevBar() {
   const onDashboard = pathname.startsWith("/dashboard");
   const onLogin = pathname.startsWith("/auth/login");
   const onPreview = pathname.startsWith("/preview");
-  const [open, setOpen] = useState(false);
-  const [menuPathname, setMenuPathname] = useState(pathname);
-
-  // Close the menu when the route changes without setState-in-effect.
-  if (pathname !== menuPathname) {
-    setMenuPathname(pathname);
-    setOpen(false);
-  }
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu>
         <DropdownMenuTrigger
           render={
             <Button

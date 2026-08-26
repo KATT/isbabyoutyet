@@ -1,6 +1,5 @@
-import { useRef, useState } from "react";
-import type { CSSProperties, Dispatch, ImgHTMLAttributes, RefObject, SetStateAction } from "react";
-import { useCompleteImageLoad } from "@/lib/use-complete-image-load";
+import type { CSSProperties, ImgHTMLAttributes } from "react";
+import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
@@ -69,59 +68,6 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
   return imgProps;
 }
 
-function callOnLoad(img: HTMLImageElement, onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"]) {
-  if (!onLoad) return;
-
-  const nativeEvent = new Event("load");
-  Object.defineProperty(nativeEvent, "target", { writable: false, value: img });
-  let prevented = false;
-  let stopped = false;
-
-  onLoad({
-    ...nativeEvent,
-    nativeEvent,
-    currentTarget: img,
-    target: img,
-    isDefaultPrevented: () => prevented,
-    isPropagationStopped: () => stopped,
-    persist: () => {},
-    preventDefault: () => {
-      prevented = true;
-      nativeEvent.preventDefault();
-    },
-    stopPropagation: () => {
-      stopped = true;
-      nativeEvent.stopPropagation();
-    },
-  });
-}
-
-type HandleLoadingOptions = {
-  loadedSrcRef: RefObject<string | null>;
-  srcKey: string;
-  setLoadedSrc: Dispatch<SetStateAction<string | null>>;
-  onLoad: ImgHTMLAttributes<HTMLImageElement>["onLoad"];
-};
-
-/**
- * Next.js waits for decode before clearing the placeholder and replays this
- * for an image that completed before hydration attached its load handler.
- * @see https://github.com/vercel/next.js/blob/78b11c37e6eafb92030612c08de4adb5bb5c8a28/packages/next/src/client/image-component.tsx
- */
-function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
-  if (options.loadedSrcRef.current === img.src) return;
-  options.loadedSrcRef.current = img.src;
-
-  const decode = "decode" in img ? img.decode() : Promise.resolve();
-  void decode
-    .catch(() => {})
-    .then(() => {
-      if (!img.parentElement || !img.isConnected) return;
-      options.setLoadedSrc(options.srcKey);
-      callOnLoad(img, options.onLoad);
-    });
-}
-
 /**
  * Drop-in `<img>` implementing Next.js' `blurDataURL` lifecycle. SSR keeps the
  * real `src` on the accessible image so loading starts immediately, while a
@@ -130,29 +76,15 @@ function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
-  const imgRef = useRef<HTMLImageElement | null>(null);
-  const loadedSrcRef = useRef<string | null>(null);
-  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
-  const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const loaded = loadedSrc === srcKey;
-  const showAltText = failedSrc === srcKey;
-
-  useCompleteImageLoad({
-    imgRef,
+  const load = useBlurImageLoad({
     srcKey,
-    onComplete: (img) => {
-      handleLoading(img, {
-        loadedSrcRef,
-        srcKey,
-        setLoadedSrc,
-        onLoad: props.onLoad,
-      });
-    },
+    onLoad: props.onLoad,
+    onError: props.onError,
   });
 
   const objectFit = placeholderObjectFit(props);
   const placeholderSrc =
-    props.blurDataUrl && !loaded
+    props.blurDataUrl && !load.loaded
       ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
           width: numericDimension(props.width),
           height: numericDimension(props.height),
@@ -164,26 +96,15 @@ export function BlurImage(props: BlurImageProps) {
   const image = (
     <img
       {...imgPropsWithoutBlur(props)}
-      ref={imgRef}
+      ref={load.imgRef}
       alt={props.alt}
       decoding={props.decoding ?? "async"}
       style={{
-        color: showAltText ? undefined : "transparent",
+        color: load.showAltText ? undefined : "transparent",
         ...props.style,
       }}
-      onLoad={(event) => {
-        handleLoading(event.currentTarget, {
-          loadedSrcRef,
-          srcKey,
-          setLoadedSrc,
-          onLoad: props.onLoad,
-        });
-      }}
-      onError={(event) => {
-        setFailedSrc(srcKey);
-        setLoadedSrc(srcKey);
-        props.onError?.(event);
-      }}
+      onLoad={load.onLoad}
+      onError={load.onError}
       src={props.src}
     />
   );
