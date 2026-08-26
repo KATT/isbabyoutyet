@@ -100,6 +100,7 @@ test("dismissChecklist hides the tour; restart brings it back without wiping ste
   });
 });
 
+// Presentation chrome on the onboarding progress doc (not URL state).
 test("coachmark and restart-hint presentation persist on userOnboarding", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
