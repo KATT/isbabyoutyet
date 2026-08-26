@@ -38,6 +38,7 @@ import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { useOptimisticOverride } from "@/lib/use-optimistic-override";
 import { cn } from "@workspace/ui/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
@@ -132,11 +133,13 @@ export function LanguageSettings(props: {
   const profile = profileQuery.data;
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
+  const [optimisticTimeZone, setOptimisticTimeZone] = useOptimisticOverride({
+    base: selectedTimeZone,
+    isEqual: (left, right) => left === right,
+  });
   const selectedTimeZoneOption =
-    timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption;
-  const languageRequestActionsRef = useRef<{ close: () => void; unmount: () => void } | null>(
-    null,
-  );
+    timeZoneOptions.find((option) => option.value === optimisticTimeZone) ?? defaultTimeZoneOption;
+  const languageRequestActionsRef = useRef<{ close: () => void; unmount: () => void } | null>(null);
 
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
@@ -145,14 +148,17 @@ export function LanguageSettings(props: {
         itemToStringValue={(option) => option.label}
         value={selectedTimeZoneOption}
         onValueChange={(option) => {
-          if (!option || option.value === selectedTimeZone) {
+          if (!option || option.value === optimisticTimeZone) {
             return;
           }
+          const previousTimeZone = optimisticTimeZone;
+          setOptimisticTimeZone(option.value);
           void onUpdateTimeZone({ timeZone: option.value })
             .then(() => {
               toast.success(t("Time zone saved"));
             })
             .catch((error) => {
+              setOptimisticTimeZone(previousTimeZone);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             });
         }}
@@ -188,12 +194,7 @@ export function LanguageSettings(props: {
         }}
       />
 
-      <Dialog
-        actionsRef={
-          // Lazy ref holder so the form can close after a successful request.
-          languageRequestActionsRef
-        }
-      >
+      <Dialog actionsRef={languageRequestActionsRef}>
         <DialogTrigger
           render={
             <Button variant="outline" size="sm">

@@ -47,7 +47,7 @@ export function DevBar() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
-      <DropdownMenu>
+      <DropdownMenu key={pathname}>
         <DropdownMenuTrigger
           render={
             <Button

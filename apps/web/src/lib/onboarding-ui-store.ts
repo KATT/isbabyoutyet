@@ -1,4 +1,4 @@
-import { useRef, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 
 type OnboardingUiSnapshot = {
@@ -62,11 +62,7 @@ function createOnboardingUiStore(): OnboardingUiStore {
  * the host can use useSyncExternalStore instead of feature useState.
  */
 export function useOnboardingUiStore() {
-  const storeRef = useRef<OnboardingUiStore | null>(null);
-  if (!storeRef.current) {
-    storeRef.current = createOnboardingUiStore();
-  }
-  const store = storeRef.current;
+  const [store] = useState(() => createOnboardingUiStore());
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, getServerSnapshot);
   return { snapshot, store };
 }

@@ -76,7 +76,7 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
  */
 export function BlurImage(props: BlurImageProps) {
   const srcKey = imageSrcKey(props.src);
-  const load = useBlurImageLoad({
+  const { imgRef, loaded, showAltText, onLoad, onError } = useBlurImageLoad({
     srcKey,
     onLoad: props.onLoad,
     onError: props.onError,
@@ -84,7 +84,7 @@ export function BlurImage(props: BlurImageProps) {
 
   const objectFit = placeholderObjectFit(props);
   const placeholderSrc =
-    props.blurDataUrl && !load.loaded
+    props.blurDataUrl && !loaded
       ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
           width: numericDimension(props.width),
           height: numericDimension(props.height),
@@ -96,15 +96,15 @@ export function BlurImage(props: BlurImageProps) {
   const image = (
     <img
       {...imgPropsWithoutBlur(props)}
-      ref={load.imgRef}
+      ref={imgRef}
       alt={props.alt}
       decoding={props.decoding ?? "async"}
       style={{
-        color: load.showAltText ? undefined : "transparent",
+        color: showAltText ? undefined : "transparent",
         ...props.style,
       }}
-      onLoad={load.onLoad}
-      onError={load.onError}
+      onLoad={onLoad}
+      onError={onError}
       src={props.src}
     />
   );
