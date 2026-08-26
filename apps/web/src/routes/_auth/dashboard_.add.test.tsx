@@ -4,21 +4,68 @@ import { LocaleProvider } from "@/lib/i18n";
 import { AddBabyPage, AddBabyPageView, Route } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-function renderAddBaby(opts: {
-  createBaby: (args: unknown) => Promise<{ publicId: string }>;
-  navigate: (args: unknown) => Promise<void>;
+function createAddBabyMocks() {
+  return {
+    createBaby: vi
+      .fn<(args: unknown) => Promise<{ publicId: string }>>()
+      .mockResolvedValue({ publicId: "baby-fern" }),
+    navigate: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+  };
+}
+
+function renderAddBaby(opts?: {
+  createBaby?: (args: unknown) => Promise<{ publicId: string }>;
+  navigate?: (args: unknown) => Promise<void>;
 }) {
+  const mocks = createAddBabyMocks();
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <AddBabyPageView createBaby={opts.createBaby as never} navigate={opts.navigate as never} />
+      <AddBabyPageView
+        createBaby={(opts?.createBaby ?? mocks.createBaby) as never}
+        navigate={(opts?.navigate ?? mocks.navigate) as never}
+      />
     </LocaleProvider>,
     { path: "/dashboard/add" },
   );
 }
 
+function expandOptionalSettings(view: Awaited<ReturnType<typeof renderAddBaby>>) {
+  fireEvent.click(view.getByRole("button", { name: "Customize your page (optional)" }));
+}
+
 test("add baby remains a standalone non-nested dashboard route", () => {
-  // Underscored `dashboard_` keeps this sibling of `/dashboard`, not a child.
   expect(Route.options.component).toBe(AddBabyPage);
+});
+
+test("optional settings stay collapsed until expanded", async () => {
+  await using view = await renderAddBaby();
+
+  expect(view.getByRole("button", { name: "Customize your page (optional)" })).toBeTruthy();
+  expect(view.queryByRole("button", { name: "Labour" })).toBeNull();
+  expect(view.queryByText("Birth journey")).toBeNull();
+
+  expandOptionalSettings(view);
+
+  expect(
+    view.getByText(
+      "You can change journey, theme, and other settings anytime after creating your page.",
+    ),
+  ).toBeTruthy();
+
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByText("Birth journey")).toBeTruthy();
+  expect(view.getByText("Theme")).toBeTruthy();
+});
+
+test("name field explains it can be filled later", async () => {
+  await using view = await renderAddBaby();
+
+  expect(view.getByLabelText("Baby name")).toBeTruthy();
+  expect(
+    view.getByText(
+      "Optional. Leave it blank for now. You can change it later in Settings.",
+    ),
+  ).toBeTruthy();
 });
 
 test("journey choices explain visible statuses and privacy", async () => {
@@ -26,13 +73,24 @@ test("journey choices explain visible statuses and privacy", async () => {
   const navigate = vi.fn<(args: unknown) => Promise<void>>();
   await using view = await renderAddBaby({ createBaby, navigate });
 
-  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
-  expect(view.getByRole("radio", { name: "Planned C-section" })).toBeTruthy();
-  expect(view.getByRole("radiogroup", { name: "Choose a journey" }).className).not.toContain(
-    "grid-cols",
+  expandOptionalSettings(view);
+
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Planned C-section" })).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
+    "true",
   );
-  expect(view.getByText("Visitors see: Labour started → Baby born")).toBeTruthy();
+  expect(view.getByRole("switch", { name: "Gone to hospital" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  const babyBornSwitch = view.getByRole("switch", { name: "Baby born" });
+  expect(
+    babyBornSwitch.getAttribute("aria-disabled") ?? babyBornSwitch.getAttribute("disabled"),
+  ).not.toBeNull();
+  expect(
+    view.getByText("Visitors see: Labour started → Gone to hospital → Baby born"),
+  ).toBeTruthy();
   expect(
     view.getByText("We save this choice for your settings, but we don't show it to anyone."),
   ).toBeTruthy();
@@ -47,6 +105,39 @@ test("journey choices explain visible statuses and privacy", async () => {
   ).toHaveLength(1);
   expect(view.getByLabelText("Due date")).toBeTruthy();
   expect(view.queryByLabelText("Public due date message")).toBeNull();
+});
+
+test("submits optional theme selection", async () => {
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  expandOptionalSettings(view);
+  fireEvent.click(view.getByRole("button", { name: "Violet Bloom" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+
+  await vi.waitFor(() => {
+    expect(createBaby).toHaveBeenCalledWith({
+      name: "Baby Fern",
+      dueDate: expect.stringContaining("2026-09-09"),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
+      birthJourney: "labor",
+      theme: "violet-bloom",
+    });
+  });
+  expect(navigate).toHaveBeenCalledWith({
+    to: "/baby/$publicId",
+    params: { publicId: "baby-fern" },
+  });
 });
 
 test.each([
@@ -66,7 +157,8 @@ test.each([
   fireEvent.change(view.getByLabelText("Due date"), {
     target: { value: "2026-09-09" },
   });
-  fireEvent.click(view.getByRole("radio", { name: testCase.label }));
+  expandOptionalSettings(view);
+  fireEvent.click(view.getByRole("button", { name: testCase.label }));
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
@@ -76,6 +168,7 @@ test.each([
       dueDateDisplayMode: "exact",
       publicDueDateText: null,
       birthJourney: testCase.birthJourney,
+      theme: null,
     });
   });
   expect(navigate).toHaveBeenCalledWith({
@@ -104,6 +197,7 @@ test("allows a hidden public due date when message mode has no text", async () =
       dueDateDisplayMode: "message",
       publicDueDateText: null,
       birthJourney: "labor",
+      theme: null,
     });
   });
 });
@@ -132,6 +226,7 @@ test("submits a custom public due date message when provided", async () => {
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",
+      theme: null,
     });
   });
 });
@@ -184,6 +279,7 @@ test("keeps entered date and message values while toggling fields", async () => 
       dueDateDisplayMode: "message",
       publicDueDateText: "Any day now",
       birthJourney: "labor",
+      theme: null,
     });
   });
 });
