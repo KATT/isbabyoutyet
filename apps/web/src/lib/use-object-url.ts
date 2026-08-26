@@ -2,29 +2,23 @@ import { useEffect, useState } from "react";
 
 /**
  * Creates an object URL for a Blob/File and revokes it when the blob changes
- * or the consumer unmounts. Lives under `apps/web/src/lib` so feature
- * components stay free of synchronization effects.
+ * or the consumer unmounts. Create/revoke run in an effect (not during render)
+ * so discarded renders cannot leak URLs or revoke a committed URL mid-paint.
  */
 export function useObjectUrl(blob: Blob | null) {
-  const [cached, setCached] = useState<{ blob: Blob | null; url: string | null }>({
-    blob: null,
-    url: null,
-  });
-
-  let url = cached.url;
-  if (cached.blob !== blob) {
-    if (cached.url) {
-      URL.revokeObjectURL(cached.url);
-    }
-    url = blob ? URL.createObjectURL(blob) : null;
-    setCached({ blob, url });
-  }
+  const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!blob) {
+      setUrl(null);
+      return;
+    }
+    const nextUrl = URL.createObjectURL(blob);
+    setUrl(nextUrl);
     return () => {
-      if (url) URL.revokeObjectURL(url);
+      URL.revokeObjectURL(nextUrl);
     };
-  }, [url]);
+  }, [blob]);
 
   return url;
 }
