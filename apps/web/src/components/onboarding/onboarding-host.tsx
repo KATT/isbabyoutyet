@@ -8,6 +8,14 @@ import { useI18n } from "@/lib/i18n";
 import { useDelayedAction } from "@/lib/use-delayed-action";
 import { GettingStartedCard } from "./getting-started";
 import { Coachmark } from "./coachmark";
+import {
+  optimisticallyCompleteStep,
+  optimisticallyDismissChecklist,
+  optimisticallySetActiveCoachmarkStepId,
+  optimisticallySetMinimized,
+  optimisticallySetRestartHintVisible,
+  patchOnboardingMine,
+} from "./onboarding-optimistic";
 import { ONBOARDING_STEPS } from "./steps";
 
 type OnboardingSession = {
@@ -34,6 +42,50 @@ function scrollToTourTarget(targetId: string) {
     return;
   }
   el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+}
+
+function useOnboardingMutations() {
+  const setMinimized = useMutation(api.onboarding.setMinimized).withOptimisticUpdate(
+    (localStore, args) => {
+      patchOnboardingMine(localStore, (progress) =>
+        optimisticallySetMinimized(progress, args.minimized),
+      );
+    },
+  );
+  const dismissChecklist = useMutation(api.onboarding.dismissChecklist).withOptimisticUpdate(
+    (localStore) => {
+      patchOnboardingMine(localStore, optimisticallyDismissChecklist);
+    },
+  );
+  const completeStep = useMutation(api.onboarding.completeStep).withOptimisticUpdate(
+    (localStore, args) => {
+      patchOnboardingMine(localStore, (progress) =>
+        optimisticallyCompleteStep(progress, args.stepId),
+      );
+    },
+  );
+  const setActiveCoachmarkStepId = useMutation(
+    api.onboarding.setActiveCoachmarkStepId,
+  ).withOptimisticUpdate((localStore, args) => {
+    patchOnboardingMine(localStore, (progress) =>
+      optimisticallySetActiveCoachmarkStepId(progress, args.stepId),
+    );
+  });
+  const setRestartHintVisible = useMutation(
+    api.onboarding.setRestartHintVisible,
+  ).withOptimisticUpdate((localStore, args) => {
+    patchOnboardingMine(localStore, (progress) =>
+      optimisticallySetRestartHintVisible(progress, args.visible),
+    );
+  });
+
+  return {
+    setMinimized,
+    dismissChecklist,
+    completeStep,
+    setActiveCoachmarkStepId,
+    setRestartHintVisible,
+  };
 }
 
 /**
@@ -76,11 +128,13 @@ export function OnboardingHostWithSession(
 
 function OnboardingHostAuthed(props: OnboardingHostProps) {
   const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
-  const setMinimized = useMutation(api.onboarding.setMinimized);
-  const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
-  const completeStep = useMutation(api.onboarding.completeStep);
-  const setActiveCoachmarkStepId = useMutation(api.onboarding.setActiveCoachmarkStepId);
-  const setRestartHintVisible = useMutation(api.onboarding.setRestartHintVisible);
+  const {
+    setMinimized,
+    dismissChecklist,
+    completeStep,
+    setActiveCoachmarkStepId,
+    setRestartHintVisible,
+  } = useOnboardingMutations();
   const { t } = useI18n();
   const spotlight = props.spotlight !== false;
   const progress = progressQuery.data;
@@ -127,13 +181,11 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             void setMinimized({ minimized });
           }}
           onDismiss={() => {
-            void (async () => {
-              await dismissChecklist({});
-              if (props.surface === "dashboard") {
-                window.scrollTo({ top: 0, behavior: "auto" });
-                await setRestartHintVisible({ visible: true });
-              }
-            })();
+            void dismissChecklist({});
+            if (props.surface === "dashboard") {
+              window.scrollTo({ top: 0, behavior: "auto" });
+              void setRestartHintVisible({ visible: true });
+            }
           }}
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
@@ -193,6 +245,9 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
 
 /** Mark a tour step complete from UI actions (share, settings open, …). */
 export function useCompleteOnboardingStep() {
-  const completeStep = useMutation(api.onboarding.completeStep);
-  return completeStep;
+  return useMutation(api.onboarding.completeStep).withOptimisticUpdate((localStore, args) => {
+    patchOnboardingMine(localStore, (progress) =>
+      optimisticallyCompleteStep(progress, args.stepId),
+    );
+  });
 }
