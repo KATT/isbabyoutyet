@@ -69,9 +69,7 @@ test("name field explains it can be filled later", async () => {
 
   expect(view.getByLabelText("Baby name")).toBeTruthy();
   expect(
-    view.getByText(
-      "Optional. Leave it blank for now. You can change it later in Settings.",
-    ),
+    view.getByText("Optional. Leave it blank for now. You can change it later in Settings."),
   ).toBeTruthy();
 });
 

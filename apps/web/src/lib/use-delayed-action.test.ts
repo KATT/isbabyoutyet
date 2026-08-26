@@ -13,7 +13,7 @@ test("runs an enabled action after the delay and cancels when disabled", async (
   await using _timers = makeResource({}, () => vi.useRealTimers());
   const action = vi.fn<() => void>();
   const hook = renderHook(
-    (props: { enabled: boolean }) =>
+    (props) =>
       useDelayedAction({
         action,
         delayMs: 4000,
@@ -39,10 +39,9 @@ test("runs an enabled action after the delay and cancels when disabled", async (
 test("delays becoming true and hides on the next timeout", async () => {
   vi.useFakeTimers();
   await using _timers = makeResource({}, () => vi.useRealTimers());
-  const hook = renderHook(
-    (props: { value: boolean }) => useDelayedBoolean({ value: props.value, delayMs: 200 }),
-    { initialProps: { value: true } },
-  );
+  const hook = renderHook((props) => useDelayedBoolean({ value: props.value, delayMs: 200 }), {
+    initialProps: { value: true },
+  });
   await using _hook = makeResource({}, () => hook.unmount());
 
   expect(hook.result.current).toBe(false);
@@ -60,9 +59,9 @@ test("delays becoming true and hides on the next timeout", async () => {
 test("reports only a live transition for the configured duration", async () => {
   vi.useFakeTimers();
   await using _timers = makeResource({}, () => vi.useRealTimers());
-  const initialProps: { value: "pending" | "sent" } = { value: "sent" };
+  const initialProps = { value: "sent" as "pending" | "sent" };
   const hook = renderHook(
-    (props: { value: "pending" | "sent" }) =>
+    (props) =>
       useTimedTransition({
         durationMs: 4000,
         from: "pending",

@@ -174,23 +174,13 @@ function AdminTableCard(props: {
   isLoadingMore: boolean;
   onLoadMore: () => void;
 }) {
-  const { t } = useI18n();
-
   return (
     <Card className="relative gap-0 py-0">
       <CardContent className="p-0">{props.children}</CardContent>
       <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
-      {props.canLoadMore || props.isLoadingMore ? (
+      {props.isLoadingMore ? (
         <div className="flex justify-center border-t py-3">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={props.isLoadingMore}
-            onClick={props.onLoadMore}
-          >
-            {props.isLoadingMore ? <Spinner className="size-5 text-primary" /> : null}
-            {t("Next")}
-          </Button>
+          <Spinner className="size-5 text-primary" />
         </div>
       ) : null}
     </Card>

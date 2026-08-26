@@ -84,7 +84,9 @@ test("hides marked milestones from visitors without deleting them", async () => 
 });
 
 test("applies hospital visibility toggle", async () => {
-  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => Promise<void>>().mockResolvedValue(undefined);
+  const onBirthJourneyChange = vi
+    .fn<(birthJourney: BirthJourney) => Promise<void>>()
+    .mockResolvedValue(undefined);
 
   await using view = renderEditor({
     birthJourney: "labor",

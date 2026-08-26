@@ -9,6 +9,7 @@ type ConvexAuthState = {
 const authenticatedWaiters = new Set<() => void>();
 let isConvexAuthenticated = false;
 
+/** @internal Test/bootstrap seam — production callers go through ConvexAuthObserver. */
 export function reportConvexAuthState(state: ConvexAuthState) {
   isConvexAuthenticated = state.isAuthenticated && !state.isLoading;
   if (!isConvexAuthenticated) {
