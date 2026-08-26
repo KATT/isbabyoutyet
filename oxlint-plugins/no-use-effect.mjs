@@ -8,7 +8,7 @@
 
 const BANNED_EFFECT_HOOKS = new Set(["useEffect", "useLayoutEffect"]);
 const MESSAGE =
-  "Do not use React `{{name}}`. Derive state during render, update it in user interactions, or use an audited lib hook seam.";
+  "Do not use React `{{name}}`. Derive state during render, update it in user interactions, or use an audited `apps/web/src/lib` hook seam.";
 
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
