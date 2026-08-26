@@ -45,8 +45,14 @@ function getCurrentSecond() {
   return Math.floor(Date.now() / 1000);
 }
 
-function useCurrentSecond() {
-  return useSyncExternalStore(subscribeToCurrentSecond, getCurrentSecond, () => null);
+const noopSubscribe = () => () => undefined;
+
+function useCurrentSecond(enabled: boolean) {
+  return useSyncExternalStore(
+    enabled ? subscribeToCurrentSecond : noopSubscribe,
+    getCurrentSecond,
+    () => null,
+  );
 }
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
@@ -64,8 +70,9 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   );
   const subscriptionCount =
     subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
-  const currentSecond = useCurrentSecond();
-  if (currentSecond === null || subscriptionCount === 0) return null;
+  const tickEnabled = subscriptionCount > 0 && notifications.length > 0;
+  const currentSecond = useCurrentSecond(tickEnabled);
+  if (!tickEnabled || currentSecond === null) return null;
 
   const currentTime = currentSecond * 1000;
 

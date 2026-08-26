@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 
 type Rect = {
   top: number;
@@ -21,7 +21,7 @@ function mobileMediaQuery() {
   return window.matchMedia("(max-width: 767px)");
 }
 
-function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void }) {
+function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current: () => void } }) {
   let snapshot: CoachmarkSnapshot | null = null;
 
   return {
@@ -33,7 +33,7 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
       const mediaQuery = mobileMediaQuery();
 
       function onTargetClick() {
-        opts.onDismiss();
+        opts.onDismissRef.current();
       }
 
       function resolveTarget() {
@@ -60,37 +60,41 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
       }
 
       function measure() {
-        const currentTarget = resolveTarget();
-        if (!currentTarget) {
+        const nextTarget = resolveTarget();
+        if (!nextTarget) {
           if (snapshot !== null) {
             snapshot = null;
             notify();
           }
           return;
         }
-        const rect = currentTarget.getBoundingClientRect();
-        if (rect.width === 0 && rect.height === 0) {
-          if (snapshot !== null) {
-            snapshot = null;
-            notify();
-          }
-          return;
-        }
-        const next = {
-          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
-          placement:
-            window.innerHeight - rect.bottom < 160 ? ("above" as const) : ("below" as const),
-          viewportWidth: window.innerWidth,
-          isMobile: mediaQuery?.matches === true,
+        const nextRect = nextTarget.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const placement: "above" | "below" =
+          nextRect.bottom + 160 > viewportHeight && nextRect.top > 160 ? "above" : "below";
+        const isMobile = mediaQuery?.matches ?? viewportWidth < 768;
+        const next: CoachmarkSnapshot = {
+          rect: {
+            top: nextRect.top,
+            left: nextRect.left,
+            width: nextRect.width,
+            height: nextRect.height,
+          },
+          placement,
+          viewportWidth,
+          isMobile,
         };
+        const previous = snapshot;
         if (
-          snapshot?.rect.top === next.rect.top &&
-          snapshot.rect.left === next.rect.left &&
-          snapshot.rect.width === next.rect.width &&
-          snapshot.rect.height === next.rect.height &&
-          snapshot.placement === next.placement &&
-          snapshot.viewportWidth === next.viewportWidth &&
-          snapshot.isMobile === next.isMobile
+          previous &&
+          previous.placement === next.placement &&
+          previous.viewportWidth === next.viewportWidth &&
+          previous.isMobile === next.isMobile &&
+          previous.rect.top === next.rect.top &&
+          previous.rect.left === next.rect.left &&
+          previous.rect.width === next.rect.width &&
+          previous.rect.height === next.rect.height
         ) {
           return;
         }
@@ -123,12 +127,15 @@ function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void })
 /**
  * Subscribes to the coachmark target’s layout. Store init lives in lib
  * (useState) so feature UI avoids both useState and render-time ref access.
+ * `onDismiss` is read through a ref so callers may pass a fresh closure.
  */
 export function useCoachmarkSnapshot(opts: { targetId: string; onDismiss: () => void }) {
+  const onDismissRef = useRef(opts.onDismiss);
+  onDismissRef.current = opts.onDismiss;
   const [store] = useState(() =>
     createCoachmarkStore({
       targetId: opts.targetId,
-      onDismiss: opts.onDismiss,
+      onDismissRef,
     }),
   );
   return useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
