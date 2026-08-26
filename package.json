@@ -14,12 +14,18 @@
     "format": "turbo format",
     "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
-    "pretest:coverage": "pnpm --filter web i18n:compile",
-    "test:coverage": "vitest run --coverage",
+    "pretest:coverage:web": "pnpm --filter web i18n:compile",
+    "test:coverage:convex": "tsx scripts/runVitestCoverageBlob.ts convex",
+    "test:coverage:query-prefetch": "tsx scripts/runVitestCoverageBlob.ts query-prefetch",
+    "test:coverage:convex-prefetch": "tsx scripts/runVitestCoverageBlob.ts convex-prefetch",
+    "test:coverage:web": "tsx scripts/runVitestCoverageBlob.ts web",
+    "test:coverage:oxlint-plugins": "tsx scripts/runVitestCoverageBlob.ts oxlint-plugins",
+    "test:coverage:merge": "vitest run --merge-reports=.vitest-blobs --coverage",
+    "test:coverage": "turbo run test:coverage:merge",
     "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
+    "checks": "pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && pnpm test:coverage && pnpm knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",

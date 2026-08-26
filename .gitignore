@@ -1,6 +1,8 @@
 node_modules
 .DS_Store
 coverage
+coverage/shards
+.vitest-blobs
 playwright-report
 test-results
 .turbo

@@ -14,7 +14,14 @@
         "VERCEL",
         "VERCEL_ENV"
       ],
-      "passThroughEnv": ["VERCEL", "VERCEL_ENV", "VERCEL_URL", "VERCEL_GIT_COMMIT_REF", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"]
+      "passThroughEnv": [
+        "VERCEL",
+        "VERCEL_ENV",
+        "VERCEL_URL",
+        "VERCEL_GIT_COMMIT_REF",
+        "VERCEL_BRANCH_URL",
+        "VERCEL_PROJECT_PRODUCTION_URL"
+      ]
     },
     "dev": {
       "cache": false,
@@ -24,20 +31,74 @@
       "dependsOn": ["^build"]
     },
     "test": {},
-    "lint": {
-    },
-    "lint-fix": {
-    },
-    "format": {
-    },
-    "//#test:coverage": {
-      "outputs": ["coverage/coverage-summary.json"],
+    "lint": {},
+    "lint-fix": {},
+    "format": {},
+    "//#test:coverage:convex": {
+      "outputs": [".vitest-blobs/convex.json"],
       "inputs": [
         "$TURBO_ROOT$/package.json",
         "$TURBO_ROOT$/vitest.config.ts",
-        "$TURBO_ROOT$/apps/**",
-        "$TURBO_ROOT$/packages/**",
-        "$TURBO_ROOT$/oxlint-plugins/**",
+        "$TURBO_ROOT$/scripts/runVitestCoverageBlob.ts",
+        "$TURBO_ROOT$/packages/convex/**",
+        "$TURBO_ROOT$/packages/convex/vitest.config.ts",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/coverage/**",
+        "!$TURBO_ROOT$/**/*.md",
+        "!$TURBO_ROOT$/.github/**",
+        "!$TURBO_ROOT$/**/.agents/**",
+        "!$TURBO_ROOT$/.cursor/**"
+      ],
+      "env": ["CI"]
+    },
+    "//#test:coverage:query-prefetch": {
+      "outputs": [".vitest-blobs/query-prefetch.json"],
+      "inputs": [
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/vitest.config.ts",
+        "$TURBO_ROOT$/scripts/runVitestCoverageBlob.ts",
+        "$TURBO_ROOT$/packages/query-prefetch/**",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/coverage/**",
+        "!$TURBO_ROOT$/**/*.md",
+        "!$TURBO_ROOT$/.github/**",
+        "!$TURBO_ROOT$/**/.agents/**",
+        "!$TURBO_ROOT$/.cursor/**"
+      ],
+      "env": ["CI"]
+    },
+    "//#test:coverage:convex-prefetch": {
+      "outputs": [".vitest-blobs/convex-prefetch.json"],
+      "inputs": [
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/vitest.config.ts",
+        "$TURBO_ROOT$/scripts/runVitestCoverageBlob.ts",
+        "$TURBO_ROOT$/packages/convex-prefetch/**",
+        "$TURBO_ROOT$/packages/query-prefetch/**",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/coverage/**",
+        "!$TURBO_ROOT$/**/*.md",
+        "!$TURBO_ROOT$/.github/**",
+        "!$TURBO_ROOT$/**/.agents/**",
+        "!$TURBO_ROOT$/.cursor/**"
+      ],
+      "env": ["CI"]
+    },
+    "//#test:coverage:web": {
+      "outputs": [".vitest-blobs/web.json"],
+      "inputs": [
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/vitest.config.ts",
+        "$TURBO_ROOT$/scripts/runVitestCoverageBlob.ts",
+        "$TURBO_ROOT$/apps/web/**",
+        "$TURBO_ROOT$/apps/web/vitest.config.ts",
+        "$TURBO_ROOT$/packages/convex/**",
+        "$TURBO_ROOT$/packages/query-prefetch/**",
+        "$TURBO_ROOT$/packages/convex-prefetch/**",
+        "$TURBO_ROOT$/packages/ui/**",
         "!$TURBO_ROOT$/**/node_modules/**",
         "!$TURBO_ROOT$/**/.turbo/**",
         "!$TURBO_ROOT$/coverage/**",
@@ -51,6 +112,35 @@
         "!$TURBO_ROOT$/**/.agents/**",
         "!$TURBO_ROOT$/.cursor/**"
       ],
+      "env": ["CI"]
+    },
+    "//#test:coverage:oxlint-plugins": {
+      "outputs": [".vitest-blobs/oxlint-plugins.json"],
+      "inputs": [
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/vitest.config.ts",
+        "$TURBO_ROOT$/scripts/runVitestCoverageBlob.ts",
+        "$TURBO_ROOT$/oxlint-plugins/**",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/coverage/**",
+        "!$TURBO_ROOT$/**/*.md",
+        "!$TURBO_ROOT$/.github/**",
+        "!$TURBO_ROOT$/**/.agents/**",
+        "!$TURBO_ROOT$/.cursor/**"
+      ],
+      "env": ["CI"]
+    },
+    "//#test:coverage:merge": {
+      "dependsOn": [
+        "//#test:coverage:convex",
+        "//#test:coverage:query-prefetch",
+        "//#test:coverage:convex-prefetch",
+        "//#test:coverage:web",
+        "//#test:coverage:oxlint-plugins"
+      ],
+      "outputs": ["coverage/coverage-summary.json"],
+      "inputs": ["$TURBO_ROOT$/.vitest-blobs/**", "$TURBO_ROOT$/vitest.config.ts"],
       "env": ["CI"]
     },
     "//#knip": {
