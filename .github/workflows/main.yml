@@ -51,6 +51,7 @@ jobs:
           key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
           restore-keys: |
             turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
+            turbo-${{ runner.os }}-
 
       - name: Set up Turborepo Remote Cache
         if: ${{ vars.TURBO_TEAM != '' }}
@@ -80,7 +81,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Test coverage
-        run: pnpm test:coverage
+        run: pnpm exec turbo run test:coverage
 
       - name: Knip
         run: pnpm knip
