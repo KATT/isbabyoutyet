@@ -1,7 +1,7 @@
 import { Button } from "@workspace/ui/components/button";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
@@ -25,12 +25,8 @@ export const Route = createFileRoute("/_auth/dashboard")({
 });
 
 export type DashboardLoaderData = {
-  babies:
-    | PreloadedConvexQuery<typeof api.baby.listByUser>
-    | InitiatedConvexQuery<typeof api.baby.listByUser>;
-  onboarding:
-    | PreloadedConvexQuery<typeof api.onboarding.getMine>
-    | InitiatedConvexQuery<typeof api.onboarding.getMine>;
+  babies: PreloadedConvexQuery<typeof api.baby.listByUser>;
+  onboarding: PreloadedConvexQuery<typeof api.onboarding.getMine>;
 };
 
 export function DashboardPageLayout() {

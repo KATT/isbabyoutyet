@@ -1,147 +1,128 @@
-import { fireEvent, render } from "@testing-library/react";
-import type { ReactElement, ReactNode } from "react";
+import { fireEvent, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-import type {
-  BabyUpdateHandler,
-  MilestoneRedateHandler,
-  MilestoneRemoveHandler,
-} from "@workspace/convex/src/types";
-import { LocaleProvider } from "@/lib/i18n";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
+import { Route, type PreviewSearch } from "@/routes/preview";
 
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  head: null as
-    | null
-    | ((options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] }),
-  search: {
-    name: "Nova",
-    dueDate: "2026-09-01T00:00:00.000Z",
-    laborStarted: "2026-08-10T08:00:00.000Z",
-    wentToHospital: null as string | null,
-    babyBorn: null as string | null,
-    laborStartedMessage: "It has begun!",
-    babyBornMessage: null as string | null,
-    settings: true,
-  },
-}));
+const baseSearch: PreviewSearch = {
+  name: "Nova",
+  dueDate: "2026-09-01T00:00:00.000Z",
+  laborStarted: "2026-08-10T08:00:00.000Z",
+  wentToHospital: null,
+  babyBorn: null,
+  laborStartedMessage: "It has begun!",
+  babyBornMessage: null,
+  settings: true,
+};
 
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute:
-    () =>
-    (options: {
-      head: (options: { match: { context: { locale: "en-GB" } } }) => { meta: unknown[] };
-    }) => {
-      mocks.head = options.head;
-      return {
-        ...options,
-        fullPath: "/preview",
-        useSearch: () => mocks.search,
-      };
-    },
-  Link: (props: { children: ReactNode }) => <a href="/">{props.children}</a>,
-  useNavigate: () => mocks.navigate,
-}));
-
-vi.mock("@/components/baby/baby-nav", () => ({
-  BabyNav: () => null,
-}));
-
-vi.mock("@/components/baby/progress-indicator", () => ({
-  ProgressIndicator: () => null,
-}));
-
-vi.mock("@/components/baby/status-display", () => ({
-  StatusDisplay: () => null,
-}));
-
-vi.mock("@/components/baby/settings-panel", () => ({
-  SettingsPanel: (props: {
-    onUpdate: BabyUpdateHandler;
-    onMilestoneRedate: MilestoneRedateHandler;
-    onMilestoneRemove: MilestoneRemoveHandler;
-  }) => (
-    <>
-      <button type="button" onClick={() => props.onUpdate({ name: "Nova Rae" })}>
-        update settings
-      </button>
-      <button
-        type="button"
-        onClick={() => props.onMilestoneRedate("gone_to_hospital", "2026-08-10T12:00:00.000Z")}
-      >
-        redate milestone
-      </button>
-      <button type="button" onClick={() => props.onMilestoneRemove("labor_started")}>
-        remove milestone
-      </button>
-    </>
-  ),
-}));
-
-const { PreviewPage } = await import("./preview");
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
+function previewEntry(search: PreviewSearch) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(search)) {
+    if (value === null || value === undefined) continue;
+    if (typeof value === "boolean") {
+      if (value) params.set(key, "true");
+      continue;
+    }
+    params.set(key, String(value));
+  }
+  const query = params.toString();
+  return query ? `/preview?${query}` : "/preview";
 }
 
 test("preview routes settings and milestone edits to separate search updates", async () => {
-  await using view = renderResource(
-    <LocaleProvider locale="en-GB">
-      <PreviewPage />
-    </LocaleProvider>,
-  );
+  await using harness = await createConvexTestHarness({ identity: null });
 
-  fireEvent.click(view.getByRole("button", { name: "update settings" }));
-  fireEvent.click(view.getByRole("button", { name: "redate milestone" }));
-  fireEvent.click(view.getByRole("button", { name: "remove milestone" }));
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/preview",
+    initialEntry: previewEntry(baseSearch),
+    overlayHistory: null,
+    wrap: null,
+  });
 
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    1,
-    expect.objectContaining({
-      search: { ...mocks.search, name: "Nova Rae" },
-      replace: true,
-    }),
-  );
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    2,
-    expect.objectContaining({
-      search: {
-        ...mocks.search,
-        wentToHospital: "2026-08-10T12:00:00.000Z",
-      },
-      replace: true,
-    }),
-  );
-  expect(mocks.navigate).toHaveBeenNthCalledWith(
-    3,
-    expect.objectContaining({
-      search: { ...mocks.search, laborStarted: null },
-      replace: true,
-    }),
-  );
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+
+  const dialog = ctx.view.getByRole("dialog");
+  fireEvent.click(within(dialog).getAllByRole("button", { name: "Edit" })[0]!);
+  await vi.waitFor(() => {
+    expect(ctx.view.getByLabelText("Baby name")).toBeTruthy();
+  });
+  fireEvent.change(ctx.view.getByLabelText("Baby name"), { target: { value: "Nova Rae" } });
+  fireEvent.click(ctx.view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: expect.objectContaining({ name: "Nova Rae" }),
+        replace: true,
+      }),
+    );
+  });
+
+  const laborEdit = within(dialog)
+    .getAllByRole("button", { name: "Edit" })
+    .find((button) => button.closest("[data-slot=item]")?.textContent?.includes("Labour started"));
+  if (!laborEdit) throw new Error("labor started edit button missing");
+  fireEvent.click(laborEdit);
+  const dateInput = ctx.view.getByLabelText("Status date and time");
+  fireEvent.change(dateInput, { target: { value: "2026-08-10T12:00" } });
+  fireEvent.click(ctx.view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: expect.objectContaining({
+          laborStarted: "2026-08-10T11:00:00.000Z",
+        }),
+        replace: true,
+      }),
+    );
+  });
+
+  fireEvent.click(laborEdit);
+  fireEvent.click(ctx.view.getByRole("button", { name: "Delete" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "Delete status" }));
+
+  await vi.waitFor(() => {
+    expect(ctx.navigate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        search: expect.objectContaining({ laborStarted: null }),
+        replace: true,
+      }),
+    );
+  });
 });
 
 test("preview derives a born status from its search dates", async () => {
-  mocks.search.babyBorn = "2026-08-11T03:00:00.000Z";
-  mocks.search.babyBornMessage = "She's here!";
+  await using harness = await createConvexTestHarness({ identity: null });
+  const search: PreviewSearch = {
+    ...baseSearch,
+    babyBorn: "2026-08-11T03:00:00.000Z",
+    babyBornMessage: "She's here!",
+    settings: false,
+  };
 
-  await using view = renderResource(
-    <LocaleProvider locale="en-GB">
-      <PreviewPage />
-    </LocaleProvider>,
-  );
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/preview",
+    initialEntry: previewEntry(search),
+    overlayHistory: null,
+    wrap: null,
+  });
 
-  expect(view.getByRole("heading", { name: "Is Nova out yet?" })).toBeTruthy();
-  mocks.search.babyBorn = null;
-  mocks.search.babyBornMessage = null;
+  expect(ctx.view.getByRole("heading", { name: "Is Nova out yet?" })).toBeTruthy();
 });
 
 test("preview still supplies localized no-index metadata after the schema cutover", () => {
-  const result = mocks.head?.({
+  const head = Route.options.head as unknown as (opts: {
+    match: { context: { locale: "en-GB" } };
+  }) => { meta: unknown[] };
+  const result = head({
     match: { context: { locale: "en-GB" } },
   });
-  expect(result?.meta.length).toBeGreaterThan(2);
+  expect(result.meta.length).toBeGreaterThan(2);
 });

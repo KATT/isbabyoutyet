@@ -1,4 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -9,13 +10,12 @@ import type {
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
-const mocks = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError },
-}));
+function spyOnToastErrorResource() {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  return makeResource(toastError, () => {
+    toastError.mockRestore();
+  });
+}
 
 const baby: BabyData = {
   name: "Nova",
@@ -216,8 +216,8 @@ test("journey selection saves the chosen preset", async () => {
   });
 });
 
-test("journey editor reports a failed save", async () => {
-  mocks.toastError.mockReset();
+test("journey editor reports a failed save and remains open", async () => {
+  await using toastError = spyOnToastErrorResource();
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
@@ -235,8 +235,9 @@ test("journey editor reports a failed save", async () => {
   fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
   await vi.waitFor(() => {
-    expect(mocks.toastError).toHaveBeenCalledWith("Could not save journey");
+    expect(toastError).toHaveBeenCalledWith("Could not save journey");
   });
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
 });
 
 test("turning off visitor visibility does not remove a marked milestone", async () => {

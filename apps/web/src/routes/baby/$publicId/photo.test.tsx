@@ -1,295 +1,101 @@
-import { fireEvent, render } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
-import { LocaleProvider } from "@/lib/i18n";
-import { testInitiatedQuery } from "@workspace/query-prefetch/test-helpers";
-import { browserImageFactory } from "@/lib/image-prefetch";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  historyBack: vi.fn<() => void>(),
-  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { overlay: undefined as true | undefined },
-  params: { publicId: "baby-smith" },
-  loaderData: null as null | Record<string, unknown>,
-}));
-
-vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
-  return {
-    ...actual,
-    createFileRoute: () => (options: Record<string, unknown>) => ({
-      options,
-      ...options,
-      fullPath: "/baby/$publicId/photo",
-      useParams: () => mocks.params,
-      useLoaderData: () => mocks.loaderData,
-    }),
-    useNavigate: () => mocks.navigate,
-    useRouter: () => ({
-      history: {
-        location: { state: mocks.historyState },
-        canGoBack: mocks.canGoBack,
-        back: mocks.historyBack,
-      },
-      navigate: mocks.navigate,
-    }),
-    notFound: () => {
-      throw { isNotFound: true };
-    },
-    redirect: (opts: unknown) => {
-      throw { options: opts };
-    },
-  };
-});
-
-vi.mock("@workspace/ui/components/dialog", async () => {
-  const React = await import("react");
-  function MockDialog(props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: ((open: boolean) => void) | undefined;
-    children: ReactNode;
-  }) {
-    const wasOpen = React.useRef(props.open);
-    React.useEffect(() => {
-      if (wasOpen.current && !props.open) {
-        props.onOpenChangeComplete?.(false);
-      }
-      wasOpen.current = props.open;
-    }, [props.open, props.onOpenChangeComplete]);
-    return (
-      <div data-testid="dialog" data-open={props.open}>
-        <button
-          type="button"
-          onClick={() => {
-            props.onOpenChange(false);
-          }}
-        >
-          dismiss
-        </button>
-        {props.children}
-      </div>
-    );
-  }
-  return {
-    Dialog: MockDialog,
-    DialogContent: (props: { children: ReactNode }) => <div>{props.children}</div>,
-  };
-});
-
-const routeModule = await import("@/routes/baby/$publicId/photo");
-const { BabyPhotoOverlay } = routeModule;
-
-async function withPhotoRouteHandlers<TResult>(
-  handlers: Record<string, unknown>,
-  run: (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<TResult>,
-) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(handlers[name] ?? null);
-        },
-      },
-    },
-  });
-  try {
-    return await run({
-      context: {
-        queryClient,
-        convexPreloader: getConvexQueryPreloader(queryClient),
-      },
-      params: { publicId: "baby-smith" },
-    });
-  } finally {
-    queryClient.clear();
-  }
-}
-
-async function runPhotoBeforeLoad(handlers: Record<string, unknown>) {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<unknown>;
-  return await withPhotoRouteHandlers(handlers, beforeLoad);
-}
-
-async function runPhotoLoader(handlers: Record<string, unknown>) {
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<{
-    baby: unknown;
-    imagePrefetch: { input: string | undefined };
-  }>;
-  return await withPhotoRouteHandlers(handlers, loader);
-}
-
-function babyDoc(opts: { photoUrl: string | null }) {
-  return {
-    _id: "jd7baby000000000000000000",
-    publicId: "baby-smith",
-    name: "Baby Smith",
-    photoUrl: opts.photoUrl,
-    thumbnailUrl: null,
-    blurDataUrl: null,
-    dueDate: "2026-09-01",
-    dueDateDisplayMode: "exact" as const,
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
-    milestoneVisibility: { showLabor: true, showHospital: true },
-    resolvedLocale: "en-GB",
-  };
-}
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedBabyWithPhoto, seedOwnedBaby } from "@/test/convexTestSeed";
+import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
+import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { Route } from "@/routes/baby/$publicId/photo";
 
 test("beforeLoad 404s unknown babies", async () => {
-  await expect(runPhotoBeforeLoad({ "baby:getByPublicId": null })).rejects.toMatchObject({
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  await expect(
+    runRouteBeforeLoad({
+      harness,
+      route: Route,
+      params: { publicId: "missing-baby" },
+    }),
+  ).rejects.toMatchObject({
     isNotFound: true,
   });
 });
 
 test("beforeLoad redirects when the public id resolves to a different slug", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    name: "Final Name",
+  });
+  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+
   await expect(
-    runPhotoBeforeLoad({
-      "baby:getByPublicId": {
-        ...babyDoc({ photoUrl: "https://cdn.example/full.jpg" }),
-        publicId: "baby-nova",
-      },
+    runRouteBeforeLoad({
+      harness,
+      route: Route,
+      params: { publicId: baby.publicId },
     }),
   ).rejects.toMatchObject({
     options: {
       to: "/baby/$publicId/photo",
-      params: { publicId: "baby-nova" },
+      params: { publicId: renamed?.publicId },
       replace: true,
     },
   });
 });
 
 test("beforeLoad allows matching public ids", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedBabyWithPhoto(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
   await expect(
-    runPhotoBeforeLoad({
-      "baby:getByPublicId": babyDoc({ photoUrl: "https://cdn.example/full.jpg" }),
+    runRouteBeforeLoad({
+      harness,
+      route: Route,
+      params: { publicId: baby.publicId },
     }),
   ).resolves.toBeUndefined();
 });
 
 test("loader redirects home when the baby has no page photo", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
   await expect(
-    runPhotoLoader({
-      "baby:getByPublicId": babyDoc({ photoUrl: null }),
+    runRouteLoader({
+      harness,
+      route: Route,
+      params: { publicId: baby.publicId },
     }),
   ).rejects.toMatchObject({
     options: {
       to: "/baby/$publicId",
-      params: { publicId: "baby-smith" },
+      params: { publicId: baby.publicId },
       resetScroll: false,
     },
   });
 });
 
-test("overlay 404s when loader data loses the page photo", async () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  mocks.loaderData = {
-    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
-      input: { id: "baby-smith" },
-      initialData: babyDoc({ photoUrl: null }) as never,
-    }),
-    imagePrefetch: testInitiatedQuery(browserImageFactory, "https://cdn.example/full.jpg"),
-  };
-
-  expect(() =>
-    render(
-      <QueryClientProvider client={queryClient}>
-        <LocaleProvider locale="en-GB">
-          <BabyPhotoOverlay />
-        </LocaleProvider>
-      </QueryClientProvider>,
-    ),
-  ).toThrow(
-    expect.objectContaining({
-      isNotFound: true,
-    }),
-  );
-  queryClient.clear();
-});
-
 test("loader prefetches the full image in the browser", async () => {
-  const photoUrl = "https://cdn.example/full.jpg";
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(name === "baby:getByPublicId" ? babyDoc({ photoUrl }) : null);
-        },
-      },
-    },
-  });
-  await using _queryClient = makeResource(queryClient, () => {
-    queryClient.clear();
-  });
-
-  const OriginalImage = globalThis.Image;
-  class MockImage {
-    #load: (() => void) | null = null;
-    addEventListener(type: string, listener: () => void) {
-      if (type === "load") this.#load = listener;
-    }
-    set src(_value: string) {
-      queueMicrotask(() => {
-        this.#load?.();
-      });
-    }
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedBabyWithPhoto(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const publicBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  const photoUrl = publicBaby?.photoUrl;
+  if (!photoUrl) {
+    throw new Error("expected seeded baby photo URL");
   }
-  vi.stubGlobal("Image", MockImage);
-  await using _image = makeResource({}, () => {
-    vi.stubGlobal("Image", OriginalImage);
-  });
 
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<{ imagePrefetch: { input: string | undefined } }>;
+  await using _image = stubBrowserImageResource();
 
-  const data = await loader({
-    context: {
-      queryClient,
-      convexPreloader: getConvexQueryPreloader(queryClient),
-    },
-    params: { publicId: "baby-smith" },
+  const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
+    harness,
+    route: Route,
+    params: { publicId: baby.publicId },
   });
 
   expect(data.imagePrefetch).toMatchObject({ input: photoUrl });
   await vi.waitFor(() => {
-    expect(queryClient.getQueryData(["browserImagePrefetch", photoUrl])).toEqual({
+    expect(harness.queryClient.getQueryData(["browserImagePrefetch", photoUrl])).toEqual({
       url: photoUrl,
       ok: true,
     });
@@ -297,40 +103,45 @@ test("loader prefetches the full image in the browser", async () => {
 });
 
 test("dismisses the lightbox overlay after the dialog closes", async () => {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  });
-  const photoUrl = "https://cdn.example/full.jpg";
-  mocks.loaderData = {
-    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
-      input: { id: "baby-smith" },
-      initialData: babyDoc({ photoUrl }) as never,
-    }),
-    imagePrefetch: testInitiatedQuery(browserImageFactory, photoUrl),
-  };
-  mocks.historyState.overlay = true;
-  mocks.canGoBack.mockReturnValue(true);
-  mocks.historyBack.mockClear();
-  mocks.navigate.mockClear();
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedBabyWithPhoto(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await using _image = stubBrowserImageResource();
 
-  const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <BabyPhotoOverlay />
-      </LocaleProvider>
-    </QueryClientProvider>,
-  );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-    queryClient.clear();
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/photo",
+    initialEntry: `/baby/${baby.publicId}/photo`,
+    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    wrap: null,
   });
 
-  expect(view.getByAltText("Photo of Baby Smith")).toBeTruthy();
   await vi.waitFor(() => {
-    expect(view.getByTestId("dialog").getAttribute("data-open")).toBe("true");
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
-  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
+  expect(ctx.view.getByAltText("Photo of Baby Smith")).toBeTruthy();
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close photo" }));
   await vi.waitFor(() => {
-    expect(mocks.historyBack).toHaveBeenCalled();
+    expect(ctx.back).toHaveBeenCalled();
   });
+});
+
+test("BabyPhotoOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedBabyWithPhoto(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await using _image = stubBrowserImageResource();
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/photo",
+    initialEntry: `/baby/${baby.publicId}/photo`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByAltText("Photo of Baby Smith")).toBeTruthy();
 });

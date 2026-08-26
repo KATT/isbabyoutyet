@@ -1,17 +1,11 @@
 import { fireEvent, render } from "@testing-library/react";
 import type { ReactElement } from "react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BirthJourney } from "@workspace/convex/src/types";
+import { LocaleProvider } from "@/lib/i18n";
 import { JourneyMilestoneEditor } from "./journey-milestone-editor";
-
-const mocks = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError },
-}));
 
 function renderResource(ui: ReactElement) {
   const view = render(ui);
@@ -25,12 +19,21 @@ function renderEditor(opts: {
   onBirthJourneyChange: (birthJourney: BirthJourney) => void | Promise<void>;
 }) {
   return renderResource(
-    <JourneyMilestoneEditor
-      birthJourney={opts.birthJourney}
-      idPrefix="test-journey"
-      onBirthJourneyChange={opts.onBirthJourneyChange}
-    />,
+    <LocaleProvider locale="en-GB">
+      <JourneyMilestoneEditor
+        birthJourney={opts.birthJourney}
+        idPrefix="test-journey"
+        onBirthJourneyChange={opts.onBirthJourneyChange}
+      />
+    </LocaleProvider>,
   );
+}
+
+function spyOnToastErrorResource() {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  return makeResource(toastError, () => {
+    toastError.mockRestore();
+  });
 }
 
 test("shows the Custom chip when both pre-birth milestones are hidden", async () => {
@@ -96,7 +99,7 @@ test("applies hospital visibility toggle", async () => {
 });
 
 test("reports a failed journey save from the editor", async () => {
-  mocks.toastError.mockReset();
+  await using toastError = spyOnToastErrorResource();
   const onBirthJourneyChange = vi
     .fn<(birthJourney: BirthJourney) => Promise<void>>()
     .mockRejectedValue(new Error("Network error"));
@@ -109,6 +112,6 @@ test("reports a failed journey save from the editor", async () => {
   fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
   await vi.waitFor(() => {
-    expect(mocks.toastError).toHaveBeenCalledWith("Network error");
+    expect(toastError).toHaveBeenCalledWith("Network error");
   });
 });

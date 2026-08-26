@@ -7,6 +7,7 @@
     "**/paraglide/**",
     "oxlint-plugins/**"
   ],
+  "tags": ["-@internal"],
   "workspaces": {
     ".": {
       "entry": ["scripts/compareCoverage.ts!"]
@@ -18,6 +19,12 @@
       "entry": [
         "public/sw.js!",
         "src/server.ts!",
+        "src/test/setup.ts!",
+        "src/test/convexTestHarness.ts!",
+        "src/test/convexTestSeed.ts!",
+        "src/test/renderWithConvexTest.tsx!",
+        "src/test/renderMountedFileRoute.tsx!",
+        "src/test/routeTestContext.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"

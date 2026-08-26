@@ -1,50 +1,51 @@
-import { fireEvent, render } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { LocaleProvider } from "@/lib/i18n";
+import { AddBabyPage, AddBabyPageView, Route } from "./dashboard_.add";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-const mocks = vi.hoisted(() => ({
-  createBaby: vi.fn<(args: unknown) => Promise<{ publicId: string }>>(),
-  navigate: vi.fn<(args: unknown) => Promise<void>>(),
-}));
+function createAddBabyMocks() {
+  return {
+    createBaby: vi
+      .fn<(args: unknown) => Promise<{ publicId: string }>>()
+      .mockResolvedValue({ publicId: "baby-fern" }),
+    navigate: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
+  };
+}
 
-vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"}>{props.children}</a>
-  ),
-  createFileRoute: (routeId: string) => (options: { component: unknown }) => ({
-    ...options,
-    routeId,
-  }),
-  useRouter: () => ({ navigate: mocks.navigate }),
-}));
+function renderAddBaby(opts: {
+  createBaby: ((args: unknown) => Promise<{ publicId: string }>) | undefined;
+  navigate: ((args: unknown) => Promise<void>) | undefined;
+}) {
+  const mocks = createAddBabyMocks();
+  return renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <AddBabyPageView
+        createBaby={(opts.createBaby ?? mocks.createBaby) as never}
+        navigate={(opts.navigate ?? mocks.navigate) as never}
+      />
+    </LocaleProvider>,
+    { path: "/dashboard/add" },
+  );
+}
 
-vi.mock("convex/react", () => ({
-  useMutation: () => mocks.createBaby,
-}));
-
-const routeModule = await import("./dashboard_.add");
-const { AddBabyPage } = routeModule;
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+function renderDefaultAddBaby() {
+  return renderAddBaby({
+    createBaby: undefined,
+    navigate: undefined,
   });
 }
 
-function expandOptionalSettings(view: ReturnType<typeof render>) {
+function expandOptionalSettings(view: Awaited<ReturnType<typeof renderAddBaby>>) {
   fireEvent.click(view.getByRole("button", { name: "Customize your page (optional)" }));
 }
 
 test("add baby remains a standalone non-nested dashboard route", () => {
-  const route = routeModule.Route as unknown as { routeId: string; component: unknown };
-  expect(route.routeId).toBe("/_auth/dashboard_/add");
-  expect(route.component).toBe(AddBabyPage);
+  expect(Route.options.component).toBe(AddBabyPage);
 });
 
 test("optional settings stay collapsed until expanded", async () => {
-  await using view = renderResource(<AddBabyPage />);
+  await using view = await renderDefaultAddBaby();
 
   expect(view.getByRole("button", { name: "Customize your page (optional)" })).toBeTruthy();
   expect(view.queryByRole("button", { name: "Labour" })).toBeNull();
@@ -63,19 +64,21 @@ test("optional settings stay collapsed until expanded", async () => {
   expect(view.getByText("Theme")).toBeTruthy();
 });
 
-test("name field explains a nickname is fine and can be changed later", async () => {
-  await using view = renderResource(<AddBabyPage />);
+test("name field explains it can be filled later", async () => {
+  await using view = await renderDefaultAddBaby();
 
   expect(view.getByLabelText("Baby name")).toBeTruthy();
   expect(
     view.getByText(
-      "Don't worry if you don't know it yet. A nickname is fine — you can change it later.",
+      "Optional. Leave it blank for now. You can change it later in Settings.",
     ),
   ).toBeTruthy();
 });
 
 test("journey choices explain visible statuses and privacy", async () => {
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi.fn<(args: unknown) => Promise<{ publicId: string }>>();
+  const navigate = vi.fn<(args: unknown) => Promise<void>>();
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   expandOptionalSettings(view);
 
@@ -112,9 +115,11 @@ test("journey choices explain visible statuses and privacy", async () => {
 });
 
 test("submits optional theme selection", async () => {
-  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
-  mocks.navigate.mockReset().mockResolvedValue(undefined);
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -127,7 +132,7 @@ test("submits optional theme selection", async () => {
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
-    expect(mocks.createBaby).toHaveBeenCalledWith({
+    expect(createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
       dueDateDisplayMode: "exact",
@@ -136,6 +141,10 @@ test("submits optional theme selection", async () => {
       theme: "violet-bloom",
     });
   });
+  expect(navigate).toHaveBeenCalledWith({
+    to: "/baby/$publicId",
+    params: { publicId: "baby-fern" },
+  });
 });
 
 test.each([
@@ -143,9 +152,11 @@ test.each([
   { label: "Home birth", birthJourney: "home_birth" },
   { label: "Planned C-section", birthJourney: "planned_c_section" },
 ])("submits the $label selection", async (testCase) => {
-  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
-  mocks.navigate.mockReset().mockResolvedValue(undefined);
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -158,7 +169,7 @@ test.each([
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
-    expect(mocks.createBaby).toHaveBeenCalledWith({
+    expect(createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-09"),
       dueDateDisplayMode: "exact",
@@ -167,16 +178,18 @@ test.each([
       theme: null,
     });
   });
-  expect(mocks.navigate).toHaveBeenCalledWith({
+  expect(navigate).toHaveBeenCalledWith({
     to: "/baby/$publicId",
     params: { publicId: "baby-fern" },
   });
 });
 
 test("allows a hidden public due date when message mode has no text", async () => {
-  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
-  mocks.navigate.mockReset().mockResolvedValue(undefined);
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -185,7 +198,7 @@ test("allows a hidden public due date when message mode has no text", async () =
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
-    expect(mocks.createBaby).toHaveBeenCalledWith({
+    expect(createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: null,
       dueDateDisplayMode: "message",
@@ -197,9 +210,11 @@ test("allows a hidden public due date when message mode has no text", async () =
 });
 
 test("submits a custom public due date message when provided", async () => {
-  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
-  mocks.navigate.mockReset().mockResolvedValue(undefined);
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -212,7 +227,7 @@ test("submits a custom public due date message when provided", async () => {
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
-    expect(mocks.createBaby).toHaveBeenCalledWith({
+    expect(createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: null,
       dueDateDisplayMode: "message",
@@ -224,7 +239,9 @@ test("submits a custom public due date message when provided", async () => {
 });
 
 test("toggles exact due date mode when clicking the row label", async () => {
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi.fn<(args: unknown) => Promise<{ publicId: string }>>();
+  const navigate = vi.fn<(args: unknown) => Promise<void>>();
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
   expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
@@ -237,9 +254,11 @@ test("toggles exact due date mode when clicking the row label", async () => {
 });
 
 test("keeps entered date and message values while toggling fields", async () => {
-  mocks.createBaby.mockReset().mockResolvedValue({ publicId: "baby-fern" });
-  mocks.navigate.mockReset().mockResolvedValue(undefined);
-  await using view = renderResource(<AddBabyPage />);
+  const createBaby = vi
+    .fn<(args: unknown) => Promise<{ publicId: string }>>()
+    .mockResolvedValue({ publicId: "baby-fern" });
+  const navigate = vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -261,7 +280,7 @@ test("keeps entered date and message values while toggling fields", async () => 
   fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
 
   await vi.waitFor(() => {
-    expect(mocks.createBaby).toHaveBeenCalledWith({
+    expect(createBaby).toHaveBeenCalledWith({
       name: "Baby Fern",
       dueDate: expect.stringContaining("2026-09-19"),
       dueDateDisplayMode: "message",

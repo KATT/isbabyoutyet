@@ -1,50 +1,18 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { LocaleProvider } from "@/lib/i18n";
 import { cookieName } from "@/paraglide/runtime";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { HomePage } from "./index";
 
-vi.mock("@/lib/auth-client", () => ({
-  authClient: {
-    useSession: () => ({ data: null }),
-  },
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  createFileRoute: () => (opts: { component: () => ReactElement }) => opts,
-  Link: (props: {
-    to: string | undefined;
-    params: { publicId: string | undefined } | undefined;
-    search: unknown;
-    children: React.ReactNode;
-    className: string | undefined;
-  }) => {
-    const href = props.params?.publicId
-      ? `/baby/${props.params.publicId}`
-      : typeof props.to === "string"
-        ? props.to
-        : "#";
-    return (
-      <a href={href} className={props.className}>
-        {props.children}
-      </a>
-    );
-  },
-}));
-
-const { HomePage } = await import("./index");
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+// No auth cookie and no reachable auth server in jsdom, so the real
+// `authClient.useSession()` hook naturally resolves to a logged-out session —
+// no need to spy on it (it's a Proxy, so vi.spyOn can't attach).
 
 test("homepage links visitors to the live Juniper Hale demo page", async () => {
-  await using _view = renderResource(<HomePage />);
+  await using _view = await renderWithTestRouter(<HomePage />);
 
   const demoLinks = screen
     .getAllByRole("link")
@@ -53,8 +21,10 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
   expect(screen.getByText(`Follow ${HOMEPAGE_DEMO_BABY.name}'s arrival`)).toBeTruthy();
 
-  const livePage = screen.getByRole("link", { name: /see a live page/i });
-  const createPage = screen.getByRole("link", { name: /create your page/i });
+  // These CTAs render as Base UI Buttons backed by a Link (not native
+  // anchors), so Base UI assigns them an accessible role of "button".
+  const livePage = screen.getByRole("button", { name: /see a live page/i });
+  const createPage = screen.getByRole("button", { name: /create your page/i });
   expect(livePage.parentElement).not.toBe(createPage.parentElement);
 });
 
@@ -63,7 +33,7 @@ test("hero headline cycles through baby names", async () => {
     vi.useRealTimers();
   });
   vi.useFakeTimers();
-  await using _view = renderResource(<HomePage />);
+  await using _view = await renderWithTestRouter(<HomePage />);
 
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
 
@@ -83,7 +53,7 @@ test("Swedish homepage hero uses Swedish name pool", async () => {
     vi.useRealTimers();
   });
   vi.useFakeTimers();
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <LocaleProvider locale="sv">
       <HomePage />
     </LocaleProvider>,
@@ -96,7 +66,7 @@ test("Swedish homepage hero uses Swedish name pool", async () => {
 });
 
 test("Swedish homepage links visitors to Ella Holm", async () => {
-  await using _view = renderResource(
+  await using _view = await renderWithTestRouter(
     <LocaleProvider locale="sv">
       <HomePage />
     </LocaleProvider>,
@@ -116,7 +86,7 @@ test("homepage language picker saves an explicit language choice", async () => {
   await using _cookie = makeResource({}, () => {
     document.cookie = `${cookieName}=; path=/; max-age=0`;
   });
-  await using _view = renderResource(<HomePage />);
+  await using _view = await renderWithTestRouter(<HomePage />);
 
   const picker = screen.getByRole("combobox", { name: "Language" });
   expect(picker.textContent).toContain("British English");

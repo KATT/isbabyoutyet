@@ -22,6 +22,14 @@
       "specifier": "./oxlint-plugins/no-optional.mjs"
     },
     {
+      "name": "no-mock",
+      "specifier": "./oxlint-plugins/no-mock.mjs"
+    },
+    {
+      "name": "no-convex-stubs",
+      "specifier": "./oxlint-plugins/no-convex-stubs.mjs"
+    },
+    {
       "name": "query-prefetch",
       "specifier": "./oxlint-plugins/query-prefetch.mjs"
     },
@@ -54,7 +62,9 @@
   "rules": {
     // Project-specific (keep):
     "vitest/no-hooks": "error",
-    // Prefer an options object over long positional argument lists.
+    // Ban module mocking everywhere — tests *and* shared test helpers, so a
+    // helper cannot reintroduce it behind a seam.
+    "no-mock/no-mock": "error",
     "eslint/max-params": ["error", 2],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
@@ -94,6 +104,15 @@
         "i18n-literal/no-literal-template": "off",
         "query-prefetch/require-preloaded-query-options": "off",
         "query-prefetch/use-loader-preloads": "off"
+      }
+    },
+    {
+      // Steer web tests toward convex-test harness instead of stub clients /
+      // fake preloaded handles.
+      "files": ["apps/web/src/**/*.test.{ts,tsx}"],
+      "rules": {
+        "no-convex-stubs/no-invalid-convex-client": "error",
+        "no-convex-stubs/no-test-preloaded-query": "error"
       }
     },
     {

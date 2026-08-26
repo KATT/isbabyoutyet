@@ -41,6 +41,40 @@ import { m } from "@/paraglide/messages";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
 
+/** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
+const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+
+/**
+ * Root `beforeLoad` with locale detection injected so tests can drive the SSR
+ * branch without mocking `createServerFn` / `detectRequestLocale`.
+ *
+ * @internal exported for tests
+ */
+export async function resolveRootBeforeLoad(opts: {
+  detectLocale: () => Promise<SupportedLocale>;
+  getClientLocale: () => SupportedLocale;
+}) {
+  // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
+  // then Accept-Language) via the server function.
+  if (typeof window === "undefined") {
+    return {
+      locale: await opts.detectLocale(),
+      isAuthenticated: false,
+      token: null,
+    };
+  }
+  // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
+  // (back button included) and the router blocks on it, so a server-function
+  // round-trip here would tax them all — that's what made cached navigations
+  // show the top progress bar. Paraglide resolves the same cookie →
+  // preferredLanguage chain locally.
+  return {
+    locale: opts.getClientLocale(),
+    isAuthenticated: false,
+    token: null,
+  };
+}
+
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
@@ -50,27 +84,11 @@ export const Route = createRootRouteWithContext<{
   isAuthenticated: boolean;
   token: string | null | undefined;
 }>()({
-  beforeLoad: async () => {
-    // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
-    // then Accept-Language) via the server function.
-    if (typeof window === "undefined") {
-      return {
-        locale: await detectRequestLocale(),
-        isAuthenticated: false,
-        token: null,
-      };
-    }
-    // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
-    // (back button included) and the router blocks on it, so a server-function
-    // round-trip here would tax them all — that's what made cached navigations
-    // show the top progress bar. Paraglide resolves the same cookie →
-    // preferredLanguage chain locally.
-    return {
-      locale: getDetectedLocale(),
-      isAuthenticated: false,
-      token: null,
-    };
-  },
+  beforeLoad: async () =>
+    await resolveRootBeforeLoad({
+      detectLocale: detectRequestLocale,
+      getClientLocale: getDetectedLocale,
+    }),
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
     const description = translate(
@@ -313,8 +331,18 @@ export const NAVIGATION_PROGRESS_DELAY_MS = 200;
 // indicator, so we show a top progress bar while the router is loading.
 // value={null} puts Progress in its indeterminate (sweeping) state.
 export function NavigationProgress() {
-  const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
+  return <NavigationProgressBar isNavigating={isNavigating} />;
+}
+
+/**
+ * Presentational progress bar. `isNavigating` is a prop so tests can drive the
+ * delay/hide behaviour without mocking `useRouterState`.
+ *
+ * @internal exported for tests
+ */
+export function NavigationProgressBar(props: { isNavigating: boolean }) {
+  const { t } = useI18n();
   const [showBar, setShowBar] = useState(false);
 
   useEffect(() => {
@@ -322,14 +350,14 @@ export function NavigationProgress() {
     // the setState out of the synchronous effect body).
     const delay = setTimeout(
       () => {
-        setShowBar(isNavigating);
+        setShowBar(props.isNavigating);
       },
-      isNavigating ? NAVIGATION_PROGRESS_DELAY_MS : 0,
+      props.isNavigating ? NAVIGATION_PROGRESS_DELAY_MS : 0,
     );
     return () => {
       clearTimeout(delay);
     };
-  }, [isNavigating]);
+  }, [props.isNavigating]);
 
   if (!showBar) {
     return null;
@@ -347,7 +375,8 @@ export function NavigationProgress() {
   );
 }
 
-function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
+/** @internal exported for tests — document shell without Convex/auth providers. */
+export function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
   return (
     <html lang={props.locale} dir="ltr">
       <head>
@@ -356,7 +385,8 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
-        <DevBar />
+        {/* Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar in prod. */}
+        {showDevBar ? <DevBar /> : null}
         <Toaster />
         <Analytics />
         <TanStackDevtools

@@ -2,30 +2,21 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_ACCOUNTS, DEMO_EMPTY_USER } from "@workspace/convex/src/seedCredentials";
+import { DemoAccountPicker } from "./demo-account-picker";
 
-const mocks = vi.hoisted(() => ({
-  hasDemoLogin: true,
-}));
-
-vi.mock("@/lib/has-demo-login", () => ({
-  get hasDemoLogin() {
-    return mocks.hasDemoLogin;
-  },
-}));
-
-const { DemoAccountPicker } = await import("./demo-account-picker");
-
-function renderPicker(onPrefill: (account: (typeof DEMO_ACCOUNTS)[number]) => void) {
-  const view = render(<DemoAccountPicker onPrefill={onPrefill} />);
+function renderPicker(opts: {
+  onPrefill: (account: (typeof DEMO_ACCOUNTS)[number]) => void;
+  enabled: boolean;
+}) {
+  const view = render(<DemoAccountPicker onPrefill={opts.onPrefill} enabled={opts.enabled} />);
   return makeResource(view, () => {
     view.unmount();
   });
 }
 
 test("lists seeded test accounts and reports the chosen one", async () => {
-  mocks.hasDemoLogin = true;
   const onPrefill = vi.fn<(account: (typeof DEMO_ACCOUNTS)[number]) => void>();
-  await using _view = renderPicker(onPrefill);
+  await using _view = renderPicker({ onPrefill, enabled: true });
 
   for (const account of DEMO_ACCOUNTS) {
     expect(screen.getByRole("option", { name: account.label })).toBeTruthy();
@@ -46,9 +37,7 @@ test("lists seeded test accounts and reports the chosen one", async () => {
 });
 
 test("hides entirely when demo login is disabled", async () => {
-  mocks.hasDemoLogin = false;
-
-  await using _view = renderPicker(() => {});
+  await using _view = renderPicker({ onPrefill: () => {}, enabled: false });
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
 });

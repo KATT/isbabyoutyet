@@ -33,6 +33,46 @@ function signupSchema(t: TranslationFunction) {
   });
 }
 
+type NewAccount = { name: string; email: string; password: string };
+
+/**
+ * `signUp` reports failure as a message rather than the auth client's own
+ * result shape, so the flow below stays independent of better-auth types.
+ *
+ * @internal Exported for tests.
+ */
+export type SignUpHandoff = {
+  signUp: (
+    body: NewAccount,
+    fetchOptions: { headers: Record<string, string> },
+  ) => Promise<{ errorMessage: string | null }>;
+  headers: () => Record<string, string>;
+  waitForAuth: () => Promise<void>;
+  navigate: () => Promise<void>;
+  failedMessage: string;
+};
+
+/**
+ * Create the account, then wait for the Convex provider to confirm the new
+ * identity before navigating — /dashboard would otherwise load against a
+ * still anonymous client and bounce back to login.
+ *
+ * @internal Exported for tests; production wires it up in `SignupPage`.
+ */
+export async function signUpAndHandoff(values: NewAccount, deps: SignUpHandoff) {
+  const result = await deps.signUp(
+    { email: values.email, password: values.password, name: values.name },
+    { headers: deps.headers() },
+  );
+
+  if (result.errorMessage !== null) {
+    throw new Error(result.errorMessage || deps.failedMessage);
+  }
+
+  await deps.waitForAuth();
+  await deps.navigate();
+}
+
 export const Route = createFileRoute("/auth/signup")({
   component: SignupPage,
   headers: authPageCacheHeaders,
@@ -46,9 +86,52 @@ export const Route = createFileRoute("/auth/signup")({
   }),
 });
 
-function SignupPage() {
+/**
+ * Mutable auth adapters so route smoke tests can swap the network-backed
+ * better-auth client without `vi.mock`.
+ *
+ * @internal
+ */
+export const signupAuthAdapter = {
+  signUpEmail: (body: NewAccount, fetchOptions: { headers: Record<string, string> }) =>
+    authClient.signUp.email(body, fetchOptions),
+  headers: () => getBrowserAuthHeaders(),
+  waitForAuth: () => waitForConvexAuth(),
+};
+
+/**
+ * @internal Exported for smoke tests; production mounts it via `Route`.
+ */
+export function SignupPage() {
   const { t } = useI18n();
   const router = useRouter();
+
+  return (
+    <SignupCard
+      onSignUp={(values) =>
+        signUpAndHandoff(values, {
+          signUp: async (body, fetchOptions) => {
+            const result = await signupAuthAdapter.signUpEmail(body, fetchOptions);
+            return { errorMessage: result.error ? (result.error.message ?? "") : null };
+          },
+          headers: () => signupAuthAdapter.headers(),
+          waitForAuth: () => signupAuthAdapter.waitForAuth(),
+          navigate: () => router.navigate({ to: "/dashboard" }),
+          failedMessage: t("Failed to sign up"),
+        })
+      }
+    />
+  );
+}
+
+/**
+ * Signup form. Takes the account-creation flow as a prop so tests can render
+ * it without an auth client.
+ *
+ * @internal Exported for tests; production uses `SignupPage`.
+ */
+export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<void> }) {
+  const { t } = useI18n();
 
   const form = useZodForm({
     schema: signupSchema(t),
@@ -82,26 +165,7 @@ function SignupPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Form
-              form={form}
-              handleSubmit={async (values) => {
-                const result = await authClient.signUp.email(
-                  {
-                    email: values.email,
-                    password: values.password,
-                    name: values.name,
-                  },
-                  { headers: getBrowserAuthHeaders() },
-                );
-
-                if (result.error) {
-                  throw new Error(result.error.message || t("Failed to sign up"));
-                }
-
-                await waitForConvexAuth();
-                await router.navigate({ to: "/dashboard" });
-              }}
-            >
+            <Form form={form} handleSubmit={(values) => props.onSignUp(values)}>
               <div className="space-y-5">
                 <FormField
                   control={form.control}

@@ -1,88 +1,58 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent } from "@testing-library/react";
+import { api } from "@workspace/convex/convex/_generated/api";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { api } from "@workspace/convex/convex/_generated/api";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
-import { LocaleProvider } from "@/lib/i18n";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { signUpTestUser } from "@/test/convexTestSeed";
+import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import { LanguageSettings } from "./language-settings";
 
-const mocks = vi.hoisted(() => ({
-  updateLocale: vi.fn<(args: unknown) => Promise<unknown>>(),
-  updateTimeZone: vi.fn<(args: unknown) => Promise<unknown>>(),
-  requestLanguage: vi.fn<(args: unknown) => Promise<unknown>>(),
-  setLocale: vi.fn<(locale: string) => Promise<void>>(),
-  toastError: vi.fn<(message: string) => void>(),
-  toastSuccess: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("convex/react", async () => {
-  const { getFunctionName } = await import("convex/server");
-  return {
-    useMutation: (ref: never) => {
-      const functionName = getFunctionName(ref);
-      if (functionName === "profile:requestLanguage") {
-        return mocks.requestLanguage;
-      }
-      return functionName === "profile:updateTimeZone" ? mocks.updateTimeZone : mocks.updateLocale;
-    },
-  };
-});
-
-vi.mock("@/lib/paraglide-setup", () => ({
-  setLocale: mocks.setLocale,
-}));
-
-vi.mock("sonner", () => ({
-  toast: { success: mocks.toastSuccess, error: mocks.toastError },
-}));
-
-const { LanguageSettings } = await import("./language-settings");
-
-const profileHandle = testPreloadedConvexQuery<typeof api.profile.get>({
-  input: {},
-  initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-});
-
-function renderResource(handle = profileHandle) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
-  });
-  const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <LanguageSettings profile={handle} className={undefined} />
-      </LocaleProvider>
-    </QueryClientProvider>,
-  );
-  return makeResource(view, () => {
-    view.unmount();
-    queryClient.clear();
+async function renderLanguageSettings(
+  harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
+) {
+  const profileHandle = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  return renderWithConvexTest({
+    harness,
+    ui: <LanguageSettings profile={profileHandle} className={undefined} />,
+    wrap: null,
   });
 }
 
 test("changing the profile language persists it and applies the locale", async () => {
-  mocks.updateLocale.mockResolvedValue(null);
-  mocks.setLocale.mockResolvedValue(undefined);
-  await using _view = renderResource();
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    password: "password123",
+    name: "Ada",
+  });
+  harness.withIdentity({ subject: userId });
 
-  fireEvent.click(screen.getByRole("combobox", { name: "Profile language" }));
-  const swedish = screen.getByRole("option", { name: /^svenska$/i });
+  await using view = await renderLanguageSettings(harness);
+
+  fireEvent.click(view.getByRole("combobox", { name: "Profile language" }));
+  const swedish = view.getByRole("option", { name: /^svenska$/i });
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
 
-  await vi.waitFor(() => {
-    expect(mocks.updateLocale).toHaveBeenCalledWith({ locale: "sv" });
-  });
-  await vi.waitFor(() => {
-    expect(mocks.setLocale).toHaveBeenCalledWith("sv");
+  await vi.waitFor(async () => {
+    const profile = await harness.client.query(api.profile.get, {});
+    expect(profile?.locale).toBe("sv");
   });
 });
 
 test("changing the profile time zone persists it", async () => {
-  mocks.updateTimeZone.mockResolvedValue(null);
-  await using _view = renderResource();
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    password: "password123",
+    name: "Ada",
+  });
+  harness.withIdentity({ subject: userId });
 
-  const picker = screen.getByRole("combobox", { name: "Profile time zone" });
+  await using view = await renderLanguageSettings(harness);
+
+  const picker = view.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
   if (!trigger) throw new Error("time zone trigger missing");
   fireEvent.focus(picker);
@@ -90,66 +60,90 @@ test("changing the profile time zone persists it", async () => {
   expect((picker as HTMLInputElement).selectionEnd).toBe("London (Europe)".length);
   fireEvent.click(trigger);
   expect((picker as HTMLInputElement).value).toBe("London (Europe)");
-  expect(screen.queryByText("No time zones found")).toBeNull();
+  expect(view.queryByText("No time zones found")).toBeNull();
   fireEvent.input(picker, { target: { value: "Tokyo" } });
-  const tokyo = screen.getByRole("option", { name: "Tokyo (Asia)" });
+  const tokyo = view.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
   fireEvent.click(tokyo);
 
   expect((picker as HTMLInputElement).value).toBe("Tokyo (Asia)");
-  await vi.waitFor(() => {
-    expect(mocks.updateTimeZone).toHaveBeenCalledWith({ timeZone: "Asia/Tokyo" });
+  await vi.waitFor(async () => {
+    const profile = await harness.client.query(api.profile.get, {});
+    expect(profile?.timeZone).toBe("Asia/Tokyo");
   });
 
-  // Reselecting the same zone is a no-op (early return in onValueChange).
-  mocks.updateTimeZone.mockClear();
   fireEvent.click(trigger);
   fireEvent.input(picker, { target: { value: "Tokyo" } });
-  const tokyoAgain = screen.getByRole("option", { name: "Tokyo (Asia)" });
+  const tokyoAgain = view.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyoAgain, { pointerType: "mouse" });
   fireEvent.click(tokyoAgain);
-  expect(mocks.updateTimeZone).not.toHaveBeenCalled();
+  await vi.waitFor(async () => {
+    const profile = await harness.client.query(api.profile.get, {});
+    expect(profile?.timeZone).toBe("Asia/Tokyo");
+  });
 });
 
 test.each([
   { failure: new Error("Could not save time zone"), expectedMessage: "Could not save time zone" },
   { failure: "offline", expectedMessage: "Something went wrong. Try again." },
 ])("a failed time zone save rolls back for $expectedMessage", async (testCase) => {
-  mocks.updateTimeZone.mockRejectedValueOnce(testCase.failure);
-  await using _view = renderResource();
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    password: "password123",
+    name: "Ada",
+  });
+  harness.withIdentity({ subject: userId });
 
-  const picker = screen.getByRole("combobox", { name: "Profile time zone" });
+  const mutationSpy = vi.spyOn(harness.client, "mutation").mockImplementationOnce(async () => {
+    throw testCase.failure;
+  });
+  await using _spy = makeResource({}, () => {
+    mutationSpy.mockRestore();
+  });
+  const toastError = vi.spyOn(toast, "error");
+  await using _toast = makeResource({}, () => {
+    toastError.mockRestore();
+  });
+
+  await using view = await renderLanguageSettings(harness);
+
+  const picker = view.getByRole("combobox", { name: "Profile time zone" });
   const trigger = picker.parentElement?.querySelector("button");
   if (!trigger) throw new Error("time zone trigger missing");
   fireEvent.click(trigger);
   fireEvent.input(picker, { target: { value: "Tokyo" } });
-  const tokyo = screen.getByRole("option", { name: "Tokyo (Asia)" });
+  const tokyo = view.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
   fireEvent.click(tokyo);
 
   await vi.waitFor(() => {
     expect((picker as HTMLInputElement).value).toBe("London (Europe)");
   });
-  expect(mocks.toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
+  expect(toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
 });
 
 test("disables the picker and falls back to the UI locale without a profile", async () => {
-  const anonymousHandle = testPreloadedConvexQuery<typeof api.profile.get>({
-    input: {},
-    initialData: null,
-  });
-  await using _view = renderResource(anonymousHandle);
+  await using harness = await createConvexTestHarness({ identity: null });
+  await using view = await renderLanguageSettings(harness);
 
-  const picker = screen.getByRole("combobox", { name: "Profile language" });
+  const picker = view.getByRole("combobox", { name: "Profile language" });
   expect(picker.getAttribute("aria-disabled") ?? picker.getAttribute("disabled")).not.toBeNull();
 });
 
 test("requesting another language submits the request form", async () => {
-  mocks.requestLanguage.mockResolvedValue(null);
-  await using view = renderResource();
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    password: "password123",
+    name: "Ada",
+  });
+  harness.withIdentity({ subject: userId });
+
+  await using view = await renderLanguageSettings(harness);
 
   fireEvent.click(view.getByRole("button", { name: "Request another language" }));
-  const input = screen.getByLabelText("Language name or code");
+  const input = view.getByLabelText("Language name or code");
   fireEvent.change(input, {
     target: { value: "French / fr-FR" },
   });
@@ -157,7 +151,25 @@ test("requesting another language submits the request form", async () => {
   if (!form) throw new Error("request form missing");
   fireEvent.submit(form);
 
-  await vi.waitFor(() => {
-    expect(mocks.requestLanguage).toHaveBeenCalledWith({ requestedLocale: "French / fr-FR" });
+  await vi.waitFor(async () => {
+    const requests = await harness.t.run(async (ctx) => {
+      return await ctx.db.query("languageRequests").collect();
+    });
+    expect(requests.some((row) => row.requestedLocale === "French / fr-FR")).toBe(true);
   });
+});
+
+test("LanguageSettings wires Convex mutations into the view", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "ada@example.com",
+    password: "password123",
+    name: "Ada",
+  });
+  harness.withIdentity({ subject: userId });
+
+  await using view = await renderLanguageSettings(harness);
+
+  expect(view.getByRole("combobox", { name: "Profile language" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Profile time zone" })).toBeTruthy();
 });

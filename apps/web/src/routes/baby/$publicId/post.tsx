@@ -62,10 +62,10 @@ export const Route = createFileRoute("/baby/$publicId/post")({
 });
 
 export function BabyPostUpdateOverlay() {
-  const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
   const completeOnboardingStep = useCompleteOnboardingStep();
+  const { t } = useI18n();
   const post = useBabyPostOverlayNav(params.publicId);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyDoc =

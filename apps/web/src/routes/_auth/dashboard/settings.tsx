@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -37,7 +38,8 @@ export const Route = createFileRoute("/_auth/dashboard/settings")({
 });
 
 export function DashboardSettingsRoute() {
-  return <DashboardSettingsSheet />;
+  const authContext = authRoute.useRouteContext();
+  return <DashboardSettingsSheet profile={authContext.profile} />;
 }
 
 function SettingsSection(props: { title: string; children: ReactNode }) {
@@ -53,18 +55,75 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
   );
 }
 
-export function DashboardSettingsSheet() {
-  const { t } = useI18n();
-  const authContext = authRoute.useRouteContext();
-  const profileQuery = usePreloadedConvexQuery(api.profile.get, authContext.profile);
+type OverlayControl = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete: (open: boolean) => void;
+};
+
+/**
+ * Mutable sign-out adapter so sheet tests can avoid the Proxy-backed
+ * better-auth client without `vi.mock`.
+ *
+ * @internal
+ */
+export const settingsAuthAdapter = {
+  signOut: (opts: Parameters<typeof authClient.signOut>[0]) => authClient.signOut(opts),
+};
+
+/**
+ * Convex-wired sheet: resolves the admin flag from the preloaded profile and
+ * owns sign-out.
+ *
+ * @internal exported for tests
+ */
+export function DashboardSettingsSheet(props: {
+  profile: PreloadedConvexQuery<typeof api.profile.get>;
+}) {
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlayNav();
+
+  return (
+    <DashboardSettingsSheetView
+      isAdmin={profileQuery.data?.isAdmin === true}
+      overlay={settings}
+      languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
+      onSignOut={async () => {
+        await settingsAuthAdapter.signOut({
+          fetchOptions: {
+            onSuccess: () => {
+              window.location.href = "/";
+            },
+            onError: (error) => {
+              toast.error(error.error.message);
+            },
+          },
+        });
+      }}
+    />
+  );
+}
+
+/**
+ * Presentational sheet — no Convex, no auth client, no route context — so the
+ * layout, admin gating, and log-out wiring are testable in isolation.
+ *
+ * @internal exported for tests
+ */
+export function DashboardSettingsSheetView(props: {
+  isAdmin: boolean;
+  overlay: OverlayControl;
+  languageSettings: ReactNode;
+  onSignOut: () => void | Promise<void>;
+}) {
+  const { t } = useI18n();
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <Sheet
-      open={settings.open}
-      onOpenChange={settings.onOpenChange}
-      onOpenChangeComplete={settings.onOpenChangeComplete}
+      open={props.overlay.open}
+      onOpenChange={props.overlay.onOpenChange}
+      onOpenChangeComplete={props.overlay.onOpenChangeComplete}
     >
       <SheetContent
         ref={contentRef}
@@ -80,9 +139,7 @@ export function DashboardSettingsSheet() {
         <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
           <SettingsSection title={t("Language and time zone")}>
             <Item>
-              <ItemContent>
-                <LanguageSettings profile={authContext.profile} className="justify-start" />
-              </ItemContent>
+              <ItemContent>{props.languageSettings}</ItemContent>
             </Item>
           </SettingsSection>
 
@@ -101,7 +158,7 @@ export function DashboardSettingsSheet() {
             </Item>
           </SettingsSection>
 
-          {profileQuery.data?.isAdmin ? (
+          {props.isAdmin ? (
             <SettingsSection title={t("Admin")}>
               <Item
                 render={
@@ -121,17 +178,8 @@ export function DashboardSettingsSheet() {
 
         <SheetFooter>
           <Button
-            onClick={async () => {
-              await authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    window.location.href = "/";
-                  },
-                  onError: (error) => {
-                    toast.error(error.error.message);
-                  },
-                },
-              });
+            onClick={() => {
+              void props.onSignOut();
             }}
           >
             <SignOut data-icon="inline-start" />

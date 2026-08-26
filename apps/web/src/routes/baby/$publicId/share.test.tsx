@@ -1,317 +1,119 @@
 import { convexQuery } from "@convex-dev/react-query";
-import { fireEvent, render } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
+import { fireEvent } from "@testing-library/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import type { FunctionReturnType } from "convex/server";
-import type { ReactNode } from "react";
 import { expect, test, vi } from "vitest";
 import { getBabySeo } from "@/lib/baby-seo";
-import { browserImageFactory } from "@/lib/image-prefetch";
-import { LocaleProvider } from "@/lib/i18n";
-import { testInitiatedQuery } from "@workspace/query-prefetch/test-helpers";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(options: unknown) => void>(),
-  historyBack: vi.fn<() => void>(),
-  canGoBack: vi.fn<() => boolean>().mockReturnValue(false),
-  historyState: { overlay: undefined as true | undefined },
-  completeOnboardingStep: vi.fn<(args: unknown) => Promise<void>>().mockResolvedValue(undefined),
-  params: { publicId: "baby-smith" },
-  loaderData: null as null | Record<string, unknown>,
-}));
-
-vi.mock("@tanstack/react-router", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-router")>("@tanstack/react-router");
-  return {
-    ...actual,
-    createFileRoute: () => (options: Record<string, unknown>) => ({
-      options,
-      ...options,
-      fullPath: "/baby/$publicId/share",
-      useParams: () => mocks.params,
-      useLoaderData: () => mocks.loaderData,
-    }),
-    useNavigate: () => mocks.navigate,
-    useRouter: () => ({
-      history: {
-        location: { state: mocks.historyState },
-        canGoBack: mocks.canGoBack,
-        back: mocks.historyBack,
-      },
-      navigate: mocks.navigate,
-    }),
-    notFound: () => {
-      throw { isNotFound: true };
-    },
-    redirect: (opts: unknown) => {
-      throw { options: opts };
-    },
-  };
-});
-
-vi.mock("@/components/onboarding/onboarding-host", () => ({
-  useCompleteOnboardingStep: () => mocks.completeOnboardingStep,
-}));
-
-vi.mock("@workspace/ui/components/dialog", async () => {
-  const React = await import("react");
-  function MockDialog(props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onOpenChangeComplete: (open: boolean) => void;
-    children: ReactNode;
-  }) {
-    const wasOpen = React.useRef(props.open);
-    React.useEffect(() => {
-      if (wasOpen.current && !props.open) {
-        props.onOpenChangeComplete(false);
-      }
-      wasOpen.current = props.open;
-    }, [props.open, props.onOpenChangeComplete]);
-    return (
-      <div role="dialog" data-open={props.open}>
-        <button
-          type="button"
-          onClick={() => {
-            props.onOpenChange(false);
-          }}
-        >
-          dismiss
-        </button>
-        {props.children}
-      </div>
-    );
-  }
-  return {
-    Dialog: MockDialog,
-    DialogContent: (props: { children: ReactNode }) => <div>{props.children}</div>,
-    DialogDescription: (props: { children: ReactNode }) => <p>{props.children}</p>,
-    DialogHeader: (props: { children: ReactNode }) => <div>{props.children}</div>,
-    DialogTitle: (props: { children: ReactNode }) => <h2>{props.children}</h2>,
-  };
-});
-
-const routeModule = await import("@/routes/baby/$publicId/share");
-const { BabyShareOverlay } = routeModule;
-
-function babyDoc(opts: {
-  publicId: string;
-  theme: "baby-blue" | "orange";
-}): NonNullable<FunctionReturnType<typeof api.baby.getByPublicId>> {
-  return {
-    _id: "jd7baby000000000000000000" as Id<"baby">,
-    _creationTime: 1,
-    publicId: opts.publicId,
-    name: "Baby Smith",
-    photoUrl: null,
-    thumbnailUrl: null,
-    blurDataUrl: null,
-    dueDate: "2026-09-01",
-    dueDateDisplayMode: "exact" as const,
-    theme: opts.theme,
-    locale: "en-GB",
-    resolvedLocale: "en-GB",
-    timeZone: "Europe/London",
-    laborStarted: null,
-    wentToHospital: null,
-    babyBorn: null,
-    milestoneVisibility: { showLabor: true, showHospital: true },
-  };
-}
-
-async function withShareRouteHandlers<TResult>(
-  handlers: Record<string, unknown>,
-  run: (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<TResult>,
-) {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        queryFn: (ctx) => {
-          const name = String(ctx.queryKey[1]);
-          return Promise.resolve(handlers[name] ?? null);
-        },
-      },
-    },
-  });
-  await using _queryClient = makeResource(queryClient, () => {
-    queryClient.clear();
-  });
-
-  return await run({
-    context: {
-      queryClient,
-      convexPreloader: getConvexQueryPreloader(queryClient),
-    },
-    params: { publicId: "baby-smith" },
-  });
-}
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
+import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
+import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
+import { Route } from "@/routes/baby/$publicId/share";
 
 test("beforeLoad validates and canonicalizes the baby slug", async () => {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<unknown>;
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
 
   await expect(
-    withShareRouteHandlers({ "baby:getByPublicId": null }, beforeLoad),
+    runRouteBeforeLoad({
+      harness,
+      route: Route,
+      params: { publicId: "missing-baby" },
+    }),
   ).rejects.toMatchObject({ isNotFound: true });
+
+  const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    name: "Renamed Nova",
+  });
+  const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+
   await expect(
-    withShareRouteHandlers(
-      { "baby:getByPublicId": babyDoc({ publicId: "baby-nova", theme: "baby-blue" }) },
-      beforeLoad,
-    ),
+    runRouteBeforeLoad({
+      harness,
+      route: Route,
+      params: { publicId: baby.publicId },
+    }),
   ).rejects.toMatchObject({
     options: {
       to: "/baby/$publicId/share",
-      params: { publicId: "baby-nova" },
+      params: { publicId: renamed?.publicId },
       replace: true,
     },
   });
 });
 
 test("loader prefetches the canonical OG image in the browser", async () => {
-  const OriginalImage = globalThis.Image;
-  class MockImage {
-    #load: (() => void) | null = null;
-    addEventListener(type: string, listener: () => void) {
-      if (type === "load") this.#load = listener;
-    }
-    set src(_value: string) {
-      queueMicrotask(() => {
-        this.#load?.();
-      });
-    }
-  }
-  vi.stubGlobal("Image", MockImage);
-  await using _image = makeResource({}, () => {
-    vi.stubGlobal("Image", OriginalImage);
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
   });
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<{
+  await using _image = stubBrowserImageResource();
+
+  const data = await runRouteLoader<{
     imagePrefetch: { input: string | undefined };
     myAccess: { initialData: { canManage: boolean } };
     shareLink: string;
-  }>;
+  }>({
+    harness,
+    route: Route,
+    params: { publicId: baby.publicId },
+  });
 
-  const baby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
-  const data = await withShareRouteHandlers(
-    {
-      "baby:getByPublicId": baby,
-      "coParents:myAccess": { canManage: false, isOwner: false },
-    },
-    loader,
-  );
-
+  const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!babyDoc) throw new Error("expected baby");
   const prefetchedImageUrl = new URL(data.imagePrefetch.input ?? "");
-  expect(prefetchedImageUrl.pathname).toBe("/og/baby/baby-smith");
+  expect(prefetchedImageUrl.pathname).toBe(`/og/baby/${baby.publicId}`);
   expect(prefetchedImageUrl.searchParams.get("v")).toBeTruthy();
-  expect(data.imagePrefetch.input).toBe(getBabySeo(baby, "baby-smith").imageUrl);
-  expect(data.myAccess.initialData.canManage).toBe(false);
-  expect(data.shareLink).toBe("https://isbabyoutyet.com/baby/baby-smith");
+  expect(data.imagePrefetch.input).toBe(getBabySeo(babyDoc, baby.publicId).imageUrl);
+  expect(data.myAccess.initialData.canManage).toBe(true);
+  expect(data.shareLink).toBe(`https://isbabyoutyet.com/baby/${baby.publicId}`);
 });
 
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
-  const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
-  const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
-  const queryFn = vi.fn<(ctx: { queryKey: readonly unknown[] }) => Promise<unknown>>((ctx) => {
-    const name = String(ctx.queryKey[1]);
-    if (name === "baby:getByPublicId") {
-      return Promise.resolve(freshBaby);
-    }
-    return Promise.resolve({ canManage: false, isOwner: false });
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "orange",
   });
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, queryFn } },
-  });
-  await using _queryClient = makeResource(queryClient, () => {
-    queryClient.clear();
-  });
-  queryClient.setQueryData(
-    convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
-    oldBaby,
+  const staleBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!staleBaby) throw new Error("expected baby");
+  harness.queryClient.setQueryData(
+    convexQuery(api.baby.getByPublicId, { id: baby.publicId }).queryKey,
+    staleBaby,
   );
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: {
-      queryClient: QueryClient;
-      convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-    };
-    params: { publicId: string };
-  }) => Promise<{
-    imagePrefetch: { input: string | undefined };
-  }>;
 
-  const data = await loader({
-    context: {
-      queryClient,
-      convexPreloader: getConvexQueryPreloader(queryClient),
-    },
-    params: { publicId: "baby-smith" },
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
+  });
+  await using _image = stubBrowserImageResource();
+
+  const data = await runRouteLoader<{ imagePrefetch: { input: string | undefined } }>({
+    harness,
+    route: Route,
+    params: { publicId: baby.publicId },
   });
 
-  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, "baby-smith").imageUrl);
-  expect(queryFn).toHaveBeenCalledWith(
-    expect.objectContaining({
-      queryKey: convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
-    }),
-  );
+  const freshBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!freshBaby) throw new Error("expected baby");
+  expect(data.imagePrefetch.input).toBe(getBabySeo(freshBaby, baby.publicId).imageUrl);
+  expect(freshBaby.theme).toBe("baby-blue");
 });
 
 test("copies from the route overlay and dismisses through overlay history", async () => {
-  const oldBaby = babyDoc({ publicId: "baby-smith", theme: "orange" });
-  const freshBaby = babyDoc({ publicId: "baby-smith", theme: "baby-blue" });
-  const oldImageUrl = getBabySeo(oldBaby, "baby-smith").imageUrl;
-  const freshPreview = getBabySeo(freshBaby, "baby-smith");
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
   });
-  await using _queryClient = makeResource(queryClient, () => {
-    queryClient.clear();
-  });
-  queryClient.setQueryData(
-    convexQuery(api.baby.getByPublicId, { id: "baby-smith" }).queryKey,
-    freshBaby,
-  );
-  queryClient.setQueryData(convexQuery(api.coParents.myAccess, { babyId: "baby-smith" }).queryKey, {
-    canManage: true,
-    isOwner: true,
-    isCoParent: false,
-  });
-  queryClient.setQueryData(browserImageFactory(freshPreview.imageUrl).queryKey, {
-    url: freshPreview.imageUrl,
-    ok: true,
-  });
-  mocks.loaderData = {
-    baby: testPreloadedConvexQuery<typeof api.baby.getByPublicId>({
-      input: { id: "baby-smith" },
-      initialData: oldBaby,
-    }),
-    imagePrefetch: testInitiatedQuery(browserImageFactory, oldImageUrl),
-    myAccess: testPreloadedConvexQuery<typeof api.coParents.myAccess>({
-      input: { babyId: "baby-smith" },
-      initialData: { canManage: false, isOwner: false, isCoParent: false },
-    }),
-    shareLink: "https://isbabyoutyet.com/baby/baby-smith",
-  };
+  const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
+  if (!babyDoc) throw new Error("expected baby");
+  const preview = getBabySeo(babyDoc, baby.publicId);
   const writeText = vi.fn<(text: string) => Promise<void>>().mockResolvedValue(undefined);
   const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
   await using _clipboard = makeResource({}, () => {
@@ -325,33 +127,119 @@ test("copies from the route overlay and dismisses through overlay history", asyn
     configurable: true,
     value: { writeText },
   });
-  mocks.historyState.overlay = true;
-  mocks.canGoBack.mockReturnValue(true);
-  mocks.historyBack.mockClear();
-  mocks.completeOnboardingStep.mockClear();
+  await using _image = stubBrowserImageResource();
 
-  const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <BabyShareOverlay />
-      </LocaleProvider>
-    </QueryClientProvider>,
-  );
-  await using _view = makeResource(view, () => {
-    view.unmount();
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/share",
+    initialEntry: `/baby/${baby.publicId}/share`,
+    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    wrap: null,
   });
 
-  const image = view.getByRole("img", { name: freshPreview.title });
-  expect(image.getAttribute("src")).toBe(freshPreview.imageUrl);
-  fireEvent.click(view.getByRole("button", { name: "Copy link to share" }));
   await vi.waitFor(() => {
-    expect(writeText).toHaveBeenCalledWith("https://isbabyoutyet.com/baby/baby-smith");
-    expect(view.getByRole("button", { name: "Copied!" })).toBeTruthy();
-    expect(mocks.completeOnboardingStep).toHaveBeenCalledWith({ stepId: "share_link" });
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  const image = ctx.view.getByRole("img", { name: preview.title });
+  expect(image.getAttribute("src")).toBe(preview.imageUrl);
+  fireEvent.click(ctx.view.getByRole("button", { name: "Copy link to share" }));
+  await vi.waitFor(() => {
+    expect(writeText).toHaveBeenCalledWith(`https://isbabyoutyet.com/baby/${baby.publicId}`);
+    expect(ctx.view.getByRole("button", { name: "Copied!" })).toBeTruthy();
+  });
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("share_link");
   });
 
-  fireEvent.click(view.getByRole("button", { name: "dismiss" }));
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
   await vi.waitFor(() => {
-    expect(mocks.historyBack).toHaveBeenCalledOnce();
+    expect(ctx.back).toHaveBeenCalledOnce();
+  });
+});
+
+test("BabyShareOverlay mounts from the real route loader", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
+  });
+  await using _image = stubBrowserImageResource();
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/share",
+    initialEntry: `/baby/${baby.publicId}/share`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  expect(ctx.view.getByRole("heading", { name: "Share the Link" })).toBeTruthy();
+});
+
+test("share overlay falls back to execCommand when clipboard.writeText fails", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.baby.update, {
+    babyId: baby.babyId,
+    theme: "baby-blue",
+  });
+  const writeText = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("denied"));
+  const execCommand = vi.fn<() => boolean>().mockReturnValue(true);
+  const clipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, "clipboard");
+  await using _clipboard = makeResource({}, () => {
+    if (clipboardDescriptor) {
+      Object.defineProperty(navigator, "clipboard", clipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(navigator, "clipboard");
+    }
+  });
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText },
+  });
+  const hadExecCommand = "execCommand" in document;
+  const originalExecCommand = document.execCommand;
+  Object.defineProperty(document, "execCommand", {
+    configurable: true,
+    writable: true,
+    value: execCommand,
+  });
+  await using _exec = makeResource({}, () => {
+    if (hadExecCommand) {
+      Object.defineProperty(document, "execCommand", {
+        configurable: true,
+        writable: true,
+        value: originalExecCommand,
+      });
+      return;
+    }
+    Reflect.deleteProperty(document, "execCommand");
+  });
+  await using _image = stubBrowserImageResource();
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/share",
+    initialEntry: `/baby/${baby.publicId}/share`,
+    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: false },
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+  fireEvent.click(ctx.view.getByRole("button", { name: "Copy link to share" }));
+  await vi.waitFor(() => {
+    expect(writeText).toHaveBeenCalled();
+    expect(execCommand).toHaveBeenCalledWith("copy");
+    expect(ctx.view.getByRole("button", { name: "Copied!" })).toBeTruthy();
   });
 });
