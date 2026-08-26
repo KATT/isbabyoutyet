@@ -47,11 +47,10 @@ jobs:
       - name: Cache Turborepo tasks
         uses: actions/cache@v4
         with:
-          path: .turbo
+          path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
           restore-keys: |
             turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
-            turbo-${{ runner.os }}-
 
       - name: Set up Turborepo Remote Cache
         if: ${{ vars.TURBO_TEAM != '' }}
@@ -81,7 +80,14 @@ jobs:
         run: pnpm typecheck
 
       - name: Test coverage
-        run: pnpm exec turbo run test:coverage
+        run: pnpm exec turbo run test:coverage --summarize
+
+      - name: Report Turbo coverage cache
+        if: always()
+        run: |
+          summary="$(ls -t .turbo/runs/*.json | head -1)"
+          jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
+          test -f coverage/coverage-summary.json
 
       - name: Knip
         run: pnpm knip

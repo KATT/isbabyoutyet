@@ -31,7 +31,7 @@
     "format": {
     },
     "//#test:coverage": {
-      "outputs": ["coverage/**"],
+      "outputs": ["coverage/coverage-summary.json"],
       "inputs": [
         "$TURBO_ROOT$/package.json",
         "$TURBO_ROOT$/vitest.config.ts",
@@ -42,12 +42,10 @@
         "!$TURBO_ROOT$/**/.turbo/**",
         "!$TURBO_ROOT$/coverage/**",
         "!$TURBO_ROOT$/**/paraglide/**",
-        "!$TURBO_ROOT$/**/_generated/**",
-        "!$TURBO_ROOT$/**/routeTree.gen.ts",
         "!$TURBO_ROOT$/**/project.inlang/cache/**",
         "!$TURBO_ROOT$/**/*.md",
         "!$TURBO_ROOT$/.github/**",
-        "!$TURBO_ROOT$/.agents/**",
+        "!$TURBO_ROOT$/**/.agents/**",
         "!$TURBO_ROOT$/.cursor/**"
       ],
       "env": ["CI"]
