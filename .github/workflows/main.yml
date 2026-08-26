@@ -52,6 +52,7 @@ jobs:
           restore-keys: |
             turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
 
+      # OIDC exchange via TURBO_TEAM + Vercel Turborepo CLI policy (no TURBO_TOKEN secret).
       - name: Set up Turborepo Remote Cache
         if: ${{ vars.TURBO_TEAM != '' }}
         uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
