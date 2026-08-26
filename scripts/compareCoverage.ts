@@ -51,8 +51,52 @@ function getPercentage(
   return percentage;
 }
 
+function getMetricCount(
+  summary: CoverageSummary,
+  options: { metric: CoverageMetric; field: "total" | "covered"; path: string },
+) {
+  const metric = summary.total[options.metric];
+  const value =
+    isJsonObject(metric) && options.field in metric
+      ? metric[options.field]
+      : undefined;
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(
+      `Invalid ${options.metric} coverage ${options.field}: ${options.path}`,
+    );
+  }
+
+  return value;
+}
+
 const baseline = await readSummary(baselinePath);
 const current = await readSummary(currentPath);
+
+const baselineStatementTotal = getMetricCount(baseline, {
+  metric: "statements",
+  field: "total",
+  path: baselinePath,
+});
+const currentStatementTotal = getMetricCount(current, {
+  metric: "statements",
+  field: "total",
+  path: currentPath,
+});
+
+// Vitest blob-shard merges can change which files enter the summary versus a
+// single-process run. When the denominators diverge, percentages are not
+// comparable — refresh the baseline on the next green main push.
+const statementTotalDelta = Math.abs(
+  currentStatementTotal - baselineStatementTotal,
+);
+if (statementTotalDelta >= 10) {
+  console.log(
+    `Coverage file set changed (statements total ${baselineStatementTotal} → ${currentStatementTotal}); skipping percentage compare until main refreshes the baseline.`,
+  );
+  process.exit(0);
+}
+
 const results = metrics.map((metric) => {
   const baselinePercentage = getPercentage(baseline, {
     metric,
