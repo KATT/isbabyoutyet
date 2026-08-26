@@ -45,30 +45,26 @@ import { getThemeOption, THEME_OPTIONS } from "./utils";
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
 // Uncontrolled popovers: forms mount fresh when the popup opens so
-// defaultValues stay current without a reset. Cancel/close-after-save use
-// PopoverClose (or a click on a hidden PopoverClose after success).
+// defaultValues stay current without a reset. Cancel uses PopoverClose;
+// successful save/delete closes via the root actionsRef.
+
+type PopoverActions = {
+  close: () => void;
+  unmount: () => void;
+};
 
 type EditorFormProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
+  onClose: () => void;
 };
-
-type PopoverCloseButton = {
-  click: () => void;
-};
-
-function closePopover(closeRef: { current: PopoverCloseButton | null }) {
-  closeRef.current?.click();
-}
 
 function EditorActions(props: { isSubmitting: boolean; isDirty: boolean }) {
   const { t } = useI18n();
   return (
     <div className="flex gap-2 justify-end">
       <PopoverClose
-        render={
-          <Button type="button" variant="outline" size="sm" disabled={props.isSubmitting} />
-        }
+        render={<Button type="button" variant="outline" size="sm" disabled={props.isSubmitting} />}
       >
         {t("Cancel")}
       </PopoverClose>
@@ -111,9 +107,11 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   return (
     <Popover
+      actionsRef={actionsRef}
       onOpenChange={(open, eventDetails) => {
         // Keep the popover open while the native date picker (rendered outside
         // the popover) is in use; Base UI replaces onInteractOutside with
@@ -140,7 +138,13 @@ export function DueDateEditor(props: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <DueDateForm baby={props.baby} onUpdate={props.onUpdate} />
+        <DueDateForm
+          baby={props.baby}
+          onUpdate={props.onUpdate}
+          onClose={() => {
+            actionsRef.current?.close();
+          }}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -148,7 +152,6 @@ export function DueDateEditor(props: DueDateEditorProps) {
 
 function DueDateForm(props: EditorFormProps) {
   const { t } = useI18n();
-  const closeRef = useRef<HTMLButtonElement | null>(null);
   const dateCodec = htmlDate(t);
   const form = useZodForm({
     schema: dueDateSchema(t),
@@ -163,12 +166,9 @@ function DueDateForm(props: EditorFormProps) {
       form={form}
       handleSubmit={async (values) => {
         await props.onUpdate(values);
-        closePopover(closeRef);
+        props.onClose();
       }}
     >
-      <PopoverClose ref={closeRef} className="sr-only" tabIndex={-1}>
-        {t("Close")}
-      </PopoverClose>
       <DueDateDisplayFields
         control={form.control}
         dateFieldName="date"
@@ -176,10 +176,7 @@ function DueDateForm(props: EditorFormProps) {
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}
       />
-      <EditorActions
-        isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
-      />
+      <EditorActions isSubmitting={form.formState.isSubmitting} isDirty={form.formState.isDirty} />
     </Form>
   );
 }
@@ -198,9 +195,10 @@ function statusDateSchema(t: TranslationFunction, timeZone: string) {
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   return (
-    <Popover>
+    <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -216,6 +214,9 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
           currentDate={props.currentDate}
           onRedate={props.onRedate}
           onRemove={props.onRemove}
+          onClose={() => {
+            actionsRef.current?.close();
+          }}
         />
       </PopoverContent>
     </Popover>
@@ -228,9 +229,9 @@ function StatusDateForm(props: {
   currentDate: string;
   onRedate: MilestoneRedateHandler;
   onRemove: MilestoneRemoveHandler;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
-  const closeRef = useRef<HTMLButtonElement | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
   const dateTimeCodec = htmlDateTime(t, props.baby.timeZone);
   const form = useZodForm({
@@ -252,12 +253,9 @@ function StatusDateForm(props: {
       form={form}
       handleSubmit={async (values) => {
         await props.onRedate(props.status, values.dateTime);
-        closePopover(closeRef);
+        props.onClose();
       }}
     >
-      <PopoverClose ref={closeRef} className="sr-only" tabIndex={-1}>
-        {t("Close")}
-      </PopoverClose>
       <FormField
         control={form.control}
         name="dateTime"
@@ -317,7 +315,7 @@ function StatusDateForm(props: {
                     startDeleteTransition(async () => {
                       try {
                         await props.onRemove(props.status);
-                        closePopover(closeRef);
+                        props.onClose();
                       } catch {
                         toast.error(
                           t("Could not delete the {{status}} status", { status: statusLabel }),
@@ -356,9 +354,10 @@ function nameSchema(t: TranslationFunction) {
 
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   return (
-    <Popover>
+    <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -367,7 +366,13 @@ export function NameEditor(props: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <NameForm baby={props.baby} onUpdate={props.onUpdate} />
+        <NameForm
+          baby={props.baby}
+          onUpdate={props.onUpdate}
+          onClose={() => {
+            actionsRef.current?.close();
+          }}
+        />
       </PopoverContent>
     </Popover>
   );
@@ -375,7 +380,6 @@ export function NameEditor(props: NameEditorProps) {
 
 function NameForm(props: EditorFormProps) {
   const { t } = useI18n();
-  const closeRef = useRef<HTMLButtonElement | null>(null);
   const form = useZodForm({
     schema: nameSchema(t),
     defaultValues: { name: props.baby.name },
@@ -386,12 +390,9 @@ function NameForm(props: EditorFormProps) {
       form={form}
       handleSubmit={async (values) => {
         await props.onUpdate(values);
-        closePopover(closeRef);
+        props.onClose();
       }}
     >
-      <PopoverClose ref={closeRef} className="sr-only" tabIndex={-1}>
-        {t("Close")}
-      </PopoverClose>
       <FormField
         control={form.control}
         name="name"
@@ -409,10 +410,7 @@ function NameForm(props: EditorFormProps) {
           "Renaming may change the page address, but links you have already shared will keep working.",
         )}
       </p>
-      <EditorActions
-        isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
-      />
+      <EditorActions isSubmitting={form.formState.isSubmitting} isDirty={form.formState.isDirty} />
     </Form>
   );
 }
@@ -452,12 +450,12 @@ type ThemeSelectorProps = {
 
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
-  const closeRef = useRef<HTMLButtonElement | null>(null);
+  const actionsRef = useRef<PopoverActions | null>(null);
   const [isPending, startThemeTransition] = useTransition();
   const selectedTheme = getThemeOption(props.baby.theme);
 
   return (
-    <Popover>
+    <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -466,9 +464,6 @@ export function ThemeSelector(props: ThemeSelectorProps) {
         }
       />
       <PopoverContent align="end" className="w-56">
-        <PopoverClose ref={closeRef} className="sr-only" tabIndex={-1}>
-          {t("Close")}
-        </PopoverClose>
         <div className="flex flex-col gap-1">
           {THEME_OPTIONS.map((option) => (
             <Button
@@ -482,7 +477,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
                 startThemeTransition(async () => {
                   try {
                     await props.onUpdate({ theme: option.value });
-                    closePopover(closeRef);
+                    actionsRef.current?.close();
                   } catch (err) {
                     toast.error(err instanceof Error ? err.message : t("Failed to update theme"));
                   }
