@@ -1,0 +1,63 @@
+import type { Doc } from "./_generated/dataModel";
+import type { QueryCtx } from "./_generated/server";
+import { milestoneVisibilityForPreset } from "../src/types";
+import { loadMilestoneDates } from "./timeline";
+import { resolveBabyPreferences } from "./babyPreferences";
+
+async function toBabyBaseDto(ctx: QueryCtx, baby: Doc<"baby">) {
+  const [milestoneDates, preferences] = await Promise.all([
+    loadMilestoneDates(ctx, baby._id),
+    resolveBabyPreferences(ctx.db, baby),
+  ]);
+  const {
+    userId: _userId,
+    ownerTokenIdentifier: _ownerTokenIdentifier,
+    lastActivityAt: _lastActivityAt,
+    subscriptionCount: _subscriptionCount,
+    birthJourney: _birthJourney,
+    dueDate: _dueDate,
+    dueDateDisplayMode: _dueDateDisplayMode,
+    publicDueDateText: _publicDueDateText,
+    ...publicBaby
+  } = baby;
+  return {
+    ...publicBaby,
+    ...milestoneDates,
+    ...preferences,
+    milestoneVisibility: milestoneVisibilityForPreset(baby.birthJourney),
+  };
+}
+
+/** Public projection physically omits whichever due-date field is inactive. */
+export async function toBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
+  const publicBaby = await toBabyBaseDto(ctx, baby);
+  switch (baby.dueDateDisplayMode) {
+    case "exact": {
+      if (!baby.dueDate) {
+        throw new Error("Exact due date display requires a due date");
+      }
+      return {
+        ...publicBaby,
+        dueDateDisplayMode: "exact" as const,
+        dueDate: baby.dueDate,
+      };
+    }
+    case "message": {
+      return {
+        ...publicBaby,
+        dueDateDisplayMode: "message" as const,
+        publicDueDateText: baby.publicDueDateText?.trim(),
+      };
+    }
+  }
+}
+
+export async function toManagerBabyDto(ctx: QueryCtx, baby: Doc<"baby">) {
+  return {
+    ...(await toBabyBaseDto(ctx, baby)),
+    birthJourney: baby.birthJourney,
+    dueDate: baby.dueDate,
+    dueDateDisplayMode: baby.dueDateDisplayMode,
+    publicDueDateText: baby.publicDueDateText,
+  };
+}

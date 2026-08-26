@@ -1,7 +1,8 @@
 /**
  * Shared demo login + seeded babies used by the Convex seeder and the web auth forms.
  *
- * DEMO_USER / DEMO_BABIES: local development and Vercel preview only — never production.
+ * DEMO_USER / DEMO_EMPTY_USER / DEMO_BABIES: local development and Vercel
+ * preview only — never production.
  * HOMEPAGE_DEMO_BABIES: seeded in every environment, including production — one live
  * demo page per supported locale, sharing photos and timeline shape.
  *
@@ -13,30 +14,48 @@ import { SUPPORTED_LOCALES } from "./i18n";
 export const DEMO_USER = {
   email: "test@example.com",
   password: "password",
-  name: "Test User",
+  name: "Demo Parent",
 } as const;
+
+/** Same password as DEMO_USER, but no babies — empty-dashboard / first-run flow. */
+export const DEMO_EMPTY_USER = {
+  email: "test+newuser@example.com",
+  password: "password",
+  name: "New Parent",
+} as const;
+
+export const DEMO_ACCOUNTS = [
+  {
+    ...DEMO_USER,
+    label: "test@example.com — with babies",
+  },
+  {
+    ...DEMO_EMPTY_USER,
+    label: "test+newuser@example.com — no babies",
+  },
+] as const;
 
 export const DEMO_BABIES = [
   {
-    name: "Baby Waiting",
+    name: "Avery",
     publicId: "baby-waiting",
     state: "not_yet",
     label: "Not yet",
   },
   {
-    name: "Baby In Labor",
+    name: "Frankie",
     publicId: "baby-in-labor",
     state: "labor_started",
     label: "Labour started",
   },
   {
-    name: "Baby At Hospital",
+    name: "Rowan",
     publicId: "baby-at-hospital",
     state: "gone_to_hospital",
     label: "Gone to hospital",
   },
   {
-    name: "Baby Born",
+    name: "Milo",
     publicId: "baby-born",
     state: "born",
     label: "Born",

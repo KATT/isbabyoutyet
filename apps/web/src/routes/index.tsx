@@ -2,10 +2,17 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
+import { LanguagePicker } from "@/components/language-picker";
 import { translate, useI18n } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n";
+import { homepageOgImagePath, openGraphImageMeta } from "@/lib/seo";
+import { searchRobotsMeta } from "@/lib/robots";
+import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
+import { setLocale } from "@/lib/paraglide-setup";
+import { homepageCacheHeaders } from "@/lib/cachePolicy";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -13,6 +20,7 @@ const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
 
 export const Route = createFileRoute("/")({
   component: HomePage,
+  headers: homepageCacheHeaders,
   head: (opts) => {
     const locale = opts.match.context.locale;
     const title = translate(locale, "Is Baby Out Yet? – Share Your Baby's Arrival");
@@ -20,6 +28,7 @@ export const Route = createFileRoute("/")({
       locale,
       "Stop answering 'any news yet?' texts. Create a simple page to keep everyone updated, let them send encouragement, and notify them the moment baby arrives.",
     );
+    const imageUrl = absoluteUrl(homepageOgImagePath());
     return {
       meta: [
         {
@@ -38,6 +47,15 @@ export const Route = createFileRoute("/")({
           content: description,
         },
         {
+          property: "og:url",
+          content: canonicalUrl("/"),
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        ...openGraphImageMeta({ imageUrl, alt: title }),
+        {
           name: "twitter:title",
           content: title,
         },
@@ -45,8 +63,9 @@ export const Route = createFileRoute("/")({
           name: "twitter:description",
           content: description,
         },
+        ...searchRobotsMeta({ index: true }),
       ],
-      links: [{ rel: "canonical", href: "https://isbabyoutyet.com/" }],
+      links: [{ rel: "canonical", href: canonicalUrl("/") }],
     };
   },
 });
@@ -60,8 +79,126 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+/**
+ * Hero headline per locale. The highlighted slot cycles through the generic
+ * "baby" word followed by popular local baby names. Words carry their own
+ * article where the language needs one (pt-BR), so the sentence stays
+ * grammatical for every name.
+ */
+const HERO_HEADLINES = {
+  "en-GB": {
+    before: "Is",
+    after: "out yet?",
+    words: ["baby", "Juniper", "Alfie", "Poppy", "Noah", "Ivy", "Oscar", "Freya"],
+  },
+  "en-US": {
+    before: "Is",
+    after: "out yet?",
+    words: ["baby", "Willow", "Liam", "Olivia", "Wyatt", "Luna", "Ezra", "Hazel"],
+  },
+  sv: {
+    before: "Har",
+    after: "kommit?",
+    words: ["bäbis", "Ella", "Hugo", "Astrid", "Nils", "Maja", "Sixten", "Vera"],
+  },
+  es: {
+    before: "¿Ya nació",
+    after: "o todavía no?",
+    words: ["bebé", "Lucía", "Mateo", "Sofía", "Leo", "Valentina", "Martín", "Emma"],
+  },
+  "pt-BR": {
+    before: "",
+    after: "já nasceu?",
+    words: [
+      "O bebê",
+      "A Helena",
+      "O Miguel",
+      "A Alice",
+      "O Arthur",
+      "A Laura",
+      "O Theo",
+      "A Cecília",
+    ],
+  },
+} as const satisfies Record<
+  SupportedLocale,
+  { before: string; after: string; words: readonly string[] }
+>;
+
+const NAME_ROTATE_INTERVAL_MS = 2400;
+
+function RotatingBabyName(props: { words: readonly string[] }) {
+  const words = props.words;
+  const [indices, setIndices] = useState({ current: 0, previous: null as number | null });
+  const [width, setWidth] = useState<number | null>(null);
+  const sizerRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  useEffect(() => {
+    const reducedMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion || words.length < 2) {
+      return;
+    }
+    const intervalId = window.setInterval(() => {
+      setIndices((prev) => ({
+        current: (prev.current + 1) % words.length,
+        previous: prev.current,
+      }));
+    }, NAME_ROTATE_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [words]);
+
+  useEffect(() => {
+    function measure() {
+      const sizer = sizerRefs.current[indices.current];
+      if (sizer) {
+        setWidth(sizer.offsetWidth);
+      }
+    }
+    measure();
+    // Remeasure once webfonts land so the pill hugs the word exactly.
+    if (document.fonts) {
+      void document.fonts.ready.then(measure);
+    }
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [indices]);
+
+  return (
+    <span
+      aria-hidden="true"
+      className="relative inline-block overflow-hidden whitespace-nowrap transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+      style={width === null ? undefined : { width }}
+    >
+      {words.map((word, wordIndex) => (
+        <span
+          key={word}
+          ref={(el) => {
+            sizerRefs.current[wordIndex] = el;
+          }}
+          className="invisible absolute left-0 top-0"
+        >
+          {word}
+        </span>
+      ))}
+      {indices.previous !== null && (
+        <span
+          key={`out-${indices.previous}-${indices.current}`}
+          className="hero-word-out absolute left-0 top-0"
+        >
+          {words[indices.previous]}
+        </span>
+      )}
+      <span key={`in-${indices.current}`} className="hero-word-in inline-block">
+        {words[indices.current]}
+      </span>
+    </span>
+  );
+}
+
 function useCurrentDate() {
-  const clientDate = useMemo(() => new Date().toISOString(), []);
+  const [clientDate] = useState(() => new Date().toISOString());
   return useSyncExternalStore<string>(
     () => () => {}, // No-op subscribe for demo dates
     () => clientDate, // Client snapshot (cached)
@@ -139,6 +276,7 @@ const HOW_IT_WORKS = [
 export function HomePage() {
   const { t, locale } = useI18n();
   const demoBaby = homepageDemoBabyFor(locale);
+  const headline = HERO_HEADLINES[locale];
   const sessionData = authClient.useSession();
 
   const currentDate = useCurrentDate();
@@ -167,14 +305,14 @@ export function HomePage() {
     },
     {
       emoji: "🏥",
-      title: "At hospital",
+      title: "Gone to hospital",
       description: "Almost there!",
       rotate: "group-hover:-rotate-1",
       search: {
         name: "Sophia",
         laborStarted: hoursAgo(4),
         wentToHospital: hoursAgo(1),
-        hospitalMessage: "We're at the hospital! Will update when baby arrives 💕",
+        hospitalMessage: "We've made it in! More news when we have it 💕",
         theme: "bubblegum",
       },
     },
@@ -210,7 +348,7 @@ export function HomePage() {
               <Button
                 size="sm"
                 className="rounded-full font-bold"
-                render={<Link to="/dashboard" preload="viewport" />}
+                render={<Link to="/dashboard" />}
                 nativeButton={false}
               >
                 {t("Dashboard")}
@@ -221,7 +359,7 @@ export function HomePage() {
                   size="sm"
                   variant="outline"
                   className="rounded-full font-bold border-2"
-                  render={<Link to="/auth/login" preload="viewport" />}
+                  render={<Link to="/auth/login" />}
                   nativeButton={false}
                 >
                   {t("Sign in")}
@@ -229,7 +367,7 @@ export function HomePage() {
                 <Button
                   size="sm"
                   className="rounded-full font-bold"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
                 >
                   {t("Get started")}
@@ -247,11 +385,12 @@ export function HomePage() {
             ✨ {t("Free forever, no ads")}
           </span>
           <h1 className="mx-auto mt-8 max-w-3xl text-5xl font-black tracking-tight text-foreground text-balance md:text-7xl">
-            {t("Is")}{" "}
+            {headline.before === "" ? null : <>{headline.before} </>}
             <span className="inline-block -rotate-1 rounded-3xl bg-primary/15 px-4 text-primary">
-              {t("baby")}
+              <span className="sr-only">{headline.words[0]}</span>
+              <RotatingBabyName words={headline.words} />
             </span>{" "}
-            {t("out yet?")}
+            {headline.after}
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground md:text-xl">
             {t(
@@ -264,7 +403,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/dashboard" preload="viewport" />}
+                  render={<Link to="/dashboard" />}
                   nativeButton={false}
                 >
                   {t("Go to Dashboard")}
@@ -274,7 +413,7 @@ export function HomePage() {
                   <Button
                     size="lg"
                     className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                    render={<Link to="/auth/signup" preload="viewport" />}
+                    render={<Link to="/auth/signup" />}
                     nativeButton={false}
                   >
                     {t("Create your page 🎈")}
@@ -283,7 +422,7 @@ export function HomePage() {
                     size="lg"
                     variant="outline"
                     className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                    render={<Link to="/auth/login" preload="viewport" />}
+                    render={<Link to="/auth/login" />}
                     nativeButton={false}
                   >
                     {t("Sign in")}
@@ -292,19 +431,13 @@ export function HomePage() {
               )}
             </div>
             <Button
-              size="sm"
-              variant="ghost"
-              className="rounded-full font-bold text-muted-foreground"
-              render={
-                <Link
-                  to="/baby/$publicId"
-                  params={{ publicId: demoBaby.publicId }}
-                  preload="viewport"
-                />
-              }
+              size="lg"
+              variant="secondary"
+              className="h-auto rounded-full border-2 border-primary/30 bg-primary/10 px-6 py-3 text-sm font-extrabold text-primary pop-shadow hover:bg-primary/20 hover:text-primary"
+              render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
               nativeButton={false}
             >
-              {t("See a live page")}
+              {t("See a live page")} 👀
             </Button>
           </div>
         </section>
@@ -441,7 +574,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/dashboard" preload="viewport" />}
+                  render={<Link to="/dashboard" />}
                   nativeButton={false}
                 >
                   {t("Go to Dashboard")}
@@ -450,7 +583,7 @@ export function HomePage() {
                 <Button
                   size="lg"
                   className="rounded-full font-extrabold"
-                  render={<Link to="/auth/signup" preload="viewport" />}
+                  render={<Link to="/auth/signup" />}
                   nativeButton={false}
                 >
                   {t("Get Started Free 🎉")}
@@ -462,16 +595,28 @@ export function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
-        <a
-          href="https://github.com/KATT/isbabyoutyet"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <GithubIcon className="h-5 w-5" />
-          <span>{t("Open source on GitHub")}</span>
-        </a>
+      <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8 text-center">
+        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
+          <LanguagePicker
+            value={locale}
+            disabled={false}
+            label={t("Language")}
+            onValueChange={async (value) => {
+              // Paraglide's configured cookie strategy persists explicit choices, then
+              // reloads so SSR and the hydrated page use the same locale.
+              await setLocale(value);
+            }}
+          />
+          <a
+            href="https://github.com/KATT/isbabyoutyet"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <GithubIcon className="h-5 w-5" />
+            <span>{t("Open source on GitHub")}</span>
+          </a>
+        </div>
       </footer>
     </div>
   );

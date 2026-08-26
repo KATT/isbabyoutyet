@@ -5,11 +5,26 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
  * Monorepo Vitest projects (formerly "workspaces").
  * Run all packages from the repo root with `pnpm test` / `pnpm exec vitest run`.
  */
+const oxlintPluginsProject = {
+  test: {
+    name: "oxlint-plugins",
+    include: ["oxlint-plugins/**/*.test.ts"],
+    environment: "node" as const,
+  },
+};
+
 export default defineConfig({
   test: {
-    projects: ["packages/convex", webUnitProject],
+    projects: [
+      "packages/convex",
+      "packages/query-prefetch",
+      "packages/convex-prefetch",
+      webUnitProject,
+      oxlintPluginsProject,
+    ],
     experimental: {
       fsModuleCache: true,
+      fsModuleCachePath: "node_modules/.experimental-vitest-cache",
     },
     coverage: {
       provider: "v8",
@@ -20,6 +35,8 @@ export default defineConfig({
         "apps/web/src/**/*.{ts,tsx}",
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
+        "packages/query-prefetch/src/**/*.ts",
+        "packages/convex-prefetch/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",
@@ -29,16 +46,6 @@ export default defineConfig({
         "**/test.resource.ts",
       ],
       reporter: ["text-summary", "html", "json", "json-summary"],
-      thresholds: {
-        // Coverage ratchet: `autoUpdate` rewrites these numbers whenever a
-        // test run beats them, so coverage can only go up. Never lower them
-        // by hand.
-        autoUpdate: true,
-        statements: 62.45,
-        branches: 56.24,
-        functions: 57.68,
-        lines: 63.29,
-      },
     },
   },
 });

@@ -1,9 +1,11 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
+import { appIdentity } from "./authIdentity";
 import { canManageBaby } from "./babyAccess";
 import { isActive } from "./softDelete";
+import { mutationWithTriggers } from "./triggers";
 
 const MAX_NAME_LENGTH = 50;
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -12,7 +14,7 @@ function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
 }
 
-export const create = mutation({
+export const create = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
     authorName: v.string(),
@@ -27,11 +29,6 @@ export const create = mutation({
     const baby = await ctx.db.get(args.babyId);
     if (!baby || !isActive(baby)) {
       throw new Error("Baby not found");
-    }
-
-    // Check if encouragements are enabled
-    if (baby.encouragementsDisabled) {
-      throw new Error("Encouragements are disabled for this baby");
     }
 
     // Validate author name
@@ -70,7 +67,7 @@ export const create = mutation({
   },
 });
 
-export const update = mutation({
+export const update = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
     visitorId: v.string(),
@@ -114,7 +111,7 @@ export const listByBaby = query({
   handler: async (ctx, args) => {
     const result = await ctx.db
       .query("encouragements")
-      .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
+      .withIndex("by_babyId_and_createdAt", (q) => q.eq("babyId", args.babyId))
       .order("desc")
       .paginate(args.paginationOpts);
 
@@ -133,7 +130,7 @@ export const listByBaby = query({
   },
 });
 
-export const remove = mutation({
+export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
     visitorId: v.optional(v.string()),
@@ -151,7 +148,9 @@ export const remove = mutation({
 
     // Check if user can manage the baby (owner or co-parent)
     const identity = await ctx.auth.getUserIdentity();
-    const isManager = identity ? await canManageBaby(ctx, baby, identity.subject) : false;
+    const isManager = identity
+      ? await canManageBaby(ctx, { baby, identity: appIdentity(identity) })
+      : false;
 
     // Check if visitor can delete (matches visitorId and within time window)
     const canVisitorDelete =

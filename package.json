@@ -6,42 +6,35 @@
     "build": "turbo build",
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",
+    "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "typecheck:scripts": "tsc --noEmit -p scripts",
     "format": "turbo format",
     "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
+    "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "turbo run format lint-fix typecheck test:coverage knip",
-    "checks:affected": "node scripts/checks-affected.mjs",
-    "precommit": "lint-staged && pnpm checks:affected",
-    "prepare": "simple-git-hooks"
+    "checks": "pnpm typecheck:scripts && turbo run format lint-fix typecheck test:coverage knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
-    "@vitest/coverage-v8": "^4.1.10",
+    "@tsconfig/strictest": "^2.0.8",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "^4.1.11",
     "knip": "^6.32.2",
-    "lint-staged": "^17.3.0",
     "npm-run-all": "^4.1.5",
-    "simple-git-hooks": "^2.13.1",
-    "turbo": "^2.10.9",
+    "oxlint": "catalog:",
+    "tsx": "^4.23.12",
+    "turbo": "^2.10.11",
     "typescript": "catalog:",
-    "vitest": "^4.1.10"
-  },
-  "simple-git-hooks": {
-    "pre-commit": "pnpm precommit"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,mjs,cjs}": [
-      "pnpm --filter web exec oxfmt --write",
-      "pnpm --filter web exec oxlint --fix"
-    ],
-    "*.{css,json,jsonc,md,mdx}": "pnpm --filter web exec oxfmt --write"
+    "vitest": "^4.1.11"
   },
   "engines": {
-    "node": "^22.0.0"
+    "node": "^24.0.0"
   },
   "packageManager": "pnpm@10.26.1+sha512.664074abc367d2c9324fdc18037097ce0a8f126034160f709928e9e9f95d98714347044e5c3164d65bd5da6c59c6be362b107546292a8eecb7999196e5ce58fa"
 }

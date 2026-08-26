@@ -6,6 +6,7 @@ import { modules, registerComponents } from "./test.setup";
 import { ONBOARDING_STEP_IDS } from "../src/onboardingSteps";
 import { createAuth } from "./auth";
 import { SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
+import { DEMO_EMPTY_USER } from "../src/seedCredentials";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -132,30 +133,13 @@ test("restart with a baby skips the welcome carousel", async () => {
   });
 });
 
-test("disabling encouragements on the first baby auto-completes that tip", async () => {
-  const t = await setup();
-  const asAlice = t.withIdentity({ subject: "alice" });
-
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Quiet",
-    dueDate: "2026-09-01",
-  });
-  await asAlice.mutation(api.baby.update, {
-    babyId: created.babyId,
-    encouragementsDisabled: true,
-  });
-
-  const progress = await asAlice.query(api.onboarding.getMine, {});
-  expect(progress.effectiveSteps).toContain("learn_encouragements");
-});
-
 test("completeStep rejects unknown step ids", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
 
   await expect(
-    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" }),
-  ).rejects.toThrow(/Unknown onboarding step/);
+    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" as never }),
+  ).rejects.toThrow(/Validator error/);
 });
 
 test("allDone when every step is effective", async () => {
@@ -240,7 +224,7 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
   const sentinel = await t.run(async (ctx) => {
     return await ctx.db
       .query("userOnboarding")
-      .withIndex("by_user", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
+      .withIndex("by_userId", (q) => q.eq("userId", SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL))
       .unique();
   });
   expect(sentinel).toBeTruthy();
@@ -255,5 +239,30 @@ test("skipTourForExistingUsers grandfathers registered users and leaves later si
     checklistDismissed: false,
     allDone: false,
     completedSteps: [],
+  });
+});
+
+test("skipTourForExistingUsers leaves the empty demo login on the first-run tour", async () => {
+  const t = await setup();
+  const emptyId = await signUpUser(t, {
+    email: DEMO_EMPTY_USER.email,
+    name: DEMO_EMPTY_USER.name,
+  });
+  const aliceId = await signUpUser(t, { email: "alice@example.com", name: "Alice" });
+
+  await t.mutation(internal.migrations.skipTourForExistingUsers, { cursor: null });
+
+  const asEmpty = t.withIdentity({ subject: emptyId });
+  expect(await asEmpty.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: false,
+    checklistDismissed: false,
+    allDone: false,
+    completedSteps: [],
+  });
+
+  const asAlice = t.withIdentity({ subject: aliceId });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    welcomeDismissed: true,
+    checklistDismissed: true,
   });
 });

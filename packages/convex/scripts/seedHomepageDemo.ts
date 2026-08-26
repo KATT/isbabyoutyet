@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { renderBlurDataUrl, renderPageThumbnail, renderPushImage } from "../src/photoDerivatives";
 import {
   HOMEPAGE_DEMO_PHOTO_FILES,
   HOMEPAGE_DEMO_PHOTO_KEYS,
@@ -15,7 +16,7 @@ const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "..");
 const assetsDir = path.join(convexPackageDir, "assets/homepage-demo");
 
-function extraConvexArgsFromArgv(argv: string[]) {
+export function extraConvexArgsFromArgv(argv: string[]) {
   const extra: string[] = [];
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
@@ -28,10 +29,14 @@ function extraConvexArgsFromArgv(argv: string[]) {
   return extra;
 }
 
-function convexRun(functionName: string, args: unknown, extraConvexArgs: string[]) {
+export function convexRun(opts: {
+  functionName: string;
+  args: unknown;
+  extraConvexArgs: string[];
+}) {
   const result = execFileSync(
     "pnpm",
-    ["convex", "run", functionName, JSON.stringify(args), ...extraConvexArgs],
+    ["convex", "run", opts.functionName, JSON.stringify(opts.args), ...opts.extraConvexArgs],
     { cwd: convexPackageDir, encoding: "utf8", env: process.env },
   );
   return parseConvexRunOutput(result);
@@ -76,34 +81,58 @@ function readPhotoBuffer(filename: string) {
   return { filePath, buffer: fs.readFileSync(filePath) };
 }
 
-async function jpegAndThumbnail(buffer: Buffer) {
+async function jpegAndDerivatives(buffer: Buffer) {
   const photo = await sharp(buffer)
     .rotate()
     .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 85 })
     .toBuffer();
-  const thumbnail = await sharp(buffer)
-    .rotate()
-    .resize(900, 900, { fit: "cover", position: "center" })
-    .jpeg({ quality: 85 })
-    .toBuffer();
-  return { photo, thumbnail };
+  const thumbnail = await renderPageThumbnail(buffer);
+  const pushImage = await renderPushImage(buffer);
+  const blurDataUrl = await renderBlurDataUrl(buffer);
+  return { photo, thumbnail, pushImage, blurDataUrl };
 }
 
-async function uploadBytes(
-  bytes: Buffer,
-  contentType: string,
-  extraConvexArgs: string[],
-): Promise<string> {
-  const uploadUrl = convexRun("homepageDemo:generateUploadUrl", {}, extraConvexArgs);
+function isLoopbackUploadUrl(uploadUrl: string) {
+  const hostname = new URL(uploadUrl).hostname;
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+/**
+ * Cloud (Vercel/prod): POST to the upload URL. Local anonymous backends die
+ * when `convex run` exits, so the URL's 127.0.0.1:3210 is gone — store bytes
+ * through `storePhoto` instead. That path cannot be used on Linux/Vercel:
+ * resized JPEGs exceed Linux MAX_ARG_STRLEN (~128KiB) as a `convex run` argv.
+ */
+async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
+  const uploadUrl = convexRun({
+    functionName: "homepageDemo:generateUploadUrl",
+    args: {},
+    extraConvexArgs: opts.extraConvexArgs,
+  });
   if (typeof uploadUrl !== "string") {
     throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
   }
 
+  if (isLoopbackUploadUrl(uploadUrl)) {
+    const storageId = convexRun({
+      functionName: "homepageDemo:storePhoto",
+      args: {
+        bytes: { $bytes: opts.bytes.toString("base64") },
+        contentType: "image/jpeg",
+      },
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    if (typeof storageId !== "string") {
+      throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
+    }
+    return storageId;
+  }
+
   const response = await fetch(uploadUrl, {
     method: "POST",
-    headers: { "Content-Type": contentType },
-    body: new Uint8Array(bytes),
+    headers: { "Content-Type": "image/jpeg" },
+    body: new Uint8Array(opts.bytes),
   });
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
@@ -115,9 +144,48 @@ async function uploadBytes(
   return payload.storageId;
 }
 
-export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
-  const extraConvexArgs = opts.extraConvexArgs ?? [];
+type UploadedPhotos = Record<
+  HomepageDemoPhotoKey,
+  { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
+>;
 
+function refreshHomepageDemoLocales(opts: {
+  extraConvexArgs: string[];
+  photos: UploadedPhotos | null;
+}) {
+  const results = [];
+  for (const locale of homepageDemoLocales()) {
+    const args = opts.photos ? { photos: opts.photos, locale } : { locale };
+    const result = convexRun({
+      functionName: "homepageDemo:refresh",
+      args,
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    console.log(`Homepage demo seeded (${locale}):`, result);
+    results.push(result);
+  }
+  return results;
+}
+
+function hasCompleteHomepageDemoPhotoSet(extraConvexArgs: string[]) {
+  const result = convexRun({
+    functionName: "homepageDemo:hasCompletePhotoSet",
+    args: {},
+    extraConvexArgs,
+  });
+  if (typeof result !== "boolean") {
+    throw new Error(`Expected homepage photo sentinel boolean, got ${JSON.stringify(result)}`);
+  }
+  return result;
+}
+
+/** Fixture babies + timeline text only — no sharp work or storage uploads. */
+export async function seedHomepageDemoContent(opts: { extraConvexArgs?: string[] }) {
+  const extraConvexArgs = opts.extraConvexArgs ?? [];
+  return refreshHomepageDemoLocales({ extraConvexArgs, photos: null });
+}
+
+async function loadPhotosFromDisk() {
   let photosOnDisk = HOMEPAGE_DEMO_PHOTO_KEYS.map((key) => ({
     key,
     ...readPhotoBuffer(HOMEPAGE_DEMO_PHOTO_FILES[key]),
@@ -137,27 +205,73 @@ export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
     );
   }
 
-  const photos: Record<HomepageDemoPhotoKey, { photoId: string; thumbnailId: string }> =
-    {} as Record<HomepageDemoPhotoKey, { photoId: string; thumbnailId: string }>;
+  return photosOnDisk;
+}
+
+async function uploadHomepageDemoPhotos(opts: { extraConvexArgs: string[] }) {
+  const photosOnDisk = await loadPhotosFromDisk();
+
+  const photos: UploadedPhotos = {} as UploadedPhotos;
 
   for (const photo of photosOnDisk) {
-    const prepared = await jpegAndThumbnail(photo.buffer);
-    const photoId = await uploadBytes(prepared.photo, "image/jpeg", extraConvexArgs);
-    const thumbnailId = await uploadBytes(prepared.thumbnail, "image/jpeg", extraConvexArgs);
-    photos[photo.key] = { photoId, thumbnailId };
+    const prepared = await jpegAndDerivatives(photo.buffer);
+    const photoId = await uploadBytes({
+      bytes: prepared.photo,
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    const thumbnailId = await uploadBytes({
+      bytes: prepared.thumbnail,
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    const pushImageId = await uploadBytes({
+      bytes: prepared.pushImage,
+      extraConvexArgs: opts.extraConvexArgs,
+    });
+    photos[photo.key] = { photoId, thumbnailId, pushImageId, blurDataUrl: prepared.blurDataUrl };
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 
-  const results = [];
-  for (const locale of homepageDemoLocales()) {
-    const result = convexRun("homepageDemo:refresh", { photos, locale }, extraConvexArgs);
-    console.log(`Homepage demo seeded (${locale}):`, result);
-    results.push(result);
+  return photos;
+}
+
+/** Resize, upload, and attach homepage demo photos to every locale baby. */
+export async function seedHomepageDemoPhotos(opts: { extraConvexArgs?: string[] }) {
+  const extraConvexArgs = opts.extraConvexArgs ?? [];
+  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+    console.log("Homepage demo photos already stored — skipping uploads.");
+    return [];
   }
-  return results;
+  const photos = await uploadHomepageDemoPhotos({ extraConvexArgs });
+  return refreshHomepageDemoLocales({ extraConvexArgs, photos });
+}
+
+export async function seedHomepageDemo(opts: { extraConvexArgs?: string[] }) {
+  const extraConvexArgs = opts.extraConvexArgs ?? [];
+  if (hasCompleteHomepageDemoPhotoSet(extraConvexArgs)) {
+    console.log("Homepage demo already initialized — daily cron handles resets.");
+    return [];
+  }
+  await seedHomepageDemoContent({ extraConvexArgs });
+  return await seedHomepageDemoPhotos({ extraConvexArgs });
 }
 
 const isCli = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 if (isCli) {
-  await seedHomepageDemo({ extraConvexArgs: extraConvexArgsFromArgv(process.argv.slice(2)) });
+  const cliArgs = process.argv.slice(2);
+  const extraConvexArgs = extraConvexArgsFromArgv(cliArgs);
+  const modeFlags = cliArgs.filter((arg) => arg.startsWith("--"));
+  const contentOnly = modeFlags.includes("--content-only");
+  const photosOnly = modeFlags.includes("--photos-only");
+
+  if (contentOnly && photosOnly) {
+    throw new Error("Use only one of --content-only or --photos-only");
+  }
+
+  if (contentOnly) {
+    await seedHomepageDemoContent({ extraConvexArgs });
+  } else if (photosOnly) {
+    await seedHomepageDemoPhotos({ extraConvexArgs });
+  } else {
+    await seedHomepageDemo({ extraConvexArgs });
+  }
 }

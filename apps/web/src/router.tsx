@@ -1,33 +1,84 @@
 import { createRouter } from "@tanstack/react-router";
+import { QueryClient } from "@tanstack/react-query";
+import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query";
+import { ConvexQueryClient } from "@convex-dev/react-query";
 import { ConvexProvider } from "convex/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { routeTree } from "./routeTree.gen";
-import { getConvexClient } from "./get-convex-client";
+import {
+  convexInfiniteQueryFn,
+  getConvexQueryPreloader,
+  registerConvexInfiniteQueryClient,
+} from "@workspace/convex-prefetch";
+import { RootErrorComponent } from "./routes/__root";
+import { setupClientConvexAuth } from "./lib/convex-auth";
 import { getDetectedLocale } from "./lib/i18n";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+/** Router preload policy — tested without constructing the full client graph. */
+export const routerPreloadOptions = {
+  defaultPreload: "viewport",
+  // React Query is the cache of record, so preloaded loader data must be
+  // immediately stale to the router: loaders re-run (as cheap ensureQueryData
+  // cache hits) instead of the router serving its own ≤30s-old snapshot.
+  // Navigation still commits instantly — stale matches revalidate in the
+  // background. https://tanstack.com/router/latest/docs/guide/data-loading
+  defaultPreloadStaleTime: 0,
+  scrollRestoration: true,
+} as const;
 
 export function getRouter() {
-  const convexClient = getConvexClient();
+  const convexUrl = import.meta.env.VITE_CONVEX_URL!;
+  if (!convexUrl) {
+    throw new Error("VITE_CONVEX_URL is not set");
+  }
+
+  // expectAuth keeps SSR-authenticated query results from being dropped on
+  // hydration; public pages still run once auth resolves as anonymous.
+  const convexQueryClient = new ConvexQueryClient(convexUrl, {
+    expectAuth: true,
+  });
+  registerConvexInfiniteQueryClient(convexQueryClient);
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        queryKeyHashFn: convexQueryClient.hashFn(),
+        // Wraps ConvexQueryClient.queryFn so infinite/paginated keys work too.
+        queryFn: convexInfiniteQueryFn(convexQueryClient) as never,
+      },
+    },
+  });
+  convexQueryClient.connect(queryClient);
+  const convexPreloader = getConvexQueryPreloader(queryClient);
+
+  // Resolve auth (signed-in or anonymous) before React mounts — see the
+  // function's doc comment for why the auth provider alone is not enough.
+  if (typeof window !== "undefined") {
+    setupClientConvexAuth(convexQueryClient, queryClient);
+  }
 
   const router = createRouter({
     routeTree,
-    defaultPreload: "intent",
-    context: { convexClient, locale: getDetectedLocale() },
-    scrollRestoration: true,
+    // Viewport preload runs loaders when a Link scrolls into view (not just on
+    // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
+    // pages via the ensureQueryData prefetchers.
+    ...routerPreloadOptions,
+    // Friendly recoverable fallback for any route error (reload / go home).
+    defaultErrorComponent: RootErrorComponent,
+    context: {
+      queryClient,
+      convexQueryClient,
+      convexClient: convexQueryClient.convexClient,
+      convexPreloader,
+      locale: getDetectedLocale(),
+      isAuthenticated: false,
+      token: null,
+    },
     Wrap: (props) => (
-      <QueryClientProvider client={queryClient}>
-        <ConvexProvider client={convexClient}>{props.children}</ConvexProvider>
-      </QueryClientProvider>
+      <ConvexProvider client={convexQueryClient.convexClient}>{props.children}</ConvexProvider>
     ),
   });
+
+  setupRouterSsrQueryIntegration({ router, queryClient });
 
   return router;
 }

@@ -1,5 +1,32 @@
+import { paginationOptsValidator, paginationResultValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { env, internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import { findBabyManager } from "./babyAccess";
+import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
+import { FORBIDDEN } from "../src/types";
+import { requiredEnv } from "./requiredEnv";
+import schema from "./schema";
+import { isActive } from "./softDelete";
+
+async function deleteSubscription(ctx: MutationCtx, subscription: Doc<"pushSubscriptions">) {
+  await ctx.db.delete(subscription._id);
+  const baby = await ctx.db.get(subscription.babyId);
+  if (baby) {
+    await ctx.db.patch(baby._id, {
+      subscriptionCount: Math.max(0, (baby.subscriptionCount ?? 0) - 1),
+    });
+  }
+}
+
+async function deleteByEndpoint(ctx: MutationCtx, endpoint: string) {
+  for await (const subscription of ctx.db
+    .query("pushSubscriptions")
+    .withIndex("by_endpoint", (q) => q.eq("endpoint", endpoint))) {
+    await deleteSubscription(ctx, subscription);
+  }
+}
 
 export const subscribe = mutation({
   args: {
@@ -7,12 +34,18 @@ export const subscribe = mutation({
     endpoint: v.string(),
     p256dh: v.string(),
     auth: v.string(),
+    userAgent: v.string(),
   },
   handler: async (ctx, args) => {
+    const baby = await ctx.db.get(args.babyId);
+    if (!baby || !isActive(baby)) {
+      throw new Error("Baby not found");
+    }
+
     // Check if subscription already exists for this babyId and endpoint
     const existing = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_babyId_endpoint", (q) =>
+      .withIndex("by_babyId_and_endpoint", (q) =>
         q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
       )
       .first();
@@ -22,6 +55,7 @@ export const subscribe = mutation({
       await ctx.db.patch(existing._id, {
         p256dh: args.p256dh,
         auth: args.auth,
+        userAgent: args.userAgent,
       });
       return existing._id;
     }
@@ -33,6 +67,10 @@ export const subscribe = mutation({
       p256dh: args.p256dh,
       auth: args.auth,
       createdAt: Date.now(),
+      userAgent: args.userAgent,
+    });
+    await ctx.db.patch(args.babyId, {
+      subscriptionCount: (baby.subscriptionCount ?? 0) + 1,
     });
 
     return subscriptionId;
@@ -41,31 +79,60 @@ export const subscribe = mutation({
 
 export const unsubscribe = mutation({
   args: {
+    babyId: v.id("baby"),
     endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
   },
   handler: async (ctx, args) => {
     const subscription = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_endpoint", (q) => q.eq("endpoint", args.endpoint))
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+      )
       .first();
-
-    if (subscription) {
-      await ctx.db.delete(subscription._id);
+    if (subscription && subscription.p256dh === args.p256dh && subscription.auth === args.auth) {
+      await deleteSubscription(ctx, subscription);
     }
   },
 });
 
-export const getSubscriptions = query({
+export const removeByEndpoint = internalMutation({
   args: {
-    babyId: v.id("baby"),
+    endpoint: v.string(),
   },
   handler: async (ctx, args) => {
-    const subscriptions = await ctx.db
+    await deleteByEndpoint(ctx, args.endpoint);
+  },
+});
+
+export const getSubscriptionsPage = internalQuery({
+  args: {
+    babyId: v.id("baby"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(schema.doc("pushSubscriptions")),
+  handler: async (ctx, args) => {
+    return await ctx.db
       .query("pushSubscriptions")
       .withIndex("by_babyId", (q) => q.eq("babyId", args.babyId))
-      .collect();
+      .paginate(args.paginationOpts);
+  },
+});
 
-    return subscriptions;
+export const getSubscriptionCount = query({
+  args: {
+    babyId: babyIdOrPublicIdValidator,
+  },
+  returns: v.union(v.number(), v.literal(FORBIDDEN)),
+  handler: async (ctx, args) => {
+    // Sentinel instead of throwing: the baby route loader queries this for
+    // every visitor.
+    const access = await findBabyManager(ctx, args.babyId);
+    if (!access) {
+      return FORBIDDEN;
+    }
+    return access.baby.subscriptionCount ?? 0;
   },
 });
 
@@ -73,24 +140,25 @@ export const getPublicKey = query({
   args: {},
   handler: async () => {
     // VAPID public key is safe to expose to clients
-    const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-    if (!vapidPublicKey) {
-      throw new Error("VAPID_PUBLIC_KEY environment variable is not set");
-    }
-    return vapidPublicKey;
+    return requiredEnv("VAPID_PUBLIC_KEY", env.VAPID_PUBLIC_KEY);
   },
 });
 
 export const isSubscribed = query({
   args: {
-    babyId: v.id("baby"),
+    babyId: babyIdOrPublicIdValidator,
     endpoint: v.string(),
   },
   handler: async (ctx, args) => {
+    const baby = await findBabyByIdOrPublicId(ctx.db, args.babyId);
+    if (!baby) {
+      return false;
+    }
+
     const subscription = await ctx.db
       .query("pushSubscriptions")
-      .withIndex("by_babyId_endpoint", (q) =>
-        q.eq("babyId", args.babyId).eq("endpoint", args.endpoint),
+      .withIndex("by_babyId_and_endpoint", (q) =>
+        q.eq("babyId", baby._id).eq("endpoint", args.endpoint),
       )
       .first();
 

@@ -12,7 +12,7 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
@@ -68,7 +68,7 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
 export function EncouragementForm(props: EncouragementFormProps) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
-  const schema = useMemo(() => encouragementSchema(t, props.babyId), [t, props.babyId]);
+  const schema = encouragementSchema(t, props.babyId);
 
   const form = useZodForm({
     schema,

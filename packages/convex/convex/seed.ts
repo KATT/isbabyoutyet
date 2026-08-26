@@ -1,24 +1,31 @@
 import { components } from "./_generated/api";
-import { internalMutation } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { createAuth } from "./auth";
-import { DEMO_BABIES, DEMO_USER } from "../src/seedCredentials";
+import { DEMO_BABIES, DEMO_EMPTY_USER, DEMO_USER } from "../src/seedCredentials";
 import { insertEncouragementTimelineItem, insertUpdateWithTimelineItem } from "./timeline";
 import type { Milestone } from "../src/types";
-import { markUserOnboardingComplete } from "./onboarding";
+import { tokenIdentifierForAuthUserId } from "./authIdentity";
+import { clearUserOnboarding, skipUserOnboarding } from "./onboarding";
+import { DEFAULT_TIME_ZONE } from "../src/timeZone";
+import { internalMutationWithTriggers } from "./triggers";
 
 async function seedDemoDataHandler(ctx: MutationCtx) {
-  const userId = await ensureDemoUser(ctx);
+  const userId = await ensureAuthUser(ctx, DEMO_USER);
   await ensureDemoProfile(ctx, userId);
 
   // Demo login is for exploring the product — skip the first-run tour.
-  await markUserOnboardingComplete(ctx, userId);
+  await skipUserOnboarding(ctx, userId);
+
+  const emptyUserId = await ensureAuthUser(ctx, DEMO_EMPTY_USER);
+  // Re-seeding restores the first-run state; skipTourForExistingUsers ignores
+  // this account when it grandfathers everyone else.
+  await clearUserOnboarding(ctx, emptyUserId);
 
   const existingBabies = await ctx.db
     .query("baby")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .collect();
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .take(100);
 
   if (existingBabies.length > 0) {
     const now = new Date();
@@ -26,6 +33,9 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     for (const spec of SEED_BABIES) {
       const baby = babiesByPublicId.get(spec.publicId);
       if (baby) {
+        if (baby.demo !== true) {
+          await ctx.db.patch(baby._id, { demo: true });
+        }
         await seedEncouragements({ ctx, babyId: baby._id, now, spec });
       }
     }
@@ -35,6 +45,8 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
       userId,
       email: DEMO_USER.email,
       count: existingBabies.length,
+      emptyUserId,
+      emptyUserEmail: DEMO_EMPTY_USER.email,
     };
   }
 
@@ -46,40 +58,62 @@ async function seedDemoDataHandler(ctx: MutationCtx) {
     userId,
     email: DEMO_USER.email,
     babies,
+    emptyUserId,
+    emptyUserEmail: DEMO_EMPTY_USER.email,
   };
 }
 
 async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
+  const tokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const existing = await ctx.db
     .query("userProfiles")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
   if (!existing) {
-    await ctx.db.insert("userProfiles", { userId, locale: "en-GB" });
+    // Demo login is the preview/local staff account — mark as admin so
+    // /dashboard/admin is available on staging without a separate promote step.
+    await ctx.db.insert("userProfiles", {
+      userId,
+      tokenIdentifier,
+      locale: "en-GB",
+      timeZone: DEFAULT_TIME_ZONE,
+      isAdmin: true,
+    });
+    return;
   }
+  await ctx.db.patch(existing._id, {
+    tokenIdentifier,
+    timeZone: existing.timeZone ?? DEFAULT_TIME_ZONE,
+    isAdmin: true,
+  });
 }
 
 /**
  * Idempotent seeder for local development and Vercel preview deployments.
- * Creates DEMO_USER (test@example.com / password) and babies in every status.
+ * Creates DEMO_USER (test@example.com / password) with babies in every status,
+ * plus DEMO_EMPTY_USER (test+newuser@example.com / password) with no babies
+ * and onboarding left unset so the first-run tour still appears.
  *
  * Preview deploys run this via `--preview-run`; local setup runs `pnpm seed`.
  */
-export const seedDemoData = internalMutation({
+export const seedDemoData = internalMutationWithTriggers({
   args: {},
   handler: seedDemoDataHandler,
 });
 
 /** Alias kept so older `--preview-run seed:seedPreviewData` refs keep working. */
-export const seedPreviewData = internalMutation({
+export const seedPreviewData = internalMutationWithTriggers({
   args: {},
   handler: seedDemoDataHandler,
 });
 
-async function ensureDemoUser(ctx: MutationCtx) {
+async function ensureAuthUser(
+  ctx: MutationCtx,
+  user: { email: string; password: string; name: string },
+) {
   const existing = await ctx.runQuery(components.betterAuth.adapter.findOne, {
     model: "user",
-    where: [{ field: "email", value: DEMO_USER.email }],
+    where: [{ field: "email", value: user.email }],
   });
 
   if (existing) {
@@ -89,9 +123,9 @@ async function ensureDemoUser(ctx: MutationCtx) {
   const auth = createAuth(ctx);
   const result = await auth.api.signUpEmail({
     body: {
-      email: DEMO_USER.email,
-      password: DEMO_USER.password,
-      name: DEMO_USER.name,
+      email: user.email,
+      password: user.password,
+      name: user.name,
     },
   });
 
@@ -146,15 +180,15 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
       {
         authorName: "Grandpa Jim",
-        message: "Thinking of you all — keep us posted!",
+        message: "Thinking of you all. Keep us posted!",
         minutesAgo: 45,
       },
     ],
   },
   "baby-at-hospital": {
     dueDateOffsetDays: 1,
-    laborStartedMessage: "Contractions got serious — heading in!",
-    hospitalMessage: "Checked in and settling into the delivery room.",
+    laborStartedMessage: "Contractions got serious. Heading in!",
+    hospitalMessage: "Checked in and getting comfy.",
     hoursAgo: { laborStarted: 8, wentToHospital: 3 },
     encouragements: [
       {
@@ -167,8 +201,8 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
   "baby-born": {
     dueDateOffsetDays: -2,
     laborStartedMessage: "Here we go!",
-    hospitalMessage: "At the hospital and ready.",
-    babyBornMessage: "Welcome to the world — everyone is healthy and happy!",
+    hospitalMessage: "At hospital. Let's do this.",
+    babyBornMessage: "Baby's here! Everyone's healthy and doing brilliantly.",
     hoursAgo: { laborStarted: 30, wentToHospital: 24, babyBorn: 12 },
     encouragements: [
       {
@@ -177,8 +211,8 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
         minutesAgo: 60 * 6,
       },
       {
-        authorName: "Neighbor Jo",
-        message: "What wonderful news. Rest up!",
+        authorName: "Neighbour Jo",
+        message: "Best news ever. Rest up!",
         minutesAgo: 60 * 2,
       },
       {
@@ -235,6 +269,7 @@ const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
  * Exported for tests that supply their own userId without Better Auth.
  */
 export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
+  const ownerTokenIdentifier = tokenIdentifierForAuthUserId(userId);
   const now = new Date();
   const created: Array<{
     id: Id<"baby">;
@@ -251,19 +286,20 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
     const wentToHospital = hoursAgoIso(now, spec.hoursAgo?.wentToHospital);
     const babyBorn = hoursAgoIso(now, spec.hoursAgo?.babyBorn);
 
-    // The legacy per-stage message fields are retired (cleared by the
-    // clearLegacyStageMessages migration) — fixture messages live only on the
-    // timeline rows via seedMilestoneUpdates below.
+    // Fixture messages live only on the timeline rows via seedMilestoneUpdates.
     const babyId = await ctx.db.insert("baby", {
       userId,
+      ownerTokenIdentifier,
       name: spec.name,
       dueDate: dueDate.toISOString(),
+      dueDateDisplayMode: "exact",
+      publicDueDateText: null,
       publicId: spec.publicId,
-      laborStarted,
-      wentToHospital,
-      babyBorn,
+      birthJourney: "labor",
       theme: null,
-      encouragementsDisabled: false,
+      demo: true,
+      subscriptionCount: 0,
+      lastActivityAt: now.getTime(),
     });
 
     await seedMilestoneUpdates(ctx, {

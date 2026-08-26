@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
-import { Translate } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { SUPPORTED_LOCALES, isSupportedLocale } from "@workspace/convex/src/i18n";
 import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
@@ -25,17 +23,22 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@workspace/ui/components/select";
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@workspace/ui/components/combobox";
 import { Form, useZodForm } from "@/components/Form";
+import { LanguagePicker } from "@/components/language-picker";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
-import { getLanguageName, useI18n } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { cn } from "@workspace/ui/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
@@ -49,9 +52,16 @@ function languageRequestSchema(t: TranslationFunction) {
     .transform((values): FunctionArgs<typeof api.profile.requestLanguage> => values);
 }
 
-function LanguageRequestForm(props: { onSaved: () => void }) {
+type RequestLanguageHandler = (
+  args: FunctionArgs<typeof api.profile.requestLanguage>,
+) => Promise<unknown>;
+
+function LanguageRequestForm(props: {
+  onSaved: () => void;
+  onRequestLanguage: RequestLanguageHandler;
+}) {
   const { t } = useI18n();
-  const requestLanguage = useMutation(api.profile.requestLanguage);
+  const requestLanguage = props.onRequestLanguage;
   const form = useZodForm({
     schema: languageRequestSchema(t),
     defaultValues: { requestedLocale: "" },
@@ -88,42 +98,97 @@ function LanguageRequestForm(props: { onSaved: () => void }) {
   );
 }
 
-export function LanguageSettings() {
+function formatTimeZoneLabel(timeZone: string) {
+  const [firstPart, ...locationParts] = timeZone.split("/");
+  const area = firstPart ?? timeZone;
+  const location = locationParts.join(" / ").replaceAll("_", " ");
+  return location ? `${location} (${area})` : area;
+}
+
+const timeZoneOptions = Array.from(
+  new Set([DEFAULT_TIME_ZONE, ...Intl.supportedValuesOf("timeZone")]),
+)
+  .toSorted()
+  .map((timeZone) => ({
+    label: formatTimeZoneLabel(timeZone),
+    value: timeZone,
+  }));
+
+const defaultTimeZoneOption = {
+  label: formatTimeZoneLabel(DEFAULT_TIME_ZONE),
+  value: DEFAULT_TIME_ZONE,
+};
+
+export function LanguageSettings(props: {
+  profile: PreloadedConvexQuery<typeof api.profile.get>;
+  className: string | undefined;
+}) {
+  const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
+  const onUpdateLocale = useMutation(api.profile.updateLocale);
+  const onUpdateTimeZone = useMutation(api.profile.updateTimeZone);
+  const onRequestLanguage = useMutation(api.profile.requestLanguage);
   const { locale, t } = useI18n();
-  const profile = useQuery(api.profile.get, {});
-  const updateLocale = useMutation(api.profile.updateLocale);
+  const profile = profileQuery.data;
   const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
-
-  async function selectLocale(value: string | null) {
-    if (!value || !isSupportedLocale(value) || value === selectedLocale) {
-      return;
-    }
-    await updateLocale({ locale: value });
-    await setLocale(value);
-  }
+  const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
+  const [selectedTimeZoneOption, setSelectedTimeZoneOption] = useState(
+    () =>
+      timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption,
+  );
 
   return (
-    <div className="flex items-center gap-2">
-      <Select
-        value={selectedLocale}
-        onValueChange={(value) => void selectLocale(value)}
+    <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
+      <Combobox
+        items={timeZoneOptions}
+        itemToStringValue={(option) => option.label}
+        value={selectedTimeZoneOption}
+        onValueChange={(option) => {
+          if (!option || option.value === selectedTimeZoneOption.value) {
+            return;
+          }
+          const previousOption = selectedTimeZoneOption;
+          setSelectedTimeZoneOption(option);
+          void onUpdateTimeZone({ timeZone: option.value })
+            .then(() => {
+              toast.success(t("Time zone saved"));
+            })
+            .catch((error) => {
+              setSelectedTimeZoneOption(previousOption);
+              toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
+            });
+        }}
         disabled={!profile}
       >
-        <SelectTrigger aria-label={t("Profile language")}>
-          <Translate data-icon="inline-start" />
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent alignItemWithTrigger={false}>
-          <SelectGroup>
-            {SUPPORTED_LOCALES.map((supportedLocale) => (
-              <SelectItem key={supportedLocale} value={supportedLocale}>
-                {getLanguageName(supportedLocale, locale)}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        </SelectContent>
-      </Select>
+        <ComboboxInput
+          className="w-56"
+          aria-label={t("Profile time zone")}
+          placeholder={t("Search time zones")}
+          onFocus={(event) => {
+            event.currentTarget.select();
+          }}
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
+          <ComboboxList>
+            {(option) => (
+              <ComboboxItem key={option.value} value={option}>
+                {option.label}
+              </ComboboxItem>
+            )}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+
+      <LanguagePicker
+        value={selectedLocale}
+        disabled={!profile}
+        label={t("Profile language")}
+        onValueChange={async (value) => {
+          await onUpdateLocale({ locale: value });
+          await setLocale(value);
+        }}
+      />
 
       <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
         <DialogTrigger
@@ -140,7 +205,12 @@ export function LanguageSettings() {
               {t("Tell us which language you would like us to add.")}
             </DialogDescription>
           </DialogHeader>
-          {requestOpen ? <LanguageRequestForm onSaved={() => setRequestOpen(false)} /> : null}
+          {requestOpen ? (
+            <LanguageRequestForm
+              onSaved={() => setRequestOpen(false)}
+              onRequestLanguage={onRequestLanguage}
+            />
+          ) : null}
         </DialogContent>
       </Dialog>
     </div>

@@ -5,16 +5,17 @@ import type { MutationCtx } from "./_generated/server";
 import {
   getBlockingLaterMilestone,
   getCurrentStatus,
-  MILESTONE_FIELDS,
   MILESTONE_LABELS,
   STATUS_ORDER,
 } from "../src/types";
-import { applyPhotoSideEffects, syncStatusNotifications } from "./baby";
+import { applyPhotoSideEffects, schedulePushNotification, syncStatusNotifications } from "./baby";
 import { requireBabyManager } from "./babyAccess";
 import {
   deleteUpdateWithTimelineItem,
   findMilestoneUpdate,
   insertUpdateWithTimelineItem,
+  isValidDateTimestamp,
+  loadMilestoneDates,
 } from "./timeline";
 import { mutationWithTriggers } from "./triggers";
 import { isActive } from "./softDelete";
@@ -29,8 +30,8 @@ export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 
 /**
  * Owner or co-parent posts an update to the timeline: a message and/or a photo,
- * optionally marking a milestone. Marking a milestone also sets the canonical
- * status timestamp on the baby doc and schedules the push notification.
+ * optionally marking a milestone. Every post schedules one delayed push;
+ * milestone status is inferred from the source update.
  */
 export const post = mutationWithTriggers({
   args: {
@@ -56,15 +57,20 @@ export const post = mutationWithTriggers({
       throw new Error(`Message must be ${MAX_UPDATE_MESSAGE_LENGTH} characters or less`);
     }
 
-    const statusBefore = getCurrentStatus(baby);
+    const datesBefore = await loadMilestoneDates(ctx, args.babyId);
+    const statusBefore = getCurrentStatus({
+      ...datesBefore,
+      birthJourney: baby.birthJourney,
+    });
 
     if (milestone) {
-      // The status only moves forward: once a later stage is reached, earlier
-      // (or equal) stages can no longer be marked
       if (STATUS_ORDER[milestone] <= STATUS_ORDER[statusBefore.type]) {
         throw new Error("Only a future status can be marked");
       }
-      const existing = await findMilestoneUpdate(ctx, args.babyId, milestone);
+      const existing = await findMilestoneUpdate(ctx, {
+        babyId: args.babyId,
+        milestone: milestone,
+      });
       if (existing) {
         throw new Error("This milestone is already marked");
       }
@@ -77,6 +83,9 @@ export const post = mutationWithTriggers({
     // Event clock: when the milestone actually happened. Defaults to the
     // announce time; a backdated value must be in the past.
     const occurredAt = milestone ? (args.occurredAt ?? postedAt) : null;
+    if (occurredAt != null && !isValidDateTimestamp(occurredAt)) {
+      throw new Error("Invalid date");
+    }
     if (occurredAt != null && occurredAt > postedAt + 60_000) {
       throw new Error("The event time cannot be in the future");
     }
@@ -89,7 +98,7 @@ export const post = mutationWithTriggers({
       // Settings can still redate occurredAt later without moving the feed position
       occurredAt,
       photoId,
-      postedByUserId: identity.subject,
+      postedByUserId: identity.authUserId,
     });
 
     if (photoId) {
@@ -97,25 +106,24 @@ export const post = mutationWithTriggers({
     }
 
     if (milestone) {
-      // The canonical status timestamp is the event clock, not the announce time
-      const dateField = MILESTONE_FIELDS[milestone].date;
-      if (!baby[dateField]) {
-        await ctx.db.patch(args.babyId, {
-          [dateField]: new Date(occurredAt ?? postedAt).toISOString(),
-        });
-      }
-
-      const updatedBaby = await ctx.db.get(args.babyId);
-      if (!updatedBaby) throw new Error("Baby not found after update");
-
       await syncStatusNotifications(ctx, {
         statusBefore,
-        updatedBaby,
+        updatedBaby: baby,
+        photoId,
+        updateId,
         customMessageByMilestone: {
           labor_started: milestone === "labor_started" ? message : null,
           gone_to_hospital: milestone === "gone_to_hospital" ? message : null,
           born: milestone === "born" ? message : null,
         },
+      });
+    } else {
+      await schedulePushNotification(ctx, {
+        baby,
+        notificationType: photoId ? "photo_added" : "update_posted",
+        customMessage: message,
+        photoId,
+        updateId,
       });
     }
 
@@ -143,9 +151,10 @@ export const setAsCurrentPhoto = mutationWithTriggers({
     await ctx.db.patch(baby._id, {
       photoId: update.photoId,
       thumbnailId: update.thumbnailId ?? null,
+      blurDataUrl: update.blurDataUrl ?? null,
     });
 
-    if (!update.thumbnailId) {
+    if (!update.thumbnailId || !update.pushImageId || !update.blurDataUrl) {
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: update.photoId,
@@ -156,8 +165,62 @@ export const setAsCurrentPhoto = mutationWithTriggers({
 });
 
 /**
- * Removes an update from the timeline. Removing a milestone update also
- * unmarks the milestone on the baby doc; removing the update carrying the
+ * Corrects when an existing milestone happened without moving its feed
+ * position. Creating a milestone remains exclusive to `post`.
+ */
+export const redateMilestone = mutationWithTriggers({
+  args: {
+    babyId: v.id("baby"),
+    milestone: milestoneValidator,
+    occurredAt: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await requireBabyManager(ctx, args.babyId);
+    if (!isValidDateTimestamp(args.occurredAt)) {
+      throw new Error("Invalid date");
+    }
+    if (args.occurredAt > Date.now() + 60_000) {
+      throw new Error("The event time cannot be in the future");
+    }
+
+    const update = await findMilestoneUpdate(ctx, {
+      babyId: args.babyId,
+      milestone: args.milestone,
+    });
+    if (!update) throw new Error("Milestone update not found");
+
+    await ctx.db.patch(update._id, { occurredAt: args.occurredAt });
+    return null;
+  },
+});
+
+/**
+ * Removes the update that marks a milestone. Callers identify the milestone;
+ * the backend resolves the source-of-truth update row.
+ */
+export const unmarkMilestone = mutationWithTriggers({
+  args: {
+    babyId: v.id("baby"),
+    milestone: milestoneValidator,
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { baby } = await requireBabyManager(ctx, args.babyId);
+    const update = await findMilestoneUpdate(ctx, {
+      babyId: args.babyId,
+      milestone: args.milestone,
+    });
+    if (!update) throw new Error("Milestone update not found");
+
+    await removeManagedUpdate(ctx, { baby, update });
+    return null;
+  },
+});
+
+/**
+ * Removes an update from the timeline. Removing a milestone update infers
+ * the status from remaining milestones; removing the update carrying the
  * current photo falls back to the most recent remaining photo update.
  */
 export const remove = mutationWithTriggers({
@@ -167,50 +230,58 @@ export const remove = mutationWithTriggers({
     if (!update || !isActive(update)) throw new Error("Update not found");
 
     const { baby } = await requireBabyManager(ctx, update.babyId);
-
-    if (update.milestone) {
-      const blocker = getBlockingLaterMilestone(baby, update.milestone);
-      if (blocker) {
-        throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
-      }
-    }
-
-    const statusBefore = getCurrentStatus(baby);
-
-    await deleteUpdateWithTimelineItem(ctx, update);
-
-    if (update.photoId && update.photoId === baby.photoId) {
-      const fallback = await findLatestRemainingPhotoUpdate(ctx, update);
-      await ctx.db.patch(baby._id, {
-        photoId: fallback?.photoId ?? null,
-        thumbnailId: fallback?.thumbnailId ?? null,
-      });
-    }
-
-    if (update.milestone) {
-      const dateField = MILESTONE_FIELDS[update.milestone].date;
-      if (baby[dateField]) {
-        await ctx.db.patch(baby._id, { [dateField]: null });
-      }
-
-      const updatedBaby = await ctx.db.get(baby._id);
-      if (!updatedBaby) throw new Error("Baby not found after update");
-
-      // Status can only move backward here: cancels pending notifications
-      await syncStatusNotifications(ctx, {
-        statusBefore,
-        updatedBaby,
-        customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
-      });
-    }
+    await removeManagedUpdate(ctx, { baby, update });
   },
 });
+
+async function removeManagedUpdate(
+  ctx: MutationCtx,
+  opts: { baby: Doc<"baby">; update: Doc<"updates"> },
+) {
+  const update = opts.update;
+  const datesBefore = await loadMilestoneDates(ctx, update.babyId);
+
+  if (update.milestone) {
+    const blocker = getBlockingLaterMilestone(datesBefore, update.milestone);
+    if (blocker) {
+      throw new Error(`Delete the ${MILESTONE_LABELS[blocker]} status first`);
+    }
+  }
+
+  const statusBefore = getCurrentStatus(datesBefore);
+
+  await deleteUpdateWithTimelineItem(ctx, update);
+
+  if (update.photoId && update.photoId === opts.baby.photoId) {
+    const fallback = await findLatestRemainingPhotoUpdate(ctx, update);
+    await ctx.db.patch(opts.baby._id, {
+      photoId: fallback?.photoId ?? null,
+      thumbnailId: fallback?.thumbnailId ?? null,
+      blurDataUrl: fallback?.blurDataUrl ?? null,
+    });
+  }
+
+  if (update.milestone) {
+    const updatedBaby = await ctx.db.get(opts.baby._id);
+    if (!updatedBaby) throw new Error("Baby not found after update");
+
+    // Status can only move backward here: cancels pending notifications
+    await syncStatusNotifications(ctx, {
+      statusBefore,
+      updatedBaby,
+      photoId: null,
+      updateId: null,
+      customMessageByMilestone: { labor_started: null, gone_to_hospital: null, born: null },
+    });
+  }
+}
 
 async function findLatestRemainingPhotoUpdate(ctx: MutationCtx, removed: Doc<"updates">) {
   const photoUpdates = await ctx.db
     .query("updates")
     .withIndex("by_babyId", (q) => q.eq("babyId", removed.babyId))
-    .collect();
+    .order("desc")
+    .take(256);
 
   let latest: { update: Doc<"updates">; postedAt: number } | null = null;
   for (const candidate of photoUpdates) {

@@ -1,52 +1,45 @@
-import { fireEvent, render, waitFor } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { api } from "@workspace/convex/convex/_generated/api";
 import { CoParentsSettings } from "@/components/baby/co-parents-settings";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 
-const mocks = vi.hoisted(() => ({
-  useQuery: vi.fn(),
-  invite: vi.fn(),
-  removeCoParent: vi.fn(),
-  cancelInvite: vi.fn(),
-}));
+test("CoParentsSettings lists co-parents seeded through convex-test", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
 
-vi.mock("convex/react", () => ({
-  useQuery: (...args: unknown[]) => mocks.useQuery(...args),
-  // CoParentsSettings calls useMutation in fixed order: invite, remove, cancel
-  useMutation: (() => {
-    let call = 0;
-    return () => {
-      const index = call;
-      call += 1;
-      if (index % 3 === 0) return mocks.invite;
-      if (index % 3 === 1) return mocks.removeCoParent;
-      return mocks.cancelInvite;
-    };
-  })(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { success: vi.fn(), error: vi.fn() },
-}));
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+  await harness.client.mutation(api.coParents.invite, {
+    babyId: baby.babyId,
+    email: "bob@example.com",
   });
-}
 
-const babyId = "jd7baby000000000000000000" as Id<"baby">;
-
-test("owner can invite a co-parent by email", async () => {
-  mocks.useQuery.mockReturnValue({
-    coParents: [],
-    invites: [],
+  const listing = await harness.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
+    babyId: baby.babyId,
   });
-  mocks.invite.mockResolvedValue({ status: "added" });
 
-  await using view = renderResource(<CoParentsSettings babyId={babyId} isOwner={true} />);
+  await using view = renderWithConvexTest({
+    harness,
+    ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
+    wrap: null,
+  });
+
+  expect(view.getByText("bob@example.com")).toBeTruthy();
+});
+
+test("owner can invite a co-parent by email through real mutations", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  const listing = await harness.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
+    babyId: baby.babyId,
+  });
+
+  await using view = renderWithConvexTest({
+    harness,
+    ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
+    wrap: null,
+  });
 
   expect(view.getByText(/No co-parents yet/)).toBeTruthy();
   fireEvent.change(view.getByPlaceholderText("partner@example.com"), {
@@ -54,69 +47,93 @@ test("owner can invite a co-parent by email", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: "Add" }));
 
-  await waitFor(() => {
-    expect(mocks.invite).toHaveBeenCalledWith({
-      babyId,
-      email: "partner@example.com",
-    });
+  await vi.waitFor(() => {
+    expect(view.getByText("partner@example.com")).toBeTruthy();
   });
 });
 
-test("lists co-parents and pending invites; owner can remove them", async () => {
-  mocks.useQuery.mockReturnValue({
-    coParents: [
-      {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
-        email: "bob@example.com",
-        name: "Bob",
-        userId: "bob",
-        addedAt: Date.now(),
-      },
-    ],
-    invites: [
-      {
-        _id: "jd7invite0000000000000000" as Id<"babyCoParentInvites">,
-        email: "new@example.com",
-        createdAt: Date.now(),
-      },
-    ],
+test("owner can remove co-parents and cancel pending invites", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const aliceId = await signUpTestUser(harness, {
+    email: "alice@example.com",
+    password: "password123",
+    name: "Alice",
   });
-  mocks.removeCoParent.mockResolvedValue(null);
-  mocks.cancelInvite.mockResolvedValue(null);
+  await signUpTestUser(harness, {
+    email: "bob@example.com",
+    password: "password123",
+    name: "Bob",
+  });
 
-  await using view = renderResource(<CoParentsSettings babyId={babyId} isOwner={true} />);
+  harness.withIdentity({ subject: aliceId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
 
-  expect(view.getByText("Bob")).toBeTruthy();
-  expect(view.getByText("Invite pending")).toBeTruthy();
+  await harness.client.mutation(api.coParents.invite, {
+    babyId: baby.babyId,
+    email: "bob@example.com",
+  });
+  await harness.client.mutation(api.coParents.invite, {
+    babyId: baby.babyId,
+    email: "newbie@example.com",
+  });
+
+  const listing = await harness.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
+    babyId: baby.babyId,
+  });
+
+  await using view = renderWithConvexTest({
+    harness,
+    ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
+    wrap: null,
+  });
+
+  expect(view.getAllByText("Invite pending")).toHaveLength(1);
+  expect(view.getByText("bob@example.com")).toBeTruthy();
 
   fireEvent.click(view.getByRole("button", { name: "Remove bob@example.com" }));
-  await waitFor(() => {
-    expect(mocks.removeCoParent).toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(view.queryByRole("button", { name: "Remove bob@example.com" })).toBeNull();
   });
 
-  fireEvent.click(view.getByRole("button", { name: "Cancel invite to new@example.com" }));
-  await waitFor(() => {
-    expect(mocks.cancelInvite).toHaveBeenCalled();
+  fireEvent.click(view.getByRole("button", { name: "Cancel invite to newbie@example.com" }));
+  await vi.waitFor(() => {
+    expect(view.queryByText("Invite pending")).toBeNull();
   });
 });
 
 test("co-parents see a read-only list without invite form", async () => {
-  mocks.useQuery.mockReturnValue({
-    coParents: [
-      {
-        _id: "jd7coparent00000000000000" as Id<"babyCoParents">,
-        email: "bob@example.com",
-        name: null,
-        userId: "bob",
-        addedAt: Date.now(),
-      },
-    ],
-    invites: [],
+  await using harness = await createConvexTestHarness({ identity: null });
+  const aliceId = await signUpTestUser(harness, {
+    email: "alice@example.com",
+    password: "password123",
+    name: "Alice",
+  });
+  const bobId = await signUpTestUser(harness, {
+    email: "bob@example.com",
+    password: "password123",
+    name: "Bob",
   });
 
-  await using view = renderResource(<CoParentsSettings babyId={babyId} isOwner={false} />);
+  harness.withIdentity({ subject: aliceId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.coParents.invite, {
+    babyId: baby.babyId,
+    email: "bob@example.com",
+  });
 
-  expect(view.getByText("bob@example.com")).toBeTruthy();
+  harness.withIdentity({ subject: bobId });
+  const listing = await harness.convexPreloader.ensureQueryData(api.coParents.listForBaby, {
+    babyId: baby.babyId,
+  });
+
+  await using view = renderWithConvexTest({
+    harness,
+    ui: <CoParentsSettings babyId={baby.babyId} isOwner={false} listing={listing} />,
+    wrap: null,
+  });
+
+  expect(view.getByText("Bob")).toBeTruthy();
   expect(view.queryByPlaceholderText("partner@example.com")).toBeNull();
   expect(view.queryByRole("button", { name: "Add" })).toBeNull();
+  expect(view.queryByRole("button", { name: /^Remove / })).toBeNull();
 });
