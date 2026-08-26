@@ -85,7 +85,7 @@ test("patchOnboardingMine applies the patch when getMine is subscribed", () => {
   expect(store.read()?.minimized).toBe(true);
 });
 
-test("patchOnboardingMine is a no-op when getMine is not subscribed", () => {
+test("patchOnboardingMine no-ops when getMine is not subscribed", () => {
   const store = createMineStore(undefined);
   patchOnboardingMine(store, (progress) => optimisticallySetMinimized(progress, true));
   expect(store.read()).toBeUndefined();
