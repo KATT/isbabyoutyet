@@ -18,7 +18,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
@@ -31,12 +31,8 @@ type ScheduledNotificationsResult = Exclude<
 const EMPTY_NOTIFICATIONS: ScheduledNotificationsResult = [];
 
 type ScheduledNotificationToastProps = {
-  notifications:
-    | PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>
-    | InitiatedConvexQuery<typeof api.baby.getScheduledNotifications>;
-  subscriptionCount:
-    | PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>
-    | InitiatedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
+  notifications: PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>;
+  subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {

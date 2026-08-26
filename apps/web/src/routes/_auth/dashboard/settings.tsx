@@ -4,7 +4,7 @@ import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -78,9 +78,7 @@ export const settingsAuthAdapter = {
  * @internal exported for tests
  */
 export function DashboardSettingsSheet(props: {
-  profile:
-    | PreloadedConvexQuery<typeof api.profile.get>
-    | InitiatedConvexQuery<typeof api.profile.get>;
+  profile: PreloadedConvexQuery<typeof api.profile.get>;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlayNav();

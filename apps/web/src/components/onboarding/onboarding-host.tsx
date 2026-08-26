@@ -3,7 +3,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useEffect, useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
@@ -17,9 +17,7 @@ type OnboardingSession = {
 
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
-  onboarding:
-    | PreloadedConvexQuery<typeof api.onboarding.getMine>
-    | InitiatedConvexQuery<typeof api.onboarding.getMine>;
+  onboarding: PreloadedConvexQuery<typeof api.onboarding.getMine>;
   /** Baby-page owners only — visitors never see the tour */
   enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */

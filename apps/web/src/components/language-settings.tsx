@@ -32,7 +32,7 @@ import {
 } from "@workspace/ui/components/combobox";
 import { Form, useZodForm } from "@/components/Form";
 import { LanguagePicker } from "@/components/language-picker";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -120,9 +120,7 @@ const defaultTimeZoneOption = {
 };
 
 export function LanguageSettings(props: {
-  profile:
-    | PreloadedConvexQuery<typeof api.profile.get>
-    | InitiatedConvexQuery<typeof api.profile.get>;
+  profile: PreloadedConvexQuery<typeof api.profile.get>;
   className: string | undefined;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
