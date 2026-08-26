@@ -65,6 +65,11 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 }
 
+function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient;
+function compatibleConvexAuthClient(client: unknown): unknown {
+  return client;
+}
+
 export function setupClientConvexAuth(
   convexQueryClient: ConvexQueryClient,
   queryClient: QueryClient,
@@ -75,6 +80,6 @@ export function setupClientConvexAuth(
   setupClientConvexAuthWithClient({
     convexQueryClient,
     queryClient,
-    authClient: authClient as unknown as ConvexAuthClient,
+    authClient: compatibleConvexAuthClient(authClient),
   });
 }
