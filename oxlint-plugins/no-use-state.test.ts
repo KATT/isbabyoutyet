@@ -74,3 +74,5 @@ tester.run("no-use-state", plugin.rules["no-use-state"], {
     },
   ],
 });
+
+// CI retrigger marker (no behavior change)
