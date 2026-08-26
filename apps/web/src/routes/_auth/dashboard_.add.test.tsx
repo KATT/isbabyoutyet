@@ -13,20 +13,27 @@ function createAddBabyMocks() {
   };
 }
 
-function renderAddBaby(opts?: {
-  createBaby?: (args: unknown) => Promise<{ publicId: string }>;
-  navigate?: (args: unknown) => Promise<void>;
+function renderAddBaby(opts: {
+  createBaby: ((args: unknown) => Promise<{ publicId: string }>) | undefined;
+  navigate: ((args: unknown) => Promise<void>) | undefined;
 }) {
   const mocks = createAddBabyMocks();
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <AddBabyPageView
-        createBaby={(opts?.createBaby ?? mocks.createBaby) as never}
-        navigate={(opts?.navigate ?? mocks.navigate) as never}
+        createBaby={(opts.createBaby ?? mocks.createBaby) as never}
+        navigate={(opts.navigate ?? mocks.navigate) as never}
       />
     </LocaleProvider>,
     { path: "/dashboard/add" },
   );
+}
+
+function renderDefaultAddBaby() {
+  return renderAddBaby({
+    createBaby: undefined,
+    navigate: undefined,
+  });
 }
 
 function expandOptionalSettings(view: Awaited<ReturnType<typeof renderAddBaby>>) {
@@ -38,7 +45,7 @@ test("add baby remains a standalone non-nested dashboard route", () => {
 });
 
 test("optional settings stay collapsed until expanded", async () => {
-  await using view = await renderAddBaby();
+  await using view = await renderDefaultAddBaby();
 
   expect(view.getByRole("button", { name: "Customize your page (optional)" })).toBeTruthy();
   expect(view.queryByRole("button", { name: "Labour" })).toBeNull();
@@ -58,7 +65,7 @@ test("optional settings stay collapsed until expanded", async () => {
 });
 
 test("name field explains it can be filled later", async () => {
-  await using view = await renderAddBaby();
+  await using view = await renderDefaultAddBaby();
 
   expect(view.getByLabelText("Baby name")).toBeTruthy();
   expect(
