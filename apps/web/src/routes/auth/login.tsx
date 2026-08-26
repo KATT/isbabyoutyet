@@ -35,6 +35,46 @@ function loginSchema(t: TranslationFunction) {
   });
 }
 
+type Credentials = { email: string; password: string };
+
+/**
+ * `signIn` reports failure as a message rather than the auth client's own
+ * result shape, so the flow below stays independent of better-auth types.
+ *
+ * @internal Exported for tests.
+ */
+export type SignInHandoff = {
+  signIn: (
+    body: Credentials & { rememberMe: boolean },
+    fetchOptions: { headers: Record<string, string> },
+  ) => Promise<{ errorMessage: string | null }>;
+  headers: () => Record<string, string>;
+  waitForAuth: () => Promise<void>;
+  navigate: () => Promise<void>;
+  failedMessage: string;
+};
+
+/**
+ * Sign in, then wait for the Convex provider to confirm the new identity
+ * before navigating — /dashboard would otherwise load against a still
+ * anonymous client and bounce straight back here.
+ *
+ * @internal Exported for tests; production wires it up in `LoginPage`.
+ */
+export async function signInAndHandoff(values: Credentials, deps: SignInHandoff) {
+  const result = await deps.signIn(
+    { email: values.email, password: values.password, rememberMe: true },
+    { headers: deps.headers() },
+  );
+
+  if (result.errorMessage !== null) {
+    throw new Error(result.errorMessage || deps.failedMessage);
+  }
+
+  await deps.waitForAuth();
+  await deps.navigate();
+}
+
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
   headers: authPageCacheHeaders,
@@ -48,13 +88,63 @@ export const Route = createFileRoute("/auth/login")({
   }),
 });
 
-function LoginPage() {
+/**
+ * Mutable auth adapters so route smoke tests can swap the network-backed
+ * better-auth client without `vi.mock` (its methods are Proxy-backed and
+ * not spyable).
+ *
+ * @internal
+ */
+export const loginAuthAdapter = {
+  signInEmail: (
+    body: Credentials & { rememberMe: boolean },
+    fetchOptions: { headers: Record<string, string> },
+  ) => authClient.signIn.email(body, fetchOptions),
+  headers: () => getBrowserAuthHeaders(),
+  waitForAuth: () => waitForConvexAuth(),
+};
+
+/**
+ * @internal Exported for smoke tests; production mounts it via `Route`.
+ */
+export function LoginPage() {
   const { t } = useI18n();
   const router = useRouter();
 
+  return (
+    <LoginCard
+      demoLoginEnabled={hasDemoLogin}
+      onSignIn={(values) =>
+        signInAndHandoff(values, {
+          signIn: async (body, fetchOptions) => {
+            const result = await loginAuthAdapter.signInEmail(body, fetchOptions);
+            return { errorMessage: result.error ? (result.error.message ?? "") : null };
+          },
+          headers: () => loginAuthAdapter.headers(),
+          waitForAuth: () => loginAuthAdapter.waitForAuth(),
+          navigate: () => router.navigate({ to: "/dashboard" }),
+          failedMessage: t("Failed to sign in"),
+        })
+      }
+    />
+  );
+}
+
+/**
+ * Login form and its demo-account prefill. Takes the sign-in flow as a prop so
+ * tests can render it without an auth client.
+ *
+ * @internal Exported for tests; production uses `LoginPage`.
+ */
+export function LoginCard(props: {
+  demoLoginEnabled: boolean;
+  onSignIn: (values: Credentials) => Promise<void>;
+}) {
+  const { t } = useI18n();
+
   const form = useZodForm({
     schema: loginSchema(t),
-    defaultValues: hasDemoLogin
+    defaultValues: props.demoLoginEnabled
       ? {
           email: DEMO_USER.email,
           password: DEMO_USER.password,
@@ -89,32 +179,14 @@ function LoginPage() {
           </CardHeader>
           <CardContent>
             <DemoAccountPicker
+              enabled={props.demoLoginEnabled}
               onPrefill={(account) => {
                 form.setValue("email", account.email);
                 form.setValue("password", account.password);
                 form.formRef.current?.requestSubmit();
               }}
             />
-            <Form
-              form={form}
-              handleSubmit={async (values) => {
-                const result = await authClient.signIn.email(
-                  {
-                    email: values.email,
-                    password: values.password,
-                    rememberMe: true,
-                  },
-                  { headers: getBrowserAuthHeaders() },
-                );
-
-                if (result.error) {
-                  throw new Error(result.error.message || t("Failed to sign in"));
-                }
-
-                await waitForConvexAuth();
-                await router.navigate({ to: "/dashboard" });
-              }}
-            >
+            <Form form={form} handleSubmit={(values) => props.onSignIn(values)}>
               <div className="space-y-5">
                 <FormField
                   control={form.control}

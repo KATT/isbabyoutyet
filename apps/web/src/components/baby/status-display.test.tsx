@@ -1,37 +1,9 @@
-import { render } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { BabyData } from "@workspace/convex/src/types";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-
-vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => ({
-    history: {
-      location: { state: { overlay: undefined } },
-      canGoBack: () => false,
-      back: vi.fn<() => void>(),
-    },
-    navigate: vi.fn<() => Promise<void>>(async () => {}),
-  }),
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      params: { publicId: string } | undefined;
-    },
-  ) => {
-    const href =
-      typeof props.to === "string"
-        ? props.to.replace("$publicId", props.params?.publicId ?? "")
-        : "#";
-    return (
-      <a href={href} aria-label={props["aria-label"]} className={props.className}>
-        {props.children}
-      </a>
-    );
-  },
-}));
-
-const { StatusDisplay } = await import("./status-display");
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { StatusDisplay } from "./status-display";
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -71,7 +43,7 @@ test.each([
 ])("renders the $heading status selected by the journey", async (testCase) => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const currentBaby = { ...baby, ...testCase.dates };
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={currentBaby}
@@ -82,21 +54,18 @@ test.each([
       latestUpdate={null}
     />,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByRole("heading", { name: testCase.heading })).toBeTruthy();
   expect(view.getByText(testCase.subline)).toBeTruthy();
 });
 
-test("home-birth labour copy does not mention hospital", () => {
+test("home-birth labour copy does not mention hospital", async () => {
   const homeBirthBaby: BabyData = {
     ...baby,
     milestoneVisibility: { showLabor: true, showHospital: false },
     laborStarted: "2026-08-18T07:00:00.000Z",
   };
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={homeBirthBaby}
@@ -107,16 +76,13 @@ test("home-birth labour copy does not mention hospital", () => {
       latestUpdate={null}
     />,
   );
-  using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByText("Things are happening!")).toBeTruthy();
   expect(view.queryByText("Not at hospital yet")).toBeNull();
 });
 
-test("shows the latest family message when present", () => {
-  const view = render(
+test("shows the latest family message when present", async () => {
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={baby}
@@ -127,9 +93,6 @@ test("shows the latest family message when present", () => {
       latestUpdate={{ message: "Everything is calm", postedAt: Date.now() }}
     />,
   );
-  using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByText("Everything is calm")).toBeTruthy();
 });
@@ -140,7 +103,7 @@ test.each([
 ])("renders singular countdown copy: $expected", async (testCase) => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
   const currentBaby = { ...baby, dueDate: testCase.dueDate };
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={currentBaby}
@@ -151,16 +114,13 @@ test.each([
       latestUpdate={null}
     />,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByText(testCase.expected)).toBeTruthy();
 });
 
 test("custom public due date text replaces the exact date and countdown", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={{
@@ -176,9 +136,6 @@ test("custom public due date text replaces the exact date and countdown", async 
       latestUpdate={null}
     />,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByText("Any day now")).toBeTruthy();
   expect(view.queryByText(/until due date/)).toBeNull();
@@ -187,7 +144,7 @@ test("custom public due date text replaces the exact date and countdown", async 
 
 test("hides the due date box when message mode has no public text", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={{
@@ -203,9 +160,6 @@ test("hides the due date box when message mode has no public text", async () => 
       latestUpdate={null}
     />,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.queryByText(/until due date/)).toBeNull();
   expect(view.queryByText(/Due date:/)).toBeNull();
@@ -214,7 +168,7 @@ test("hides the due date box when message mode has no public text", async () => 
 
 test("blank public due date text keeps the exact date and countdown", async () => {
   await using _timers = useFakeTimersResource(new Date("2026-08-18T08:00:00.000Z"));
-  const view = render(
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId={null}
       baby={{ ...baby, publicDueDateText: "   " }}
@@ -225,16 +179,13 @@ test("blank public due date text keeps the exact date and countdown", async () =
       latestUpdate={null}
     />,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   expect(view.getByText("14 days until due date")).toBeTruthy();
   expect(view.getByText("Due date: 1 September 2026")).toBeTruthy();
 });
 
-test("uses the thumbnail inline and links to the photo overlay", () => {
-  const view = render(
+test("uses the thumbnail inline and links to the photo overlay", async () => {
+  await using view = await renderWithTestRouter(
     <StatusDisplay
       publicId="baby-nova"
       baby={baby}
@@ -245,9 +196,6 @@ test("uses the thumbnail inline and links to the photo overlay", () => {
       latestUpdate={null}
     />,
   );
-  using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   const avatar = view.getByRole("link", { name: "Photo of Nova" });
   expect(avatar.getAttribute("href")).toBe("/baby/baby-nova/photo");

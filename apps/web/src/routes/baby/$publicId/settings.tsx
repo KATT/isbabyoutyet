@@ -2,7 +2,6 @@ import { SettingsPanel } from "@/components/baby/settings-panel";
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import type { BabyData } from "@workspace/convex/src/types";
 import {
   createFileRoute,
   notFound,
@@ -10,11 +9,11 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import type { FunctionReturnType } from "convex/server";
 import { useMutation } from "convex/react";
 import { useI18n } from "@/lib/i18n";
 import { authenticateManagerOverlaySsr } from "@/lib/managerOverlayAuth";
 import { useBabySettingsOverlayNav } from "@/lib/overlay-nav";
+import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
@@ -70,25 +69,6 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
   component: BabySettingsOverlay,
 });
 
-type ManagerBabyDoc = Exclude<FunctionReturnType<typeof api.baby.getManagerBaby>, typeof FORBIDDEN>;
-
-export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
-  return {
-    name: doc.name,
-    dueDate: doc.dueDate,
-    dueDateDisplayMode: doc.dueDateDisplayMode,
-    publicDueDateText: doc.publicDueDateText,
-    theme: doc.theme ?? null,
-    locale: doc.locale ?? null,
-    timeZone: doc.timeZone,
-    laborStarted: doc.laborStarted ?? null,
-    wentToHospital: doc.wentToHospital ?? null,
-    babyBorn: doc.babyBorn ?? null,
-    milestoneVisibility: doc.milestoneVisibility,
-    photoId: doc.photoId ?? null,
-  };
-}
-
 export function BabySettingsOverlay() {
   const { locale } = useI18n();
   const params = Route.useParams();
@@ -105,8 +85,8 @@ export function BabySettingsOverlay() {
   if (!managerBabyDoc) {
     throw notFound();
   }
-  const baby = managerDocToBabyData(managerBabyDoc);
   const isOwner = loaderData.myAccess.initialData.isOwner;
+  const baby = managerDocToBabyData(managerBabyDoc);
 
   return (
     <SettingsPanel

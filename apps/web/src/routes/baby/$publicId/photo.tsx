@@ -50,12 +50,12 @@ export function BabyPhotoOverlay() {
   const { t } = useI18n();
   const params = Route.useParams();
   const loaderData = Route.useLoaderData();
+  const photo = useBabyPhotoOverlayNav(params.publicId);
   useQuery(preloadedQueryOptions(browserImageFactory, loaderData.imagePrefetch));
   const babyDoc = loaderData.baby.initialData;
   if (!babyDoc?.photoUrl) {
     throw notFound();
   }
-  const photo = useBabyPhotoOverlayNav(params.publicId);
 
   return (
     <PhotoLightbox

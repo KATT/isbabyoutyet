@@ -18,6 +18,7 @@ export default defineSchema({
       v.literal("labor"),
       v.literal("home_birth"),
       v.literal("planned_c_section"),
+      v.literal("custom"),
     ),
     theme: v.optional(v.union(v.string(), v.null())), // Theme preset name (e.g., "violet-bloom", "baby-blue")
     locale: v.optional(v.union(supportedLocaleValidator, v.null())), // Optional language override; null/absent inherits the owner's profile

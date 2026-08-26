@@ -11,7 +11,15 @@ const PRIVATE_HEADERS = {
   "Cache-Control": "private, no-store, no-cache, max-age=0, must-revalidate",
 } as const;
 
-export async function handleCachePurge(request: Request) {
+type CachePurgeDeps = {
+  deleteByTag: typeof dangerouslyDeleteByTag;
+};
+
+/**
+ * Cache purge handler. `deps` is injectable for tests so we never need to
+ * `vi.mock("@vercel/functions")`.
+ */
+export async function handleCachePurge(request: Request, deps: CachePurgeDeps) {
   const secret = process.env.BETTER_AUTH_SECRET;
   if (!secret) {
     return Response.json(
@@ -46,7 +54,7 @@ export async function handleCachePurge(request: Request) {
   }
 
   if (process.env.VERCEL) {
-    await dangerouslyDeleteByTag(parsed.data.tags, {
+    await deps.deleteByTag(parsed.data.tags, {
       revalidationDeadlineSeconds: 0,
     });
   }
@@ -58,7 +66,9 @@ export const Route = createFileRoute("/api/cache/purge")({
   server: {
     handlers: {
       POST: async (requestContext) => {
-        return await handleCachePurge(requestContext.request);
+        return await handleCachePurge(requestContext.request, {
+          deleteByTag: dangerouslyDeleteByTag,
+        });
       },
     },
   },

@@ -3,18 +3,21 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { useEffect, useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
 import { GettingStartedCard } from "./getting-started";
 import { Coachmark } from "./coachmark";
 import { ONBOARDING_STEPS } from "./steps";
 
+type OnboardingSession = {
+  data: { user: { id: string } } | null;
+  isPending: boolean;
+};
+
 type OnboardingHostProps = {
   surface: "dashboard" | "baby";
-  onboarding:
-    | PreloadedConvexQuery<typeof api.onboarding.getMine>
-    | InitiatedConvexQuery<typeof api.onboarding.getMine>;
+  onboarding: PreloadedConvexQuery<typeof api.onboarding.getMine>;
   /** Baby-page owners only — visitors never see the tour */
   enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */
@@ -27,7 +30,7 @@ type OnboardingHostProps = {
 
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement)) {
+  if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
     return;
   }
   el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
@@ -41,11 +44,30 @@ function scrollToTourTarget(targetId: string) {
  * anonymous visitors never suspend on `onboarding.getMine`.
  */
 export function OnboardingHost(props: OnboardingHostProps) {
-  const enabled = props.enabled !== false;
   const session = authClient.useSession();
-  const isAuthed = !!session.data?.user;
+  return (
+    <OnboardingHostWithSession
+      {...props}
+      session={{
+        data: session.data?.user ? { user: { id: session.data.user.id } } : null,
+        isPending: session.isPending,
+      }}
+    />
+  );
+}
 
-  if (!enabled || !isAuthed || session.isPending) {
+/**
+ * Session-injected gate used by tests. Production goes through {@link OnboardingHost}.
+ *
+ * @internal exported for tests
+ */
+export function OnboardingHostWithSession(
+  props: OnboardingHostProps & { session: OnboardingSession },
+) {
+  const enabled = props.enabled !== false;
+  const isAuthed = !!props.session.data?.user;
+
+  if (!enabled || !isAuthed || props.session.isPending) {
     return null;
   }
 
@@ -53,25 +75,25 @@ export function OnboardingHost(props: OnboardingHostProps) {
 }
 
 function OnboardingHostAuthed(props: OnboardingHostProps) {
-  const { t } = useI18n();
-  const spotlight = props.spotlight !== false;
   const progressQuery = usePreloadedConvexQuery(api.onboarding.getMine, props.onboarding);
-  const progress = progressQuery.data;
   const setMinimized = useMutation(api.onboarding.setMinimized);
   const dismissChecklist = useMutation(api.onboarding.dismissChecklist);
   const completeStep = useMutation(api.onboarding.completeStep);
+  const { t } = useI18n();
+  const spotlight = props.spotlight !== false;
+  const progress = progressQuery.data;
+  const onDismissChecklist = dismissChecklist;
 
   const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
   const [restartHintVisible, setRestartHintVisible] = useState(false);
 
-  // Don't leave a finished checklist hanging on the page
   useEffect(() => {
     if (!progress.allDone || progress.checklistDismissed) return;
     const timeout = window.setTimeout(() => {
-      void dismissChecklist({});
+      void onDismissChecklist({});
     }, 4000);
     return () => window.clearTimeout(timeout);
-  }, [progress.allDone, progress.checklistDismissed, dismissChecklist]);
+  }, [progress.allDone, progress.checklistDismissed, onDismissChecklist]);
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 

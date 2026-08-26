@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
-import { getMilestonePolicy, milestoneVisibilityForPreset } from "../src/types";
+import {
+  getMilestonePolicy,
+  milestoneVisibilityForPreset,
+  birthJourneyForVisibility,
+} from "../src/types";
 
 test("saved journey selections derive their available milestones", () => {
   expect(milestoneVisibilityForPreset("labor")).toEqual({
@@ -14,6 +18,12 @@ test("saved journey selections derive their available milestones", () => {
     showLabor: false,
     showHospital: true,
   });
+  expect(milestoneVisibilityForPreset("custom")).toEqual({
+    showLabor: false,
+    showHospital: false,
+  });
+  expect(birthJourneyForVisibility({ showLabor: true, showHospital: true })).toBe("labor");
+  expect(birthJourneyForVisibility({ showLabor: false, showHospital: false })).toBe("custom");
 });
 
 test("labour selection includes every milestone", () => {

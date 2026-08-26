@@ -1,28 +1,10 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
-}));
-
-vi.mock("@workspace/ui/components/mode-toggle", () => ({
-  ModeToggle: () => <button type="button">Toggle theme</button>,
-}));
-
-const { BabyNav } = await import("@/components/baby/baby-nav");
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { BabyNav } from "@/components/baby/baby-nav";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 test("groups owner actions separately from page actions", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <BabyNav
       shareButton={{ to: "/baby/$publicId/share" }}
       shareOpen={false}
@@ -51,7 +33,7 @@ test("groups owner actions separately from page actions", async () => {
 });
 
 test("hides the owner group when the visitor has no owner actions", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <BabyNav
       shareButton={{ to: "/baby/$publicId/share" }}
       shareOpen={false}
@@ -71,7 +53,7 @@ test("hides the owner group when the visitor has no owner actions", async () => 
 });
 
 test("disables sharing when the share link is empty", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <BabyNav
       shareButton={null}
       shareOpen={false}
@@ -96,7 +78,7 @@ test("calls dismiss handlers when overlay owner actions are open", async () => {
   const onDismissPostUpdate = vi.fn<() => void>();
   const onDismissSettings = vi.fn<() => void>();
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <BabyNav
       shareButton={{ to: "/baby/$publicId/share" }}
       shareOpen={true}

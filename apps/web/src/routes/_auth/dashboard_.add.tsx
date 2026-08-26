@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import type { NavigateOptions } from "@tanstack/react-router";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
@@ -6,6 +7,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
+import { AddBabyOptionalSettings } from "@/components/baby/add-baby-optional-settings";
 import { Card, CardContent } from "@workspace/ui/components/card";
 import {
   FormControl,
@@ -16,7 +18,6 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Form, useZodForm } from "@/components/Form";
-import { JourneySelector } from "@/components/baby/journey-selector";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -33,7 +34,9 @@ function addBabySchema(t: TranslationFunction) {
         z.literal("labor"),
         z.literal("home_birth"),
         z.literal("planned_c_section"),
+        z.literal("custom"),
       ]),
+      theme: z.union([z.string(), z.null()]),
     })
     .superRefine((values, ctx) => {
       if (values.showExactDueDate && !values.dueDate) {
@@ -50,6 +53,7 @@ function addBabySchema(t: TranslationFunction) {
       dueDateDisplayMode: values.showExactDueDate ? "exact" : "message",
       publicDueDateText: values.publicDueDateText || null,
       birthJourney: values.birthJourney,
+      theme: values.theme,
     }));
 }
 
@@ -57,10 +61,26 @@ export const Route = createFileRoute("/_auth/dashboard_/add")({
   component: AddBabyPage,
 });
 
+type CreateBaby = (args: FunctionArgs<typeof api.baby.create>) => Promise<{ publicId: string }>;
+
 export function AddBabyPage() {
-  const { t } = useI18n();
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
+
+  return <AddBabyPageView createBaby={createBaby} navigate={(opts) => router.navigate(opts)} />;
+}
+
+/**
+ * Presentational add-baby form. Mutation + navigate arrive as props so tests
+ * can drive submit without mocking Convex or the router module.
+ *
+ * @internal exported for tests
+ */
+export function AddBabyPageView(props: {
+  createBaby: CreateBaby;
+  navigate: (opts: NavigateOptions) => Promise<void>;
+}) {
+  const { t } = useI18n();
 
   const form = useZodForm({
     schema: addBabySchema(t),
@@ -70,6 +90,7 @@ export function AddBabyPage() {
       showExactDueDate: true,
       publicDueDateText: "",
       birthJourney: "labor" as const,
+      theme: null,
     },
   });
 
@@ -98,7 +119,7 @@ export function AddBabyPage() {
             </span>
           </h1>
           <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name, how to display the due date, and a journey — that's all it takes!")}
+            {t("A name and a due date — that's all it takes!")}
           </p>
         </div>
 
@@ -107,9 +128,9 @@ export function AddBabyPage() {
             <Form
               form={form}
               handleSubmit={async (values) => {
-                const result = await createBaby(values);
+                const result = await props.createBaby(values);
 
-                await router.navigate({
+                await props.navigate({
                   to: "/baby/$publicId",
                   params: { publicId: result.publicId },
                 });
@@ -126,9 +147,7 @@ export function AddBabyPage() {
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormDescription>
-                        {t(
-                          "Don't worry if you don't know it yet. A nickname is fine — you can change it later.",
-                        )}
+                        {t("Optional — leave blank for now. You can change the time later in settings.")}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -145,27 +164,10 @@ export function AddBabyPage() {
                   stopPopoverPropagation={false}
                 />
 
-                <FormField
+                <AddBabyOptionalSettings
                   control={form.control}
-                  name="birthJourney"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Choose a journey")}</FormLabel>
-                      <FormControl>
-                        <JourneySelector
-                          value={renderProps.field.value}
-                          onValueChange={renderProps.field.onChange}
-                          idPrefix="add-journey"
-                        />
-                      </FormControl>
-                      <FormDescription>
-                        {t(
-                          "We save this choice for your settings, but we don't show it to anyone.",
-                        )}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  birthJourneyFieldName="birthJourney"
+                  themeFieldName="theme"
                 />
 
                 <Button

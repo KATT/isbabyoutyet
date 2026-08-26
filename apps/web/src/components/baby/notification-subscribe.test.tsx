@@ -1,14 +1,19 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { fireEvent, screen } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
-import { testPreloadedConvexQuery } from "@workspace/convex-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import { LocaleProvider } from "@/lib/i18n";
-import { browserPushQueryOptions, prefetchBrowserPushCapability } from "./notification-subscribe";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { signUpTestUser } from "@/test/convexTestSeed";
+import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import {
+  browserPushQueryOptions,
+  NotificationSubscribe,
+  prefetchBrowserPushCapability,
+} from "./notification-subscribe";
 
 const IPHONE_SAFARI_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
@@ -32,23 +37,6 @@ type BrowserPushStub = {
   subscription: PushSubscription | null;
   serviceWorkerReady: Promise<ServiceWorkerRegistration>;
 };
-
-vi.mock("@convex-dev/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@convex-dev/react-query")>();
-  return {
-    ...actual,
-    useConvexMutation: () => vi.fn<() => Promise<null>>().mockResolvedValue(null),
-  };
-});
-
-vi.mock("sonner", () => ({
-  toast: {
-    promise: vi.fn<(...args: unknown[]) => void>(),
-    error: vi.fn<(message: string) => void>(),
-  },
-}));
-
-const { NotificationSubscribe } = await import("./notification-subscribe");
 
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
@@ -164,35 +152,37 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-const vapidPublicKey = testPreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>({
-  input: {},
-  initialData: "vapid-public-key",
-});
-
-function renderSubscribe(capability: BrowserPushCapability) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+async function renderSubscribe(capability: BrowserPushCapability) {
+  const harnessCtx = await createConvexTestHarness({ identity: null });
+  await signUpTestUser(harnessCtx, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  const view = render(
-    <QueryClientProvider client={queryClient}>
-      <LocaleProvider locale="en-GB">
-        <TooltipProvider>
-          <NotificationSubscribe
-            babyId={babyId}
-            vapidPublicKey={vapidPublicKey}
-            browserPush={testPreloadedQuery(
-              (ref) => browserPushQueryOptions(queryClient, ref),
-              capability,
-              babyRef,
-            )}
-          />
-        </TooltipProvider>
-      </LocaleProvider>
-    </QueryClientProvider>,
+  const vapid = await harnessCtx.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getPublicKey,
+    {},
   );
-  return makeResource(view, () => {
-    view.unmount();
-    queryClient.clear();
+  const view = renderWithConvexTest({
+    harness: harnessCtx,
+    ui: (
+      <TooltipProvider>
+        <NotificationSubscribe
+          babyId={babyId}
+          vapidPublicKey={vapid}
+          browserPush={testPreloadedQuery(
+            (ref) => browserPushQueryOptions(harnessCtx.queryClient, ref),
+            capability,
+            babyRef,
+          )}
+        />
+      </TooltipProvider>
+    ),
+    wrap: null,
+  });
+  return makeAsyncResource(view, async () => {
+    view[Symbol.dispose]();
+    await harnessCtx[Symbol.asyncDispose]();
   });
 }
 
@@ -369,7 +359,7 @@ test("does not touch PushManager while prefetching on the server", async () => {
 });
 
 test("shows iOS Home Screen instructions when the PWA is not installed", async () => {
-  await using view = renderSubscribe({ kind: "needsIosInstall" });
+  await using view = await renderSubscribe({ kind: "needsIosInstall" });
 
   fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
 
@@ -378,27 +368,27 @@ test("shows iOS Home Screen instructions when the PWA is not installed", async (
 });
 
 test("offers subscribe when push is supported without a subscription", async () => {
-  await using view = renderSubscribe({ kind: "unsubscribed" });
+  await using view = await renderSubscribe({ kind: "unsubscribed" });
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when the service worker times out", async () => {
-  await using view = renderSubscribe({ kind: "serviceWorkerTimeout" });
+  await using view = await renderSubscribe({ kind: "serviceWorkerTimeout" });
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when push is unsupported", async () => {
-  await using view = renderSubscribe({ kind: "unsupported" });
+  await using view = await renderSubscribe({ kind: "unsupported" });
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });
 
 test("shows unsubscribe when Convex reports an active subscription", async () => {
-  await using view = renderSubscribe({
+  await using view = await renderSubscribe({
     kind: "subscribed",
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
     isSubscribed: true,
@@ -408,7 +398,7 @@ test("shows unsubscribe when Convex reports an active subscription", async () =>
 });
 
 test("offers subscribe when the browser is subscribed but Convex is not", async () => {
-  await using view = renderSubscribe({
+  await using view = await renderSubscribe({
     kind: "subscribed",
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
     isSubscribed: false,

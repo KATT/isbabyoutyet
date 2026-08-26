@@ -1,87 +1,96 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { AnyRoute } from "@tanstack/react-router";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  Outlet,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { render } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { getFunctionName } from "convex/server";
+import type { FunctionReturnType } from "convex/server";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { LocaleProvider } from "@/lib/i18n";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashboard/route";
 
-const mocks = vi.hoisted(() => ({
-  babies: { kind: "babies" },
-  onboarding: { kind: "onboarding" },
-}));
+const babySmith = {
+  _id: "baby-id" as Id<"baby">,
+  name: "Baby Smith",
+  timeZone: "Europe/London",
+  publicId: "baby-smith",
+  dueDate: "2026-12-01",
+  dueDateDisplayMode: "exact" as const,
+  publicDueDateText: null,
+  laborStarted: null,
+  wentToHospital: null,
+  babyBorn: null,
+  role: "owner" as const,
+};
 
-vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => ({
-    history: {
-      location: { state: { overlay: undefined } },
-      canGoBack: () => false,
-      back: vi.fn<() => void>(),
-    },
-    navigate: vi.fn<() => Promise<void>>(async () => {}),
-  }),
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
-  Outlet: () => <div data-testid="dashboard-outlet" />,
-  createFileRoute: () => (opts: { component: unknown; loader: unknown }) => ({
-    ...opts,
-    options: opts,
-    useLoaderData: () => ({
-      babies: mocks.babies,
-      onboarding: mocks.onboarding,
-    }),
-  }),
-  getRouteApi: () => ({
-    useRouteContext: () => ({
-      profile: {
-        input: {},
-        initialData: { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-      },
-    }),
-  }),
-}));
+const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
+  welcomeDismissed: true,
+  checklistDismissed: true,
+  minimized: false,
+  completedSteps: [],
+  hasBaby: true,
+  hasUpdate: true,
+  effectiveSteps: [],
+  allDone: true,
+  tourBaby: null,
+};
 
-vi.mock("@workspace/convex-prefetch", () => ({
-  usePreloadedConvexQuery: (_query: unknown, handle: unknown) =>
-    handle === mocks.babies
-      ? { data: [] }
-      : {
-          data: { tourBaby: null },
-        },
-}));
+/**
+ * Stands in for `convexPreloader` so the real loader runs without a Convex
+ * deployment, recording call order to prove the prefetches are not serialised.
+ */
+/**
+ * `Route.update()` is typed for non-structural option tweaks only, so widen it
+ * to re-parent the real route (same instance, so its `useLoaderData` keeps
+ * resolving) onto a test root.
+ */
+function reparentRoute<TRoute extends AnyRoute>(
+  route: TRoute,
+  opts: { path: string; getParentRoute: () => AnyRoute },
+): TRoute {
+  const update = route.update as (options: typeof opts) => TRoute;
+  return update(opts);
+}
 
-vi.mock("@/components/onboarding/onboarding-host", () => ({
-  OnboardingHost: () => null,
-}));
+type EnsureQueryData = (
+  query: Parameters<typeof getFunctionName>[0],
+  input: Record<string, never>,
+) => Promise<{ input: Record<string, never>; initialData: unknown }>;
 
-vi.mock("@/components/language-settings", () => ({
-  LanguageSettings: () => null,
-}));
-
-vi.mock("@/lib/auth-server", () => ({
-  authServer: {
-    fetchAuthQuery: vi.fn<() => Promise<unknown>>(),
-    getToken: vi.fn<() => Promise<string | null>>(),
-  },
-}));
-
-const routeModule = await import("@/routes/_auth/dashboard/route");
-const { DashboardBabyList, DashboardHeader, DashboardPageLayout } = routeModule;
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+function stubPreloader(babies: (typeof babySmith)[]) {
+  const calls: string[] = [];
+  const ensureQueryData = vi.fn<EnsureQueryData>((query, input) => {
+    const name = getFunctionName(query);
+    calls.push(name);
+    return Promise.resolve({
+      input,
+      initialData: name === getFunctionName(api.baby.listByUser) ? babies : onboardingProgress,
+    });
   });
+  return { calls, context: { convexPreloader: { ensureQueryData } } };
 }
 
 test("shows the empty state once the list has loaded with no babies", async () => {
-  await using view = renderResource(<DashboardBabyList babies={[]} tourBabyPublicId={undefined} />);
+  await using view = await renderWithTestRouter(
+    <DashboardBabyList babies={[]} tourBabyPublicId={undefined} />,
+  );
 
   expect(view.getByText("No baby pages yet")).toBeTruthy();
 });
 
 test("dashboard header keeps only add baby and profile settings actions", async () => {
-  await using view = renderResource(<DashboardHeader />);
+  await using view = await renderWithTestRouter(<DashboardHeader />);
 
   expect(view.getByRole("button", { name: "Add Baby" }).getAttribute("href")).toBe(
     "/dashboard/add",
@@ -95,57 +104,73 @@ test("dashboard header keeps only add baby and profile settings actions", async 
 });
 
 test("parent dashboard stays mounted while child routes render through its outlet", async () => {
-  await using view = renderResource(<DashboardPageLayout />);
+  const preloader = stubPreloader([babySmith]);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
+  });
+  // The real route re-parented onto a bare test root: its loader, component,
+  // and `<Outlet />` all run, with a child route standing in for /dashboard/*.
+  const rootRoute = createRootRoute({
+    component: function TestRoot() {
+      return (
+        <QueryClientProvider client={queryClient}>
+          <LocaleProvider locale="en-GB">
+            <TooltipProvider>
+              <Outlet />
+            </TooltipProvider>
+          </LocaleProvider>
+        </QueryClientProvider>
+      );
+    },
+  });
+  const dashboardRoute = reparentRoute(Route, {
+    path: "/dashboard",
+    getParentRoute: () => rootRoute,
+  });
+  const childRoute = createRoute({
+    getParentRoute: () => dashboardRoute,
+    path: "/",
+    component: () => <div data-testid="dashboard-outlet" />,
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([dashboardRoute.addChildren([childRoute])]),
+    history: createMemoryHistory({ initialEntries: ["/dashboard"] }),
+    defaultPendingMinMs: 0,
+    context: preloader.context,
+  });
+  await router.load();
+
+  const rendered = render(<RouterProvider router={router} />);
+  await using view = makeResource(rendered, () => {
+    rendered.unmount();
+    queryClient.clear();
+  });
 
   expect(view.getByRole("heading", { name: /Your babies/ })).toBeTruthy();
   expect(view.getByTestId("dashboard-outlet")).toBeTruthy();
 });
 
 test("parent dashboard loader starts independent prefetches without a waterfall", async () => {
-  const calls: string[] = [];
-  const ensureQueryData = vi.fn<
-    (_query: unknown, _input: unknown) => Promise<Record<string, never>>
-  >(() => {
-    calls.push(`query-${String(calls.length + 1)}`);
-    return Promise.resolve({});
-  });
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
-    context: { convexPreloader: { ensureQueryData: typeof ensureQueryData } };
+  const preloader = stubPreloader([]);
+  const loader = Route.options.loader as unknown as (opts: {
+    context: typeof preloader.context;
   }) => Promise<unknown>;
 
-  const pending = loader({
-    context: {
-      convexPreloader: { ensureQueryData },
-    },
-  });
+  const pending = loader({ context: preloader.context });
 
-  expect(calls).toEqual(["query-1", "query-2"]);
+  expect(preloader.calls).toEqual([
+    getFunctionName(api.baby.listByUser),
+    getFunctionName(api.onboarding.getMine),
+  ]);
   await expect(pending).resolves.toMatchObject({
-    babies: {},
-    onboarding: {},
+    babies: { initialData: [] },
+    onboarding: { initialData: onboardingProgress },
   });
 });
 
 test("shows prefetched babies without a spinner", async () => {
-  await using view = renderResource(
-    <DashboardBabyList
-      tourBabyPublicId="baby-smith"
-      babies={[
-        {
-          _id: "baby-id" as Id<"baby">,
-          name: "Baby Smith",
-          timeZone: "Europe/London",
-          publicId: "baby-smith",
-          dueDate: "2026-12-01",
-          dueDateDisplayMode: "exact",
-          publicDueDateText: null,
-          laborStarted: null,
-          wentToHospital: null,
-          babyBorn: null,
-          role: "owner",
-        },
-      ]}
-    />,
+  await using view = await renderWithTestRouter(
+    <DashboardBabyList tourBabyPublicId="baby-smith" babies={[babySmith]} />,
   );
 
   expect(view.queryByRole("status", { name: "Loading" })).toBeNull();

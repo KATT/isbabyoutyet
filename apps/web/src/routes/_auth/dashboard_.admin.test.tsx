@@ -1,116 +1,25 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
-import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
+import { isRedirect } from "@tanstack/react-router";
 import type { ReactElement } from "react";
+import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
-import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
 import type { TranslationFunction } from "@/lib/i18n";
-import { testPreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch/test-helpers";
-
-const mocks = vi.hoisted(() => ({
-  navigate: vi.fn<(opts: unknown) => void>(),
-  search: {
-    tab: "babies" as "babies" | "languages" | "users",
-    sort: "created" as "created" | "updated",
-    order: "desc" as "asc" | "desc",
-    hideDemo: true,
-  },
-  fetchNextPage: vi.fn<() => Promise<unknown>>(),
-  infinitePages: [{ page: [] as unknown[], isDone: true, continueCursor: "" }],
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      search: Record<string, string> | undefined;
-      replace: boolean | undefined;
-    },
-  ) => {
-    const { to, search, children, replace: _replace, ...rest } = props;
-    const query = search
-      ? `?${new URLSearchParams(search as Record<string, string>).toString()}`
-      : "";
-    return (
-      <a href={`${typeof to === "string" ? to : "#"}${query}`} {...rest}>
-        {children}
-      </a>
-    );
-  },
-  createFileRoute: (routeId: string) => (opts: Record<string, unknown>) => ({
-    ...opts,
-    routeId,
-    useSearch: () => mocks.search,
-    useLoaderData: () => ({
-      babies: testPreloadedConvexInfiniteQuery<typeof api.admin.listBabies>({
-        input: { sortBy: "created", sortOrder: "desc", hideDemo: true },
-        numItems: 20,
-        initialData: {
-          pages: [{ page: [], isDone: true, continueCursor: "" }],
-          pageParams: [{ numItems: 20, cursor: null }],
-        },
-      }),
-      languages: testPreloadedConvexInfiniteQuery<typeof api.admin.listLanguageRequests>({
-        input: {},
-        numItems: 20,
-        initialData: {
-          pages: [{ page: [], isDone: true, continueCursor: "" }],
-          pageParams: [{ numItems: 20, cursor: null }],
-        },
-      }),
-      users: testPreloadedConvexInfiniteQuery<typeof api.admin.listUsers>({
-        input: {},
-        numItems: 20,
-        initialData: {
-          pages: [{ page: [], isDone: true, continueCursor: "" }],
-          pageParams: [{ numItems: 20, cursor: null }],
-        },
-      }),
-    }),
-  }),
-  redirect: (opts: unknown) => {
-    throw { isRedirect: true, ...(opts as object) };
-  },
-  useNavigate: () => mocks.navigate,
-}));
-
-vi.mock("@workspace/convex-prefetch", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@workspace/convex-prefetch")>();
-  return {
-    ...actual,
-    usePreloadedConvexInfiniteQuery: () => ({
-      data: {
-        pages: mocks.infinitePages,
-        pageParams: [{ numItems: 20, cursor: null }],
-      },
-      hasNextPage: false,
-      isFetchingNextPage: false,
-      fetchNextPage: mocks.fetchNextPage,
-    }),
-  };
-});
-
-const {
-  Route: AdminRoute,
-  AdminDashboardPage,
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import {
   ADMIN_DEFAULT_SEARCH,
+  AdminDashboardPage,
+  AdminDashboardView,
   BabiesSection,
   LanguageRequestsSection,
+  Route as AdminRoute,
   UsersSection,
   formatWhen,
   isAdminTab,
   nextSortSearch,
   statusLabel,
-} = await import("@/routes/_auth/dashboard_.admin");
-
-function renderResource(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+} from "@/routes/_auth/dashboard_.admin";
 
 const t = ((key: string) => key) as TranslationFunction;
 
@@ -125,10 +34,15 @@ const sampleBaby = {
   managerEmails: ["owner@example.com", "co@example.com"],
 };
 
+function renderAdmin(ui: ReactElement) {
+  return renderWithTestRouter(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>, {
+    path: "/dashboard/admin",
+  });
+}
+
 test("admin remains a standalone non-nested dashboard route", () => {
-  const route = AdminRoute as unknown as { routeId: string; component: unknown };
-  expect(route.routeId).toBe("/_auth/dashboard_/admin");
-  expect(route.component).toBe(AdminDashboardPage);
+  // Underscored `dashboard_` keeps this sibling of `/dashboard`, not a child.
+  expect(AdminRoute.options.component).toBe(AdminDashboardPage);
 });
 
 test("statusLabel covers every baby status", () => {
@@ -158,7 +72,7 @@ test("nextSortSearch defaults to desc and only toggles to asc on the active desc
 });
 
 test("language requests section shows empty and rows", async () => {
-  await using empty = renderResource(
+  await using empty = await renderAdmin(
     <LanguageRequestsSection
       requests={[]}
       hasNextPage={false}
@@ -168,7 +82,7 @@ test("language requests section shows empty and rows", async () => {
   );
   expect(empty.getByText("No language requests yet")).toBeTruthy();
 
-  await using filled = renderResource(
+  await using filled = await renderAdmin(
     <LanguageRequestsSection
       hasNextPage={false}
       isFetchingNextPage={false}
@@ -196,8 +110,75 @@ test("language requests section shows empty and rows", async () => {
   expect(filled.getByText("user-2")).toBeTruthy();
 });
 
+test("users section shows empty and rows", async () => {
+  await using empty = await renderAdmin(
+    <UsersSection
+      users={[]}
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+    />,
+  );
+  expect(empty.getByText("No users yet")).toBeTruthy();
+
+  await using filled = await renderAdmin(
+    <UsersSection
+      hasNextPage={false}
+      isFetchingNextPage={false}
+      onLoadMore={() => undefined}
+      users={[
+        {
+          _id: "user-1",
+          name: "Ada",
+          email: "ada@example.com",
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          babies: [
+            { name: "River", publicId: "baby-river", demo: false },
+            { name: "Sky", publicId: "baby-sky", demo: true },
+          ],
+        },
+        {
+          _id: "user-2",
+          name: "Bob",
+          email: "bob@example.com",
+          createdAt: Date.UTC(2026, 0, 16, 12, 0),
+          babies: [],
+        },
+      ]}
+    />,
+  );
+  expect(filled.getByText("Ada")).toBeTruthy();
+  expect(filled.getByText("ada@example.com")).toBeTruthy();
+  expect(filled.getByRole("link", { name: "River" })).toBeTruthy();
+  expect(filled.getByRole("link", { name: "Sky" })).toBeTruthy();
+  expect(filled.getByText(/Demo/)).toBeTruthy();
+  expect(filled.getByText("Bob")).toBeTruthy();
+  expect(filled.getByText("—")).toBeTruthy();
+});
+
+test("users section shows loading-more spinner", async () => {
+  await using view = await renderAdmin(
+    <UsersSection
+      hasNextPage={true}
+      isFetchingNextPage={true}
+      onLoadMore={() => undefined}
+      users={[
+        {
+          _id: "user-1",
+          name: "Ada",
+          email: "ada@example.com",
+          createdAt: Date.UTC(2026, 0, 15, 12, 0),
+          babies: [{ name: "River", publicId: "baby-river", demo: false }],
+        },
+      ]}
+    />,
+  );
+  expect(view.getByText("Ada")).toBeTruthy();
+  expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
+});
+
 test("babies section sorts via clickable header links", async () => {
-  await using view = renderResource(
+  await using view = await renderAdmin(
     <BabiesSection
       sort="updated"
       order="desc"
@@ -237,7 +218,7 @@ test("babies section sorts via clickable header links", async () => {
 });
 
 test("babies section shows a spinner while loading more", async () => {
-  await using loadingMore = renderResource(
+  await using loadingMore = await renderAdmin(
     <BabiesSection
       sort="created"
       order="desc"
@@ -254,7 +235,7 @@ test("babies section shows a spinner while loading more", async () => {
 });
 
 test("language requests section shows loading-more spinner", async () => {
-  await using view = renderResource(
+  await using view = await renderAdmin(
     <LanguageRequestsSection
       hasNextPage={true}
       isFetchingNextPage={true}
@@ -271,73 +252,6 @@ test("language requests section shows loading-more spinner", async () => {
     />,
   );
   expect(view.getByText("French")).toBeTruthy();
-  expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
-});
-
-test("users section shows empty and rows", async () => {
-  await using empty = renderResource(
-    <UsersSection
-      users={[]}
-      hasNextPage={false}
-      isFetchingNextPage={false}
-      onLoadMore={() => undefined}
-    />,
-  );
-  expect(empty.getByText("No users yet")).toBeTruthy();
-
-  await using filled = renderResource(
-    <UsersSection
-      hasNextPage={false}
-      isFetchingNextPage={false}
-      onLoadMore={() => undefined}
-      users={[
-        {
-          _id: "user-1",
-          name: "Ada",
-          email: "ada@example.com",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          babies: [
-            { name: "River", publicId: "baby-river", demo: false },
-            { name: "Sky", publicId: "baby-sky", demo: true },
-          ],
-        },
-        {
-          _id: "user-2",
-          name: "Bob",
-          email: "bob@example.com",
-          createdAt: Date.UTC(2026, 0, 16, 12, 0),
-          babies: [],
-        },
-      ]}
-    />,
-  );
-  expect(filled.getByText("Ada")).toBeTruthy();
-  expect(filled.getByText("ada@example.com")).toBeTruthy();
-  expect(filled.getByRole("link", { name: "River" })).toBeTruthy();
-  expect(filled.getByRole("link", { name: "Sky" })).toBeTruthy();
-  expect(filled.getByText(/Demo/)).toBeTruthy();
-  expect(filled.getByText("Bob")).toBeTruthy();
-  expect(filled.getByText("—")).toBeTruthy();
-});
-
-test("users section shows loading-more spinner", async () => {
-  await using view = renderResource(
-    <UsersSection
-      hasNextPage={true}
-      isFetchingNextPage={true}
-      onLoadMore={() => undefined}
-      users={[
-        {
-          _id: "user-1",
-          name: "Ada",
-          email: "ada@example.com",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          babies: [{ name: "River", publicId: "baby-river", demo: false }],
-        },
-      ]}
-    />,
-  );
-  expect(view.getByText("Ada")).toBeTruthy();
   expect(view.getAllByRole("status", { name: "Loading" }).length).toBeGreaterThan(0);
 });
 
@@ -371,7 +285,7 @@ test("infinite scroll sentinel requests another page when visible", async () => 
   globalThis.IntersectionObserver =
     MockIntersectionObserver as unknown as typeof IntersectionObserver;
 
-  await using _view = renderResource(
+  await using _view = await renderAdmin(
     <BabiesSection
       sort="updated"
       order="desc"
@@ -390,9 +304,22 @@ test("infinite scroll sentinel requests another page when visible", async () => 
 });
 
 test("admin dashboard page exposes tab links and hide-demo filter", async () => {
-  mocks.search.tab = "babies";
-  mocks.infinitePages = [{ page: [], isDone: true, continueCursor: "" }];
-  await using view = renderResource(<AdminDashboardPage />);
+  const onTabChange = vi.fn<(tab: "babies" | "languages" | "users") => void>();
+  const onHideDemoChange = vi.fn<(hideDemo: boolean) => void>();
+
+  await using view = await renderAdmin(
+    <AdminDashboardView
+      tab="babies"
+      sort="created"
+      order="desc"
+      hideDemo={true}
+      onTabChange={onTabChange}
+      onHideDemoChange={onHideDemoChange}
+      babiesTab={<div>babies body</div>}
+      usersTab={<div>users body</div>}
+      languagesTab={<div>languages body</div>}
+    />,
+  );
   expect(view.getByText("Admin dashboard")).toBeTruthy();
 
   const babiesTab = view.getByRole("tab", { name: "All babies" });
@@ -408,10 +335,11 @@ test("admin dashboard page exposes tab links and hide-demo filter", async () => 
   const hideDemo = view.getByRole("switch", { name: "Hide demo babies" });
   expect(hideDemo.getAttribute("aria-checked")).toBe("true");
   fireEvent.click(hideDemo);
-  expect(mocks.navigate).toHaveBeenCalled();
+  expect(onHideDemoChange).toHaveBeenCalledWith(false);
 
   fireEvent.click(languagesTab);
-  expect(mocks.navigate).toHaveBeenCalled();
+  // Tab Links navigate via href; onValueChange also fires for the Tabs control.
+  expect(onTabChange).toHaveBeenCalled();
 });
 
 test("admin defaults to created-desc babies and recognizes every admin tab", () => {
@@ -427,26 +355,38 @@ test("admin defaults to created-desc babies and recognizes every admin tab", () 
   expect(isAdminTab("nope")).toBe(false);
 });
 
-test("users tab renders recent signup rows from the infinite query", async () => {
-  mocks.search.tab = "users";
-  mocks.infinitePages = [
-    {
-      page: [
-        {
-          _id: "user-1",
-          name: "Ada",
-          email: "ada@example.com",
-          createdAt: Date.UTC(2026, 0, 15, 12, 0),
-          babies: [{ name: "River", publicId: "baby-river", demo: false }],
-        },
-      ],
-      isDone: true,
-      continueCursor: "",
-    },
-  ];
-  await using view = renderResource(<AdminDashboardPage />);
+test("users tab body renders without the hide-demo filter", async () => {
+  await using view = await renderAdmin(
+    <AdminDashboardView
+      tab="users"
+      sort="created"
+      order="desc"
+      hideDemo={true}
+      onTabChange={() => undefined}
+      onHideDemoChange={() => undefined}
+      babiesTab={<div>babies body</div>}
+      usersTab={
+        <UsersSection
+          hasNextPage={false}
+          isFetchingNextPage={false}
+          onLoadMore={() => undefined}
+          users={[
+            {
+              _id: "user-1",
+              name: "Ada",
+              email: "ada@example.com",
+              createdAt: Date.UTC(2026, 0, 15, 12, 0),
+              babies: [{ name: "River", publicId: "baby-river", demo: false }],
+            },
+          ]}
+        />
+      }
+      languagesTab={<div>languages body</div>}
+    />,
+  );
   expect(view.getByText("Ada")).toBeTruthy();
   expect(view.getByText("ada@example.com")).toBeTruthy();
+  expect(view.getByRole("link", { name: "River" })).toBeTruthy();
   expect(view.queryByRole("switch", { name: "Hide demo babies" })).toBeNull();
 });
 
@@ -479,17 +419,19 @@ async function runAdminLoader(
     serverHttpClient: undefined,
   } as never);
   const route = AdminRoute as unknown as {
-    loader: (opts: {
-      context: {
-        queryClient: QueryClient;
-        convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
-        profile: { input: Record<string, never>; initialData: typeof profile };
-      };
-      deps: { tab: string; sort: string; order: string; hideDemo: boolean };
-    }) => Promise<Record<string, unknown>>;
+    options: {
+      loader: (opts: {
+        context: {
+          queryClient: QueryClient;
+          convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
+          profile: { input: Record<string, never>; initialData: typeof profile };
+        };
+        deps: { tab: string; sort: string; order: string; hideDemo: boolean };
+      }) => Promise<Record<string, unknown>>;
+    };
   };
   const queryClient = makeAdminLoaderQueryClient(handlers);
-  return await route.loader({
+  return await route.options.loader({
     context: {
       queryClient,
       convexPreloader: getConvexQueryPreloader(queryClient),
@@ -518,20 +460,26 @@ test("loader prefetches babies, users, and language requests in parallel for adm
 });
 
 test("loader redirects non-admins without prefetching admin queries", async () => {
-  const pending = runAdminLoader(
-    {
-      "admin:listBabies": () => {
-        throw new Error("admin:listBabies should not run for non-admins");
+  try {
+    await runAdminLoader(
+      {
+        "admin:listBabies": () => {
+          throw new Error("admin:listBabies should not run for non-admins");
+        },
+        "admin:listLanguageRequests": () => {
+          throw new Error("admin:listLanguageRequests should not run for non-admins");
+        },
+        "admin:listUsers": () => {
+          throw new Error("admin:listUsers should not run for non-admins");
+        },
       },
-      "admin:listLanguageRequests": () => {
-        throw new Error("admin:listLanguageRequests should not run for non-admins");
-      },
-      "admin:listUsers": () => {
-        throw new Error("admin:listUsers should not run for non-admins");
-      },
-    },
-    { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
-  );
-
-  await expect(pending).rejects.toMatchObject({ isRedirect: true, to: "/dashboard" });
+      { locale: "en-GB", timeZone: "Europe/London", isAdmin: false },
+    );
+    expect.unreachable("expected a redirect");
+  } catch (error) {
+    expect(isRedirect(error)).toBe(true);
+    if (isRedirect(error)) {
+      expect(error.options.to).toBe("/dashboard");
+    }
+  }
 });

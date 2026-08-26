@@ -1,17 +1,21 @@
 import { fireEvent, render } from "@testing-library/react";
+import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import type { BabyData, BabyUpdateHandler } from "@workspace/convex/src/types";
+import type {
+  BabyData,
+  BabyUpdateHandler,
+  MilestoneRemoveHandler,
+} from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 
-const mocks = vi.hoisted(() => ({
-  toastError: vi.fn<(message: string) => void>(),
-}));
-
-vi.mock("sonner", () => ({
-  toast: { error: mocks.toastError },
-}));
+function spyOnToastErrorResource() {
+  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
+  return makeResource(toastError, () => {
+    toastError.mockRestore();
+  });
+}
 
 const baby: BabyData = {
   name: "Nova",
@@ -42,6 +46,10 @@ function renderResource(ui: React.ReactElement) {
   return makeResource(view, () => {
     view.unmount();
   });
+}
+
+function openJourneyEditor(view: ReturnType<typeof render>) {
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
 }
 
 test("settings dialog shows page fields when open and stays closed when not", async () => {
@@ -78,11 +86,16 @@ test("settings dialog shows page fields when open and stays closed when not", as
   expect(
     open.getByText("1 September 2026 · Visitors see the exact date and countdown."),
   ).toBeTruthy();
-  expect(open.getByText("Labour started")).toBeTruthy();
+  expect(open.getAllByText("Labour started").length).toBeGreaterThan(0);
   expect(open.getByText("Theme")).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Page details" })).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Birth journey" })).toBeTruthy();
   expect(open.getByRole("heading", { level: 3, name: "Appearance" })).toBeTruthy();
+  expect(
+    open.getByText("Visitors see: Labour started → Gone to hospital → Baby born"),
+  ).toBeTruthy();
+  expect(open.queryByRole("button", { name: "Labour" })).toBeNull();
+
   expect(open.queryByText("Delete page")).toBeNull();
 
   fireEvent.click(open.getByRole("button", { name: "Close" }));
@@ -180,7 +193,7 @@ test("page language selection saves the locale override", async () => {
   expect(onUpdate).toHaveBeenCalledWith({ locale: null });
 });
 
-test("journey selection saves the chosen option", async () => {
+test("journey selection saves the chosen preset", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
@@ -195,21 +208,16 @@ test("journey selection saves the chosen option", async () => {
   );
 
   expect(view.getByText("Journey")).toBeTruthy();
-  expect(view.getByText("Labour")).toBeTruthy();
-  expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  expect(view.getByRole("radio", { name: "Labour" })).toBeTruthy();
-  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
+  openJourneyEditor(view);
+  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
-  });
-  await vi.waitFor(() => {
-    expect(view.queryByRole("radio", { name: "Home birth" })).toBeNull();
   });
 });
 
 test("journey editor reports a failed save and remains open", async () => {
-  mocks.toastError.mockReset();
+  await using toastError = spyOnToastErrorResource();
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
@@ -223,13 +231,39 @@ test("journey editor reports a failed save and remains open", async () => {
     />,
   );
 
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  fireEvent.click(view.getByRole("radio", { name: "Home birth" }));
+  openJourneyEditor(view);
+  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
   await vi.waitFor(() => {
-    expect(mocks.toastError).toHaveBeenCalledWith("Could not save journey");
+    expect(toastError).toHaveBeenCalledWith("Could not save journey");
   });
-  expect(view.getByRole("radio", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+});
+
+test("turning off visitor visibility does not remove a marked milestone", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  const onMilestoneRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <SettingsPanel
+      baby={baby}
+      onUpdate={onUpdate}
+      open
+      onOpenChange={vi.fn<(open: boolean) => void>()}
+      {...absentSettingsProps}
+      onMilestoneRemove={onMilestoneRemove}
+    />,
+  );
+
+  openJourneyEditor(view);
+
+  fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
+
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
+  });
+  expect(onMilestoneRemove).not.toHaveBeenCalled();
+  expect(view.queryByRole("heading", { name: "Remove marked milestones?" })).toBeNull();
 });
 
 test("journey selection stays changeable after milestone updates", async () => {
@@ -238,7 +272,7 @@ test("journey selection stays changeable after milestone updates", async () => {
 
   await using view = renderResource(
     <SettingsPanel
-      baby={{ ...baby, wentToHospital: "2026-08-10T12:00:00.000Z" }}
+      baby={{ ...baby, laborStarted: null, wentToHospital: "2026-08-10T12:00:00.000Z" }}
       onUpdate={onUpdate}
       open
       onOpenChange={onOpenChange}
@@ -247,10 +281,10 @@ test("journey selection stays changeable after milestone updates", async () => {
     />,
   );
 
-  expect(view.getByText("Gone to hospital")).toBeTruthy();
-  expect(view.getByText("Home birth")).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  fireEvent.click(view.getByRole("radio", { name: "Planned C-section" }));
+  expect(view.getAllByText("Gone to hospital").length).toBeGreaterThan(0);
+  openJourneyEditor(view);
+  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Planned C-section" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
   });
@@ -281,5 +315,6 @@ test("theme constants render through the active translation catalog", async () =
   expect(view.getByText("Tema")).toBeTruthy();
   expect(view.getByText("Mango")).toBeTruthy();
   expect(view.getByText("Resa")).toBeTruthy();
-  expect(view.getByText("Förlossning")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Redigera resa" }));
+  expect(view.getByRole("button", { name: "Förlossning" })).toBeTruthy();
 });

@@ -1,4 +1,10 @@
-import { act, renderHook } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
+import {
+  createMemoryHistory,
+  createRootRoute,
+  createRouter,
+  RouterProvider,
+} from "@tanstack/react-router";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
@@ -6,20 +12,8 @@ import {
   dismissOverlay,
   openOverlayLink,
   useBabyPostOverlayNav,
+  type OverlayControl,
 } from "@/lib/overlay-nav";
-
-const router = vi.hoisted(() => ({
-  history: {
-    location: { state: { overlay: true as true | undefined } },
-    canGoBack: () => true,
-    back: vi.fn<() => void>(),
-  },
-  navigate: vi.fn<(opts: unknown) => Promise<void>>(async () => {}),
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  useRouter: () => router,
-}));
 
 test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
@@ -116,8 +110,7 @@ test("dismissOverlay navigates with closeLink when history cannot go back", () =
   expect(navigate).toHaveBeenCalledWith(closeLink);
 });
 
-test("useOverlayNav owns enter/exit state and dismisses after animation", () => {
-  router.history.back.mockClear();
+test("useOverlayNav owns enter/exit state and dismisses after animation", async () => {
   const frames: FrameRequestCallback[] = [];
   const requestFrame = vi
     .spyOn(globalThis, "requestAnimationFrame")
@@ -126,25 +119,47 @@ test("useOverlayNav owns enter/exit state and dismisses after animation", () => 
       return frames.length;
     });
   const cancelFrame = vi.spyOn(globalThis, "cancelAnimationFrame").mockImplementation(() => {});
-  using _animationFrame = makeResource({}, () => {
+  await using _animationFrame = makeResource({}, () => {
     requestFrame.mockRestore();
     cancelFrame.mockRestore();
   });
-  const hook = renderHook(() => useBabyPostOverlayNav("baby-smith"));
 
-  expect(hook.result.current.open).toBe(false);
+  const latest: { current: ReturnType<typeof useBabyPostOverlayNav> | null } = { current: null };
+  function Harness() {
+    latest.current = useBabyPostOverlayNav("baby-smith");
+    return null;
+  }
+
+  const history = createMemoryHistory({ initialEntries: ["/"] });
+  history.push("/post", { overlay: true });
+  const back = vi.spyOn(history, "back");
+  const rootRoute = createRootRoute({
+    component: Harness,
+  });
+  const router = createRouter({
+    routeTree: rootRoute,
+    history,
+    defaultPendingMinMs: 0,
+  });
+  await router.load();
+  const view = render(<RouterProvider router={router} />);
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(latest.current?.open).toBe(false);
   act(() => {
     frames[0]?.(0);
   });
-  expect(hook.result.current.open).toBe(true);
+  expect(latest.current?.open).toBe(true);
   act(() => {
-    hook.result.current.close();
+    latest.current?.close();
   });
-  expect(hook.result.current.open).toBe(false);
-  expect(router.history.back).not.toHaveBeenCalled();
+  expect(latest.current?.open).toBe(false);
+  expect(back).not.toHaveBeenCalled();
 
   act(() => {
-    hook.result.current.onOpenChangeComplete(false);
+    (latest.current as OverlayControl).onOpenChangeComplete(false);
   });
-  expect(router.history.back).toHaveBeenCalledOnce();
+  expect(back).toHaveBeenCalledOnce();
 });
