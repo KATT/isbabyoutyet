@@ -2,13 +2,13 @@
  * Disallow React's effect hooks outside the vendored UI package.
  *
  * App state should come from route search params, queries, mutations, or
- * direct user interactions. External subscriptions belong behind
- * `useSyncExternalStore` instead of effect-driven synchronization.
+ * direct user interactions. External subscriptions (timers, observers,
+ * storage) belong in audited `apps/web/src/lib` seams — not in feature UI.
  */
 
 const BANNED_EFFECT_HOOKS = new Set(["useEffect", "useLayoutEffect"]);
 const MESSAGE =
-  "Do not use React `{{name}}`. Derive state during render, update it in user interactions, or subscribe with `useSyncExternalStore`.";
+  "Do not use React `{{name}}`. Derive state during render, update it in user interactions, or use an audited lib hook seam.";
 
 function importedName(node) {
   return node.imported.type === "Identifier" ? node.imported.name : node.imported.value;
