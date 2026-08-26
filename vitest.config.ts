@@ -54,9 +54,11 @@ export default defineConfig({
         // Lowered a hair alongside replacing the covered useResolveAnonymousAuth
         // hook with creation-time wiring in router.tsx (an untested-by-design
         // entry file); the ratchet snaps to exact values on the next run.
-        statements: 87.32,
+        // Lowered alongside deleting covered onboarding-ui-store (state moved
+        // into Convex userOnboarding); the ratchet snaps back on the next run.
+        statements: 87.31,
         branches: 79.54,
-        functions: 87.67,
+        functions: 87.75,
         lines: 87.84,
       },
     },

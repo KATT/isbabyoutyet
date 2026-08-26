@@ -44,6 +44,8 @@ const onboardingProgress: FunctionReturnType<typeof api.onboarding.getMine> = {
   effectiveSteps: [],
   allDone: true,
   tourBaby: null,
+  activeCoachmarkStepId: null,
+  restartHintVisible: false,
 };
 
 /**
