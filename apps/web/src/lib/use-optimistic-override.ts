@@ -3,6 +3,8 @@ import { useState } from "react";
 /**
  * Optimistic override that clears once `base` catches up. Audited lib seam for
  * feature UIs that must not call useState directly.
+ *
+ * `null` is the "no override" sentinel — `$Value` must not include `null`.
  */
 export function useOptimisticOverride<$Value>(opts: {
   base: $Value;

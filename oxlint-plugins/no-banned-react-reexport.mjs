@@ -33,6 +33,20 @@ function exportedLocalName(specifier) {
   return specifier.local.type === "Identifier" ? specifier.local.name : specifier.local.value;
 }
 
+function reportBannedIdentifier(context, node, bannedLocals) {
+  if (node.type !== "Identifier") {
+    return;
+  }
+  const hookName = bannedLocals.get(node.name);
+  if (hookName) {
+    context.report({
+      node,
+      messageId: "banned",
+      data: { name: hookName },
+    });
+  }
+}
+
 const noBannedReactReexport = {
   meta: {
     type: "problem",
@@ -67,6 +81,10 @@ const noBannedReactReexport = {
         }
       },
 
+      ExportDefaultDeclaration(node) {
+        reportBannedIdentifier(context, node.declaration, bannedLocals);
+      },
+
       ExportNamedDeclaration(node) {
         if (node.source?.value === "react") {
           for (const specifier of node.specifiers) {
@@ -85,6 +103,14 @@ const noBannedReactReexport = {
 
         if (node.source) {
           return;
+        }
+
+        if (node.declaration?.type === "VariableDeclaration") {
+          for (const declarator of node.declaration.declarations) {
+            if (declarator.init) {
+              reportBannedIdentifier(context, declarator.init, bannedLocals);
+            }
+          }
         }
 
         for (const specifier of node.specifiers) {

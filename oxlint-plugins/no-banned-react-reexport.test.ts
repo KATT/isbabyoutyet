@@ -49,5 +49,13 @@ tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"],
       code: `import { useOptimistic as opt } from "react"; export { opt as useOptimistic };`,
       errors: [{ messageId: "banned" }],
     },
+    {
+      code: `import { useState } from "react"; export const useLocalState = useState;`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `import { useEffect } from "react"; export default useEffect;`,
+      errors: [{ messageId: "banned" }],
+    },
   ],
 });

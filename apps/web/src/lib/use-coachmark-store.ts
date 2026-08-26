@@ -60,41 +60,39 @@ function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current:
       }
 
       function measure() {
-        const nextTarget = resolveTarget();
-        if (!nextTarget) {
+        const currentTarget = resolveTarget();
+        if (!currentTarget) {
           if (snapshot !== null) {
             snapshot = null;
             notify();
           }
           return;
         }
-        const nextRect = nextTarget.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
-        const placement: "above" | "below" =
-          nextRect.bottom + 160 > viewportHeight && nextRect.top > 160 ? "above" : "below";
-        const isMobile = mediaQuery?.matches ?? viewportWidth < 768;
+        const rect = currentTarget.getBoundingClientRect();
+        // Collapsed/hidden targets (0×0) should hide the tip, not anchor a
+        // degenerate spotlight — restore pre-fold semantics.
+        if (rect.width === 0 && rect.height === 0) {
+          if (snapshot !== null) {
+            snapshot = null;
+            notify();
+          }
+          return;
+        }
         const next: CoachmarkSnapshot = {
-          rect: {
-            top: nextRect.top,
-            left: nextRect.left,
-            width: nextRect.width,
-            height: nextRect.height,
-          },
-          placement,
-          viewportWidth,
-          isMobile,
+          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+          placement:
+            window.innerHeight - rect.bottom < 160 ? ("above" as const) : ("below" as const),
+          viewportWidth: window.innerWidth,
+          isMobile: mediaQuery?.matches === true,
         };
-        const previous = snapshot;
         if (
-          previous &&
-          previous.placement === next.placement &&
-          previous.viewportWidth === next.viewportWidth &&
-          previous.isMobile === next.isMobile &&
-          previous.rect.top === next.rect.top &&
-          previous.rect.left === next.rect.left &&
-          previous.rect.width === next.rect.width &&
-          previous.rect.height === next.rect.height
+          snapshot?.rect.top === next.rect.top &&
+          snapshot.rect.left === next.rect.left &&
+          snapshot.rect.width === next.rect.width &&
+          snapshot.rect.height === next.rect.height &&
+          snapshot.placement === next.placement &&
+          snapshot.viewportWidth === next.viewportWidth &&
+          snapshot.isMobile === next.isMobile
         ) {
           return;
         }

@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
+import type { DialogActions } from "@workspace/ui/components/dialog";
 import {
   FormControl,
   FormField,
@@ -139,7 +140,7 @@ export function LanguageSettings(props: {
   });
   const selectedTimeZoneOption =
     timeZoneOptions.find((option) => option.value === optimisticTimeZone) ?? defaultTimeZoneOption;
-  const languageRequestActionsRef = useRef<{ close: () => void; unmount: () => void } | null>(null);
+  const languageRequestActionsRef = useRef<DialogActions | null>(null);
 
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>

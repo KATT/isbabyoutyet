@@ -60,6 +60,10 @@ function createOnboardingUiStore(): OnboardingUiStore {
 /**
  * Per-mount store for ephemeral coachmark / restart-hint UI. Lives in lib so
  * the host can use useSyncExternalStore instead of feature useState.
+ *
+ * Policy-driven relocation (one consumer, no external system) — prefer URL /
+ * query state for new ephemeral UI; do not treat this as a template for more
+ * "parked" feature state under lib.
  */
 export function useOnboardingUiStore() {
   const [store] = useState(() => createOnboardingUiStore());
