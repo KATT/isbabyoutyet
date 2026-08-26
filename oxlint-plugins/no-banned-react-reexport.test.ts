@@ -1,0 +1,36 @@
+import { RuleTester } from "oxlint/plugins-dev";
+import { describe, it } from "vitest";
+import plugin from "./no-banned-react-reexport.mjs";
+
+RuleTester.describe = describe;
+RuleTester.it = it;
+
+const tester = new RuleTester({
+  languageOptions: { parserOptions: { lang: "tsx" } },
+});
+
+tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"], {
+  valid: [
+    `export { useRef, useSyncExternalStore } from "react";`,
+    `export { Button } from "@workspace/ui/components/button";`,
+    `import { useState } from "react"; export function useThing() { return useState(0); }`,
+  ],
+  invalid: [
+    {
+      code: `export { useEffect } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export { useState } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+    {
+      code: `export { useReducer, useOptimistic } from "react";`,
+      errors: [{ messageId: "banned" }, { messageId: "banned" }],
+    },
+    {
+      code: `export { useLayoutEffect as afterPaint } from "react";`,
+      errors: [{ messageId: "banned" }],
+    },
+  ],
+});

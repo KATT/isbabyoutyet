@@ -22,6 +22,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
+import type { PopoverActions } from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -804,7 +805,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const actionsRef = useRef<{ close: () => void; unmount: () => void } | null>(null);
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);

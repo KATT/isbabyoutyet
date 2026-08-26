@@ -1,13 +1,21 @@
 /**
- * Disallow React's useState outside audited seams (vendored UI + app lib).
+ * Disallow React local-state hooks outside audited seams (vendored UI + app lib).
  *
  * Feature UI state should live in the URL (search params / nested routes),
  * come from queries/mutations, or use uncontrolled component triggers
  * (PopoverTrigger, DialogTrigger, etc.). Ephemeral timing and observers
  * belong in `apps/web/src/lib`.
+ *
+ * Also bans useReducer / useActionState / useOptimistic — they are useState
+ * with extra steps and would otherwise bypass the rule.
  */
 
-const BANNED_STATE_HOOKS = new Set(["useState"]);
+const BANNED_STATE_HOOKS = new Set([
+  "useState",
+  "useReducer",
+  "useActionState",
+  "useOptimistic",
+]);
 const MESSAGE =
   "Do not use React `{{name}}`. Put shareable UI state in the URL, derive it from queries/mutations, or use an uncontrolled component trigger; audited lib hooks may own local state.";
 
@@ -29,7 +37,7 @@ const noUseState = {
   meta: {
     type: "problem",
     docs: {
-      description: "Disallow React useState in feature application code",
+      description: "Disallow React local-state hooks in feature application code",
     },
     schema: [],
     messages: {

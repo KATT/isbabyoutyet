@@ -19,6 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
+import type { PopoverActions } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Clock, Trash } from "@phosphor-icons/react";
@@ -47,11 +48,6 @@ type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose;
 // successful save/delete closes via the root actionsRef.
-
-type PopoverActions = {
-  close: () => void;
-  unmount: () => void;
-};
 
 type EditorFormProps = {
   baby: BabyData;
