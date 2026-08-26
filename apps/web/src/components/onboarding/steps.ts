@@ -19,7 +19,8 @@ export const ONBOARDING_STEPS = [
   {
     id: "add_baby",
     title: "Add your first baby",
-    description: "Give them a name and due date — that creates a public page friends can open.",
+    description:
+      "Add a name and date, then choose a journey. It only sets which statuses visitors can see.",
     surface: "dashboard",
     targetId: "add_baby",
     icon: Baby,
@@ -39,7 +40,7 @@ export const ONBOARDING_STEPS = [
     id: "post_update",
     title: "Post an update",
     description:
-      "Post milestones and everyday notes from the nav. Push notifications only go to people who subscribed — and only when you mark a status update (labour, hospital, or born).",
+      "Post milestones and everyday notes from the nav. Only enabled status updates notify subscribers.",
     surface: "baby",
     targetId: "post_update",
     icon: ChatCircleText,
@@ -48,7 +49,7 @@ export const ONBOARDING_STEPS = [
   {
     id: "explore_settings",
     title: "Peek at settings",
-    description: "Themes, names, and whether visitors can leave encouragements — all in Settings.",
+    description: "Themes, names, and language — all in Settings.",
     surface: "baby",
     targetId: "explore_settings",
     icon: GearSix,
@@ -65,32 +66,3 @@ export const ONBOARDING_STEPS = [
     ctaLabel: undefined,
   },
 ] as const satisfies ReadonlyArray<OnboardingStepCopy>;
-
-export type WelcomeSlide = {
-  title: TranslationKey;
-  body: TranslationKey;
-  icon: Icon;
-};
-
-export const WELCOME_SLIDES = [
-  {
-    title: "Welcome — here's the idea",
-    body: "Is Baby Out Yet gives you one calm page for labour updates, so friends and family stop texting you for news.",
-    icon: Baby,
-  },
-  {
-    title: "Create a baby page",
-    body: "Add a name and due date. You get a shareable link like isbabyoutyet.com/baby/… that shows the current status.",
-    icon: ShareNetwork,
-  },
-  {
-    title: "Share once, update as you go",
-    body: "Post milestones and messages from the nav. Status updates notify subscribers; everyday notes and encouragements stay quiet.",
-    icon: ChatCircleText,
-  },
-  {
-    title: "Skip anytime",
-    body: "A tiny checklist follows you around. Tap a step to jump there or highlight the control. Dismiss whenever — restart from the dashboard sparkle.",
-    icon: Heart,
-  },
-] as const satisfies ReadonlyArray<WelcomeSlide>;

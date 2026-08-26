@@ -1,32 +1,40 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { makeFunctionReference } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
-const mocks = vi.hoisted(() => {
-  const watchQuery = vi.fn<
-    () => {
-      onUpdate: (cb: () => void) => () => void;
-      localQueryResult: () => undefined;
-    }
-  >(() => ({
-    onUpdate: (_cb: () => void) => () => undefined,
+import { registerConvexInfiniteQueryClient } from "./convexInfiniteQuery";
+import { testPreloadedConvexInfiniteQuery } from "./test-helpers";
+import { usePreloadedConvexInfiniteQuery } from "./usePreloadedConvexInfiniteQuery";
+
+type WatchHandle = {
+  onUpdate: (cb: () => void) => () => void;
+  localQueryResult: () => undefined;
+};
+
+type WatchQuery = (funcRef: unknown, args: Record<string, unknown>) => WatchHandle;
+
+function idleWatchQuery() {
+  return vi.fn<WatchQuery>(() => ({
+    onUpdate: () => () => undefined,
     localQueryResult: () => undefined,
   }));
-  return { watchQuery };
-});
+}
 
-vi.mock("convex/react", () => ({
-  useConvex: () => ({ watchQuery: mocks.watchQuery }),
-}));
-
-const { registerConvexInfiniteQueryClient } = await import("./convexInfiniteQuery");
-const { usePreloadedConvexInfiniteQuery } = await import("./usePreloadedConvexInfiniteQuery");
-const { testPreloadedConvexInfiniteQuery } = await import("./test-helpers");
-
-function createWrapper(queryClient: QueryClient) {
+/**
+ * `useConvex()` only reads context, so the real `ConvexProvider` happily
+ * carries a `watchQuery`-shaped stand-in for the live-page subscriptions.
+ */
+function createWrapper(queryClient: QueryClient, watchQuery: WatchQuery) {
+  const convex = { watchQuery } as unknown as ConvexReactClient;
   return function Wrapper(props: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client: queryClient }, props.children);
+    return React.createElement(
+      ConvexProvider,
+      { client: convex },
+      React.createElement(QueryClientProvider, { client: queryClient }, props.children),
+    );
   };
 }
 
@@ -46,14 +54,14 @@ test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", a
     },
   } as never);
 
-  mocks.watchQuery.mockClear();
+  const watchQuery = idleWatchQuery();
   const { result } = renderHook(
     () =>
       usePreloadedConvexInfiniteQuery("posts:list" as never, {
         handle,
         remixArgs: null,
       }),
-    { wrapper: createWrapper(queryClient) },
+    { wrapper: createWrapper(queryClient, watchQuery) },
   );
 
   await waitFor(() => {
@@ -65,7 +73,7 @@ test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", a
   });
   expect(result.current.hasNextPage).toBe(false);
   // Built-in live sync: each loaded page gets a Convex watch
-  expect(mocks.watchQuery).toHaveBeenCalledWith("posts:list", {
+  expect(watchQuery).toHaveBeenCalledWith(makeFunctionReference("posts:list"), {
     tag: "news",
     paginationOpts: { numItems: 20, cursor: null },
   });
@@ -90,7 +98,7 @@ test("usePreloadedConvexInfiniteQuery fetches when the handle has no initialData
         handle: initiatedHandle as never,
         remixArgs: null,
       }),
-    { wrapper: createWrapper(queryClient) },
+    { wrapper: createWrapper(queryClient, idleWatchQuery()) },
   );
 
   await waitFor(() => {
@@ -122,21 +130,21 @@ test("usePreloadedConvexInfiniteQuery remixes args from local state", async () =
     },
   } as never);
 
-  mocks.watchQuery.mockClear();
+  const watchQuery = idleWatchQuery();
   const { result } = renderHook(
     () =>
       usePreloadedConvexInfiniteQuery("posts:list" as never, {
         handle,
         remixArgs: (args) => ({ ...args, visitor: "v1" }),
       }),
-    { wrapper: createWrapper(queryClient) },
+    { wrapper: createWrapper(queryClient, watchQuery) },
   );
 
   await waitFor(() => {
     expect(result.current.data.pages).toHaveLength(1);
   });
   // Live watch uses the remixed args
-  expect(mocks.watchQuery).toHaveBeenCalledWith("posts:list", {
+  expect(watchQuery).toHaveBeenCalledWith(makeFunctionReference("posts:list"), {
     tag: "news",
     visitor: "v1",
     paginationOpts: { numItems: 20, cursor: null },

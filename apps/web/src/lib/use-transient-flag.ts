@@ -2,21 +2,21 @@ import { useEffect, useState } from "react";
 
 /**
  * A user-triggered flag that stays true for `durationMs` after each activate().
- * Retriggering resets the timer. Lives in `apps/web/src/lib` so the timeout
- * effect is an audited seam rather than feature-component synchronization.
+ * Retriggering bumps a generation so the timer resets. Lives in
+ * `apps/web/src/lib` so the timeout effect is an audited seam.
  */
 export function useTransientFlag(durationMs: number) {
-  const [active, setActive] = useState(false);
+  const [generation, setGeneration] = useState(0);
 
   useEffect(() => {
-    if (!active) return;
-    const timeout = window.setTimeout(() => setActive(false), durationMs);
+    if (generation === 0) return;
+    const timeout = window.setTimeout(() => setGeneration(0), durationMs);
     return () => window.clearTimeout(timeout);
-  }, [active, durationMs]);
+  }, [generation, durationMs]);
 
   function activate() {
-    setActive(true);
+    setGeneration((current) => current + 1);
   }
 
-  return [active, activate] as const;
+  return [generation > 0, activate] as const;
 }

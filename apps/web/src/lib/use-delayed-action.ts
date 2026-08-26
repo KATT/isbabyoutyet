@@ -6,11 +6,35 @@ import { useEffect, useRef, useState } from "react";
  * so feature components stay free of synchronization effects.
  */
 export function useDelayedAction(opts: { action: () => void; delayMs: number; enabled: boolean }) {
+  const actionRef = useRef(opts.action);
+  useEffect(() => {
+    actionRef.current = opts.action;
+  });
   useEffect(() => {
     if (!opts.enabled) return;
-    const timeout = window.setTimeout(opts.action, opts.delayMs);
+    const timeout = window.setTimeout(() => {
+      actionRef.current();
+    }, opts.delayMs);
     return () => window.clearTimeout(timeout);
-  }, [opts.action, opts.delayMs, opts.enabled]);
+  }, [opts.delayMs, opts.enabled]);
+}
+
+/**
+ * Mirrors `value`, delaying `true` by `delayMs` and applying `false` on the
+ * next timeout (0ms). Used for UI that must not flash on instantaneous pulses.
+ */
+export function useDelayedBoolean(opts: { value: boolean; delayMs: number }) {
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => {
+        setShown(opts.value);
+      },
+      opts.value ? opts.delayMs : 0,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [opts.value, opts.delayMs]);
+  return shown;
 }
 
 /**

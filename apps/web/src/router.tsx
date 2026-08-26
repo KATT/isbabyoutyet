@@ -6,11 +6,24 @@ import { ConvexProvider } from "convex/react";
 import { routeTree } from "./routeTree.gen";
 import {
   convexInfiniteQueryFn,
+  getConvexQueryPreloader,
   registerConvexInfiniteQueryClient,
 } from "@workspace/convex-prefetch";
 import { RootErrorComponent } from "./routes/__root";
 import { setupClientConvexAuth } from "./lib/convex-auth";
 import { getDetectedLocale } from "./lib/i18n";
+
+/** Router preload policy — tested without constructing the full client graph. */
+export const routerPreloadOptions = {
+  defaultPreload: "viewport",
+  // React Query is the cache of record, so preloaded loader data must be
+  // immediately stale to the router: loaders re-run (as cheap ensureQueryData
+  // cache hits) instead of the router serving its own ≤30s-old snapshot.
+  // Navigation still commits instantly — stale matches revalidate in the
+  // background. https://tanstack.com/router/latest/docs/guide/data-loading
+  defaultPreloadStaleTime: 0,
+  scrollRestoration: true,
+} as const;
 
 export function getRouter() {
   const convexUrl = import.meta.env.VITE_CONVEX_URL!;
@@ -35,6 +48,7 @@ export function getRouter() {
     },
   });
   convexQueryClient.connect(queryClient);
+  const convexPreloader = getConvexQueryPreloader(queryClient);
 
   // Resolve auth (signed-in or anonymous) before React mounts — see the
   // function's doc comment for why the auth provider alone is not enough.
@@ -47,18 +61,18 @@ export function getRouter() {
     // Viewport preload runs loaders when a Link scrolls into view (not just on
     // hover/focus), so e.g. visible dashboard baby cards prefetch their baby
     // pages via the ensureQueryData prefetchers.
-    defaultPreload: "viewport",
+    ...routerPreloadOptions,
     // Friendly recoverable fallback for any route error (reload / go home).
     defaultErrorComponent: RootErrorComponent,
     context: {
       queryClient,
       convexQueryClient,
       convexClient: convexQueryClient.convexClient,
+      convexPreloader,
       locale: getDetectedLocale(),
       isAuthenticated: false,
       token: null,
     },
-    scrollRestoration: true,
     Wrap: (props) => (
       <ConvexProvider client={convexQueryClient.convexClient}>{props.children}</ConvexProvider>
     ),

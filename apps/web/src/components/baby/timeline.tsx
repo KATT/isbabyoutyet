@@ -11,7 +11,6 @@ import {
 } from "@workspace/ui/components/alert-dialog";
 import { Badge } from "@workspace/ui/components/badge";
 import { Button } from "@workspace/ui/components/button";
-import { Dialog, DialogContent, DialogTrigger } from "@workspace/ui/components/dialog";
 import { Input } from "@workspace/ui/components/input";
 import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -33,6 +32,7 @@ import {
   Trash,
   X,
 } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import { useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
@@ -44,12 +44,11 @@ import type {
   InitiatedConvexInfiniteQuery,
   PreloadedConvexInfiniteQuery,
 } from "@workspace/convex-prefetch";
-import type { BabyData, BabyStatus, Milestone } from "@workspace/convex/src/types";
+import type { BabyData, Milestone } from "@workspace/convex/src/types";
 import {
   getBlockingLaterMilestone,
-  getCurrentStatus,
+  getMilestonePolicy,
   MILESTONE_LABELS,
-  STATUS_ORDER,
 } from "@workspace/convex/src/types";
 import { Form, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
@@ -60,6 +59,9 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { useIntersectionAction } from "@/lib/use-intersection-action";
+import { useObjectUrl } from "@/lib/use-object-url";
+import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
+import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -81,8 +83,9 @@ type PostUpdateArgs = FunctionArgs<typeof api.updates.post>;
 
 function composerSchema(opts: {
   t: TranslationFunction;
-  currentStatus: BabyStatus["type"];
+  allowedMilestones: readonly Milestone[];
   babyId: Id<"baby">;
+  timeZone: string;
 }) {
   return z
     .object({
@@ -93,7 +96,7 @@ function composerSchema(opts: {
         z.literal("gone_to_hospital"),
         z.literal("born"),
       ]),
-      occurredAt: optionalHtmlDateTime(opts.t),
+      occurredAt: optionalHtmlDateTime(opts.t, opts.timeZone),
       photo: z.custom<File>().nullable(),
     })
     .refine(
@@ -101,9 +104,7 @@ function composerSchema(opts: {
       { error: opts.t("Add a message, a photo, or a milestone to post") },
     )
     .refine(
-      (draft) =>
-        draft.milestone === "none" ||
-        STATUS_ORDER[draft.milestone] > STATUS_ORDER[opts.currentStatus],
+      (draft) => draft.milestone === "none" || opts.allowedMilestones.includes(draft.milestone),
       {
         error: opts.t("That status has already been marked"),
         path: ["milestone"],
@@ -152,9 +153,12 @@ function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale
   return rtf.format(0, "second");
 }
 
-/** Milestone event clock in the viewer's local timezone (e.g. "Jan 11, 5:14 AM"). */
-function formatOccurredAtLocal(timestamp: number, locale: SupportedLocale): string {
-  return new Date(timestamp).toLocaleString(locale, {
+function formatOccurredAt(
+  timestamp: number,
+  opts: { locale: SupportedLocale; timeZone: string },
+): string {
+  return new Date(timestamp).toLocaleString(opts.locale, {
+    timeZone: opts.timeZone,
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -177,46 +181,56 @@ type UpdateComposerProps = {
   onPosted: () => void;
 };
 
+type PostUpdateFn = (
+  args: FunctionArgs<typeof api.updates.post>,
+) => Promise<FunctionReturnType<typeof api.updates.post>>;
+
+type GenerateUploadUrlFn = (
+  args: FunctionArgs<typeof api.baby.generateUploadUrl>,
+) => Promise<FunctionReturnType<typeof api.baby.generateUploadUrl>>;
+
+type UpdateComposerFormProps = UpdateComposerProps & {
+  postUpdate: PostUpdateFn;
+  generateUploadUrl: GenerateUploadUrlFn;
+};
+
+/** Hooks into Convex, then delegates to the pure `UpdateComposerForm`. */
 export function UpdateComposer(props: UpdateComposerProps) {
-  const currentStatus = getCurrentStatus(props.baby);
+  const postUpdate = useMutation(api.updates.post);
+  const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
+  const currentStatus = getMilestonePolicy(props.baby).currentStatus;
+  // Remount when the journey stage advances so a stale milestone selection
+  // cannot resurface after an unmark — no sync effect needed.
   return (
     <UpdateComposerForm
       key={currentStatus.type}
-      babyId={props.babyId}
-      baby={props.baby}
-      babyName={props.babyName}
-      onPosted={props.onPosted}
-      currentStatus={currentStatus}
+      {...props}
+      postUpdate={postUpdate}
+      generateUploadUrl={generateUploadUrl}
     />
   );
 }
 
-function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabyStatus }) {
+function UpdateComposerForm(props: UpdateComposerFormProps) {
   const { t } = useI18n();
-  const postUpdate = useMutation(api.updates.post);
-  const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
-  function releasePhotoPreview(node: HTMLImageElement | null) {
-    if (!node || !photoPreviewUrl) return;
-    return () => URL.revokeObjectURL(photoPreviewUrl);
-  }
 
   // The status only moves forward: offer only stages AFTER the current one,
   // and none at all once "Born" is reached
-  const futureMilestones = (Object.keys(MILESTONE_META) as Milestone[]).filter(
-    (candidate) => STATUS_ORDER[candidate] > STATUS_ORDER[props.currentStatus.type],
-  );
+  const milestonePolicy = getMilestonePolicy(props.baby);
+  const currentStatus = milestonePolicy.currentStatus;
+  const futureMilestones = milestonePolicy.visibleMilestones.filter(milestonePolicy.canMark);
   const schema = composerSchema({
     t,
-    currentStatus: props.currentStatus.type,
+    allowedMilestones: futureMilestones,
     babyId: props.babyId,
+    timeZone: props.baby.timeZone,
   });
 
   const form = useZodForm({
     schema,
     // RHF re-runs the resolver when this changes (status advanced in another tab)
-    context: props.currentStatus.type,
+    context: currentStatus.type,
     defaultValues: {
       message: "",
       milestone: "none",
@@ -229,10 +243,14 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
 
   const draft = form.watch();
 
+  // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
     draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
       ? draft.milestone
       : null;
+
+  const photoPreviewUrl = useObjectUrl(draft.photo);
+
   const canPost = !isPosting && schema.safeParse(draft).success;
 
   return (
@@ -254,7 +272,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
           const { photo, ...args } = values;
           let photoId: PostUpdateArgs["photoId"];
           if (photo) {
-            const uploadUrl = await generateUploadUrl({ babyId: args.babyId });
+            const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
               method: "POST",
               headers: { "Content-Type": photo.type },
@@ -267,7 +285,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
             photoId = uploaded.storageId;
           }
 
-          await postUpdate({ ...args, photoId });
+          await props.postUpdate({ ...args, photoId });
 
           toast.success(t("Update posted!"));
           // No reset needed: the composer lives in a dialog that unmounts on close
@@ -298,7 +316,6 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
           {photoPreviewUrl && (
             <div className="relative w-fit">
               <img
-                ref={releasePhotoPreview}
                 src={photoPreviewUrl}
                 alt={t("Photo to post")}
                 className="max-h-40 rounded-lg border border-border object-cover"
@@ -310,7 +327,6 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
                 className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
                 onClick={() => {
                   form.setValue("photo", null);
-                  setPhotoPreviewUrl(null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
                 disabled={isPosting}
@@ -329,12 +345,12 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
               <FormField
                 control={form.control}
                 name="milestone"
-                render={({ field }) => (
+                render={(renderProps) => (
                   <RadioGroup
                     aria-labelledby="composer-status-label"
                     value={selectedMilestone ?? "none"}
                     onValueChange={(value) => {
-                      field.onChange(value);
+                      renderProps.field.onChange(value);
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}
@@ -384,7 +400,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
                           <FormControl>
                             <Input
                               type="datetime-local"
-                              max={htmlDateTimeNow()}
+                              max={htmlDateTimeNow(props.baby.timeZone)}
                               disabled={isPosting}
                               className="w-fit"
                               {...field}
@@ -421,7 +437,6 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
                 return;
               }
               form.setValue("photo", file, { shouldDirty: true });
-              setPhotoPreviewUrl(URL.createObjectURL(file));
             }}
             className="hidden"
           />
@@ -464,6 +479,7 @@ function UpdateComposerForm(props: UpdateComposerProps & { currentStatus: BabySt
 
 type UpdateTimelineItemProps = {
   item: UpdateItemData;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -522,14 +538,23 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
               <Badge
                 className="shrink-0"
                 title={
-                  update.occurredAt ? formatOccurredAtLocal(update.occurredAt, locale) : undefined
+                  update.occurredAt
+                    ? formatOccurredAt(update.occurredAt, {
+                        locale,
+                        timeZone: props.baby.timeZone,
+                      })
+                    : undefined
                 }
               >
                 <MilestoneIcon className="w-3 h-3" />
                 {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
                   <span className="font-normal opacity-90">
-                    · {formatOccurredAtLocal(update.occurredAt, locale)}
+                    ·{" "}
+                    {formatOccurredAt(update.occurredAt, {
+                      locale,
+                      timeZone: props.baby.timeZone,
+                    })}
                   </span>
                 )}
               </Badge>
@@ -552,7 +577,9 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
             <span
               className="text-xs text-muted-foreground shrink-0"
               title={t("Posted {{date}}", {
-                date: new Date(props.item.postedAt).toLocaleString(locale),
+                date: new Date(props.item.postedAt).toLocaleString(locale, {
+                  timeZone: props.baby.timeZone,
+                }),
               })}
             >
               {getRelativeTimeFromTimestamp(props.item.postedAt, locale)}
@@ -630,7 +657,13 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         {/* Photo first when present; the caption/message sits last so long
             copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
-          <TimelinePhoto photoUrl={update.photoUrl} thumbnailUrl={update.thumbnailUrl} />
+          <TimelinePhoto
+            publicId={props.publicId}
+            updateId={update._id}
+            photoUrl={update.photoUrl}
+            thumbnailUrl={update.thumbnailUrl}
+            blurDataUrl={update.blurDataUrl}
+          />
         )}
 
         {update.message && (
@@ -644,53 +677,42 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
 }
 
 type TimelinePhotoProps = {
+  publicId: string;
+  updateId: Id<"updates">;
   photoUrl: string;
   thumbnailUrl: string | null;
+  blurDataUrl: string | null;
 };
 
 function TimelinePhoto(props: TimelinePhotoProps) {
   const { t } = useI18n();
-  const [isOpen, setIsOpen] = useState(false);
   const inlineUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photo = useBabyUpdatePhotoOverlayNav({
+    publicId: props.publicId,
+    updateId: props.updateId,
+  });
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger
-        render={
-          <button
-            aria-label={t("View photo full size")}
-            className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <img
-              src={inlineUrl}
-              alt={t("Baby update")}
-              className="max-h-64 w-full object-cover"
-              loading="lazy"
-            />
-          </button>
-        }
+    <Link
+      {...photo.openLink}
+      aria-label={t("View photo full size")}
+      className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+    >
+      <BlurImage
+        src={inlineUrl}
+        alt={t("Baby update")}
+        blurDataUrl={props.blurDataUrl}
+        className="aspect-square max-h-64 w-full object-cover"
+        loading="lazy"
       />
-      <DialogContent className="max-w-3xl p-0 border-0 bg-transparent shadow-none">
-        <button
-          onClick={() => setIsOpen(false)}
-          aria-label={t("Close photo")}
-          className="absolute -top-12 right-0 p-2 rounded-full bg-background/80 backdrop-blur-sm text-foreground hover:bg-background transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-        <img
-          src={props.photoUrl}
-          alt={t("Baby update")}
-          className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
-        />
-      </DialogContent>
-    </Dialog>
+    </Link>
   );
 }
 
 type EncouragementTimelineItemProps = {
   item: EncouragementItemData;
   isOwner: boolean;
+  timeZone: string;
   currentVisitorId: string;
   onDelete: (id: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
   onUpdate: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
@@ -803,7 +825,9 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               </span>
               <span
                 className="text-xs text-muted-foreground shrink-0"
-                title={new Date(encouragement.createdAt).toLocaleString(locale)}
+                title={new Date(encouragement.createdAt).toLocaleString(locale, {
+                  timeZone: props.timeZone,
+                })}
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
@@ -893,6 +917,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
 
 type TimelineFeedProps = {
   babyId: Id<"baby">;
+  publicId: string;
   baby: BabyData;
   babyName: string;
   isOwner: boolean;
@@ -902,8 +927,23 @@ type TimelineFeedProps = {
     | InitiatedConvexInfiniteQuery<typeof api.timeline.listByBaby>;
 };
 
+type RemoveUpdateFn = (
+  args: FunctionArgs<typeof api.updates.remove>,
+) => Promise<FunctionReturnType<typeof api.updates.remove>>;
+type SetAsCurrentPhotoFn = (
+  args: FunctionArgs<typeof api.updates.setAsCurrentPhoto>,
+) => Promise<FunctionReturnType<typeof api.updates.setAsCurrentPhoto>>;
+type RemoveEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.remove>,
+) => Promise<FunctionReturnType<typeof api.encouragements.remove>>;
+type UpdateEncouragementFn = (
+  args: FunctionArgs<typeof api.encouragements.update>,
+) => Promise<FunctionReturnType<typeof api.encouragements.update>>;
+
+/** Hooks into Convex, then delegates to the pure `TimelineFeedView`. */
 export function TimelineFeed(props: TimelineFeedProps) {
-  const { t } = useI18n();
+  // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
+  // the loader handle (no visitorId), then remixArgs picks it up on the client.
   const currentVisitorId = useSyncExternalStore(
     subscribeToStoredVisitorId,
     getStoredVisitorId,
@@ -923,19 +963,63 @@ export function TimelineFeed(props: TimelineFeedProps) {
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
   const removeEncouragement = useMutation(api.encouragements.remove);
   const updateEncouragement = useMutation(api.encouragements.update);
+
+  const items = timelineQuery.data.pages.flatMap((page) => page.page);
+
+  return (
+    <TimelineFeedView
+      publicId={props.publicId}
+      baby={props.baby}
+      babyName={props.babyName}
+      isOwner={props.isOwner}
+      items={items}
+      hasNextPage={timelineQuery.hasNextPage}
+      isFetchingNextPage={timelineQuery.isFetchingNextPage}
+      fetchNextPage={timelineQuery.fetchNextPage}
+      currentVisitorId={currentVisitorId}
+      removeUpdate={removeUpdate}
+      setAsCurrentPhoto={setAsCurrentPhoto}
+      removeEncouragement={removeEncouragement}
+      updateEncouragement={updateEncouragement}
+    />
+  );
+}
+
+type TimelineFeedViewProps = {
+  publicId: string;
+  baby: BabyData;
+  babyName: string;
+  isOwner: boolean;
+  items: TimelineItemData[];
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => unknown;
+  currentVisitorId: string;
+  removeUpdate: RemoveUpdateFn;
+  setAsCurrentPhoto: SetAsCurrentPhotoFn;
+  removeEncouragement: RemoveEncouragementFn;
+  updateEncouragement: UpdateEncouragementFn;
+};
+
+/**
+ * Presentational timeline feed body — wired by {@link TimelineFeed}.
+ */
+function TimelineFeedView(props: TimelineFeedViewProps) {
+  const { t } = useI18n();
+  const hasNextPage = props.hasNextPage;
+  const isFetchingNextPage = props.isFetchingNextPage;
+  const fetchNextPage = props.fetchNextPage;
   const loadMoreRef = useIntersectionAction({
-    enabled: timelineQuery.hasNextPage && !timelineQuery.isFetchingNextPage,
+    enabled: hasNextPage && !isFetchingNextPage,
     onIntersect: () => {
-      void timelineQuery.fetchNextPage();
+      void fetchNextPage();
     },
     threshold: 0.1,
   });
 
-  const items = timelineQuery.data.pages.flatMap((page) => page.page);
-
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {
-      await removeUpdate({ updateId });
+      await props.removeUpdate({ updateId });
       toast.success(t("Update removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove update"));
@@ -944,7 +1028,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
 
   const handleSetAsCurrentPhoto = async (updateId: Id<"updates">) => {
     try {
-      await setAsCurrentPhoto({ updateId });
+      await props.setAsCurrentPhoto({ updateId });
       toast.success(t("Set as the page photo"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to set page photo"));
@@ -956,7 +1040,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     visitorId: string | undefined,
   ) => {
     try {
-      await removeEncouragement({ encouragementId, visitorId });
+      await props.removeEncouragement({ encouragementId, visitorId });
       toast.success(t("Encouragement removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove encouragement"));
@@ -967,7 +1051,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     args: FunctionArgs<typeof api.encouragements.update>,
   ) => {
     try {
-      await updateEncouragement(args);
+      await props.updateEncouragement(args);
       toast.success(t("Encouragement updated"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to update encouragement"));
@@ -975,7 +1059,7 @@ export function TimelineFeed(props: TimelineFeedProps) {
     }
   };
 
-  if (items.length === 0) {
+  if (props.items.length === 0) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-4">
@@ -1007,11 +1091,12 @@ export function TimelineFeed(props: TimelineFeedProps) {
       </div>
 
       <div className="space-y-4">
-        {items.map((item) =>
+        {props.items.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
               key={item._id}
               item={item}
+              publicId={props.publicId}
               baby={props.baby}
               babyName={props.babyName}
               isOwner={props.isOwner}
@@ -1023,27 +1108,22 @@ export function TimelineFeed(props: TimelineFeedProps) {
               key={item._id}
               item={item}
               isOwner={props.isOwner}
-              currentVisitorId={currentVisitorId}
+              timeZone={props.baby.timeZone}
+              currentVisitorId={props.currentVisitorId}
               onDelete={handleDeleteEncouragement}
               onUpdate={handleUpdateEncouragement}
             />
           ),
         )}
 
-        {timelineQuery.hasNextPage || timelineQuery.isFetchingNextPage ? (
-          <div ref={loadMoreRef} className="flex justify-center py-2">
-            <Button
-              variant="outline"
-              disabled={timelineQuery.isFetchingNextPage}
-              onClick={() => {
-                void timelineQuery.fetchNextPage();
-              }}
-            >
-              {timelineQuery.isFetchingNextPage ? <Spinner /> : null}
-              {t("Next")}
-            </Button>
-          </div>
-        ) : null}
+        {/* Infinite scroll trigger */}
+        <div ref={loadMoreRef} className="py-2">
+          {isFetchingNextPage ? (
+            <div className="text-center text-muted-foreground">
+              <Spinner className="mx-auto" />
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

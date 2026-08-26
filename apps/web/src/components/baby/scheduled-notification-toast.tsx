@@ -18,19 +18,22 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { FORBIDDEN } from "@workspace/convex/src/types";
-import type { InitiatedConvexQuery, PreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useTimedTransition } from "@/lib/use-delayed-action";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
+type ScheduledNotificationsResult = Exclude<
+  FunctionReturnType<typeof api.baby.getScheduledNotifications>,
+  typeof FORBIDDEN
+>;
+
+const EMPTY_NOTIFICATIONS: ScheduledNotificationsResult = [];
+
 type ScheduledNotificationToastProps = {
-  notifications:
-    | PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>
-    | InitiatedConvexQuery<typeof api.baby.getScheduledNotifications>;
-  subscriptionCount:
-    | PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>
-    | InitiatedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
+  notifications: PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>;
+  subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
 function subscribeToCurrentSecond(notify: () => void) {
@@ -54,7 +57,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   // FORBIDDEN only happens for non-managers, who never render this component —
   // treat it like "nothing scheduled" so the types stay honest.
   const notificationsData = notificationsQuery.data;
-  const notifications = notificationsData === FORBIDDEN ? [] : notificationsData;
+  const notifications = notificationsData === FORBIDDEN ? EMPTY_NOTIFICATIONS : notificationsData;
   const subscriptionCountQuery = usePreloadedConvexQuery(
     api.pushSubscriptions.getSubscriptionCount,
     props.subscriptionCount,

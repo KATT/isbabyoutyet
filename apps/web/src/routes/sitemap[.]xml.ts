@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCredentials";
 import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
 import { CANONICAL_ORIGIN } from "@/lib/site-url";
+import { withPublicCache } from "@/lib/cachePolicy";
 
 function sitemapXml() {
   const today = new Date().toISOString().slice(0, 10);
@@ -39,12 +40,14 @@ export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: () =>
-        new Response(sitemapXml(), {
-          headers: {
-            "Content-Type": "application/xml; charset=utf-8",
-            "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",
-          },
-        }),
+        withPublicCache(
+          new Response(sitemapXml(), {
+            headers: {
+              "Content-Type": "application/xml; charset=utf-8",
+            },
+          }),
+          { maxAgeSeconds: 3_600, tags: ["discovery"] },
+        ),
     },
   },
 });

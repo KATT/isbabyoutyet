@@ -1,120 +1,91 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { LocaleProvider } from "@/lib/i18n";
+import {
+  NAVIGATION_PROGRESS_DELAY_MS,
+  NavigationProgressBar,
+  NotFoundComponent,
+  resolveRootBeforeLoad,
+  RootDocument,
+  RootErrorComponent,
+} from "@/routes/__root";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-const routerState = vi.hoisted(() => ({ isLoading: false }));
-const routeContext = vi.hoisted(() => ({ value: {} as Record<string, unknown> }));
-
-vi.mock("@tanstack/react-router", () => ({
-  HeadContent: () => null,
-  Link: (props: React.ComponentProps<"a"> & { to: string | undefined }) => (
-    <a href={typeof props.to === "string" ? props.to : "#"} {...props} />
-  ),
-  Outlet: () => null,
-  Scripts: () => null,
-  createRootRouteWithContext: () => (opts: unknown) => opts,
-  useMatches: () => [],
-  useRouteContext: () => routeContext.value,
-  useRouterState: (opts: { select: (state: typeof routerState) => unknown }) =>
-    opts.select(routerState),
-}));
-
-vi.mock("next-themes", () => ({
-  ThemeProvider: (props: { children: React.ReactNode }) => props.children,
-  useTheme: () => ({ theme: "light", setTheme: () => {} }),
-}));
-
-vi.mock("@/components/dev-bar", () => ({
-  DevBar: () => null,
-}));
-
-vi.mock("@tanstack/react-router-devtools", () => ({
-  TanStackRouterDevtoolsPanel: () => null,
-}));
-
-vi.mock("@tanstack/react-devtools", () => ({
-  TanStackDevtools: () => null,
-}));
-
-vi.mock("@convex-dev/better-auth/react", () => ({
-  ConvexBetterAuthProvider: (props: { children: React.ReactNode }) => props.children,
-}));
-
-vi.mock("@vercel/analytics/react", () => ({
-  Analytics: () => null,
-}));
-
-const session = vi.hoisted(() => ({
-  value: { data: null as unknown, isPending: true },
-}));
-
-vi.mock("@/lib/auth-client", () => ({
-  authClient: { useSession: () => session.value },
-}));
-
-vi.mock("@tanstack/react-start", () => ({
-  createServerFn: () => ({ handler: (fn: unknown) => fn }),
-}));
-
-vi.mock("@/lib/auth-server", () => ({
-  authServer: { getToken: vi.fn<() => Promise<string | null>>(() => Promise.resolve(null)) },
-}));
-
-const { NavigationProgress, NotFoundComponent, RootErrorComponent, Route } =
-  await import("@/routes/__root");
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
+function renderProgress(ui: ReactElement) {
+  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
   return makeResource(view, () => {
     view.unmount();
   });
 }
 
-test("beforeLoad resolves locale and auth locally on the client, without a server round-trip", async () => {
-  const { QueryClient } = await import("@tanstack/react-query");
-  const { convexQuery } = await import("@convex-dev/react-query");
-  const { api } = await import("@workspace/convex/convex/_generated/api");
-  const queryClient = new QueryClient();
-  // With createRootRouteWithContext mocked, Route is the options object.
-  const options = Route as unknown as {
-    beforeLoad: (ctx: {
-      context: { queryClient: unknown; convexQueryClient: { serverHttpClient: undefined } };
-    }) => Promise<{ locale: string; isAuthenticated: boolean; token: string | null }>;
-  };
-  const ctx = { context: { queryClient, convexQueryClient: { serverHttpClient: undefined } } };
-
-  const anonymous = await options.beforeLoad(ctx);
-  expect(anonymous.locale).toBeTruthy();
-  expect(anonymous.isAuthenticated).toBe(false);
-
-  // A cached profile is the session signal for client navigations.
-  queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, {
-    locale: "sv",
-    isAdmin: false,
+function withoutBrowserWindow(run: () => Promise<void>) {
+  const windowDescriptor = Object.getOwnPropertyDescriptor(globalThis, "window");
+  Object.defineProperty(globalThis, "window", { value: undefined, configurable: true });
+  return run().finally(() => {
+    if (windowDescriptor) {
+      Object.defineProperty(globalThis, "window", windowDescriptor);
+    }
   });
-  const authed = await options.beforeLoad(ctx);
-  expect(authed.isAuthenticated).toBe(true);
+}
+
+test("beforeLoad keeps shared document rendering anonymous", async () => {
+  const anonymous = await resolveRootBeforeLoad({
+    detectLocale: async () => "sv",
+    getClientLocale: () => "en-GB",
+  });
+  expect(anonymous.locale).toBe("en-GB");
+  expect(anonymous.isAuthenticated).toBe(false);
+  expect(anonymous.token).toBeNull();
 });
 
-test("the root component renders the document shell", async () => {
-  const { QueryClient } = await import("@tanstack/react-query");
-  routeContext.value = {
-    convexQueryClient: { convexClient: {} },
-    queryClient: new QueryClient(),
-    locale: "en-GB",
-    token: null,
-  };
-  const RootComponent = (Route as unknown as { component: () => ReactElement }).component;
+test("client navigations resolve the locale without a server round-trip", async () => {
+  // Regression (PR #112 undid PR #108): the root beforeLoad blocks every
+  // client navigation, so calling the detect-locale server function made all
+  // cached navigations wait on an HTTP request and flash the progress bar.
+  const detectLocale = vi.fn<() => Promise<"sv">>(() => Promise.resolve("sv"));
 
-  await using _view = renderResource(<RootComponent />);
+  const result = await resolveRootBeforeLoad({
+    detectLocale,
+    getClientLocale: () => "en-GB",
+  });
+
+  expect(result.locale).toBe("en-GB");
+  expect(detectLocale).not.toHaveBeenCalled();
+});
+
+test("server rendering resolves the locale from request headers", async () => {
+  const detectLocale = vi.fn<() => Promise<"sv">>(() => Promise.resolve("sv"));
+
+  await withoutBrowserWindow(async () => {
+    const result = await resolveRootBeforeLoad({
+      detectLocale,
+      getClientLocale: () => "en-GB",
+    });
+
+    expect(result.locale).toBe("sv");
+    expect(detectLocale).toHaveBeenCalledTimes(1);
+  });
+});
+
+test("the root document shell sets the html lang attribute", async () => {
+  await using _view = await renderWithTestRouter(
+    <RootDocument locale="en-GB">
+      <div>shell</div>
+    </RootDocument>,
+  );
 
   // React 19 hoists the <html> element onto the real document.
   expect(document.documentElement.getAttribute("lang")).toBe("en-GB");
 });
 
 test("the error page offers reload and go-home recovery, with details in dev", async () => {
-  await using view = renderResource(<RootErrorComponent error={new Error("boom")} />);
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <RootErrorComponent error={new Error("boom")} />
+    </LocaleProvider>,
+  );
 
   expect(view.getByText("Something went wrong")).toBeTruthy();
   expect(view.getByText("Go Home")).toBeTruthy();
@@ -130,30 +101,96 @@ test("the error page hides technical details outside dev", async () => {
     vi.unstubAllEnvs();
   });
 
-  await using view = renderResource(<RootErrorComponent error={new Error("boom")} />);
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <RootErrorComponent error={new Error("boom")} />
+    </LocaleProvider>,
+  );
 
   expect(view.getByText("Something went wrong")).toBeTruthy();
   expect(view.queryByText("boom")).toBeNull();
 });
 
 test("the not-found page offers a way back home", async () => {
-  await using view = renderResource(<NotFoundComponent />);
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <NotFoundComponent />
+    </LocaleProvider>,
+  );
 
   expect(view.getByText("404")).toBeTruthy();
   expect(view.getByText("Go Home")).toBeTruthy();
 });
 
 test("no progress bar renders while the router is idle", async () => {
-  routerState.isLoading = false;
-  await using view = renderResource(<NavigationProgress />);
+  await using view = renderProgress(<NavigationProgressBar isNavigating={false} />);
 
   expect(view.queryByRole("progressbar")).toBeNull();
 });
 
-test("an indeterminate progress bar renders while the router loads the next page", async () => {
-  routerState.isLoading = true;
-  await using view = renderResource(<NavigationProgress />);
+test("an indeterminate progress bar renders once loading outlasts the delay", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  await using view = renderProgress(<NavigationProgressBar isNavigating={true} />);
+
+  // The router flips isLoading true on every navigation, cached ones
+  // included — nothing may render before the delay elapses.
+  expect(view.queryByRole("progressbar")).toBeNull();
+
+  act(() => {
+    vi.advanceTimersByTime(NAVIGATION_PROGRESS_DELAY_MS);
+  });
 
   const progressbar = view.getByRole("progressbar", { name: "Loading" });
   expect(progressbar.dataset.indeterminate).toBeDefined();
+  expect(progressbar.className).toContain("animate-progress-indeterminate");
+});
+
+test("fast navigations never flash the progress bar", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  await using view = renderProgress(<NavigationProgressBar isNavigating={true} />);
+
+  // Navigation finishes before the delay elapses (instant, cache-served nav).
+  act(() => {
+    vi.advanceTimersByTime(NAVIGATION_PROGRESS_DELAY_MS - 1);
+  });
+  view.rerender(
+    <LocaleProvider locale="en-GB">
+      <NavigationProgressBar isNavigating={false} />
+    </LocaleProvider>,
+  );
+
+  act(() => {
+    vi.advanceTimersByTime(NAVIGATION_PROGRESS_DELAY_MS * 5);
+  });
+  expect(view.queryByRole("progressbar")).toBeNull();
+});
+
+test("the progress bar hides as soon as loading resolves", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  await using view = renderProgress(<NavigationProgressBar isNavigating={true} />);
+
+  act(() => {
+    vi.advanceTimersByTime(NAVIGATION_PROGRESS_DELAY_MS);
+  });
+  expect(view.getByRole("progressbar", { name: "Loading" })).toBeTruthy();
+
+  view.rerender(
+    <LocaleProvider locale="en-GB">
+      <NavigationProgressBar isNavigating={false} />
+    </LocaleProvider>,
+  );
+  act(() => {
+    vi.advanceTimersByTime(0);
+  });
+
+  expect(view.queryByRole("progressbar")).toBeNull();
 });

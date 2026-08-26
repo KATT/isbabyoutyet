@@ -9,15 +9,13 @@ import {
   useRouteContext,
   useRouterState,
 } from "@tanstack/react-router";
-import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
-import { api } from "@workspace/convex/convex/_generated/api";
+import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
-import { createServerFn } from "@tanstack/react-start";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -27,63 +25,70 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
-import { authServer } from "@/lib/auth-server";
 import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
-import { aiNoTrainHeaders, aiNoTrainMeta } from "@/lib/robots";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
+import { privateCacheHeaders } from "@/lib/cachePolicy";
+import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
+import { useDelayedBoolean } from "@/lib/use-delayed-action";
 
-// Cookie-authenticated token for SSR (and client navigations via server fn)
-const getAuth = createServerFn({ method: "GET" }).handler(async () => {
-  return await authServer.getToken();
-});
+/** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
+const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+
+/**
+ * Root `beforeLoad` with locale detection injected so tests can drive the SSR
+ * branch without mocking `createServerFn` / `detectRequestLocale`.
+ *
+ * @internal exported for tests
+ */
+export async function resolveRootBeforeLoad(opts: {
+  detectLocale: () => Promise<SupportedLocale>;
+  getClientLocale: () => SupportedLocale;
+}) {
+  // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
+  // then Accept-Language) via the server function.
+  if (typeof window === "undefined") {
+    return {
+      locale: await opts.detectLocale(),
+      isAuthenticated: false,
+      token: null,
+    };
+  }
+  // Client navigations: zero network. beforeLoad re-runs on EVERY navigation
+  // (back button included) and the router blocks on it, so a server-function
+  // round-trip here would tax them all — that's what made cached navigations
+  // show the top progress bar. Paraglide resolves the same cookie →
+  // preferredLanguage chain locally.
+  return {
+    locale: opts.getClientLocale(),
+    isAuthenticated: false,
+    token: null,
+  };
+}
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
   convexQueryClient: ConvexQueryClient;
   convexClient: ConvexReactClient;
+  convexPreloader: ConvexQueryPreloader;
   locale: SupportedLocale;
   isAuthenticated: boolean;
   token: string | null | undefined;
 }>()({
-  beforeLoad: async (ctx) => {
-    // SSR: detect the locale from request headers and exchange the session
-    // cookie for a Convex token so ensureQueryData / useSuspenseQuery run as
-    // the signed-in user.
-    if (typeof window === "undefined") {
-      const [locale, token] = await Promise.all([detectRequestLocale(), getAuth()]);
-      if (token) {
-        ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
-      }
-      return {
-        locale,
-        isAuthenticated: !!token,
-        token,
-      };
-    }
-
-    // Client navigations: zero network — beforeLoad re-runs on every
-    // navigation (back button included), so a server round-trip here would
-    // tax them all. The locale resolves locally, live auth belongs to
-    // ConvexBetterAuthProvider (initialToken only matters at hydration), and
-    // the cached profile tells us whether a session exists.
-    const cachedProfile = ctx.context.queryClient.getQueryData(
-      convexQuery(api.profile.get, {}).queryKey,
-    );
-    return {
-      locale: getDetectedLocale(),
-      isAuthenticated: cachedProfile != null,
-      token: null,
-    };
-  },
+  beforeLoad: async () =>
+    await resolveRootBeforeLoad({
+      detectLocale: detectRequestLocale,
+      getClientLocale: getDetectedLocale,
+    }),
   head: (opts) => {
     const locale = opts.match.context.locale ?? getDetectedLocale();
     const description = translate(
@@ -139,7 +144,6 @@ export const Route = createRootRouteWithContext<{
           name: "apple-mobile-web-app-status-bar-style",
           content: "black-translucent",
         },
-        ...aiNoTrainMeta(),
       ],
       links: [
         {
@@ -174,11 +178,7 @@ export const Route = createRootRouteWithContext<{
     };
   },
   headers() {
-    return {
-      "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400",
-      Vary: "Accept-Language, Cookie",
-      ...aiNoTrainHeaders(),
-    };
+    return privateCacheHeaders();
   },
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -187,6 +187,10 @@ export const Route = createRootRouteWithContext<{
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
+  const token = matches.reduce<string | null | undefined>((currentToken, match) => {
+    const matchContext = match.context as { token: string | null | undefined };
+    return matchContext.token ?? currentToken;
+  }, context.token);
   const locale = matches.reduce((currentLocale, match) => {
     const matchContext = match.context as { locale: SupportedLocale | undefined };
     return matchContext.locale ?? currentLocale;
@@ -200,8 +204,9 @@ function RootComponent() {
       <ConvexBetterAuthProvider
         client={context.convexQueryClient.convexClient}
         authClient={authClient as unknown as AuthClient}
-        initialToken={context.token}
+        initialToken={token}
       >
+        <ConvexAuthObserver />
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>
@@ -284,28 +289,54 @@ export function NotFoundComponent() {
   );
 }
 
+// The router flips isLoading true on every navigation — including instant
+// ones served entirely from the React Query cache — so an undelayed bar
+// flashes on every click and makes fast navigations look slow. Only show it
+// once loading has persisted past this threshold (same idea as TanStack's
+// defaultPendingMs for pending components).
+export const NAVIGATION_PROGRESS_DELAY_MS = 200;
+
 // Global pending indicator: the URL updates immediately on navigation, but on
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
 // indicator, so we show a top progress bar while the router is loading.
 // value={null} puts Progress in its indeterminate (sweeping) state.
 export function NavigationProgress() {
-  const { t } = useI18n();
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
+  return <NavigationProgressBar isNavigating={isNavigating} />;
+}
 
-  if (!isNavigating) {
+/**
+ * Presentational progress bar. `isNavigating` is a prop so tests can drive the
+ * delay/hide behaviour without mocking `useRouterState`.
+ *
+ * @internal exported for tests
+ */
+export function NavigationProgressBar(props: { isNavigating: boolean }) {
+  const { t } = useI18n();
+  const showBar = useDelayedBoolean({
+    value: props.isNavigating,
+    delayMs: NAVIGATION_PROGRESS_DELAY_MS,
+  });
+
+  if (!showBar) {
     return null;
   }
   return (
     <Progress
       value={null}
       aria-label={t("Loading")}
-      className="pointer-events-none fixed inset-x-0 top-0 z-50"
+      className={cn(
+        "pointer-events-none fixed inset-x-0 top-0 z-50",
+        "[&_[data-slot=progress-indicator]]:w-1/4 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:animate-progress-indeterminate",
+        "motion-reduce:[&_[data-slot=progress-indicator]]:w-full motion-reduce:[&_[data-slot=progress-indicator]]:animate-none",
+      )}
     />
   );
 }
 
-function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
+/** @internal exported for tests — document shell without Convex/auth providers. */
+export function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
   return (
     <html lang={props.locale} dir="ltr">
       <head>
@@ -314,7 +345,8 @@ function RootDocument(props: { children: React.ReactNode; locale: SupportedLocal
       <body>
         <NavigationProgress />
         {props.children}
-        <DevBar />
+        {/* Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar in prod. */}
+        {showDevBar ? <DevBar /> : null}
         <Toaster />
         <Analytics />
         <TanStackDevtools

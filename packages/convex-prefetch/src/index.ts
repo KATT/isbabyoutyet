@@ -15,11 +15,10 @@ export type {
   QueryReference,
 } from "./handles.js";
 
-export { getConvexQueryPreloader } from "./preloader.js";
+export { getConvexQueryPreloader, type ConvexQueryPreloader } from "./preloader.js";
 export {
   preloadedConvexQueryOptions,
   useInitiateConvexQuery,
   usePreloadedConvexQuery,
 } from "./usePreloadedConvexQuery.js";
-export { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages.js";
 export { usePreloadedConvexInfiniteQuery } from "./usePreloadedConvexInfiniteQuery.js";

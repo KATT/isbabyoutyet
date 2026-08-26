@@ -7,8 +7,7 @@ import { CANONICAL_ORIGIN } from "@/lib/site-url";
 
 /**
  * Crawlers that collect web text for model training (not ordinary search).
- * Each needs its own User-agent group — they do not honour `User-agent: *`
- * or `noai` meta tags.
+ * Each needs its own User-agent group — they do not honour `User-agent: *`.
  */
 const AI_TRAINING_USER_AGENTS = [
   "GPTBot",
@@ -40,33 +39,42 @@ function homepageDemoBabyPaths() {
   return SUPPORTED_LOCALES.map((locale) => `/baby/${HOMEPAGE_DEMO_BABIES[locale].publicId}`);
 }
 
-export function isIndexableBabyPublicId(publicId: string) {
-  return isHomepageDemoPublicId(publicId);
+function publicCrawlRules() {
+  const demoAllows = homepageDemoBabyPaths()
+    .flatMap((path) => [`Allow: ${path}`, `Allow: /og${path}`])
+    .join("\n");
+
+  return `Allow: /
+Allow: /og
+Disallow: /auth/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /demo/
+Disallow: /preview
+Disallow: /baby/
+Disallow: /og/baby/
+${demoAllows}`;
 }
 
-export function aiNoTrainMeta() {
-  return [{ name: "robots", content: "noai, noimageai" }];
+export function isIndexableBabyPublicId(publicId: string) {
+  return isHomepageDemoPublicId(publicId);
 }
 
 export function searchRobotsMeta(opts: { index: boolean }) {
   if (opts.index) {
     return [
-      { name: "robots", content: "index, follow, noai, noimageai" },
+      { name: "robots", content: "index, follow" },
       { name: "googlebot", content: "index, follow" },
     ];
   }
   return [
-    { name: "robots", content: "noindex, nofollow, noai, noimageai" },
+    { name: "robots", content: "noindex, nofollow" },
     { name: "googlebot", content: "noindex, nofollow" },
   ];
 }
 
-export function aiNoTrainHeaders() {
-  return { "X-Robots-Tag": "noai, noimageai" };
-}
-
 export function noIndexHeaders() {
-  return { "X-Robots-Tag": "noindex, nofollow, noai, noimageai" };
+  return { "X-Robots-Tag": "noindex, nofollow" };
 }
 
 export function babyPageRobotsHeaders(publicId: string) {
@@ -77,30 +85,19 @@ export function babyPageRobotsHeaders(publicId: string) {
 }
 
 export function robotsTxt() {
-  const demoAllows = homepageDemoBabyPaths()
-    .flatMap((path) => [`Allow: ${path}`, `Allow: /og${path}`])
-    .join("\n");
+  const crawlRules = publicCrawlRules();
+  const aiAllows = AI_TRAINING_USER_AGENTS.map(
+    (agent) => `User-agent: ${agent}\n${crawlRules}`,
+  ).join("\n\n");
 
-  const aiBlocks = AI_TRAINING_USER_AGENTS.map((agent) => `User-agent: ${agent}\nDisallow: /`).join(
-    "\n\n",
-  );
-
-  return `# Search engines may index the marketing homepage and live demo baby pages.
+  return `# Search engines and AI agents may index the marketing homepage and live demo baby pages.
 # Real family baby pages stay out of the index.
 User-agent: *
-Allow: /
-Disallow: /auth/
-Disallow: /dashboard/
-Disallow: /api/
-Disallow: /demo/
-Disallow: /preview
-Disallow: /baby/
-Disallow: /og/baby/
-${demoAllows}
+${crawlRules}
 
 Sitemap: ${CANONICAL_ORIGIN}/sitemap.xml
 
-# Model-training crawlers — no page on this site.
-${aiBlocks}
+# Model-training crawlers — same public paths as search engines.
+${aiAllows}
 `;
 }

@@ -1,50 +1,10 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { DEMO_BABIES, HOMEPAGE_DEMO_BABIES } from "@workspace/convex/src/seedCredentials";
+import { activeBabyPublicId, DevBar } from "@/components/dev-bar";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-const mocks = vi.hoisted(() => ({
-  pathname: "/dashboard",
-  hasDemoLogin: true,
-}));
-
-vi.mock("@/lib/has-demo-login", () => ({
-  get hasDemoLogin() {
-    return mocks.hasDemoLogin;
-  },
-}));
-
-vi.mock("@tanstack/react-router", () => ({
-  Link: (
-    props: React.ComponentProps<"a"> & {
-      to: string | undefined;
-      params: { publicId: string } | undefined;
-    },
-  ) => {
-    const href =
-      props.to === "/baby/$publicId" && props.params
-        ? `/baby/${props.params.publicId}`
-        : typeof props.to === "string"
-          ? props.to
-          : "#";
-    return (
-      <a href={href} {...props}>
-        {props.children}
-      </a>
-    );
-  },
-  useRouterState: (opts: { select: (state: { location: { pathname: string } }) => string }) =>
-    opts.select({ location: { pathname: mocks.pathname } }),
-}));
-
-const { DevBar } = await import("./dev-bar");
-
-function renderDevBar() {
-  const view = render(<DevBar />);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+const HOMEPAGE_DEMO = HOMEPAGE_DEMO_BABIES["en-GB"];
 
 async function openDevBar() {
   fireEvent.click(screen.getByRole("button", { name: /developer shortcuts/i }));
@@ -54,10 +14,9 @@ async function openDevBar() {
 }
 
 test("opens a menu of seeded baby shortcuts", async () => {
-  mocks.pathname = "/dashboard";
-  mocks.hasDemoLogin = true;
-
-  await using _view = renderDevBar();
+  await using _view = await renderWithTestRouter(<DevBar />, {
+    path: "/dashboard",
+  });
 
   expect(screen.queryByRole("menuitem", { name: /not yet/i })).toBeNull();
   await openDevBar();
@@ -67,30 +26,19 @@ test("opens a menu of seeded baby shortcuts", async () => {
     expect(link.getAttribute("href")).toBe(`/baby/${baby.publicId}`);
   }
 
-  const juniper = screen.getByRole("menuitem", {
-    name: new RegExp(HOMEPAGE_DEMO_BABIES["en-GB"].name, "i"),
-  });
-  expect(juniper.getAttribute("href")).toBe(`/baby/${HOMEPAGE_DEMO_BABIES["en-GB"].publicId}`);
-});
-
-test("hides entirely when demo login is disabled", async () => {
-  mocks.hasDemoLogin = false;
-  mocks.pathname = "/";
-
-  await using _view = renderDevBar();
-
-  expect(screen.queryByRole("button", { name: /developer shortcuts/i })).toBeNull();
+  const juniper = screen.getByRole("menuitem", { name: new RegExp(HOMEPAGE_DEMO.name, "i") });
+  expect(juniper.getAttribute("href")).toBe(`/baby/${HOMEPAGE_DEMO.publicId}`);
 });
 
 test("closes when the route changes", async () => {
-  mocks.pathname = "/dashboard";
-  mocks.hasDemoLogin = true;
-
-  await using view = renderDevBar();
+  await using view = await renderWithTestRouter(<DevBar />, { path: "/dashboard" });
   await openDevBar();
 
-  mocks.pathname = "/baby/baby-waiting";
-  view.rerender(<DevBar />);
+  // The test tree registers only a root route, so drive the location through
+  // history instead of a typed `navigate({ to })`.
+  act(() => {
+    view.router.history.push("/baby/baby-waiting");
+  });
 
   await vi.waitFor(() => {
     expect(screen.queryByRole("menu")).toBeNull();
@@ -98,10 +46,7 @@ test("closes when the route changes", async () => {
 });
 
 test("page shortcut links point at dashboard, login, and preview", async () => {
-  mocks.pathname = "/";
-  mocks.hasDemoLogin = true;
-
-  await using _view = renderDevBar();
+  await using _view = await renderWithTestRouter(<DevBar />, { path: "/" });
   await openDevBar();
 
   expect(screen.getByRole("menuitem", { name: /dashboard/i }).getAttribute("href")).toBe(
@@ -112,49 +57,53 @@ test("page shortcut links point at dashboard, login, and preview", async () => {
 });
 
 test("marks the current baby when opened on a baby page", async () => {
-  mocks.pathname = "/baby/baby-in-labor";
-  mocks.hasDemoLogin = true;
-
-  await using _view = renderDevBar();
-  await openDevBar();
-
-  expect(screen.getByRole("menuitem", { name: /labour started/i })).toBeTruthy();
-  expect(screen.getByRole("menuitem", { name: /not yet/i })).toBeTruthy();
-});
-
-test("covers page active states for dashboard, login, and preview", async () => {
-  mocks.hasDemoLogin = true;
-
-  mocks.pathname = "/dashboard";
-  {
-    await using _dashboard = renderDevBar();
-    await openDevBar();
-    expect(screen.getByRole("menuitem", { name: /dashboard/i })).toBeTruthy();
-  }
-
-  mocks.pathname = "/auth/login";
-  {
-    await using _login = renderDevBar();
-    await openDevBar();
-    expect(screen.getByRole("menuitem", { name: /login/i })).toBeTruthy();
-  }
-
-  mocks.pathname = "/preview";
-  {
-    await using _preview = renderDevBar();
-    await openDevBar();
-    expect(screen.getByRole("menuitem", { name: /preview/i })).toBeTruthy();
-  }
-});
-
-test("marks the current homepage demo baby", async () => {
-  mocks.pathname = `/baby/${HOMEPAGE_DEMO_BABIES["en-GB"].publicId}`;
-  mocks.hasDemoLogin = true;
-
-  await using _view = renderDevBar();
+  await using _view = await renderWithTestRouter(<DevBar />, {
+    path: "/baby/baby-in-labor",
+  });
   await openDevBar();
 
   expect(
-    screen.getByRole("menuitem", { name: new RegExp(HOMEPAGE_DEMO_BABIES["en-GB"].name, "i") }),
-  ).toBeTruthy();
+    screen.getByRole("menuitem", { name: /labour started/i }).getAttribute("aria-current"),
+  ).toBe("page");
+  expect(
+    screen.getByRole("menuitem", { name: /not yet/i }).getAttribute("aria-current"),
+  ).toBeNull();
+});
+
+test("marks the current homepage demo baby", async () => {
+  await using _view = await renderWithTestRouter(<DevBar />, {
+    path: `/baby/${HOMEPAGE_DEMO.publicId}`,
+  });
+  await openDevBar();
+
+  expect(
+    screen
+      .getByRole("menuitem", { name: new RegExp(HOMEPAGE_DEMO.name, "i") })
+      .getAttribute("aria-current"),
+  ).toBe("page");
+});
+
+test.each([
+  { path: "/dashboard", name: /dashboard/i },
+  { path: "/auth/login", name: /login/i },
+  { path: "/preview", name: /preview/i },
+])("marks the current page shortcut on $path", async (testCase) => {
+  await using _view = await renderWithTestRouter(<DevBar />, {
+    path: testCase.path,
+  });
+  await openDevBar();
+
+  const items = screen.getAllByRole("menuitem");
+  const current = items.filter((item) => item.getAttribute("aria-current") === "page");
+  expect(current).toHaveLength(1);
+  expect(current[0]?.textContent).toMatch(testCase.name);
+});
+
+test.each([
+  { pathname: "/baby/baby-waiting", expected: "baby-waiting" },
+  { pathname: "/baby/baby-waiting/settings", expected: "baby-waiting" },
+  { pathname: "/dashboard", expected: null },
+  { pathname: "/babysitter", expected: null },
+])("activeBabyPublicId($pathname) is $expected", (testCase) => {
+  expect(activeBabyPublicId(testCase.pathname)).toBe(testCase.expected);
 });

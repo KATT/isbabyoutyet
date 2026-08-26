@@ -1,38 +1,37 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
+import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { anyApi, makeFunctionReference } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
+import { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages";
+
+type LivePage = { page: { id: string }[]; isDone: boolean; continueCursor: string };
+
 type WatchHandle = {
   onUpdate: (cb: () => void) => () => void;
-  localQueryResult: () =>
-    | { page: { id: string }[]; isDone: boolean; continueCursor: string }
-    | undefined;
+  localQueryResult: () => LivePage | undefined;
 };
 
-const mocks = vi.hoisted(() => {
-  const localResult = { page: [{ id: "a" }], isDone: true, continueCursor: "" };
-  let updateCb: (() => void) | null = null;
-  const onUpdate = vi.fn<(cb: () => void) => () => void>((cb) => {
-    updateCb = cb;
-    return () => undefined;
-  });
-  const watchQuery = vi.fn<() => WatchHandle>(() => ({
-    onUpdate,
-    localQueryResult: () => localResult,
-  }));
-  return { localResult, onUpdate, watchQuery, getUpdateCb: () => updateCb };
-});
+type WatchQuery = (funcRef: unknown, args: Record<string, unknown>) => WatchHandle;
 
-vi.mock("convex/react", () => ({
-  useConvex: () => ({ watchQuery: mocks.watchQuery }),
-}));
+const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCursor: "" };
 
-const { useLiveConvexInfinitePages } = await import("./useLiveConvexInfinitePages");
-
-function wrapperFor(client: QueryClient) {
+/**
+ * `useConvex()` only reads context, so the real `ConvexProvider` happily
+ * carries a `watchQuery`-shaped stand-in. The stub client is built once per
+ * wrapper: a fresh identity per render would itself force the live-pages
+ * effect to resubscribe.
+ */
+function wrapperFor(client: QueryClient, watchQuery: WatchQuery) {
+  const convex = { watchQuery } as unknown as ConvexReactClient;
   return function Wrapper(props: { children: React.ReactNode }) {
-    return React.createElement(QueryClientProvider, { client }, props.children);
+    return React.createElement(
+      ConvexProvider,
+      { client: convex },
+      React.createElement(QueryClientProvider, { client }, props.children),
+    );
   };
 }
 
@@ -40,27 +39,37 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
   const client = new QueryClient();
   const setSpy = vi.spyOn(client, "setQueryData");
   const queryKey = ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }] as const;
+  const funcRef = makeFunctionReference("timeline:listByBaby");
+  const updateCbs: Array<() => void> = [];
+
+  const watchQuery = vi.fn<WatchQuery>(() => ({
+    onUpdate: (cb: () => void) => {
+      updateCbs.push(cb);
+      return () => undefined;
+    },
+    localQueryResult: () => localResult,
+  }));
 
   const { unmount } = renderHook(
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: "timeline:listByBaby" as never,
+        funcRef: funcRef as never,
         args: { babyId: "b1" },
         pageParams: [
           { numItems: 20, cursor: null },
           { numItems: 20, cursor: "c1" },
         ],
       }),
-    { wrapper: wrapperFor(client) },
+    { wrapper: wrapperFor(client, watchQuery) },
   );
 
-  expect(mocks.watchQuery).toHaveBeenCalledTimes(2);
-  expect(mocks.watchQuery).toHaveBeenCalledWith("timeline:listByBaby", {
+  expect(watchQuery).toHaveBeenCalledTimes(2);
+  expect(watchQuery).toHaveBeenCalledWith(funcRef, {
     babyId: "b1",
     paginationOpts: { numItems: 20, cursor: null },
   });
-  expect(mocks.watchQuery).toHaveBeenCalledWith("timeline:listByBaby", {
+  expect(watchQuery).toHaveBeenCalledWith(funcRef, {
     babyId: "b1",
     paginationOpts: { numItems: 20, cursor: "c1" },
   });
@@ -77,7 +86,7 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
   });
   setSpy.mockClear();
 
-  mocks.getUpdateCb()?.();
+  updateCbs[1]?.();
   expect(setSpy).toHaveBeenCalled();
   const updater = setSpy.mock.calls[0]?.[1];
   expect(updater).toBeTypeOf("function");
@@ -96,7 +105,7 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
       { numItems: 20, cursor: "c1" },
     ],
   });
-  expect(next?.pages[1]).toEqual(mocks.localResult);
+  expect(next?.pages[1]).toEqual(localResult);
 
   unmount();
 });
@@ -107,15 +116,16 @@ test("useLiveConvexInfinitePages skips updates when localQueryResult throws or i
   const queryKey = ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }] as const;
 
   let call = 0;
-  mocks.watchQuery.mockImplementation(() => {
+  const watchQuery = vi.fn<WatchQuery>(() => {
     call += 1;
+    const throwsOnRead = call === 1;
     return {
       onUpdate: (cb: () => void) => {
         cb();
         return () => undefined;
       },
       localQueryResult: () => {
-        if (call === 1) {
+        if (throwsOnRead) {
           throw new Error("not ready");
         }
         return undefined;
@@ -127,14 +137,14 @@ test("useLiveConvexInfinitePages skips updates when localQueryResult throws or i
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: "timeline:listByBaby" as never,
+        funcRef: makeFunctionReference("timeline:listByBaby") as never,
         args: { babyId: "b1" },
         pageParams: [
           { numItems: 20, cursor: null },
           { numItems: 20, cursor: "c1" },
         ],
       }),
-    { wrapper: wrapperFor(client) },
+    { wrapper: wrapperFor(client, watchQuery) },
   );
 
   expect(setSpy).not.toHaveBeenCalled();
@@ -147,23 +157,23 @@ test("useLiveConvexInfinitePages leaves cache alone when previous data is missin
   const queryKey = ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }] as const;
   let updateCb: (() => void) | null = null;
 
-  mocks.watchQuery.mockImplementation(() => ({
+  const watchQuery = vi.fn<WatchQuery>(() => ({
     onUpdate: (cb: () => void) => {
       updateCb = cb;
       return () => undefined;
     },
-    localQueryResult: () => mocks.localResult,
+    localQueryResult: () => localResult,
   }));
 
   const { unmount } = renderHook(
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: "timeline:listByBaby" as never,
+        funcRef: makeFunctionReference("timeline:listByBaby") as never,
         args: { babyId: "b1" },
         pageParams: [{ numItems: 20, cursor: null }],
       }),
-    { wrapper: wrapperFor(client) },
+    { wrapper: wrapperFor(client, watchQuery) },
   );
 
   setSpy.mockClear();
@@ -179,23 +189,169 @@ test("useLiveConvexInfinitePages leaves cache alone when previous data is missin
 
 test("useLiveConvexInfinitePages is a no-op when there are no pageParams", () => {
   const client = new QueryClient();
-  mocks.watchQuery.mockClear();
-  mocks.watchQuery.mockImplementation(() => ({
-    onUpdate: mocks.onUpdate,
-    localQueryResult: () => mocks.localResult,
+  const watchQuery = vi.fn<WatchQuery>(() => ({
+    onUpdate: () => () => undefined,
+    localQueryResult: () => localResult,
   }));
 
   const { unmount } = renderHook(
     () =>
       useLiveConvexInfinitePages({
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }],
-        funcRef: "timeline:listByBaby" as never,
+        funcRef: makeFunctionReference("timeline:listByBaby") as never,
         args: { babyId: "b1" },
         pageParams: [],
       }),
-    { wrapper: wrapperFor(client) },
+    { wrapper: wrapperFor(client, watchQuery) },
   );
 
-  expect(mocks.watchQuery).not.toHaveBeenCalled();
+  expect(watchQuery).not.toHaveBeenCalled();
+  unmount();
+});
+
+test("useLiveConvexInfinitePages does not resubscribe when opts identities change with same contents", () => {
+  const client = new QueryClient();
+  const unsubscribers: Array<ReturnType<typeof vi.fn>> = [];
+
+  const watchQuery = vi.fn<WatchQuery>(() => ({
+    onUpdate: () => {
+      const unsubscribe = vi.fn();
+      unsubscribers.push(unsubscribe);
+      return unsubscribe;
+    },
+    localQueryResult: () => localResult,
+  }));
+
+  const { rerender, unmount } = renderHook(
+    (props: {
+      queryKey: readonly unknown[];
+      args: Record<string, unknown>;
+      pageParams: { numItems: number; cursor: string | null }[];
+    }) =>
+      useLiveConvexInfinitePages({
+        queryKey: props.queryKey as never,
+        // Fresh api-proxy identity each render, same function name.
+        funcRef: anyApi.timeline.listByBaby as never,
+        args: props.args,
+        pageParams: props.pageParams,
+      }),
+    {
+      wrapper: wrapperFor(client, watchQuery),
+      initialProps: {
+        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
+        args: { babyId: "b1", tag: "x" } as Record<string, unknown>,
+        pageParams: [{ numItems: 20, cursor: null }],
+      },
+    },
+  );
+
+  expect(watchQuery).toHaveBeenCalledTimes(1);
+  expect(unsubscribers).toHaveLength(1);
+
+  rerender({
+    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
+    args: { babyId: "b1", tag: "x" },
+    pageParams: [{ numItems: 20, cursor: null }],
+  });
+
+  expect(watchQuery).toHaveBeenCalledTimes(1);
+  expect(unsubscribers[0]).not.toHaveBeenCalled();
+
+  // Object key insertion order must not force a resubscribe.
+  rerender({
+    queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { tag: "x", babyId: "b1" }],
+    args: { tag: "x", babyId: "b1" },
+    pageParams: [{ cursor: null, numItems: 20 }],
+  });
+
+  expect(watchQuery).toHaveBeenCalledTimes(1);
+  expect(unsubscribers[0]).not.toHaveBeenCalled();
+
+  unmount();
+  expect(unsubscribers[0]).toHaveBeenCalledTimes(1);
+});
+
+test("useLiveConvexInfinitePages resubscribes when args contents change", () => {
+  const client = new QueryClient();
+  const unsubscribers: Array<ReturnType<typeof vi.fn>> = [];
+
+  const watchQuery = vi.fn<WatchQuery>(() => ({
+    onUpdate: () => {
+      const unsubscribe = vi.fn();
+      unsubscribers.push(unsubscribe);
+      return unsubscribe;
+    },
+    localQueryResult: () => localResult,
+  }));
+
+  const { rerender, unmount } = renderHook(
+    (props: { args: Record<string, unknown> }) =>
+      useLiveConvexInfinitePages({
+        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args] as never,
+        funcRef: anyApi.timeline.listByBaby as never,
+        args: props.args,
+        pageParams: [{ numItems: 20, cursor: null }],
+      }),
+    {
+      wrapper: wrapperFor(client, watchQuery),
+      initialProps: { args: { babyId: "b1" } as Record<string, unknown> },
+    },
+  );
+
+  expect(watchQuery).toHaveBeenCalledTimes(1);
+
+  rerender({ args: { babyId: "b1", visitorId: "v1" } as Record<string, unknown> });
+
+  expect(unsubscribers[0]).toHaveBeenCalledTimes(1);
+  expect(watchQuery).toHaveBeenCalledTimes(2);
+  expect(watchQuery).toHaveBeenLastCalledWith(makeFunctionReference("timeline:listByBaby"), {
+    babyId: "b1",
+    visitorId: "v1",
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+
+  unmount();
+});
+
+test("useLiveConvexInfinitePages ignores late updates past the cached page count", () => {
+  const client = new QueryClient();
+  const setSpy = vi.spyOn(client, "setQueryData");
+  let updateCb: (() => void) | null = null;
+
+  const watchQuery = vi.fn<WatchQuery>(() => ({
+    onUpdate: (cb: () => void) => {
+      updateCb = cb;
+      return () => undefined;
+    },
+    localQueryResult: () => localResult,
+  }));
+
+  const queryKey = ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }] as const;
+  const { unmount } = renderHook(
+    () =>
+      useLiveConvexInfinitePages({
+        queryKey,
+        funcRef: makeFunctionReference("timeline:listByBaby") as never,
+        args: { babyId: "b1" },
+        pageParams: [
+          { numItems: 20, cursor: null },
+          { numItems: 20, cursor: "c1" },
+        ],
+      }),
+    { wrapper: wrapperFor(client, watchQuery) },
+  );
+
+  setSpy.mockClear();
+  updateCb!();
+  const updater = setSpy.mock.calls[0]?.[1] as (previous: {
+    pages: unknown[];
+    pageParams: unknown[];
+  }) => { pages: unknown[] };
+  const previous = {
+    pages: [{ page: [], isDone: false, continueCursor: "c1" }],
+    pageParams: [{ numItems: 20, cursor: null }],
+  };
+  expect(updater(previous)).toBe(previous);
+
   unmount();
 });

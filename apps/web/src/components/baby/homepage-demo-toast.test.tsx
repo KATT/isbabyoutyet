@@ -2,8 +2,7 @@ import { fireEvent, render } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
-
-const { HomepageDemoToast } = await import("./homepage-demo-toast");
+import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
 
 function renderToastResource(publicId: string) {
   const view = render(<HomepageDemoToast publicId={publicId} />);
@@ -15,7 +14,11 @@ function renderToastResource(publicId: string) {
 test("shows a persistent demo toast on the homepage demo baby", async () => {
   await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
 
+  // English locale maps the key "This is a demo baby" → "This is a demo page"
   expect(view.getByText("This is a demo page")).toBeTruthy();
+  expect(
+    view.getByText("Feel free to post test messages — we reset this demo daily."),
+  ).toBeTruthy();
   expect(view.getByRole("complementary")).toBeTruthy();
 });
 

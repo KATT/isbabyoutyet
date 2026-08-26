@@ -1,247 +1,395 @@
-import { act, fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { api } from "@workspace/convex/convex/_generated/api";
+import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
+import { LocaleProvider } from "@/lib/i18n";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { OnboardingHostWithSession, useCompleteOnboardingStep } from "./onboarding-host";
 
-const mocks = vi.hoisted(() => ({
-  useSuspenseQuery: vi.fn<() => { data: unknown }>(),
-  useSession: vi.fn<() => { data: { user: { id: string } } | null; isPending: boolean }>(),
-  dismissWelcome: vi.fn<() => void>(),
-  setMinimized: vi.fn<() => void>(),
-  dismissChecklist: vi.fn<() => void>(),
-  completeStep: vi.fn<() => void>(),
-}));
+async function renderOnboardingHost(opts: {
+  harness: Awaited<ReturnType<typeof createConvexTestHarness>>;
+  surface: "dashboard" | "baby";
+  babyPublicId: string | undefined;
+  session: { data: { user: { id: string } } | null; isPending: boolean };
+  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
+}) {
+  const onboarding = await opts.harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
+  return await renderWithTestRouter(
+    <QueryClientProvider client={opts.harness.queryClient}>
+      <ConvexProvider client={opts.harness.convexClient as unknown as ConvexReactClient}>
+        <LocaleProvider locale="en-GB">
+          <OnboardingHostWithSession
+            surface={opts.surface}
+            onboarding={onboarding}
+            enabled={undefined}
+            spotlight={undefined}
+            babyPublicId={opts.babyPublicId}
+            onGoToStep={opts.onGoToStep}
+            session={opts.session}
+          />
+        </LocaleProvider>
+      </ConvexProvider>
+    </QueryClientProvider>,
+    { path: "/" },
+  );
+}
 
-vi.mock("@/lib/auth-client", () => ({
-  authClient: {
-    useSession: () => mocks.useSession(),
-  },
-}));
-
-vi.mock("@tanstack/react-query", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@tanstack/react-query")>();
-  return {
-    ...actual,
-    useSuspenseQuery: () => mocks.useSuspenseQuery(),
-  };
-});
-
-vi.mock("convex/react", () => ({
-  useMutation: (() => {
-    let call = 0;
-    return () => {
-      const index = call;
-      call += 1;
-      if (index % 4 === 0) return mocks.dismissWelcome;
-      if (index % 4 === 1) return mocks.setMinimized;
-      if (index % 4 === 2) return mocks.dismissChecklist;
-      return mocks.completeStep;
-    };
-  })(),
-}));
-
-vi.mock("./welcome-tour", () => ({
-  WelcomeTourDialog: (props: {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    onFinished: () => void;
-  }) =>
-    props.open ? (
-      <button
-        type="button"
-        onClick={() => {
-          props.onFinished();
-          props.onOpenChange(false);
-        }}
-      >
-        Finish welcome
-      </button>
-    ) : null,
-}));
-
-vi.mock("./getting-started", () => ({
-  GettingStartedCard: () => <div data-testid="getting-started" />,
-}));
-
-vi.mock("./coachmark", () => ({
-  Coachmark: () => null,
-}));
-
-const { OnboardingHost } = await import("./onboarding-host");
-const { testPreloadedConvexQuery } = await import("@workspace/convex-prefetch/test-helpers");
-const { api } = await import("@workspace/convex/convex/_generated/api");
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
+function plantTourTarget(targetId: string) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.setAttribute("data-tour-id", targetId);
+  el.textContent = targetId;
+  el.style.cssText = "position:fixed;top:80px;left:80px;width:40px;height:40px;";
+  el.scrollIntoView = () => {};
+  el.getBoundingClientRect = () =>
+    ({
+      x: 80,
+      y: 80,
+      top: 80,
+      left: 80,
+      bottom: 120,
+      right: 120,
+      width: 40,
+      height: 40,
+      toJSON: () => ({}),
+    }) as DOMRect;
+  document.body.appendChild(el);
+  return makeResource(el, () => {
+    el.remove();
   });
 }
 
-const progress = {
-  welcomeDismissed: true,
-  checklistDismissed: false,
-  minimized: false,
-  completedSteps: [] as string[],
-  hasBaby: true,
-  hasUpdate: false,
-  effectiveSteps: ["add_baby"],
-  allDone: false,
-  tourBaby: { publicId: "baby-smith", name: "Smith" },
-};
-
-const onboardingHandle = testPreloadedConvexQuery<typeof api.onboarding.getMine>({
-  input: {},
-  initialData: progress,
-});
+async function seedAllOnboardingStepsDone(
+  harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
+  babyId: Awaited<ReturnType<typeof seedOwnedBaby>>["babyId"],
+) {
+  await harness.client.mutation(api.updates.post, {
+    babyId,
+    message: "First update",
+  });
+  for (const stepId of ["share_link", "explore_settings", "learn_encouragements"] as const) {
+    await harness.client.mutation(api.onboarding.completeStep, { stepId });
+  }
+}
 
 test("returns null for anonymous visitors", async () => {
-  mocks.useSession.mockReturnValue({ data: null, isPending: false });
+  await using harness = await createConvexTestHarness({ identity: null });
+  const onboarding = await harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
+  await using view = renderWithConvexTest({
+    harness,
+    ui: (
+      <OnboardingHostWithSession
+        surface="dashboard"
+        onboarding={onboarding}
+        enabled={undefined}
+        spotlight={undefined}
+        babyPublicId={undefined}
+        onGoToStep={undefined}
+        session={{ data: null, isPending: false }}
+      />
+    ),
+    wrap: null,
+  });
 
-  expect(view.container.firstChild).toBeNull();
+  expect(view.queryByText(/getting started/i)).toBeNull();
+  expect(view.queryByRole("button", { name: "Dismiss guide" })).toBeNull();
+});
+
+test("shows the checklist on first run without a welcome dialog", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  expect(view.getAllByText("Add your first baby").length).toBeGreaterThan(0);
+  expect(view.queryByRole("dialog", { name: /welcome/i })).toBeNull();
 });
 
 test("mounts authed onboarding host when progress is loaded", async () => {
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
 
-  expect(view.getByTestId("getting-started")).toBeTruthy();
+  expect(view.getAllByText(/getting started/i).length).toBeGreaterThan(0);
+});
+
+test("highlights how to restore the guide after dismissal", async () => {
+  const scrollTo = vi.fn<(options: ScrollToOptions) => void>();
+  const scrollToDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
+  await using _scrollTo = makeResource({}, () => {
+    if (scrollToDescriptor) {
+      Object.defineProperty(window, "scrollTo", scrollToDescriptor);
+    } else {
+      Reflect.deleteProperty(window, "scrollTo");
+    }
+  });
+  Object.defineProperty(window, "scrollTo", {
+    configurable: true,
+    value: scrollTo,
+  });
+  await using _target = plantTourTarget("restart_tour");
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("button", { name: "Dismiss guide" })[0]!);
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.checklistDismissed).toBe(true);
+  });
+  await vi.waitFor(() => {
+    expect(view.getByText("Guide dismissed")).toBeTruthy();
+  });
+  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
 });
 
 test("renders on the tour baby page when babyPublicId matches", async () => {
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  mocks.useSuspenseQuery.mockReturnValue({ data: progress });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="baby"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId="baby-smith"
-      onGoToStep={undefined}
-    />,
-  );
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: baby.publicId,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
 
-  expect(view.getByTestId("getting-started")).toBeTruthy();
+  expect(view.getAllByText(/share the link/i).length).toBeGreaterThan(0);
 });
 
-test("dismisses a completed checklist after four seconds", async () => {
+test("keeps the coachmark tip hidden until a tip target is activated", async () => {
+  await using _target = plantTourTarget("share_link");
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: baby.publicId,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  expect(view.queryByRole("button", { name: "Hide tip" })).toBeNull();
+  expect(view.getAllByRole("link", { name: /show share/i }).length).toBeGreaterThan(0);
+  expect(view.getAllByRole("button", { name: "Dismiss guide" }).length).toBeGreaterThan(0);
+});
+
+test("returns null on a non-tour baby page", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: "other-baby",
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  expect(view.queryByText(/getting started/i)).toBeNull();
+});
+
+test("auto-dismisses the checklist shortly after all steps are done", async () => {
   vi.useFakeTimers();
-  await using _timers = makeResource({}, () => vi.useRealTimers());
-  mocks.dismissChecklist.mockClear();
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
-  });
-  mocks.useSuspenseQuery.mockReturnValue({
-    data: {
-      ...progress,
-      effectiveSteps: ["add_baby", "share_link", "post_update", "explore_settings"],
-      allDone: true,
-    },
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
   });
 
-  await using _view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedAllOnboardingStepsDone(harness, baby.babyId);
 
-  act(() => vi.advanceTimersByTime(3999));
-  expect(mocks.dismissChecklist).not.toHaveBeenCalled();
-  act(() => vi.advanceTimersByTime(1));
-  expect(mocks.dismissChecklist).toHaveBeenCalledOnce();
+  await using _view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  await vi.advanceTimersByTimeAsync(4000);
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.checklistDismissed).toBe(true);
+  });
 });
 
-test("persists a skipped welcome tour when the user already has a baby", async () => {
+test("auto-dismiss timer survives progress re-renders", async () => {
   vi.useFakeTimers();
-  await using _timers = makeResource({}, () => vi.useRealTimers());
-  mocks.dismissWelcome.mockClear();
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
-  });
-  mocks.useSuspenseQuery.mockReturnValue({
-    data: {
-      ...progress,
-      welcomeDismissed: false,
-    },
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
   });
 
-  await using _view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await seedAllOnboardingStepsDone(harness, baby.babyId);
 
-  act(() => vi.advanceTimersByTime(0));
-  expect(mocks.dismissWelcome).toHaveBeenCalledOnce();
+  await using _view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  await vi.advanceTimersByTimeAsync(2000);
+  await harness.client.mutation(api.onboarding.setMinimized, { minimized: true });
+  await vi.advanceTimersByTimeAsync(2000);
+
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.checklistDismissed).toBe(true);
+  });
 });
 
-test("closes the welcome tour immediately while persisting dismissal", async () => {
-  mocks.dismissWelcome.mockClear();
-  mocks.useSession.mockReturnValue({
-    data: { user: { id: "user-1" } },
-    isPending: false,
+test("checklist CTAs complete steps and open baby overlays", async () => {
+  const onGoToStep = vi.fn<(stepId: OnboardingStepId) => void>();
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
   });
-  mocks.useSuspenseQuery.mockReturnValue({
-    data: {
-      ...progress,
-      welcomeDismissed: false,
-      hasBaby: false,
-    },
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.onboarding.completeStep, { stepId: "add_baby" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: baby.publicId,
+    onGoToStep,
+    session: { data: { user: { id: userId } }, isPending: false },
   });
 
-  await using view = renderResource(
-    <OnboardingHost
-      surface="dashboard"
-      onboarding={onboardingHandle}
-      enabled={undefined}
-      spotlight={undefined}
-      babyPublicId={undefined}
-      onGoToStep={undefined}
-    />,
-  );
+  fireEvent.click(view.getAllByRole("button", { name: /open settings/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("explore_settings");
+  });
 
-  fireEvent.click(view.getByRole("button", { name: "Finish welcome" }));
-  expect(view.queryByRole("button", { name: "Finish welcome" })).toBeNull();
-  expect(mocks.dismissWelcome).toHaveBeenCalledOnce();
+  fireEvent.click(view.getAllByRole("button", { name: "Minimize" })[0]!);
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.minimized).toBe(true);
+  });
+});
+
+test("authed onboarding host wires Convex mutations into the view", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  expect(view.getAllByText(/getting started/i).length).toBeGreaterThan(0);
+});
+
+test("useCompleteOnboardingStep returns the Convex mutation", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "user-1" } });
+
+  const holder: { completeStep: unknown } = { completeStep: null };
+  function Probe() {
+    holder.completeStep = useCompleteOnboardingStep();
+    return null;
+  }
+
+  await using _view = renderWithConvexTest({
+    harness,
+    ui: <Probe />,
+    wrap: null,
+  });
+
+  expect(typeof holder.completeStep).toBe("function");
 });

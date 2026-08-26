@@ -4,10 +4,10 @@ import { components } from "./_generated/api";
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
-import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
 import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
+import { loadCurrentStatus } from "./timeline";
 
 const sortByValidator = v.union(v.literal("created"), v.literal("updated"));
 const sortOrderValidator = v.union(v.literal("asc"), v.literal("desc"));
@@ -24,7 +24,9 @@ const babyRowValidator = v.object({
   _id: v.id("baby"),
   name: v.string(),
   publicId: v.string(),
-  dueDate: v.string(),
+  dueDate: v.union(v.string(), v.null()),
+  dueDateDisplayMode: v.union(v.literal("exact"), v.literal("message")),
+  publicDueDateText: v.union(v.string(), v.null()),
   status: v.union(
     v.literal("not_yet"),
     v.literal("labor_started"),
@@ -36,6 +38,47 @@ const babyRowValidator = v.object({
   updatedAt: v.number(),
   managerEmails: v.array(v.string()),
 });
+
+const userBabySummaryValidator = v.object({
+  name: v.string(),
+  publicId: v.string(),
+  demo: v.boolean(),
+});
+
+const userRowValidator = v.object({
+  _id: v.string(),
+  email: v.string(),
+  name: v.string(),
+  createdAt: v.number(),
+  babies: v.array(userBabySummaryValidator),
+});
+
+function authUserRow(user: Record<string, unknown>) {
+  return {
+    _id: String(user._id),
+    email: String(user.email),
+    name: String(user.name),
+    createdAt: Number(user.createdAt),
+  };
+}
+
+async function ownedBabiesForUser(ctx: QueryCtx, userId: string) {
+  const babies = await ctx.db
+    .query("baby")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .order("desc")
+    .take(100);
+  const rows = [];
+  for (const baby of babies) {
+    if (!isActive(baby)) continue;
+    rows.push({
+      name: baby.name,
+      publicId: baby.publicId,
+      demo: baby.demo === true,
+    });
+  }
+  return rows;
+}
 
 /**
  * Resolve a Better Auth user's email. Sentinel / non-document owners
@@ -144,7 +187,9 @@ export const listBabies = query({
         name: baby.name,
         publicId: baby.publicId,
         dueDate: baby.dueDate,
-        status: getCurrentStatus(baby).type,
+        dueDateDisplayMode: baby.dueDateDisplayMode,
+        publicDueDateText: baby.publicDueDateText,
+        status: (await loadCurrentStatus(ctx, baby._id)).type,
         demo: baby.demo === true,
         createdAt,
         updatedAt: Math.max(createdAt, baby.lastActivityAt ?? createdAt),
@@ -152,5 +197,34 @@ export const listBabies = query({
       });
     }
     return { ...result, page: rows };
+  },
+});
+
+/** Newest Better Auth signups first — staff review of recent registrations. */
+export const listUsers = query({
+  args: {
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(userRowValidator),
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const result = await ctx.runQuery(components.betterAuth.adapter.findMany, {
+      model: "user",
+      sortBy: { field: "createdAt", direction: "desc" },
+      paginationOpts: args.paginationOpts,
+    });
+    const page = [];
+    for (const user of result.page as Record<string, unknown>[]) {
+      const row = authUserRow(user);
+      page.push({
+        ...row,
+        babies: await ownedBabiesForUser(ctx, row._id),
+      });
+    }
+    return {
+      page,
+      isDone: result.isDone as boolean,
+      continueCursor: result.continueCursor as string,
+    };
   },
 });

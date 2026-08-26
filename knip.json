@@ -7,8 +7,11 @@
     "**/paraglide/**",
     "oxlint-plugins/**"
   ],
+  "tags": ["-@internal"],
   "workspaces": {
-    ".": {},
+    ".": {
+      "entry": ["scripts/compareCoverage.ts!"]
+    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -16,13 +19,19 @@
       "entry": [
         "public/sw.js!",
         "src/server.ts!",
+        "src/test/setup.ts!",
+        "src/test/convexTestHarness.ts!",
+        "src/test/convexTestSeed.ts!",
+        "src/test/renderWithConvexTest.tsx!",
+        "src/test/renderMountedFileRoute.tsx!",
+        "src/test/routeTestContext.ts!",
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
       ]
     },
     "packages/convex": {
-      "entry": ["scripts/seedHomepageDemo.ts!"]
+      "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
     },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
