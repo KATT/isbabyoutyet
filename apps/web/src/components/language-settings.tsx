@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
@@ -14,7 +13,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import type { DialogActions } from "@workspace/ui/components/dialog";
 import {
   FormControl,
   FormField,
@@ -31,7 +29,13 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/combobox";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { LanguagePicker } from "@/components/language-picker";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -141,7 +145,7 @@ export function LanguageSettings(props: {
   });
   const selectedTimeZoneOption =
     timeZoneOptions.find((option) => option.value === optimisticTimeZone) ?? defaultTimeZoneOption;
-  const languageRequestActionsRef = useRef<DialogActions | null>(null);
+  const languageRequestOverlay = useFormOverlay({ onOpenChange: undefined });
 
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
@@ -196,7 +200,7 @@ export function LanguageSettings(props: {
         }}
       />
 
-      <Dialog actionsRef={languageRequestActionsRef}>
+      <Dialog {...languageRequestOverlay.rootProps}>
         <DialogTrigger
           render={
             <Button variant="outline" size="sm">
@@ -205,18 +209,18 @@ export function LanguageSettings(props: {
           }
         />
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t("Request another language")}</DialogTitle>
-            <DialogDescription>
-              {t("Tell us which language you would like us to add.")}
-            </DialogDescription>
-          </DialogHeader>
-          <LanguageRequestForm
-            onRequestLanguage={onRequestLanguage}
-            onClose={() => {
-              languageRequestActionsRef.current?.close();
-            }}
-          />
+          <FormOverlayProvider overlay={languageRequestOverlay}>
+            <DialogHeader>
+              <DialogTitle>{t("Request another language")}</DialogTitle>
+              <DialogDescription>
+                {t("Tell us which language you would like us to add.")}
+              </DialogDescription>
+            </DialogHeader>
+            <LanguageRequestForm
+              onRequestLanguage={onRequestLanguage}
+              onClose={languageRequestOverlay.close}
+            />
+          </FormOverlayProvider>
         </DialogContent>
       </Dialog>
     </div>
