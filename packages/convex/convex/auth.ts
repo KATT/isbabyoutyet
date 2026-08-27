@@ -73,7 +73,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
               {
                 userId: user.id,
                 email: String(user.email),
-                name: user.name ?? null,
+                name: parseOptionalString(user.name),
               },
             );
           },

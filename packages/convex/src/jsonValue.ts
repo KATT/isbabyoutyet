@@ -17,11 +17,6 @@ function tagOf(value: JsonValue | null | undefined) {
   return Object.prototype.toString.call(value);
 }
 
-export function isJsonObject(value: JsonValue): value is JsonObject {
-  return tagOf(value) === "[object Object]";
-}
-
-/** Structural object check for loosely typed external values (not arrays/null). */
 export function isJsonObjectValue<TValue>(value: TValue): value is TValue & JsonObject {
   return Object.prototype.toString.call(value) === "[object Object]";
 }
@@ -73,25 +68,4 @@ export function parseOptionalString(value: JsonValue | undefined): string | null
     return null;
   }
   return parseJsonString(value);
-}
-
-/** Read a string field from a decoded JSON object payload. */
-export function readStringProperty(value: JsonObject, key: string): string | null {
-  for (const entry of Object.entries(value)) {
-    if (entry[0] !== key) {
-      continue;
-    }
-    return parseOptionalString(entry[1]);
-  }
-  return null;
-}
-
-/** True when a value is a callable function (realm-safe tag check). */
-export function isCallable<TValue>(value: TValue) {
-  const tag = Object.prototype.toString.call(value);
-  return (
-    tag === "[object Function]" ||
-    tag === "[object AsyncFunction]" ||
-    tag === "[object GeneratorFunction]"
-  );
 }

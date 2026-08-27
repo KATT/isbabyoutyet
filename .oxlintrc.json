@@ -195,6 +195,13 @@
       }
     },
     {
+      // Peer-type bridge for better-auth vs @convex-dev/better-auth AuthClient.
+      "files": ["apps/web/src/lib/auth-client-bridge.ts"],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
+      }
+    },
+    {
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/**"],
       "rules": {

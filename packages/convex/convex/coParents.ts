@@ -37,7 +37,7 @@ async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string)
   if (authUser?.email) {
     return {
       email: normalizeEmail(String(authUser.email)),
-      name: authUser.name ?? null,
+      name: parseOptionalString(authUser.name),
     };
   }
   const byId = await findUserById(ctx, userId);

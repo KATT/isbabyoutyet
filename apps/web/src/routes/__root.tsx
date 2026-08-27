@@ -15,7 +15,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -24,7 +23,7 @@ import appCss from "../../../../packages/ui/src/styles/globals.css?url";
 import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
-import { authClient } from "@/lib/auth-client";
+import { bridgedAuthClient } from "@/lib/auth-client-bridge";
 import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
@@ -201,7 +200,7 @@ export function contextLocale<TContext>(context: TContext): SupportedLocale | un
   return localeText;
 }
 
-function contextToken<TContext>(context: TContext) {
+export function contextToken<TContext>(context: TContext) {
   if (!isPlainContext(context) || !("token" in context)) {
     return undefined;
   }
@@ -222,12 +221,7 @@ function isPlainContext<TContext>(context: TContext): context is TContext & obje
 
 // better-auth and @convex-dev/better-auth currently expose structurally
 // incompatible client types despite supporting the same peer-version range.
-function compatibleAuthClient(client: typeof authClient): AuthClient;
-function compatibleAuthClient(client: any): AuthClient {
-  return client;
-}
-
-const convexAuthClient = compatibleAuthClient(authClient);
+const convexAuthClient = bridgedAuthClient();
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });

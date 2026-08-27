@@ -7,18 +7,12 @@ type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
 };
 
 function imageSrcKey(src: BlurImageProps["src"]) {
-  if (
-    src === undefined ||
-    Object.prototype.toString.call(src) === "[object Object]" ||
-    Array.isArray(src)
-  ) {
+  if (src === undefined) {
     return "";
   }
-  // Blob/File and other non-string src values are objects with specialized tags.
-  if (Object.prototype.toString.call(src) !== "[object String]" && `${src}` !== src) {
-    return "";
-  }
-  return src;
+  // Only plain string URLs are load-state keys (Blob/srcset objects stringify differently).
+  const key = `${src}`;
+  return key === src ? key : "";
 }
 
 function numericDimension(value: BlurImageProps["width"] | BlurImageProps["height"]) {
