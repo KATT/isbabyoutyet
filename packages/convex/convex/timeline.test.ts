@@ -33,6 +33,7 @@ async function setup() {
 function useFakeTimersResource() {
   vi.useFakeTimers();
   return makeResource({}, () => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 }

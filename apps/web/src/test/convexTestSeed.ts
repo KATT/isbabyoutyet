@@ -1,6 +1,7 @@
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { createAuth } from "@workspace/convex/convex/auth";
+import { mergeBabyUpdateArgs } from "@workspace/convex/src/mergeBabyUpdateArgs";
 import type { FunctionArgs } from "convex/server";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 
@@ -141,18 +142,7 @@ export async function patchOwnedBaby(
     if (!doc) throw new Error("Baby not found");
     return doc;
   });
-  await harness.client.mutation(api.baby.update, {
-    babyId: patch.babyId,
-    dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
-    dueDateDisplayMode:
-      patch.dueDateDisplayMode !== undefined ? patch.dueDateDisplayMode : baby.dueDateDisplayMode,
-    publicDueDateText:
-      patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
-    name: patch.name !== undefined ? patch.name : baby.name,
-    theme: patch.theme !== undefined ? patch.theme : (baby.theme ?? null),
-    locale: patch.locale !== undefined ? patch.locale : (baby.locale ?? null),
-    birthJourney: patch.birthJourney !== undefined ? patch.birthJourney : baby.birthJourney,
-  });
+  await harness.client.mutation(api.baby.update, mergeBabyUpdateArgs({ baby, patch }));
 }
 
 /** Posts a timeline update with omitted fields as explicit `null`. */

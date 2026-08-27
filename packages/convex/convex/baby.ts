@@ -31,7 +31,7 @@ type DueDateDisplayMode = "exact" | "message";
 
 const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
 
-function normalizePublicDueDateText(value: string | null | undefined) {
+function normalizePublicDueDateText(value: string | null) {
   const normalized = value?.trim() ?? "";
   if (normalized.length > MAX_PUBLIC_DUE_DATE_TEXT_LENGTH) {
     throw new Error("Public due date message must be 80 characters or fewer");
@@ -40,19 +40,17 @@ function normalizePublicDueDateText(value: string | null | undefined) {
 }
 
 function normalizeDueDateDisplay(opts: {
-  dueDate: string | null | undefined;
-  mode: DueDateDisplayMode | undefined;
-  text: string | null | undefined;
+  dueDate: string | null;
+  mode: DueDateDisplayMode;
+  text: string | null;
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
-  const mode = opts.mode ?? (normalizedText ? "message" : "exact");
-  const dueDate = opts.dueDate ?? null;
-  if (mode === "exact" && !dueDate) {
+  if (opts.mode === "exact" && !opts.dueDate) {
     throw new Error("A due date is required when the exact date is shown");
   }
   return {
-    dueDate,
-    mode,
+    dueDate: opts.dueDate,
+    mode: opts.mode,
     text: normalizedText,
   };
 }

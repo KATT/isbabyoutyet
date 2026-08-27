@@ -3,6 +3,7 @@ import type { FunctionArgs } from "convex/server";
 import type { convexTest } from "convex-test";
 import type { api } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
+import { mergeBabyUpdateArgs } from "../src/mergeBabyUpdateArgs";
 
 /**
  * All Convex function modules for convex-test.
@@ -128,18 +129,7 @@ export function updateBabyArgs(
   patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
     Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
 ): FunctionArgs<typeof api.baby.update> {
-  return {
-    babyId: patch.babyId,
-    dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
-    dueDateDisplayMode:
-      patch.dueDateDisplayMode !== undefined ? patch.dueDateDisplayMode : baby.dueDateDisplayMode,
-    publicDueDateText:
-      patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
-    name: patch.name !== undefined ? patch.name : baby.name,
-    theme: patch.theme !== undefined ? patch.theme : (baby.theme ?? null),
-    locale: patch.locale !== undefined ? patch.locale : (baby.locale ?? null),
-    birthJourney: patch.birthJourney !== undefined ? patch.birthJourney : baby.birthJourney,
-  };
+  return mergeBabyUpdateArgs({ baby, patch });
 }
 
 /** Load the baby row, then fill required `baby.update` fields the test omitted. */
