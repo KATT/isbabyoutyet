@@ -1,15 +1,14 @@
 # https://docs.codecov.com/docs/commit-status
 # Full-suite uploads only (never vitest --changed). Fail the PR when coverage drops.
 #
-# Use an absolute project floor (not `target: auto`) until `main` has Codecov
-# uploads. On stacked tips the PR base often has `base_totals: null`, so `auto`
-# cannot detect a drop even when head coverage falls (e.g. 80.06% → 77.14%).
+# Project `target: auto` needs a base report. The codecov job uploads coverage for
+# `pull_request.base.sha` before the head upload so stacked tips still compare.
 coverage:
   status:
     project:
       default:
-        target: 80%
-        threshold: 0%
+        target: auto
+        threshold: 0.5%
         informational: false
     patch:
       default:

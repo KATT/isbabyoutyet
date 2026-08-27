@@ -99,7 +99,8 @@ jobs:
   # Parallel with `checks`. Always full-suite coverage for Codecov (never --changed).
   codecov:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # PRs may run coverage twice (base + head) so Codecov has a comparison target.
+    timeout-minutes: 30
     permissions:
       contents: read
       id-token: write
@@ -109,6 +110,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -143,6 +145,42 @@ jobs:
         uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
         with:
           team: ${{ vars.TURBO_TEAM }}
+
+      # Stacked tips often have no Codecov upload on the PR base branch. Upload one
+      # so project `target: auto` can fail on coverage drops instead of
+      # "No report found to compare against".
+      - name: Coverage for PR base
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout --force "${{ github.event.pull_request.base.sha }}"
+          pnpm install --frozen-lockfile
+          pnpm pretest:coverage
+          # Base tip may not emit lcov via config; force reporters on the CLI.
+          CI=true pnpm exec vitest run --coverage \
+            --coverage.reporter=text-summary \
+            --coverage.reporter=json-summary \
+            --coverage.reporter=lcov
+          test -f coverage/lcov.info
+
+      - name: Upload PR base coverage to Codecov
+        if: github.event_name == 'pull_request'
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage/lcov.info
+          flags: unit
+          name: vitest-base
+          override_commit: ${{ github.event.pull_request.base.sha }}
+          override_branch: ${{ github.base_ref }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Restore PR head
+        if: github.event_name == 'pull_request'
+        run: |
+          git checkout --force "${{ github.sha }}"
+          pnpm install --frozen-lockfile
 
       - name: Full coverage (Turbo-cached)
         run: pnpm exec turbo run test:coverage --summarize
