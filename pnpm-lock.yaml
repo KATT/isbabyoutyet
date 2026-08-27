@@ -89,6 +89,9 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.79.0
+      tsx:
+        specifier: ^4.23.12
+        version: 4.23.12
       turbo:
         specifier: ^2.10.11
         version: 2.10.11
