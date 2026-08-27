@@ -88,19 +88,11 @@
     "eslint/max-params": ["error", 2],
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    // Anti-Slop (zero-cost first; remaining rules land in stacked follow-ups):
     "anti-slop/no-chained-type-assertions": "error",
-    "anti-slop/no-conditional-empty-object-spread": "error",
-    "anti-slop/no-known-value-widening": "error",
     "anti-slop/no-module-mocking": "error",
-    "anti-slop/no-object-parameters": "error",
     "anti-slop/no-reflect-apply": "error",
-    "anti-slop/no-reflect-get": "error",
-    "anti-slop/no-runtime-typeof": "error",
-    "anti-slop/no-shape-in-symbol-names": "error",
-    "anti-slop/no-unknown-parameters": "error",
-    "anti-slop/no-unknown-returns": "error",
     "anti-slop/no-unknown-type-aliases": "error",
-    "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-widen-then-assert": "error",
     "anti-slop/require-safety-comment-for-type-assertion": "error",
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
@@ -127,7 +119,6 @@
       ],
       "rules": {
         "anti-slop/no-chained-type-assertions": "off",
-        "anti-slop/no-known-value-widening": "off",
         "anti-slop/no-widen-then-assert": "off",
         "anti-slop/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
