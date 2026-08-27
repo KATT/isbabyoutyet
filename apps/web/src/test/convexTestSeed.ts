@@ -1,7 +1,6 @@
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { createAuth } from "@workspace/convex/convex/auth";
-import { mergeBabyUpdateArgs } from "@workspace/convex/src/mergeBabyUpdateArgs";
 import type { FunctionArgs } from "convex/server";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 
@@ -137,12 +136,7 @@ export async function patchOwnedBaby(
   patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
     Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
 ) {
-  const baby = await harness.t.run(async (ctx) => {
-    const doc = await ctx.db.get(patch.babyId);
-    if (!doc) throw new Error("Baby not found");
-    return doc;
-  });
-  await harness.client.mutation(api.baby.update, mergeBabyUpdateArgs({ baby, patch }));
+  await harness.client.mutation(api.baby.update, patch);
 }
 
 /** Posts a timeline update with omitted fields as explicit `null`. */

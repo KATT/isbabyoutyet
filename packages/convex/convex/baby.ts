@@ -31,7 +31,7 @@ type DueDateDisplayMode = "exact" | "message";
 
 const MAX_PUBLIC_DUE_DATE_TEXT_LENGTH = 80;
 
-function normalizePublicDueDateText(value: string | null) {
+function normalizePublicDueDateText(value: string | null | undefined) {
   const normalized = value?.trim() ?? "";
   if (normalized.length > MAX_PUBLIC_DUE_DATE_TEXT_LENGTH) {
     throw new Error("Public due date message must be 80 characters or fewer");
@@ -40,17 +40,19 @@ function normalizePublicDueDateText(value: string | null) {
 }
 
 function normalizeDueDateDisplay(opts: {
-  dueDate: string | null;
-  mode: DueDateDisplayMode;
-  text: string | null;
+  dueDate: string | null | undefined;
+  mode: DueDateDisplayMode | undefined;
+  text: string | null | undefined;
 }) {
   const normalizedText = normalizePublicDueDateText(opts.text);
-  if (opts.mode === "exact" && !opts.dueDate) {
+  const mode = opts.mode ?? (normalizedText ? "message" : "exact");
+  const dueDate = opts.dueDate ?? null;
+  if (mode === "exact" && !dueDate) {
     throw new Error("A due date is required when the exact date is shown");
   }
   return {
-    dueDate: opts.dueDate,
-    mode: opts.mode,
+    dueDate,
+    mode,
     text: normalizedText,
   };
 }
@@ -576,48 +578,56 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    dueDate: v.union(v.string(), v.null()),
-    dueDateDisplayMode: dueDateDisplayModeValidator,
-    publicDueDateText: v.union(v.string(), v.null()),
-    name: v.string(),
-    theme: v.union(v.string(), v.null()),
-    locale: v.union(supportedLocaleValidator, v.null()),
-    birthJourney: birthJourneyValidator,
+    /* oxlint-disable no-convex-optional/no-undocumented-optional -- Sparse patch; omitted keys mean unchanged and map to ctx.db.patch. */
+    dueDate: v.optional(v.union(v.string(), v.null())),
+    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+    publicDueDateText: v.optional(v.union(v.string(), v.null())),
+    name: v.optional(v.string()),
+    theme: v.optional(v.union(v.string(), v.null())),
+    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
+    birthJourney: v.optional(birthJourneyValidator),
+    /* oxlint-enable no-convex-optional/no-undocumented-optional */
   },
   handler: async (ctx, args) => {
-    const { identity, baby } = await requireBabyManager(ctx, args.babyId);
-    const dueDateDisplay = normalizeDueDateDisplay({
-      dueDate: args.dueDate,
-      mode: args.dueDateDisplayMode,
-      text: args.publicDueDateText,
-    });
+    const { babyId, ...patch } = args;
+    const { identity, baby } = await requireBabyManager(ctx, babyId);
+    if (
+      patch.dueDate !== undefined ||
+      patch.dueDateDisplayMode !== undefined ||
+      patch.publicDueDateText !== undefined
+    ) {
+      const dueDateDisplay = normalizeDueDateDisplay({
+        dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+        mode: patch.dueDateDisplayMode ?? baby.dueDateDisplayMode,
+        text:
+          patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
+      });
+      patch.dueDate = dueDateDisplay.dueDate;
+      patch.dueDateDisplayMode = dueDateDisplay.mode;
+      patch.publicDueDateText = dueDateDisplay.text;
+    }
 
     let publicId: string | undefined;
-    if (args.name !== baby.name) {
-      const newSlugifiedName = slugify(args.name);
+    // If name changed and the slugified name would result in a different publicId
+    if (patch.name && patch.name !== baby.name) {
+      const newSlugifiedName = slugify(patch.name);
+      // Only update publicId if the slugified name is different from current publicId
       if (newSlugifiedName !== baby.publicId) {
         const oldPublicId = baby.publicId;
         publicId = await generateUniquePublicId({
           db: ctx.db,
-          baseName: args.name,
+          baseName: patch.name,
           excludeTokenIdentifier: identity.tokenIdentifier,
         });
         await ctx.db.insert("babyPublicIdHistory", {
-          babyId: args.babyId,
+          babyId,
           publicId: oldPublicId,
         });
       }
     }
 
-    const fields = {
-      dueDate: dueDateDisplay.dueDate,
-      dueDateDisplayMode: dueDateDisplay.mode,
-      publicDueDateText: dueDateDisplay.text,
-      name: args.name,
-      theme: args.theme,
-      locale: args.locale,
-      birthJourney: args.birthJourney,
-    };
-    await ctx.db.patch(args.babyId, publicId ? { ...fields, publicId } : fields);
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(babyId, publicId ? { ...patch, publicId } : patch);
+    }
   },
 });

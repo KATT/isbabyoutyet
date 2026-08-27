@@ -8,7 +8,6 @@ import {
   registerComponents,
   createBabyArgs,
   createEncouragementArgs,
-  loadBabyUpdateArgs,
 } from "./test.setup";
 
 test("baby and related writes leave a durable targeted purge job", async () => {
@@ -25,10 +24,10 @@ test("baby and related writes leave a durable targeted purge job", async () => {
   );
   await asAlice.mutation(
     api.baby.update,
-    await loadBabyUpdateArgs(t, {
+    {
       babyId: created.babyId,
       name: "Baby Jones",
-    }),
+    },
   );
   await t.mutation(
     api.encouragements.create,

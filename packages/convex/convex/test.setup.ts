@@ -2,8 +2,6 @@
 import type { FunctionArgs } from "convex/server";
 import type { convexTest } from "convex-test";
 import type { api } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
-import { mergeBabyUpdateArgs } from "../src/mergeBabyUpdateArgs";
 
 /**
  * All Convex function modules for convex-test.
@@ -110,38 +108,4 @@ export function createEncouragementArgs(
     timezone: null,
     ...opts,
   };
-}
-
-type BabyUpdateFields = Pick<
-  Doc<"baby">,
-  | "dueDate"
-  | "dueDateDisplayMode"
-  | "publicDueDateText"
-  | "name"
-  | "theme"
-  | "locale"
-  | "birthJourney"
->;
-
-/** Merge a stored baby row with a sparse test patch into required `baby.update` args. */
-export function updateBabyArgs(
-  baby: BabyUpdateFields,
-  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
-    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
-): FunctionArgs<typeof api.baby.update> {
-  return mergeBabyUpdateArgs({ baby, patch });
-}
-
-/** Load the baby row, then fill required `baby.update` fields the test omitted. */
-export async function loadBabyUpdateArgs(
-  t: { run: TestConvex["run"] },
-  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
-    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
-) {
-  const baby = await t.run(async (ctx) => {
-    const doc = await ctx.db.get(patch.babyId);
-    if (!doc) throw new Error("Baby not found");
-    return doc;
-  });
-  return updateBabyArgs(baby, patch);
 }

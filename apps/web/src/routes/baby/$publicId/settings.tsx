@@ -1,7 +1,6 @@
 import { SettingsPanel } from "@/components/baby/settings-panel";
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { mergeBabyUpdateArgs } from "@workspace/convex/src/mergeBabyUpdateArgs";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import {
   createFileRoute,
@@ -95,12 +94,7 @@ export function BabySettingsOverlay() {
       birthJourney={managerBabyDoc.birthJourney}
       profileLocale={loaderData.profile.initialData?.locale ?? locale}
       onUpdate={async (update) => {
-        await updateBaby(
-          mergeBabyUpdateArgs({
-            baby: managerBabyDoc,
-            patch: { babyId: managerBabyDoc._id, ...update },
-          }),
-        );
+        await updateBaby({ babyId: managerBabyDoc._id, ...update });
         await router.invalidate();
       }}
       onMilestoneRedate={async (milestone, occurredAt) => {

@@ -8,7 +8,8 @@
  * or `@deprecated`.
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
- * schema/RPC.
+ * schema/RPC. Sparse `ctx.db.patch` RPC args (currently `baby.update`) keep
+ * `v.optional()` with an `oxlint-disable` for that mutation.
  */
 
 const MESSAGE =
