@@ -1,7 +1,6 @@
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -24,9 +23,8 @@ import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
-import { useRef, useTransition } from "react";
+import { useRef } from "react";
 import { useFormState, useWatch } from "react-hook-form";
-import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
 import {
@@ -50,6 +48,8 @@ import { getThemeOption, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
+const emptyActionSchema = z.object({});
+
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose;
 // successful save/delete closes via the root actionsRef.
@@ -68,9 +68,7 @@ function EditorActions(props: { isBusy: boolean }) {
   const busy = isSubmitting || props.isBusy;
   return (
     <div className="flex gap-2 justify-end">
-      <PopoverClose
-        render={<Button type="button" variant="outline" size="sm" disabled={busy} />}
-      >
+      <PopoverClose render={<Button type="button" variant="outline" size="sm" disabled={busy} />}>
         {t("Cancel")}
       </PopoverClose>
       <SubmitButton
@@ -243,12 +241,16 @@ function StatusDateForm(props: {
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const [isDeleting, startDeleteTransition] = useTransition();
   const dateTimeCodec = htmlDateTime(t, props.baby.timeZone);
   const form = useZodForm({
     schema: statusDateSchema(t, props.baby.timeZone),
     defaultValues: { dateTime: dateTimeCodec.encode(props.currentDate) },
   });
+  const deleteForm = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
+  });
+  const { isSubmitting: isDeleting } = useFormState({ control: deleteForm.control });
   const blocker = getBlockingLaterMilestone(props.baby, props.status);
   const statusLabel = MILESTONE_LABELS[props.status];
 
@@ -260,90 +262,91 @@ function StatusDateForm(props: {
   );
 
   return (
-    <Form
-      form={form}
-      handleSubmit={async (values) => {
-        await props.onRedate(props.status, values.dateTime);
-        props.onClose();
-      }}
-    >
-      <FormField
-        control={form.control}
-        name="dateTime"
-        render={({ field }) => (
-          <FormItem className="mb-3">
-            <FormControl>
-              <Input
-                type="datetime-local"
-                aria-label={t("Status date and time")}
-                max={htmlDateTimeNow(props.baby.timeZone)}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="flex items-center justify-between gap-2">
-        {blocker ? (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span
-                  className="inline-flex"
-                  aria-label={t("Delete the {{status}} status first", {
-                    status: MILESTONE_LABELS[blocker],
-                  })}
+    <>
+      <Form
+        form={deleteForm}
+        handleSubmit={async () => {
+          await props.onRemove(props.status);
+          props.onClose();
+        }}
+      >
+        {null}
+      </Form>
+      <Form
+        form={form}
+        handleSubmit={async (values) => {
+          await props.onRedate(props.status, values.dateTime);
+          props.onClose();
+        }}
+      >
+        <FormField
+          control={form.control}
+          name="dateTime"
+          render={({ field }) => (
+            <FormItem className="mb-3">
+              <FormControl>
+                <Input
+                  type="datetime-local"
+                  aria-label={t("Status date and time")}
+                  max={htmlDateTimeNow(props.baby.timeZone)}
+                  {...field}
                 />
-              }
-            >
-              {deleteButton}
-            </TooltipTrigger>
-            <TooltipContent>
-              {t("Delete the {{status}} status first", { status: MILESTONE_LABELS[blocker] })}
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <AlertDialog>
-            <AlertDialogTrigger render={deleteButton} />
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  {t("Delete {{status}} status?", { status: statusLabel })}
-                </AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t(
-                    "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
-                  )}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                <AlertDialogAction
-                  variant="destructive"
-                  disabled={isDeleting}
-                  onClick={() => {
-                    startDeleteTransition(async () => {
-                      try {
-                        await props.onRemove(props.status);
-                        props.onClose();
-                      } catch {
-                        toast.error(
-                          t("Could not delete the {{status}} status", { status: statusLabel }),
-                        );
-                      }
-                    });
-                  }}
-                >
-                  {t("Delete status")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-        <EditorActions isBusy={isDeleting} />
-      </div>
-    </Form>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center justify-between gap-2">
+          {blocker ? (
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span
+                    className="inline-flex"
+                    aria-label={t("Delete the {{status}} status first", {
+                      status: MILESTONE_LABELS[blocker],
+                    })}
+                  />
+                }
+              >
+                {deleteButton}
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("Delete the {{status}} status first", { status: MILESTONE_LABELS[blocker] })}
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <AlertDialog>
+              <AlertDialogTrigger render={deleteButton} />
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {t("Delete {{status}} status?", { status: statusLabel })}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {t(
+                      "This removes the status and deletes its timeline update, including any message or photo attached to it. This cannot be undone.",
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                  <SubmitButton
+                    form={deleteForm}
+                    variant="destructive"
+                    IconComponent={Trash}
+                    iconPosition="start"
+                  >
+                    {t("Delete status")}
+                  </SubmitButton>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          <EditorActions isBusy={isDeleting} />
+        </div>
+      </Form>
+    </>
   );
 }
 
@@ -517,8 +520,15 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const actionsRef = useRef<PopoverActions | null>(null);
-  const [isPending, startThemeTransition] = useTransition();
   const selectedTheme = getThemeOption(props.baby.theme);
+  const form = useZodForm({
+    schema: z
+      .object({
+        theme: z.union([z.string(), z.null()]),
+      })
+      .transform((values): Pick<BabyPatch, "theme"> => values),
+    defaultValues: { theme: props.baby.theme ?? null },
+  });
 
   return (
     <Popover actionsRef={actionsRef}>
@@ -537,31 +547,34 @@ export function ThemeSelector(props: ThemeSelectorProps) {
         }
       />
       <PopoverContent align="end" className="w-56">
-        <div className="flex flex-col gap-1">
-          {THEME_OPTIONS.map((option) => (
-            <Button
-              key={option.value ?? "default"}
-              variant={selectedTheme?.value === option.value ? "default" : "ghost"}
-              aria-pressed={selectedTheme?.value === option.value}
-              size="sm"
-              className="justify-start gap-2"
-              disabled={isPending}
-              onClick={() => {
-                startThemeTransition(async () => {
-                  try {
-                    await props.onUpdate({ theme: option.value });
-                    actionsRef.current?.close();
-                  } catch (err) {
-                    toast.error(err instanceof Error ? err.message : t("Failed to update theme"));
-                  }
-                });
-              }}
-            >
-              <ThemeSwatches colors={option.colors} />
-              {t(option.labelKey)}
-            </Button>
-          ))}
-        </div>
+        <Form
+          form={form}
+          handleSubmit={async (values) => {
+            await props.onUpdate(values);
+            actionsRef.current?.close();
+          }}
+        >
+          <div className="flex flex-col gap-1">
+            {THEME_OPTIONS.map((option) => (
+              <SubmitButton
+                key={option.value ?? "default"}
+                form="context"
+                variant={selectedTheme?.value === option.value ? "default" : "ghost"}
+                aria-pressed={selectedTheme?.value === option.value}
+                size="sm"
+                className="justify-start gap-2"
+                IconComponent={null}
+                iconPosition="start"
+                onClick={() => {
+                  form.setValue("theme", option.value, { shouldDirty: true });
+                }}
+              >
+                <ThemeSwatches colors={option.colors} />
+                {t(option.labelKey)}
+              </SubmitButton>
+            ))}
+          </div>
+        </Form>
       </PopoverContent>
     </Popover>
   );

@@ -1,8 +1,5 @@
-import { useMutation } from "convex/react";
-import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
@@ -14,6 +11,8 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useMutation } from "convex/react";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 
 type CoParentsListing = Exclude<
   FunctionReturnType<typeof api.coParents.listForBaby>,
@@ -77,6 +76,68 @@ function InviteCoParentForm(props: {
   );
 }
 
+function RemoveCoParentForm(props: {
+  email: string;
+  coParentId: Id<"babyCoParents">;
+  onRemove: (args: { coParentId: Id<"babyCoParents"> }) => Promise<unknown>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: z.object({}),
+    defaultValues: {},
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async () => {
+        await props.onRemove({ coParentId: props.coParentId });
+        toast.success(t("Co-parent removed"));
+      }}
+    >
+      <SubmitButton
+        form="context"
+        variant="ghost"
+        size="icon-sm"
+        IconComponent={UserMinus}
+        iconPosition="start"
+        aria-label={t("Remove {{email}}", { email: props.email })}
+      />
+    </Form>
+  );
+}
+
+function CancelInviteForm(props: {
+  email: string;
+  inviteId: Id<"babyCoParentInvites">;
+  onCancel: (args: { inviteId: Id<"babyCoParentInvites"> }) => Promise<unknown>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: z.object({}),
+    defaultValues: {},
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async () => {
+        await props.onCancel({ inviteId: props.inviteId });
+        toast.success(t("Invite cancelled"));
+      }}
+    >
+      <SubmitButton
+        form="context"
+        variant="ghost"
+        size="icon-sm"
+        IconComponent={X}
+        iconPosition="start"
+        aria-label={t("Cancel invite to {{email}}", { email: props.email })}
+      />
+    </Form>
+  );
+}
+
 type CoParentsSettingsProps = {
   babyId: Id<"baby">;
   /** Only the owner can invite/remove; co-parents see a read-only list. */
@@ -109,21 +170,11 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
               {row.name ? <div className="text-muted-foreground truncate">{row.email}</div> : null}
             </div>
             {props.isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("Remove {{email}}", { email: row.email })}
-                onClick={() => {
-                  void removeCoParent({ coParentId: row._id })
-                    .then(() => toast.success(t("Co-parent removed")))
-                    .catch((error) => {
-                      toast.error(error instanceof Error ? error.message : t("Could not remove"));
-                    });
-                }}
-              >
-                <UserMinus className="w-4 h-4" />
-              </Button>
+              <RemoveCoParentForm
+                email={row.email}
+                coParentId={row._id}
+                onRemove={removeCoParent}
+              />
             ) : null}
           </li>
         ))}
@@ -134,21 +185,7 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
               <div className="text-muted-foreground">{t("Invite pending")}</div>
             </div>
             {props.isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("Cancel invite to {{email}}", { email: row.email })}
-                onClick={() => {
-                  void cancelInvite({ inviteId: row._id })
-                    .then(() => toast.success(t("Invite cancelled")))
-                    .catch((error) => {
-                      toast.error(error instanceof Error ? error.message : t("Could not cancel"));
-                    });
-                }}
-              >
-                <X className="w-4 h-4" />
-              </Button>
+              <CancelInviteForm email={row.email} inviteId={row._id} onCancel={cancelInvite} />
             ) : null}
           </li>
         ))}
