@@ -1,6 +1,5 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
@@ -160,15 +159,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const showRestartHint = props.surface === "dashboard" && progress.restartHintVisible;
   const coachmarkCompletesStep = nextStep != null && nextStep.surface === "baby";
 
-  function highlightStep(stepId: OnboardingStepId) {
-    const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
-    if (!step) {
-      return;
-    }
-    void setActiveCoachmarkStepId({ stepId: step.id });
-    scrollToTourTarget(step.targetId);
-  }
-
   return (
     <>
       {showChecklist && !showCoachmark && !showRestartHint ? (
@@ -188,7 +178,14 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
           }}
-          onGoToStep={highlightStep}
+          onGoToStep={(stepId) => {
+            const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
+            if (!step) {
+              return;
+            }
+            void setActiveCoachmarkStepId({ stepId: step.id });
+            scrollToTourTarget(step.targetId);
+          }}
           surface={props.surface}
           tourBaby={progress.tourBaby}
           className={undefined}
