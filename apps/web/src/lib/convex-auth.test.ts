@@ -3,7 +3,12 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import type { ConvexAuthClient } from "@/lib/convex-auth";
-import { setupClientConvexAuthWithClient } from "@/lib/convex-auth";
+import {
+  compatibleConvexAuthClient,
+  readSessionAtom,
+  setupClientConvexAuthWithClient,
+} from "@/lib/convex-auth";
+import { authClient } from "@/lib/auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
 type SessionListener = (session: SessionSnapshot | undefined) => void;
@@ -112,4 +117,40 @@ test("a session resolving to none clears the cached profile; pending or signed-i
   // signal must go null so the next navigation re-checks the token.
   auth.emit({ data: null, isPending: false });
   expect(clients.queryClient.getQueryData(profileKey)).toBeNull();
+});
+
+test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
+  expect(readSessionAtom({} as typeof authClient.$store.atoms)).toBeUndefined();
+  expect(readSessionAtom({ session: null } as typeof authClient.$store.atoms)).toBeUndefined();
+  expect(readSessionAtom({ session: "x" } as typeof authClient.$store.atoms)).toBeUndefined();
+  expect(
+    readSessionAtom({ session: { subscribe: 1 } } as typeof authClient.$store.atoms),
+  ).toBeUndefined();
+
+  const unsub = vi.fn();
+  const atom = readSessionAtom({
+    session: {
+      subscribe: (listener: SessionListener) => {
+        listener({ data: null, isPending: false });
+        return unsub;
+      },
+    },
+  } as typeof authClient.$store.atoms);
+  expect(atom).toBeTruthy();
+  const stop = atom?.subscribe(() => {});
+  stop?.();
+  expect(unsub).toHaveBeenCalledTimes(1);
+
+  const atomWithoutUnsub = readSessionAtom({
+    session: {
+      subscribe: () => undefined,
+    },
+  } as typeof authClient.$store.atoms);
+  expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
+});
+
+test("compatibleConvexAuthClient bridges token and session", () => {
+  const bridged = compatibleConvexAuthClient(authClient);
+  expect(bridged.convex.token).toBeTypeOf("function");
+  expect("session" in bridged.$store.atoms).toBe(true);
 });
