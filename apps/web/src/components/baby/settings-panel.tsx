@@ -10,7 +10,6 @@ import {
 } from "@workspace/ui/components/item";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -64,9 +63,21 @@ import {
   isSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
+import {
+  Form,
+  FormCancelButton,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import type { ReactNode } from "react";
+import { useWatch } from "react-hook-form";
+import * as z from "zod";
+
+const emptyActionSchema = z.object({});
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -118,33 +129,111 @@ function BabyLanguageSelect(props: {
       label: getLanguageName(supportedLocale, locale),
     })),
   ];
+  const form = useZodForm({
+    schema: z
+      .object({
+        locale: z.union([z.literal("inherit"), z.enum(SUPPORTED_LOCALES)]),
+      })
+      .transform((values) => ({
+        locale: values.locale === "inherit" ? null : values.locale,
+      })),
+    defaultValues: { locale: props.value ?? "inherit" },
+  });
+  const selectedLocale = useWatch({ control: form.control, name: "locale" });
 
   return (
-    <Select
-      items={languageItems}
-      value={props.value ?? "inherit"}
-      onValueChange={(value) => {
-        if (value === "inherit") {
-          void props.onUpdate({ locale: null });
-        } else if (typeof value === "string" && isSupportedLocale(value)) {
-          void props.onUpdate({ locale: value });
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        try {
+          await props.onUpdate(values);
+        } catch (error) {
+          form.reset({ locale: props.value ?? "inherit" });
+          throw error;
         }
       }}
     >
-      <SelectTrigger aria-label={t("Language")} size="sm" className="max-w-44">
-        <SelectValue />
-      </SelectTrigger>
-      {/* Wider than the capped trigger so long inherit labels are not clipped */}
-      <SelectContent alignItemWithTrigger={false} className="w-auto min-w-44">
-        <SelectGroup>
-          {languageItems.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+      <Select
+        items={languageItems}
+        value={selectedLocale}
+        onValueChange={(value) => {
+          if (value !== "inherit" && !(typeof value === "string" && isSupportedLocale(value))) {
+            return;
+          }
+          form.setValue("locale", value, { shouldDirty: true });
+          form.formRef.current?.requestSubmit();
+        }}
+      >
+        <SelectTrigger aria-label={t("Language")} size="sm" className="max-w-44">
+          <SelectValue />
+        </SelectTrigger>
+        {/* Wider than the capped trigger so long inherit labels are not clipped */}
+        <SelectContent alignItemWithTrigger={false} className="w-auto min-w-44">
+          <SelectGroup>
+            {languageItems.map((item) => (
+              <SelectItem key={item.value} value={item.value}>
+                {item.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Form>
+  );
+}
+
+function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Promise<void> }) {
+  const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const form = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
+  });
+
+  return (
+    <AlertDialog {...overlay.rootProps}>
+      <AlertDialogTrigger
+        render={
+          <Button variant="destructive" size="sm">
+            {t("Delete")}
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("Delete {{name}}'s page?", { name: props.babyName })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete();
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete page")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -398,38 +487,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <ItemDescription>{t("Hide this baby page from everyone")}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <AlertDialog>
-                    <AlertDialogTrigger
-                      render={
-                        <Button variant="destructive" size="sm">
-                          {t("Delete")}
-                        </Button>
-                      }
-                    />
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          {t("Delete {{name}}'s page?", { name: props.baby.name })}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t(
-                            "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
-                          )}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="destructive"
-                          onClick={() => {
-                            void onDelete();
-                          }}
-                        >
-                          {t("Delete page")}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <DeleteBabyPageForm babyName={props.baby.name} onDelete={onDelete} />
                 </ItemActions>
               </Item>
             </SettingsSection>
