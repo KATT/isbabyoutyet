@@ -80,7 +80,7 @@ jobs:
       - name: Knip
         run: pnpm knip
 
-  # Head-only coverage; main/push uploads give Codecov the PR base report.
+  # Parallel with `checks`. Full-suite coverage for Codecov (never --changed).
   codecov:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -132,8 +132,50 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      # main/push already uploads coverage for the PR base commit, so Codecov
-      # project `target: auto` can compare without remeasuring the base here.
+      # Skip when Codecov already has the base (e.g. main push). Remeasure for
+      # stacked tips whose base never uploaded, using Turbo so main stays a HIT.
+      - name: Ensure Codecov has PR base report
+        id: base_cov
+        if: github.event_name == 'pull_request'
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          code="$(curl -sS -o /tmp/codecov-base.json -w "%{http_code}" \
+            "https://codecov.io/api/v2/github/${OWNER}/repos/${REPO}/commits/${BASE_SHA}")"
+          if [[ "$code" == "200" ]] && jq -e '.totals.coverage != null' /tmp/codecov-base.json >/dev/null; then
+            echo "Base ${BASE_SHA} already on Codecov (coverage=$(jq -r '.totals.coverage' /tmp/codecov-base.json))"
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Base ${BASE_SHA} missing on Codecov (HTTP ${code}); measuring with Turbo"
+          echo "needed=true" >> "$GITHUB_OUTPUT"
+          git checkout --force "$BASE_SHA"
+          pnpm install --frozen-lockfile
+          pnpm exec turbo run test:coverage
+          test -f coverage/lcov.info
+          cp coverage/lcov.info /tmp/base-lcov.info
+
+      - name: Upload PR base coverage to Codecov
+        if: github.event_name == 'pull_request' && steps.base_cov.outputs.needed == 'true'
+        uses: codecov/codecov-action@v5
+        with:
+          files: /tmp/base-lcov.info
+          flags: unit
+          name: vitest-base
+          override_commit: ${{ github.event.pull_request.base.sha }}
+          override_branch: ${{ github.base_ref }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Restore PR head
+        if: github.event_name == 'pull_request' && steps.base_cov.outputs.needed == 'true'
+        run: |
+          git checkout --force "${{ github.event.pull_request.head.sha }}"
+          pnpm install --frozen-lockfile
+
       - name: Full coverage (Turbo-cached)
         run: |
           pnpm exec turbo run test:coverage

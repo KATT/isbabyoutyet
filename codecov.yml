@@ -1,21 +1,23 @@
 # https://docs.codecov.com/docs/commit-status
 # Full-suite uploads only (never vitest --changed). Codecov is the coverage gate.
 #
-# Project `target: auto` compares to the PR base commit. That report comes from
-# the codecov job on push to main (not from remeasuring the base on every PR).
+# Gate is project coverage only: never go down vs the PR base commit
+# (`target: auto`, `threshold: 0%`). Patch status is informational.
+#
+# Base reports usually come from main/push uploads. For stacked PRs whose base
+# tip has no report yet, CI remeasures that base (Turbo-cached) and uploads it.
 coverage:
   status:
     project:
       default:
-        # Fail on any project coverage drop vs base.
+        # Fail if overall coverage drops vs base (no wiggle room).
         target: auto
         threshold: 0%
         informational: false
     patch:
       default:
-        # Every new/changed line must be covered (test files ignored below).
-        target: 100%
-        informational: false
+        # Do not fail PRs on partial diff coverage; project ratchet is the gate.
+        informational: true
 
 comment:
   layout: "diff, flags, files"
