@@ -65,7 +65,8 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 }
 
-function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
+/** @internal Exported for tests. */
+export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
   if (!("session" in atoms)) {
     return undefined;
   }
@@ -91,7 +92,8 @@ function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | u
   };
 }
 
-function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient {
+/** @internal Exported for tests. */
+export function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient {
   return {
     convex: {
       token: (opts) => client.convex.token(opts),
