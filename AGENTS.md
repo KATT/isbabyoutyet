@@ -31,8 +31,9 @@ Checklist before adding a lib hook with `useEffect` / `useState` /
    idiom across timing/observer hooks); do not use a sync effect solely to
    refresh the ref
 
-`packages/ui` (vendored shadcn) is exempt. First-party packages stay under the
-rules; rare file overrides need a comment citing the concrete constraint.
+`packages/ui-cssinjs` (vendored StyleX shadcn registry) is exempt. First-party
+packages stay under the rules; rare file overrides need a comment citing the
+concrete constraint.
 
 ## Routing / scroll / overlays
 

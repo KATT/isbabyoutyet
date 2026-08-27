@@ -154,24 +154,6 @@
       }
     },
     {
-      // Vendored shadcn/ui registry components — not first-party code.
-      "files": ["packages/ui/src/**"],
-      "rules": {
-        "eslint/max-params": "off",
-        "eslint/no-shadow": "off",
-        "eslint/no-underscore-dangle": "off",
-        "no-use-effect/no-use-effect": "off",
-        "no-use-state/no-use-state": "off",
-        "react-compiler/no-manual-memoization": "off",
-        "react/react-in-jsx-scope": "off",
-        "react/no-unstable-nested-components": "off",
-        "react/set-state-in-effect": "off",
-        "react/exhaustive-effect-dependencies": "off",
-        "react/immutability": "off",
-        "react-hooks/exhaustive-deps": "off"
-      }
-    },
-    {
       // StyleX registry components (shadcn-cssinjs) — same carve-out as Tailwind ui.
       "files": ["packages/ui-cssinjs/src/**", "packages/ui-patterns/src/**"],
       "rules": {

@@ -12,7 +12,7 @@ const tester = new RuleTester({
 tester.run("no-banned-react-reexport", plugin.rules["no-banned-react-reexport"], {
   valid: [
     `export { useRef, useTransition } from "react";`,
-    `export { Button } from "@workspace/ui/components/button";`,
+    `export { Button } from "@workspace/ui-cssinjs/components/button";`,
     `import { useState } from "react"; export function useThing() { return useState(0); }`,
     `import { useRef } from "react"; export { useRef };`,
   ],
