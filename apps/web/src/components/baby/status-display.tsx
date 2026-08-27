@@ -72,12 +72,6 @@ const styles = stylex.create({
     },
     lineHeight: 1,
   },
-  avatarImage: {
-    display: "block",
-    height: "100%",
-    objectFit: "cover",
-    width: "100%",
-  },
   answer: {
     color: colors.primary,
     fontSize: {
@@ -211,7 +205,6 @@ function PhotoAvatar(props: PhotoAvatarProps) {
       height={160}
       blurDataUrl={props.blurDataUrl}
       objectFit="cover"
-      {...stylex.props(styles.avatarImage)}
     />
   ) : null;
 

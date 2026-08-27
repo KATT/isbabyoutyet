@@ -15,7 +15,11 @@ type PhotoLightboxProps = {
 
 const styles = stylex.create({
   frame: {
+    borderRadius: "0.5rem",
+    maxHeight: "80vh",
+    overflow: "hidden",
     position: "relative",
+    width: "100%",
   },
   close: {
     alignItems: "center",
@@ -35,13 +39,6 @@ const styles = stylex.create({
     right: 0,
     top: `calc(-1 * ${spacing.s12})`,
     transition: "background-color 0.15s",
-  },
-  image: {
-    borderRadius: "0.5rem",
-    height: "auto",
-    maxHeight: "80vh",
-    objectFit: "contain",
-    width: "100%",
   },
 });
 
@@ -69,7 +66,6 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
             alt={props.alt}
             blurDataUrl={props.blurDataUrl}
             objectFit="contain"
-            {...stylex.props(styles.image)}
           />
         </div>
       </DialogContent>

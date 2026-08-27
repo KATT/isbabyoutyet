@@ -1,9 +1,8 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
 import * as stylex from "@stylexjs/stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
-type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
+type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt" | "className" | "style"> & {
   alt: string;
   blurDataUrl: string | null;
   /** Placeholder / image object-fit. Defaults to `cover` when undefined. */
@@ -12,8 +11,15 @@ type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
 
 const styles = stylex.create({
   wrapper: {
-    display: "inline-grid",
+    display: "block",
+    height: "100%",
     position: "relative",
+    width: "100%",
+  },
+  img: {
+    display: "block",
+    height: "100%",
+    width: "100%",
   },
   placeholder: {
     borderRadius: "inherit",
@@ -35,8 +41,8 @@ function numericDimension(value: BlurImageProps["width"] | BlurImageProps["heigh
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function placeholderObjectFit(props: BlurImageProps) {
-  return props.objectFit ?? props.style?.objectFit ?? "cover";
+function resolvedObjectFit(objectFit: BlurImageProps["objectFit"]) {
+  return objectFit ?? "cover";
 }
 
 type BlurSvgOptions = {
@@ -75,7 +81,6 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
     onError: _onError,
     onLoad: _onLoad,
     src: _src,
-    style: _style,
     ...imgProps
   } = props;
   return imgProps;
@@ -95,7 +100,7 @@ export function BlurImage(props: BlurImageProps) {
     onError: props.onError,
   });
 
-  const objectFit = placeholderObjectFit(props);
+  const objectFit = resolvedObjectFit(props.objectFit);
   const placeholderSrc =
     props.blurDataUrl && !loaded
       ? `data:image/svg+xml;charset=utf-8,${getImageBlurSvg({
@@ -106,15 +111,18 @@ export function BlurImage(props: BlurImageProps) {
         })}`
       : null;
 
+  const imageStylex = stylex.props(styles.img);
   const image = (
     <img
       {...imgPropsWithoutBlur(props)}
+      {...imageStylex}
       ref={imgRef}
       alt={props.alt}
       decoding={props.decoding ?? "async"}
       style={{
+        ...imageStylex.style,
         color: showAltText ? undefined : "transparent",
-        ...props.style,
+        objectFit,
       }}
       onLoad={onLoad}
       onError={onError}
@@ -124,22 +132,21 @@ export function BlurImage(props: BlurImageProps) {
 
   if (!props.blurDataUrl) return image;
 
+  const placeholderStylex = stylex.props(styles.placeholder);
   return (
-    <span
-      {...stylex.props(styles.wrapper, customClassName(props.className))}
-      data-blur-image-wrapper=""
-    >
+    <span {...stylex.props(styles.wrapper)} data-blur-image-wrapper="">
       {image}
       {placeholderSrc ? (
         <img
           aria-hidden="true"
           alt=""
-          {...stylex.props(styles.placeholder, customClassName(props.className))}
+          {...placeholderStylex}
           data-blur-image-placeholder=""
           src={placeholderSrc}
           style={{
+            ...placeholderStylex.style,
             objectFit,
-            objectPosition: props.style?.objectPosition ?? "50% 50%",
+            objectPosition: "50% 50%",
           }}
         />
       ) : null}

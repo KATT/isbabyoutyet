@@ -263,6 +263,7 @@ const styles = stylex.create({
     wordBreak: "break-word",
   },
   photoLink: {
+    aspectRatio: "1 / 1",
     borderColor: colors.border,
     borderRadius: radius.lg,
     borderStyle: "solid",
@@ -270,6 +271,7 @@ const styles = stylex.create({
     cursor: "pointer",
     display: "block",
     marginTop: spacing.s2,
+    maxHeight: "16rem",
     maxWidth: "100%",
     overflow: "hidden",
     outline: {
@@ -284,12 +286,6 @@ const styles = stylex.create({
     transitionDuration: "150ms",
     transitionProperty: "transform",
     transitionTimingFunction: "ease",
-    width: "100%",
-  },
-  photoImg: {
-    aspectRatio: "1 / 1",
-    maxHeight: "16rem",
-    objectFit: "cover",
     width: "100%",
   },
   emptyState: {
@@ -378,12 +374,6 @@ const styles = stylex.create({
   },
   dateInputFit: {
     width: "fit-content",
-  },
-  timelinePhoto: {
-    aspectRatio: "1",
-    maxHeight: "16rem",
-    objectFit: "cover",
-    width: "100%",
   },
 });
 
@@ -1015,7 +1005,6 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         blurDataUrl={props.blurDataUrl}
         objectFit="cover"
         loading="lazy"
-        {...stylex.props(styles.timelinePhoto)}
       />
     </Link>
   );

@@ -4,7 +4,6 @@ import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
-import tailwindcss from "@tailwindcss/vite";
 import stylex from "@stylexjs/unplugin";
 import { nitro } from "nitro/vite";
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
@@ -161,13 +160,11 @@ const config = defineConfig({
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
-    // Compile StyleX in `@workspace/ui` (and the app) before Tailwind /
-    // React. Keep Tailwind for app layout while StyleX owns component chrome.
+    // Compile StyleX in `@workspace/ui` (and the app) before React.
     stylex.vite({
       useCSSLayers: true,
       runtimeInjection: false,
     }),
-    tailwindcss(),
     tanstackStart({
       server: {
         entry: "./src/server.ts",

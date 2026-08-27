@@ -2,20 +2,10 @@ import { fireEvent, render } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { expect, test, vi } from "vitest";
 import type { ImgHTMLAttributes } from "react";
-import * as stylex from "@stylexjs/stylex";
 import { BlurImage } from "./blur-image";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 const BLUR = "data:image/jpeg;base64,/9j/blur";
-
-const sizingStyles = stylex.create({
-  cover: {
-    aspectRatio: "1",
-    height: "100%",
-    objectFit: "cover",
-    width: "100%",
-  },
-});
 
 test("paints a blurred SVG in front of the real image until it decodes", async () => {
   const view = render(
@@ -138,8 +128,7 @@ test("skips the placeholder when no blur data URL is provided", () => {
   expect(img.style.filter).toBe("");
 });
 
-test("keeps sizing styles and dimensions on the wrapper and real image", () => {
-  const sizing = stylex.props(sizingStyles.cover);
+test("keeps width and height attributes on the real image", () => {
   const view = render(
     <BlurImage
       src="https://example.com/photo.jpg"
@@ -148,7 +137,6 @@ test("keeps sizing styles and dimensions on the wrapper and real image", () => {
       objectFit="cover"
       width={160}
       height={160}
-      {...sizing}
     />,
   );
   using _view = makeResource(view, () => {
@@ -159,23 +147,20 @@ test("keeps sizing styles and dimensions on the wrapper and real image", () => {
   const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
     "[data-blur-image-placeholder]",
   );
-  expect(img.parentElement?.getAttribute("class")).toContain(sizing.className);
-  expect(img.getAttribute("class")).toContain(sizing.className);
-  expect(placeholder?.getAttribute("class")).toContain(sizing.className);
-  expect(placeholder?.style.objectFit).toBe("cover");
+  expect(img.parentElement?.hasAttribute("data-blur-image-wrapper")).toBe(true);
+  expect(placeholder).not.toBeNull();
   expect(img.width).toBe(160);
   expect(img.height).toBe(160);
 });
 
-test("matches placeholder object fit from objectFit prop and inline styles", () => {
+test("matches placeholder object fit from the objectFit prop", () => {
   const view = render(
     <>
       <BlurImage
-        src="https://example.com/inline.jpg"
-        alt="Inline fit"
+        src="https://example.com/default.jpg"
+        alt="Default fit"
         blurDataUrl={BLUR}
         objectFit={undefined}
-        style={{ objectFit: "contain" }}
       />
       <BlurImage
         src="https://example.com/fill.jpg"
@@ -195,6 +180,12 @@ test("matches placeholder object fit from objectFit prop and inline styles", () 
         blurDataUrl={BLUR}
         objectFit="scale-down"
       />
+      <BlurImage
+        src="https://example.com/contain.jpg"
+        alt="Contain fit"
+        blurDataUrl={BLUR}
+        objectFit="contain"
+      />
     </>,
   );
   using _view = makeResource(view, () => {
@@ -205,35 +196,12 @@ test("matches placeholder object fit from objectFit prop and inline styles", () 
     "[data-blur-image-placeholder]",
   );
   expect([...placeholders].map((placeholder) => placeholder.style.objectFit)).toEqual([
-    "contain",
+    "cover",
     "fill",
     "none",
     "scale-down",
+    "contain",
   ]);
-});
-
-test("preserves caller styles while layering the placeholder separately", async () => {
-  const view = render(
-    <BlurImage
-      src="https://example.com/photo.jpg"
-      alt="Nova"
-      blurDataUrl={BLUR}
-      objectFit={undefined}
-      style={{ backgroundImage: "linear-gradient(red, blue)" }}
-    />,
-  );
-  using _view = makeResource(view, () => {
-    view.unmount();
-  });
-
-  const img = view.getByAltText("Nova") as HTMLImageElement;
-  expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
-  expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
-  fireEvent.load(img);
-  await vi.waitFor(() => {
-    expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).toBeNull();
-    expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
-  });
 });
 
 test("removes the placeholder and reveals alt text when loading fails", () => {
