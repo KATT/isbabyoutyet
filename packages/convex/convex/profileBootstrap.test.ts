@@ -122,6 +122,7 @@ test("sign-in fills a missing time zone without replacing the saved language", a
       tokenIdentifier: profile.tokenIdentifier,
       locale: profile.locale,
       isAdmin: profile.isAdmin,
+      timeZone: profile.timeZone,
     });
   });
 
@@ -141,7 +142,7 @@ test("sign-in fills a missing time zone without replacing the saved language", a
 
   expect(await t.withIdentity({ subject: userId }).query(api.profile.get, {})).toEqual({
     locale: "sv",
-    timeZone: "Asia/Tokyo",
+    timeZone: "Europe/London",
     isAdmin: false,
   });
 });

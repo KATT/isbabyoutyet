@@ -3,7 +3,7 @@ import { expect, test } from "vitest";
 import { api, components, internal } from "./_generated/api";
 import schema from "./schema";
 import { DEMO_EMPTY_USER, DEMO_USER, HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
-import { modules, registerComponents } from "./test.setup";
+import { modules, registerComponents, testBabyInsert, testCoParentInsert } from "./test.setup";
 import { parseAuthUserPage } from "./admin";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
@@ -136,72 +136,90 @@ test("admins can list babies sorted by created or updated with manager emails", 
 
   await t.run(async (ctx) => {
     const now = Date.now();
-    await ctx.db.insert("babyCoParents", {
-      babyId: waiting._id,
-      userId: "co-parent-user",
-      tokenIdentifier: "https://convex.test|co-parent-user",
-      email: "coparent@example.com",
-      name: "Co",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
-    });
-    await ctx.db.insert("babyCoParents", {
-      babyId: waiting._id,
-      userId: "gone-user",
-      tokenIdentifier: "https://convex.test|gone-user",
-      email: "gone@example.com",
-      name: "Gone",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
-      deletedAt: Date.now(),
-    });
-    await ctx.db.insert("babyCoParents", {
-      babyId: waiting._id,
-      userId: "dup-owner",
-      tokenIdentifier: "https://convex.test|dup-owner",
-      email: DEMO_USER.email,
-      name: "Dup",
-      addedByUserId: seeded.userId,
-      addedAt: Date.now(),
-    });
-    await ctx.db.insert("baby", {
-      userId: "unknown-owner",
-      ownerTokenIdentifier: "https://convex.test|unknown-owner",
-      name: "Deleted",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "baby-deleted",
-      birthJourney: "labor",
-      lastActivityAt: now,
-      subscriptionCount: 0,
-      deletedAt: Date.now(),
-    });
-    await ctx.db.insert("baby", {
-      userId: "unknown-owner",
-      ownerTokenIdentifier: "https://convex.test|unknown-owner",
-      name: "Quiet",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "message",
-      publicDueDateText: "Any day now",
-      publicId: "baby-quiet",
-      birthJourney: "labor",
-      lastActivityAt: now,
-      subscriptionCount: 0,
-    });
-    await ctx.db.insert("baby", {
-      userId: HOMEPAGE_DEMO_OWNER_USER_ID,
-      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_OWNER_USER_ID}`,
-      name: "Juniper Hale",
-      dueDate: "2026-08-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "juniper-hale",
-      birthJourney: "labor",
-      demo: true,
-      lastActivityAt: now,
-      subscriptionCount: 0,
-    });
+    await ctx.db.insert(
+      "babyCoParents",
+      testCoParentInsert({
+        babyId: waiting._id,
+        userId: "co-parent-user",
+        tokenIdentifier: "https://convex.test|co-parent-user",
+        email: "coparent@example.com",
+        name: "Co",
+        addedByUserId: seeded.userId,
+        addedAt: Date.now(),
+      }),
+    );
+    await ctx.db.insert(
+      "babyCoParents",
+      testCoParentInsert({
+        babyId: waiting._id,
+        userId: "gone-user",
+        tokenIdentifier: "https://convex.test|gone-user",
+        email: "gone@example.com",
+        name: "Gone",
+        addedByUserId: seeded.userId,
+        addedAt: Date.now(),
+        deletedAt: Date.now(),
+      }),
+    );
+    await ctx.db.insert(
+      "babyCoParents",
+      testCoParentInsert({
+        babyId: waiting._id,
+        userId: "dup-owner",
+        tokenIdentifier: "https://convex.test|dup-owner",
+        email: DEMO_USER.email,
+        name: "Dup",
+        addedByUserId: seeded.userId,
+        addedAt: Date.now(),
+      }),
+    );
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "unknown-owner",
+        ownerTokenIdentifier: "https://convex.test|unknown-owner",
+        name: "Deleted",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "baby-deleted",
+        birthJourney: "labor",
+        lastActivityAt: now,
+        subscriptionCount: 0,
+        deletedAt: Date.now(),
+      }),
+    );
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "unknown-owner",
+        ownerTokenIdentifier: "https://convex.test|unknown-owner",
+        name: "Quiet",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "message",
+        publicDueDateText: "Any day now",
+        publicId: "baby-quiet",
+        birthJourney: "labor",
+        lastActivityAt: now,
+        subscriptionCount: 0,
+      }),
+    );
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: HOMEPAGE_DEMO_OWNER_USER_ID,
+        ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_OWNER_USER_ID}`,
+        name: "Juniper Hale",
+        dueDate: "2026-08-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "juniper-hale",
+        birthJourney: "labor",
+        demo: true,
+        lastActivityAt: now,
+        subscriptionCount: 0,
+      }),
+    );
   });
 
   const byCreated = await asDemo.query(api.admin.listBabies, {

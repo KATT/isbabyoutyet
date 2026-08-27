@@ -2,7 +2,14 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { modules, registerComponents, createBabyArgs } from "./test.setup";
+import {
+  modules,
+  registerComponents,
+  createBabyArgs,
+  testNotificationInsert,
+  testTimelineItemInsert,
+  testUpdateInsert,
+} from "./test.setup";
 
 test("sending a photo notification resolves the image URL and marks the job sent", async () => {
   const t = convexTest(schema, modules);
@@ -23,17 +30,23 @@ test("sending a photo notification resolves the image URL and marks the job sent
     return await ctx.storage.store(new Blob(["push image bytes"], { type: "image/jpeg" }));
   });
   const updateId = await t.run(async (ctx) => {
-    const timelineItemId = await ctx.db.insert("timelineItems", {
-      babyId: created.babyId,
-      kind: "update",
-      postedAt: Date.now(),
-    });
-    return await ctx.db.insert("updates", {
-      babyId: created.babyId,
-      timelineItemId,
-      photoId: photo,
-      pushImageId: pushImage,
-    });
+    const timelineItemId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId: created.babyId,
+        kind: "update",
+        postedAt: Date.now(),
+      }),
+    );
+    return await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId: created.babyId,
+        timelineItemId,
+        photoId: photo,
+        pushImageId: pushImage,
+      }),
+    );
   });
 
   await t.mutation(api.pushSubscriptions.subscribe, {
@@ -46,16 +59,19 @@ test("sending a photo notification resolves the image URL and marks the job sent
   });
 
   const notificationId = await t.run(async (ctx) => {
-    return await ctx.db.insert("scheduledNotifications", {
-      babyId: created.babyId,
-      status: "pending",
-      scheduledFor: Date.now(),
-      notificationType: "photo_added",
-      customMessage: null,
-      photoId: photo,
-      updateId,
-      createdAt: Date.now(),
-    });
+    return await ctx.db.insert(
+      "scheduledNotifications",
+      testNotificationInsert({
+        babyId: created.babyId,
+        status: "pending",
+        scheduledFor: Date.now(),
+        notificationType: "photo_added",
+        customMessage: null,
+        photoId: photo,
+        updateId,
+        createdAt: Date.now(),
+      }),
+    );
   });
 
   await t.action(internal.pushNotifications.sendNotification, {

@@ -12,46 +12,64 @@ import {
   sanitizeOnboardingStepsDoc,
 } from "./migrations";
 import schema from "./schema";
-import { modules } from "./test.setup";
+import {
+  modules,
+  testBabyInsert,
+  testCoParentInsert,
+  testOnboardingInsert,
+  testProfileInsert,
+} from "./test.setup";
 
 test("auth identity migrations remain idempotent after backfill", async () => {
   const t = convexTest(schema, modules);
 
   const ids = await t.run(async (ctx) => {
-    const babyId = await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Migration Baby",
-      dueDate: "2026-09-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "migration-baby",
-      birthJourney: "labor",
-      lastActivityAt: 1,
-      subscriptionCount: 99,
-    });
-    const profileId = await ctx.db.insert("userProfiles", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      locale: "en-GB",
-      isAdmin: false,
-    });
-    const onboardingId = await ctx.db.insert("userOnboarding", {
-      userId: "alice",
-      tokenIdentifier: "https://convex.test|alice",
-      completedSteps: ["share_link"],
-      welcomeDismissed: false,
-      checklistDismissed: false,
-      minimized: false,
-    });
-    const coParentId = await ctx.db.insert("babyCoParents", {
-      babyId,
-      userId: "bob",
-      tokenIdentifier: "https://convex.test|bob",
-      email: "bob@example.com",
-      addedByUserId: "alice",
-      addedAt: 1,
-    });
+    const babyId = await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Migration Baby",
+        dueDate: "2026-09-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "migration-baby",
+        birthJourney: "labor",
+        lastActivityAt: 1,
+        subscriptionCount: 99,
+      }),
+    );
+    const profileId = await ctx.db.insert(
+      "userProfiles",
+      testProfileInsert({
+        userId: "alice",
+        tokenIdentifier: "https://convex.test|alice",
+        locale: "en-GB",
+        isAdmin: false,
+      }),
+    );
+    const onboardingId = await ctx.db.insert(
+      "userOnboarding",
+      testOnboardingInsert({
+        userId: "alice",
+        tokenIdentifier: "https://convex.test|alice",
+        completedSteps: ["share_link"],
+        welcomeDismissed: false,
+        checklistDismissed: false,
+        minimized: false,
+      }),
+    );
+    const coParentId = await ctx.db.insert(
+      "babyCoParents",
+      testCoParentInsert({
+        babyId,
+        userId: "bob",
+        tokenIdentifier: "https://convex.test|bob",
+        email: "bob@example.com",
+        addedByUserId: "alice",
+        addedAt: 1,
+      }),
+    );
     return { babyId, profileId, onboardingId, coParentId };
   });
 
@@ -109,18 +127,21 @@ test("auth identity migrations remain idempotent after backfill", async () => {
 test("due date display migration preserves and normalizes existing messages", async () => {
   const t = convexTest(schema, modules);
   const babyId = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Migration Baby",
-      dueDate: "2026-09-01",
-      dueDateDisplayMode: "message",
-      publicDueDateText: "  Any day now  ",
-      publicId: "message-migration-baby",
-      birthJourney: "labor",
-      lastActivityAt: 1,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Migration Baby",
+        dueDate: "2026-09-01",
+        dueDateDisplayMode: "message",
+        publicDueDateText: "  Any day now  ",
+        publicId: "message-migration-baby",
+        birthJourney: "labor",
+        lastActivityAt: 1,
+        subscriptionCount: 0,
+      }),
+    );
   });
 
   await t.run(async (ctx) => {

@@ -3,7 +3,7 @@ import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
-import { modules, registerComponents, createBabyArgs, postUpdateArgs } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, postUpdateArgs, testBabyInsert } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -199,30 +199,36 @@ test("custom public due date text hides the exact day from visitors", async () =
 test("public DTO rejects exact mode without a due date", async () => {
   const t = await setup();
   await t.run(async (ctx) => {
-    await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Missing Date",
-      dueDate: null,
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "missing-date",
-      birthJourney: "labor",
-      subscriptionCount: 0,
-      lastActivityAt: 1,
-    });
-    await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Blank Message",
-      dueDate: "2026-09-01",
-      dueDateDisplayMode: "message",
-      publicDueDateText: null,
-      publicId: "blank-message",
-      birthJourney: "labor",
-      subscriptionCount: 0,
-      lastActivityAt: 1,
-    });
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Missing Date",
+        dueDate: null,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "missing-date",
+        birthJourney: "labor",
+        subscriptionCount: 0,
+        lastActivityAt: 1,
+      }),
+    );
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Blank Message",
+        dueDate: "2026-09-01",
+        dueDateDisplayMode: "message",
+        publicDueDateText: null,
+        publicId: "blank-message",
+        birthJourney: "labor",
+        subscriptionCount: 0,
+        lastActivityAt: 1,
+      }),
+    );
   });
 
   await expect(t.query(api.baby.getByPublicId, { id: "missing-date" })).rejects.toThrow(

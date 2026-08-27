@@ -4,7 +4,7 @@ import { expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
-import { modules, registerComponents, createBabyArgs } from "./test.setup";
+import { modules, registerComponents, createBabyArgs, testSubscriptionInsert } from "./test.setup";
 
 const TEST_USER_AGENT =
   "Mozilla/5.0 (Linux; Android 14; Pixel 8) Chrome/120.0.0.0 Mobile Safari/537.36";
@@ -100,13 +100,16 @@ test("internal pagination reaches every subscription without a cap", async () =>
 
   await t.run(async (ctx) => {
     for (let index = 0; index < 205; index += 1) {
-      await ctx.db.insert("pushSubscriptions", {
-        babyId: created.babyId,
-        endpoint: `https://push.example/subscription-${index}`,
-        p256dh: `key-${index}`,
-        auth: `secret-${index}`,
-        createdAt: index,
-      });
+      await ctx.db.insert(
+        "pushSubscriptions",
+        testSubscriptionInsert({
+          babyId: created.babyId,
+          endpoint: `https://push.example/subscription-${index}`,
+          p256dh: `key-${index}`,
+          auth: `secret-${index}`,
+          createdAt: index,
+        }),
+      );
     }
     await ctx.db.patch(created.babyId, { subscriptionCount: 205 });
   });

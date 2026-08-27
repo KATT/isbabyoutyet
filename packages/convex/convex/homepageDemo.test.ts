@@ -4,7 +4,15 @@ import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
-import { createEncouragementArgs, modules, registerComponents } from "./test.setup";
+import {
+  createEncouragementArgs,
+  modules,
+  registerComponents,
+  testBabyInsert,
+  testEncouragementInsert,
+  testTimelineItemInsert,
+  testUpdateInsert,
+} from "./test.setup";
 import { getCurrentStatus } from "../src/types";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "../src/seedCredentials";
 import {
@@ -494,18 +502,21 @@ test("refresh refuses to hijack a real baby that shares a demo publicId", async 
   const t = await setup();
 
   const realBabyId = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Real Willow",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
-      birthJourney: "labor",
-      lastActivityAt: 1,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Real Willow",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
+        birthJourney: "labor",
+        lastActivityAt: 1,
+        subscriptionCount: 0,
+      }),
+    );
   });
 
   await expect(
@@ -542,19 +553,22 @@ test("daily reset rolls back every demo change when a reserved publicId belongs 
   });
 
   const realBabyId = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Real Willow",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
-      birthJourney: "labor",
-      demo: true,
-      lastActivityAt: 123,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Real Willow",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: HOMEPAGE_DEMO_BABIES["en-US"].publicId,
+        birthJourney: "labor",
+        demo: true,
+        lastActivityAt: 123,
+        subscriptionCount: 0,
+      }),
+    );
   });
   const realBabyBefore = await t.run(async (ctx) => await ctx.db.get(realBabyId));
 
@@ -584,42 +598,57 @@ test("daily reset leaves non-homepage documents and shared storage untouched", a
   if (!sharedPhotoId) throw new Error("Divergent fixture is missing its bump photo");
 
   const real = await t.run(async (ctx) => {
-    const babyId = await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Alice's Baby",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "alices-real-baby",
-      birthJourney: "labor",
-      lastActivityAt: 123,
-      subscriptionCount: 0,
-    });
-    const updateTimelineId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "update",
-      postedAt: 100,
-    });
-    const updateId = await ctx.db.insert("updates", {
-      babyId,
-      timelineItemId: updateTimelineId,
-      message: "A real family update",
-      photoId: sharedPhotoId,
-    });
-    const encouragementTimelineId = await ctx.db.insert("timelineItems", {
-      babyId,
-      kind: "encouragement",
-      postedAt: 101,
-    });
-    const encouragementId = await ctx.db.insert("encouragements", {
-      babyId,
-      authorName: "Grandma",
-      message: "For the real family",
-      createdAt: 101,
-      timelineItemId: encouragementTimelineId,
-      visitorId: "real-family-visitor",
-    });
+    const babyId = await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Alice's Baby",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "alices-real-baby",
+        birthJourney: "labor",
+        lastActivityAt: 123,
+        subscriptionCount: 0,
+      }),
+    );
+    const updateTimelineId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId,
+        kind: "update",
+        postedAt: 100,
+      }),
+    );
+    const updateId = await ctx.db.insert(
+      "updates",
+      testUpdateInsert({
+        babyId,
+        timelineItemId: updateTimelineId,
+        message: "A real family update",
+        photoId: sharedPhotoId,
+      }),
+    );
+    const encouragementTimelineId = await ctx.db.insert(
+      "timelineItems",
+      testTimelineItemInsert({
+        babyId,
+        kind: "encouragement",
+        postedAt: 101,
+      }),
+    );
+    const encouragementId = await ctx.db.insert(
+      "encouragements",
+      testEncouragementInsert({
+        babyId,
+        authorName: "Grandma",
+        message: "For the real family",
+        createdAt: 101,
+        timelineItemId: encouragementTimelineId,
+        visitorId: "real-family-visitor",
+      }),
+    );
     return {
       babyId,
       updateTimelineId,
@@ -660,19 +689,22 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
   const t = await setup();
 
   const legacyId = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: HOMEPAGE_DEMO_BABY.ownerUserId,
-      ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
-      name: "Juniper Hale",
-      dueDate: "2026-01-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: HOMEPAGE_DEMO_BABY.publicId,
-      birthJourney: "labor",
-      theme: HOMEPAGE_DEMO_BABY.theme,
-      lastActivityAt: 1,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: HOMEPAGE_DEMO_BABY.ownerUserId,
+        ownerTokenIdentifier: `https://convex.test|${HOMEPAGE_DEMO_BABY.ownerUserId}`,
+        name: "Juniper Hale",
+        dueDate: "2026-01-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: HOMEPAGE_DEMO_BABY.publicId,
+        birthJourney: "labor",
+        theme: HOMEPAGE_DEMO_BABY.theme,
+        lastActivityAt: 1,
+        subscriptionCount: 0,
+      }),
+    );
   });
 
   const result = await t.mutation(internal.homepageDemo.refresh, { photos: {}, locale: null });
@@ -686,19 +718,22 @@ test("refresh grandfathers the sentinel-owned juniper-hale row and stamps demo: 
 test("clearFeedBatch refuses a non-homepage baby even when demo is true", async () => {
   const t = await setup();
   const babyId = await t.run(async (ctx) => {
-    return await ctx.db.insert("baby", {
-      userId: "alice",
-      ownerTokenIdentifier: "https://convex.test|alice",
-      name: "Someone Else",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "someone-else",
-      birthJourney: "labor",
-      demo: true,
-      lastActivityAt: 1,
-      subscriptionCount: 0,
-    });
+    return await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: "alice",
+        ownerTokenIdentifier: "https://convex.test|alice",
+        name: "Someone Else",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "someone-else",
+        birthJourney: "labor",
+        demo: true,
+        lastActivityAt: 1,
+        subscriptionCount: 0,
+      }),
+    );
   });
 
   await expect(t.mutation(internal.homepageDemo.clearFeedBatch, { babyId })).rejects.toThrow(
