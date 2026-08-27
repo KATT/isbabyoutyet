@@ -8,7 +8,7 @@ import {
   readSessionAtom,
   setupClientConvexAuthWithClient,
 } from "@/lib/convex-auth";
-import { authClient } from "@/lib/auth-client";
+import { authClient as realAuthClient } from "@/lib/auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
 type SessionListener = (session: SessionSnapshot | undefined) => void;
@@ -120,22 +120,30 @@ test("a session resolving to none clears the cached profile; pending or signed-i
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
-  expect(readSessionAtom({} as typeof authClient.$store.atoms)).toBeUndefined();
-  expect(readSessionAtom({ session: null } as typeof authClient.$store.atoms)).toBeUndefined();
-  expect(readSessionAtom({ session: "x" } as typeof authClient.$store.atoms)).toBeUndefined();
+  const emptyAtoms = {} as unknown as typeof realAuthClient.$store.atoms;
+  expect(readSessionAtom(emptyAtoms)).toBeUndefined();
   expect(
-    readSessionAtom({ session: { subscribe: 1 } } as typeof authClient.$store.atoms),
+    readSessionAtom({ session: null } as unknown as typeof realAuthClient.$store.atoms),
+  ).toBeUndefined();
+  expect(
+    readSessionAtom({ session: "x" } as unknown as typeof realAuthClient.$store.atoms),
+  ).toBeUndefined();
+  expect(
+    readSessionAtom({
+      session: { subscribe: 1 },
+    } as unknown as typeof realAuthClient.$store.atoms),
   ).toBeUndefined();
 
   const unsub = vi.fn();
+  function subscribeWithUnsub(listener: SessionListener) {
+    listener({ data: null, isPending: false });
+    return unsub;
+  }
   const atom = readSessionAtom({
     session: {
-      subscribe: (listener: SessionListener) => {
-        listener({ data: null, isPending: false });
-        return unsub;
-      },
+      subscribe: subscribeWithUnsub,
     },
-  } as typeof authClient.$store.atoms);
+  } as unknown as typeof realAuthClient.$store.atoms);
   expect(atom).toBeTruthy();
   const stop = atom?.subscribe(() => {});
   stop?.();
@@ -145,12 +153,12 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     session: {
       subscribe: () => undefined,
     },
-  } as typeof authClient.$store.atoms);
+  } as unknown as typeof realAuthClient.$store.atoms);
   expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
 });
 
 test("compatibleConvexAuthClient bridges token and session", () => {
-  const bridged = compatibleConvexAuthClient(authClient);
+  const bridged = compatibleConvexAuthClient(realAuthClient);
   expect(bridged.convex.token).toBeTypeOf("function");
   expect("session" in bridged.$store.atoms).toBe(true);
 });
