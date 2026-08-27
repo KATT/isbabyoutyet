@@ -259,7 +259,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
       ? milestone
       : null;
 
-const photoPreviewUrl = useObjectUrl(photoFile ?? null);
+  const photoPreviewUrl = useObjectUrl(photoFile ?? null);
 
   return (
     <div className="space-y-3">
