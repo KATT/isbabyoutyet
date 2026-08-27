@@ -52,6 +52,7 @@ import {
 } from "@workspace/convex/src/types";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import { getVisitorId } from "./encouragements";
@@ -259,15 +260,19 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   });
   const isPosting = form.formState.isSubmitting;
 
-  // oxlint-disable-next-line no-rhf-watch/no-rhf-watch -- Replaced with useWatch in stack 3/3.
-  const draft = form.watch();
+  const draft = useWatch({
+    control: form.control,
+    defaultValue: form.getValues(),
+  });
 
   // Guard against a stale selection: the status may have advanced from
   // another tab while a milestone was selected here. The mask keeps the
   // current render correct; the effect clears the value so the old choice
   // can't resurface if the status regresses later via unmarking.
   const selectedMilestone =
-    draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
+    draft.milestone != null &&
+    draft.milestone !== "none" &&
+    futureMilestones.includes(draft.milestone)
       ? draft.milestone
       : null;
   useEffect(() => {
@@ -278,7 +283,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
     }
   }, [form, futureMilestones]);
 
-  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
+  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo ?? null);
 
   const canPost = schema.safeParse(draft).success;
 
