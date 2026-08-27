@@ -7,16 +7,51 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
 import { createDismissedIdsStore } from "@/lib/use-dismissed-ids";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type HomepageDemoToastProps = {
   publicId: string;
 };
 
 const homepageDemoDismissals = createDismissedIdsStore();
+
+const styles = stylex.create({
+  aside: {
+    bottom: spacing.s4,
+    left: spacing.s4,
+    maxWidth: "calc(100vw - 2rem)",
+    position: "fixed",
+    zIndex: 40,
+  },
+  shell: {
+    backgroundColor: colors.background,
+    borderColor: `color-mix(in oklab, ${colors.primary} 40%, transparent)`,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+    maxWidth: "24rem",
+    minWidth: "300px",
+  },
+  media: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderRadius: "9999px",
+    display: "flex",
+    height: "2.5rem",
+    justifyContent: "center",
+    width: "2.5rem",
+  },
+  icon: {
+    color: colors.primary,
+    height: "1.25rem",
+    width: "1.25rem",
+  },
+});
 
 /**
  * Persistent notice on the public homepage demo baby so visitors know they
@@ -28,31 +63,31 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
   if (!isHomepageDemoPublicId(props.publicId) || dismissed) return null;
 
   return (
-    <aside className="fixed bottom-4 left-4 z-40 max-w-[calc(100vw-2rem)]" aria-live="polite">
-      <Item
-        variant="outline"
-        className="min-w-[300px] max-w-sm border-primary/40 bg-background shadow-lg"
-      >
-        <ItemMedia className="size-10 rounded-full bg-primary/10">
-          <Info className="size-5 text-primary" />
-        </ItemMedia>
-        <ItemContent>
-          <ItemTitle>{t("This is a demo baby")}</ItemTitle>
-          <ItemDescription>
-            {t("Feel free to post test messages — we reset this demo daily.")}
-          </ItemDescription>
-        </ItemContent>
-        <ItemActions>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t("Hide tip")}
-            onClick={() => homepageDemoDismissals.dismiss(props.publicId)}
-          >
-            <X />
-          </Button>
-        </ItemActions>
-      </Item>
+    <aside {...stylex.props(styles.aside)} aria-live="polite">
+      <div {...stylex.props(styles.shell)}>
+        <Item variant="outline">
+          <div {...stylex.props(styles.media)}>
+            <Info {...stylex.props(styles.icon)} />
+          </div>
+          <ItemContent>
+            <ItemTitle>{t("This is a demo baby")}</ItemTitle>
+            <ItemDescription>
+              {t("Feel free to post test messages — we reset this demo daily.")}
+            </ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button
+              variant="ghost"
+              size="icon"
+              shape="pill"
+              aria-label={t("Hide tip")}
+              onClick={() => homepageDemoDismissals.dismiss(props.publicId)}
+            >
+              <X />
+            </Button>
+          </ItemActions>
+        </Item>
+      </div>
     </aside>
   );
 }

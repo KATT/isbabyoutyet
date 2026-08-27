@@ -177,6 +177,7 @@ export function AddBabyPageView(props: {
                 handleSubmit={async (values) => {
                   const result = await props.createBaby(values);
 
+<<<<<<< HEAD
                   await props.navigate({
                     to: "/baby/$publicId",
                     params: { publicId: result.publicId },
@@ -202,6 +203,14 @@ export function AddBabyPageView(props: {
                       </FormItem>
                     )}
                   />
+=======
+                <DueDateDisplayFields
+                  control={form.control}
+                  dateFieldName="dueDate"
+                  sectionLabelWeight="bold"
+                  stopPopoverPropagation={false}
+                />
+>>>>>>> 7ea6f06 (Migrate baby UI chrome to StyleX + ui-patterns (batch 1))
 
                   <DueDateDisplayFields
                     control={form.control}

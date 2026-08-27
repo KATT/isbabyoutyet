@@ -7,6 +7,8 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
 import type {
   BirthJourney,
   MilestoneVisibility,
@@ -18,12 +20,37 @@ import {
 } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-options";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type JourneyMilestoneEditorProps = {
   birthJourney: BirthJourney;
   onBirthJourneyChange: (birthJourney: BirthJourney) => void;
   idPrefix: string;
 };
+
+const styles = stylex.create({
+  panel: {
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s3,
+    padding: spacing.s4,
+  },
+  row: {
+    alignItems: "center",
+    cursor: "pointer",
+    display: "flex",
+    gap: spacing.s3,
+    justifyContent: "space-between",
+  },
+  rowLocked: {
+    opacity: 0.7,
+  },
+});
 
 /**
  * Controlled journey preset + visitor-milestone toggles.
@@ -37,7 +64,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
       value: option.value,
       label: t(option.labelKey),
     })),
-    // Included so the closed trigger can show "Custom" when toggles diverge
     { value: "custom" as const, label: t("Custom") },
   ];
 
@@ -53,15 +79,15 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <p className="text-sm text-muted-foreground">
+    <Stack gap="s4">
+      <Text size="sm" tone="muted">
         {t("We save this choice for your settings, but we don't show it to anyone.")}
-      </p>
+      </Text>
 
-      <div className="flex flex-col gap-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <Stack gap="s2">
+        <Text size="xs" weight="bold" tone="muted">
           {t("Presets")}
-        </p>
+        </Text>
         <Select
           items={presetItems}
           value={props.birthJourney}
@@ -71,10 +97,10 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
             }
           }}
         >
-          <SelectTrigger aria-label={t("Presets")} size="sm" className="w-full">
+          <SelectTrigger aria-label={t("Presets")} size="sm">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false} className="w-(--anchor-width)">
+          <SelectContent alignItemWithTrigger={false}>
             <SelectGroup>
               {JOURNEY_PRESET_OPTIONS.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
@@ -84,18 +110,17 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
             </SelectGroup>
           </SelectContent>
         </Select>
-      </div>
+      </Stack>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
-        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+      <div {...stylex.props(styles.panel)}>
+        <Text size="xs" weight="bold" tone="muted">
           {t("Milestones visitors see")}
-        </p>
+        </Text>
 
-        <label
-          htmlFor={`${props.idPrefix}-show-labor`}
-          className="flex items-center justify-between gap-3"
-        >
-          <span className="text-sm font-medium">{t("Labour started")}</span>
+        <label htmlFor={`${props.idPrefix}-show-labor`} {...stylex.props(styles.row)}>
+          <Text as="span" size="sm" weight="medium">
+            {t("Labour started")}
+          </Text>
           <Switch
             id={`${props.idPrefix}-show-labor`}
             checked={visibility.showLabor}
@@ -105,11 +130,10 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
           />
         </label>
 
-        <label
-          htmlFor={`${props.idPrefix}-show-hospital`}
-          className="flex items-center justify-between gap-3"
-        >
-          <span className="text-sm font-medium">{t("Gone to hospital")}</span>
+        <label htmlFor={`${props.idPrefix}-show-hospital`} {...stylex.props(styles.row)}>
+          <Text as="span" size="sm" weight="medium">
+            {t("Gone to hospital")}
+          </Text>
           <Switch
             id={`${props.idPrefix}-show-hospital`}
             checked={visibility.showHospital}
@@ -121,16 +145,18 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
 
         <label
           htmlFor={`${props.idPrefix}-show-born`}
-          className="flex items-center justify-between gap-3 opacity-70"
+          {...stylex.props(styles.row, styles.rowLocked)}
         >
-          <span className="text-sm font-medium">{t("Baby born")}</span>
+          <Text as="span" size="sm" weight="medium">
+            {t("Baby born")}
+          </Text>
           <Switch id={`${props.idPrefix}-show-born`} checked={true} disabled={true} />
         </label>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <Text size="sm" tone="muted">
         {t(JOURNEY_OPTION_BY_VALUE[props.birthJourney].descriptionKey)}
-      </p>
-    </div>
+      </Text>
+    </Stack>
   );
 }

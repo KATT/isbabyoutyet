@@ -6,11 +6,33 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
-import { Label } from "@workspace/ui/components/label";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { VisuallyHidden } from "@workspace/ui-patterns/components/visually-hidden";
+import * as stylex from "@stylexjs/stylex";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
 import { useI18n } from "@/lib/i18n";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+
+const styles = stylex.create({
+  panel: {
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    overflow: "hidden",
+  },
+  nested: {
+    backgroundColor: `color-mix(in oklab, ${colors.muted} 30%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    borderStyle: "solid",
+    borderTopWidth: "1px",
+    paddingBlockEnd: spacing.s3,
+    paddingBlockStart: spacing.s2,
+    paddingInline: spacing.s3,
+  },
+});
 
 type DueDateDisplayFieldsProps<
   TFieldValues extends FieldValues,
@@ -18,8 +40,7 @@ type DueDateDisplayFieldsProps<
 > = {
   control: Control<TFieldValues, unknown, unknown>;
   dateFieldName: TDateName;
-  className: string | undefined;
-  sectionLabelClassName: string | undefined;
+  sectionLabelWeight: "normal" | "bold";
   stopPopoverPropagation: boolean;
 };
 
@@ -37,23 +58,25 @@ export function DueDateDisplayFields<
   });
 
   return (
-    <FormItem className={props.className}>
-      <Label className={props.sectionLabelClassName}>{t("Due Date")}</Label>
-      <div className="overflow-hidden rounded-xl border border-border">
+    <FormItem>
+      <Text as="div" size="sm" weight={props.sectionLabelWeight === "bold" ? "bold" : "medium"}>
+        {t("Due Date")}
+      </Text>
+      <div {...stylex.props(styles.panel)}>
         <ShowExactDueDateToggleField
           control={props.control}
           name={"showExactDueDate" as FieldPath<TFieldValues>}
-          rowClassName="gap-3 p-3 pb-2"
-          titleClassName={undefined}
         />
-        <div className="border-t border-border/60 bg-muted/30 px-3 pb-3 pt-2">
+        <div {...stylex.props(styles.nested)}>
           {showExactDueDate ? (
             <FormField
               control={props.control}
               name={props.dateFieldName}
               render={(renderProps) => (
                 <FormItem>
-                  <FormLabel className="sr-only">{t("Due Date")}</FormLabel>
+                  <VisuallyHidden>
+                    <FormLabel>{t("Due Date")}</FormLabel>
+                  </VisuallyHidden>
                   <FormControl>
                     <Input
                       type="date"
@@ -81,9 +104,7 @@ export function DueDateDisplayFields<
               name={"publicDueDateText" as FieldPath<TFieldValues>}
               render={(renderProps) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-normal text-muted-foreground">
-                    {t("Public due date message")}
-                  </FormLabel>
+                  <FormLabel>{t("Public due date message")}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder={t("September baby")}
