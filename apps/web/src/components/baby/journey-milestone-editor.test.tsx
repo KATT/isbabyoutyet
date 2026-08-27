@@ -28,7 +28,14 @@ function renderEditor(opts: {
   );
 }
 
-test("shows the Custom chip when both pre-birth milestones are hidden", async () => {
+function selectPreset(view: ReturnType<typeof render>, label: string) {
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const option = view.getByRole("option", { name: label });
+  fireEvent.pointerDown(option, { pointerType: "mouse" });
+  fireEvent.click(option);
+}
+
+test("shows Custom in the preset select when both pre-birth milestones are hidden", async () => {
   const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
 
   await using view = renderEditor({
@@ -36,7 +43,7 @@ test("shows the Custom chip when both pre-birth milestones are hidden", async ()
     onBirthJourneyChange,
   });
 
-  expect(view.getByRole("button", { name: "Custom" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Custom");
   expect(view.getByText("Visitors see: Baby born")).toBeTruthy();
 });
 
@@ -88,7 +95,7 @@ test("selecting a preset notifies the caller", async () => {
     onBirthJourneyChange,
   });
 
-  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
+  selectPreset(view, "Home birth");
 
   expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
 });

@@ -507,12 +507,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger
         render={
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-2"
-            aria-label={t("Change theme")}
-          >
+          <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
             {selectedTheme ? (
               <>
                 <ThemeSwatches colors={selectedTheme.colors} />

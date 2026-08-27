@@ -286,21 +286,22 @@ test("theme selector reports a failed update and remains open", async () => {
 
 test("journey editor saves only when dirty", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(
-    <JourneyEditor birthJourney="labor" onUpdate={onUpdate} />,
-  );
+  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
   expect(saveButton.disabled).toBe(true);
 
-  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const homeBirth = view.getByRole("option", { name: "Home birth" });
+  fireEvent.pointerDown(homeBirth, { pointerType: "mouse" });
+  fireEvent.click(homeBirth);
   expect(saveButton.disabled).toBe(false);
   expect(onUpdate).not.toHaveBeenCalled();
 
   fireEvent.click(saveButton);
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" }));
-  await vi.waitFor(() => expect(view.queryByRole("button", { name: "Home birth" })).toBeNull());
+  await vi.waitFor(() => expect(view.queryByRole("combobox", { name: "Presets" })).toBeNull());
 });
 
 test("journey editor reports a failed save and remains open", async () => {
@@ -308,18 +309,19 @@ test("journey editor reports a failed save and remains open", async () => {
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
-  await using view = renderResource(
-    <JourneyEditor birthJourney="labor" onUpdate={onUpdate} />,
-  );
+  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const homeBirth = view.getByRole("option", { name: "Home birth" });
+  fireEvent.pointerDown(homeBirth, { pointerType: "mouse" });
+  fireEvent.click(homeBirth);
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => {
     expect(toastError).toHaveBeenCalledWith("Could not save journey");
   });
-  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Home birth");
 });
 
 test("status editor confirms destructive deletion", async () => {

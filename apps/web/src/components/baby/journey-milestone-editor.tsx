@@ -1,9 +1,16 @@
-import { Button } from "@workspace/ui/components/button";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import { cn } from "@workspace/ui/lib/utils";
 import type { BirthJourney, MilestoneVisibility } from "@workspace/convex/src/types";
 import {
   birthJourneyForVisibility,
+  isPresetBirthJourney,
   milestoneVisibilityForPreset,
 } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
@@ -22,13 +29,21 @@ type JourneyMilestoneEditorProps = {
 export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   const { t } = useI18n();
   const visibility = milestoneVisibilityForPreset(props.birthJourney);
+  const presetItems = [
+    ...JOURNEY_PRESET_OPTIONS.map((option) => ({
+      value: option.value,
+      label: t(option.labelKey),
+    })),
+    // Included so the closed trigger can show "Custom" when toggles diverge
+    { value: "custom" as const, label: t("Custom") },
+  ];
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
     props.onBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
   }
 
   function handlePresetSelect(preset: BirthJourney) {
-    if (preset === props.birthJourney) {
+    if (preset === props.birthJourney || !isPresetBirthJourney(preset)) {
       return;
     }
     requestVisibilityChange(milestoneVisibilityForPreset(preset));
@@ -44,37 +59,28 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
         <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           {t("Presets")}
         </p>
-        <div className="flex flex-wrap gap-2">
-          {JOURNEY_PRESET_OPTIONS.map((option) => {
-            const selected = props.birthJourney === option.value;
-            return (
-              <Button
-                key={option.value}
-                type="button"
-                variant={selected ? "default" : "outline"}
-                size="sm"
-                className={cn("rounded-full font-bold", selected && "pointer-events-none")}
-                aria-pressed={selected}
-                onClick={() => {
-                  handlePresetSelect(option.value);
-                }}
-              >
-                {t(option.labelKey)}
-              </Button>
-            );
-          })}
-          {props.birthJourney === "custom" ? (
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              className="rounded-full font-bold pointer-events-none"
-              aria-pressed={true}
-            >
-              {t("Custom")}
-            </Button>
-          ) : null}
-        </div>
+        <Select
+          items={presetItems}
+          value={props.birthJourney}
+          onValueChange={(value) => {
+            if (value === "labor" || value === "home_birth" || value === "planned_c_section") {
+              handlePresetSelect(value);
+            }
+          }}
+        >
+          <SelectTrigger aria-label={t("Presets")} size="sm" className="w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent alignItemWithTrigger={false} className="w-(--anchor-width)">
+            <SelectGroup>
+              {JOURNEY_PRESET_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {t(option.labelKey)}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">

@@ -267,9 +267,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   // current render correct; the effect clears the value so the old choice
   // can't resurface if the status regresses later via unmarking.
   const selectedMilestone =
-    milestone != null &&
-    milestone !== "none" &&
-    futureMilestones.includes(milestone)
+    milestone != null && milestone !== "none" && futureMilestones.includes(milestone)
       ? milestone
       : null;
   useEffect(() => {
@@ -785,11 +783,7 @@ function EncouragementEditForm(props: {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea
-                  aria-label={t("Edit your message")}
-                  className="min-h-20"
-                  {...field}
-                />
+                <Textarea aria-label={t("Edit your message")} className="min-h-20" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
