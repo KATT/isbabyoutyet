@@ -259,9 +259,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
     },
   });
 
-  const message = useWatch({ control: form.control, name: "message" });
   const milestone = useWatch({ control: form.control, name: "milestone" });
-  const occurredAt = useWatch({ control: form.control, name: "occurredAt" });
   const photoFile = useWatch({ control: form.control, name: "photo" });
 
   // Guard against a stale selection: the status may have advanced from
@@ -283,13 +281,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   }, [form, futureMilestones]);
 
   const photoPreviewUrl = usePhotoPreviewUrl(photoFile ?? null);
-
-  const canPost = schema.safeParse({
-    message,
-    milestone,
-    occurredAt,
-    photo: photoFile,
-  }).success;
 
   return (
     <div className="space-y-3">
@@ -494,11 +485,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
             </SubmitButton>
           </div>
 
-          {!canPost && (
-            <p className="text-xs text-muted-foreground text-right">
-              {t("Add a message, a photo, or a milestone — any one is enough.")}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground text-right">
+            {t("Add a message, a photo, or a milestone — any one is enough.")}
+          </p>
         </div>
       </Form>
     </div>
