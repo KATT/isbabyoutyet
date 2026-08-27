@@ -80,10 +80,11 @@ jobs:
       - name: Knip
         run: pnpm knip
 
-  # Parallel with `checks`. Full-suite coverage for Codecov (never --changed).
+  # Parallel with `checks`. Full-suite coverage + local ratchet vs PR base SHA
+  # (main push or stacked inner-PR tip). Optional Codecov upload is informational.
   codecov:
     runs-on: ubuntu-latest
-    # Keep tight: probe+HIT should stay fast; a hang or MISS-heavy path means fix CI.
+    # Probe/HIT path should stay fast; a hang or MISS-heavy path means fix CI.
     timeout-minutes: 5
     permissions:
       contents: read
@@ -95,8 +96,7 @@ jobs:
         with:
           lfs: true
           fetch-depth: 0
-          # On PRs, start from the branch tip (not the merge commit) so coverage
-          # and Codecov patch status share the same commit SHA.
+          # On PRs, start from the branch tip (not the merge commit).
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
@@ -133,73 +133,62 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      # Project `target: auto` needs a report at pull_request.base.sha.
-      # main/push and stacked inner-PR head uploads usually already provide it.
-      # Probe (with short retries for processing races); only remeasure on miss.
-      - name: Probe Codecov for PR base report
-        id: base_report
+      # Exact SHA only — no restore-keys fallback (would compare against the wrong tip).
+      - name: Restore PR base coverage baseline
+        id: baseline
         if: github.event_name == 'pull_request'
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-        run: |
-          found=false
-          for _attempt in 1 2 3; do
-            code="$(curl -sS -o /tmp/codecov-base.json -w "%{http_code}" \
-              "https://api.codecov.io/api/v2/github/${GITHUB_REPOSITORY%/*}/repos/${GITHUB_REPOSITORY#*/}/commits/${BASE_SHA}")" || code=000
-            if [[ "$code" == "200" ]]; then
-              if jq -e '.totals.coverage != null' /tmp/codecov-base.json >/dev/null; then
-                found=true
-                echo "Base ${BASE_SHA} on Codecov (coverage=$(jq -r '.totals.coverage' /tmp/codecov-base.json))"
-                break
-              fi
-              # Report accepted but still processing — retry briefly.
-            elif [[ "$code" == "404" ]]; then
-              break
-            fi
-            sleep 5
-          done
-          echo "found=${found}" | tee -a "$GITHUB_OUTPUT"
+        uses: actions/cache/restore@v4
+        with:
+          path: .coverage-baseline
+          key: coverage-summary-${{ github.event.pull_request.base.sha }}
 
-      - name: Coverage for PR base (report missing)
-        if: github.event_name == 'pull_request' && steps.base_report.outputs.found == 'false'
+      # Stacked tips / races: remeasure base when no Actions cache entry exists yet.
+      - name: Measure PR base coverage baseline
+        if: github.event_name == 'pull_request' && steps.baseline.outputs.cache-hit != 'true'
         run: |
           git checkout --force "${{ github.event.pull_request.base.sha }}"
           pnpm install --frozen-lockfile
           pnpm exec turbo run test:coverage
-          test -f coverage/lcov.info
-          cp coverage/lcov.info /tmp/base-lcov.info
+          test -f coverage/coverage-summary.json
+          mkdir -p .coverage-baseline
+          cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
           git checkout --force "${{ github.event.pull_request.head.sha }}"
           pnpm install --frozen-lockfile
-
-      - name: Upload PR base coverage to Codecov
-        if: github.event_name == 'pull_request' && steps.base_report.outputs.found == 'false'
-        uses: codecov/codecov-action@v5
-        with:
-          files: /tmp/base-lcov.info
-          flags: unit
-          name: vitest-base
-          override_commit: ${{ github.event.pull_request.base.sha }}
-          override_branch: ${{ github.base_ref }}
-          token: ${{ secrets.CODECOV_TOKEN }}
-          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
-          fail_ci_if_error: true
-          verbose: true
 
       - name: Full coverage (Turbo-cached)
         run: |
           pnpm exec turbo run test:coverage
-          test -f coverage/lcov.info
+          test -f coverage/coverage-summary.json
+
+      - name: Compare coverage with PR base
+        if: github.event_name == 'pull_request'
+        run: |
+          test -f .coverage-baseline/coverage-summary.json
+          pnpm coverage:compare
+
+      # Cache this tip so stacked outer PRs can restore it as their base.
+      - name: Prepare coverage baseline for cache
+        run: |
+          mkdir -p .coverage-baseline
+          cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
+
+      - name: Save coverage baseline
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: .coverage-baseline
+          key: coverage-summary-${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Upload coverage to Codecov
+        if: hashFiles('coverage/lcov.info') != ''
+        continue-on-error: true
         uses: codecov/codecov-action@v5
         with:
           files: coverage/lcov.info
           flags: unit
           name: vitest
-          # Align upload commit with the tree we measured (PR head tip, else push SHA).
           override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
-          # Prefer upload token when present; otherwise OIDC via Codecov GitHub App.
           token: ${{ secrets.CODECOV_TOKEN }}
           use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
           verbose: true
