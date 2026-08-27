@@ -499,7 +499,7 @@ type MigrationRunnerReport = {
   readonly toStartOver: string;
 };
 
-function parseMigrationRunnerReport(result: unknown): MigrationRunnerReport {
+export function parseMigrationRunnerReport(result: unknown): MigrationRunnerReport {
   if (typeof result !== "object" || result === null) {
     throw new Error("Migration runner returned an invalid report");
   }
