@@ -71,8 +71,198 @@ import { useObjectUrl } from "@/lib/use-object-url";
 import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
+import * as stylex from "@stylexjs/stylex";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+const styles = stylex.create({
+  headerRow: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+  },
+  iconPrimary: { color: colors.primary, flexShrink: 0 },
+  iconMuted: { color: colors.mutedForeground, flexShrink: 0 },
+  iconMutedHoverFg: {
+    color: { ":hover": colors.foreground, default: colors.mutedForeground },
+  },
+  iconMutedHoverDestructive: {
+    color: { ":hover": colors.destructive, default: colors.mutedForeground },
+  },
+  photoPreviewWrap: { position: "relative", width: "fit-content" },
+  photoPreview: {
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    maxHeight: "10rem",
+    objectFit: "cover",
+  },
+  photoRemoveBtn: { position: "absolute", right: "-0.5rem", top: "-0.5rem" },
+  radioLabel: {
+    alignItems: "center",
+    cursor: "pointer",
+    display: "flex",
+    fontSize: "0.875rem",
+    gap: spacing.s2,
+    lineHeight: "1.25rem",
+  },
+  occurredLabel: { display: "block" },
+  hiddenInput: { display: "none" },
+  avatar: {
+    alignItems: "center",
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    display: "flex",
+    flexShrink: 0,
+    fontSize: "1.125rem",
+    height: "2.5rem",
+    justifyContent: "center",
+    marginTop: spacing.s1,
+    width: "2.5rem",
+  },
+  avatarUpdate: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 25%, transparent)`,
+  },
+  avatarEncouragement: {
+    backgroundColor: `color-mix(in oklab, ${colors.secondary} 40%, transparent)`,
+    borderColor: colors.border,
+    color: colors.secondaryForeground,
+    fontSize: "1rem",
+    fontWeight: 900,
+  },
+  bubble: {
+    borderBottomLeftRadius: radius.lg,
+    borderRadius: "1.5rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    flexGrow: 1,
+    minWidth: 0,
+    padding: spacing.s4,
+  },
+  bubbleUpdate: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 5%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 20%, transparent)`,
+  },
+  bubbleEncouragement: {
+    backgroundColor: `color-mix(in oklab, ${colors.muted} 30%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.border} 70%, transparent)`,
+  },
+  itemRow: { alignItems: "flex-start", display: "flex", gap: spacing.s3 },
+  metaRow: {
+    alignItems: "flex-start",
+    display: "flex",
+    gap: spacing.s2,
+    justifyContent: "space-between",
+  },
+  metaLeft: {
+    alignItems: "center",
+    display: "flex",
+    flexGrow: 1,
+    flexWrap: "wrap",
+    gap: spacing.s2,
+    minWidth: 0,
+  },
+  metaLeftEnc: { flexGrow: 1, minWidth: 0 },
+  authorName: {
+    color: colors.foreground,
+    fontWeight: 500,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  relativeTime: {
+    color: colors.mutedForeground,
+    flexShrink: 0,
+    fontSize: "0.75rem",
+    lineHeight: "1rem",
+  },
+  youTag: {
+    color: `color-mix(in oklab, ${colors.primary} 70%, transparent)`,
+    flexShrink: 0,
+    fontSize: "0.75rem",
+    lineHeight: "1rem",
+  },
+  occurredNote: { fontWeight: 400, opacity: 0.9 },
+  actionRow: {
+    display: "flex",
+    flexShrink: 0,
+    gap: spacing.s1,
+  },
+  markdown: {
+    color: `color-mix(in oklab, ${colors.foreground} 90%, transparent)`,
+    fontSize: "0.875rem",
+    lineHeight: "1.25rem",
+    marginTop: spacing.s2,
+    maxWidth: "none",
+    minWidth: 0,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  },
+  markdownMuted: {
+    color: colors.mutedForeground,
+    fontSize: "0.875rem",
+    lineHeight: "1.25rem",
+    maxWidth: "none",
+    minWidth: 0,
+    overflowWrap: "anywhere",
+    wordBreak: "break-word",
+  },
+  photoLink: {
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    cursor: "pointer",
+    display: "block",
+    marginTop: spacing.s2,
+    maxWidth: "100%",
+    overflow: "hidden",
+    outline: { ":focus-visible": `2px solid ${colors.primary}`, default: "none" },
+    outlineOffset: "2px",
+    transform: { ":hover": "scale(1.02)", default: null },
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+    width: "100%",
+  },
+  emptyState: {
+    borderColor: colors.border,
+    borderRadius: "1.5rem",
+    borderStyle: "dashed",
+    borderWidth: "2px",
+    paddingBlock: spacing.s10,
+    textAlign: "center",
+  },
+  emptyEmoji: { fontSize: "1.875rem", lineHeight: 1, margin: 0 },
+  loadMore: { paddingBlock: spacing.s2 },
+  loadMoreInner: {
+    color: colors.mutedForeground,
+    display: "flex",
+    justifyContent: "center",
+  },
+  tooltipAnchor: { display: "inline-flex" },
+  headerBlock: { marginBottom: spacing.s4 },
+  encAuthorRow: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+    marginBottom: spacing.s1,
+  },
+  dateInputFit: { width: "fit-content" },
+  timelinePhoto: {
+    aspectRatio: "1",
+    maxHeight: "16rem",
+    objectFit: "cover",
+    width: "100%",
+  },
+});
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -260,17 +450,19 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   const photoPreviewUrl = useObjectUrl(photoFile ?? null);
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <ChatCircleText className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">{t("Post an update")}</h3>
+    <Stack gap="s3">
+      <div {...stylex.props(styles.headerRow)}>
+        <ChatCircleText size={20} {...stylex.props(styles.iconPrimary)} />
+        <Text as="h3" size="lg" weight="semibold">
+          {t("Post an update")}
+        </Text>
       </div>
-      <p className="text-sm text-muted-foreground">
+      <Text size="sm" tone="muted">
         {t(
           "Everyone following {{name}}'s page will see it. A message, a photo, a milestone — each is optional, any mix works.",
           { name: props.babyName },
         )}
-      </p>
+      </Text>
 
       <Form
         form={form}
@@ -298,19 +490,18 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
           props.onPosted();
         }}
       >
-        <div className="space-y-3">
+        <Stack gap="s3">
           <FormField
             control={form.control}
             name="message"
-            render={({ field }) => (
+            render={(renderProps) => (
               <FormItem>
                 <FormControl>
                   <Textarea
                     placeholder={t("Write a message (optional)…")}
                     aria-label={t("Update message (optional)")}
-                    className="min-h-20"
                     maxLength={MAX_UPDATE_MESSAGE_LENGTH}
-                    {...field}
+                    {...renderProps.field}
                   />
                 </FormControl>
                 <FormMessage />
@@ -319,33 +510,35 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
           />
 
           {photoPreviewUrl && (
-            <div className="relative w-fit">
+            <div {...stylex.props(styles.photoPreviewWrap)}>
               <img
                 src={photoPreviewUrl}
                 alt={t("Photo to post")}
-                className="max-h-40 rounded-lg border border-border object-cover"
+                {...stylex.props(styles.photoPreview)}
               />
-              <Button
-                type="button"
-                variant="secondary"
-                size="icon"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow"
-                onClick={() => {
-                  form.setValue("photo", null);
-                  if (fileInputRef.current) fileInputRef.current.value = "";
-                }}
-                aria-label={t("Remove photo")}
-              >
-                <X className="w-3 h-3" />
-              </Button>
+              <span {...stylex.props(styles.photoRemoveBtn)}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon-sm"
+                  shape="pill"
+                  onClick={() => {
+                    form.setValue("photo", null);
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                  }}
+                  aria-label={t("Remove photo")}
+                >
+                  <X size={12} />
+                </Button>
+              </span>
             </div>
           )}
 
           {futureMilestones.length > 0 && (
-            <div className="space-y-2">
-              <p id="composer-status-label" className="text-xs font-medium text-muted-foreground">
+            <Stack gap="s2">
+              <Text as="p" id="composer-status-label" size="xs" weight="medium" tone="muted">
                 {t("Status change (optional)")}
-              </p>
+              </Text>
               <FormField
                 control={form.control}
                 name="milestone"
@@ -358,9 +551,8 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}
-                    className="gap-1.5"
                   >
-                    <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <label {...stylex.props(styles.radioLabel)}>
                       <RadioGroupItem value="none" />
                       {t("No status change")}
                     </label>
@@ -368,12 +560,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                       const meta = MILESTONE_META[candidate];
                       const MilestoneIcon = meta.icon;
                       return (
-                        <label
-                          key={candidate}
-                          className="flex items-center gap-2 text-sm cursor-pointer"
-                        >
+                        <label key={candidate} {...stylex.props(styles.radioLabel)}>
                           <RadioGroupItem value={candidate} />
-                          <MilestoneIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                          <MilestoneIcon size={14} {...stylex.props(styles.iconMuted)} />
                           {t(meta.labelKey)}
                         </label>
                       );
@@ -382,45 +571,47 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                 )}
               />
               {selectedMilestone && (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground">
+                <Stack gap="s2">
+                  <Text size="xs" tone="muted">
                     {t(
                       'This changes the page status to "{{status}}" and notifies everyone subscribed.',
                       {
                         status: t(MILESTONE_META[selectedMilestone].labelKey),
                       },
                     )}
-                  </p>
+                  </Text>
                   <FormField
                     control={form.control}
                     name="occurredAt"
-                    render={({ field }) => (
+                    render={(renderProps) => (
                       <FormItem>
-                        <label className="block space-y-1">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {t("When did it happen? (optional)")}
-                          </span>
-                          <FormControl>
-                            <Input
-                              type="datetime-local"
-                              max={htmlDateTimeNow(props.baby.timeZone)}
-                              className="w-fit"
-                              {...field}
-                            />
-                          </FormControl>
+                        <label {...stylex.props(styles.occurredLabel)}>
+                          <Stack gap="s1">
+                            <Text as="span" size="xs" weight="medium" tone="muted">
+                              {t("When did it happen? (optional)")}
+                            </Text>
+                            <FormControl>
+                              <Input
+                                type="datetime-local"
+                                max={htmlDateTimeNow(props.baby.timeZone)}
+                                style={styles.dateInputFit}
+                                {...renderProps.field}
+                              />
+                            </FormControl>
+                          </Stack>
                         </label>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <p className="text-xs text-muted-foreground">
+                  <Text size="xs" tone="muted">
                     {t(
                       "Optional — leave blank for now. You can change the time later in settings.",
                     )}
-                  </p>
-                </div>
+                  </Text>
+                </Stack>
               )}
-            </div>
+            </Stack>
           )}
 
           <input
@@ -440,34 +631,40 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               }
               form.setValue("photo", file, { shouldDirty: true });
             }}
-            className="hidden"
+            {...stylex.props(styles.hiddenInput)}
           />
 
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <Inline gap="s2" justify="between" fullWidth>
             <Button
               type="button"
               variant="outline"
               size="sm"
+              shape="pill"
               onClick={() => fileInputRef.current?.click()}
             >
-              <Images className="w-4 h-4" />
+              <Images size={16} />
               {photoFile ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
+            <SubmitButton
+              form="context"
+              IconComponent={PaperPlaneTilt}
+              iconPosition="start"
+              shape="pill"
+            >
               {selectedMilestone
                 ? t('Post & mark "{{status}}"', {
                     status: t(MILESTONE_META[selectedMilestone].labelKey),
                   })
                 : t("Post update")}
             </SubmitButton>
-          </div>
+          </Inline>
 
-          <p className="text-xs text-muted-foreground text-right">
+          <Text size="xs" tone="muted" align="end">
             {t("Add a message, a photo, or a milestone — any one is enough.")}
-          </p>
-        </div>
+          </Text>
+        </Stack>
       </Form>
-    </div>
+    </Stack>
   );
 }
 
@@ -507,32 +704,27 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const deleteButton = (
     <Button
       variant="ghost"
-      size="icon"
-      className="h-8 w-8"
+      size="icon-sm"
       aria-label={t("Delete update")}
       disabled={Boolean(deleteBlocker)}
     >
-      <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+      <Trash size={16} {...stylex.props(styles.iconMutedHoverDestructive)} />
     </Button>
   );
 
   return (
-    <div className="group flex items-start gap-3">
-      <span
-        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-primary/25 bg-primary/10 text-lg"
-        aria-hidden="true"
-      >
+    <div data-timeline-item="" {...stylex.props(styles.itemRow)}>
+      <span {...stylex.props(styles.avatar, styles.avatarUpdate)} aria-hidden="true">
         {bubbleEmoji}
       </span>
-      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-primary/20 bg-primary/5 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <span className="font-medium text-foreground truncate">
+      <div {...stylex.props(styles.bubble, styles.bubbleUpdate)}>
+        <div {...stylex.props(styles.metaRow)}>
+          <div {...stylex.props(styles.metaLeft)}>
+            <span {...stylex.props(styles.authorName)}>
               {t("{{name}}'s family", { name: props.babyName })}
             </span>
             {milestoneMeta ? (
               <Badge
-                className="shrink-0"
                 title={
                   update.occurredAt
                     ? formatOccurredAt(update.occurredAt, {
@@ -542,10 +734,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                     : undefined
                 }
               >
-                <MilestoneIcon className="w-3 h-3" />
+                <MilestoneIcon size={12} />
                 {update.milestone && t(MILESTONE_LABEL_KEYS[update.milestone])}
                 {update.occurredAt != null && (
-                  <span className="font-normal opacity-90">
+                  <span {...stylex.props(styles.occurredNote)}>
                     ·{" "}
                     {formatOccurredAt(update.occurredAt, {
                       locale,
@@ -555,23 +747,21 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                 )}
               </Badge>
             ) : update.photoUrl ? (
-              <Badge variant="secondary" className="shrink-0">
-                <Camera className="w-3 h-3" />
+              <Badge variant="secondary">
+                <Camera size={12} />
                 {t("New photo")}
               </Badge>
             ) : (
-              <Badge variant="secondary" className="shrink-0">
-                {t("Update")}
-              </Badge>
+              <Badge variant="secondary">{t("Update")}</Badge>
             )}
             {update.isCurrentPagePhoto && (
-              <Badge variant="outline" className="shrink-0">
-                <PushPin className="w-3 h-3" />
+              <Badge variant="outline">
+                <PushPin size={12} />
                 {t("Page photo")}
               </Badge>
             )}
             <span
-              className="text-xs text-muted-foreground shrink-0"
+              {...stylex.props(styles.relativeTime)}
               title={t("Posted {{date}}", {
                 date: new Date(props.item.postedAt).toLocaleString(locale, {
                   timeZone: props.baby.timeZone,
@@ -583,17 +773,16 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           </div>
 
           {props.isOwner && (
-            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+            <div {...stylex.props(styles.actionRow)}>
               {canPinPhoto && (
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  size="icon-sm"
                   aria-label={t("Set as page photo")}
                   title={t("Set as page photo")}
                   onClick={() => props.onSetAsCurrentPhoto(update._id)}
                 >
-                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  <PushPin size={16} {...stylex.props(styles.iconMutedHoverFg)} />
                 </Button>
               )}
               {deleteBlocker ? (
@@ -601,7 +790,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   <TooltipTrigger
                     render={
                       <span
-                        className="inline-flex"
+                        {...stylex.props(styles.tooltipAnchor)}
                         aria-label={t("Delete the {{status}} status first", {
                           status: MILESTONE_LABELS[deleteBlocker],
                         })}
@@ -650,8 +839,6 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           )}
         </div>
 
-        {/* Photo first when present; the caption/message sits last so long
-            copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
           <TimelinePhoto
             publicId={props.publicId}
@@ -663,7 +850,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
         )}
 
         {update.message && (
-          <div className="mt-2 min-w-0 max-w-none break-words text-sm text-foreground/90 prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
+          <div {...stylex.props(styles.markdown)}>
             <Streamdown>{update.message}</Streamdown>
           </div>
         )}
@@ -692,7 +879,7 @@ function TimelinePhoto(props: TimelinePhotoProps) {
     <Link
       {...photo.openLink}
       aria-label={t("View photo full size")}
-      className="mt-2 block w-full max-w-full cursor-pointer overflow-hidden rounded-lg border border-border transition-transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-primary"
+      {...stylex.props(styles.photoLink)}
     >
       <BlurImage
         src={inlineUrl}
@@ -700,7 +887,7 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         blurDataUrl={props.blurDataUrl}
         objectFit="cover"
         loading="lazy"
-        style={{ aspectRatio: "1", maxHeight: "16rem", width: "100%", objectFit: "cover" }}
+        {...stylex.props(styles.timelinePhoto)}
       />
     </Link>
   );
@@ -757,31 +944,31 @@ function EncouragementEditForm(props: {
         props.onClose();
       }}
     >
-      <div className="space-y-2">
+      <Stack gap="s2">
         <FormField
           control={form.control}
           name="message"
-          render={({ field }) => (
+          render={(renderProps) => (
             <FormItem>
               <FormControl>
-                <Textarea aria-label={t("Edit your message")} className="min-h-20" {...field} />
+                <Textarea aria-label={t("Edit your message")} {...renderProps.field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <div className="flex gap-2">
+        <Inline gap="s2">
           <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
           <PopoverClose
             render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
           >
-            <X className="w-3 h-3" />
+            <X size={12} />
             {t("Cancel")}
           </PopoverClose>
-        </div>
-      </div>
+        </Inline>
+      </Stack>
     </Form>
   );
 }
@@ -797,53 +984,42 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const initial = encouragement.authorName.trim().charAt(0).toUpperCase() || "💛";
 
   return (
-    <div className="group flex items-start gap-3">
-      <span
-        className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-secondary/40 text-base font-black text-secondary-foreground"
-        aria-hidden="true"
-      >
+    <div data-timeline-item="" {...stylex.props(styles.itemRow)}>
+      <span {...stylex.props(styles.avatar, styles.avatarEncouragement)} aria-hidden="true">
         {initial}
       </span>
-      <div className="min-w-0 flex-1 rounded-3xl rounded-tl-lg border-2 border-border/70 bg-muted/30 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="font-medium text-foreground truncate">
-                {encouragement.authorName}
-              </span>
+      <div {...stylex.props(styles.bubble, styles.bubbleEncouragement)}>
+        <div {...stylex.props(styles.metaRow)}>
+          <div {...stylex.props(styles.metaLeftEnc)}>
+            <div {...stylex.props(styles.encAuthorRow)}>
+              <span {...stylex.props(styles.authorName)}>{encouragement.authorName}</span>
               <span
-                className="text-xs text-muted-foreground shrink-0"
+                {...stylex.props(styles.relativeTime)}
                 title={new Date(encouragement.createdAt).toLocaleString(locale, {
                   timeZone: props.timeZone,
                 })}
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
-              {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
+              {isOwnPost && <span {...stylex.props(styles.youTag)}>{t("(you)")}</span>}
             </div>
-
-            <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
+            <div {...stylex.props(styles.markdownMuted)}>
               <Streamdown>{encouragement.message}</Streamdown>
             </div>
           </div>
 
           {(canEdit || canDelete) && (
-            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
+            <div {...stylex.props(styles.actionRow)}>
               {canEdit && (
                 <Popover actionsRef={actionsRef}>
                   <PopoverTrigger
                     render={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label={t("Edit encouragement")}
-                      />
+                      <Button variant="ghost" size="icon-sm" aria-label={t("Edit encouragement")} />
                     }
                   >
-                    <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    <PencilSimple size={16} {...stylex.props(styles.iconMutedHoverFg)} />
                   </PopoverTrigger>
-                  <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+                  <PopoverContent align="end">
                     <EncouragementEditForm
                       initialMessage={encouragement.message}
                       encouragementId={encouragement._id}
@@ -860,13 +1036,8 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 <AlertDialog>
                   <AlertDialogTrigger
                     render={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label={t("Delete encouragement")}
-                      >
-                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+                      <Button variant="ghost" size="icon-sm" aria-label={t("Delete encouragement")}>
+                        <Trash size={16} {...stylex.props(styles.iconMutedHoverDestructive)} />
                       </Button>
                     }
                   />
@@ -1046,38 +1217,40 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
     }
   };
 
+  const feedHeader = (
+    <div {...stylex.props(styles.headerRow, styles.headerBlock)}>
+      <Heart size={20} {...stylex.props(styles.iconPrimary)} />
+      <Text as="h3" size="lg" weight="extrabold">
+        {t("Updates & encouragements")}
+      </Text>
+    </div>
+  );
+
   if (props.items.length === 0) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-extrabold text-foreground">
-            {t("Updates & encouragements")}
-          </h3>
-        </div>
-        <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
-          <p className="text-3xl" aria-hidden="true">
+      <Stack gap="s4">
+        {feedHeader}
+        <div {...stylex.props(styles.emptyState)}>
+          <p {...stylex.props(styles.emptyEmoji)} aria-hidden="true">
             💌
           </p>
-          <p className="mt-3 font-bold text-foreground">{t("Nothing here yet")}</p>
-          <p className="mt-1 text-sm font-medium text-muted-foreground">
-            {props.isOwner
-              ? t("Post your first update to keep everyone in the loop!")
-              : t("Updates from the family will show up here.")}
-          </p>
+          <Stack gap="s1" align="center">
+            <Text weight="bold">{t("Nothing here yet")}</Text>
+            <Text size="sm" weight="medium" tone="muted">
+              {props.isOwner
+                ? t("Post your first update to keep everyone in the loop!")
+                : t("Updates from the family will show up here.")}
+            </Text>
+          </Stack>
         </div>
-      </div>
+      </Stack>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
-      </div>
-
-      <div className="space-y-4">
+    <Stack gap="s4">
+      {feedHeader}
+      <Stack gap="s4">
         {props.items.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
@@ -1104,14 +1277,14 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
         )}
 
         {/* Infinite scroll trigger */}
-        <div ref={loadMoreRef} className="py-2">
+        <div ref={loadMoreRef} {...stylex.props(styles.loadMore)}>
           {isFetchingNextPage ? (
-            <div className="text-center text-muted-foreground">
-              <Spinner className="mx-auto" />
+            <div {...stylex.props(styles.loadMoreInner)}>
+              <Spinner />
             </div>
           ) : null}
         </div>
-      </div>
-    </div>
+      </Stack>
+    </Stack>
   );
 }

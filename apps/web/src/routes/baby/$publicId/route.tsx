@@ -38,7 +38,156 @@ import {
   useBabyShareOverlayNav,
 } from "@/lib/overlay-nav";
 
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
+
 const TIMELINE_PAGE_SIZE = 20;
+
+const styles = stylex.create({
+  page: {
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    minHeight: "100vh",
+  },
+  header: {
+    paddingBottom: spacing.s1,
+    paddingInline: spacing.s4,
+    paddingTop: spacing.s3,
+  },
+  headerInner: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+    justifyContent: "space-between",
+    marginInline: "auto",
+    maxWidth: "72rem",
+  },
+  brandChip: {
+    alignItems: "center",
+    backdropFilter: "blur(12px)",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    display: "flex",
+    gap: spacing.s2,
+    paddingBottom: spacing.s1_5,
+    paddingLeft: spacing.s2,
+    paddingRight: spacing.s4,
+    paddingTop: spacing.s1_5,
+    textDecoration: "none",
+    transform: { ":hover": "rotate(-2deg)", default: null },
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+  },
+  brandIcon: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: "9999px",
+    color: colors.primary,
+    display: "flex",
+    height: "1.75rem",
+    justifyContent: "center",
+    width: "1.75rem",
+  },
+  brandName: {
+    color: colors.foreground,
+    fontSize: "0.875rem",
+    fontWeight: 800,
+    letterSpacing: "-0.025em",
+  },
+  main: {
+    marginInline: "auto",
+    maxWidth: "72rem",
+    paddingBottom: spacing.s16,
+    paddingInline: spacing.s4,
+    width: "100%",
+  },
+  title: {
+    color: colors.foreground,
+    fontSize: { "@media (min-width: 768px)": "3.75rem", default: "2.25rem" },
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    margin: 0,
+    paddingBottom: spacing.s10,
+    paddingInline: spacing.s2,
+    paddingTop: { "@media (min-width: 768px)": spacing.s12, default: spacing.s10 },
+    textAlign: "center",
+    textWrap: "balance",
+  },
+  layoutGrid: {
+    alignItems: { "@media (min-width: 1024px)": "start", default: "stretch" },
+    display: "grid",
+    gap: spacing.s8,
+    gridTemplateColumns: {
+      "@media (min-width: 1024px)": "minmax(0, 5fr) minmax(0, 6fr)",
+      default: "minmax(0, 1fr)",
+    },
+  },
+  statusCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: "2rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    overflowX: "clip",
+    paddingBottom: spacing.s6,
+    paddingInline: { "@media (min-width: 768px)": spacing.s8, default: spacing.s5 },
+    position: { "@media (min-width: 1024px)": "sticky", default: "relative" },
+    textAlign: "center",
+    top: { "@media (min-width: 1024px)": spacing.s4, default: null },
+  },
+  feedColumn: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s8,
+  },
+  encouragementCard: {
+    backgroundColor: `color-mix(in oklab, ${colors.secondary} 15%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.secondary} 60%, transparent)`,
+    borderRadius: "2rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    padding: { "@media (min-width: 768px)": spacing.s8, default: spacing.s6 },
+  },
+  timelineCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: "2rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    padding: { "@media (min-width: 768px)": spacing.s8, default: spacing.s6 },
+  },
+  footer: {
+    backgroundColor: `color-mix(in oklab, ${colors.background} 60%, transparent)`,
+    borderTopColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    borderTopStyle: "solid",
+    borderTopWidth: "2px",
+    paddingBlock: spacing.s8,
+    textAlign: "center",
+  },
+  footerLink: {
+    color: { ":hover": colors.foreground, default: colors.mutedForeground },
+    display: "inline-flex",
+    fontSize: "0.875rem",
+    fontWeight: 700,
+    gap: spacing.s1,
+    paddingInline: spacing.s6,
+    textDecoration: "none",
+    transitionDuration: "150ms",
+    transitionProperty: "color",
+    transitionTimingFunction: "ease",
+  },
+  subscribeRow: { display: "flex", justifyContent: "center" },
+  progressRow: { marginTop: spacing.s4 },
+});
 
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPageLayout,
@@ -290,7 +439,7 @@ function BabyPageLayout() {
   const currentStatus = getCurrentStatus(baby);
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
+    <div {...stylex.props(styles.page)}>
       <HomepageDemoToast publicId={babyDoc.publicId} />
 
       {canManage && birthJourney && managerBaby ? (
@@ -310,16 +459,13 @@ function BabyPageLayout() {
       ) : null}
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
-      <header className="px-4 pt-3 pb-1">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
-          <Link
-            to="/"
-            className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-              <Baby className="h-4 w-4 text-primary" />
+      <header {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.headerInner)}>
+          <Link to="/" {...stylex.props(styles.brandChip)}>
+            <span {...stylex.props(styles.brandIcon)}>
+              <Baby size={16} weight="bold" />
             </span>
-            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+            <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
           </Link>
           <BabyNav
             shareButton={share.openLink}
@@ -342,15 +488,13 @@ function BabyPageLayout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-16">
-        <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
-          {t("Is {{name}} out yet?", { name: baby.name })}
-        </h1>
+      <main {...stylex.props(styles.main)}>
+        <h1 {...stylex.props(styles.title)}>{t("Is {{name}} out yet?", { name: baby.name })}</h1>
 
         {/* Split layout: sticky status card on the left, feed on the right.
             No internal scroll on the card — that steals wheel/trackpad from the page. */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start">
-          <section className="overflow-x-clip rounded-[2rem] border-2 border-border bg-card px-5 pb-6 text-center pop-shadow-strong md:px-7 lg:sticky lg:top-4">
+        <div {...stylex.props(styles.layoutGrid)}>
+          <section {...stylex.props(styles.statusCard)}>
             <StatusDisplay
               publicId={babyDoc.publicId}
               baby={baby}
@@ -367,14 +511,14 @@ function BabyPageLayout() {
                   : null
               }
             />
-            <div className="flex justify-center">
+            <div {...stylex.props(styles.subscribeRow)}>
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
                 browserPush={loaderData.browserPush}
               />
             </div>
-            <div className="mt-4">
+            <div {...stylex.props(styles.progressRow)}>
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />
             </div>
           </section>
@@ -383,15 +527,15 @@ function BabyPageLayout() {
               visitor's encouragement form sits above the feed so nobody has
               to scroll past every message to post; the owner posts via the
               "Post update" button in the dock. */}
-          <div className="space-y-8">
+          <div {...stylex.props(styles.feedColumn)}>
             <section
-              className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
+              {...stylex.props(styles.encouragementCard)}
               data-tour-id="learn_encouragements"
             >
               <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
             </section>
 
-            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
+            <section {...stylex.props(styles.timelineCard)}>
               <TimelineFeed
                 babyId={babyDoc._id}
                 publicId={babyDoc.publicId}
@@ -405,11 +549,8 @@ function BabyPageLayout() {
         </div>
       </main>
 
-      <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
-        >
+      <footer {...stylex.props(styles.footer)}>
+        <Link to="/" {...stylex.props(styles.footerLink)}>
           {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
         </Link>
       </footer>
