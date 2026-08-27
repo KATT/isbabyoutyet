@@ -294,7 +294,9 @@ test("theme selector toasts a generic message for non-Error failures", async () 
   fireEvent.click(view.getByRole("button", { name: "Change theme" }));
   fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
 
-  await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Failed to update theme"));
+  await vi.waitFor(() =>
+    expect(toastError).toHaveBeenCalledWith("Something went wrong. Try again."),
+  );
 });
 
 test("journey editor saves only when dirty", async () => {
