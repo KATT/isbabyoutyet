@@ -7,8 +7,8 @@ type LocaleRequestDeps = {
   readCookie: (name: string) => string | undefined;
 };
 
-export function detectLocaleFromRequestHeaders(
-  _serverContext: unknown = undefined,
+export function detectLocaleFromRequestHeaders<TServerContext>(
+  _serverContext: TServerContext | undefined = undefined,
   deps: LocaleRequestDeps | undefined = undefined,
 ) {
   const readHeader = deps?.readHeader ?? getRequestHeader;

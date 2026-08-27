@@ -3,7 +3,7 @@ import type { QueryClient, QueryFunctionContext } from "@tanstack/react-query";
 import { QueryClient as QueryClientImpl } from "@tanstack/react-query";
 import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
-import type { UserIdentity } from "convex/server";
+import type { FunctionReference, UserIdentity } from "convex/server";
 import type { Value } from "convex/values";
 import {
   CONVEX_INFINITE_QUERY_KEY,
@@ -23,12 +23,21 @@ type WatchQueryHandle = {
   onUpdate: (cb: () => void) => void;
 };
 
+type ConvexQueryRef = FunctionReference<"query">;
+type ConvexMutationRef = FunctionReference<"mutation">;
+type ConvexActionRef = FunctionReference<"action">;
+type ConvexAuthTokenFetcher = () => Promise<string | null | undefined>;
+
+type ConvexCallerQuery = <TArgs>(query: ConvexQueryRef, args: TArgs) => Promise<Value>;
+type ConvexCallerMutation = <TArgs>(mutation: ConvexMutationRef, args: TArgs) => Promise<Value>;
+type ConvexCallerAction = <TArgs>(action: ConvexActionRef, args: TArgs) => Promise<Value>;
+
 export type IntegrationConvexClient = {
-  query: (query: unknown, args: unknown) => Promise<Value>;
-  mutation: (mutation: unknown, args: unknown) => Promise<Value>;
-  action: (action: unknown, args: unknown) => Promise<Value>;
-  watchQuery: (query: unknown, args: unknown) => WatchQueryHandle;
-  setAuth: (fetchToken: unknown, onChange: (authenticated: boolean) => void) => void;
+  query: ConvexCallerQuery;
+  mutation: ConvexCallerMutation;
+  action: ConvexCallerAction;
+  watchQuery: <TArgs>(query: ConvexQueryRef, args: TArgs) => WatchQueryHandle;
+  setAuth: (fetchToken: ConvexAuthTokenFetcher, onChange: (authenticated: boolean) => void) => void;
   clearAuth: () => void;
 };
 
@@ -56,16 +65,16 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   const watchCache = new Map<object, Map<string, Value>>();
   let queryClientForInvalidation: QueryClient | null = null;
 
-  function runQuery(query: unknown, args: unknown) {
-    return (activeClient.query as (q: unknown, a: unknown) => Promise<Value>)(query, args);
+  function runQuery<TArgs>(query: ConvexQueryRef, args: TArgs) {
+    return (activeClient.query as ConvexCallerQuery)(query, args);
   }
 
-  function runMutation(mutation: unknown, args: unknown) {
-    return (activeClient.mutation as (m: unknown, a: unknown) => Promise<Value>)(mutation, args);
+  function runMutation<TArgs>(mutation: ConvexMutationRef, args: TArgs) {
+    return (activeClient.mutation as ConvexCallerMutation)(mutation, args);
   }
 
-  function runAction(action: unknown, args: unknown) {
-    return (activeClient.action as (a: unknown, args: unknown) => Promise<Value>)(action, args);
+  function runAction<TArgs>(action: ConvexActionRef, args: TArgs) {
+    return (activeClient.action as ConvexCallerAction)(action, args);
   }
 
   function invalidateConvexQueries() {
@@ -179,14 +188,14 @@ function createIntegrationQueryFn(
     const caller = getClient();
     if (tag === "convexQuery" && typeof funcName === "string") {
       const args = context.queryKey[2] ?? {};
-      return await (caller.query as (q: unknown, a: unknown) => Promise<Value>)(
+      return await (caller.query as ConvexCallerQuery)(
         makeFunctionReference<"query">(funcName),
         args,
       );
     }
     if (tag === "convexAction" && typeof funcName === "string") {
       const args = context.queryKey[2] ?? {};
-      return await (caller.action as (a: unknown, args: unknown) => Promise<Value>)(
+      return await (caller.action as ConvexCallerAction)(
         makeFunctionReference<"action">(funcName),
         args,
       );

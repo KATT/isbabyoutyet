@@ -6,6 +6,7 @@ import type {
   PreloadedInfiniteQuery,
   PreloadedQuery,
   QueryDataOf,
+  QueryFactoryInput,
   QueryInput,
   QueryInputArgs,
   QueryOptionsFactory,
@@ -13,6 +14,18 @@ import type {
 
 /** Page cursor/offset at the untyped infinite-query options boundary. */
 type InfiniteQueryPageParam = string | number | boolean | null | object;
+
+/** Rejection value forwarded to initiator `onError` before domain handling. */
+type QueryFailureReason =
+  | string
+  | number
+  | boolean
+  | bigint
+  | symbol
+  | null
+  | undefined
+  | QueryFailureReason[]
+  | { readonly [key: string]: QueryFailureReason };
 
 interface AnyInfiniteQueryOptions extends AnyQueryOptions {
   initialPageParam: InfiniteQueryPageParam;
@@ -27,7 +40,7 @@ interface AnyInfiniteQueryOptions extends AnyQueryOptions {
 }
 
 type RuntimeQueryOptionsFactory = {
-  bivarianceHack(input: unknown): AnyQueryOptions;
+  bivarianceHack(input: QueryFactoryInput): AnyQueryOptions;
 }["bivarianceHack"];
 
 interface OnErrorFnOptions {
@@ -42,7 +55,7 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
   return factory(input);
 }
 
@@ -178,7 +191,7 @@ export function getQueryInitiator(
       ...input: QueryInputArgs<TFactory>
     ): InitiatedQuery<TFactory> {
       const options = invokeFactory(factory, input[0]);
-      ensureFactoryQueryData<TFactory>(queryClient, options).catch((error: unknown) =>
+      ensureFactoryQueryData<TFactory>(queryClient, options).catch((error: QueryFailureReason) =>
         onError({ error }),
       );
       return createInitiatedQuery(factory, input);
@@ -203,8 +216,8 @@ export function getQueryInitiator(
       ...input: QueryInputArgs<TFactory>
     ): InitiatedInfiniteQuery<TFactory> {
       const options = invokeFactory(factory, input[0]);
-      ensureFactoryInfiniteQueryData<TFactory>(queryClient, options).catch((error: unknown) =>
-        onError({ error }),
+      ensureFactoryInfiniteQueryData<TFactory>(queryClient, options).catch(
+        (error: QueryFailureReason) => onError({ error }),
       );
       return createInitiatedInfiniteQuery(factory, input);
     },

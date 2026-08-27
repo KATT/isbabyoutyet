@@ -28,7 +28,7 @@ if (baselinePath === undefined || currentPath === undefined) {
   );
 }
 
-function isJsonObject(value: unknown): value is JsonObject {
+function isJsonObject<TValue>(value: TValue): value is TValue & JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -43,7 +43,7 @@ function formatChange(change: number) {
 
 async function readSummary(path: string) {
   const contents = await readFile(path, "utf8");
-  const summary: unknown = JSON.parse(contents);
+  const summary: JsonValue = JSON.parse(contents);
 
   if (
     !isJsonObject(summary) ||
@@ -62,7 +62,9 @@ function getPercentage(
 ) {
   const metric = summary.total[options.metric];
   const percentage =
-    isJsonObject(metric) && "pct" in metric ? metric["pct"] : undefined;
+    metric !== undefined && isJsonObject(metric) && "pct" in metric
+      ? metric["pct"]
+      : undefined;
 
   if (typeof percentage !== "number" || !Number.isFinite(percentage)) {
     throw new Error(

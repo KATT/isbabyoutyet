@@ -3,6 +3,7 @@ import type {
   AnyQueryOptions,
   InitiatedInfiniteQuery,
   InitiatedQuery,
+  QueryFactoryInput,
   QueryInput,
   QueryInputArgs,
   QueryOptionsFactory,
@@ -24,14 +25,14 @@ interface AnyInfiniteQueryOptions extends AnyQueryOptions {
 }
 
 type RuntimeQueryOptionsFactory = {
-  bivarianceHack(input: unknown): AnyQueryOptions;
+  bivarianceHack(input: QueryFactoryInput): AnyQueryOptions;
 }["bivarianceHack"];
 
 function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
   return factory(input);
 }
 

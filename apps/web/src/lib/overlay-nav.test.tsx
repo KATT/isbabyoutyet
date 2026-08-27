@@ -14,6 +14,7 @@ import {
   useBabyPostOverlayNav,
   type OverlayControl,
 } from "@/lib/overlay-nav";
+import type { LinkProps } from "@tanstack/react-router";
 
 test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
@@ -46,7 +47,7 @@ test("closeOverlayLink replaces to the close target without scroll reset", () =>
 
 test("dismissOverlay prefers history.back when the overlay was push-opened", () => {
   const back = vi.fn<() => void>();
-  const navigate = vi.fn<(opts: unknown) => void>();
+  const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
@@ -68,7 +69,7 @@ test("dismissOverlay prefers history.back when the overlay was push-opened", () 
 
 test("dismissOverlay navigates with closeLink without overlay history", () => {
   const back = vi.fn<() => void>();
-  const navigate = vi.fn<(opts: unknown) => void>();
+  const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },
@@ -90,7 +91,7 @@ test("dismissOverlay navigates with closeLink without overlay history", () => {
 
 test("dismissOverlay navigates with closeLink when history cannot go back", () => {
   const back = vi.fn<() => void>();
-  const navigate = vi.fn<(opts: unknown) => void>();
+  const navigate = vi.fn<(opts: LinkProps) => void>();
   const closeLink = closeOverlayLink({
     to: "/baby/$publicId",
     params: { publicId: "baby-smith" },

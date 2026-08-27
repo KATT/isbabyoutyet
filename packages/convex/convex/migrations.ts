@@ -120,14 +120,14 @@ export const backfillEncouragementTimeline = migrations.define({
 
 const SKIP_TOUR_BATCH_SIZE = 50;
 
-function authUserId(user: unknown) {
+function authUserId<TUser>(user: TUser) {
   if (user && typeof user === "object" && "_id" in user) {
     return String(user._id);
   }
   throw new Error("Better Auth user is missing _id");
 }
 
-function authUserEmail(user: unknown) {
+function authUserEmail<TUser>(user: TUser) {
   if (user && typeof user === "object" && "email" in user && typeof user.email === "string") {
     return user.email;
   }
@@ -499,8 +499,8 @@ type MigrationRunnerReport = {
   readonly toStartOver: string;
 };
 
-function parseMigrationRunnerReport(result: unknown): MigrationRunnerReport {
-  if (typeof result !== "object" || result === null) {
+function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
+  if (typeof result !== "object" || result === null || Array.isArray(result)) {
     throw new Error("Migration runner returned an invalid report");
   }
   if (
