@@ -38,7 +38,6 @@ import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
-import "@/lib/stylex-dev";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
