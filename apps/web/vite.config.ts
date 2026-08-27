@@ -179,7 +179,12 @@ const config = defineConfig({
     exclude: ["@resvg/resvg-js"],
   },
   ssr: {
-    noExternal: ["@convex-dev/better-auth", "@workspace/ui-cssinjs", "@stylexjs/stylex"],
+    noExternal: [
+      "@convex-dev/better-auth",
+      "@workspace/ui-cssinjs",
+      "@workspace/ui-patterns",
+      "@stylexjs/stylex",
+    ],
     external: ["@resvg/resvg-js"],
     optimizeDeps: {
       exclude: ["@resvg/resvg-js"],

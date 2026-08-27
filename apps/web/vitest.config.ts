@@ -103,7 +103,12 @@ export const webUnitProject = defineProject({
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component
-        inline: ["convex-table-history", "@workspace/ui-cssinjs", "@stylexjs/stylex"],
+        inline: [
+          "convex-table-history",
+          "@workspace/ui-cssinjs",
+          "@workspace/ui-patterns",
+          "@stylexjs/stylex",
+        ],
       },
     },
   },

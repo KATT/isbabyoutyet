@@ -173,7 +173,7 @@
     },
     {
       // StyleX registry components (shadcn-cssinjs) — same carve-out as Tailwind ui.
-      "files": ["packages/ui-cssinjs/src/**"],
+      "files": ["packages/ui-cssinjs/src/**", "packages/ui-patterns/src/**"],
       "rules": {
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
