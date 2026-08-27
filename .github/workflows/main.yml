@@ -89,6 +89,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      statuses: write
 
     steps:
       - name: Checkout code
@@ -161,10 +162,39 @@ jobs:
           test -f coverage/coverage-summary.json
 
       - name: Compare coverage with PR base
+        id: compare
         if: github.event_name == 'pull_request'
         run: |
           test -f .coverage-baseline/coverage-summary.json
           pnpm coverage:compare
+
+      # Companion status (Codecov-style description in the PR checks list).
+      - name: Post coverage compare status
+        if: always() && github.event_name == 'pull_request' && steps.compare.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COVERAGE_DESCRIPTION: ${{ steps.compare.outputs.description }}
+        run: |
+          if [[ "${{ steps.compare.outcome }}" == "success" ]]; then
+            state=success
+          else
+            state=failure
+          fi
+          description="$COVERAGE_DESCRIPTION"
+          if [[ -z "$description" ]]; then
+            if [[ "$state" == "success" ]]; then
+              description="Coverage meets or exceeds PR base"
+            else
+              description="Coverage regressed vs PR base"
+            fi
+          fi
+          description="${description:0:140}"
+          gh api --method POST \
+            "repos/${GITHUB_REPOSITORY}/statuses/${{ github.event.pull_request.head.sha }}" \
+            -f state="$state" \
+            -f context="coverage/compare" \
+            -f description="$description" \
+            -f target_url="${{ github.server_url }}/${GITHUB_REPOSITORY}/actions/runs/${{ github.run_id }}"
 
       # Cache this tip so stacked outer PRs can restore it as their base.
       - name: Prepare coverage baseline for cache
