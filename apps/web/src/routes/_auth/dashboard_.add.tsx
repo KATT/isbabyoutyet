@@ -17,7 +17,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -170,14 +170,15 @@ export function AddBabyPageView(props: {
                   themeFieldName="theme"
                 />
 
-                <Button
-                  type="submit"
+                <SubmitButton
+                  form="context"
+                  IconComponent="🍼"
+                  iconPosition="end"
                   className="w-full rounded-full font-extrabold pop-shadow"
-                  disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? t("Creating...") : t("Add Baby 🍼")}
-                </Button>
+                  {t("Add Baby")}
+                </SubmitButton>
               </div>
             </Form>
           </CardContent>
