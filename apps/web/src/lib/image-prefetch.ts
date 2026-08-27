@@ -18,8 +18,12 @@ export function browserImageFactory(imageUrl: string) {
 
 export type BrowserImageFactory = typeof browserImageFactory;
 
+type RuntimeInitiatedBrowserImage = Partial<{
+  readonly input: unknown;
+}>;
+
 function initiatedBrowserImage(imageUrl: string): InitiatedQuery<BrowserImageFactory>;
-function initiatedBrowserImage(imageUrl: string): unknown {
+function initiatedBrowserImage(imageUrl: string): RuntimeInitiatedBrowserImage {
   return { input: imageUrl };
 }
 

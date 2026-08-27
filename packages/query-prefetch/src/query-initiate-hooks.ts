@@ -32,6 +32,10 @@ function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
   return factory(input);
 }
 
+type RuntimeInitiatedQuery = {
+  input?: unknown;
+};
+
 function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInputArgs<TFactory>,
@@ -39,7 +43,7 @@ function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
 function createInitiatedQuery(
   _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
-): { input?: unknown } {
+): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
 
@@ -50,7 +54,7 @@ function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
 function createInitiatedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
-): { input?: unknown } {
+): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
 

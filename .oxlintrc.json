@@ -99,6 +99,7 @@
     "anti-slop/no-reflect-get": "error",
     "anti-slop/no-object-parameters": "error",
     "anti-slop/no-conditional-empty-object-spread": "error",
+    "anti-slop/no-known-value-widening": "error",
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
@@ -124,6 +125,7 @@
       "rules": {
         "anti-slop/no-chained-type-assertions": "off",
         "anti-slop/no-widen-then-assert": "off",
+        "anti-slop/no-known-value-widening": "off",
         "anti-slop/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
       }

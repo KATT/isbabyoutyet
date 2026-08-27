@@ -6,7 +6,7 @@ type PushCopy = {
   body: string;
 };
 
-const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
+const copy = {
   "en-GB": {
     labor_started: {
       title: (name) => `${name}: Labour's started!`,
@@ -117,7 +117,7 @@ const copy: Record<SupportedLocale, Record<NotifiableStatus, PushCopy>> = {
       body: "Vem ver as novidades!",
     },
   },
-};
+} satisfies Record<SupportedLocale, Record<NotifiableStatus, PushCopy>>;
 
 export function getPushMessage(opts: {
   locale: SupportedLocale;
