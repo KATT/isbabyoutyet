@@ -25,7 +25,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
@@ -119,11 +125,12 @@ export function DashboardSettingsSheetView(props: {
 }) {
   const { t } = useI18n();
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const formOverlay = useFormOverlay({ onOpenChange: props.overlay.onOpenChange });
 
   return (
     <Sheet
       open={props.overlay.open}
-      onOpenChange={props.overlay.onOpenChange}
+      {...formOverlay.rootProps}
       onOpenChangeComplete={props.overlay.onOpenChangeComplete}
     >
       <SheetContent
@@ -132,54 +139,56 @@ export function DashboardSettingsSheetView(props: {
         side="right"
         className="w-full sm:max-w-sm"
       >
-        <SheetHeader>
-          <SheetTitle>{t("Settings")}</SheetTitle>
-          <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
-        </SheetHeader>
+        <FormOverlayProvider overlay={formOverlay}>
+          <SheetHeader>
+            <SheetTitle>{t("Settings")}</SheetTitle>
+            <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
+          </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
-          <SettingsSection title={t("Language and time zone")}>
-            <Item>
-              <ItemContent>{props.languageSettings}</ItemContent>
-            </Item>
-          </SettingsSection>
-
-          <SettingsSection title={t("Appearance")}>
-            <Item>
-              <ItemMedia variant="icon">
-                <Palette />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Appearance")}</ItemTitle>
-                <ItemDescription>{t("Theme")}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <ModeToggle />
-              </ItemActions>
-            </Item>
-          </SettingsSection>
-
-          {props.isAdmin ? (
-            <SettingsSection title={t("Admin")}>
-              <Item
-                render={
-                  <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
-                }
-              >
-                <ItemMedia variant="icon">
-                  <Shield />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{t("Admin dashboard")}</ItemTitle>
-                </ItemContent>
+          <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
+            <SettingsSection title={t("Language and time zone")}>
+              <Item>
+                <ItemContent>{props.languageSettings}</ItemContent>
               </Item>
             </SettingsSection>
-          ) : null}
-        </div>
 
-        <SheetFooter>
-          <SignOutForm onSignOut={props.onSignOut} />
-        </SheetFooter>
+            <SettingsSection title={t("Appearance")}>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Palette />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Appearance")}</ItemTitle>
+                  <ItemDescription>{t("Theme")}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <ModeToggle />
+                </ItemActions>
+              </Item>
+            </SettingsSection>
+
+            {props.isAdmin ? (
+              <SettingsSection title={t("Admin")}>
+                <Item
+                  render={
+                    <Link to="/dashboard/admin" search={ADMIN_DEFAULT_SEARCH} preload="viewport" />
+                  }
+                >
+                  <ItemMedia variant="icon">
+                    <Shield />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{t("Admin dashboard")}</ItemTitle>
+                  </ItemContent>
+                </Item>
+              </SettingsSection>
+            ) : null}
+          </div>
+
+          <SheetFooter>
+            <SignOutForm onSignOut={props.onSignOut} />
+          </SheetFooter>
+        </FormOverlayProvider>
       </SheetContent>
     </Sheet>
   );

@@ -1,4 +1,12 @@
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormCancelButton,
+  FormOverlayProvider,
+  shouldBlockOverlayDismiss,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -18,12 +26,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
-import type { PopoverActions } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
-import { useRef } from "react";
 import { useFormState, useWatch } from "react-hook-form";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
@@ -51,8 +57,8 @@ type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 const emptyActionSchema = z.object({});
 
 // Uncontrolled popovers: forms mount fresh when the popup opens so
-// defaultValues stay current without a reset. Cancel uses PopoverClose;
-// successful save/delete closes via the root actionsRef.
+// defaultValues stay current without a reset. Cancel uses PopoverClose +
+// FormCancelButton; successful save/delete closes via useFormOverlay.close.
 
 type EditorFormProps = {
   baby: BabyData;
@@ -63,12 +69,12 @@ type EditorFormProps = {
 function EditorActions(props: { isBusy: boolean }) {
   const { t } = useI18n();
   // Subscribe via useFormState — reading form.formState via the Proxy is not a
-  // reliable re-render under the React Compiler.
-  const { isSubmitting, isDirty } = useFormState();
-  const busy = isSubmitting || props.isBusy;
+  // reliable re-render under the React Compiler. FormCancelButton owns
+  // isSubmitting for Cancel; keep isDirty / isBusy for Save.
+  const { isDirty } = useFormState();
   return (
     <div className="flex gap-2 justify-end">
-      <PopoverClose render={<Button type="button" variant="outline" size="sm" disabled={busy} />}>
+      <PopoverClose render={<FormCancelButton form="context" size="sm" disabled={props.isBusy} />}>
         {t("Cancel")}
       </PopoverClose>
       <SubmitButton
@@ -76,7 +82,7 @@ function EditorActions(props: { isBusy: boolean }) {
         IconComponent={Check}
         iconPosition="start"
         size="sm"
-        disabled={!isDirty || busy}
+        disabled={!isDirty || props.isBusy}
       >
         {t("Save")}
       </SubmitButton>
@@ -116,29 +122,28 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({
+    onOpenChange: (open, eventDetails) => {
+      // Keep the popover open while the native date picker (rendered outside
+      // the popover) is in use; Base UI replaces onInteractOutside with
+      // onOpenChange reasons + eventDetails.cancel()
+      if (
+        !open &&
+        (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
+      ) {
+        const activeElement = document.activeElement;
+        if (
+          activeElement?.tagName === "INPUT" &&
+          (activeElement as HTMLInputElement).type === "date"
+        ) {
+          eventDetails.cancel();
+        }
+      }
+    },
+  });
 
   return (
-    <Popover
-      actionsRef={actionsRef}
-      onOpenChange={(open, eventDetails) => {
-        // Keep the popover open while the native date picker (rendered outside
-        // the popover) is in use; Base UI replaces onInteractOutside with
-        // onOpenChange reasons + eventDetails.cancel()
-        if (
-          !open &&
-          (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
-        ) {
-          const activeElement = document.activeElement;
-          if (
-            activeElement?.tagName === "INPUT" &&
-            (activeElement as HTMLInputElement).type === "date"
-          ) {
-            eventDetails.cancel();
-          }
-        }
-      }}
-    >
+    <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -147,13 +152,9 @@ export function DueDateEditor(props: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <DueDateForm
-          baby={props.baby}
-          onUpdate={props.onUpdate}
-          onClose={() => {
-            actionsRef.current?.close();
-          }}
-        />
+        <FormOverlayProvider overlay={overlay}>
+          <DueDateForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
+        </FormOverlayProvider>
       </PopoverContent>
     </Popover>
   );
@@ -204,10 +205,10 @@ function statusDateSchema(t: TranslationFunction, timeZone: string) {
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   return (
-    <Popover actionsRef={actionsRef}>
+    <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -217,16 +218,16 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <StatusDateForm
-          baby={props.baby}
-          status={props.status}
-          currentDate={props.currentDate}
-          onRedate={props.onRedate}
-          onRemove={props.onRemove}
-          onClose={() => {
-            actionsRef.current?.close();
-          }}
-        />
+        <FormOverlayProvider overlay={overlay}>
+          <StatusDateForm
+            baby={props.baby}
+            status={props.status}
+            currentDate={props.currentDate}
+            onRedate={props.onRedate}
+            onRemove={props.onRemove}
+            onClose={overlay.close}
+          />
+        </FormOverlayProvider>
       </PopoverContent>
     </Popover>
   );
@@ -316,7 +317,19 @@ function StatusDateForm(props: {
               </TooltipContent>
             </Tooltip>
           ) : (
-            <AlertDialog>
+            <AlertDialog
+              onOpenChange={(open, eventDetails) => {
+                if (
+                  shouldBlockOverlayDismiss({
+                    isLocked: isDeleting,
+                    open,
+                    reason: eventDetails.reason,
+                  })
+                ) {
+                  eventDetails.cancel();
+                }
+              }}
+            >
               <AlertDialogTrigger render={deleteButton} />
               <AlertDialogContent>
                 <AlertDialogHeader>
@@ -330,7 +343,9 @@ function StatusDateForm(props: {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
+                  <AlertDialogCancel render={<FormCancelButton form={deleteForm} />}>
+                    {t("Cancel")}
+                  </AlertDialogCancel>
                   <SubmitButton
                     form={deleteForm}
                     variant="destructive"
@@ -365,10 +380,10 @@ function nameSchema(t: TranslationFunction) {
 
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   return (
-    <Popover actionsRef={actionsRef}>
+    <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
@@ -377,13 +392,9 @@ export function NameEditor(props: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <NameForm
-          baby={props.baby}
-          onUpdate={props.onUpdate}
-          onClose={() => {
-            actionsRef.current?.close();
-          }}
-        />
+        <FormOverlayProvider overlay={overlay}>
+          <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
+        </FormOverlayProvider>
       </PopoverContent>
     </Popover>
   );
@@ -441,10 +452,10 @@ function journeySchema() {
 
 export function JourneyEditor(props: JourneyEditorProps) {
   const { t } = useI18n();
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   return (
-    <Popover actionsRef={actionsRef}>
+    <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
@@ -453,13 +464,13 @@ export function JourneyEditor(props: JourneyEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
-        <JourneyForm
-          birthJourney={props.birthJourney}
-          onUpdate={props.onUpdate}
-          onClose={() => {
-            actionsRef.current?.close();
-          }}
-        />
+        <FormOverlayProvider overlay={overlay}>
+          <JourneyForm
+            birthJourney={props.birthJourney}
+            onUpdate={props.onUpdate}
+            onClose={overlay.close}
+          />
+        </FormOverlayProvider>
       </PopoverContent>
     </Popover>
   );
@@ -519,7 +530,7 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
 
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
   const selectedTheme = getThemeOption(props.baby.theme);
   const form = useZodForm({
     schema: z
@@ -531,7 +542,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
   });
 
   return (
-    <Popover actionsRef={actionsRef}>
+    <Popover {...overlay.rootProps}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
@@ -547,34 +558,36 @@ export function ThemeSelector(props: ThemeSelectorProps) {
         }
       />
       <PopoverContent align="end" className="w-56">
-        <Form
-          form={form}
-          handleSubmit={async (values) => {
-            await props.onUpdate(values);
-            actionsRef.current?.close();
-          }}
-        >
-          <div className="flex flex-col gap-1">
-            {THEME_OPTIONS.map((option) => (
-              <SubmitButton
-                key={option.value ?? "default"}
-                form="context"
-                variant={selectedTheme?.value === option.value ? "default" : "ghost"}
-                aria-pressed={selectedTheme?.value === option.value}
-                size="sm"
-                className="justify-start gap-2"
-                IconComponent={null}
-                iconPosition="start"
-                onClick={() => {
-                  form.setValue("theme", option.value, { shouldDirty: true });
-                }}
-              >
-                <ThemeSwatches colors={option.colors} />
-                {t(option.labelKey)}
-              </SubmitButton>
-            ))}
-          </div>
-        </Form>
+        <FormOverlayProvider overlay={overlay}>
+          <Form
+            form={form}
+            handleSubmit={async (values) => {
+              await props.onUpdate(values);
+              overlay.close();
+            }}
+          >
+            <div className="flex flex-col gap-1">
+              {THEME_OPTIONS.map((option) => (
+                <SubmitButton
+                  key={option.value ?? "default"}
+                  form="context"
+                  variant={selectedTheme?.value === option.value ? "default" : "ghost"}
+                  aria-pressed={selectedTheme?.value === option.value}
+                  size="sm"
+                  className="justify-start gap-2"
+                  IconComponent={null}
+                  iconPosition="start"
+                  onClick={() => {
+                    form.setValue("theme", option.value, { shouldDirty: true });
+                  }}
+                >
+                  <ThemeSwatches colors={option.colors} />
+                  {t(option.labelKey)}
+                </SubmitButton>
+              ))}
+            </div>
+          </Form>
+        </FormOverlayProvider>
       </PopoverContent>
     </Popover>
   );

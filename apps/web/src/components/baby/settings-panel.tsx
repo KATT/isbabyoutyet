@@ -63,7 +63,14 @@ import {
   isSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormCancelButton,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import type { ReactNode } from "react";
@@ -177,13 +184,14 @@ function BabyLanguageSelect(props: {
 
 function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Promise<void> }) {
   const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
   });
 
   return (
-    <AlertDialog>
+    <AlertDialog {...overlay.rootProps}>
       <AlertDialogTrigger
         render={
           <Button variant="destructive" size="sm">
@@ -192,34 +200,38 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
         }
       />
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {t("Delete {{name}}'s page?", { name: props.babyName })}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {t(
-              "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <Form
-          form={form}
-          handleSubmit={async () => {
-            await props.onDelete();
-          }}
-        >
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <SubmitButton
-              form="context"
-              variant="destructive"
-              IconComponent={Trash}
-              iconPosition="start"
-            >
-              {t("Delete page")}
-            </SubmitButton>
-          </AlertDialogFooter>
-        </Form>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("Delete {{name}}'s page?", { name: props.babyName })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "The page will disappear from your dashboard and the public link will stop working. Only you (the owner) can do this.",
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete();
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete page")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
