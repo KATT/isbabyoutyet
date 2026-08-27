@@ -156,7 +156,7 @@ test("parent dashboard loader starts independent prefetches without a waterfall"
   const preloader = stubPreloader([]);
   const loader = Route.options.loader as unknown as (opts: {
     context: typeof preloader.context;
-  }) => Promise<{ babies: object; onboarding: object }>;
+  }) => Promise<unknown>;
 
   const pending = loader({ context: preloader.context });
 

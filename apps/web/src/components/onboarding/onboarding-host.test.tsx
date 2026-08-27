@@ -491,7 +491,7 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
   const holder: {
-    completeStep: ((args: { stepId: OnboardingStepId }) => Promise<null>) | null;
+    completeStep: ((args: { stepId: OnboardingStepId }) => Promise<unknown>) | null;
   } = { completeStep: null };
   function Probe() {
     holder.completeStep = useCompleteOnboardingStep();

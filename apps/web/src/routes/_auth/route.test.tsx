@@ -22,14 +22,8 @@ type GuardCtx = {
   token: string | null;
 };
 
-type ProfileSnapshot = {
-  locale: string;
-  timeZone: string;
-  isAdmin: boolean;
-};
-
 function makeGuardCtx() {
-  const queryFn = vi.fn<() => Promise<null | ProfileSnapshot>>(() => Promise.resolve(null));
+  const queryFn = vi.fn<() => Promise<unknown>>(() => Promise.resolve(null));
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, queryFn } },
   });
@@ -51,10 +45,7 @@ async function runGuard(opts: { context: GuardCtx; fetchToken: () => Promise<str
   });
 }
 
-/** Guard runs that are expected to throw a redirect (result is never observed). */
-type GuardRunResult = object | null | void;
-
-async function expectRedirectHome(run: () => Promise<GuardRunResult>) {
+async function expectRedirectHome(run: () => Promise<unknown>) {
   try {
     await run();
     expect.unreachable("expected a redirect");

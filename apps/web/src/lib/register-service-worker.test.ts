@@ -1,9 +1,7 @@
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
-type ServiceWorkerRegistrationLike = { scope: string };
-
-function serviceWorkerResource(register: () => Promise<ServiceWorkerRegistrationLike>) {
+function serviceWorkerResource(register: () => Promise<unknown>) {
   const descriptor = Object.getOwnPropertyDescriptor(navigator, "serviceWorker");
   Object.defineProperty(navigator, "serviceWorker", {
     configurable: true,
@@ -20,9 +18,7 @@ function serviceWorkerResource(register: () => Promise<ServiceWorkerRegistration
 
 test("registers the service worker during client bootstrap", async () => {
   const registration = { scope: "/" };
-  const register = vi
-    .fn<() => Promise<ServiceWorkerRegistrationLike>>()
-    .mockResolvedValue(registration);
+  const register = vi.fn<() => Promise<unknown>>().mockResolvedValue(registration);
   await using _serviceWorker = serviceWorkerResource(register);
   const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
   await using _log = makeResource({}, () => log.mockRestore());
@@ -35,9 +31,7 @@ test("registers the service worker during client bootstrap", async () => {
 
 test("reports service worker registration failures", async () => {
   const cause = new Error("registration failed");
-  const register = vi
-    .fn<() => Promise<ServiceWorkerRegistrationLike>>()
-    .mockRejectedValue(cause);
+  const register = vi.fn<() => Promise<unknown>>().mockRejectedValue(cause);
   await using _serviceWorker = serviceWorkerResource(register);
   const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
   await using _error = makeResource({}, () => error.mockRestore());
