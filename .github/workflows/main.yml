@@ -83,8 +83,8 @@ jobs:
   # Parallel with `checks`. Full-suite coverage for Codecov (never --changed).
   codecov:
     runs-on: ubuntu-latest
-    # Common path ~2–3.5m; missing-base fallback can add another suite.
-    timeout-minutes: 10
+    # Keep tight: probe+HIT should stay fast; a hang or MISS-heavy path means fix CI.
+    timeout-minutes: 5
     permissions:
       contents: read
       id-token: write
