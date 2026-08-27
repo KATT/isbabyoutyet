@@ -155,17 +155,12 @@ jobs:
           test -f coverage/lcov.info
 
       - name: Upload coverage to Codecov
-        if: ${{ secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5
         with:
           files: coverage/lcov.info
           flags: unit
           name: vitest
           token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+          # Token may be unset until Codecov is configured; don't fail the parallel job.
+          fail_ci_if_error: false
           verbose: true
-
-      - name: Codecov token missing
-        if: ${{ secrets.CODECOV_TOKEN == '' }}
-        run: |
-          echo "::warning::CODECOV_TOKEN is not set. Add the Codecov upload token as a GitHub Actions secret, and install the Codecov GitHub App for this org/repo. Coverage still ran; upload was skipped."
