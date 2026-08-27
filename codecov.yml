@@ -1,0 +1,31 @@
+# https://docs.codecov.com/docs/commit-status
+# Full-suite uploads only (never vitest --changed). Fail the PR when coverage drops.
+coverage:
+  status:
+    project:
+      default:
+        # Compare to parent/base coverage; fail on any drop beyond threshold.
+        target: auto
+        threshold: 0.5%
+        informational: false
+    patch:
+      default:
+        # New/changed lines should be covered.
+        target: 80%
+        informational: false
+
+comment:
+  layout: "diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  hide_project_coverage: false
+
+ignore:
+  - "**/_generated/**"
+  - "**/routeTree.gen.ts"
+  - "**/*.test.{ts,tsx}"
+  - "**/test.setup.ts"
+  - "**/test.resource.ts"
+  - "**/paraglide/**"
