@@ -30,10 +30,6 @@ type OnboardingHostProps = {
   enabled: boolean | undefined;
   /** Hide spotlight tips (e.g. while a modal is open) */
   spotlight: boolean | undefined;
-  /** When set, the baby-page tour only runs on the first created baby */
-  babyPublicId: string | undefined;
-  /** Baby-page: open post-update / settings from the checklist */
-  onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
 };
 
 function scrollToTourTarget(targetId: string) {
@@ -90,7 +86,7 @@ function useOnboardingMutations() {
 
 /**
  * Owns the first-run floating checklist + one active coachmark.
- * Mount on the dashboard index (not /dashboard/add) and the first baby's owner page.
+ * Mount on the dashboard index (not /dashboard/add) and any owner-managed baby page.
  *
  * Auth-gated: only mounts the suspense query once the session is known so
  * anonymous visitors never suspend on `onboarding.getMine`.
@@ -150,14 +146,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 
-  const isTourBabyPage =
-    props.surface !== "baby" ||
-    (progress.tourBaby != null && progress.tourBaby.publicId === props.babyPublicId);
-
-  if (!isTourBabyPage) {
-    return null;
-  }
-
   const showChecklist = !progress.checklistDismissed;
   const showCoachmark =
     spotlight &&
@@ -170,6 +158,16 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const coachmarkTitle = nextStep ? t(nextStep.title) : "";
   const coachmarkDescription = nextStep ? t(nextStep.description) : "";
   const showRestartHint = props.surface === "dashboard" && progress.restartHintVisible;
+  const coachmarkCompletesStep = nextStep != null && nextStep.surface === "baby";
+
+  function highlightStep(stepId: OnboardingStepId) {
+    const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
+    if (!step) {
+      return;
+    }
+    void setActiveCoachmarkStepId({ stepId: step.id });
+    scrollToTourTarget(step.targetId);
+  }
 
   return (
     <>
@@ -190,22 +188,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onAcknowledgeStep={(stepId) => {
             void completeStep({ stepId });
           }}
-          onGoToStep={(stepId) => {
-            if (stepId === "post_update") {
-              props.onGoToStep?.(stepId);
-              return;
-            }
-            if (stepId === "explore_settings") {
-              props.onGoToStep?.(stepId);
-              void completeStep({ stepId });
-              return;
-            }
-            const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
-            if (step) {
-              void setActiveCoachmarkStepId({ stepId: step.id });
-              scrollToTourTarget(step.targetId);
-            }
-          }}
+          onGoToStep={highlightStep}
           surface={props.surface}
           tourBaby={progress.tourBaby}
           className={undefined}
@@ -217,7 +200,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           targetId={coachmarkTargetId}
           title={coachmarkTitle}
           description={coachmarkDescription}
-          completeOnDismiss={nextStep.id === "learn_encouragements"}
+          completeOnDismiss={coachmarkCompletesStep}
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}

@@ -53,8 +53,6 @@ export function DashboardPage(props: DashboardLoaderData) {
         onboarding={props.onboarding}
         enabled={undefined}
         spotlight={undefined}
-        babyPublicId={undefined}
-        onGoToStep={undefined}
       />
       <DashboardHeader />
 

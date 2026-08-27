@@ -157,7 +157,7 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
   expect(mobileDock?.style.getPropertyValue("--visual-viewport-bottom")).toBe("159px");
 });
 
-test("dashboard share step links to the first baby's share overlay", async () => {
+test("dashboard baby-page steps link to the preferred baby's page (not overlays)", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
@@ -172,12 +172,12 @@ test("dashboard share step links to the first baby's share overlay", async () =>
     />,
   );
 
-  const links = screen.getAllByRole("link", { name: /show share/i });
+  const links = screen.getAllByRole("link", { name: /see ada's page/i });
   expect(links.length).toBeGreaterThan(0);
-  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting");
 });
 
-test("baby-page share step links directly to the share overlay", async () => {
+test("baby-page share step highlights via Show me", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
@@ -193,11 +193,8 @@ test("baby-page share step links directly to the share overlay", async () => {
     />,
   );
 
-  const links = screen.getAllByRole("link", { name: /show share/i });
-  expect(links.length).toBeGreaterThan(0);
-  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting/share");
-  fireEvent.click(links[0]!);
-  expect(onGoToStep).not.toHaveBeenCalled();
+  fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("share_link");
 });
 
 test("minimized chip shows progress count", async () => {
@@ -220,7 +217,7 @@ test("minimized chip shows progress count", async () => {
   expect(onMinimize).toHaveBeenCalledWith(false);
 });
 
-test("dashboard settings CTA marks the step done while opening the page", async () => {
+test("dashboard settings CTA opens the preferred baby's page without completing", async () => {
   const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
@@ -236,11 +233,11 @@ test("dashboard settings CTA marks the step done while opening the page", async 
     />,
   );
 
-  fireEvent.click(screen.getAllByRole("link", { name: /open settings/i })[0]!);
-  expect(onAcknowledge).toHaveBeenCalledWith("explore_settings");
+  fireEvent.click(screen.getAllByRole("link", { name: /see ada's page/i })[0]!);
+  expect(onAcknowledge).not.toHaveBeenCalled();
 });
 
-test("baby-page checklist links post update and can open settings", async () => {
+test("baby-page checklist uses Show me for post and settings tips", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
@@ -256,14 +253,12 @@ test("baby-page checklist links post update and can open settings", async () => 
     />,
   );
 
-  const postLink = screen.getAllByRole("link", { name: /post an update/i })[0];
-  expect(postLink?.getAttribute("href")).toContain("/baby/baby-waiting/post");
-
-  fireEvent.click(screen.getAllByRole("button", { name: /open settings/i })[0]!);
-  expect(onGoToStep).toHaveBeenCalledWith("explore_settings");
+  fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("post_update");
 });
 
-test("baby-page post action stays unavailable until a tour baby exists", async () => {
+test("baby-page Show me works without a preferred tour baby", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link"]}
@@ -272,13 +267,14 @@ test("baby-page post action stays unavailable until a tour baby exists", async (
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       className={undefined}
-      onGoToStep={vi.fn<(stepId: string) => void>()}
+      onGoToStep={onGoToStep}
       surface="baby"
       tourBaby={null}
     />,
   );
 
-  expect(screen.queryByRole("link", { name: "Post an update" })).toBeNull();
+  fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("post_update");
 });
 
 test("all-done state offers close checklist", async () => {
