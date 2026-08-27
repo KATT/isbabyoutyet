@@ -2,17 +2,35 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Badge } from "@workspace/ui-cssinjs/components/badge";
+import { Card, CardHeader, CardTitle } from "@workspace/ui-cssinjs/components/card";
+import { Input } from "@workspace/ui-cssinjs/components/input";
+import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
 
-describe("@workspace/ui-cssinjs Button", () => {
-  it("renders with theme data attributes and primary styles", () => {
-    const html = renderToStaticMarkup(
-      <Button variant="default" size="default" className={undefined} render={undefined}>
-        Save
-      </Button>,
-    );
-
+describe("@workspace/ui-cssinjs components", () => {
+  it("renders button with theme data attributes", () => {
+    const html = renderToStaticMarkup(<Button>Save</Button>);
     expect(html).toContain('data-slot="button"');
     expect(html).toContain('data-variant="default"');
     expect(html).toContain("Save");
+  });
+
+  it("renders badge, card, input, and spinner", () => {
+    const html = renderToStaticMarkup(
+      <>
+        <Badge>New</Badge>
+        <Card>
+          <CardHeader>
+            <CardTitle>Hello</CardTitle>
+          </CardHeader>
+        </Card>
+        <Input aria-label="Name" />
+        <Spinner />
+      </>,
+    );
+    expect(html).toContain("New");
+    expect(html).toContain("Hello");
+    expect(html).toContain('aria-label="Name"');
+    expect(html.length).toBeGreaterThan(20);
   });
 });
