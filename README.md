@@ -2,6 +2,8 @@ mainly vibe coded
 
 ## dev setup
 
+Requires **Node.js 24** ([`.nvmrc`](.nvmrc)).
+
 ### install
 
 ```sh
