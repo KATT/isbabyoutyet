@@ -41,13 +41,7 @@ export type StackProps = Omit<ComponentProps<"div">, "className" | "style"> & {
 function Stack(props: StackProps) {
   const direction = props.direction ?? "column";
   const gap = props.gap ?? "s4";
-  const {
-    className: _className,
-    style: _style,
-    direction: _direction,
-    gap: _gap,
-    ...rest
-  } = props;
+  const { className: _className, style: _style, direction: _direction, gap: _gap, ...rest } = props;
 
   return (
     <div

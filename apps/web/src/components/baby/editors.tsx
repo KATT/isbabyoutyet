@@ -68,9 +68,7 @@ function EditorActions(props: { isBusy: boolean }) {
   const busy = isSubmitting || props.isBusy;
   return (
     <div className="flex gap-2 justify-end">
-      <PopoverClose
-        render={<Button type="button" variant="outline" size="sm" disabled={busy} />}
-      >
+      <PopoverClose render={<Button type="button" variant="outline" size="sm" disabled={busy} />}>
         {t("Cancel")}
       </PopoverClose>
       <SubmitButton
