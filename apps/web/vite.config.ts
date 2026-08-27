@@ -161,9 +161,13 @@ const config = defineConfig({
       projects: ["./tsconfig.json"],
     }),
     // Compile StyleX in `@workspace/ui` (and the app) before React.
+    // Dev: CSS is served at `/virtual:stylex.css` (linked from `__root.tsx`
+    // because TanStack Start SSR skips Vite `transformIndexHtml`).
+    // Prod: append aggregated CSS into the globals stylesheet asset.
     stylex.vite({
       useCSSLayers: true,
       runtimeInjection: false,
+      cssInjectionTarget: (fileName) => fileName.includes("globals"),
     }),
     tanstackStart({
       server: {

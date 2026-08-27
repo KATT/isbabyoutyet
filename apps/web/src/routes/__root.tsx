@@ -38,6 +38,7 @@ import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
+import "@/lib/stylex-dev";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
@@ -210,6 +211,16 @@ export const Route = createRootRouteWithContext<{
         },
       ],
       links: [
+        // StyleX unplugin serves aggregated atomic CSS here in Vite serve.
+        // TanStack Start SSR skips transformIndexHtml, so link it explicitly.
+        ...(import.meta.env.DEV
+          ? ([
+              {
+                rel: "stylesheet",
+                href: "/virtual:stylex.css",
+              },
+            ] as const)
+          : []),
         {
           rel: "stylesheet",
           href: nunitoCss,
