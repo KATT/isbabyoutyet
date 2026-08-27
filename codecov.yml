@@ -1,0 +1,42 @@
+# https://docs.codecov.com/docs/commit-status
+# Full-suite uploads only (never vitest --changed). Codecov is the coverage gate.
+#
+# Gate is project coverage only: never go down vs the PR base commit
+# (`target: auto`, `threshold: 0%`). Patch status is informational.
+#
+# Project `target: auto` compares to the PR base commit. That report comes from
+# push uploads (main/next/canary) or the inner PR's head-tip upload for stacked
+# PRs; the codecov job probes the Codecov API and remeasures the base via Turbo
+# only when no report exists.
+codecov:
+  # Prefer failing closed over Codecov inventing a pseudo-base for stacks.
+  allow_pseudo_compare: false
+
+coverage:
+  status:
+    project:
+      default:
+        # Fail if overall coverage drops vs base (no wiggle room).
+        target: auto
+        threshold: 0%
+        informational: false
+    patch:
+      default:
+        # Do not fail PRs on partial diff coverage; project ratchet is the gate.
+        informational: true
+
+comment:
+  layout: "diff, flags, files"
+  behavior: default
+  require_changes: false
+  require_base: false
+  require_head: true
+  hide_project_coverage: false
+
+ignore:
+  - "**/_generated/**"
+  - "**/routeTree.gen.ts"
+  - "**/*.test.{ts,tsx}"
+  - "**/test.setup.ts"
+  - "**/test.resource.ts"
+  - "**/paraglide/**"
