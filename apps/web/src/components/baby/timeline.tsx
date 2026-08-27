@@ -260,20 +260,20 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   });
   const isPosting = form.formState.isSubmitting;
 
-  const draft = useWatch({
-    control: form.control,
-    defaultValue: form.getValues(),
-  });
+  const message = useWatch({ control: form.control, name: "message" });
+  const milestone = useWatch({ control: form.control, name: "milestone" });
+  const occurredAt = useWatch({ control: form.control, name: "occurredAt" });
+  const photoFile = useWatch({ control: form.control, name: "photo" });
 
   // Guard against a stale selection: the status may have advanced from
   // another tab while a milestone was selected here. The mask keeps the
   // current render correct; the effect clears the value so the old choice
   // can't resurface if the status regresses later via unmarking.
   const selectedMilestone =
-    draft.milestone != null &&
-    draft.milestone !== "none" &&
-    futureMilestones.includes(draft.milestone)
-      ? draft.milestone
+    milestone != null &&
+    milestone !== "none" &&
+    futureMilestones.includes(milestone)
+      ? milestone
       : null;
   useEffect(() => {
     const value = form.getValues("milestone");
@@ -283,9 +283,14 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
     }
   }, [form, futureMilestones]);
 
-  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo ?? null);
+  const photoPreviewUrl = usePhotoPreviewUrl(photoFile ?? null);
 
-  const canPost = schema.safeParse(draft).success;
+  const canPost = schema.safeParse({
+    message,
+    milestone,
+    occurredAt,
+    photo: photoFile,
+  }).success;
 
   return (
     <div className="space-y-3">
@@ -479,7 +484,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Images className="w-4 h-4" />
-              {draft.photo ? t("Change photo") : t("Add photo (optional)")}
+              {photoFile ? t("Change photo") : t("Add photo (optional)")}
             </Button>
             <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
               {selectedMilestone

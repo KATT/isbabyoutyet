@@ -12,7 +12,12 @@ const tester = new RuleTester({
 tester.run("no-rhf-watch", plugin.rules["no-rhf-watch"], {
   valid: [
     `import { useWatch } from "react-hook-form";
-     const draft = useWatch({ control: form.control });`,
+     const milestone = useWatch({ control: form.control, name: "milestone" });`,
+    `import { useWatch } from "react-hook-form";
+     const [milestone, photo] = useWatch({
+       control: form.control,
+       name: ["milestone", "photo"],
+     });`,
     `import { useFormState } from "react-hook-form";
      const { isSubmitting } = useFormState({ control: form.control });`,
     // Unrelated identifiers named watch are fine when not called as RHF watch.
@@ -22,25 +27,38 @@ tester.run("no-rhf-watch", plugin.rules["no-rhf-watch"], {
   invalid: [
     {
       code: `const draft = form.watch();`,
-      errors: [{ message: /useWatch/ }],
+      errors: [{ message: /useWatch\(\{ name \}\)/ }],
     },
     {
       code: `const milestone = form.watch("milestone");`,
-      errors: [{ message: /useWatch/ }],
+      errors: [{ message: /useWatch\(\{ name \}\)/ }],
     },
     {
       code: `const draft = form["watch"]();`,
-      errors: [{ message: /useWatch/ }],
+      errors: [{ message: /useWatch\(\{ name \}\)/ }],
     },
     {
       code: `const { watch } = form;
              const draft = watch();`,
-      errors: [{ message: /useWatch/ }, { message: /useWatch/ }],
+      errors: [{ message: /useWatch\(\{ name \}\)/ }, { message: /useWatch\(\{ name \}\)/ }],
     },
     {
       code: `import { watch } from "react-hook-form";
              const draft = watch(control);`,
-      errors: [{ message: /useWatch/ }],
+      errors: [{ message: /useWatch\(\{ name \}\)/ }],
+    },
+    {
+      code: `import { useWatch } from "react-hook-form";
+             const draft = useWatch({ control: form.control });`,
+      errors: [{ message: /Pass `name` to `useWatch/ }],
+    },
+    {
+      code: `import { useWatch } from "react-hook-form";
+             const draft = useWatch({
+               control: form.control,
+               defaultValue: form.getValues(),
+             });`,
+      errors: [{ message: /Pass `name` to `useWatch/ }],
     },
   ],
 });
