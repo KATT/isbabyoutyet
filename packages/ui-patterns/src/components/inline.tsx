@@ -1,41 +1,71 @@
 import type { ComponentProps } from "react";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
-import { gapStyles, type StackGap } from "@workspace/ui-patterns/components/stack";
+import {
+  alignStyles,
+  gapStyles,
+  justifyStyles,
+  type StackAlign,
+  type StackGap,
+  type StackJustify,
+} from "@workspace/ui-patterns/components/stack";
 
 const inlineStyles = stylex.create({
   base: {
-    alignItems: "center",
     display: "flex",
     flexDirection: "row",
     flexWrap: "wrap",
+    minWidth: 0,
+  },
+  nowrap: {
+    flexWrap: "nowrap",
+  },
+  fullWidth: {
+    width: "100%",
   },
 });
 
 export type InlineProps = Omit<ComponentProps<"div">, "className" | "style"> & {
   gap?: StackGap;
-  className?: string;
-  style?: StyleXStyles;
+  align?: StackAlign;
+  justify?: StackJustify | null;
+  wrap?: boolean;
+  fullWidth?: boolean;
 };
 
 function Inline(props: InlineProps) {
   const gap = props.gap ?? "s2";
-  const { className: _className, style: _style, gap: _gap, ...rest } = props;
+  const align = props.align ?? "center";
+  const justify = props.justify ?? null;
+  const wrap = props.wrap ?? true;
+  const fullWidth = props.fullWidth ?? false;
 
   return (
     <div
       {...stylex.props(
         inlineStyles.base,
+        wrap ? null : inlineStyles.nowrap,
         gapStyles[gap],
-        customClassName(props.className),
-        props.style,
+        alignStyles[align],
+        justify === null ? null : justifyStyles[justify],
+        fullWidth ? inlineStyles.fullWidth : null,
       )}
       data-slot="inline"
-      {...rest}
+      {...omitInlineLayoutProps(props)}
     />
   );
+}
+
+function omitInlineLayoutProps(props: InlineProps) {
+  const {
+    gap: _gap,
+    align: _align,
+    justify: _justify,
+    wrap: _wrap,
+    fullWidth: _fullWidth,
+    ...rest
+  } = props;
+  return rest;
 }
 
 export { Inline, inlineStyles };

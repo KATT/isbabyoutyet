@@ -1,14 +1,12 @@
 # `@workspace/ui-patterns`
 
-Layout primitives styled with StyleX, for screens that should not lean on
-Tailwind spacing utilities. Uses the shared spacing tokens from
-`@workspace/ui`.
-
-App migration can keep Tailwind layout classes; reach for these when building
-new StyleX-first compositions.
+Layout and text primitives styled with StyleX. Uses shared tokens from
+`@workspace/ui`. These components do **not** accept `className` or `style`.
 
 ## Exports
 
-- `Stack` — vertical or horizontal flex with gap
-- `Box` — padding / margin wrappers
+- `Stack` — flex column/row with gap, align, justify, wrap
+- `Box` — padding / width wrappers
 - `Inline` — horizontal wrap with gap
+- `Text` — typed tone / size / weight / align
+- `VisuallyHidden` — accessible screen-reader-only text

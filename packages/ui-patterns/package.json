@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./components/*": "./src/components/*.tsx",
+    "./components/visually-hidden": "./src/components/visuallyHidden.tsx",
     "./lib/*": "./src/lib/*.ts"
   },
   "scripts": {
