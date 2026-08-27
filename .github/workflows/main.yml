@@ -77,6 +77,14 @@ jobs:
           pnpm pretest:coverage
           pnpm exec vitest run --changed "${{ github.event.pull_request.base.sha }}"
 
+      # Push: full suite without coverage so `checks` still gates merges if it is
+      # the required job. Coverage + upload stay in the parallel codecov job.
+      - name: Test (full)
+        if: github.event_name != 'pull_request'
+        run: |
+          pnpm pretest:coverage
+          pnpm exec vitest run
+
       - name: Knip
         run: pnpm knip
 
@@ -95,6 +103,9 @@ jobs:
         with:
           lfs: true
           fetch-depth: 0
+          # On PRs, start from the branch tip (not the merge commit) so coverage
+          # and Codecov patch status share the same commit SHA.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -163,7 +174,9 @@ jobs:
       - name: Restore PR head
         if: github.event_name == 'pull_request'
         run: |
-          git checkout --force "${{ github.sha }}"
+          # Measure the PR branch tip (not the ephemeral merge commit) so the
+          # lcov upload matches Codecov's pull_request.head.sha / patch gate.
+          git checkout --force "${{ github.event.pull_request.head.sha }}"
           pnpm install --frozen-lockfile
 
       - name: Full coverage (Turbo-cached)
@@ -182,6 +195,8 @@ jobs:
           files: coverage/lcov.info
           flags: unit
           name: vitest
+          # Align upload commit with the tree we measured (PR head tip, else push SHA).
+          override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
           # Prefer upload token when present; otherwise OIDC via Codecov GitHub App.
           token: ${{ secrets.CODECOV_TOKEN }}
           use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
