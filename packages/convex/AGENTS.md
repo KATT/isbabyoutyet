@@ -15,6 +15,10 @@ stacked migration PRs), read
 [`.agents/skills/convex-schema-migration/SKILL.md`](.agents/skills/convex-schema-migration/SKILL.md)
 before editing `schema.ts` or `migrations.ts`.
 
+`v.optional()` on schema fields and RPC args is a migration transient only.
+Undocumented optionals fail `no-convex-optional/no-undocumented-optional`;
+keep them only with JSDoc `@deprecated`, then backfill and require the key.
+
 <!-- convex-ai-end -->
 
 ## Demo seed

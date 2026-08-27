@@ -22,6 +22,10 @@
       "specifier": "./oxlint-plugins/no-optional.mjs"
     },
     {
+      "name": "no-convex-optional",
+      "specifier": "./oxlint-plugins/no-convex-optional.mjs"
+    },
+    {
       "name": "no-mock",
       "specifier": "./oxlint-plugins/no-mock.mjs"
     },
@@ -112,7 +116,8 @@
     "no-use-state/no-use-state": "error",
     // Always on — including apps/web/src/lib — so banned hooks cannot be
     // laundered through a local re-export barrel.
-    "no-banned-react-reexport/no-banned-react-reexport": "error"
+    "no-banned-react-reexport/no-banned-react-reexport": "error",
+    "no-convex-optional/no-undocumented-optional": "error"
   },
   "overrides": [
     {
@@ -275,6 +280,13 @@
         "react/set-state-in-effect": "off",
         "react/refs": "off",
         "react/immutability": "off"
+      }
+    },
+    {
+      // Process env validators, not schema/RPC — absence is "unset in this deploy".
+      "files": ["packages/convex/convex/convex.config.ts"],
+      "rules": {
+        "no-convex-optional/no-undocumented-optional": "off"
       }
     },
     {

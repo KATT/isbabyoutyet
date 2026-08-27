@@ -20,8 +20,11 @@ export const create = mutationWithTriggers({
     authorName: v.string(),
     message: v.string(),
     visitorId: v.string(),
+    /** @deprecated Optional until callers pass `null`. */
     userAgent: v.optional(v.string()),
+    /** @deprecated Optional until callers pass `null`. */
     locale: v.optional(v.string()),
+    /** @deprecated Optional until callers pass `null`. */
     timezone: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -104,7 +107,7 @@ export const update = mutationWithTriggers({
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
-    // The caller's own visitor id, only used to mark their posts with `isMine`
+    /** The caller's visitor id, used to mark their posts with `isMine`. @deprecated Optional until callers pass `null`. */
     visitorId: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
@@ -133,6 +136,7 @@ export const listByBaby = query({
 export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
+    /** @deprecated Optional until callers pass `null`. */
     visitorId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {

@@ -23,7 +23,7 @@ If you remove an enum literal or field from the schema in the same deploy as the
 
 | Phase                       | Action                                 | Schema                                                                                   | Migration                                                                                                              | Stack PR                         |
 | --------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc | None yet (or register idempotent strip migration in same PR)                                                           | **1/N**                          |
+| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `@deprecated` in JSDoc (`no-convex-optional/no-undocumented-optional` requires this tag) | None yet (or register idempotent strip migration in same PR)                                                           | **1/N**                          |
 | **2. Migrate**              | Strip legacy data from all rows        | Same permissive schema as phase 1                                                        | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
 | **3. Remove**               | Tighten schema and delete dead code    | Drop field from `schema.ts` / remove enum literal from validators                        | Migration already ran; no new migration                                                                                | **2/N**                          |
 
@@ -76,7 +76,7 @@ Add convex-test coverage in `migrations.test.ts`: insert a doc with legacy shape
 
 ```
 Removal migration:
-- [ ] Phase 1: validator/schema still accepts legacy rows (@deprecated JSDoc)
+- [ ] Phase 1: validator/schema still accepts legacy rows (`v.optional` + `@deprecated` JSDoc; enforced by `no-convex-optional/no-undocumented-optional`)
 - [ ] Phase 2: idempotent migration in runTableMigrations (+ HISTORICAL if gate)
 - [ ] Test in migrations.test.ts
 - [ ] PR 1/N: permissive schema + migration + deploy

@@ -69,8 +69,11 @@ export const sendNotification = internalAction({
     babyName: v.string(),
     publicId: v.string(), // Still need publicId for the URL
     status: notifiableStatusValidator,
+    /** @deprecated Optional until callers pass an explicit value or `null`. */
     customMessage: v.optional(v.union(v.string(), v.null())),
+    /** @deprecated Optional until callers pass an explicit value or `null`. */
     photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    /** @deprecated Optional until callers pass an explicit value or `null`. */
     updateId: v.optional(v.union(v.id("updates"), v.null())),
     locale: supportedLocaleValidator,
   },
