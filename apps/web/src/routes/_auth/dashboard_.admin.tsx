@@ -777,7 +777,9 @@ export function AdminDashboardView(props: {
                     {props.tab === "babies" ? props.babiesTab : null}
                   </TabsContent>
 
-                  <TabsContent value="users">{props.tab === "users" ? props.usersTab : null}</TabsContent>
+                  <TabsContent value="users">
+                    {props.tab === "users" ? props.usersTab : null}
+                  </TabsContent>
 
                   <TabsContent value="languages">
                     {props.tab === "languages" ? props.languagesTab : null}
