@@ -257,9 +257,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
 
   // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
-    milestone != null &&
-    milestone !== "none" &&
-    futureMilestones.includes(milestone)
+    milestone != null && milestone !== "none" && futureMilestones.includes(milestone)
       ? milestone
       : null;
 
@@ -769,11 +767,7 @@ function EncouragementEditForm(props: {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea
-                  aria-label={t("Edit your message")}
-                  className="min-h-20"
-                  {...field}
-                />
+                <Textarea aria-label={t("Edit your message")} className="min-h-20" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -992,7 +986,7 @@ type TimelineFeedViewProps = {
   items: TimelineItemData[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
-  fetchNextPage: () => unknown;
+  fetchNextPage: () => void;
   currentVisitorId: string;
   removeUpdate: RemoveUpdateFn;
   setAsCurrentPhoto: SetAsCurrentPhotoFn;

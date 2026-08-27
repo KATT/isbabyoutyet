@@ -93,7 +93,7 @@ async function fetchConvexInfinitePage(
     queryKey: RuntimeConvexInfiniteQueryKey;
     pageParam: unknown;
   },
-): Promise<unknown>;
+): Promise<FunctionReturnType<PaginatedQueryReference>>;
 async function fetchConvexInfinitePage(
   convexQueryClient: ConvexQueryClient,
   opts: {

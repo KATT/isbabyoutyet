@@ -4,6 +4,7 @@ import { QueryClient as QueryClientImpl } from "@tanstack/react-query";
 import { convexTest } from "convex-test";
 import { makeFunctionReference } from "convex/server";
 import type { UserIdentity } from "convex/server";
+import type { Value } from "convex/values";
 import {
   CONVEX_INFINITE_QUERY_KEY,
   convexInfiniteQueryFn,
@@ -18,14 +19,14 @@ type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;
 
 type WatchQueryHandle = {
-  localQueryResult: () => unknown;
+  localQueryResult: () => Value | undefined;
   onUpdate: (cb: () => void) => void;
 };
 
 export type IntegrationConvexClient = {
-  query: (query: unknown, args: unknown) => Promise<unknown>;
-  mutation: (mutation: unknown, args: unknown) => Promise<unknown>;
-  action: (action: unknown, args: unknown) => Promise<unknown>;
+  query: (query: unknown, args: unknown) => Promise<Value>;
+  mutation: (mutation: unknown, args: unknown) => Promise<Value>;
+  action: (action: unknown, args: unknown) => Promise<Value>;
   watchQuery: (query: unknown, args: unknown) => WatchQueryHandle;
   setAuth: (fetchToken: unknown, onChange: (authenticated: boolean) => void) => void;
   clearAuth: () => void;
@@ -52,19 +53,19 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   await registerComponents(t);
   let activeClient: ConvexTestCaller = opts.identity ? t.withIdentity(opts.identity) : t;
 
-  const watchCache = new Map<object, Map<string, unknown>>();
+  const watchCache = new Map<object, Map<string, Value>>();
   let queryClientForInvalidation: QueryClient | null = null;
 
   function runQuery(query: unknown, args: unknown) {
-    return (activeClient.query as (q: unknown, a: unknown) => Promise<unknown>)(query, args);
+    return (activeClient.query as (q: unknown, a: unknown) => Promise<Value>)(query, args);
   }
 
   function runMutation(mutation: unknown, args: unknown) {
-    return (activeClient.mutation as (m: unknown, a: unknown) => Promise<unknown>)(mutation, args);
+    return (activeClient.mutation as (m: unknown, a: unknown) => Promise<Value>)(mutation, args);
   }
 
   function runAction(action: unknown, args: unknown) {
-    return (activeClient.action as (a: unknown, args: unknown) => Promise<unknown>)(action, args);
+    return (activeClient.action as (a: unknown, args: unknown) => Promise<Value>)(action, args);
   }
 
   function invalidateConvexQueries() {
@@ -93,7 +94,7 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
     watchQuery: (query, args) => {
       let queryCache = watchCache.get(query as object);
       if (!queryCache) {
-        queryCache = new Map();
+        queryCache = new Map<string, Value>();
         watchCache.set(query as object, queryCache);
       }
       const argsKey = JSON.stringify(args ?? {});
@@ -178,14 +179,14 @@ function createIntegrationQueryFn(
     const caller = getClient();
     if (tag === "convexQuery" && typeof funcName === "string") {
       const args = context.queryKey[2] ?? {};
-      return await (caller.query as (q: unknown, a: unknown) => Promise<unknown>)(
+      return await (caller.query as (q: unknown, a: unknown) => Promise<Value>)(
         makeFunctionReference<"query">(funcName),
         args,
       );
     }
     if (tag === "convexAction" && typeof funcName === "string") {
       const args = context.queryKey[2] ?? {};
-      return await (caller.action as (a: unknown, args: unknown) => Promise<unknown>)(
+      return await (caller.action as (a: unknown, args: unknown) => Promise<Value>)(
         makeFunctionReference<"action">(funcName),
         args,
       );

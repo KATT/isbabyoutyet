@@ -435,7 +435,7 @@ test("beforeLoad 404s unknown babies", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<unknown>;
+  }) => Promise<object | void | null>;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
   const pending = beforeLoad({
@@ -460,7 +460,7 @@ test("beforeLoad redirects legacy settings links", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<unknown>;
+  }) => Promise<object | void | null>;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 
   await expect(
@@ -483,7 +483,9 @@ test("beforeLoad redirects legacy settings links", async () => {
 });
 
 test("loader does not mutate profiles for authenticated visitors", async () => {
-  const mutation = vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
+  const mutation = vi.fn<() => Promise<{ locale: string }>>(() =>
+    Promise.resolve({ locale: "en-GB" }),
+  );
   const result = await runBabyLoader(
     {
       "baby:getByPublicId": BABY_DOC,

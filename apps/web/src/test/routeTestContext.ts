@@ -17,6 +17,9 @@ export function routeContextFromHarness(harness: ConvexTestHarness): RouteTestCo
   };
 }
 
+/** beforeLoad may enrich context, return nothing, or throw (redirect/notFound). */
+type RouteBeforeLoadResult = object | void | null;
+
 export async function runRouteBeforeLoad(opts: {
   harness: ConvexTestHarness;
   route: AnyRoute;
@@ -26,7 +29,7 @@ export async function runRouteBeforeLoad(opts: {
     | ((routeOpts: {
         context: RouteTestContext;
         params: Record<string, string>;
-      }) => Promise<unknown>)
+      }) => Promise<RouteBeforeLoadResult>)
     | undefined;
   if (!beforeLoad) {
     return undefined;

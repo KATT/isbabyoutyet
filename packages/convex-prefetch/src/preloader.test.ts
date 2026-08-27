@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
-import type { FunctionReference } from "convex/server";
+import type { FunctionReference, PaginationResult } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 import { getConvexQueryPreloader } from "./preloader";
@@ -26,6 +26,8 @@ type IsSubscribedRef = FunctionReference<
   boolean
 >;
 const pushIsSubscribed = "pushSubscriptions:isSubscribed" as unknown as IsSubscribedRef;
+
+type TestInfinitePage = PaginationResult<string>;
 
 function createWrapper(queryClient: QueryClient) {
   return function Wrapper(props: { children: React.ReactNode }) {
@@ -69,7 +71,7 @@ test("fetchQueryData replaces cached data with a fresh snapshot", async () => {
 test("getConvexQueryPreloader ensures infinite pages and stores numItems", async () => {
   registerConvexInfiniteQueryClient({
     convexClient: {
-      query: vi.fn<() => Promise<unknown>>(async () => ({
+      query: vi.fn<() => Promise<TestInfinitePage>>(async () => ({
         page: ["row"],
         isDone: true,
         continueCursor: "",
@@ -111,7 +113,7 @@ test("initiateQueryData starts the fetch without awaiting and returns a data-les
 });
 
 test("initiateInfiniteQueryData starts the first page without awaiting", async () => {
-  const convexClientQuery = vi.fn<() => Promise<unknown>>(async () => ({
+  const convexClientQuery = vi.fn<() => Promise<TestInfinitePage>>(async () => ({
     page: ["row"],
     isDone: true,
     continueCursor: "",
