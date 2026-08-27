@@ -22,3 +22,34 @@ tester.run(
     ],
   },
 );
+
+tester.run(
+  "anti-slop/no-shape-in-symbol-names",
+  antiSlopPlugin.rules["no-shape-in-symbol-names"],
+  {
+    valid: ["interface UserRecord { id: string }"],
+    invalid: [
+      {
+        code: "interface UserShape { id: string }",
+        errors: [{ messageId: "forbiddenSymbolName" }],
+      },
+    ],
+  },
+);
+
+tester.run(
+  "anti-slop/no-unknown-parameters",
+  antiSlopPlugin.rules["no-unknown-parameters"],
+  {
+    valid: [
+      "function enrich(cause: unknown): void {}",
+      "function parse(value: string): void {}",
+    ],
+    invalid: [
+      {
+        code: "function parse(value: unknown): void {}",
+        errors: [{ messageId: "unknownParameter" }],
+      },
+    ],
+  },
+);
