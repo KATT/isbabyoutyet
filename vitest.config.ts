@@ -45,7 +45,7 @@ export default defineConfig({
         "**/test.setup.ts",
         "**/test.resource.ts",
       ],
-      // CI: json-summary for Turbo cache asserts; lcov for Codecov upload.
+      // CI: json-summary for the local coverage ratchet; lcov for main-push Codecov history.
       // Local: full HTML/JSON reports for browsing.
       reporter: process.env.CI
         ? ["text-summary", "json-summary", "lcov"]
