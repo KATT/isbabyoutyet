@@ -198,7 +198,10 @@
       // Peer-type bridge for better-auth vs @convex-dev/better-auth AuthClient.
       "files": ["apps/web/src/lib/auth-client-bridge.ts"],
       "rules": {
-        "typescript/consistent-type-assertions": "off"
+        "typescript/consistent-type-assertions": "off",
+        "anti-slop/no-chained-type-assertions": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-widen-then-assert": "off"
       }
     },
     {
