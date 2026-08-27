@@ -109,7 +109,9 @@ test("settings sheet log-out button invokes the injected handler", async () => {
   });
 
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
-  expect(onSignOut).toHaveBeenCalledTimes(1);
+  await vi.waitFor(() => {
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
 });
 
 test("DashboardSettingsSheet signs out through the auth adapter", async () => {
