@@ -75,6 +75,8 @@ export const webUnitProject = defineProject({
     stylex.vite({
       useCSSLayers: true,
       runtimeInjection: false,
+      // Keep StyleX compile on; prefer css-only so Vitest can exit.
+      devMode: "css-only",
     }),
     viteReact(),
   ],
