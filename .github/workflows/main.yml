@@ -80,11 +80,11 @@ jobs:
       - name: Knip
         run: pnpm knip
 
-  # Parallel with `checks`. Always full-suite coverage for Codecov (never --changed).
+  # Parallel with `checks`. Full-suite coverage for Codecov (never --changed).
   codecov:
     runs-on: ubuntu-latest
-    # PRs may run coverage twice (base + head) so Codecov has a comparison target.
-    timeout-minutes: 30
+    # Keep tight: probe+HIT should stay fast; a hang or MISS-heavy path means fix CI.
+    timeout-minutes: 5
     permissions:
       contents: read
       id-token: write
@@ -133,24 +133,46 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      # Stacked tips often have no Codecov upload on the PR base branch. Upload one
-      # so project `target: auto` can fail on coverage drops instead of
-      # "No report found to compare against".
-      - name: Coverage for PR base
+      # Project `target: auto` needs a report at pull_request.base.sha.
+      # main/push and stacked inner-PR head uploads usually already provide it.
+      # Probe (with short retries for processing races); only remeasure on miss.
+      - name: Probe Codecov for PR base report
+        id: base_report
         if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          found=false
+          for _attempt in 1 2 3; do
+            code="$(curl -sS -o /tmp/codecov-base.json -w "%{http_code}" \
+              "https://api.codecov.io/api/v2/github/${GITHUB_REPOSITORY%/*}/repos/${GITHUB_REPOSITORY#*/}/commits/${BASE_SHA}")" || code=000
+            if [[ "$code" == "200" ]]; then
+              if jq -e '.totals.coverage != null' /tmp/codecov-base.json >/dev/null; then
+                found=true
+                echo "Base ${BASE_SHA} on Codecov (coverage=$(jq -r '.totals.coverage' /tmp/codecov-base.json))"
+                break
+              fi
+              # Report accepted but still processing — retry briefly.
+            elif [[ "$code" == "404" ]]; then
+              break
+            fi
+            sleep 5
+          done
+          echo "found=${found}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Coverage for PR base (report missing)
+        if: github.event_name == 'pull_request' && steps.base_report.outputs.found == 'false'
         run: |
           git checkout --force "${{ github.event.pull_request.base.sha }}"
           pnpm install --frozen-lockfile
-          pnpm pretest:coverage
-          # Base tip may not emit lcov via config; force reporters on the CLI.
-          CI=true pnpm exec vitest run --coverage \
-            --coverage.reporter=text-summary \
-            --coverage.reporter=lcov
+          pnpm exec turbo run test:coverage
           test -f coverage/lcov.info
           cp coverage/lcov.info /tmp/base-lcov.info
+          git checkout --force "${{ github.event.pull_request.head.sha }}"
+          pnpm install --frozen-lockfile
 
       - name: Upload PR base coverage to Codecov
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.base_report.outputs.found == 'false'
         uses: codecov/codecov-action@v5
         with:
           files: /tmp/base-lcov.info
@@ -162,14 +184,6 @@ jobs:
           use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
           fail_ci_if_error: true
           verbose: true
-
-      - name: Restore PR head
-        if: github.event_name == 'pull_request'
-        run: |
-          # Measure the PR branch tip (not the ephemeral merge commit) so the
-          # lcov upload matches Codecov's pull_request.head.sha / patch gate.
-          git checkout --force "${{ github.event.pull_request.head.sha }}"
-          pnpm install --frozen-lockfile
 
       - name: Full coverage (Turbo-cached)
         run: |
