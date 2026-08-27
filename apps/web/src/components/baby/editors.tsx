@@ -54,15 +54,20 @@ type EditorFormProps = {
   onClose: () => void;
 };
 
-function EditorActions(props: { onClose: () => void; disabled: boolean }) {
+function EditorActions(props: { onClose: () => void }) {
   const { t } = useI18n();
   // Subscribe via useFormState — reading form.formState via the Proxy is not a
   // reliable re-render under the React Compiler.
   const { isSubmitting, isDirty } = useFormState();
-  const busy = isSubmitting || props.disabled;
   return (
     <div className="flex gap-2 justify-end">
-      <Button type="button" onClick={props.onClose} variant="outline" size="sm" disabled={busy}>
+      <Button
+        type="button"
+        onClick={props.onClose}
+        variant="outline"
+        size="sm"
+        disabled={isSubmitting}
+      >
         {t("Cancel")}
       </Button>
       <SubmitButton
@@ -70,7 +75,7 @@ function EditorActions(props: { onClose: () => void; disabled: boolean }) {
         IconComponent={Check}
         iconPosition="start"
         size="sm"
-        disabled={!isDirty || props.disabled}
+        disabled={!isDirty}
       >
         {t("Save")}
       </SubmitButton>
@@ -179,7 +184,7 @@ function DueDateForm(props: EditorFormProps) {
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}
       />
-      <EditorActions onClose={props.onClose} disabled={false} />
+      <EditorActions onClose={props.onClose} />
     </Form>
   );
 }
@@ -332,7 +337,7 @@ function StatusDateForm(props: {
             </AlertDialogContent>
           </AlertDialog>
         )}
-        <EditorActions onClose={props.onClose} disabled={isDeleting} />
+        <EditorActions onClose={props.onClose} />
       </div>
     </Form>
   );
@@ -403,7 +408,7 @@ function NameForm(props: EditorFormProps) {
           "Renaming may change the page address, but links you have already shared will keep working.",
         )}
       </p>
-      <EditorActions onClose={props.onClose} disabled={false} />
+      <EditorActions onClose={props.onClose} />
     </Form>
   );
 }
@@ -473,7 +478,7 @@ function JourneyForm(props: {
           }}
         />
       </div>
-      <EditorActions onClose={props.onClose} disabled={false} />
+      <EditorActions onClose={props.onClose} />
     </Form>
   );
 }
