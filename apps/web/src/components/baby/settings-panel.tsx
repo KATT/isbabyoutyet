@@ -102,6 +102,52 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
   );
 }
 
+function BabyLanguageSelect(props: {
+  value: SupportedLocale | null | undefined;
+  inheritedLocale: SupportedLocale;
+  onUpdate: BabyUpdateHandler;
+}) {
+  const { locale, t } = useI18n();
+  const inheritLabel = t("Use my profile language ({{language}})", {
+    language: getLanguageName(props.inheritedLocale, locale),
+  });
+  const languageItems = [
+    { value: "inherit", label: inheritLabel },
+    ...SUPPORTED_LOCALES.map((supportedLocale) => ({
+      value: supportedLocale,
+      label: getLanguageName(supportedLocale, locale),
+    })),
+  ];
+
+  return (
+    <Select
+      items={languageItems}
+      value={props.value ?? "inherit"}
+      onValueChange={(value) => {
+        if (value === "inherit") {
+          void props.onUpdate({ locale: null });
+        } else if (typeof value === "string" && isSupportedLocale(value)) {
+          void props.onUpdate({ locale: value });
+        }
+      }}
+    >
+      <SelectTrigger aria-label={t("Language")} size="sm">
+        <SelectValue />
+      </SelectTrigger>
+      {/* Grow beyond the trigger so long inherit labels are not clipped */}
+      <SelectContent alignItemWithTrigger={false} className="w-auto min-w-(--anchor-width)">
+        <SelectGroup>
+          {languageItems.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+}
+
 /**
  * Owner settings: page metadata and corrections. Marking milestones and
  * posting photos happens through the "Post update" composer; milestone rows
@@ -307,34 +353,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 </ItemDescription>
               </ItemContent>
               <ItemActions>
-                <Select
-                  value={props.baby.locale ?? "inherit"}
-                  onValueChange={(value) => {
-                    if (value === "inherit") {
-                      void props.onUpdate({ locale: null });
-                    } else if (typeof value === "string" && isSupportedLocale(value)) {
-                      void props.onUpdate({ locale: value });
-                    }
-                  }}
-                >
-                  <SelectTrigger aria-label={t("Language")}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent alignItemWithTrigger={false}>
-                    <SelectGroup>
-                      <SelectItem value="inherit">
-                        {t("Use my profile language ({{language}})", {
-                          language: getLanguageName(inheritedLocale, locale),
-                        })}
-                      </SelectItem>
-                      {SUPPORTED_LOCALES.map((supportedLocale) => (
-                        <SelectItem key={supportedLocale} value={supportedLocale}>
-                          {getLanguageName(supportedLocale, locale)}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+                <BabyLanguageSelect
+                  value={props.baby.locale}
+                  inheritedLocale={inheritedLocale}
+                  onUpdate={props.onUpdate}
+                />
               </ItemActions>
             </Item>
           </SettingsSection>

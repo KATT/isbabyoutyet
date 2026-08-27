@@ -1,6 +1,5 @@
 import { fireEvent, render } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BirthJourney } from "@workspace/convex/src/types";
@@ -16,7 +15,7 @@ function renderResource(ui: ReactElement) {
 
 function renderEditor(opts: {
   birthJourney: BirthJourney;
-  onBirthJourneyChange: (birthJourney: BirthJourney) => void | Promise<void>;
+  onBirthJourneyChange: (birthJourney: BirthJourney) => void;
 }) {
   return renderResource(
     <LocaleProvider locale="en-GB">
@@ -27,13 +26,6 @@ function renderEditor(opts: {
       />
     </LocaleProvider>,
   );
-}
-
-function spyOnToastErrorResource() {
-  const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
-  return makeResource(toastError, () => {
-    toastError.mockRestore();
-  });
 }
 
 test("shows the Custom chip when both pre-birth milestones are hidden", async () => {
@@ -48,10 +40,8 @@ test("shows the Custom chip when both pre-birth milestones are hidden", async ()
   expect(view.getByText("Visitors see: Baby born")).toBeTruthy();
 });
 
-test("applies toggle changes immediately", async () => {
-  const onBirthJourneyChange = vi
-    .fn<(birthJourney: BirthJourney) => Promise<void>>()
-    .mockResolvedValue(undefined);
+test("applies toggle changes immediately to the caller", async () => {
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
 
   await using view = renderEditor({
     birthJourney: "labor",
@@ -60,15 +50,11 @@ test("applies toggle changes immediately", async () => {
 
   fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
 
-  await vi.waitFor(() => {
-    expect(onBirthJourneyChange).toHaveBeenCalledWith("planned_c_section");
-  });
+  expect(onBirthJourneyChange).toHaveBeenCalledWith("planned_c_section");
 });
 
 test("hides marked milestones from visitors without deleting them", async () => {
-  const onBirthJourneyChange = vi
-    .fn<(birthJourney: BirthJourney) => Promise<void>>()
-    .mockResolvedValue(undefined);
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
 
   await using view = renderEditor({
     birthJourney: "labor",
@@ -77,14 +63,12 @@ test("hides marked milestones from visitors without deleting them", async () => 
 
   fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
 
-  await vi.waitFor(() => {
-    expect(onBirthJourneyChange).toHaveBeenCalledWith("planned_c_section");
-  });
+  expect(onBirthJourneyChange).toHaveBeenCalledWith("planned_c_section");
   expect(view.queryByRole("heading", { name: "Remove marked milestones?" })).toBeNull();
 });
 
 test("applies hospital visibility toggle", async () => {
-  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => Promise<void>>().mockResolvedValue(undefined);
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
 
   await using view = renderEditor({
     birthJourney: "labor",
@@ -93,16 +77,11 @@ test("applies hospital visibility toggle", async () => {
 
   fireEvent.click(view.getByRole("switch", { name: "Gone to hospital" }));
 
-  await vi.waitFor(() => {
-    expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
-  });
+  expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
 });
 
-test("reports a failed journey save from the editor", async () => {
-  await using toastError = spyOnToastErrorResource();
-  const onBirthJourneyChange = vi
-    .fn<(birthJourney: BirthJourney) => Promise<void>>()
-    .mockRejectedValue(new Error("Network error"));
+test("selecting a preset notifies the caller", async () => {
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
 
   await using view = renderEditor({
     birthJourney: "labor",
@@ -111,7 +90,5 @@ test("reports a failed journey save from the editor", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Home birth" }));
 
-  await vi.waitFor(() => {
-    expect(toastError).toHaveBeenCalledWith("Network error");
-  });
+  expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
 });

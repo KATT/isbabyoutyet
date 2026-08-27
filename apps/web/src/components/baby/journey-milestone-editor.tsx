@@ -8,33 +8,23 @@ import {
 } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-options";
-import { useState } from "react";
-import { toast } from "sonner";
 
 type JourneyMilestoneEditorProps = {
   birthJourney: BirthJourney;
-  onBirthJourneyChange: (birthJourney: BirthJourney) => void | Promise<void>;
+  onBirthJourneyChange: (birthJourney: BirthJourney) => void;
   idPrefix: string;
 };
 
+/**
+ * Controlled journey preset + visitor-milestone toggles.
+ * Callers own persistence (settings Save, add-baby form field, etc.).
+ */
 export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   const { t } = useI18n();
   const visibility = milestoneVisibilityForPreset(props.birthJourney);
-  const [isSaving, setIsSaving] = useState(false);
-
-  async function applyBirthJourneyChange(birthJourney: BirthJourney) {
-    setIsSaving(true);
-    try {
-      await props.onBirthJourneyChange(birthJourney);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("Failed to update journey"));
-    } finally {
-      setIsSaving(false);
-    }
-  }
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
-    void applyBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
+    props.onBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
   }
 
   function handlePresetSelect(preset: BirthJourney) {
@@ -65,7 +55,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
                 size="sm"
                 className={cn("rounded-full font-bold", selected && "pointer-events-none")}
                 aria-pressed={selected}
-                disabled={isSaving}
                 onClick={() => {
                   handlePresetSelect(option.value);
                 }}
@@ -101,7 +90,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
           <Switch
             id={`${props.idPrefix}-show-labor`}
             checked={visibility.showLabor}
-            disabled={isSaving}
             onCheckedChange={(checked) => {
               requestVisibilityChange({ ...visibility, showLabor: checked });
             }}
@@ -116,7 +104,6 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
           <Switch
             id={`${props.idPrefix}-show-hospital`}
             checked={visibility.showHospital}
-            disabled={isSaving}
             onCheckedChange={(checked) => {
               requestVisibilityChange({ ...visibility, showHospital: checked });
             }}
