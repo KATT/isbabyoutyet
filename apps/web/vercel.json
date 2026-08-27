@@ -3,5 +3,6 @@
   "buildCommand": "pnpm deploy-convex",
   "outputDirectory": ".output/public",
   "installCommand": "pnpm install",
-  "framework": null
+  "framework": null,
+  "trailingSlash": false
 }

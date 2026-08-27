@@ -1,5 +1,4 @@
-import { Form, useZodForm } from "@/components/Form";
-import { Button } from "@workspace/ui/components/button";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import {
   FormControl,
   FormField,
@@ -150,8 +149,8 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
             error: (err) =>
               err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
-          form.reset({ authorName: values.authorName, message: "" });
           await promise;
+          form.reset({ authorName: values.authorName, message: "" });
         }}
       >
         <div className="space-y-3">
@@ -187,10 +186,14 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
             )}
           />
 
-          <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-            <PaperPlaneTilt className="w-4 h-4" />
-            {form.formState.isSubmitting ? t("Sending...") : t("Send Encouragement")}
-          </Button>
+          <SubmitButton
+            form="context"
+            IconComponent={PaperPlaneTilt}
+            iconPosition="start"
+            className="w-full"
+          >
+            {t("Send Encouragement")}
+          </SubmitButton>
         </div>
       </Form>
     </div>
