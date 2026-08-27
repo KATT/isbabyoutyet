@@ -20,14 +20,15 @@ function spyOnToastErrorResource() {
 const baby: BabyData = {
   name: "Nova",
   timeZone: "Europe/London",
+  theme: null,
+  locale: null,
+  photoId: null,
   dueDate: "2026-09-01T00:00:00.000Z",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,
-  theme: null,
   laborStarted: "2026-08-10T08:00:00.000Z",
   wentToHospital: null,
   babyBorn: null,
-  photoId: null,
   milestoneVisibility: { showLabor: true, showHospital: true },
 };
 

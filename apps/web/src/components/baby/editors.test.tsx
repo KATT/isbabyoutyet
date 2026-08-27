@@ -29,6 +29,9 @@ function spyOnToastErrorResource() {
 const baby: BabyData = {
   name: "Nova",
   timeZone: "Europe/London",
+  theme: null,
+  locale: null,
+  photoId: null,
   dueDate: "2026-09-01",
   dueDateDisplayMode: "exact",
   publicDueDateText: null,

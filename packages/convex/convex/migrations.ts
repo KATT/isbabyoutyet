@@ -434,7 +434,7 @@ async function patchMissingKeys<TTable extends keyof DataModel>(
   await ctx.db.patch(opts.id, patch);
 }
 
-/** Writes omitted union/boolean keys so a later PR can drop `v.optional()`. */
+/** Writes omitted union/boolean keys so schema validators can drop `v.optional()`. */
 export async function backfillBabyOptionalKeysDoc(ctx: MutationCtx, baby: Doc<"baby">) {
   await patchMissingKeys(ctx, {
     id: baby._id,

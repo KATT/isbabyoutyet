@@ -31,6 +31,8 @@ function getDefaultBabyData(): PreviewBabyData {
     publicDueDateText: null,
     theme: null,
     timeZone: DEFAULT_TIME_ZONE,
+    locale: null,
+    photoId: null,
     laborStarted: null,
     wentToHospital: null,
     babyBorn: null,
@@ -38,7 +40,6 @@ function getDefaultBabyData(): PreviewBabyData {
     hospitalMessage: null,
     babyBornMessage: null,
     laborStartedMessage: null,
-    photoId: null,
   };
 }
 
