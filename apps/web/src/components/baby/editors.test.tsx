@@ -55,9 +55,10 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
-  expect(saveButton.disabled).toBe(false);
+  expect(saveButton.disabled).toBe(true);
 
   fireEvent.change(input, { target: { value: "  Nova Rae  " } });
+  expect(saveButton.disabled).toBe(false);
   fireEvent.click(saveButton);
 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));

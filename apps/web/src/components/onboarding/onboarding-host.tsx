@@ -1,11 +1,11 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
+import { useOnboardingUiStore } from "@/lib/onboarding-ui-store";
 import { useDelayedAction } from "@/lib/use-delayed-action";
 import { GettingStartedCard } from "./getting-started";
 import { Coachmark } from "./coachmark";
@@ -83,9 +83,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const { t } = useI18n();
   const spotlight = props.spotlight !== false;
   const progress = progressQuery.data;
-
-  const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
-  const [restartHintVisible, setRestartHintVisible] = useState(false);
+  const { snapshot: ui, store } = useOnboardingUiStore();
 
   function dismissFinishedChecklist() {
     void dismissChecklist({});
@@ -111,13 +109,13 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
     spotlight &&
     showChecklist &&
     nextStep &&
-    activeCoachmarkStepId === nextStep.id &&
+    ui.activeCoachmarkStepId === nextStep.id &&
     nextStep.surface === props.surface;
 
   const coachmarkTargetId = nextStep?.targetId;
   const coachmarkTitle = nextStep ? t(nextStep.title) : "";
   const coachmarkDescription = nextStep ? t(nextStep.description) : "";
-  const showRestartHint = props.surface === "dashboard" && restartHintVisible;
+  const showRestartHint = props.surface === "dashboard" && ui.restartHintVisible;
 
   return (
     <>
@@ -133,7 +131,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
               await dismissChecklist({});
               if (props.surface === "dashboard") {
                 window.scrollTo({ top: 0, behavior: "auto" });
-                setRestartHintVisible(true);
+                store.setRestartHintVisible(true);
               }
             })();
           }}
@@ -152,7 +150,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
             }
             const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
             if (step) {
-              setActiveCoachmarkStepId(step.id);
+              store.setActiveCoachmarkStepId(step.id);
               scrollToTourTarget(step.targetId);
             }
           }}
@@ -171,7 +169,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           onComplete={() => {
             void completeStep({ stepId: nextStep.id });
           }}
-          onDismiss={() => setActiveCoachmarkStepId(null)}
+          onDismiss={() => store.setActiveCoachmarkStepId(null)}
         />
       ) : null}
 
@@ -182,7 +180,7 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           description={t("Use this sparkle button to bring the guide back anytime.")}
           completeOnDismiss={undefined}
           onComplete={undefined}
-          onDismiss={() => setRestartHintVisible(false)}
+          onDismiss={() => store.setRestartHintVisible(false)}
         />
       ) : null}
     </>

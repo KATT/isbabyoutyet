@@ -10,11 +10,13 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
-import { useState } from "react";
+import { createDismissedIdsStore } from "@/lib/use-dismissed-ids";
 
 type HomepageDemoToastProps = {
   publicId: string;
 };
+
+const homepageDemoDismissals = createDismissedIdsStore();
 
 /**
  * Persistent notice on the public homepage demo baby so visitors know they
@@ -22,8 +24,8 @@ type HomepageDemoToastProps = {
  */
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
   const { t } = useI18n();
-  const [dismissedPublicId, setDismissedPublicId] = useState<string | null>(null);
-  if (!isHomepageDemoPublicId(props.publicId) || dismissedPublicId === props.publicId) return null;
+  const dismissed = homepageDemoDismissals.useIsDismissed(props.publicId);
+  if (!isHomepageDemoPublicId(props.publicId) || dismissed) return null;
 
   return (
     <aside className="fixed bottom-4 left-4 z-40 max-w-[calc(100vw-2rem)]" aria-live="polite">
@@ -45,7 +47,7 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
             variant="ghost"
             size="icon"
             aria-label={t("Hide tip")}
-            onClick={() => setDismissedPublicId(props.publicId)}
+            onClick={() => homepageDemoDismissals.dismiss(props.publicId)}
           >
             <X />
           </Button>

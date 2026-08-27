@@ -85,6 +85,10 @@ function createSubscribe(deps: WatchDeps) {
  * by ConvexQueryClient yet).
  *
  * Package-internal — used by {@link usePreloadedConvexInfiniteQuery} only.
+ *
+ * Uses render-time useState adjustment (React’s “adjusting state when props
+ * change” pattern) so subscribe identity stays stable without reading refs
+ * during render (banned by react/refs).
  */
 export function useLiveConvexInfinitePages(opts: {
   queryKey: QueryKey;

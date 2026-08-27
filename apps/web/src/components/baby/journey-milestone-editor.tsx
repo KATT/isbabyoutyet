@@ -8,7 +8,7 @@ import {
 } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-options";
-import { useState } from "react";
+import { useTransition } from "react";
 import { toast } from "sonner";
 
 type JourneyMilestoneEditorProps = {
@@ -20,21 +20,20 @@ type JourneyMilestoneEditorProps = {
 export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
   const { t } = useI18n();
   const visibility = milestoneVisibilityForPreset(props.birthJourney);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, startSaveTransition] = useTransition();
 
-  async function applyBirthJourneyChange(birthJourney: BirthJourney) {
-    setIsSaving(true);
-    try {
-      await props.onBirthJourneyChange(birthJourney);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : t("Failed to update journey"));
-    } finally {
-      setIsSaving(false);
-    }
+  function applyBirthJourneyChange(birthJourney: BirthJourney) {
+    startSaveTransition(async () => {
+      try {
+        await props.onBirthJourneyChange(birthJourney);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : t("Failed to update journey"));
+      }
+    });
   }
 
   function requestVisibilityChange(nextVisibility: MilestoneVisibility) {
-    void applyBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
+    applyBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
   }
 
   function handlePresetSelect(preset: BirthJourney) {

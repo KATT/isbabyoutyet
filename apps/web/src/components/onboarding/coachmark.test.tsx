@@ -101,6 +101,45 @@ test("appears when its target mounts after the coachmark", async () => {
   });
 });
 
+test("hides the tip while the target has a zero-size rect", async () => {
+  const target = document.createElement("button");
+  target.setAttribute("data-tour-id", "collapsed-target");
+  target.scrollIntoView = vi.fn<() => void>();
+  let rect = { top: 40, left: 40, width: 0, height: 0, bottom: 40, right: 40 };
+  Object.defineProperty(target, "getBoundingClientRect", {
+    value: () => rect,
+  });
+  document.body.appendChild(target);
+  await using _target = makeResource({}, () => target.remove());
+
+  await using _view = renderResource(
+    <Coachmark
+      targetId="collapsed-target"
+      title="Collapsed target"
+      description="Should stay hidden until sized."
+      onDismiss={() => undefined}
+      completeOnDismiss={undefined}
+      onComplete={undefined}
+    />,
+  );
+
+  expect(screen.queryByText("Collapsed target")).toBeNull();
+
+  rect = { top: 40, left: 40, width: 80, height: 32, bottom: 72, right: 120 };
+  window.dispatchEvent(new Event("resize"));
+
+  await vi.waitFor(() => {
+    expect(screen.getByText("Collapsed target")).toBeTruthy();
+  });
+
+  rect = { top: 40, left: 40, width: 0, height: 0, bottom: 40, right: 40 };
+  window.dispatchEvent(new Event("resize"));
+
+  await vi.waitFor(() => {
+    expect(screen.queryByText("Collapsed target")).toBeNull();
+  });
+});
+
 test("uses a bounded mobile card on narrow viewports", async () => {
   const matchMediaDescriptor = Object.getOwnPropertyDescriptor(window, "matchMedia");
   await using _matchMedia = makeResource({}, () => {

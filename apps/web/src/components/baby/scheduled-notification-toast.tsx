@@ -10,7 +10,6 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
-import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
@@ -22,6 +21,7 @@ import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useTimedTransition } from "@/lib/use-delayed-action";
+import { useCurrentSecond } from "@/lib/use-current-second";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationsResult = Exclude<
@@ -35,19 +35,6 @@ type ScheduledNotificationToastProps = {
   notifications: PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>;
   subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
-
-function subscribeToCurrentSecond(notify: () => void) {
-  const interval = window.setInterval(notify, 1000);
-  return () => window.clearInterval(interval);
-}
-
-function getCurrentSecond() {
-  return Math.floor(Date.now() / 1000);
-}
-
-function useCurrentSecond() {
-  return useSyncExternalStore(subscribeToCurrentSecond, getCurrentSecond, () => null);
-}
 
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
   const notificationsQuery = usePreloadedConvexQuery(
@@ -64,8 +51,9 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   );
   const subscriptionCount =
     subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
-  const currentSecond = useCurrentSecond();
-  if (currentSecond === null || subscriptionCount === 0) return null;
+  const tickEnabled = subscriptionCount > 0 && notifications.length > 0;
+  const currentSecond = useCurrentSecond(tickEnabled);
+  if (!tickEnabled || currentSecond === null) return null;
 
   const currentTime = currentSecond * 1000;
 
@@ -145,13 +133,11 @@ type NotificationToastContentProps = {
 
 function NotificationToastContent(props: NotificationToastContentProps) {
   const { t } = useI18n();
-  const [cancelled, setCancelled] = useState(false);
   const seconds = Math.max(0, Math.ceil((props.scheduledFor - props.currentTime) / 1000));
 
   const cancelMutation = useTanstackMutation({
     mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
     onSuccess: () => {
-      setCancelled(true);
       toast.success(t("Notification cancelled"));
     },
     onError: (error) => {
@@ -159,7 +145,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
     },
   });
 
-  if (cancelled) return null;
+  if (cancelMutation.isSuccess) return null;
 
   return (
     <Item variant="outline" className="min-w-[300px] shadow-lg bg-background">

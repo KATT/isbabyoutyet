@@ -1,5 +1,40 @@
 # Agent notes
 
+## React hooks policy (`useEffect` / local state)
+
+Feature code under `apps/web/src/components` and `apps/web/src/routes` must not
+use `useEffect` / `useLayoutEffect`, local-state hooks (`useState`,
+`useReducer`, `useActionState`, `useOptimistic`), or `useSyncExternalStore`.
+Prefer:
+
+- **URL / nested routes** for shareable UI (overlays, tabs, lightboxes)
+- **Queries / mutations / `useTransition`** for server data and pending UI
+- **Uncontrolled triggers** (`PopoverTrigger`, `DialogTrigger`, `DrawerTrigger`)
+  for settings editors and similar ephemeral open/close
+
+### `apps/web/src/lib` audited seams
+
+Lib may use effects, local state, and `useSyncExternalStore` when the hook is a
+**reusable seam** that owns cleanup for an external system (timers, observers,
+blob URLs, module stores). Oxlint exemptions apply only to `use-*` hooks plus
+`onboarding-ui-store.ts`, `overlay-nav.ts`, and `convexAuthHandoff.ts` — not
+the whole `lib/` tree.
+
+Checklist before adding a lib hook with `useEffect` / `useState` /
+`useSyncExternalStore`:
+
+1. **Reusable** — at least one clear consumer pattern, not a single feature’s
+   private lifecycle parked to dodge the ban
+2. **Documented** — file comment states what external system it syncs
+3. **Tested** when timing or subscription behavior is non-trivial
+4. **No re-export** of banned React hooks (`no-banned-react-reexport`)
+5. **Latest-callback refs** — write `ref.current = latest` during render (same
+   idiom across timing/observer hooks); do not use a sync effect solely to
+   refresh the ref
+
+`packages/ui` (vendored shadcn) is exempt. First-party packages stay under the
+rules; rare file overrides need a comment citing the concrete constraint.
+
 ## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`), post-update (`/baby/$publicId/post`),

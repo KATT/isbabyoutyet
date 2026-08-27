@@ -1,8 +1,10 @@
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Connects an IntersectionObserver event directly to an action while React
- * owns subscription setup and cleanup through useSyncExternalStore.
+ * Connects an IntersectionObserver event directly to an action. Lives in lib
+ * so the effect may own observer setup/cleanup; `onIntersect` is kept fresh
+ * via a latest-callback ref written during render (same idiom as sibling
+ * timing hooks).
  */
 export function useIntersectionAction(opts: {
   enabled: boolean;
@@ -10,25 +12,24 @@ export function useIntersectionAction(opts: {
   threshold: number;
 }) {
   const [node, setNode] = useState<HTMLElement | null>(null);
-  function subscribe(_notify: () => void) {
+  const onIntersectRef = useRef(opts.onIntersect);
+  onIntersectRef.current = opts.onIntersect;
+
+  useEffect(() => {
     if (!opts.enabled || node === null || typeof IntersectionObserver === "undefined") {
-      return () => undefined;
+      return;
     }
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting) {
-          opts.onIntersect();
+          onIntersectRef.current();
         }
       },
       { threshold: opts.threshold },
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }
-  useSyncExternalStore(
-    subscribe,
-    () => 0,
-    () => 0,
-  );
+  }, [opts.enabled, opts.threshold, node]);
+
   return setNode;
 }
