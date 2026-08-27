@@ -467,9 +467,6 @@ importers:
       oxlint:
         specifier: 'catalog:'
         version: 1.79.0
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0
