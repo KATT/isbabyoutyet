@@ -1,0 +1,23 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "base-nova",
+  "rsc": false,
+  "tsx": true,
+  "tailwind": {
+    "config": "",
+    "css": "src/styles/globals.css",
+    "baseColor": "neutral",
+    "cssVariables": true
+  },
+  "iconLibrary": "lucide",
+  "aliases": {
+    "components": "@workspace/ui-cssinjs/components",
+    "utils": "@workspace/ui-cssinjs/lib/utils",
+    "hooks": "@workspace/ui-cssinjs/hooks",
+    "lib": "@workspace/ui-cssinjs/lib",
+    "ui": "@workspace/ui-cssinjs/components"
+  },
+  "registries": {
+    "@stylex": "https://www.shadcn-cssinjs.com/r/{name}.json"
+  }
+}

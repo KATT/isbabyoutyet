@@ -2,6 +2,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, defineProject } from "vitest/config";
 import viteReact from "@vitejs/plugin-react";
 import viteTsConfigPaths from "vite-tsconfig-paths";
+import stylex from "@stylexjs/unplugin";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommand } from "vitest/node";
 
@@ -71,6 +72,11 @@ export const webUnitProject = defineProject({
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
+    stylex.vite({
+      useCSSLayers: true,
+      runtimeInjection: false,
+      externalPackages: ["@workspace/ui-cssinjs"],
+    }),
     viteReact(),
   ],
   test: {
@@ -96,7 +102,7 @@ export const webUnitProject = defineProject({
     server: {
       deps: {
         // Needed when web tests pull in convex-test + the table-history component
-        inline: ["convex-table-history"],
+        inline: ["convex-table-history", "@workspace/ui-cssinjs", "@stylexjs/stylex"],
       },
     },
   },

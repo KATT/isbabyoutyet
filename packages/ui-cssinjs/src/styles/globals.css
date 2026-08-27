@@ -1,0 +1,110 @@
+/**
+ * Theme CSS for `@workspace/ui-cssinjs`.
+ *
+ * During the parallel migration, apps may still load `@workspace/ui/globals.css`
+ * for Tailwind + the same CSS variables. These variables are duplicated here so
+ * StyleX tokens (`tokens.stylex.ts`) resolve identically once this package owns
+ * theming alone.
+ *
+ * StyleX component CSS is injected by `@stylexjs/unplugin` into the Vite CSS
+ * graph — no `@stylex;` PostCSS directive is required with the Vite adapter.
+ */
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --radius: 0.5rem;
+}
+
+:root {
+  --background: oklch(0.9883 0.0058 84.5662);
+  --foreground: oklch(0.1371 0.036 258.5258);
+  --card: oklch(0.9883 0.0058 84.5662);
+  --card-foreground: oklch(0.1371 0.036 258.5258);
+  --popover: oklch(0.9883 0.0058 84.5662);
+  --popover-foreground: oklch(0.1371 0.036 258.5258);
+  --primary: oklch(0.7667 0.1581 68.4475);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9354 0.0196 84.5902);
+  --secondary-foreground: oklch(0.1371 0.036 258.5258);
+  --muted: oklch(0.9648 0.0049 84.5642);
+  --muted-foreground: oklch(0.5547 0.0407 257.4404);
+  --accent: oklch(0.9054 0.1156 91.5262);
+  --accent-foreground: oklch(0.1371 0.036 258.5258);
+  --destructive: oklch(0.6368 0.2078 25.3259);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.9293 0.0098 84.5761);
+  --input: oklch(0.9293 0.0098 84.5761);
+  --ring: oklch(0.7667 0.1581 68.4475);
+  --sidebar: oklch(0.9715 0.0158 84.5852);
+  --sidebar-foreground: oklch(0.1371 0.036 258.5258);
+  --sidebar-primary: oklch(0.7454 0.1652 64.8097);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.8885 0.1338 91.0632);
+  --sidebar-accent-foreground: oklch(0.1371 0.036 258.5258);
+  --sidebar-border: oklch(0.8935 0.0149 84.5857);
+  --sidebar-ring: oklch(0.7454 0.1652 64.8097);
+  --radius: 0.5rem;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: oklch(0.1371 0.036 258.5258);
+  --foreground: oklch(0.9883 0.0058 84.5662);
+  --card: oklch(0.1371 0.036 258.5258);
+  --card-foreground: oklch(0.9883 0.0058 84.5662);
+  --popover: oklch(0.1371 0.036 258.5258);
+  --popover-foreground: oklch(0.9883 0.0058 84.5662);
+  --primary: oklch(0.7667 0.1581 68.4475);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.269 0.028 258.5);
+  --secondary-foreground: oklch(0.9883 0.0058 84.5662);
+  --muted: oklch(0.269 0.028 258.5);
+  --muted-foreground: oklch(0.708 0.02 258);
+  --accent: oklch(0.269 0.028 258.5);
+  --accent-foreground: oklch(0.9883 0.0058 84.5662);
+  --destructive: oklch(0.6368 0.2078 25.3259);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.7667 0.1581 68.4475);
+  --sidebar: oklch(0.205 0.03 258);
+  --sidebar-foreground: oklch(0.9883 0.0058 84.5662);
+  --sidebar-primary: oklch(0.7454 0.1652 64.8097);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.269 0.028 258.5);
+  --sidebar-accent-foreground: oklch(0.9883 0.0058 84.5662);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.7454 0.1652 64.8097);
+}

@@ -172,6 +172,24 @@
       }
     },
     {
+      // StyleX registry components (shadcn-cssinjs) — same carve-out as Tailwind ui.
+      "files": ["packages/ui-cssinjs/src/**"],
+      "rules": {
+        "eslint/max-params": "off",
+        "eslint/no-shadow": "off",
+        "eslint/no-underscore-dangle": "off",
+        "no-use-effect/no-use-effect": "off",
+        "no-use-state/no-use-state": "off",
+        "react-compiler/no-manual-memoization": "off",
+        "react/react-in-jsx-scope": "off",
+        "react/no-unstable-nested-components": "off",
+        "react/set-state-in-effect": "off",
+        "react/exhaustive-effect-dependencies": "off",
+        "react/immutability": "off",
+        "react-hooks/exhaustive-deps": "off"
+      }
+    },
+    {
       // Audited React-hook seams under lib (not the whole lib directory).
       // Timers/observers/stores may use effects, local state, and latest-callback
       // refs written during render. Feature components stay banned.

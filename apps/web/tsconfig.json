@@ -28,7 +28,8 @@
         "../../packages/convex-prefetch/src/test-helpers.ts"
       ],
       "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
-      "@workspace/ui/*": ["../../packages/ui/src/*"]
+      "@workspace/ui/*": ["../../packages/ui/src/*"],
+      "@workspace/ui-cssinjs/*": ["../../packages/ui-cssinjs/src/*"]
     }
   }
 }
