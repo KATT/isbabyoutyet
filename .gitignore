@@ -4,6 +4,7 @@ coverage
 playwright-report
 test-results
 .turbo
+.vitest-affected
 dist
 dist-ssr
 *.local

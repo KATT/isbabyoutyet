@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -44,6 +45,19 @@ jobs:
           restore-keys: |
             vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
 
+      - name: Cache vitest-affected graphs
+        uses: actions/cache@v4
+        with:
+          path: |
+            .vitest-affected
+            apps/web/.vitest-affected
+            packages/*/.vitest-affected
+            oxlint-plugins/.vitest-affected
+          key: vitest-affected-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            vitest-affected-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
+            vitest-affected-${{ runner.os }}-
+
       - name: Cache Turborepo tasks
         uses: actions/cache@v4
         with:
@@ -59,15 +73,6 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      - name: Restore main coverage baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
-        with:
-          path: .coverage-baseline
-          key: coverage-main-${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            coverage-main-
-
       - name: Typecheck scripts
         run: pnpm typecheck:scripts
 
@@ -80,28 +85,47 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test coverage
+      # PRs: package-level vitest-affected (root multi-project mode skips selection).
+      - name: Test affected packages
+        if: github.event_name == 'pull_request'
+        env:
+          VITEST_AFFECTED_REF: ${{ github.event.pull_request.base.sha }}
+        run: pnpm test:affected
+
+      # main/push: full suite + Turbo coverage cache for the baseline.
+      - name: Test coverage (full)
+        if: github.event_name != 'pull_request'
+        env:
+          VITEST_AFFECTED_DISABLED: "1"
         run: pnpm exec turbo run test:coverage --summarize
 
       - name: Report Turbo coverage cache
-        if: always()
+        if: github.event_name != 'pull_request' && always()
         run: |
           summary="$(ls -t .turbo/runs/*.json | head -1)"
           jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
           test -f coverage/coverage-summary.json
 
+      - name: Report vitest-affected decisions
+        if: github.event_name == 'pull_request' && always()
+        run: |
+          shopt -s nullglob
+          files=(.vitest-affected/stats.jsonl apps/web/.vitest-affected/stats.jsonl packages/*/.vitest-affected/stats.jsonl oxlint-plugins/.vitest-affected/stats.jsonl)
+          if (( ${#files[@]} == 0 )); then
+            echo "::notice::No vitest-affected stats yet (graphs build on first full package run)."
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "::notice title=vitest-affected $(dirname "$f")::$(tail -n 1 "$f")"
+          done
+
       - name: Knip
         run: pnpm knip
 
-      - name: Compare coverage with main
+      - name: Skip coverage compare on selective PR runs
         if: github.event_name == 'pull_request'
         run: |
-          if [[ ! -f .coverage-baseline/coverage-summary.json ]]; then
-            echo "::notice::No main coverage baseline is cached yet; the first green main run will create one."
-            exit 0
-          fi
-
-          pnpm coverage:compare
+          echo "::notice::Skipping coverage compare: PR runs use vitest-affected selection. Full-suite baseline is updated on main pushes only."
 
       - name: Prepare main coverage baseline
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

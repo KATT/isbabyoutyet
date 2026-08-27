@@ -13,7 +13,8 @@
     "format": "oxfmt && oxlint --fix",
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:affected": "vitest run"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.101.4",

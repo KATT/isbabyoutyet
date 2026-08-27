@@ -24,6 +24,10 @@
       "dependsOn": ["^build"]
     },
     "test": {},
+    "test:affected": {
+      "cache": false,
+      "env": ["CI", "VITEST_AFFECTED", "VITEST_AFFECTED_REF", "VITEST_AFFECTED_DISABLED"]
+    },
     "lint": {
     },
     "lint-fix": {

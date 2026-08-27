@@ -147,7 +147,9 @@ export function AddBabyPageView(props: {
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormDescription>
-                        {t("Optional — leave blank for now. You can change the time later in settings.")}
+                        {t(
+                          "Optional — leave blank for now. You can change the time later in settings.",
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

@@ -1,6 +1,8 @@
-import { defineProject } from "vitest/config";
+import { defineConfig } from "vitest/config";
+import { createVitestAffectedPlugin } from "../../scripts/createVitestAffectedPlugin.ts";
 
-export default defineProject({
+export default defineConfig({
+  plugins: [createVitestAffectedPlugin()],
   test: {
     name: "convex",
     // Approximate the Convex runtime better than node
