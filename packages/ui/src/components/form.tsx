@@ -93,9 +93,9 @@ function FormItem(props: FormItemProps) {
     <FormItemContext.Provider value={{ id }}>
       <div
         data-slot="form-item"
+        {...props}
         className={stylexProps.className}
         style={stylexProps.style}
-        {...props}
       />
     </FormItemContext.Provider>
   );
@@ -144,9 +144,9 @@ function FormDescription(props: FormDescriptionProps) {
     <p
       data-slot="form-description"
       id={formDescriptionId}
+      {...props}
       className={stylexProps.className}
       style={stylexProps.style}
-      {...props}
     />
   );
 }
@@ -166,9 +166,9 @@ function FormMessage(props: FormMessageProps) {
     <p
       data-slot="form-message"
       id={formMessageId}
+      {...props}
       className={stylexProps.className}
       style={stylexProps.style}
-      {...props}
     >
       {body}
     </p>

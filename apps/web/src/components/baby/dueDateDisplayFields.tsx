@@ -61,7 +61,8 @@ export function DueDateDisplayFields<
   });
 
   return (
-    <FormItem {...stylex.props(styles.root)}>
+    <div {...stylex.props(styles.root)}>
+      <FormItem>
       <Text
         as="div"
         size="sm"
@@ -131,5 +132,6 @@ export function DueDateDisplayFields<
         </div>
       </div>
     </FormItem>
+    </div>
   );
 }

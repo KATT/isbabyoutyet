@@ -72,11 +72,13 @@ export function ShowExactDueDateToggleField<
       control={props.control}
       name={props.name}
       render={(renderProps) => (
-        <FormItem {...stylex.props(styles.item)}>
+        <FormItem>
+          <div {...stylex.props(styles.item)}>
           <ShowExactDueDateToggleRow
             checked={renderProps.field.value}
             onCheckedChange={renderProps.field.onChange}
           />
+          </div>
         </FormItem>
       )}
     />
