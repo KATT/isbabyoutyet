@@ -127,7 +127,14 @@ export function SubmitButton<TFieldValues extends FieldValues>(
     throw new Error("SubmitButton must be used within a Form or have a form prop");
   }
 
-  const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
+  const {
+    form: formProp,
+    IconComponent,
+    iconPosition,
+    disabled,
+    children,
+    ...buttonProps
+  } = props;
 
   const icon = (
     <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
