@@ -259,6 +259,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   });
   const isPosting = form.formState.isSubmitting;
 
+  // oxlint-disable-next-line no-rhf-watch/no-rhf-watch -- Replaced with useWatch in stack 3/3.
   const draft = form.watch();
 
   // Guard against a stale selection: the status may have advanced from
