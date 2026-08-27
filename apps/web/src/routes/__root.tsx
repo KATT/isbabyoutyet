@@ -32,6 +32,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
+import { isPlainObject, isString } from "@workspace/convex/src/runtimeGuards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
@@ -190,14 +191,10 @@ export function contextLocale<TContext>(context: TContext): SupportedLocale | un
     return undefined;
   }
   const locale = context.locale;
-  if (locale === null || locale === undefined || locale === true || locale === false) {
+  if (!isString(locale) || !isSupportedLocale(locale)) {
     return undefined;
   }
-  const localeText = `${locale}`;
-  if (localeText !== locale || !isSupportedLocale(localeText)) {
-    return undefined;
-  }
-  return localeText;
+  return locale;
 }
 
 export function contextToken<TContext>(context: TContext) {
@@ -208,15 +205,14 @@ export function contextToken<TContext>(context: TContext) {
   if (token === null) {
     return token;
   }
-  if (token === undefined || token === true || token === false) {
+  if (!isString(token)) {
     return undefined;
   }
-  const tokenText = `${token}`;
-  return tokenText === token ? tokenText : undefined;
+  return token;
 }
 
 function isPlainContext<TContext>(context: TContext): context is TContext & object {
-  return Object.prototype.toString.call(context) === "[object Object]";
+  return isPlainObject(context);
 }
 
 // better-auth and @convex-dev/better-auth currently expose structurally

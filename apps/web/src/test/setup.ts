@@ -7,6 +7,8 @@
 
 import { webcrypto } from "node:crypto";
 
+import { isFunction } from "@workspace/convex/src/runtimeGuards";
+
 // jsdom's SubtleCrypto rejects ArrayBuffers from Blob#arrayBuffer(); route storage
 // hashing in convex-test through Node's webcrypto instead.
 const nodeDigest = webcrypto.subtle.digest.bind(webcrypto.subtle);
@@ -23,7 +25,7 @@ subtle.digest = (algorithm, data) => {
   return nodeDigest(algorithm, bytes);
 };
 
-if (Object.prototype.toString.call(window.matchMedia) !== "[object Function]") {
+if (!isFunction(window.matchMedia)) {
   window.matchMedia = (query: string) => ({
     matches: false,
     media: query,
@@ -45,17 +47,17 @@ class StubObserver {
   }
 }
 
-if (Object.prototype.toString.call(window.IntersectionObserver) !== "[object Function]") {
+if (!isFunction(window.IntersectionObserver)) {
   window.IntersectionObserver = StubObserver as unknown as typeof IntersectionObserver;
 }
 
-if (Object.prototype.toString.call(window.ResizeObserver) !== "[object Function]") {
+if (!isFunction(window.ResizeObserver)) {
   window.ResizeObserver = StubObserver as unknown as typeof ResizeObserver;
 }
 
 // jsdom leaves Element#scrollIntoView unimplemented; coachmarks / tour targets
 // call it and would otherwise throw into the router error boundary.
 function stubScrollIntoView(this: Element) {}
-if (Object.prototype.toString.call(Element.prototype.scrollIntoView) !== "[object Function]") {
+if (!isFunction(Element.prototype.scrollIntoView)) {
   Element.prototype.scrollIntoView = stubScrollIntoView;
 }

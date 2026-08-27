@@ -15,6 +15,7 @@ import { preloadedConvexQueryOptions } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { isFunction } from "@workspace/convex/src/runtimeGuards";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { Button } from "@workspace/ui/components/button";
@@ -368,8 +369,7 @@ function getIOSStatus() {
   }
 
   const isStandalone =
-    (Object.prototype.toString.call(window.matchMedia) === "[object Function]" &&
-      window.matchMedia("(display-mode: standalone)").matches) ||
+    (isFunction(window.matchMedia) && window.matchMedia("(display-mode: standalone)").matches) ||
     (hasStandaloneFlag(navigator) && navigator.standalone === true);
 
   return { isIOS: true, isStandalone };

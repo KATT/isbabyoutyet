@@ -1,4 +1,5 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
+import { isNumber, isString } from "@workspace/convex/src/runtimeGuards";
 import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
@@ -10,21 +11,21 @@ function imageSrcKey(src: BlurImageProps["src"]) {
   if (src === undefined) {
     return "";
   }
-  // Only plain string URLs are load-state keys (Blob/srcset objects stringify differently).
-  const key = `${src}`;
-  return key === src ? key : "";
+  return isString(src) ? src : "";
 }
 
 function numericDimension(value: BlurImageProps["width"] | BlurImageProps["height"]) {
   if (value === undefined) {
     return undefined;
   }
-  const asText = `${value}`;
-  if (asText === value) {
+  if (isString(value)) {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) ? parsed : undefined;
   }
-  return Number(asText);
+  if (isNumber(value)) {
+    return value;
+  }
+  return undefined;
 }
 
 function placeholderObjectFit(props: BlurImageProps) {

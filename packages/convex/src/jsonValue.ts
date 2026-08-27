@@ -1,7 +1,9 @@
 /**
- * JSON value decoding without runtime `typeof` representation checks.
+ * JSON value decoding without scattering runtime representation checks.
  * Prefer these parsers at I/O boundaries, then branch on the domain value.
  */
+
+import { isBoolean, isNumber, isPlainObject, isString } from "./runtimeGuards.js";
 
 export type JsonValue =
   | null
@@ -13,53 +15,41 @@ export type JsonValue =
 
 export type JsonObject = { readonly [key: string]: JsonValue };
 
-function tagOf(value: JsonValue | null | undefined) {
-  return Object.prototype.toString.call(value);
+function isJsonString(value: JsonValue): value is string {
+  return isString(value);
+}
+
+function isJsonNumber(value: JsonValue): value is number {
+  return isNumber(value);
+}
+
+function isJsonBoolean(value: JsonValue): value is boolean {
+  return isBoolean(value);
 }
 
 export function isJsonObjectValue<TValue>(value: TValue): value is TValue & JsonObject {
-  return Object.prototype.toString.call(value) === "[object Object]";
+  return isPlainObject(value);
 }
 
 export function parseJsonString(value: JsonValue): string | null {
-  if (
-    value === null ||
-    value === true ||
-    value === false ||
-    Array.isArray(value) ||
-    tagOf(value) === "[object Object]"
-  ) {
+  if (!isJsonString(value)) {
     return null;
   }
-  const asText = `${value}`;
-  if (asText !== value) {
-    return null;
-  }
-  return asText;
+  return value;
 }
 
 export function parseJsonNumber(value: JsonValue): number | null {
-  if (
-    value === null ||
-    value === true ||
-    value === false ||
-    Array.isArray(value) ||
-    tagOf(value) === "[object Object]"
-  ) {
+  if (!isJsonNumber(value)) {
     return null;
   }
-  const asText = `${value}`;
-  if (asText === value) {
-    return null;
-  }
-  return Number(asText);
+  return value;
 }
 
 export function parseJsonBoolean(value: JsonValue): boolean | null {
-  if (value === true || value === false) {
-    return value;
+  if (!isJsonBoolean(value)) {
+    return null;
   }
-  return null;
+  return value;
 }
 
 /** Decode a loosely typed adapter/API field that should be a string when present. */

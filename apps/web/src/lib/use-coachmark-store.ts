@@ -1,4 +1,5 @@
 import { useRef, useState, useSyncExternalStore } from "react";
+import { isFunction } from "@workspace/convex/src/runtimeGuards";
 
 type Rect = {
   top: number;
@@ -15,7 +16,7 @@ type CoachmarkSnapshot = {
 };
 
 function mobileMediaQuery() {
-  if (Object.prototype.toString.call(window.matchMedia) !== "[object Function]") {
+  if (!isFunction(window.matchMedia)) {
     return null;
   }
   return window.matchMedia("(max-width: 767px)");

@@ -205,6 +205,16 @@
       }
     },
     {
+      // Central runtime representation guards for unparsed external values.
+      "files": ["**/runtimeGuards.ts"],
+      "rules": {
+        "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off"
+      }
+    },
+    {
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/**"],
       "rules": {

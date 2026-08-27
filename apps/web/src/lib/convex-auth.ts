@@ -2,6 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { isFunction, isPlainObject } from "@workspace/convex/src/runtimeGuards";
 import { authClient } from "./auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
@@ -71,20 +72,17 @@ export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionA
     return undefined;
   }
   const session = atoms.session;
-  if (Object.prototype.toString.call(session) !== "[object Object]") {
+  if (!isPlainObject(session)) {
     return undefined;
   }
-  if (
-    !("subscribe" in session) ||
-    Object.prototype.toString.call(session.subscribe) !== "[object Function]"
-  ) {
+  if (!("subscribe" in session) || !isFunction(session.subscribe)) {
     return undefined;
   }
   const subscribe = session.subscribe;
   return {
     subscribe: (listener) => {
       const unsubscribe = subscribe.call(session, listener);
-      if (Object.prototype.toString.call(unsubscribe) === "[object Function]") {
+      if (isFunction(unsubscribe)) {
         return unsubscribe;
       }
       return () => {};

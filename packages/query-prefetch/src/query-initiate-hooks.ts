@@ -1,4 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { isFunction } from "@workspace/convex/src/runtimeGuards";
 import type {
   AnyQueryOptions,
   InitiatedInfiniteQuery,
@@ -66,8 +67,7 @@ function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfinit
   return (
     "initialPageParam" in options &&
     "getNextPageParam" in options &&
-    (Object.prototype.toString.call(options.getNextPageParam) === "[object Function]" ||
-      Object.prototype.toString.call(options.getNextPageParam) === "[object AsyncFunction]")
+    isFunction(options.getNextPageParam)
   );
 }
 

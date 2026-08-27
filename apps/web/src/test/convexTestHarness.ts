@@ -14,6 +14,7 @@ import {
 import schema from "@workspace/convex/convex/schema";
 import { makeAsyncResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
+import { isPlainObject, isString } from "@workspace/convex/src/runtimeGuards";
 
 type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;
@@ -214,10 +215,12 @@ function parseQueryKeyString(value: QueryFunctionContext["queryKey"][number]) {
     value === true ||
     value === false ||
     Array.isArray(value) ||
-    Object.prototype.toString.call(value) === "[object Object]"
+    isPlainObject(value)
   ) {
     return null;
   }
-  const asText = `${value}`;
-  return asText === value ? asText : null;
+  if (!isString(value)) {
+    return null;
+  }
+  return value;
 }

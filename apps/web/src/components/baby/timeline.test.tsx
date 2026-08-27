@@ -7,6 +7,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { isPlainObject } from "@workspace/convex/src/runtimeGuards";
 import { CONVEX_INFINITE_QUERY_KEY } from "@workspace/convex-prefetch";
 import { LocaleProvider } from "@/lib/i18n";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
@@ -23,7 +24,7 @@ import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
-  return Object.prototype.toString.call(args) === "[object Object]";
+  return isPlainObject(args);
 }
 
 const notYetBaby: BabyData = {
