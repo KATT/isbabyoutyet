@@ -45,7 +45,7 @@ export default defineConfig({
         "**/test.setup.ts",
         "**/test.resource.ts",
       ],
-      // CI: json-summary for the local coverage ratchet; lcov for main-push Codecov history.
+      // CI: json-summary for the local coverage ratchet; lcov for Codecov history uploads.
       // Local: full HTML/JSON reports for browsing.
       reporter: process.env.CI
         ? ["text-summary", "json-summary", "lcov"]

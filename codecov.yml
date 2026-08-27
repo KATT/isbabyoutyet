@@ -1,13 +1,13 @@
-# Codecov uploads run on main/next/canary pushes only (history graphs).
-# PR merge gate is the local compareCoverage ratchet in the `codecov` CI job —
-# do not enable GitHub checks or PR comments here.
+# Upload on PRs and pushes for dashboard history. Do not enable GitHub statuses,
+# checks, or PR comments — the merge gate is local compareCoverage in CI.
 coverage:
-  status: false
+  status:
+    project: off
+    patch: off
 
 comment: false
 
-github_checks:
-  annotations: false
+github_checks: false
 
 ignore:
   - "**/_generated/**"
