@@ -306,7 +306,6 @@ function SortableHeaderLink(props: {
     clicked: props.column,
   });
   const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
-  const iconStyle = stylex.props(active ? styles.sortIconVisible : styles.sortIconHidden);
 
   return (
     <TableHead>
@@ -325,8 +324,7 @@ function SortableHeaderLink(props: {
         {props.label}
         <SortIcon
           data-icon="inline-end"
-          className={iconStyle.className}
-          style={iconStyle.style}
+          {...stylex.props(active ? styles.sortIconVisible : styles.sortIconHidden)}
           aria-hidden="true"
         />
       </Link>
