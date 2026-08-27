@@ -33,7 +33,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -55,19 +55,17 @@ import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/com
 import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
-import { getVisitorId } from "./encouragements";
+import { getStoredVisitorId, subscribeToStoredVisitorId } from "./encouragements";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useIntersectionAction } from "@/lib/use-intersection-action";
+import { useObjectUrl } from "@/lib/use-object-url";
 import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
-function subscribeVisitorId() {
-  return () => {};
-}
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -75,30 +73,6 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-function usePhotoPreviewUrl(photo: File | null) {
-  const [cached, setCached] = useState<{ photo: File | null; url: string | null }>({
-    photo: null,
-    url: null,
-  });
-
-  let url = cached.url;
-  if (cached.photo !== photo) {
-    if (cached.url) {
-      URL.revokeObjectURL(cached.url);
-    }
-    url = photo ? URL.createObjectURL(photo) : null;
-    setCached({ photo, url });
-  }
-
-  useEffect(() => {
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [url]);
-
-  return url;
-}
 
 /**
  * A post's three fields are mutually inclusive: any combination works, as
@@ -225,8 +199,16 @@ type UpdateComposerFormProps = UpdateComposerProps & {
 export function UpdateComposer(props: UpdateComposerProps) {
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
+  const currentStatus = getMilestonePolicy(props.baby).currentStatus;
+  // Remount when the journey stage advances so a stale milestone selection
+  // cannot resurface after an unmark — no sync effect needed.
   return (
-    <UpdateComposerForm {...props} postUpdate={postUpdate} generateUploadUrl={generateUploadUrl} />
+    <UpdateComposerForm
+      key={currentStatus.type}
+      {...props}
+      postUpdate={postUpdate}
+      generateUploadUrl={generateUploadUrl}
+    />
   );
 }
 
@@ -262,25 +244,15 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
   const milestone = useWatch({ control: form.control, name: "milestone" });
   const photoFile = useWatch({ control: form.control, name: "photo" });
 
-  // Guard against a stale selection: the status may have advanced from
-  // another tab while a milestone was selected here. The mask keeps the
-  // current render correct; the effect clears the value so the old choice
-  // can't resurface if the status regresses later via unmarking.
+  // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
     milestone != null &&
     milestone !== "none" &&
     futureMilestones.includes(milestone)
       ? milestone
       : null;
-  useEffect(() => {
-    const value = form.getValues("milestone");
-    if (value !== "none" && !futureMilestones.includes(value)) {
-      form.setValue("milestone", "none");
-      form.resetField("occurredAt");
-    }
-  }, [form, futureMilestones]);
 
-  const photoPreviewUrl = usePhotoPreviewUrl(photoFile ?? null);
+  const photoPreviewUrl = useObjectUrl(photoFile ?? null);
 
   return (
     <div className="space-y-3">
@@ -961,8 +933,11 @@ type UpdateEncouragementFn = (
 export function TimelineFeed(props: TimelineFeedProps) {
   // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
   // the loader handle (no visitorId), then remixArgs picks it up on the client.
-  // getVisitorId returns "" without window, so it is safe as the SSR snapshot too.
-  const currentVisitorId = useSyncExternalStore(subscribeVisitorId, getVisitorId, getVisitorId);
+  const currentVisitorId = useSyncExternalStore(
+    subscribeToStoredVisitorId,
+    getStoredVisitorId,
+    () => "",
+  );
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
@@ -1020,35 +995,16 @@ type TimelineFeedViewProps = {
  */
 function TimelineFeedView(props: TimelineFeedViewProps) {
   const { t } = useI18n();
-  const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasNextPage = props.hasNextPage;
   const isFetchingNextPage = props.isFetchingNextPage;
   const fetchNextPage = props.fetchNextPage;
-
-  // Infinite scroll with IntersectionObserver
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          void fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const loadMoreRef = useIntersectionAction({
+    enabled: hasNextPage && !isFetchingNextPage,
+    onIntersect: () => {
+      void fetchNextPage();
+    },
+    threshold: 0.1,
+  });
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {

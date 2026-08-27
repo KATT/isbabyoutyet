@@ -29,40 +29,27 @@ test("homepage links visitors to the live Juniper Hale demo page", async () => {
 });
 
 test("hero headline cycles through baby names", async () => {
-  await using _timers = makeResource({}, () => {
-    vi.useRealTimers();
-  });
   vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
   await using _view = await renderWithTestRouter(<HomePage />);
 
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
-
-  // Before the first tick only the invisible sizer copy of the name exists.
-  expect(screen.getAllByText("Juniper")).toHaveLength(1);
-
-  act(() => {
-    vi.advanceTimersByTime(2400);
-  });
-
-  // After a tick the name is also rendered as the visible rotating word.
-  expect(screen.getAllByText("Juniper")).toHaveLength(2);
+  expect(screen.queryByText("Juniper")).toBeNull();
+  act(() => vi.advanceTimersByTime(2400));
+  expect(screen.getByText("Juniper").classList.contains("hero-word-in")).toBe(true);
 });
 
 test("Swedish homepage hero uses Swedish name pool", async () => {
-  await using _timers = makeResource({}, () => {
-    vi.useRealTimers();
-  });
   vi.useFakeTimers();
+  await using _timers = makeResource({}, () => vi.useRealTimers());
   await using _view = await renderWithTestRouter(
     <LocaleProvider locale="sv">
       <HomePage />
     </LocaleProvider>,
   );
 
-  act(() => {
-    vi.advanceTimersByTime(2400);
-  });
-  expect(screen.getAllByText("Ella")).toHaveLength(2);
+  act(() => vi.advanceTimersByTime(2400));
+  expect(screen.getByText("Ella").classList.contains("hero-word-in")).toBe(true);
 });
 
 test("Swedish homepage links visitors to Ella Holm", async () => {

@@ -20,7 +20,6 @@ import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
-import { useState } from "react";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { getBabySeo } from "@/lib/baby-seo";
@@ -29,6 +28,7 @@ import { useI18n } from "@/lib/i18n";
 import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
+import { useTransientFlag } from "@/lib/use-transient-flag";
 
 export const Route = createFileRoute("/baby/$publicId/share")({
   beforeLoad: async (opts) => {
@@ -80,7 +80,7 @@ export function BabyShareOverlay() {
   const loaderData = Route.useLoaderData();
   const completeOnboardingStep = useCompleteOnboardingStep();
   const { t } = useI18n();
-  const [copied, setCopied] = useState(false);
+  const [copied, showCopied] = useTransientFlag(2000);
   const share = useBabyShareOverlayNav(params.publicId);
   const babyQuery = usePreloadedConvexQuery(api.baby.getByPublicId, loaderData.baby);
   const myAccessQuery = usePreloadedConvexQuery(api.coParents.myAccess, loaderData.myAccess);
@@ -102,7 +102,7 @@ export function BabyShareOverlay() {
   async function copyShareLink() {
     try {
       await navigator.clipboard.writeText(loaderData.shareLink);
-      setCopied(true);
+      showCopied();
       toast.success(t("Copied to clipboard"));
       if (myAccessQuery.data.canManage) {
         void completeOnboardingStep({ stepId: "share_link" });
@@ -116,7 +116,7 @@ export function BabyShareOverlay() {
       textArea.select();
       try {
         document.execCommand("copy");
-        setCopied(true);
+        showCopied();
         toast.success(t("Copied to clipboard"));
         if (myAccessQuery.data.canManage) {
           void completeOnboardingStep({ stepId: "share_link" });

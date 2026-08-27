@@ -1,5 +1,6 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { CSSProperties, Dispatch, ImgHTMLAttributes, RefObject, SetStateAction } from "react";
+import { useCompleteImageLoad } from "@/lib/use-complete-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
@@ -121,8 +122,6 @@ function handleLoading(img: HTMLImageElement, options: HandleLoadingOptions) {
     });
 }
 
-const useNonWarningLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
-
 /**
  * Drop-in `<img>` implementing Next.js' `blurDataURL` lifecycle. SSR keeps the
  * real `src` on the accessible image so loading starts immediately, while a
@@ -138,16 +137,18 @@ export function BlurImage(props: BlurImageProps) {
   const loaded = loadedSrc === srcKey;
   const showAltText = failedSrc === srcKey;
 
-  useNonWarningLayoutEffect(() => {
-    const img = imgRef.current;
-    if (!img?.complete) return;
-    handleLoading(img, {
-      loadedSrcRef,
-      srcKey,
-      setLoadedSrc,
-      onLoad: props.onLoad,
-    });
-  }, [props.onLoad, srcKey]);
+  useCompleteImageLoad({
+    imgRef,
+    srcKey,
+    onComplete: (img) => {
+      handleLoading(img, {
+        loadedSrcRef,
+        srcKey,
+        setLoadedSrc,
+        onLoad: props.onLoad,
+      });
+    },
+  });
 
   const objectFit = placeholderObjectFit(props);
   const placeholderSrc =

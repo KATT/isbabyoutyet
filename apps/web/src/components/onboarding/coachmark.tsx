@@ -1,6 +1,6 @@
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 import { useVisualViewportMetrics } from "./visual-viewport";
@@ -23,82 +23,156 @@ type Rect = {
   height: number;
 };
 
+type CoachmarkSnapshot = {
+  rect: Rect;
+  placement: "above" | "below";
+  viewportWidth: number;
+  isMobile: boolean;
+};
+
+function mobileMediaQuery() {
+  if (typeof window.matchMedia !== "function") {
+    return null;
+  }
+  return window.matchMedia("(max-width: 767px)");
+}
+
+function createCoachmarkStore(opts: { targetId: string; onDismiss: () => void }) {
+  let snapshot: CoachmarkSnapshot | null = null;
+
+  return {
+    getSnapshot: () => snapshot,
+    subscribe: (notify: () => void) => {
+      let target: HTMLElement | null = null;
+      let resizeObserver: ResizeObserver | null = null;
+      let scrolledTarget: HTMLElement | null = null;
+      const mediaQuery = mobileMediaQuery();
+
+      function onTargetClick() {
+        opts.onDismiss();
+      }
+
+      function resolveTarget() {
+        const element = document.querySelector(`[data-tour-id="${opts.targetId}"]`);
+        const nextTarget = element instanceof HTMLElement ? element : null;
+        if (target === nextTarget) return target;
+        if (target) {
+          target.removeEventListener("click", onTargetClick);
+        }
+        resizeObserver?.disconnect();
+        target = nextTarget;
+        if (target && typeof ResizeObserver !== "undefined") {
+          resizeObserver = new ResizeObserver(measure);
+          resizeObserver.observe(target);
+        }
+        if (target) {
+          target.addEventListener("click", onTargetClick);
+        }
+        if (target && scrolledTarget !== target) {
+          scrolledTarget = target;
+          target.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+        }
+        return target;
+      }
+
+      function measure() {
+        const currentTarget = resolveTarget();
+        if (!currentTarget) {
+          if (snapshot !== null) {
+            snapshot = null;
+            notify();
+          }
+          return;
+        }
+        const rect = currentTarget.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) {
+          if (snapshot !== null) {
+            snapshot = null;
+            notify();
+          }
+          return;
+        }
+        const next = {
+          rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+          placement:
+            window.innerHeight - rect.bottom < 160 ? ("above" as const) : ("below" as const),
+          viewportWidth: window.innerWidth,
+          isMobile: mediaQuery?.matches === true,
+        };
+        if (
+          snapshot?.rect.top === next.rect.top &&
+          snapshot.rect.left === next.rect.left &&
+          snapshot.rect.width === next.rect.width &&
+          snapshot.rect.height === next.rect.height &&
+          snapshot.placement === next.placement &&
+          snapshot.viewportWidth === next.viewportWidth &&
+          snapshot.isMobile === next.isMobile
+        ) {
+          return;
+        }
+        snapshot = next;
+        notify();
+      }
+
+      measure();
+      window.addEventListener("resize", measure);
+      window.addEventListener("scroll", measure, true);
+      mediaQuery?.addEventListener("change", measure);
+      const interval = window.setInterval(measure, 500);
+      const mutationObserver =
+        typeof MutationObserver === "undefined" ? null : new MutationObserver(measure);
+      mutationObserver?.observe(document.body, { childList: true, subtree: true });
+
+      return () => {
+        window.removeEventListener("resize", measure);
+        window.removeEventListener("scroll", measure, true);
+        mediaQuery?.removeEventListener("change", measure);
+        target?.removeEventListener("click", onTargetClick);
+        resizeObserver?.disconnect();
+        mutationObserver?.disconnect();
+        window.clearInterval(interval);
+      };
+    },
+  };
+}
+
 /**
  * Soft spotlight + tip bubble anchored to `[data-tour-id=…]`.
  * Skippable; does not block the whole page (pointer-events only on the tip).
  */
 export function Coachmark(props: CoachmarkProps) {
+  return <CoachmarkTarget key={props.targetId} {...props} />;
+}
+
+function CoachmarkTarget(props: CoachmarkProps) {
   const { t } = useI18n();
-  const { onDismiss } = props;
-  const [rect, setRect] = useState<Rect | null>(null);
-  const [placement, setPlacement] = useState<"above" | "below">("below");
-  const [isMobile, setIsMobile] = useState(false);
   const visualViewport = useVisualViewportMetrics();
+  const [store] = useState(() =>
+    createCoachmarkStore({
+      targetId: props.targetId,
+      onDismiss: props.onDismiss,
+    }),
+  );
+  const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, () => null);
 
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") {
-      return;
-    }
-    const mediaQuery = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsMobile(mediaQuery.matches);
-    update();
-    mediaQuery.addEventListener("change", update);
-    return () => mediaQuery.removeEventListener("change", update);
-  }, []);
-
-  useEffect(() => {
-    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-    if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
-      return;
-    }
-    el.scrollIntoView({ block: "center", behavior: "auto", inline: "nearest" });
-  }, [props.targetId]);
-
-  useEffect(() => {
-    const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-    if (!(el instanceof HTMLElement)) {
-      return;
-    }
-    const dismiss = () => onDismiss();
-    el.addEventListener("click", dismiss);
-    return () => el.removeEventListener("click", dismiss);
-  }, [onDismiss, props.targetId]);
-
-  useEffect(() => {
-    function measure() {
-      const el = document.querySelector(`[data-tour-id="${props.targetId}"]`);
-      if (!(el instanceof HTMLElement)) {
-        setRect(null);
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      if (r.width === 0 && r.height === 0) {
-        setRect(null);
-        return;
-      }
-      setRect({ top: r.top, left: r.left, width: r.width, height: r.height });
-      // Prefer below the target; flip above if near the bottom of the viewport
-      const spaceBelow = window.innerHeight - r.bottom;
-      setPlacement(spaceBelow < 160 ? "above" : "below");
-    }
-
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("scroll", measure, true);
-    const interval = window.setInterval(measure, 500);
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure, true);
-      window.clearInterval(interval);
-    };
-  }, [props.targetId]);
-
-  if (!rect || typeof document === "undefined") {
+  if (!snapshot || typeof document === "undefined") {
     return null;
   }
 
-  const tipTop = placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
-  const tipLeft = Math.min(Math.max(12, rect.left + rect.width / 2 - 140), window.innerWidth - 292);
+  const rect = snapshot.rect;
+  const tipTop =
+    snapshot.placement === "below" ? rect.top + rect.height + 12 : Math.max(8, rect.top - 12);
+  const tipLeft = Math.min(
+    Math.max(12, rect.left + rect.width / 2 - 140),
+    snapshot.viewportWidth - 292,
+  );
+
+  function dismiss() {
+    if (props.completeOnDismiss) {
+      props.onComplete?.();
+    }
+    props.onDismiss();
+  }
 
   return createPortal(
     <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">
@@ -111,7 +185,7 @@ export function Coachmark(props: CoachmarkProps) {
           height: rect.height + 8,
         }}
       />
-      {isMobile ? (
+      {snapshot.isMobile ? (
         <div
           className="pointer-events-auto fixed left-1/2 bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] w-[calc(100dvw-1.5rem)] max-w-xs -translate-x-1/2 rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
           style={visualViewport.style}
@@ -121,16 +195,7 @@ export function Coachmark(props: CoachmarkProps) {
           <p className="mb-1 font-medium text-foreground">{props.title}</p>
           <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{props.description}</p>
           <div className="flex justify-end">
-            <Button
-              className="min-h-11"
-              variant="outline"
-              onClick={() => {
-                if (props.completeOnDismiss) {
-                  props.onComplete?.();
-                }
-                onDismiss();
-              }}
-            >
+            <Button className="min-h-11" variant="outline" onClick={dismiss}>
               {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
             </Button>
           </div>
@@ -139,7 +204,7 @@ export function Coachmark(props: CoachmarkProps) {
         <div
           className={cn(
             "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
-            placement === "above" && "-translate-y-full",
+            snapshot.placement === "above" && "-translate-y-full",
           )}
           style={{ top: tipTop, left: tipLeft }}
           role="dialog"
@@ -148,17 +213,7 @@ export function Coachmark(props: CoachmarkProps) {
           <p className="mb-1 font-medium text-foreground">{props.title}</p>
           <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{props.description}</p>
           <div className="flex justify-end">
-            <Button
-              size="sm"
-              className="min-h-11"
-              variant="ghost"
-              onClick={() => {
-                if (props.completeOnDismiss) {
-                  props.onComplete?.();
-                }
-                onDismiss();
-              }}
-            >
+            <Button size="sm" className="min-h-11" variant="ghost" onClick={dismiss}>
               {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
             </Button>
           </div>

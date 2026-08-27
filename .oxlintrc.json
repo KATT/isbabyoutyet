@@ -42,6 +42,10 @@
       "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
     },
     {
+      "name": "no-use-effect",
+      "specifier": "./oxlint-plugins/no-use-effect.mjs"
+    },
+    {
       "name": "react-compiler",
       "specifier": "./oxlint-plugins/react-compiler.mjs"
     },
@@ -73,7 +77,8 @@
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
-    "query-prefetch/no-convex-query-hooks": "error"
+    "query-prefetch/no-convex-query-hooks": "error",
+    "no-use-effect/no-use-effect": "error"
   },
   "overrides": [
     {
@@ -143,6 +148,7 @@
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
+        "no-use-effect/no-use-effect": "off",
         "react-compiler/no-manual-memoization": "off",
         "react/react-in-jsx-scope": "off",
         "react/no-unstable-nested-components": "off",
@@ -150,6 +156,14 @@
         "react/exhaustive-effect-dependencies": "off",
         "react/immutability": "off",
         "react-hooks/exhaustive-deps": "off"
+      }
+    },
+    {
+      // Shared app lib hooks may use carefully designed effects (timers, observers).
+      // Feature components under routes/components stay banned.
+      "files": ["apps/web/src/lib/**/*.{ts,tsx}"],
+      "rules": {
+        "no-use-effect/no-use-effect": "off"
       }
     },
     {

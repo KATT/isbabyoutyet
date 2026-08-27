@@ -302,7 +302,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
 
 test("the composer previews a selected photo and can remove it", async () => {
   const createObjectURL = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:preview");
-  const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+  const revokeObjectURL = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
   await using _objectUrls = makeResource({}, () => {
     createObjectURL.mockRestore();
     revokeObjectURL.mockRestore();
@@ -322,10 +322,13 @@ test("the composer previews a selected photo and can remove it", async () => {
   fireEvent.change(fileInput, {
     target: { files: [new File(["png"], "baby.png", { type: "image/png" })] },
   });
-  expect(view.getByAltText("Photo to post")).toBeTruthy();
+  await vi.waitFor(() => {
+    expect(view.getByAltText("Photo to post")).toBeTruthy();
+  });
 
   fireEvent.click(view.getByRole("button", { name: "Remove photo" }));
   expect(view.queryByAltText("Photo to post")).toBeNull();
+  expect(revokeObjectURL).toHaveBeenCalledWith("blob:preview");
 });
 
 test("timeline milestone deletion is disabled while a later status exists", async () => {

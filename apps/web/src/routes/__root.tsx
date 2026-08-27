@@ -13,9 +13,7 @@ import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
-import { useConvexAuth } from "convex/react";
 import * as React from "react";
-import { useEffect, useState } from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -38,8 +36,10 @@ import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
 import { m } from "@/paraglide/messages";
+import "@/lib/register-service-worker";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
-import { reportConvexAuthState } from "@/lib/convexAuthHandoff";
+import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
+import { useDelayedBoolean } from "@/lib/use-delayed-action";
 
 /** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
 const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
@@ -196,19 +196,6 @@ function RootComponent() {
     return matchContext.locale ?? currentLocale;
   }, context.locale);
 
-  useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.log("Service Worker registered:", registration);
-        })
-        .catch((error) => {
-          console.error("Service Worker registration failed:", error);
-        });
-    }
-  }, []);
-
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       {/* Cast: better-auth >=1.6.18 broke assignability to @convex-dev/better-auth's
@@ -219,7 +206,7 @@ function RootComponent() {
         authClient={authClient as unknown as AuthClient}
         initialToken={token}
       >
-        <ProviderAuthObserver />
+        <ConvexAuthObserver />
         {/* Phosphor icons render in the two-tone "duotone" style app-wide */}
         <IconContext.Provider value={{ weight: "duotone" }}>
           <TooltipProvider>
@@ -233,22 +220,6 @@ function RootComponent() {
       </ConvexBetterAuthProvider>
     </ThemeProvider>
   );
-}
-
-function ProviderAuthObserver() {
-  const auth = useConvexAuth();
-
-  useEffect(() => {
-    // Better Auth exposes its session before Convex has validated the token.
-    // useConvexAuth is the documented server-confirmed signal:
-    // https://labs.convex.dev/better-auth/basic-usage/authorization
-    reportConvexAuthState({
-      isAuthenticated: auth.isAuthenticated,
-      isLoading: auth.isLoading,
-    });
-  }, [auth.isAuthenticated, auth.isLoading]);
-
-  return null;
 }
 
 // Router-wide error fallback (registered as defaultErrorComponent): residual
@@ -343,21 +314,10 @@ export function NavigationProgress() {
  */
 export function NavigationProgressBar(props: { isNavigating: boolean }) {
   const { t } = useI18n();
-  const [showBar, setShowBar] = useState(false);
-
-  useEffect(() => {
-    // Show only after the delay; hide on the next tick (a 0ms timeout keeps
-    // the setState out of the synchronous effect body).
-    const delay = setTimeout(
-      () => {
-        setShowBar(props.isNavigating);
-      },
-      props.isNavigating ? NAVIGATION_PROGRESS_DELAY_MS : 0,
-    );
-    return () => {
-      clearTimeout(delay);
-    };
-  }, [props.isNavigating]);
+  const showBar = useDelayedBoolean({
+    value: props.isNavigating,
+    delayMs: NAVIGATION_PROGRESS_DELAY_MS,
+  });
 
   if (!showBar) {
     return null;

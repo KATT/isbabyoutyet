@@ -2,7 +2,7 @@ import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { homepageDemoBabyFor } from "@workspace/convex/src/seedCredentials";
 import { LanguagePicker } from "@/components/language-picker";
@@ -13,6 +13,7 @@ import { searchRobotsMeta } from "@/lib/robots";
 import { absoluteUrl, canonicalUrl } from "@/lib/site-url";
 import { setLocale } from "@/lib/paraglide-setup";
 import { homepageCacheHeaders } from "@/lib/cachePolicy";
+import { useRotatingIndex } from "@/lib/use-delayed-action";
 
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
@@ -127,43 +128,36 @@ const HERO_HEADLINES = {
 
 const NAME_ROTATE_INTERVAL_MS = 2400;
 
-function RotatingBabyName(props: { words: readonly string[] }) {
-  const words = props.words;
-  const [indices, setIndices] = useState({ current: 0, previous: null as number | null });
+function useMeasuredWidth() {
   const [width, setWidth] = useState<number | null>(null);
-  const sizerRefs = useRef<(HTMLSpanElement | null)[]>([]);
-
-  useEffect(() => {
-    const reducedMotion =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion || words.length < 2) {
-      return;
-    }
-    const intervalId = window.setInterval(() => {
-      setIndices((prev) => ({
-        current: (prev.current + 1) % words.length,
-        previous: prev.current,
-      }));
-    }, NAME_ROTATE_INTERVAL_MS);
-    return () => window.clearInterval(intervalId);
-  }, [words]);
-
-  useEffect(() => {
-    function measure() {
-      const sizer = sizerRefs.current[indices.current];
-      if (sizer) {
-        setWidth(sizer.offsetWidth);
-      }
-    }
+  function ref(node: HTMLSpanElement | null) {
+    if (!node) return;
+    let active = true;
+    const measure = () => {
+      if (active) setWidth(node.offsetWidth);
+    };
     measure();
-    // Remeasure once webfonts land so the pill hugs the word exactly.
+    window.addEventListener("resize", measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(node);
     if (document.fonts) {
       void document.fonts.ready.then(measure);
     }
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, [indices]);
+    return () => {
+      active = false;
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }
+  return [ref, width] as const;
+}
+
+function RotatingBabyName(props: { words: readonly string[] }) {
+  const indices = useRotatingIndex({
+    intervalMs: NAME_ROTATE_INTERVAL_MS,
+    itemCount: props.words.length,
+  });
+  const [measureCurrentWord, width] = useMeasuredWidth();
 
   return (
     <span
@@ -171,27 +165,20 @@ function RotatingBabyName(props: { words: readonly string[] }) {
       className="relative inline-block overflow-hidden whitespace-nowrap transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
       style={width === null ? undefined : { width }}
     >
-      {words.map((word, wordIndex) => (
-        <span
-          key={word}
-          ref={(el) => {
-            sizerRefs.current[wordIndex] = el;
-          }}
-          className="invisible absolute left-0 top-0"
-        >
-          {word}
-        </span>
-      ))}
-      {indices.previous !== null && (
+      {indices.previous !== null ? (
         <span
           key={`out-${indices.previous}-${indices.current}`}
           className="hero-word-out absolute left-0 top-0"
         >
-          {words[indices.previous]}
+          {props.words[indices.previous]}
         </span>
-      )}
-      <span key={`in-${indices.current}`} className="hero-word-in inline-block">
-        {words[indices.current]}
+      ) : null}
+      <span
+        key={`in-${indices.current}`}
+        ref={measureCurrentWord}
+        className="hero-word-in inline-block"
+      >
+        {props.words[indices.current]}
       </span>
     </span>
   );

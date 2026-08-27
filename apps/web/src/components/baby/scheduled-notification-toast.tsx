@@ -10,10 +10,10 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
-import type { FunctionReturnType } from "convex/server";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Check, X } from "@phosphor-icons/react";
 import type { NotifiableStatus } from "@workspace/convex/src/types";
@@ -21,6 +21,7 @@ import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { useI18n } from "@/lib/i18n";
+import { useTimedTransition } from "@/lib/use-delayed-action";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
 
 type ScheduledNotificationsResult = Exclude<
@@ -35,8 +36,20 @@ type ScheduledNotificationToastProps = {
   subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
+function subscribeToCurrentSecond(notify: () => void) {
+  const interval = window.setInterval(notify, 1000);
+  return () => window.clearInterval(interval);
+}
+
+function getCurrentSecond() {
+  return Math.floor(Date.now() / 1000);
+}
+
+function useCurrentSecond() {
+  return useSyncExternalStore(subscribeToCurrentSecond, getCurrentSecond, () => null);
+}
+
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
-  const { t } = useI18n();
   const notificationsQuery = usePreloadedConvexQuery(
     api.baby.getScheduledNotifications,
     props.notifications,
@@ -51,100 +64,75 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   );
   const subscriptionCount =
     subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
+  const currentSecond = useCurrentSecond();
+  if (currentSecond === null || subscriptionCount === 0) return null;
 
-  // Track active toasts and previous notification states
-  const activeToasts = useRef(new Set<Id<"scheduledNotifications">>());
-  const previousPendingIds = useRef(new Set<Id<"scheduledNotifications">>());
+  const currentTime = currentSecond * 1000;
 
-  useEffect(() => {
-    const pendingNotifications = notifications.filter(
-      (notification) => notification.status === "pending",
+  return (
+    <aside
+      className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col gap-2"
+      aria-live="polite"
+    >
+      {notifications.map((notification) => (
+        <ScheduledNotificationItem
+          key={notification._id}
+          notification={notification}
+          subscriptionCount={subscriptionCount}
+          currentTime={currentTime}
+        />
+      ))}
+    </aside>
+  );
+}
+
+type ScheduledNotification = Exclude<
+  FunctionReturnType<typeof api.baby.getScheduledNotifications>,
+  typeof FORBIDDEN
+>[number];
+
+function ScheduledNotificationItem(props: {
+  notification: ScheduledNotification;
+  subscriptionCount: number;
+  currentTime: number;
+}) {
+  const { t } = useI18n();
+  const sentRecently = useTimedTransition({
+    durationMs: 4000,
+    from: "pending",
+    to: "sent",
+    value: props.notification.status,
+  });
+
+  if (props.notification.status === "pending") {
+    return (
+      <NotificationToastContent
+        notificationId={props.notification._id}
+        notificationType={props.notification.notificationType}
+        scheduledFor={props.notification.scheduledFor}
+        subscriptionCount={props.subscriptionCount}
+        currentTime={props.currentTime}
+      />
     );
+  }
+  if (!sentRecently) return null;
 
-    // Don't show any toasts if there are no subscribers
-    if (subscriptionCount === 0) {
-      // Dismiss any existing toasts
-      for (const id of activeToasts.current) {
-        toast.dismiss(id);
-      }
-      activeToasts.current.clear();
-      previousPendingIds.current.clear();
-      return;
-    }
-
-    const currentPendingIds = new Set(pendingNotifications.map((n) => n._id));
-
-    // Check for notifications that were pending but are now sent
-    for (const id of previousPendingIds.current) {
-      if (!currentPendingIds.has(id)) {
-        const notification = notifications.find((n) => n._id === id);
-        if (notification?.status === "sent") {
-          // Dismiss the countdown toast and show success
-          toast.dismiss(id);
-          activeToasts.current.delete(id);
-          toast.custom(
-            () => (
-              <Item variant="outline" className="min-w-[300px] border-green-500/50 shadow-lg">
-                <ItemMedia className="size-10 rounded-full bg-green-500/10">
-                  <Check className="size-5 text-green-500" />
-                </ItemMedia>
-                <ItemContent>
-                  <ItemTitle>{t("Notification sent!")}</ItemTitle>
-                  <ItemDescription>
-                    {t(NOTIFICATION_LABEL_KEYS[notification.notificationType])} ·{" "}
-                    {t(subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-                      count: subscriptionCount,
-                    })}
-                  </ItemDescription>
-                </ItemContent>
-              </Item>
-            ),
-            { duration: 4000 },
-          );
-        } else {
-          // Just dismiss if cancelled or other status
-          toast.dismiss(id);
-          activeToasts.current.delete(id);
-        }
-      }
-    }
-
-    // Update previous pending IDs for next comparison
-    previousPendingIds.current = currentPendingIds;
-
-    // Create toasts for new pending notifications
-    for (const notification of pendingNotifications) {
-      if (!activeToasts.current.has(notification._id)) {
-        activeToasts.current.add(notification._id);
-        toast.custom(
-          () => (
-            <NotificationToastContent
-              notificationId={notification._id}
-              notificationType={notification.notificationType}
-              scheduledFor={notification.scheduledFor}
-              subscriptionCount={subscriptionCount}
-            />
-          ),
-          {
-            id: notification._id,
-            duration: Infinity,
-          },
-        );
-      }
-    }
-  }, [notifications, subscriptionCount, t]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    const toasts = activeToasts.current;
-    return () => {
-      for (const id of toasts) {
-        toast.dismiss(id);
-      }
-    };
-  }, []);
-
-  return null;
+  return (
+    <Item variant="outline" className="min-w-[300px] border-green-500/50 bg-background shadow-lg">
+      <ItemMedia className="size-10 rounded-full bg-green-500/10">
+        <Check className="size-5 text-green-500" />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>{t("Notification sent!")}</ItemTitle>
+        <ItemDescription>
+          {t(NOTIFICATION_LABEL_KEYS[props.notification.notificationType])} ·{" "}
+          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+            count: props.subscriptionCount,
+          })}
+        </ItemDescription>
+      </ItemContent>
+    </Item>
+  );
 }
 
 type NotificationToastContentProps = {
@@ -152,18 +140,18 @@ type NotificationToastContentProps = {
   notificationType: NotifiableStatus;
   scheduledFor: number;
   subscriptionCount: number;
+  currentTime: number;
 };
 
 function NotificationToastContent(props: NotificationToastContentProps) {
   const { t } = useI18n();
-  const [seconds, setSeconds] = useState(() =>
-    Math.max(0, Math.ceil((props.scheduledFor - Date.now()) / 1000)),
-  );
+  const [cancelled, setCancelled] = useState(false);
+  const seconds = Math.max(0, Math.ceil((props.scheduledFor - props.currentTime) / 1000));
 
   const cancelMutation = useTanstackMutation({
     mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
     onSuccess: () => {
-      toast.dismiss(props.notificationId);
+      setCancelled(true);
       toast.success(t("Notification cancelled"));
     },
     onError: (error) => {
@@ -171,18 +159,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
     },
   });
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const remaining = Math.max(0, Math.floor((props.scheduledFor - Date.now()) / 1000));
-      setSeconds(remaining);
-
-      if (remaining <= 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [props.scheduledFor]);
+  if (cancelled) return null;
 
   return (
     <Item variant="outline" className="min-w-[300px] shadow-lg bg-background">

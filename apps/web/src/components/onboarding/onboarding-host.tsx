@@ -1,11 +1,12 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
+import { useDelayedAction } from "@/lib/use-delayed-action";
 import { GettingStartedCard } from "./getting-started";
 import { Coachmark } from "./coachmark";
 import { ONBOARDING_STEPS } from "./steps";
@@ -82,18 +83,18 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
   const { t } = useI18n();
   const spotlight = props.spotlight !== false;
   const progress = progressQuery.data;
-  const onDismissChecklist = dismissChecklist;
 
   const [activeCoachmarkStepId, setActiveCoachmarkStepId] = useState<OnboardingStepId | null>(null);
   const [restartHintVisible, setRestartHintVisible] = useState(false);
 
-  useEffect(() => {
-    if (!progress.allDone || progress.checklistDismissed) return;
-    const timeout = window.setTimeout(() => {
-      void onDismissChecklist({});
-    }, 4000);
-    return () => window.clearTimeout(timeout);
-  }, [progress.allDone, progress.checklistDismissed, onDismissChecklist]);
+  function dismissFinishedChecklist() {
+    void dismissChecklist({});
+  }
+  useDelayedAction({
+    action: dismissFinishedChecklist,
+    delayMs: 4000,
+    enabled: progress.allDone && !progress.checklistDismissed,
+  });
 
   const nextStep = ONBOARDING_STEPS.find((step) => !progress.effectiveSteps.includes(step.id));
 
