@@ -2,6 +2,7 @@ import { fireEvent } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
@@ -131,6 +132,37 @@ test("mounts authed onboarding host when progress is loaded", async () => {
   });
 
   expect(view.getAllByText(/getting started/i).length).toBeGreaterThan(0);
+});
+
+test("minimizes the checklist through the host mutation", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getByRole("button", { name: /^minimize$/i }));
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.minimized).toBe(true);
+  });
+  await vi.waitFor(() => {
+    expect(view.queryByRole("button", { name: /^minimize$/i })).toBeNull();
+  });
+  fireEvent.click(view.getByRole("button", { name: /getting started: \d+ of 5 done\. expand\./i }));
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.minimized).toBe(false);
+  });
 });
 
 test("highlights how to restore the guide after dismissal", async () => {
