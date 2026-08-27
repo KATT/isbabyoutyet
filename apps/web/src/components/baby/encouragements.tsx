@@ -104,12 +104,7 @@ export function EncouragementForm(props: EncouragementFormProps) {
           // Save name to localStorage for next time
           localStorage.setItem(STORAGE_KEY_NAME, values.authorName);
 
-          const promise = createEncouragement(values).then(async (it) => {
-            if (import.meta.env.DEV) {
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-            }
-            return it;
-          });
+          const promise = createEncouragement(values);
 
           toast.promise(promise, {
             loading: t("Sending your encouragement..."),
