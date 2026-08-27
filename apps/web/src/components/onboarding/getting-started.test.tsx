@@ -177,6 +177,46 @@ test("dashboard baby-page steps link to the preferred baby's page (not overlays)
   expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting");
 });
 
+test("dashboard post-update step links to the preferred baby's page", async () => {
+  await using _view = await renderWithTestRouter(
+    <GettingStartedCard
+      effectiveSteps={["add_baby", "share_link"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
+    />,
+  );
+
+  const links = screen.getAllByRole("link", { name: /see ada's page/i });
+  expect(links.length).toBeGreaterThan(0);
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting");
+});
+
+test("baby-page Show me is a no-op when onGoToStep is missing", async () => {
+  const onAcknowledge = vi.fn<(stepId: string) => void>();
+  await using _view = await renderWithTestRouter(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={vi.fn<() => void>()}
+      onDismiss={vi.fn<() => void>()}
+      onAcknowledgeStep={onAcknowledge}
+      surface="baby"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={null}
+    />,
+  );
+
+  fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
+  expect(onAcknowledge).not.toHaveBeenCalled();
+});
+
 test("baby-page share step highlights via Show me", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(

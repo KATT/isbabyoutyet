@@ -316,6 +316,63 @@ test("Show me for settings scrolls, highlights, and completes on Got it", async 
   });
 });
 
+test("Show me for share scrolls the tour target into view", async () => {
+  await using target = plantTourTarget("share_link");
+  const scrollIntoView = vi.fn();
+  target.scrollIntoView = scrollIntoView;
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
+  await vi.waitFor(() => {
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      block: "center",
+      behavior: "smooth",
+      inline: "nearest",
+    });
+  });
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.activeCoachmarkStepId).toBe("share_link");
+  });
+});
+
+test("Show me activates the tip even when the tour target is not in the DOM", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.activeCoachmarkStepId).toBe("share_link");
+  });
+});
+
 test("messages-from-visitors tip scrolls, highlights, and completes on Got it without posting", async () => {
   await using _target = plantTourTarget("learn_encouragements");
 
