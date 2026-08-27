@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef } from "react";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
+import type { DialogActions } from "@workspace/ui/components/dialog";
 import {
   FormControl,
   FormField,
@@ -39,6 +40,7 @@ import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
+import { useOptimisticOverride } from "@/lib/use-optimistic-override";
 import { cn } from "@workspace/ui/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
@@ -58,8 +60,8 @@ type RequestLanguageHandler = (
 ) => Promise<unknown>;
 
 function LanguageRequestForm(props: {
-  onSaved: () => void;
   onRequestLanguage: RequestLanguageHandler;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
   const requestLanguage = props.onRequestLanguage;
@@ -73,8 +75,9 @@ function LanguageRequestForm(props: {
       form={form}
       handleSubmit={async (values) => {
         await requestLanguage(values);
-        props.onSaved();
+        form.reset({ requestedLocale: "" });
         toast.success(t("Language request saved"));
+        props.onClose();
       }}
     >
       <FormField
@@ -130,13 +133,15 @@ export function LanguageSettings(props: {
   const onRequestLanguage = useMutation(api.profile.requestLanguage);
   const { locale, t } = useI18n();
   const profile = profileQuery.data;
-  const [requestOpen, setRequestOpen] = useState(false);
   const selectedLocale = profile?.locale ?? locale;
   const selectedTimeZone = profile?.timeZone ?? DEFAULT_TIME_ZONE;
-  const [selectedTimeZoneOption, setSelectedTimeZoneOption] = useState(
-    () =>
-      timeZoneOptions.find((option) => option.value === selectedTimeZone) ?? defaultTimeZoneOption,
-  );
+  const [optimisticTimeZone, setOptimisticTimeZone] = useOptimisticOverride({
+    base: selectedTimeZone,
+    isEqual: (left, right) => left === right,
+  });
+  const selectedTimeZoneOption =
+    timeZoneOptions.find((option) => option.value === optimisticTimeZone) ?? defaultTimeZoneOption;
+  const languageRequestActionsRef = useRef<DialogActions | null>(null);
 
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
@@ -145,17 +150,17 @@ export function LanguageSettings(props: {
         itemToStringValue={(option) => option.label}
         value={selectedTimeZoneOption}
         onValueChange={(option) => {
-          if (!option || option.value === selectedTimeZoneOption.value) {
+          if (!option || option.value === optimisticTimeZone) {
             return;
           }
-          const previousOption = selectedTimeZoneOption;
-          setSelectedTimeZoneOption(option);
+          const previousTimeZone = optimisticTimeZone;
+          setOptimisticTimeZone(option.value);
           void onUpdateTimeZone({ timeZone: option.value })
             .then(() => {
               toast.success(t("Time zone saved"));
             })
             .catch((error) => {
-              setSelectedTimeZoneOption(previousOption);
+              setOptimisticTimeZone(previousTimeZone);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             });
         }}
@@ -191,7 +196,7 @@ export function LanguageSettings(props: {
         }}
       />
 
-      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
+      <Dialog actionsRef={languageRequestActionsRef}>
         <DialogTrigger
           render={
             <Button variant="outline" size="sm">
@@ -206,12 +211,12 @@ export function LanguageSettings(props: {
               {t("Tell us which language you would like us to add.")}
             </DialogDescription>
           </DialogHeader>
-          {requestOpen ? (
-            <LanguageRequestForm
-              onSaved={() => setRequestOpen(false)}
-              onRequestLanguage={onRequestLanguage}
-            />
-          ) : null}
+          <LanguageRequestForm
+            onRequestLanguage={onRequestLanguage}
+            onClose={() => {
+              languageRequestActionsRef.current?.close();
+            }}
+          />
         </DialogContent>
       </Dialog>
     </div>

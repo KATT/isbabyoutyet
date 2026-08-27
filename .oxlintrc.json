@@ -42,6 +42,18 @@
       "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
     },
     {
+      "name": "no-use-effect",
+      "specifier": "./oxlint-plugins/no-use-effect.mjs"
+    },
+    {
+      "name": "no-use-state",
+      "specifier": "./oxlint-plugins/no-use-state.mjs"
+    },
+    {
+      "name": "no-banned-react-reexport",
+      "specifier": "./oxlint-plugins/no-banned-react-reexport.mjs"
+    },
+    {
       "name": "react-compiler",
       "specifier": "./oxlint-plugins/react-compiler.mjs"
     },
@@ -73,7 +85,12 @@
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
-    "query-prefetch/no-convex-query-hooks": "error"
+    "query-prefetch/no-convex-query-hooks": "error",
+    "no-use-effect/no-use-effect": "error",
+    "no-use-state/no-use-state": "error",
+    // Always on — including apps/web/src/lib — so banned hooks cannot be
+    // laundered through a local re-export barrel.
+    "no-banned-react-reexport/no-banned-react-reexport": "error"
   },
   "overrides": [
     {
@@ -143,6 +160,8 @@
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
+        "no-use-effect/no-use-effect": "off",
+        "no-use-state/no-use-state": "off",
         "react-compiler/no-manual-memoization": "off",
         "react/react-in-jsx-scope": "off",
         "react/no-unstable-nested-components": "off",
@@ -153,10 +172,36 @@
       }
     },
     {
+      // Audited React-hook seams under lib (not the whole lib directory).
+      // Timers/observers/stores may use effects, local state, and latest-callback
+      // refs written during render. Feature components stay banned.
+      "files": [
+        "apps/web/src/lib/use-*.{ts,tsx}",
+        "apps/web/src/lib/overlay-nav.ts",
+        "apps/web/src/lib/convexAuthHandoff.ts"
+      ],
+      "rules": {
+        "no-use-effect/no-use-effect": "off",
+        "no-use-state/no-use-state": "off",
+        "react/set-state-in-effect": "off",
+        "react/refs": "off",
+        "react/immutability": "off"
+      }
+    },
+    {
       // query-prefetch overloads use an optional third `remixInput` param (KATT gist API).
       "files": ["packages/query-prefetch/src/**"],
       "rules": {
         "eslint/max-params": "off"
+      }
+    },
+    {
+      // Render-time useState adjustment is required here: react/refs forbids
+      // reading refs during render, and useSyncExternalStore needs a stable
+      // subscribe identity when watch deps are deeply equal.
+      "files": ["packages/convex-prefetch/src/useLiveConvexInfinitePages.ts"],
+      "rules": {
+        "no-use-state/no-use-state": "off"
       }
     }
   ]

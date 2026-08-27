@@ -171,6 +171,10 @@ export default defineSchema({
     checklistDismissed: v.boolean(),
     /** Checklist collapsed to a small chip */
     minimized: v.boolean(),
+    /** Open coachmark tip for a tour step (null = none). Additive optional. */
+    activeCoachmarkStepId: v.optional(v.union(onboardingStepIdValidator, v.null())),
+    /** One-shot tip pointing at the restart control after checklist dismiss. */
+    restartHintVisible: v.optional(v.boolean()),
   })
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_userId", ["userId"]),

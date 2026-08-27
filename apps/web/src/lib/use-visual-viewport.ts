@@ -1,6 +1,26 @@
 import { useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 
+/**
+ * Subscribes to visualViewport + window resize so mobile chrome (keyboard,
+ * browser UI) can offset fixed docks. Audited lib seam for feature UI.
+ */
+export function useVisualViewportMetrics() {
+  const snapshot = useSyncExternalStore(
+    subscribeToVisualViewport,
+    getVisualViewportSnapshot,
+    getServerVisualViewportSnapshot,
+  );
+  const [bottomText, widthText, leftText] = snapshot.split("|");
+  const bottom = Number(bottomText);
+  const width = Number(widthText);
+  const left = Number(leftText);
+  const style = {
+    "--visual-viewport-bottom": `${bottom}px`,
+  } as CSSProperties;
+  return { bottom, width, left, style };
+}
+
 function subscribeToVisualViewport(onStoreChange: () => void) {
   const viewport = window.visualViewport;
   window.addEventListener("resize", onStoreChange);
@@ -24,20 +44,4 @@ function getVisualViewportSnapshot() {
 
 function getServerVisualViewportSnapshot() {
   return "0|0|0";
-}
-
-export function useVisualViewportMetrics() {
-  const snapshot = useSyncExternalStore(
-    subscribeToVisualViewport,
-    getVisualViewportSnapshot,
-    getServerVisualViewportSnapshot,
-  );
-  const [bottomText, widthText, leftText] = snapshot.split("|");
-  const bottom = Number(bottomText);
-  const width = Number(widthText);
-  const left = Number(leftText);
-  const style = {
-    "--visual-viewport-bottom": `${bottom}px`,
-  } as CSSProperties;
-  return { bottom, width, left, style };
 }

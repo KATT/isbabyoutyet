@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   replaceEqualDeep,
   useQueryClient,
@@ -25,6 +25,59 @@ type LivePagesSnapshot = {
   pageParams: PaginationOptions[];
 };
 
+type WatchDeps = {
+  queryKey: QueryKey;
+  args: Record<string, unknown>;
+  pageParams: PaginationOptions[];
+  funcName: string;
+  queryClient: ReturnType<typeof useQueryClient>;
+  convex: ReturnType<typeof useConvex>;
+};
+
+function createSubscribe(deps: WatchDeps) {
+  return (notify: () => void) => {
+    const funcRef = makeFunctionReference<"query">(deps.funcName);
+    const unsubscribers = deps.pageParams.map((pageParam, index) => {
+      const watch = deps.convex.watchQuery(funcRef, {
+        ...deps.args,
+        paginationOpts: pageParam,
+      });
+      return watch.onUpdate(() => {
+        let value: LivePage | undefined;
+        try {
+          value = watch.localQueryResult() as LivePage | undefined;
+        } catch {
+          return;
+        }
+        if (value === undefined) {
+          return;
+        }
+        deps.queryClient.setQueryData(
+          deps.queryKey,
+          (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
+            if (!previous) {
+              return previous;
+            }
+            if (index >= previous.pages.length) {
+              return previous;
+            }
+            const pages = [...previous.pages];
+            pages[index] = value;
+            return { ...previous, pages };
+          },
+        );
+        notify();
+      });
+    });
+
+    return () => {
+      for (const unsubscribe of unsubscribers) {
+        unsubscribe();
+      }
+    };
+  };
+}
+
 /**
  * Keeps TanStack infinite-query pages in sync with Convex watch subscriptions.
  * Each loaded `pageParam` gets its own `watchQuery`; updates patch that page
@@ -32,6 +85,10 @@ type LivePagesSnapshot = {
  * by ConvexQueryClient yet).
  *
  * Package-internal — used by {@link usePreloadedConvexInfiniteQuery} only.
+ *
+ * Uses render-time useState adjustment (React’s “adjusting state when props
+ * change” pattern) so subscribe identity stays stable without reading refs
+ * during render (banned by react/refs).
  */
 export function useLiveConvexInfinitePages(opts: {
   queryKey: QueryKey;
@@ -43,8 +100,8 @@ export function useLiveConvexInfinitePages(opts: {
   const convex = useConvex();
   // Callers rebuild `args`/`pageParams`/`queryKey` each render, and `funcRef`
   // from the generated `api` proxy is a new object per property access.
-  // `replaceEqualDeep` keeps the previous identity when contents match so the
-  // effect resubscribes only on real changes (no JSON stringify/parse).
+  // `replaceEqualDeep` keeps the previous identity when contents match so we
+  // resubscribe only on real changes (no JSON stringify/parse).
   // `getFunctionName` / `makeFunctionReference` stabilize the function ref.
   const funcName = getFunctionName(opts.funcRef);
   const [snapshot, setSnapshot] = useState<LivePagesSnapshot>(() => ({
@@ -67,48 +124,40 @@ export function useLiveConvexInfinitePages(opts: {
     });
   }
 
-  const queryKey = snapshot.queryKey;
-  const args = snapshot.args;
-  const pageParams = snapshot.pageParams;
+  const watchDeps: WatchDeps = {
+    queryKey: snapshot.queryKey,
+    args: snapshot.args,
+    pageParams: snapshot.pageParams,
+    funcName,
+    queryClient,
+    convex,
+  };
 
-  useEffect(() => {
-    const funcRef = makeFunctionReference<"query">(funcName);
-    const unsubscribers = pageParams.map((pageParam, index) => {
-      const watch = convex.watchQuery(funcRef, {
-        ...args,
-        paginationOpts: pageParam,
-      });
-      return watch.onUpdate(() => {
-        let value: LivePage | undefined;
-        try {
-          value = watch.localQueryResult() as LivePage | undefined;
-        } catch {
-          return;
-        }
-        if (value === undefined) {
-          return;
-        }
-        queryClient.setQueryData(
-          queryKey,
-          (previous: InfiniteData<LivePage, PaginationOptions> | undefined) => {
-            if (!previous) {
-              return previous;
-            }
-            if (index >= previous.pages.length) {
-              return previous;
-            }
-            const pages = [...previous.pages];
-            pages[index] = value;
-            return { ...previous, pages };
-          },
-        );
-      });
+  // Keep a stable `subscribe` identity across renders when watch inputs are
+  // unchanged (useSyncExternalStore resubscribes when `subscribe` changes).
+  // Adjust during render — same pattern as the snapshot above — so we do not
+  // need useEffect / useCallback (banned by no-use-effect / no-manual-memo).
+  const [subscription, setSubscription] = useState(() => ({
+    deps: watchDeps,
+    subscribe: createSubscribe(watchDeps),
+  }));
+  if (
+    watchDeps.queryKey !== subscription.deps.queryKey ||
+    watchDeps.args !== subscription.deps.args ||
+    watchDeps.pageParams !== subscription.deps.pageParams ||
+    watchDeps.funcName !== subscription.deps.funcName ||
+    watchDeps.queryClient !== subscription.deps.queryClient ||
+    watchDeps.convex !== subscription.deps.convex
+  ) {
+    setSubscription({
+      deps: watchDeps,
+      subscribe: createSubscribe(watchDeps),
     });
+  }
 
-    return () => {
-      for (const unsubscribe of unsubscribers) {
-        unsubscribe();
-      }
-    };
-  }, [args, convex, funcName, pageParams, queryClient, queryKey]);
+  useSyncExternalStore(
+    subscription.subscribe,
+    () => 0,
+    () => 0,
+  );
 }
