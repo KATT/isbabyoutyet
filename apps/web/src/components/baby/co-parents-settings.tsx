@@ -79,7 +79,7 @@ function InviteCoParentForm(props: {
 function RemoveCoParentForm(props: {
   email: string;
   coParentId: Id<"babyCoParents">;
-  onRemove: (args: { coParentId: Id<"babyCoParents"> }) => Promise<unknown>;
+  onRemove: (args: { coParentId: Id<"babyCoParents"> }) => Promise<void>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -110,7 +110,7 @@ function RemoveCoParentForm(props: {
 function CancelInviteForm(props: {
   email: string;
   inviteId: Id<"babyCoParentInvites">;
-  onCancel: (args: { inviteId: Id<"babyCoParentInvites"> }) => Promise<unknown>;
+  onCancel: (args: { inviteId: Id<"babyCoParentInvites"> }) => Promise<void>;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -173,7 +173,9 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
               <RemoveCoParentForm
                 email={row.email}
                 coParentId={row._id}
-                onRemove={removeCoParent}
+                onRemove={async (args) => {
+                  await removeCoParent(args);
+                }}
               />
             ) : null}
           </li>
@@ -185,7 +187,13 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
               <div className="text-muted-foreground">{t("Invite pending")}</div>
             </div>
             {props.isOwner ? (
-              <CancelInviteForm email={row.email} inviteId={row._id} onCancel={cancelInvite} />
+              <CancelInviteForm
+                email={row.email}
+                inviteId={row._id}
+                onCancel={async (args) => {
+                  await cancelInvite(args);
+                }}
+              />
             ) : null}
           </li>
         ))}
