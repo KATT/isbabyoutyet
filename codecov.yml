@@ -4,8 +4,14 @@
 # Gate is project coverage only: never go down vs the PR base commit
 # (`target: auto`, `threshold: 0%`). Patch status is informational.
 #
-# Base reports usually come from main/push uploads. For stacked PRs whose base
-# tip has no report yet, CI remeasures that base (Turbo-cached) and uploads it.
+# Project `target: auto` compares to the PR base commit. That report comes from
+# push uploads (main/next/canary) or the inner PR's head-tip upload for stacked
+# PRs; the codecov job probes the Codecov API and remeasures the base via Turbo
+# only when no report exists.
+codecov:
+  # Prefer failing closed over Codecov inventing a pseudo-base for stacks.
+  allow_pseudo_compare: false
+
 coverage:
   status:
     project:
