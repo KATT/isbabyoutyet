@@ -84,15 +84,17 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
   const button = view.getByRole("button", { name: "Send" }) as HTMLButtonElement;
   expect(view.queryByRole("status")).toBeNull();
   expect(button.disabled).toBe(false);
+  expect(button.getAttribute("aria-busy")).toBe("false");
 
   fireEvent.click(button);
 
   await vi.advanceTimersByTimeAsync(500);
 
   await vi.waitFor(() => {
-    expect(view.getByRole("status", { name: "Loading" })).toBeTruthy();
+    expect(button.disabled).toBe(true);
   });
-  expect(button.disabled).toBe(true);
+  expect(button.getAttribute("aria-busy")).toBe("true");
+  expect(button.querySelector('[data-slot="spinner"]')).toBeTruthy();
   expect(button.textContent).toContain("Send");
   expect(onSubmit).toHaveBeenCalledWith({ note: "hi" });
 
@@ -100,11 +102,11 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
   await vi.advanceTimersByTimeAsync(0);
 
   await vi.waitFor(() => {
-    expect(view.queryByRole("status")).toBeNull();
+    expect(button.disabled).toBe(false);
   });
-  expect(button.disabled).toBe(false);
+  expect(button.querySelector('[data-slot="spinner"]')).toBeNull();
+  expect(button.getAttribute("aria-busy")).toBe("false");
 });
-
 test("SubmitButton can target an explicit form outside the <form> element", async () => {
   await using _timers = makeResource({}, () => {
     vi.useRealTimers();

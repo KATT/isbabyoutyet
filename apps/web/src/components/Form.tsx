@@ -137,17 +137,15 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   } = props;
 
   const icon = (
-    <span className="relative inline-grid size-4 shrink-0 place-items-center">
+    <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
       {isSubmitting ? (
         <span className="submit-icon-swap-in inline-grid place-items-center">
           <Spinner className="size-4" />
         </span>
       ) : typeof IconComponent === "string" ? (
-        <span className="text-base leading-none" aria-hidden>
-          {IconComponent}
-        </span>
+        <span className="text-base leading-none">{IconComponent}</span>
       ) : (
-        <IconComponent className="size-4" aria-hidden />
+        <IconComponent className="size-4" />
       )}
     </span>
   );
@@ -157,6 +155,7 @@ export function SubmitButton<TFieldValues extends FieldValues>(
       {...buttonProps}
       form={formProp === "context" ? undefined : formProp.id}
       type="submit"
+      aria-busy={isSubmitting}
       disabled={isSubmitting || Boolean(disabled)}
     >
       {iconPosition === "start" ? icon : null}
