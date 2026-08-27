@@ -3,12 +3,7 @@ import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
-import {
-  modules,
-  registerComponents,
-  createEncouragementArgs,
-  testBabyInsert,
-} from "./test.setup";
+import { modules, registerComponents, createEncouragementArgs, testBabyInsert } from "./test.setup";
 
 const FIRST_PAGE = { numItems: 10, cursor: null };
 

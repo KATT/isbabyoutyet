@@ -251,7 +251,10 @@ export function testCoParentInsert(
 }
 
 export function testInviteInsert(
-  opts: Pick<InsertDoc<"babyCoParentInvites">, "babyId" | "email" | "invitedByUserId" | "createdAt"> &
+  opts: Pick<
+    InsertDoc<"babyCoParentInvites">,
+    "babyId" | "email" | "invitedByUserId" | "createdAt"
+  > &
     Partial<InsertDoc<"babyCoParentInvites">>,
 ): InsertDoc<"babyCoParentInvites"> {
   return {

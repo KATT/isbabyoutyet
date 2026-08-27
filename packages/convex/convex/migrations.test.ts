@@ -38,12 +38,12 @@ import {
   testUpdateInsert,
 } from "./test.setup";
 
-function withoutKeys<TDoc extends object>(doc: TDoc, keys: ReadonlyArray<keyof TDoc>) {
-  const copy: Record<string, unknown> = { ...doc };
+function withoutKeys<TDoc>(doc: TDoc, keys: ReadonlyArray<keyof TDoc & string>) {
+  const copy: Record<string, unknown> = Object.assign({}, doc);
   for (const key of keys) {
-    delete copy[String(key)];
+    delete copy[key];
   }
-  return copy as unknown as TDoc;
+  return copy as TDoc;
 }
 
 test("retained migrations skip linked rows and backfill update metadata and counts", async () => {
