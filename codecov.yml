@@ -1,5 +1,5 @@
 # https://docs.codecov.com/docs/commit-status
-# Full-suite uploads only (never vitest --changed). Fail the PR when coverage drops.
+# Full-suite uploads only (never vitest --changed). Codecov is the coverage gate.
 #
 # Project `target: auto` needs a base report. The codecov job uploads coverage for
 # `pull_request.base.sha` before the head upload so stacked tips still compare.
@@ -7,13 +7,14 @@ coverage:
   status:
     project:
       default:
+        # Fail on any project coverage drop vs base.
         target: auto
-        threshold: 0.5%
+        threshold: 0%
         informational: false
     patch:
       default:
-        # New/changed lines should be covered. Test-only diffs are ignored below.
-        target: 80%
+        # Every new/changed line must be covered (test files ignored below).
+        target: 100%
         informational: false
 
 comment:
