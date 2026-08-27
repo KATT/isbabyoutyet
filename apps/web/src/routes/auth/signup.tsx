@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -17,8 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Form, useZodForm } from "@/components/Form";
-import { Baby } from "@phosphor-icons/react";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import { Baby, UserPlus } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
@@ -209,14 +208,14 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
                   )}
                 />
 
-                <Button
-                  type="submit"
+                <SubmitButton
+                  form="context"
+                  IconComponent={UserPlus}
                   className="w-full rounded-full font-extrabold pop-shadow"
-                  disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? t("Signing up...") : t("Sign Up")}
-                </Button>
+                  {t("Sign Up")}
+                </SubmitButton>
               </div>
             </Form>
 

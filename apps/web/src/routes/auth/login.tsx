@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import {
   Card,
@@ -17,8 +16,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Form, useZodForm } from "@/components/Form";
-import { Baby } from "@phosphor-icons/react";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import { Baby, SignIn } from "@phosphor-icons/react";
 import { DEMO_USER } from "@workspace/convex/src/seedCredentials";
 import { DemoAccountPicker } from "@/components/demo-account-picker";
 import { hasDemoLogin } from "@/lib/has-demo-login";
@@ -216,14 +215,14 @@ export function LoginCard(props: {
                   )}
                 />
 
-                <Button
-                  type="submit"
+                <SubmitButton
+                  form="context"
+                  IconComponent={SignIn}
                   className="w-full rounded-full font-extrabold pop-shadow"
-                  disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? t("Signing in...") : t("Sign In")}
-                </Button>
+                  {t("Sign In")}
+                </SubmitButton>
               </div>
             </Form>
 

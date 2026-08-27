@@ -50,7 +50,7 @@ import {
   getMilestonePolicy,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
@@ -480,16 +480,13 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               <Images className="w-4 h-4" />
               {draft.photo ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <Button type="submit" disabled={!canPost}>
-              <PaperPlaneTilt className="w-4 h-4" />
-              {isPosting
-                ? t("Posting...")
-                : selectedMilestone
-                  ? t('Post & mark "{{status}}"', {
-                      status: t(MILESTONE_META[selectedMilestone].labelKey),
-                    })
-                  : t("Post update")}
-            </Button>
+            <SubmitButton form="context" IconComponent={PaperPlaneTilt} disabled={!canPost}>
+              {selectedMilestone
+                ? t('Post & mark "{{status}}"', {
+                    status: t(MILESTONE_META[selectedMilestone].labelKey),
+                  })
+                : t("Post update")}
+            </SubmitButton>
           </div>
 
           {!canPost && !isPosting && (
@@ -806,10 +803,9 @@ function EncouragementEditForm(props: {
           )}
         />
         <div className="flex gap-2">
-          <Button size="sm" type="submit" disabled={isSaving}>
-            <Check className="w-3 h-3" />
-            {isSaving ? t("Saving...") : t("Save")}
-          </Button>
+          <SubmitButton form="context" IconComponent={Check} size="sm">
+            {t("Save")}
+          </SubmitButton>
           <Button
             size="sm"
             type="button"

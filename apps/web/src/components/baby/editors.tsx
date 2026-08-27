@@ -1,4 +1,4 @@
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { Clock, Trash } from "@phosphor-icons/react";
+import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -62,9 +62,14 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
       >
         {t("Cancel")}
       </Button>
-      <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
+      <SubmitButton
+        form="context"
+        IconComponent={Check}
+        size="sm"
+        disabled={props.isSubmitting || !props.isDirty}
+      >
         {t("Save")}
-      </Button>
+      </SubmitButton>
     </div>
   );
 }

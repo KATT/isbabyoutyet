@@ -6,12 +6,12 @@ import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { toast } from "sonner";
-import { CircleNotch, UserMinus, X } from "@phosphor-icons/react";
+import { UserMinus, UserPlus, X } from "@phosphor-icons/react";
 import * as z from "zod";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -70,13 +70,9 @@ function InviteCoParentForm(props: {
             </FormItem>
           )}
         />
-        <Button type="submit" size="sm" disabled={form.formState.isSubmitting || !email.trim()}>
-          {form.formState.isSubmitting ? (
-            <CircleNotch className="w-4 h-4 animate-spin" />
-          ) : (
-            t("Add")
-          )}
-        </Button>
+        <SubmitButton form="context" IconComponent={UserPlus} size="sm" disabled={!email.trim()}>
+          {t("Add")}
+        </SubmitButton>
       </div>
     </Form>
   );

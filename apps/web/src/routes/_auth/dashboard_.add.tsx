@@ -17,9 +17,9 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
-import { ArrowLeft } from "@phosphor-icons/react";
+import { ArrowLeft, Baby } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -147,7 +147,9 @@ export function AddBabyPageView(props: {
                         <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
                       </FormControl>
                       <FormDescription>
-                        {t("Optional — leave blank for now. You can change the time later in settings.")}
+                        {t(
+                          "Optional — leave blank for now. You can change the time later in settings.",
+                        )}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -168,14 +170,14 @@ export function AddBabyPageView(props: {
                   themeFieldName="theme"
                 />
 
-                <Button
-                  type="submit"
+                <SubmitButton
+                  form="context"
+                  IconComponent={Baby}
                   className="w-full rounded-full font-extrabold pop-shadow"
-                  disabled={form.formState.isSubmitting}
                   size="lg"
                 >
-                  {form.formState.isSubmitting ? t("Creating...") : t("Add Baby 🍼")}
-                </Button>
+                  {t("Add Baby 🍼")}
+                </SubmitButton>
               </div>
             </Form>
           </CardContent>
