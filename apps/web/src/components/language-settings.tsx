@@ -30,7 +30,8 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/combobox";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { LanguagePicker } from "@/components/language-picker";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -90,9 +91,9 @@ function LanguageRequestForm(props: {
         )}
       />
       <DialogFooter>
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
           {t("Send request")}
-        </Button>
+        </SubmitButton>
       </DialogFooter>
     </Form>
   );

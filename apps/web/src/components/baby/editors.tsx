@@ -1,4 +1,4 @@
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,7 +16,7 @@ import { Input } from "@workspace/ui/components/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { Clock, Trash } from "@phosphor-icons/react";
+import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -49,7 +49,7 @@ type EditorFormProps = {
   onClose: () => void;
 };
 
-function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+function EditorActions(props: { onClose: () => void; isSubmitting: boolean }) {
   const { t } = useI18n();
   return (
     <div className="flex gap-2 justify-end">
@@ -62,9 +62,9 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
       >
         {t("Cancel")}
       </Button>
-      <Button type="submit" size="sm" disabled={props.isSubmitting || !props.isDirty}>
+      <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
         {t("Save")}
-      </Button>
+      </SubmitButton>
     </div>
   );
 }
@@ -173,7 +173,6 @@ function DueDateForm(props: EditorFormProps) {
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
       />
     </Form>
   );
@@ -330,7 +329,6 @@ function StatusDateForm(props: {
         <EditorActions
           onClose={props.onClose}
           isSubmitting={form.formState.isSubmitting || isDeleting}
-          isDirty={form.formState.isDirty}
         />
       </div>
     </Form>
@@ -405,7 +403,6 @@ function NameForm(props: EditorFormProps) {
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
       />
     </Form>
   );
