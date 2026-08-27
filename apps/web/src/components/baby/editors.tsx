@@ -49,7 +49,7 @@ type EditorFormProps = {
   onClose: () => void;
 };
 
-function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDirty: boolean }) {
+function EditorActions(props: { onClose: () => void; isSubmitting: boolean }) {
   const { t } = useI18n();
   return (
     <div className="flex gap-2 justify-end">
@@ -62,13 +62,7 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
       >
         {t("Cancel")}
       </Button>
-      <SubmitButton
-        form="context"
-        IconComponent={Check}
-        iconPosition="start"
-        size="sm"
-        disabled={props.isSubmitting || !props.isDirty}
-      >
+      <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
         {t("Save")}
       </SubmitButton>
     </div>
@@ -179,7 +173,6 @@ function DueDateForm(props: EditorFormProps) {
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
       />
     </Form>
   );
@@ -336,7 +329,6 @@ function StatusDateForm(props: {
         <EditorActions
           onClose={props.onClose}
           isSubmitting={form.formState.isSubmitting || isDeleting}
-          isDirty={form.formState.isDirty}
         />
       </div>
     </Form>
@@ -411,7 +403,6 @@ function NameForm(props: EditorFormProps) {
       <EditorActions
         onClose={props.onClose}
         isSubmitting={form.formState.isSubmitting}
-        isDirty={form.formState.isDirty}
       />
     </Form>
   );

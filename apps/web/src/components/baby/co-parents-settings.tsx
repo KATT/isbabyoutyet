@@ -42,7 +42,6 @@ function InviteCoParentForm(props: {
     schema: inviteCoParentSchema(t, props.babyId),
     defaultValues: { email: "" },
   });
-  const email = form.watch("email");
 
   return (
     <Form
@@ -70,13 +69,7 @@ function InviteCoParentForm(props: {
             </FormItem>
           )}
         />
-        <SubmitButton
-          form="context"
-          IconComponent={UserPlus}
-          iconPosition="start"
-          size="sm"
-          disabled={!email.trim()}
-        >
+        <SubmitButton form="context" IconComponent={UserPlus} iconPosition="start" size="sm">
           {t("Add")}
         </SubmitButton>
       </div>

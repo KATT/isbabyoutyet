@@ -480,12 +480,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               <Images className="w-4 h-4" />
               {draft.photo ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <SubmitButton
-              form="context"
-              IconComponent={PaperPlaneTilt}
-              iconPosition="start"
-              disabled={!canPost}
-            >
+            <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
               {selectedMilestone
                 ? t('Post & mark "{{status}}"', {
                     status: t(MILESTONE_META[selectedMilestone].labelKey),
