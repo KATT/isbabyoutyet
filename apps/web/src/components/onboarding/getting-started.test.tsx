@@ -13,7 +13,6 @@ test("shows the next incomplete step and an add-baby CTA on the dashboard", asyn
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -33,7 +32,6 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
       onDismiss={onDismiss}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -78,7 +76,6 @@ test("dismisses the guide from the explicit labeled action", async () => {
       onDismiss={onDismiss}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -124,7 +121,6 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -161,7 +157,6 @@ test("dashboard baby-page steps link to the preferred baby's page (not overlays)
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -180,7 +175,6 @@ test("dashboard post-update step links to the preferred baby's page", async () =
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -199,7 +193,6 @@ test("baby-page Show me is a no-op when onGoToStep is missing", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -218,7 +211,6 @@ test("baby-page share step highlights via Show me", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -237,7 +229,6 @@ test("minimized chip shows progress count", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -256,7 +247,6 @@ test("desktop Minimize collapses the checklist panel", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={null}
     />,
   );
@@ -274,7 +264,6 @@ test("dashboard settings CTA opens the preferred baby's page without completing"
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -292,7 +281,6 @@ test("baby-page checklist uses Show me for post and settings tips", async () => 
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      className={undefined}
       onGoToStep={onGoToStep}
       surface="baby"
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
@@ -311,7 +299,6 @@ test("baby-page Show me works without a preferred tour baby", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      className={undefined}
       onGoToStep={onGoToStep}
       surface="baby"
       tourBaby={null}
@@ -338,7 +325,6 @@ test("all-done state offers close checklist", async () => {
       onDismiss={onDismiss}
       surface="baby"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -361,7 +347,6 @@ test("dashboard learn encouragements step links to the first baby's page", async
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -381,7 +366,6 @@ test("baby-page learn encouragements opens the highlight tip via Show me", async
       onDismiss={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -401,7 +385,6 @@ test("next-step hint Show me runs the baby-page highlight action", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={onGoToStep}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
@@ -421,14 +404,13 @@ test("next-step hint See page runs the dashboard deep link", async () => {
       onDismiss={vi.fn<() => void>()}
       surface="dashboard"
       onGoToStep={undefined}
-      className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
 
   const hintTitles = screen.getAllByText("Peek at settings");
   expect(hintTitles.length).toBeGreaterThan(0);
-  const hintPanel = hintTitles[hintTitles.length - 1]!.closest("div.rounded-lg");
+  const hintPanel = hintTitles[hintTitles.length - 1]!.closest("[data-getting-started-hint]");
   expect(hintPanel).toBeTruthy();
   const seePage =
     within(hintPanel as HTMLElement).queryByRole("link", { name: /see ada's page/i }) ||

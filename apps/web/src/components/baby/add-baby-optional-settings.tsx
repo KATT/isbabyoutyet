@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -48,7 +47,10 @@ const styles = stylex.create({
     },
     borderBottomColor: colors.border,
     borderBottomStyle: "solid",
-    borderBottomWidth: 0,
+    borderBottomWidth: {
+      default: 0,
+      ":is([data-panel-open])": "1px",
+    },
     cursor: "pointer",
     display: "block",
     paddingBlock: spacing.s3,
@@ -56,17 +58,16 @@ const styles = stylex.create({
     textAlign: "start",
     width: "100%",
   },
-  triggerOpen: {
-    borderBottomWidth: "1px",
-  },
   caret: {
     flexShrink: 0,
+    transform: {
+      default: "rotate(0deg)",
+      // Matches when this node is a descendant of the open trigger.
+      ":is([data-panel-open] *)": "rotate(180deg)",
+    },
     transitionDuration: "150ms",
     transitionProperty: "transform",
     transitionTimingFunction: "ease",
-  },
-  caretOpen: {
-    transform: "rotate(180deg)",
   },
   content: {
     paddingBlockEnd: spacing.s4,
@@ -100,24 +101,16 @@ export function AddBabyOptionalSettings<
   TThemeName extends FieldPath<TFieldValues>,
 >(props: AddBabyOptionalSettingsProps<TFieldValues, TBirthJourneyName, TThemeName>) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
 
   return (
     <div {...stylex.props(styles.shell)}>
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger
-          render={
-            <button
-              type="button"
-              {...stylex.props(styles.trigger, open ? styles.triggerOpen : null)}
-            />
-          }
-        >
+      <Collapsible>
+        <CollapsibleTrigger render={<button type="button" {...stylex.props(styles.trigger)} />}>
           <Inline gap="s3" justify="between" wrap={false} fullWidth>
             <Text as="span" weight="bold">
               {t("Customize your page (optional)")}
             </Text>
-            <CaretDown size={16} {...stylex.props(styles.caret, open ? styles.caretOpen : null)} />
+            <CaretDown size={16} {...stylex.props(styles.caret)} />
           </Inline>
         </CollapsibleTrigger>
         <CollapsibleContent>

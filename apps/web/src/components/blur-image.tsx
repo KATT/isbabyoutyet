@@ -6,6 +6,8 @@ import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
   blurDataUrl: string | null;
+  /** Placeholder / image object-fit. Defaults to `cover` when undefined. */
+  objectFit: CSSProperties["objectFit"] | undefined;
 };
 
 const styles = stylex.create({
@@ -34,14 +36,7 @@ function numericDimension(value: BlurImageProps["width"] | BlurImageProps["heigh
 }
 
 function placeholderObjectFit(props: BlurImageProps) {
-  if (props.style?.objectFit) return props.style.objectFit;
-
-  const className = ` ${props.className ?? ""} `;
-  if (className.includes(" object-contain ")) return "contain";
-  if (className.includes(" object-fill ")) return "fill";
-  if (className.includes(" object-none ")) return "none";
-  if (className.includes(" object-scale-down ")) return "scale-down";
-  return "cover";
+  return props.objectFit ?? props.style?.objectFit ?? "cover";
 }
 
 type BlurSvgOptions = {
@@ -76,6 +71,7 @@ function imgPropsWithoutBlur(props: BlurImageProps) {
     alt: _alt,
     blurDataUrl: _blurDataUrl,
     decoding: _decoding,
+    objectFit: _objectFit,
     onError: _onError,
     onLoad: _onLoad,
     src: _src,

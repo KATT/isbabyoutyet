@@ -68,6 +68,7 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
             src={props.photoUrl}
             alt={props.alt}
             blurDataUrl={props.blurDataUrl}
+            objectFit="contain"
             {...stylex.props(styles.image)}
           />
         </div>

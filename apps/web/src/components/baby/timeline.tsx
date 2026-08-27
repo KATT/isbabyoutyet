@@ -698,8 +698,9 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         src={inlineUrl}
         alt={t("Baby update")}
         blurDataUrl={props.blurDataUrl}
-        className="aspect-square max-h-64 w-full object-cover"
+        objectFit="cover"
         loading="lazy"
+        style={{ aspectRatio: "1", maxHeight: "16rem", width: "100%", objectFit: "cover" }}
       />
     </Link>
   );

@@ -210,6 +210,7 @@ function PhotoAvatar(props: PhotoAvatarProps) {
       width={160}
       height={160}
       blurDataUrl={props.blurDataUrl}
+      objectFit="cover"
       {...stylex.props(styles.avatarImage)}
     />
   ) : null;
