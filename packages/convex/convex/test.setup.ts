@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
+import type { FunctionArgs } from "convex/server";
 import type { convexTest } from "convex-test";
+import type { api } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 
 /**
  * All Convex function modules for convex-test.
@@ -62,4 +65,93 @@ export async function registerMigrationsComponent(t: TestConvex) {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
   t.registerComponent("migrations", migrationsSchema.default, migrationsModules);
+}
+
+/** Required `baby.create` args with the pre-feature defaults tests used to omit. */
+export function createBabyArgs(
+  opts: Pick<FunctionArgs<typeof api.baby.create>, "name" | "dueDate"> &
+    Partial<FunctionArgs<typeof api.baby.create>>,
+): FunctionArgs<typeof api.baby.create> {
+  return {
+    dueDateDisplayMode: opts.dueDate ? "exact" : "message",
+    publicDueDateText: null,
+    birthJourney: "labor",
+    theme: null,
+    ...opts,
+  };
+}
+
+/** Required `updates.post` args; omitted fields are explicit `null`. */
+export function postUpdateArgs(
+  opts: Pick<FunctionArgs<typeof api.updates.post>, "babyId"> &
+    Partial<FunctionArgs<typeof api.updates.post>>,
+): FunctionArgs<typeof api.updates.post> {
+  return {
+    message: null,
+    milestone: null,
+    occurredAt: null,
+    photoId: null,
+    ...opts,
+  };
+}
+
+/** Required `encouragements.create` metadata; omitted fields are explicit `null`. */
+export function createEncouragementArgs(
+  opts: Pick<
+    FunctionArgs<typeof api.encouragements.create>,
+    "babyId" | "authorName" | "message" | "visitorId"
+  > &
+    Partial<FunctionArgs<typeof api.encouragements.create>>,
+): FunctionArgs<typeof api.encouragements.create> {
+  return {
+    userAgent: null,
+    locale: null,
+    timezone: null,
+    ...opts,
+  };
+}
+
+type BabyUpdateFields = Pick<
+  Doc<"baby">,
+  | "dueDate"
+  | "dueDateDisplayMode"
+  | "publicDueDateText"
+  | "name"
+  | "theme"
+  | "locale"
+  | "birthJourney"
+>;
+
+/** Merge a stored baby row with a sparse test patch into required `baby.update` args. */
+export function updateBabyArgs(
+  baby: BabyUpdateFields,
+  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
+    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
+): FunctionArgs<typeof api.baby.update> {
+  return {
+    babyId: patch.babyId,
+    dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+    dueDateDisplayMode:
+      patch.dueDateDisplayMode !== undefined ? patch.dueDateDisplayMode : baby.dueDateDisplayMode,
+    publicDueDateText:
+      patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
+    name: patch.name !== undefined ? patch.name : baby.name,
+    theme: patch.theme !== undefined ? patch.theme : (baby.theme ?? null),
+    locale: patch.locale !== undefined ? patch.locale : (baby.locale ?? null),
+    birthJourney: patch.birthJourney !== undefined ? patch.birthJourney : baby.birthJourney,
+  };
+}
+
+/** Load the baby row, then fill required `baby.update` fields the test omitted. */
+export async function loadBabyUpdateArgs(
+  t: { run: TestConvex["run"] },
+  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
+    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
+) {
+  const baby = await t.run(async (ctx) => {
+    const doc = await ctx.db.get(patch.babyId);
+    if (!doc) throw new Error("Baby not found");
+    return doc;
+  });
+  return updateBabyArgs(baby, patch);
 }

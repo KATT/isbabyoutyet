@@ -4,7 +4,14 @@ import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
-import { modules, registerComponents } from "./test.setup";
+import {
+  modules,
+  registerComponents,
+  createBabyArgs,
+  postUpdateArgs,
+  createEncouragementArgs,
+  loadBabyUpdateArgs,
+} from "./test.setup";
 import { insertUpdateWithTimelineItem } from "./timeline";
 
 const FIRST_PAGE = { numItems: 20, cursor: null };
@@ -13,10 +20,13 @@ async function setup() {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
-  const created = await asAlice.mutation(api.baby.create, {
-    name: "Baby Smith",
-    dueDate: "2026-09-01",
-  });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
   return { t, asAlice, babyId: created.babyId };
 }
 
@@ -45,19 +55,29 @@ test("a text-only update tops the feed without changing the status", async () =>
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
-  await t.mutation(api.encouragements.create, {
-    babyId,
-    authorName: "Grandma",
-    message: "Good luck!",
-    visitorId: "visitor-1",
-  });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId,
+      authorName: "Grandma",
+      message: "Good luck!",
+      visitorId: "visitor-1",
+    }),
+  );
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    message: "Long walk today. Still comfy in there",
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      message: "Long walk today. Still comfy in there",
+    }),
+  );
 
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toMatchObject([
     { kind: "update", update: { message: "Long walk today. Still comfy in there" } },
     { kind: "encouragement", encouragement: { authorName: "Grandma" } },
@@ -87,19 +107,23 @@ test("a text-only update tops the feed without changing the status", async () =>
 test("the public feed never leaks visitor credentials or metadata", async () => {
   const { t, babyId } = await setup();
 
-  await t.mutation(api.encouragements.create, {
-    babyId,
-    authorName: "Grandma",
-    message: "Hi!",
-    visitorId: "visitor-secret",
-    userAgent: "Mozilla/5.0",
-    locale: "en-US",
-    timezone: "Europe/Stockholm",
-  });
+  await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId,
+      authorName: "Grandma",
+      message: "Hi!",
+      visitorId: "visitor-secret",
+      userAgent: "Mozilla/5.0",
+      locale: "en-US",
+      timezone: "Europe/Stockholm",
+    }),
+  );
 
   const anonymous = await t.query(api.timeline.listByBaby, {
     babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   const item = anonymous.page[0];
   if (item?.kind !== "encouragement") throw new Error("expected encouragement item");
@@ -125,8 +149,8 @@ test("a photo-only update does not blank the latest message", async () => {
   const { t, asAlice, babyId } = await setup();
   const photo = await storeBlob(t);
 
-  await asAlice.mutation(api.updates.post, { babyId, message: "Still waiting!" });
-  await asAlice.mutation(api.updates.post, { babyId, photoId: photo });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, message: "Still waiting!" }));
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, photoId: photo }));
 
   const latest = await t.query(api.timeline.latestUpdate, { babyId });
   expect(latest).toMatchObject({ update: { message: "Still waiting!" } });
@@ -146,37 +170,47 @@ test("a photo-only update does not blank the latest message", async () => {
 test("posting requires content and ownership", async () => {
   const { t, asAlice, babyId } = await setup();
 
-  await expect(asAlice.mutation(api.updates.post, { babyId, message: "   " })).rejects.toThrow(
-    "An update needs a message, a photo, or a milestone",
-  );
+  await expect(
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, message: "   " })),
+  ).rejects.toThrow("An update needs a message, a photo, or a milestone");
 
   // The three fields are mutually inclusive — any single one is enough, and
   // a whitespace-only message is trimmed away rather than blocking the post
   const photo = await storeBlob(t);
-  await asAlice.mutation(api.updates.post, { babyId, message: "   ", photoId: photo });
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, message: "   ", photoId: photo }),
+  );
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page[0]).toMatchObject({ kind: "update", update: { message: null } });
   expect(feed.page[0]?.kind === "update" && feed.page[0].update.photoUrl).toBeTruthy();
 
   const asBob = t.withIdentity({ subject: "bob" });
-  await expect(asBob.mutation(api.updates.post, { babyId, message: "Hi" })).rejects.toThrow(
-    "Not authorized",
-  );
+  await expect(
+    asBob.mutation(api.updates.post, postUpdateArgs({ babyId, message: "Hi" })),
+  ).rejects.toThrow("Not authorized");
 
-  await expect(t.mutation(api.updates.post, { babyId, message: "Hi" })).rejects.toThrow(
-    "Not authenticated",
-  );
+  await expect(
+    t.mutation(api.updates.post, postUpdateArgs({ babyId, message: "Hi" })),
+  ).rejects.toThrow("Not authenticated");
 });
 
 test("status is inferred from milestone updates, not stored baby fields", async () => {
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "born",
-    message: "She's here!",
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "born",
+      message: "She's here!",
+    }),
+  );
 
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   expect(publicBaby?.babyBorn).toBeTruthy();
@@ -199,14 +233,14 @@ test("status is inferred from milestone updates, not stored baby fields", async 
 
   // The status only moves forward: re-marking the same milestone — or any
   // earlier stage — is rejected once a later stage is reached
-  await expect(asAlice.mutation(api.updates.post, { babyId, milestone: "born" })).rejects.toThrow(
-    "Only a future status can be marked",
-  );
   await expect(
-    asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" }),
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "born" })),
   ).rejects.toThrow("Only a future status can be marked");
   await expect(
-    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "gone_to_hospital" })),
+  ).rejects.toThrow("Only a future status can be marked");
+  await expect(
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" })),
   ).rejects.toThrow("Only a future status can be marked");
 });
 
@@ -262,21 +296,31 @@ test("an invalid persisted milestone timestamp fails closed", async () => {
 
 test("journey selection does not block backend milestone writes", async () => {
   const { t, asAlice, babyId } = await setup();
-  await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
-  });
+  await asAlice.mutation(
+    api.baby.update,
+    await loadBabyUpdateArgs(t, {
+      babyId,
+      birthJourney: "planned_c_section",
+    }),
+  );
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+      occurredAt: Date.parse("2026-08-10T08:00:00.000Z"),
+    }),
+  );
 
   const baby = await getBaby(t, babyId);
   expect(baby).not.toHaveProperty("laborStarted");
   expect(baby.birthJourney).toBe("planned_c_section");
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toMatchObject([{ kind: "update", update: { milestone: "labor_started" } }]);
 });
 
@@ -285,22 +329,29 @@ test("changing selection leaves existing updates and notifications untouched", a
   const { t, asAlice, babyId } = await setup();
   const photoId = await storeBlob(t);
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    message: "A quiet update for everyone",
-    photoId,
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+      message: "A quiet update for everyone",
+      photoId,
+    }),
+  );
 
   const notificationsBefore = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
-  await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
-  });
+  await asAlice.mutation(
+    api.baby.update,
+    await loadBabyUpdateArgs(t, {
+      babyId,
+      birthJourney: "planned_c_section",
+    }),
+  );
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId,
     paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
   expect(feed.page).toHaveLength(1);
   expect(feed.page[0]).toMatchObject({
@@ -317,16 +368,22 @@ test("changing selection leaves existing updates and notifications untouched", a
 
 test("changing selection then unmarking cancels the pending milestone push", async () => {
   await using _timers = useFakeTimersResource();
-  const { asAlice, babyId } = await setup();
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-  });
+  const { t, asAlice, babyId } = await setup();
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+    }),
+  );
 
-  await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
-  });
+  await asAlice.mutation(
+    api.baby.update,
+    await loadBabyUpdateArgs(t, {
+      babyId,
+      birthJourney: "planned_c_section",
+    }),
+  );
   await asAlice.mutation(api.updates.unmarkMilestone, {
     babyId,
     milestone: "labor_started",
@@ -338,14 +395,21 @@ test("changing selection then unmarking cancels the pending milestone push", asy
 
 test("selection changes do not filter empty historical milestone rows", async () => {
   const { t, asAlice, babyId } = await setup();
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
 
-  await asAlice.mutation(api.baby.update, {
+  await asAlice.mutation(
+    api.baby.update,
+    await loadBabyUpdateArgs(t, {
+      babyId,
+      birthJourney: "planned_c_section",
+    }),
+  );
+
+  const feed = await t.query(api.timeline.listByBaby, {
     babyId,
-    birthJourney: "planned_c_section",
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
-
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   expect(feed.page).toMatchObject([{ kind: "update", update: { milestone: "labor_started" } }]);
 });
 
@@ -354,12 +418,15 @@ test("a milestone with a photo is a single status push that carries the image", 
   const { t, asAlice, babyId } = await setup();
   const photo = await storeBlob(t);
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "born",
-    message: "She's here!",
-    photoId: photo,
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "born",
+      message: "She's here!",
+      photoId: photo,
+    }),
+  );
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([
@@ -376,8 +443,11 @@ test("a later generic update does not cancel a pending status push", async () =>
   await using _timers = useFakeTimersResource();
   const { asAlice, babyId } = await setup();
 
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
-  await asAlice.mutation(api.updates.post, { babyId, message: "Breathing through it" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, message: "Breathing through it" }),
+  );
 
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([
@@ -395,20 +465,23 @@ test("the forward-only guard enforces order at every intermediate stage", async 
   const { asAlice, babyId } = await setup();
 
   // From labor_started: re-marking it is rejected, later stages are open
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
   await expect(
-    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" })),
   ).rejects.toThrow("Only a future status can be marked");
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, milestone: "gone_to_hospital" }),
+  );
 
   // From gone_to_hospital: same and earlier stages are rejected, born is open
   await expect(
-    asAlice.mutation(api.updates.post, { babyId, milestone: "gone_to_hospital" }),
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "gone_to_hospital" })),
   ).rejects.toThrow("Only a future status can be marked");
   await expect(
-    asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" }),
+    asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" })),
   ).rejects.toThrow("Only a future status can be marked");
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "born" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "born" }));
 });
 
 test("milestones are posted, redated, and unmarked through explicit update operations", async () => {
@@ -416,14 +489,21 @@ test("milestones are posted, redated, and unmarked through explicit update opera
 
   const initialOccurredAt = Date.parse("2026-08-10T08:00:00.000Z");
   const beforeMark = Date.now();
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    occurredAt: initialOccurredAt,
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+      occurredAt: initialOccurredAt,
+    }),
+  );
   const afterMark = Date.now();
 
-  let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  let feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toHaveLength(1);
   const marked = feed.page[0];
   if (marked?.kind !== "update") throw new Error("expected update");
@@ -442,7 +522,11 @@ test("milestones are posted, redated, and unmarked through explicit update opera
     milestone: "labor_started",
     occurredAt: Date.parse("2026-08-10T10:30:00.000Z"),
   });
-  feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toMatchObject([
     {
       postedAt: postedAtBeforeRedate,
@@ -455,28 +539,43 @@ test("milestones are posted, redated, and unmarked through explicit update opera
     babyId,
     milestone: "labor_started",
   });
-  feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toEqual([]);
 });
 
 test("encouragements dual-write timeline rows and cascade on delete", async () => {
   const { t, asAlice, babyId } = await setup();
 
-  const encouragementId = await t.mutation(api.encouragements.create, {
-    babyId,
-    authorName: "Uncle Bob",
-    message: "So excited!",
-    visitorId: "visitor-2",
-  });
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId,
+      authorName: "Uncle Bob",
+      message: "So excited!",
+      visitorId: "visitor-2",
+    }),
+  );
 
-  let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  let feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toMatchObject([
     { kind: "encouragement", encouragement: { authorName: "Uncle Bob" } },
   ]);
 
-  await asAlice.mutation(api.encouragements.remove, { encouragementId });
+  await asAlice.mutation(api.encouragements.remove, { encouragementId, visitorId: null });
 
-  feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toEqual([]);
   const softDeleted = await t.run(async (ctx) => {
     const items = await ctx.db.query("timelineItems").collect();
@@ -493,11 +592,14 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
-  const updateId = await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    message: "It's starting",
-  });
+  const updateId = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+      message: "It's starting",
+    }),
+  );
 
   await asAlice.mutation(api.updates.remove, { updateId });
 
@@ -507,7 +609,11 @@ test("removing a milestone update unmarks it and cancels the pending push", asyn
   const notifications = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   expect(notifications).toMatchObject([{ status: "cancelled", notificationType: "labor_started" }]);
 
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toEqual([]);
 });
 
@@ -515,18 +621,27 @@ test("milestones must be deleted in reverse order", async () => {
   await using _timers = useFakeTimersResource();
   const { t, asAlice, babyId } = await setup();
 
-  const laborUpdateId = await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-  });
-  const hospitalUpdateId = await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "gone_to_hospital",
-  });
-  const bornUpdateId = await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "born",
-  });
+  const laborUpdateId = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+    }),
+  );
+  const hospitalUpdateId = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "gone_to_hospital",
+    }),
+  );
+  const bornUpdateId = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "born",
+    }),
+  );
 
   await expect(
     asAlice.mutation(api.updates.unmarkMilestone, {
@@ -558,16 +673,23 @@ test("photo updates keep old photos; removing one falls back to the previous", a
   // Legacy path: settings photo uploader
   await asAlice.mutation(api.baby.updatePhoto, { babyId, photoId: photoA });
   // New path: photo posted as an update with a message
-  const updateB = await asAlice.mutation(api.updates.post, {
-    babyId,
-    photoId: photoB,
-    message: "Bump week 39",
-  });
+  const updateB = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      photoId: photoB,
+      message: "Bump week 39",
+    }),
+  );
 
   let baby = await getBaby(t, babyId);
   expect(baby.photoId).toBe(photoB);
 
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toMatchObject([
     { kind: "update", update: { message: "Bump week 39" } },
     { kind: "update", update: { message: null } },
@@ -587,17 +709,30 @@ test("text updates never displace the current page photo; pinning brings back an
   const photoA = await storeBlob(t);
   const photoB = await storeBlob(t);
 
-  await asAlice.mutation(api.updates.post, { babyId, photoId: photoA, message: "First pic" });
-  const updateB = await asAlice.mutation(api.updates.post, { babyId, photoId: photoB });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, photoId: photoA, message: "First pic" }),
+  );
+  const updateB = await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, photoId: photoB }),
+  );
 
   // Text-only posts after a photo upload leave the page photo alone
-  await asAlice.mutation(api.updates.post, { babyId, message: "Just a status, no new photo" });
-  await asAlice.mutation(api.updates.post, { babyId, message: "Another one" });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({ babyId, message: "Just a status, no new photo" }),
+  );
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, message: "Another one" }));
   let baby = await getBaby(t, babyId);
   expect(baby.photoId).toBe(photoB);
 
   // The feed marks which photo is the current page photo
-  let feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  let feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   const photoFlags = feed.page
     .filter((item) => item.kind === "update" && item.update.photoUrl)
     .map((item) => item.kind === "update" && item.update.isCurrentPagePhoto);
@@ -613,7 +748,7 @@ test("text updates never displace the current page photo; pinning brings back an
 
   // A brand-new photo upload takes over again (latest wins by default)
   const photoC = await storeBlob(t);
-  await asAlice.mutation(api.updates.post, { babyId, photoId: photoC });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, photoId: photoC }));
   baby = await getBaby(t, babyId);
   expect(baby.photoId).toBe(photoC);
 
@@ -635,7 +770,7 @@ test("redating validates the timestamp and requires an existing milestone", asyn
     }),
   ).rejects.toThrow("Milestone update not found");
 
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
 
   await expect(
     asAlice.mutation(api.updates.redateMilestone, {
@@ -659,11 +794,14 @@ test("posting a milestone rejects non-finite and out-of-range timestamps", async
 
   for (const occurredAt of [NaN, Infinity, -Infinity, Number.MAX_VALUE]) {
     await expect(
-      asAlice.mutation(api.updates.post, {
-        babyId,
-        milestone: "labor_started",
-        occurredAt,
-      }),
+      asAlice.mutation(
+        api.updates.post,
+        postUpdateArgs({
+          babyId,
+          milestone: "labor_started",
+          occurredAt,
+        }),
+      ),
     ).rejects.toThrow("Invalid date");
   }
 });
@@ -671,10 +809,14 @@ test("posting a milestone rejects non-finite and out-of-range timestamps", async
 test("posting a milestone sets occurredAt to the announce time", async () => {
   const { t, asAlice, babyId } = await setup();
   const before = Date.now();
-  await asAlice.mutation(api.updates.post, { babyId, milestone: "labor_started" });
+  await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
   const after = Date.now();
 
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toHaveLength(1);
   const item = feed.page[0];
   if (item?.kind !== "update") throw new Error("expected update");
@@ -688,16 +830,23 @@ test("posting a milestone can backdate the event clock without moving the feed",
   const occurredAt = Date.now() - 6 * 60 * 60 * 1000;
 
   const before = Date.now();
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    milestone: "labor_started",
-    message: "Started overnight, telling you all now!",
-    occurredAt,
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      milestone: "labor_started",
+      message: "Started overnight, telling you all now!",
+      occurredAt,
+    }),
+  );
   const after = Date.now();
 
   // The feed slot is the announce time; the event clock is the backdated time
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   expect(feed.page).toHaveLength(1);
   const item = feed.page[0];
   if (item?.kind !== "update") throw new Error("expected update");
@@ -716,19 +865,25 @@ test("a backdated event time is rejected when in the future or without a milesto
   const { asAlice, babyId } = await setup();
 
   await expect(
-    asAlice.mutation(api.updates.post, {
-      babyId,
-      milestone: "labor_started",
-      occurredAt: Date.now() + 60 * 60 * 1000,
-    }),
+    asAlice.mutation(
+      api.updates.post,
+      postUpdateArgs({
+        babyId,
+        milestone: "labor_started",
+        occurredAt: Date.now() + 60 * 60 * 1000,
+      }),
+    ),
   ).rejects.toThrow("The event time cannot be in the future");
 
   await expect(
-    asAlice.mutation(api.updates.post, {
-      babyId,
-      message: "Just a message",
-      occurredAt: Date.now() - 60 * 60 * 1000,
-    }),
+    asAlice.mutation(
+      api.updates.post,
+      postUpdateArgs({
+        babyId,
+        message: "Just a message",
+        occurredAt: Date.now() - 60 * 60 * 1000,
+      }),
+    ),
   ).rejects.toThrow("A backdated time requires a status change");
 });
 
@@ -738,13 +893,20 @@ test("getUpdatePhoto returns the public photo payload for a timeline update", as
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   if (!publicBaby) throw new Error("expected baby");
 
-  await asAlice.mutation(api.updates.post, {
-    babyId,
-    message: "First smile",
-    photoId,
-  });
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      message: "First smile",
+      photoId,
+    }),
+  );
 
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
+  const feed = await t.query(api.timeline.listByBaby, {
+    babyId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
+  });
   const item = feed.page[0];
   if (item?.kind !== "update") throw new Error("expected update");
 
@@ -764,11 +926,18 @@ test("getUpdatePhoto returns null for text-only updates", async () => {
   const publicBaby = await t.query(api.baby.getByPublicId, { id: babyId });
   if (!publicBaby) throw new Error("expected baby");
 
-  await asAlice.mutation(api.updates.post, {
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      message: "No photo here",
+    }),
+  );
+  const feed = await t.query(api.timeline.listByBaby, {
     babyId,
-    message: "No photo here",
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   const item = feed.page[0];
   if (item?.kind !== "update") throw new Error("expected update");
 
@@ -782,17 +951,27 @@ test("getUpdatePhoto returns null for text-only updates", async () => {
 
 test("getUpdatePhoto returns null when the update belongs to another baby", async () => {
   const { t, asAlice, babyId } = await setup();
-  const other = await asAlice.mutation(api.baby.create, {
-    name: "Baby Other",
-    dueDate: "2026-10-01",
-  });
+  const other = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Other",
+      dueDate: "2026-10-01",
+    }),
+  );
   const photoId = await storeBlob(t);
-  await asAlice.mutation(api.updates.post, {
+  await asAlice.mutation(
+    api.updates.post,
+    postUpdateArgs({
+      babyId,
+      message: "First baby photo",
+      photoId,
+    }),
+  );
+  const feed = await t.query(api.timeline.listByBaby, {
     babyId,
-    message: "First baby photo",
-    photoId,
+    paginationOpts: FIRST_PAGE,
+    visitorId: null,
   });
-  const feed = await t.query(api.timeline.listByBaby, { babyId, paginationOpts: FIRST_PAGE });
   const item = feed.page[0];
   if (item?.kind !== "update") throw new Error("expected update");
 

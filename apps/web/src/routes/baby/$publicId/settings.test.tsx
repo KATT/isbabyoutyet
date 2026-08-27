@@ -3,7 +3,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import { expect, test, vi } from "vitest";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { seedOwnedBaby, signUpTestUser, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
@@ -79,7 +79,7 @@ test("beforeLoad 404s unknown babies", async () => {
 test("beforeLoad redirects when the public id resolves to a different slug", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     name: "Final Name",
   });

@@ -7,7 +7,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { LocaleProvider } from "@/lib/i18n";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
+import { seedOwnedBaby, signUpTestUser, postTestUpdate } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { OnboardingHostWithSession, useCompleteOnboardingStep } from "./onboarding-host";
@@ -65,7 +65,7 @@ async function seedAllOnboardingStepsDone(
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
   babyId: Awaited<ReturnType<typeof seedOwnedBaby>>["babyId"],
 ) {
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId,
     message: "First update",
   });
@@ -328,7 +328,7 @@ test("Show me for settings scrolls, highlights, and completes on Got it", async 
   });
   harness.withIdentity({ subject: userId });
   const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "First update",
   });
@@ -422,7 +422,7 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
   });
   harness.withIdentity({ subject: userId });
   const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "First update",
   });
@@ -433,6 +433,7 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
   const encouragementsBefore = await harness.client.query(api.encouragements.listByBaby, {
     babyId: baby.babyId,
     paginationOpts: { numItems: 20, cursor: null },
+    visitorId: null,
   });
 
   await using view = await renderOnboardingHost({
@@ -457,6 +458,7 @@ test("messages-from-visitors tip scrolls, highlights, and completes on Got it wi
   const encouragementsAfter = await harness.client.query(api.encouragements.listByBaby, {
     babyId: baby.babyId,
     paginationOpts: { numItems: 20, cursor: null },
+    visitorId: null,
   });
   expect(encouragementsAfter.page).toEqual(encouragementsBefore.page);
 });

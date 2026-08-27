@@ -28,6 +28,7 @@ export const generateThumbnailsForExistingPhotos = migrations.define({
       await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateThumbnail, {
         babyId: baby._id,
         photoId: baby.photoId,
+        updateId: null,
       });
     }
   },
@@ -88,6 +89,7 @@ export async function generateBlurDataUrlsForExistingBabyPhotosDoc(
   await ctx.scheduler.runAfter(0, internal.babyThumbnails.generateBlurDataUrl, {
     babyId: baby._id,
     photoId: baby.photoId,
+    updateId: null,
   });
 }
 

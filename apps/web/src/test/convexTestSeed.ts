@@ -1,6 +1,7 @@
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { createAuth } from "@workspace/convex/convex/auth";
+import type { FunctionArgs } from "convex/server";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 
 /** Creates a baby owned by the harness identity (must already be set). */
@@ -14,6 +15,10 @@ export async function seedOwnedBaby(
   const created = await harness.client.mutation(api.baby.create, {
     name: opts.name,
     dueDate: opts.dueDate,
+    dueDateDisplayMode: opts.dueDate ? "exact" : "message",
+    publicDueDateText: null,
+    birthJourney: "labor",
+    theme: null,
   });
   return {
     babyId: created.babyId as Id<"baby">,
@@ -83,6 +88,8 @@ export async function seedTimelineUpdateWithPhoto(
   const updateId = await harness.client.mutation(api.updates.post, {
     babyId: opts.babyId,
     message: opts.message,
+    milestone: null,
+    occurredAt: null,
     photoId,
   });
   return { updateId, photoId };
@@ -116,7 +123,50 @@ export async function seedPendingLaborNotification(
 ) {
   await harness.client.mutation(api.updates.post, {
     babyId: opts.babyId,
+    message: null,
     milestone: "labor_started",
+    occurredAt: null,
+    photoId: null,
+  });
+}
+
+/** Sparse test patch for `baby.update`; unspecified fields keep the stored values. */
+export async function patchOwnedBaby(
+  harness: ConvexTestHarness,
+  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
+    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
+) {
+  const baby = await harness.t.run(async (ctx) => {
+    const doc = await ctx.db.get(patch.babyId);
+    if (!doc) throw new Error("Baby not found");
+    return doc;
+  });
+  await harness.client.mutation(api.baby.update, {
+    babyId: patch.babyId,
+    dueDate: patch.dueDate !== undefined ? patch.dueDate : baby.dueDate,
+    dueDateDisplayMode:
+      patch.dueDateDisplayMode !== undefined ? patch.dueDateDisplayMode : baby.dueDateDisplayMode,
+    publicDueDateText:
+      patch.publicDueDateText !== undefined ? patch.publicDueDateText : baby.publicDueDateText,
+    name: patch.name !== undefined ? patch.name : baby.name,
+    theme: patch.theme !== undefined ? patch.theme : (baby.theme ?? null),
+    locale: patch.locale !== undefined ? patch.locale : (baby.locale ?? null),
+    birthJourney: patch.birthJourney !== undefined ? patch.birthJourney : baby.birthJourney,
+  });
+}
+
+/** Posts a timeline update with omitted fields as explicit `null`. */
+export async function postTestUpdate(
+  harness: ConvexTestHarness,
+  opts: Pick<FunctionArgs<typeof api.updates.post>, "babyId"> &
+    Partial<FunctionArgs<typeof api.updates.post>>,
+) {
+  return await harness.client.mutation(api.updates.post, {
+    message: null,
+    milestone: null,
+    occurredAt: null,
+    photoId: null,
+    ...opts,
   });
 }
 
@@ -134,5 +184,8 @@ export async function seedTimelineEncouragement(
     authorName: opts.authorName,
     message: opts.message,
     visitorId: "visitor-test",
+    userAgent: null,
+    locale: null,
+    timezone: null,
   });
 }

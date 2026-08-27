@@ -19,6 +19,7 @@ import {
   seedTimelineUpdateWithPhoto,
   signUpTestUser,
   storeTestBlob,
+  postTestUpdate,
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
@@ -108,7 +109,7 @@ async function renderComposer(
 async function prefetchTimeline(harness: ConvexTestHarness, publicId: string) {
   await harness.queryClient.invalidateQueries({ queryKey: [CONVEX_INFINITE_QUERY_KEY] });
   return await harness.convexPreloader.ensureInfiniteQueryData(api.timeline.listByBaby, {
-    args: { babyId: publicId },
+    args: { babyId: publicId, visitorId: null },
     numItems: 20,
   });
 }
@@ -266,6 +267,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
       paginationOpts: { numItems: 20, cursor: null },
+      visitorId: null,
     });
     const milestoneUpdate = feed.page.find(
       (item) => item.kind === "update" && item.update.milestone === "labor_started",
@@ -296,6 +298,7 @@ test("a filled event-time picker posts the backdated occurredAt", async () => {
     const feed = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
       paginationOpts: { numItems: 20, cursor: null },
+      visitorId: null,
     });
     const milestoneUpdate = feed.page.find(
       (item) => item.kind === "update" && item.update.milestone === "labor_started",
@@ -339,15 +342,15 @@ test("the composer previews a selected photo and can remove it", async () => {
 test("timeline milestone deletion is disabled while a later status exists", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     milestone: "labor_started",
   });
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     milestone: "gone_to_hospital",
   });
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     milestone: "born",
   });
@@ -415,7 +418,7 @@ test("shows the empty feed, not a spinner, when the loaded first page is empty",
 test("renders historical milestone badges regardless of current selection", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
-  await harness.client.mutation(api.updates.post, {
+  await postTestUpdate(harness, {
     babyId: baby.babyId,
     message: "A family update",
     milestone: "labor_started",
@@ -491,6 +494,7 @@ test("owners can delete an encouragement and toast success", async () => {
   const timeline = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
     paginationOpts: { numItems: 20, cursor: null },
+    visitorId: null,
   });
   expect(timeline.page.some((item) => item.kind === "encouragement")).toBe(false);
 });
@@ -507,6 +511,9 @@ test("authors can edit their own encouragement within the edit window", async ()
     authorName: "Me",
     message: "Original message",
     visitorId: "visitor-1",
+    userAgent: null,
+    locale: null,
+    timezone: null,
   });
 
   await using feed = await renderTimelineFeed(harness, {
@@ -571,6 +578,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
     const afterDelete = await harness.client.query(api.timeline.listByBaby, {
       babyId: baby.publicId,
       paginationOpts: { numItems: 20, cursor: null },
+      visitorId: null,
     });
     expect(afterDelete.page.some((item) => item.kind === "update")).toBe(false);
   }
@@ -705,6 +713,7 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
   const feed = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
     paginationOpts: { numItems: 20, cursor: null },
+    visitorId: null,
   });
   expect(
     feed.page.some(

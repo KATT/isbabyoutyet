@@ -36,14 +36,11 @@ export const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 export const post = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    message: v.optional(v.union(v.string(), v.null())),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    milestone: v.optional(v.union(milestoneValidator, v.null())),
-    /** Event clock for a milestone (ms epoch). @todo Optional until callers pass an explicit value or `null`. */
-    occurredAt: v.optional(v.union(v.number(), v.null())),
-    /** @todo Optional until callers pass an explicit value or `null`. */
-    photoId: v.optional(v.union(v.id("_storage"), v.null())),
+    message: v.union(v.string(), v.null()),
+    milestone: v.union(milestoneValidator, v.null()),
+    /** Event clock for a milestone (ms epoch). Null means "happening now". */
+    occurredAt: v.union(v.number(), v.null()),
+    photoId: v.union(v.id("_storage"), v.null()),
   },
   handler: async (ctx, args) => {
     const { identity, baby } = await requireBabyManager(ctx, args.babyId);

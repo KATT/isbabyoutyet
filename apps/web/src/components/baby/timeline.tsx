@@ -125,13 +125,14 @@ function composerSchema(opts: {
       },
     )
     .transform((draft): PostUpdateArgs & { photo: File | null } => {
-      const milestone = draft.milestone === "none" ? undefined : draft.milestone;
+      const milestone = draft.milestone === "none" ? null : draft.milestone;
       return {
         babyId: opts.babyId,
-        message: draft.message || undefined,
+        message: draft.message || null,
         milestone,
-        occurredAt: milestone ? (draft.occurredAt ?? undefined) : undefined,
+        occurredAt: milestone ? (draft.occurredAt ?? null) : null,
         photo: draft.photo,
+        photoId: null,
       };
     });
 }
@@ -286,7 +287,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
         form={form}
         handleSubmit={async (values) => {
           const { photo, ...args } = values;
-          let photoId: PostUpdateArgs["photoId"];
+          let photoId: PostUpdateArgs["photoId"] = null;
           if (photo) {
             const uploadUrl = await props.generateUploadUrl({ babyId: args.babyId });
             const response = await fetch(uploadUrl, {
@@ -1045,13 +1046,10 @@ export function TimelineFeed(props: TimelineFeedProps) {
   // the first render matches the SSR handle (no visitorId).
   const timelineQuery = usePreloadedConvexInfiniteQuery(api.timeline.listByBaby, {
     handle: props.timeline,
-    remixArgs: (args) => {
-      const remixedArgs = { ...args };
-      if (currentVisitorId) {
-        remixedArgs.visitorId = currentVisitorId;
-      }
-      return remixedArgs;
-    },
+    remixArgs: (args) => ({
+      ...args,
+      visitorId: currentVisitorId || null,
+    }),
   });
   const removeUpdate = useMutation(api.updates.remove);
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);
@@ -1134,7 +1132,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
     visitorId: string | undefined,
   ) => {
     try {
-      await props.removeEncouragement({ encouragementId, visitorId });
+      await props.removeEncouragement({ encouragementId, visitorId: visitorId ?? null });
       toast.success(t("Encouragement removed"));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("Failed to remove encouragement"));

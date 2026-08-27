@@ -94,7 +94,23 @@ export function BabySettingsOverlay() {
       birthJourney={managerBabyDoc.birthJourney}
       profileLocale={loaderData.profile.initialData?.locale ?? locale}
       onUpdate={async (update) => {
-        await updateBaby({ babyId: managerBabyDoc._id, ...update });
+        await updateBaby({
+          babyId: managerBabyDoc._id,
+          dueDate: update.dueDate !== undefined ? update.dueDate : managerBabyDoc.dueDate,
+          dueDateDisplayMode:
+            update.dueDateDisplayMode !== undefined
+              ? update.dueDateDisplayMode
+              : managerBabyDoc.dueDateDisplayMode,
+          publicDueDateText:
+            update.publicDueDateText !== undefined
+              ? update.publicDueDateText
+              : managerBabyDoc.publicDueDateText,
+          name: update.name !== undefined ? update.name : managerBabyDoc.name,
+          theme: update.theme !== undefined ? update.theme : (managerBabyDoc.theme ?? null),
+          locale: update.locale !== undefined ? update.locale : (managerBabyDoc.locale ?? null),
+          birthJourney:
+            update.birthJourney !== undefined ? update.birthJourney : managerBabyDoc.birthJourney,
+        });
         await router.invalidate();
       }}
       onMilestoneRedate={async (milestone, occurredAt) => {

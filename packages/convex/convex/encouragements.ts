@@ -20,12 +20,9 @@ export const create = mutationWithTriggers({
     authorName: v.string(),
     message: v.string(),
     visitorId: v.string(),
-    /** @todo Optional until callers pass `null`. */
-    userAgent: v.optional(v.string()),
-    /** @todo Optional until callers pass `null`. */
-    locale: v.optional(v.string()),
-    /** @todo Optional until callers pass `null`. */
-    timezone: v.optional(v.string()),
+    userAgent: v.union(v.string(), v.null()),
+    locale: v.union(v.string(), v.null()),
+    timezone: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     // Validate baby exists and is not soft-deleted
@@ -61,9 +58,11 @@ export const create = mutationWithTriggers({
       createdAt,
       timelineItemId,
       visitorId: args.visitorId,
-      userAgent: args.userAgent,
-      locale: args.locale,
-      timezone: args.timezone,
+      // Schema still uses `v.optional(v.string())`; omit until the backfill
+      // tightens those columns to `v.union(v.string(), v.null())`.
+      ...(args.userAgent === null ? {} : { userAgent: args.userAgent }),
+      ...(args.locale === null ? {} : { locale: args.locale }),
+      ...(args.timezone === null ? {} : { timezone: args.timezone }),
     });
 
     return encouragementId;
@@ -107,8 +106,8 @@ export const update = mutationWithTriggers({
 export const listByBaby = query({
   args: {
     babyId: v.id("baby"),
-    /** The caller's visitor id, used to mark their posts with `isMine`. @todo Optional until callers pass `null`. */
-    visitorId: v.optional(v.string()),
+    /** The caller's visitor id, used to mark their posts with `isMine`. */
+    visitorId: v.union(v.string(), v.null()),
     paginationOpts: paginationOptsValidator,
   },
   handler: async (ctx, args) => {
@@ -127,7 +126,7 @@ export const listByBaby = query({
         authorName: encouragement.authorName,
         message: encouragement.message,
         createdAt: encouragement.createdAt,
-        isMine: args.visitorId !== undefined && encouragement.visitorId === args.visitorId,
+        isMine: args.visitorId != null && encouragement.visitorId === args.visitorId,
       })),
     };
   },
@@ -136,8 +135,7 @@ export const listByBaby = query({
 export const remove = mutationWithTriggers({
   args: {
     encouragementId: v.id("encouragements"),
-    /** @todo Optional until callers pass `null`. */
-    visitorId: v.optional(v.string()),
+    visitorId: v.union(v.string(), v.null()),
   },
   handler: async (ctx, args) => {
     const encouragement = await ctx.db.get(args.encouragementId);

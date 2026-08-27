@@ -5,7 +5,7 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import { expect, test, vi } from "vitest";
 import { getBabySeo } from "@/lib/baby-seo";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { seedOwnedBaby } from "@/test/convexTestSeed";
+import { seedOwnedBaby, patchOwnedBaby } from "@/test/convexTestSeed";
 import { renderMountedFileRoute, stubBrowserImageResource } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { Route } from "@/routes/baby/$publicId/share";
@@ -22,7 +22,7 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   ).rejects.toMatchObject({ isNotFound: true });
 
   const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     name: "Renamed Nova",
   });
@@ -46,7 +46,7 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
 test("loader prefetches the canonical OG image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "baby-blue",
   });
@@ -75,7 +75,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
 test("loader replaces a cached old theme with the fresh baby snapshot", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "orange",
   });
@@ -86,7 +86,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
     staleBaby,
   );
 
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "baby-blue",
   });
@@ -107,7 +107,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
 test("copies from the route overlay and dismisses through overlay history", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "baby-blue",
   });
@@ -162,7 +162,7 @@ test("copies from the route overlay and dismisses through overlay history", asyn
 test("BabyShareOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "baby-blue",
   });
@@ -186,7 +186,7 @@ test("BabyShareOverlay mounts from the real route loader", async () => {
 test("share overlay falls back to execCommand when clipboard.writeText fails", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
-  await harness.client.mutation(api.baby.update, {
+  await patchOwnedBaby(harness, {
     babyId: baby.babyId,
     theme: "baby-blue",
   });
