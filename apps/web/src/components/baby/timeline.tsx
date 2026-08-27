@@ -1,6 +1,5 @@
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -22,7 +21,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
-import type { PopoverActions } from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -41,6 +39,7 @@ import {
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { useRef } from "react";
+import type { ReactElement } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -57,7 +56,14 @@ import {
   getMilestonePolicy,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormCancelButton,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
@@ -257,9 +263,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
 
   // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
-    milestone != null &&
-    milestone !== "none" &&
-    futureMilestones.includes(milestone)
+    milestone != null && milestone !== "none" && futureMilestones.includes(milestone)
       ? milestone
       : null;
 
@@ -495,6 +499,152 @@ const MILESTONE_EMOJI: Record<Milestone, string> = {
   born: "🎉",
 };
 
+const emptyActionSchema = z.object({});
+
+function PinAsPagePhotoForm(props: {
+  updateId: Id<"updates">;
+  onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async () => {
+        await props.onSetAsCurrentPhoto(props.updateId);
+      }}
+    >
+      <SubmitButton
+        form="context"
+        variant="ghost"
+        size="icon"
+        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+        IconComponent={PushPin}
+        iconPosition="start"
+        aria-label={t("Set as page photo")}
+        title={t("Set as page photo")}
+      />
+    </Form>
+  );
+}
+
+function DeleteUpdateForm(props: {
+  updateId: Id<"updates">;
+  onDelete: (updateId: Id<"updates">) => Promise<void>;
+  title: string;
+  description: string;
+  trigger: ReactElement;
+}) {
+  const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const form = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
+  });
+
+  return (
+    <AlertDialog {...overlay.rootProps}>
+      <AlertDialogTrigger render={props.trigger} />
+      <AlertDialogContent>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{props.title}</AlertDialogTitle>
+            <AlertDialogDescription>{props.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete(props.updateId);
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function DeleteEncouragementForm(props: {
+  encouragementId: Id<"encouragements">;
+  authorName: string;
+  visitorId: string | undefined;
+  onDelete: (encouragementId: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const form = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
+  });
+
+  return (
+    <AlertDialog {...overlay.rootProps}>
+      <AlertDialogTrigger
+        render={
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            aria-label={t("Delete encouragement")}
+          >
+            <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
+                { name: props.authorName },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete(props.encouragementId, props.visitorId);
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   const { locale, t } = useI18n();
   const update = props.item.update;
@@ -591,16 +741,10 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           {props.isOwner && (
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canPinPhoto && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label={t("Set as page photo")}
-                  title={t("Set as page photo")}
-                  onClick={() => props.onSetAsCurrentPhoto(update._id)}
-                >
-                  <PushPin className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                </Button>
+                <PinAsPagePhotoForm
+                  updateId={update._id}
+                  onSetAsCurrentPhoto={props.onSetAsCurrentPhoto}
+                />
               )}
               {deleteBlocker ? (
                 <Tooltip>
@@ -623,34 +767,25 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
                   </TooltipContent>
                 </Tooltip>
               ) : (
-                <AlertDialog>
-                  <AlertDialogTrigger render={deleteButton} />
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t("Delete update?")}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {update.milestone
-                          ? t("This also unmarks the milestone on the status card.")
-                          : t("This removes the update from the timeline.")}{" "}
-                        {update.photoUrl
-                          ? t(
-                              "If this photo is the current page photo, the previous one takes its place.",
-                            )
-                          : ""}{" "}
-                        {t("This action cannot be undone.")}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                      <AlertDialogAction
-                        variant="destructive"
-                        onClick={() => props.onDelete(update._id)}
-                      >
-                        {t("Delete")}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <DeleteUpdateForm
+                  updateId={update._id}
+                  onDelete={props.onDelete}
+                  title={t("Delete update?")}
+                  description={[
+                    update.milestone
+                      ? t("This also unmarks the milestone on the status card.")
+                      : t("This removes the update from the timeline."),
+                    update.photoUrl
+                      ? t(
+                          "If this photo is the current page photo, the previous one takes its place.",
+                        )
+                      : "",
+                    t("This action cannot be undone."),
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  trigger={deleteButton}
+                />
               )}
             </div>
           )}
@@ -752,8 +887,6 @@ function EncouragementEditForm(props: {
     }),
     defaultValues: { message: props.initialMessage },
   });
-  const isSaving = form.formState.isSubmitting;
-
   return (
     <Form
       form={form}
@@ -769,11 +902,7 @@ function EncouragementEditForm(props: {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea
-                  aria-label={t("Edit your message")}
-                  className="min-h-20"
-                  {...field}
-                />
+                <Textarea aria-label={t("Edit your message")} className="min-h-20" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -783,9 +912,7 @@ function EncouragementEditForm(props: {
           <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
-          <PopoverClose
-            render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
-          >
+          <PopoverClose render={<FormCancelButton form="context" size="sm" />}>
             <X className="w-3 h-3" />
             {t("Cancel")}
           </PopoverClose>
@@ -798,7 +925,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
@@ -839,7 +966,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
           {(canEdit || canDelete) && (
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canEdit && (
-                <Popover actionsRef={actionsRef}>
+                <Popover {...overlay.rootProps}>
                   <PopoverTrigger
                     render={
                       <Button
@@ -853,57 +980,25 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                     <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-                    <EncouragementEditForm
-                      initialMessage={encouragement.message}
-                      encouragementId={encouragement._id}
-                      visitorId={props.currentVisitorId}
-                      onSave={props.onUpdate}
-                      onClose={() => {
-                        actionsRef.current?.close();
-                      }}
-                    />
+                    <FormOverlayProvider overlay={overlay}>
+                      <EncouragementEditForm
+                        initialMessage={encouragement.message}
+                        encouragementId={encouragement._id}
+                        visitorId={props.currentVisitorId}
+                        onSave={props.onUpdate}
+                        onClose={overlay.close}
+                      />
+                    </FormOverlayProvider>
                   </PopoverContent>
                 </Popover>
               )}
               {canDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger
-                    render={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label={t("Delete encouragement")}
-                      >
-                        <Trash className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                      </Button>
-                    }
-                  />
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {t(
-                          "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
-                          { name: encouragement.authorName },
-                        )}
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() =>
-                          props.onDelete(
-                            encouragement._id,
-                            canEdit ? props.currentVisitorId : undefined,
-                          )
-                        }
-                      >
-                        {t("Delete")}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                <DeleteEncouragementForm
+                  encouragementId={encouragement._id}
+                  authorName={encouragement.authorName}
+                  visitorId={canEdit ? props.currentVisitorId : undefined}
+                  onDelete={props.onDelete}
+                />
               )}
             </div>
           )}
