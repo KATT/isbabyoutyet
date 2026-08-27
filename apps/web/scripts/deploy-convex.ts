@@ -51,17 +51,24 @@ const convexEnv = convexEnvSchema.parse({ ...env, SITE_URL: siteUrl });
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
 
+function convexDeployEnv() {
+  const childEnv: Record<string, string | undefined> = {
+    ...process.env,
+    VITE_SITE_URL: siteUrl,
+  };
+  // Bake demo-login prefills into the web build on preview only.
+  if (isPreview) {
+    childEnv.VITE_HAS_DEMO_LOGIN = "true";
+  }
+  return childEnv;
+}
+
 function convexCli(args: string[]) {
   console.log(`\n$ convex ${args.join(" ")}`);
   execFileSync("pnpm", ["convex", ...args], {
     cwd: convexPackageDir,
     stdio: "inherit",
-    env: {
-      ...process.env,
-      VITE_SITE_URL: siteUrl,
-      // Bake demo-login prefills into the web build on preview only.
-      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
-    },
+    env: convexDeployEnv(),
   });
 }
 
@@ -71,11 +78,7 @@ function convexCliOutput(args: string[]) {
     cwd: convexPackageDir,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "inherit"],
-    env: {
-      ...process.env,
-      VITE_SITE_URL: siteUrl,
-      ...(isPreview ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
-    },
+    env: convexDeployEnv(),
   });
 }
 

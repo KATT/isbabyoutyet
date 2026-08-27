@@ -235,11 +235,16 @@ export const completeStep = mutation({
     if (doc.completedSteps.includes(args.stepId)) {
       return null;
     }
-    await ctx.db.patch(doc._id, {
+    const onboardingPatch = {
       completedSteps: [...doc.completedSteps, args.stepId],
       welcomeDismissed: true,
-      ...(doc.activeCoachmarkStepId === args.stepId ? { activeCoachmarkStepId: null } : {}),
-    });
+    };
+    await ctx.db.patch(
+      doc._id,
+      doc.activeCoachmarkStepId === args.stepId
+        ? { ...onboardingPatch, activeCoachmarkStepId: null }
+        : onboardingPatch,
+    );
     return null;
   },
 });
