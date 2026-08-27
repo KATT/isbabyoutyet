@@ -5,14 +5,12 @@ import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { GettingStartedCard } from "./getting-started";
 
 test("shows the next incomplete step and an add-baby CTA on the dashboard", async () => {
-  const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={[]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -33,7 +31,6 @@ test("keeps mobile first-use guidance compact until the user opens the checklist
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -79,7 +76,6 @@ test("dismisses the guide from the explicit labeled action", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -126,7 +122,6 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -164,7 +159,6 @@ test("dashboard baby-page steps link to the preferred baby's page (not overlays)
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -184,7 +178,6 @@ test("dashboard post-update step links to the preferred baby's page", async () =
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -198,14 +191,12 @@ test("dashboard post-update step links to the preferred baby's page", async () =
 });
 
 test("baby-page Show me is a no-op when onGoToStep is missing", async () => {
-  const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby"]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={onAcknowledge}
       surface="baby"
       onGoToStep={undefined}
       className={undefined}
@@ -214,7 +205,7 @@ test("baby-page Show me is a no-op when onGoToStep is missing", async () => {
   );
 
   fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
-  expect(onAcknowledge).not.toHaveBeenCalled();
+  expect(screen.getAllByRole("button", { name: /show me/i }).length).toBeGreaterThan(0);
 });
 
 test("baby-page share step highlights via Show me", async () => {
@@ -225,7 +216,6 @@ test("baby-page share step highlights via Show me", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="baby"
       onGoToStep={onGoToStep}
       className={undefined}
@@ -245,7 +235,6 @@ test("minimized chip shows progress count", async () => {
       minimized
       onMinimize={onMinimize}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={undefined}
       className={undefined}
@@ -257,15 +246,32 @@ test("minimized chip shows progress count", async () => {
   expect(onMinimize).toHaveBeenCalledWith(false);
 });
 
+test("desktop Minimize collapses the checklist panel", async () => {
+  const onMinimize = vi.fn<(minimized: boolean) => void>();
+  await using _view = await renderWithTestRouter(
+    <GettingStartedCard
+      effectiveSteps={["add_baby"]}
+      minimized={false}
+      onMinimize={onMinimize}
+      onDismiss={vi.fn<() => void>()}
+      surface="dashboard"
+      onGoToStep={undefined}
+      className={undefined}
+      tourBaby={null}
+    />,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: /^minimize$/i }));
+  expect(onMinimize).toHaveBeenCalledWith(true);
+});
+
 test("dashboard settings CTA opens the preferred baby's page without completing", async () => {
-  const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -273,8 +279,9 @@ test("dashboard settings CTA opens the preferred baby's page without completing"
     />,
   );
 
-  fireEvent.click(screen.getAllByRole("link", { name: /see ada's page/i })[0]!);
-  expect(onAcknowledge).not.toHaveBeenCalled();
+  const links = screen.getAllByRole("link", { name: /see ada's page/i });
+  expect(links[0]?.getAttribute("href")).toBe("/baby/baby-waiting");
+  fireEvent.click(links[0]!);
 });
 
 test("baby-page checklist uses Show me for post and settings tips", async () => {
@@ -285,7 +292,6 @@ test("baby-page checklist uses Show me for post and settings tips", async () => 
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       className={undefined}
       onGoToStep={onGoToStep}
       surface="baby"
@@ -305,7 +311,6 @@ test("baby-page Show me works without a preferred tour baby", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       className={undefined}
       onGoToStep={onGoToStep}
       surface="baby"
@@ -331,7 +336,6 @@ test("all-done state offers close checklist", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={onDismiss}
-      onAcknowledgeStep={vi.fn<() => void>()}
       surface="baby"
       onGoToStep={undefined}
       className={undefined}
@@ -355,7 +359,6 @@ test("dashboard learn encouragements step links to the first baby's page", async
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -370,14 +373,12 @@ test("dashboard learn encouragements step links to the first baby's page", async
 
 test("baby-page learn encouragements opens the highlight tip via Show me", async () => {
   const onGoToStep = vi.fn<(stepId: string) => void>();
-  const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update", "explore_settings"]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={onAcknowledge}
       surface="baby"
       onGoToStep={onGoToStep}
       className={undefined}
@@ -387,7 +388,6 @@ test("baby-page learn encouragements opens the highlight tip via Show me", async
 
   fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
   expect(onGoToStep).toHaveBeenCalledWith("learn_encouragements");
-  expect(onAcknowledge).not.toHaveBeenCalled();
 });
 
 test("next-step hint Show me runs the baby-page highlight action", async () => {
@@ -399,7 +399,6 @@ test("next-step hint Show me runs the baby-page highlight action", async () => {
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={vi.fn<(stepId: string) => void>()}
       surface="baby"
       onGoToStep={onGoToStep}
       className={undefined}
@@ -413,16 +412,13 @@ test("next-step hint Show me runs the baby-page highlight action", async () => {
   expect(onGoToStep).toHaveBeenCalledWith("learn_encouragements");
 });
 
-test("next-step hint Open settings acknowledges from the dashboard panel", async () => {
-  const onAcknowledge = vi.fn<(stepId: string) => void>();
-
+test("next-step hint See page runs the dashboard deep link", async () => {
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
       effectiveSteps={["add_baby", "share_link", "post_update"]}
       minimized={false}
       onMinimize={vi.fn<() => void>()}
       onDismiss={vi.fn<() => void>()}
-      onAcknowledgeStep={onAcknowledge}
       surface="dashboard"
       onGoToStep={undefined}
       className={undefined}
@@ -434,10 +430,9 @@ test("next-step hint Open settings acknowledges from the dashboard panel", async
   expect(hintTitles.length).toBeGreaterThan(0);
   const hintPanel = hintTitles[hintTitles.length - 1]!.closest("div.rounded-lg");
   expect(hintPanel).toBeTruthy();
-  const settingsInHint =
-    within(hintPanel as HTMLElement).queryByRole("link", { name: /open settings/i }) ||
-    within(hintPanel as HTMLElement).getByRole("button", { name: /open settings/i });
-  onAcknowledge.mockClear();
-  fireEvent.click(settingsInHint);
-  expect(onAcknowledge).toHaveBeenCalledWith("explore_settings");
+  const seePage =
+    within(hintPanel as HTMLElement).queryByRole("link", { name: /see ada's page/i }) ||
+    within(hintPanel as HTMLElement).getByRole("button", { name: /see ada's page/i });
+  expect(seePage.getAttribute("href") ?? "").toContain("baby-waiting");
+  fireEvent.click(seePage);
 });

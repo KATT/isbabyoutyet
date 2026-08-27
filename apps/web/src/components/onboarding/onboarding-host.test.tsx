@@ -480,7 +480,9 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   });
 });
 
-test("dashboard settings CTA acknowledges the step through the host", async () => {
+test("baby-page settings tip completes through the host Show me action", async () => {
+  await using _target = plantTourTarget("explore_settings");
+
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
@@ -495,13 +497,15 @@ test("dashboard settings CTA acknowledges the step through the host", async () =
 
   await using view = await renderOnboardingHost({
     harness,
-    surface: "dashboard",
-    babyPublicId: undefined,
-    onGoToStep: undefined,
+    surface: "baby",
     session: { data: { user: { id: userId } }, isPending: false },
   });
 
-  fireEvent.click(view.getAllByRole("link", { name: /open settings/i })[0]!);
+  fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
+  await vi.waitFor(() => {
+    expect(view.getByRole("button", { name: "Got it" })).toBeTruthy();
+  });
+  fireEvent.click(view.getByRole("button", { name: "Got it" }));
   await vi.waitFor(async () => {
     const progress = await harness.client.query(api.onboarding.getMine, {});
     expect(progress.completedSteps).toContain("explore_settings");

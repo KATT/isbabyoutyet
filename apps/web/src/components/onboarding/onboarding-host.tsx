@@ -175,9 +175,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
               void setRestartHintVisible({ visible: true });
             }
           }}
-          onAcknowledgeStep={(stepId) => {
-            void completeStep({ stepId });
-          }}
           onGoToStep={(stepId) => {
             const step = ONBOARDING_STEPS.find((item) => item.id === stepId);
             if (!step) {

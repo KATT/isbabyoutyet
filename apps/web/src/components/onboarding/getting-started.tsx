@@ -32,7 +32,6 @@ type GettingStartedCardProps = {
   minimized: boolean;
   onMinimize: (minimized: boolean) => void;
   onDismiss: () => void;
-  onAcknowledgeStep: (stepId: OnboardingStepId) => void;
   /** Current route context for CTAs */
   surface: "dashboard" | "baby";
   /** First owned baby — preferred deep-link target from dashboard CTAs only */
@@ -58,7 +57,6 @@ function getStepAction(opts: {
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  onAcknowledge: (stepId: OnboardingStepId) => void;
   t: TranslationFunction;
 }): StepAction | null {
   const step = opts.step;
@@ -340,7 +338,6 @@ function ChecklistContents(props: ChecklistContentsProps) {
                 surface: props.surface,
                 tourBaby: props.tourBaby,
                 onGoToStep: props.onGoToStep,
-                onAcknowledge: props.onAcknowledgeStep,
                 t,
               });
           return (
@@ -368,11 +365,6 @@ function ChecklistContents(props: ChecklistContentsProps) {
             surface={props.surface}
             tourBaby={props.tourBaby}
             onGoToStep={props.onGoToStep}
-            onAcknowledge={() => {
-              if (props.nextStep) {
-                props.onAcknowledgeStep(props.nextStep.id);
-              }
-            }}
             onBeforeAction={props.onBeforeAction}
             closeWithDrawerClose={props.closeWithDrawerClose}
             t={t}
@@ -486,7 +478,6 @@ function NextStepHint(props: {
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  onAcknowledge: () => void;
   onBeforeAction: (() => void) | undefined;
   closeWithDrawerClose: boolean;
   t: TranslationFunction;
@@ -498,11 +489,6 @@ function NextStepHint(props: {
     surface: props.surface,
     tourBaby: props.tourBaby,
     onGoToStep: props.onGoToStep,
-    onAcknowledge: (stepId) => {
-      if (stepId === props.step.id) {
-        props.onAcknowledge();
-      }
-    },
     t,
   });
 
