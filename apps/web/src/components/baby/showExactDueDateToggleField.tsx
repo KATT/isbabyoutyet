@@ -1,8 +1,24 @@
 import { FormControl, FormField, FormItem, useFormField } from "@workspace/ui/components/form";
 import { Switch } from "@workspace/ui/components/switch";
-import { cn } from "@workspace/ui/lib/utils";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import * as stylex from "@stylexjs/stylex";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useI18n } from "@/lib/i18n";
+import { spacing } from "@workspace/ui/lib/tokens.stylex";
+
+const styles = stylex.create({
+  row: {
+    alignItems: "center",
+    cursor: "pointer",
+    display: "flex",
+    gap: spacing.s3,
+    justifyContent: "space-between",
+    paddingBlockEnd: spacing.s2,
+    paddingBlockStart: spacing.s3,
+    paddingInline: spacing.s3,
+  },
+});
 
 type ShowExactDueDateToggleFieldProps<
   TFieldValues extends FieldValues,
@@ -10,37 +26,34 @@ type ShowExactDueDateToggleFieldProps<
 > = {
   control: Control<TFieldValues, unknown, unknown>;
   name: TName;
-  rowClassName: string | undefined;
-  titleClassName: string | undefined;
 };
 
 function ShowExactDueDateToggleRow(props: {
   checked: boolean;
   onCheckedChange: (checked: boolean) => void;
-  rowClassName: string | undefined;
-  titleClassName: string | undefined;
 }) {
   const { t } = useI18n();
-  const { formItemId, formDescriptionId } = useFormField();
-  const titleId = `${formItemId}-title`;
+  const fieldIds = useFormField();
+  const titleId = `${fieldIds.formItemId}-title`;
 
   return (
-    <label
-      htmlFor={formItemId}
-      className={cn("flex items-center justify-between", props.rowClassName)}
-    >
-      <div className="flex flex-col gap-1">
-        <span id={titleId} className={cn("text-sm leading-none font-medium", props.titleClassName)}>
+    <label htmlFor={fieldIds.formItemId} {...stylex.props(styles.row)}>
+      <Stack gap="s1">
+        <Text as="span" id={titleId} size="sm" weight="medium">
           {t("Show exact due date")}
-        </span>
-        <span id={formDescriptionId} className="text-muted-foreground text-sm">
+        </Text>
+        <Text as="span" id={fieldIds.formDescriptionId} size="sm" tone="muted">
           {props.checked
             ? t("Visitors see the exact date and countdown.")
             : t("Visitors see only your message.")}
-        </span>
-      </div>
+        </Text>
+      </Stack>
       <FormControl aria-labelledby={titleId}>
-        <Switch id={formItemId} checked={props.checked} onCheckedChange={props.onCheckedChange} />
+        <Switch
+          id={fieldIds.formItemId}
+          checked={props.checked}
+          onCheckedChange={props.onCheckedChange}
+        />
       </FormControl>
     </label>
   );
@@ -55,12 +68,10 @@ export function ShowExactDueDateToggleField<
       control={props.control}
       name={props.name}
       render={(renderProps) => (
-        <FormItem className="border-0 p-0">
+        <FormItem>
           <ShowExactDueDateToggleRow
             checked={renderProps.field.value}
             onCheckedChange={renderProps.field.onChange}
-            rowClassName={props.rowClassName}
-            titleClassName={props.titleClassName}
           />
         </FormItem>
       )}

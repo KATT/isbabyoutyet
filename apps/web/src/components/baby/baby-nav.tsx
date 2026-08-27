@@ -1,10 +1,13 @@
 import { Button } from "@workspace/ui/components/button";
 import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+import { Inline } from "@workspace/ui-patterns/components/inline";
 import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type BabyNavProps = {
   /** Open-share link (push). Null when sharing is unavailable. */
@@ -26,17 +29,38 @@ type BabyNavProps = {
   onSettingsOpened: (() => void) | null;
 };
 
+const styles = stylex.create({
+  dock: {
+    alignItems: "center",
+    backdropFilter: "blur(12px)",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    display: "flex",
+    gap: spacing.s1,
+    padding: spacing.s1,
+  },
+  divider: {
+    backgroundColor: colors.border,
+    height: "1.25rem",
+    width: "1px",
+  },
+});
+
 export function BabyNav(props: BabyNavProps) {
   const { t } = useI18n();
   const hasOwnerActions = !!(props.postUpdateButton || props.settingsButton);
 
   const ownerActions = hasOwnerActions ? (
-    <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
+    <Inline gap="s1" wrap={false} role="group" aria-label={t("Owner actions")}>
       {props.postUpdateButton &&
         (props.postUpdateOpen && props.onDismissPostUpdate ? (
           <Button
             variant="default"
-            className="rounded-full font-bold"
+            shape="pill"
             data-tour-id="post_update"
             onClick={props.onDismissPostUpdate}
           >
@@ -46,7 +70,7 @@ export function BabyNav(props: BabyNavProps) {
         ) : (
           <Button
             variant="ghost"
-            className="rounded-full font-bold"
+            shape="pill"
             render={<Link {...(props.postUpdateButton as any)} />}
             nativeButton={false}
             data-tour-id="post_update"
@@ -63,7 +87,7 @@ export function BabyNav(props: BabyNavProps) {
                 <Button
                   variant="default"
                   size="icon"
-                  className="rounded-full"
+                  shape="pill"
                   aria-label={t("Close settings")}
                   data-tour-id="explore_settings"
                   onClick={props.onDismissSettings}
@@ -74,7 +98,7 @@ export function BabyNav(props: BabyNavProps) {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="rounded-full"
+                  shape="pill"
                   render={<Link {...(props.settingsButton as any)} />}
                   nativeButton={false}
                   aria-label={t("Settings")}
@@ -93,11 +117,11 @@ export function BabyNav(props: BabyNavProps) {
           </TooltipContent>
         </Tooltip>
       )}
-    </div>
+    </Inline>
   ) : null;
 
   const pageActions = (
-    <div role="group" aria-label={t("Page actions")} className="flex items-center gap-1">
+    <Inline gap="s1" wrap={false} role="group" aria-label={t("Page actions")}>
       <Tooltip>
         <TooltipTrigger
           render={
@@ -105,7 +129,7 @@ export function BabyNav(props: BabyNavProps) {
               <Button
                 variant="default"
                 size="icon"
-                className="rounded-full"
+                shape="pill"
                 aria-label={t("Close share preview")}
                 data-tour-id="share_link"
                 onClick={props.onDismissShare}
@@ -116,7 +140,7 @@ export function BabyNav(props: BabyNavProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="rounded-full"
+                shape="pill"
                 render={props.shareButton ? <Link {...(props.shareButton as any)} /> : undefined}
                 nativeButton={!props.shareButton}
                 disabled={!props.shareButton}
@@ -133,15 +157,14 @@ export function BabyNav(props: BabyNavProps) {
         </TooltipContent>
       </Tooltip>
 
-      <ModeToggle className="rounded-full" />
-    </div>
+      <ModeToggle />
+    </Inline>
   );
 
-  // A floating pill dock; the page decides where it sits
   return (
-    <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
+    <div {...stylex.props(styles.dock)}>
       {ownerActions}
-      {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
+      {ownerActions && <span {...stylex.props(styles.divider)} aria-hidden="true" />}
       {pageActions}
     </div>
   );

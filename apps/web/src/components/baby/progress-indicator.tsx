@@ -3,11 +3,91 @@ import { getMilestonePolicy, MILESTONE_FIELDS } from "@workspace/convex/src/type
 import { getRelativeTime } from "./utils";
 import { useI18n } from "@/lib/i18n";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type ProgressIndicatorProps = {
   baby: BabyData;
   currentStatus: BabyStatus;
 };
+
+const styles = stylex.create({
+  root: { overflowX: "clip", width: "100%" },
+  grid: { display: "grid" },
+  step: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    minWidth: 0,
+    textAlign: "center",
+  },
+  rail: {
+    alignItems: "center",
+    display: "flex",
+    marginBottom: spacing.s1_5,
+    width: "100%",
+  },
+  halfLine: { borderTopWidth: "2px", flexGrow: 1, height: 0, minWidth: 0 },
+  halfTransparent: { borderColor: "transparent", borderStyle: "solid" },
+  halfFilled: { borderColor: colors.primary, borderStyle: "solid" },
+  halfEmpty: { borderColor: colors.border, borderStyle: "dashed" },
+  badge: {
+    alignItems: "center",
+    backgroundColor: colors.card,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    display: "flex",
+    flexShrink: 0,
+    fontSize: "1.125rem",
+    height: "2.5rem",
+    justifyContent: "center",
+    position: "relative",
+    transition: "all 0.3s",
+    width: "2.5rem",
+  },
+  badgeDone: {
+    borderColor: colors.primary,
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+  },
+  badgeCurrent: {
+    borderColor: `color-mix(in oklab, ${colors.primary} 40%, transparent)`,
+    boxShadow: `0 0 0 2px color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+  },
+  badgeIdle: { borderColor: colors.border, filter: "grayscale(1)", opacity: 0.6 },
+  glow: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: "9999px",
+    inset: 0,
+    pointerEvents: "none",
+    position: "absolute",
+  },
+  emoji: { position: "relative" },
+  dateChip: {
+    backgroundColor: `color-mix(in oklab, ${colors.muted} 60%, transparent)`,
+    borderRadius: "9999px",
+    color: colors.mutedForeground,
+    fontSize: "10px",
+    fontWeight: 600,
+    marginTop: spacing.s1,
+    maxWidth: "100%",
+    overflow: "hidden",
+    paddingBlock: spacing.s0_5,
+    paddingInline: spacing.s1_5,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  label: {
+    fontSize: "11px",
+    fontWeight: 800,
+    lineHeight: 1.25,
+    textWrap: "balance",
+    "@media (min-width: 640px)": { fontSize: "0.75rem" },
+  },
+  labelDone: { color: colors.foreground },
+  labelCurrent: { color: colors.primary },
+  labelIdle: { color: colors.mutedForeground },
+});
 
 export function ProgressIndicator(props: ProgressIndicatorProps) {
   const { locale, t } = useI18n();
@@ -31,86 +111,76 @@ export function ProgressIndicator(props: ProgressIndicatorProps) {
 
   return (
     <div
-      className="w-full overflow-x-clip"
+      {...stylex.props(styles.root)}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(milestonePolicy.progressPercent)}
     >
-      {/*
-        Each column owns a left half-line + badge + right half-line. Adjacent
-        halves meet between columns, so the stroke reaches the rim and never
-        crosses the badge face.
-      */}
       <ol
-        className="grid"
+        {...stylex.props(styles.grid)}
         style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
       >
         {steps.map((step, index) => {
           const isCurrent = currentStatus.type === step.key;
-          // Path into this milestone fills once the milestone itself is reached.
           const leftFilled = index > 0 && step.completed;
-          // Path onward fills once the next milestone is reached.
           const rightFilled = index < lastIndex && steps[index + 1]?.completed === true;
 
           return (
-            <li key={step.key} className="flex min-w-0 flex-col items-center text-center">
-              <div className="mb-1.5 flex w-full items-center">
+            <li key={step.key} {...stylex.props(styles.step)}>
+              <div {...stylex.props(styles.rail)}>
                 <div
                   aria-hidden="true"
-                  className={`h-0 min-w-0 flex-1 border-t-2 ${
+                  {...stylex.props(
+                    styles.halfLine,
                     index === 0
-                      ? "border-transparent"
+                      ? styles.halfTransparent
                       : leftFilled
-                        ? "border-solid border-primary"
-                        : "border-dashed border-border"
-                  }`}
+                        ? styles.halfFilled
+                        : styles.halfEmpty,
+                  )}
                 />
                 <div
-                  className={`relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card text-lg transition-all duration-300 ${
+                  {...stylex.props(
+                    styles.badge,
                     step.completed
-                      ? "border-primary pop-shadow"
+                      ? styles.badgeDone
                       : isCurrent
-                        ? "border-primary/40 ring-2 ring-primary/15"
-                        : "border-border opacity-60 grayscale"
-                  }`}
-                >
-                  {step.completed && (
-                    <span
-                      aria-hidden="true"
-                      className="pointer-events-none absolute inset-0 rounded-full bg-primary/15"
-                    />
+                        ? styles.badgeCurrent
+                        : styles.badgeIdle,
                   )}
-                  <span aria-hidden="true" className="relative">
+                >
+                  {step.completed && <span aria-hidden="true" {...stylex.props(styles.glow)} />}
+                  <span aria-hidden="true" {...stylex.props(styles.emoji)}>
                     {step.emoji}
                   </span>
                 </div>
                 <div
                   aria-hidden="true"
-                  className={`h-0 min-w-0 flex-1 border-t-2 ${
+                  {...stylex.props(
+                    styles.halfLine,
                     index === lastIndex
-                      ? "border-transparent"
+                      ? styles.halfTransparent
                       : rightFilled
-                        ? "border-solid border-primary"
-                        : "border-dashed border-border"
-                  }`}
+                        ? styles.halfFilled
+                        : styles.halfEmpty,
+                  )}
                 />
               </div>
               <p
-                className={`text-[11px] leading-tight font-extrabold text-balance sm:text-xs ${
+                {...stylex.props(
+                  styles.label,
                   step.completed
-                    ? "text-foreground"
+                    ? styles.labelDone
                     : isCurrent
-                      ? "text-primary"
-                      : "text-muted-foreground"
-                }`}
+                      ? styles.labelCurrent
+                      : styles.labelIdle,
+                )}
               >
                 {t(step.labelKey)}
               </p>
               {step.date && (
-                <p className="mt-1 max-w-full truncate rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                  {getRelativeTime(step.date, locale)}
-                </p>
+                <p {...stylex.props(styles.dateChip)}>{getRelativeTime(step.date, locale)}</p>
               )}
             </li>
           );

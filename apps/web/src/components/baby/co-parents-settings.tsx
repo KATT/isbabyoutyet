@@ -5,6 +5,9 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { Button } from "@workspace/ui/components/button";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
 import { toast } from "sonner";
 import { UserMinus, UserPlus, X } from "@phosphor-icons/react";
 import * as z from "zod";
@@ -14,6 +17,7 @@ import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import * as stylex from "@stylexjs/stylex";
 
 type CoParentsListing = Exclude<
   FunctionReturnType<typeof api.coParents.listForBaby>,
@@ -21,6 +25,11 @@ type CoParentsListing = Exclude<
 >;
 
 type InviteArgs = FunctionArgs<typeof api.coParents.invite>;
+
+const styles = stylex.create({
+  grow: { flexGrow: 1, minWidth: 0 },
+  list: { listStyle: "none", margin: 0, padding: 0 },
+});
 
 function inviteCoParentSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
@@ -56,23 +65,25 @@ function InviteCoParentForm(props: {
         );
       }}
     >
-      <div className="flex gap-2">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem className="flex-1">
-              <FormControl>
-                <Input type="email" placeholder="partner@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <Inline gap="s2" wrap={false} fullWidth>
+        <div {...stylex.props(styles.grow)}>
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="email" placeholder="partner@example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <SubmitButton form="context" IconComponent={UserPlus} iconPosition="start" size="sm">
           {t("Add")}
         </SubmitButton>
-      </div>
+      </Inline>
     </Form>
   );
 }
@@ -91,8 +102,6 @@ type CoParentsSettingsProps = {
 export function CoParentsSettings(props: CoParentsSettingsProps) {
   const { t } = useI18n();
   const listingQuery = usePreloadedConvexQuery(api.coParents.listForBaby, props.listing);
-  // FORBIDDEN only happens for non-managers, who never render this component —
-  // treat it like an empty listing so the types stay honest.
   const listing: CoParentsListing =
     listingQuery.data === FORBIDDEN ? { coParents: [], invites: [] } : listingQuery.data;
   const invite = useMutation(api.coParents.invite);
@@ -100,66 +109,88 @@ export function CoParentsSettings(props: CoParentsSettingsProps) {
   const cancelInvite = useMutation(api.coParents.cancelInvite);
 
   return (
-    <div className="space-y-3 w-full">
-      <ul className="space-y-2">
-        {listing.coParents.map((row) => (
-          <li key={row._id} className="flex items-center justify-between gap-2 text-sm">
-            <div className="min-w-0">
-              <div className="font-medium truncate">{row.name || row.email}</div>
-              {row.name ? <div className="text-muted-foreground truncate">{row.email}</div> : null}
-            </div>
-            {props.isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("Remove {{email}}", { email: row.email })}
-                onClick={() => {
-                  void removeCoParent({ coParentId: row._id })
-                    .then(() => toast.success(t("Co-parent removed")))
-                    .catch((error) => {
-                      toast.error(error instanceof Error ? error.message : t("Could not remove"));
-                    });
-                }}
-              >
-                <UserMinus className="w-4 h-4" />
-              </Button>
-            ) : null}
-          </li>
-        ))}
-        {listing.invites.map((row) => (
-          <li key={row._id} className="flex items-center justify-between gap-2 text-sm">
-            <div className="min-w-0">
-              <div className="font-medium truncate">{row.email}</div>
-              <div className="text-muted-foreground">{t("Invite pending")}</div>
-            </div>
-            {props.isOwner ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                aria-label={t("Cancel invite to {{email}}", { email: row.email })}
-                onClick={() => {
-                  void cancelInvite({ inviteId: row._id })
-                    .then(() => toast.success(t("Invite cancelled")))
-                    .catch((error) => {
-                      toast.error(error instanceof Error ? error.message : t("Could not cancel"));
-                    });
-                }}
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            ) : null}
-          </li>
-        ))}
-        {listing.coParents.length === 0 && listing.invites.length === 0 ? (
-          <li className="text-sm text-muted-foreground">
-            {t("No co-parents yet. Add a partner so they can post updates too.")}
-          </li>
-        ) : null}
+    <Stack gap="s3" fullWidth>
+      <ul {...stylex.props(styles.list)}>
+        <Stack gap="s2">
+          {listing.coParents.map((row) => (
+            <li key={row._id}>
+              <Inline gap="s2" justify="between" wrap={false} fullWidth>
+                <div {...stylex.props(styles.grow)}>
+                  <Text weight="medium" size="sm" truncate>
+                    {row.name || row.email}
+                  </Text>
+                  {row.name ? (
+                    <Text tone="muted" size="sm" truncate>
+                      {row.email}
+                    </Text>
+                  ) : null}
+                </div>
+                {props.isOwner ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("Remove {{email}}", { email: row.email })}
+                    onClick={() => {
+                      void removeCoParent({ coParentId: row._id })
+                        .then(() => toast.success(t("Co-parent removed")))
+                        .catch((error) => {
+                          toast.error(
+                            error instanceof Error ? error.message : t("Could not remove"),
+                          );
+                        });
+                    }}
+                  >
+                    <UserMinus size={16} />
+                  </Button>
+                ) : null}
+              </Inline>
+            </li>
+          ))}
+          {listing.invites.map((row) => (
+            <li key={row._id}>
+              <Inline gap="s2" justify="between" wrap={false} fullWidth>
+                <div {...stylex.props(styles.grow)}>
+                  <Text weight="medium" size="sm" truncate>
+                    {row.email}
+                  </Text>
+                  <Text tone="muted" size="sm">
+                    {t("Invite pending")}
+                  </Text>
+                </div>
+                {props.isOwner ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label={t("Cancel invite to {{email}}", { email: row.email })}
+                    onClick={() => {
+                      void cancelInvite({ inviteId: row._id })
+                        .then(() => toast.success(t("Invite cancelled")))
+                        .catch((error) => {
+                          toast.error(
+                            error instanceof Error ? error.message : t("Could not cancel"),
+                          );
+                        });
+                    }}
+                  >
+                    <X size={16} />
+                  </Button>
+                ) : null}
+              </Inline>
+            </li>
+          ))}
+          {listing.coParents.length === 0 && listing.invites.length === 0 ? (
+            <li>
+              <Text size="sm" tone="muted">
+                {t("No co-parents yet. Add a partner so they can post updates too.")}
+              </Text>
+            </li>
+          ) : null}
+        </Stack>
       </ul>
 
       {props.isOwner ? <InviteCoParentForm babyId={props.babyId} onInvite={invite} /> : null}
-    </div>
+    </Stack>
   );
 }

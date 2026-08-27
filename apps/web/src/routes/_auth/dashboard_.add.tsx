@@ -159,8 +159,7 @@ export function AddBabyPageView(props: {
                 <DueDateDisplayFields
                   control={form.control}
                   dateFieldName="dueDate"
-                  className={undefined}
-                  sectionLabelClassName="font-bold"
+                  sectionLabelWeight="bold"
                   stopPopoverPropagation={false}
                 />
 

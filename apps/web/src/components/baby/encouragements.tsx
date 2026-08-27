@@ -8,6 +8,8 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
@@ -19,6 +21,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { useClientHydration } from "@/lib/use-client-hydration";
 import { getVisitorId } from "@/lib/use-visitor-id";
+import * as stylex from "@stylexjs/stylex";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -28,12 +31,15 @@ type EncouragementFormProps = {
 const MAX_NAME_LENGTH = 50;
 const STORAGE_KEY_NAME = "encouragement-author-name";
 
+const styles = stylex.create({
+  fullWidth: { width: "100%" },
+});
+
 function getStoredAuthorName() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
-// Trim before validating, so whitespace-only input doesn't pass "required"
 function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
   return z
     .object({
@@ -84,21 +90,22 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
   });
 
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <p className="text-3xl" aria-hidden="true">
+    <Stack gap="s4">
+      <Stack gap="s2" align="center">
+        <p aria-hidden="true" style={{ fontSize: "1.875rem", margin: 0, textAlign: "center" }}>
           💛
         </p>
-        <h3 className="mt-2 text-xl font-extrabold text-foreground">{t("Send some love")}</h3>
-        <p className="mt-1 text-sm font-medium text-muted-foreground">
+        <Text as="h3" size="xl" weight="extrabold" align="center">
+          {t("Send some love")}
+        </Text>
+        <Text size="sm" weight="medium" tone="muted" align="center">
           {t("Leave a message of support for {{name}}'s family", { name: props.babyName })}
-        </p>
-      </div>
+        </Text>
+      </Stack>
 
       <Form
         form={form}
         handleSubmit={async (values) => {
-          // Save name to localStorage for next time
           localStorage.setItem(STORAGE_KEY_NAME, values.authorName);
 
           const promise = createEncouragement(values).then(async (it) => {
@@ -118,7 +125,7 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
           form.reset({ authorName: values.authorName, message: "" });
         }}
       >
-        <div className="space-y-3">
+        <Stack gap="s3">
           <FormField
             control={form.control}
             name="authorName"
@@ -140,27 +147,24 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
               <FormItem>
                 <FormLabel>{t("Message")}</FormLabel>
                 <FormControl>
-                  <Textarea
-                    placeholder={t("Write your message of encouragement...")}
-                    className="min-h-24"
-                    {...field}
-                  />
+                  <Textarea placeholder={t("Write your message of encouragement...")} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <SubmitButton
-            form="context"
-            IconComponent={PaperPlaneTilt}
-            iconPosition="start"
-            className="w-full"
-          >
-            {t("Send Encouragement")}
-          </SubmitButton>
-        </div>
+          <div {...stylex.props(styles.fullWidth)}>
+            <SubmitButton
+              form="context"
+              IconComponent={PaperPlaneTilt}
+              iconPosition="start"
+            >
+              {t("Send Encouragement")}
+            </SubmitButton>
+          </div>
+        </Stack>
       </Form>
-    </div>
+    </Stack>
   );
 }

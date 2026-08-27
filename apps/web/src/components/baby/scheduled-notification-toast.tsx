@@ -4,7 +4,6 @@ import {
   ItemActions,
   ItemContent,
   ItemDescription,
-  ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
 import { Spinner } from "@workspace/ui/components/spinner";
@@ -23,6 +22,8 @@ import { useI18n } from "@/lib/i18n";
 import { useTimedTransition } from "@/lib/use-delayed-action";
 import { useCurrentSecond } from "@/lib/use-current-second";
 import { NOTIFICATION_LABEL_KEYS } from "./translation-keys";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type ScheduledNotificationsResult = Exclude<
   FunctionReturnType<typeof api.baby.getScheduledNotifications>,
@@ -36,13 +37,60 @@ type ScheduledNotificationToastProps = {
   subscriptionCount: PreloadedConvexQuery<typeof api.pushSubscriptions.getSubscriptionCount>;
 };
 
+const styles = stylex.create({
+  aside: {
+    bottom: spacing.s4,
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s2,
+    maxWidth: "calc(100vw - 2rem)",
+    position: "fixed",
+    right: spacing.s4,
+    zIndex: 50,
+  },
+  toastShell: {
+    backgroundColor: colors.background,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+    minWidth: "300px",
+  },
+  toastShellSent: {
+    borderColor: "color-mix(in oklab, #22c55e 50%, transparent)",
+  },
+  media: {
+    alignItems: "center",
+    borderRadius: "9999px",
+    display: "flex",
+    flexShrink: 0,
+    fontSize: "1.125rem",
+    fontWeight: 600,
+    fontVariantNumeric: "tabular-nums",
+    height: "2.5rem",
+    justifyContent: "center",
+    width: "2.5rem",
+  },
+  mediaPending: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    color: colors.primary,
+  },
+  mediaSent: {
+    backgroundColor: "color-mix(in oklab, #22c55e 10%, transparent)",
+  },
+  checkIcon: {
+    color: "#22c55e",
+    height: "1.25rem",
+    width: "1.25rem",
+  },
+});
+
 export function ScheduledNotificationToast(props: ScheduledNotificationToastProps) {
   const notificationsQuery = usePreloadedConvexQuery(
     api.baby.getScheduledNotifications,
     props.notifications,
   );
-  // FORBIDDEN only happens for non-managers, who never render this component —
-  // treat it like "nothing scheduled" so the types stay honest.
   const notificationsData = notificationsQuery.data;
   const notifications = notificationsData === FORBIDDEN ? EMPTY_NOTIFICATIONS : notificationsData;
   const subscriptionCountQuery = usePreloadedConvexQuery(
@@ -58,10 +106,7 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   const currentTime = currentSecond * 1000;
 
   return (
-    <aside
-      className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col gap-2"
-      aria-live="polite"
-    >
+    <aside {...stylex.props(styles.aside)} aria-live="polite">
       {notifications.map((notification) => (
         <ScheduledNotificationItem
           key={notification._id}
@@ -106,20 +151,22 @@ function ScheduledNotificationItem(props: {
   if (!sentRecently) return null;
 
   return (
-    <Item variant="outline" className="min-w-[300px] border-green-500/50 bg-background shadow-lg">
-      <ItemMedia className="size-10 rounded-full bg-green-500/10">
-        <Check className="size-5 text-green-500" />
-      </ItemMedia>
-      <ItemContent>
-        <ItemTitle>{t("Notification sent!")}</ItemTitle>
-        <ItemDescription>
-          {t(NOTIFICATION_LABEL_KEYS[props.notification.notificationType])} ·{" "}
-          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-            count: props.subscriptionCount,
-          })}
-        </ItemDescription>
-      </ItemContent>
-    </Item>
+    <div {...stylex.props(styles.toastShell, styles.toastShellSent)}>
+      <Item variant="outline">
+        <div {...stylex.props(styles.media, styles.mediaSent)}>
+          <Check {...stylex.props(styles.checkIcon)} />
+        </div>
+        <ItemContent>
+          <ItemTitle>{t("Notification sent!")}</ItemTitle>
+          <ItemDescription>
+            {t(NOTIFICATION_LABEL_KEYS[props.notification.notificationType])} ·{" "}
+            {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+              count: props.subscriptionCount,
+            })}
+          </ItemDescription>
+        </ItemContent>
+      </Item>
+    </div>
   );
 }
 
@@ -148,30 +195,30 @@ function NotificationToastContent(props: NotificationToastContentProps) {
   if (cancelMutation.isSuccess) return null;
 
   return (
-    <Item variant="outline" className="min-w-[300px] shadow-lg bg-background">
-      <ItemMedia className="size-10 rounded-full bg-primary/10 tabular-nums text-lg font-semibold text-primary">
-        {seconds}
-      </ItemMedia>
-      <ItemContent>
-        <ItemTitle>{t("Sending notification...")}</ItemTitle>
-        <ItemDescription>
-          {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
-          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-            count: props.subscriptionCount,
-          })}
-        </ItemDescription>
-      </ItemContent>
-      <ItemActions>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={cancelMutation.isPending}
-          onClick={() => cancelMutation.mutate({ notificationId: props.notificationId })}
-        >
-          {cancelMutation.isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
-          {t("Cancel")}
-        </Button>
-      </ItemActions>
-    </Item>
+    <div {...stylex.props(styles.toastShell)}>
+      <Item variant="outline">
+        <div {...stylex.props(styles.media, styles.mediaPending)}>{seconds}</div>
+        <ItemContent>
+          <ItemTitle>{t("Sending notification...")}</ItemTitle>
+          <ItemDescription>
+            {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
+            {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
+              count: props.subscriptionCount,
+            })}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={cancelMutation.isPending}
+            onClick={() => cancelMutation.mutate({ notificationId: props.notificationId })}
+          >
+            {cancelMutation.isPending ? <Spinner /> : <X size={16} />}
+            {t("Cancel")}
+          </Button>
+        </ItemActions>
+      </Item>
+    </div>
   );
 }
