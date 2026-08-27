@@ -10,18 +10,14 @@
     "lint": "turbo lint",
     "lint-fix": "turbo lint-fix",
     "typecheck": "turbo typecheck",
-    "typecheck:scripts": "tsc --noEmit -p scripts",
     "format": "turbo format",
     "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
-    "test:changed": "vitest run --changed",
-    "test:coverage:changed": "vitest run --coverage --changed",
-    "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
+    "checks": "pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",
@@ -31,7 +27,6 @@
     "knip": "^6.32.2",
     "npm-run-all": "^4.1.5",
     "oxlint": "catalog:",
-    "tsx": "^4.23.12",
     "turbo": "^2.10.11",
     "typescript": "catalog:",
     "vitest": "^4.1.11"
