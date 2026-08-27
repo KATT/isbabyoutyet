@@ -21,7 +21,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@workspace/ui/components/popover";
-import type { PopoverActions } from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -57,7 +56,14 @@ import {
   getMilestonePolicy,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import {
+  Form,
+  FormCancelButton,
+  FormOverlayProvider,
+  SubmitButton,
+  useFormOverlay,
+  useZodForm,
+} from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
@@ -530,37 +536,42 @@ function DeleteUpdateForm(props: {
   trigger: ReactElement;
 }) {
   const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
   });
 
   return (
-    <AlertDialog>
+    <AlertDialog {...overlay.rootProps}>
       <AlertDialogTrigger render={props.trigger} />
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{props.title}</AlertDialogTitle>
-          <AlertDialogDescription>{props.description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <Form
-          form={form}
-          handleSubmit={async () => {
-            await props.onDelete(props.updateId);
-          }}
-        >
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <SubmitButton
-              form="context"
-              variant="destructive"
-              IconComponent={Trash}
-              iconPosition="start"
-            >
-              {t("Delete")}
-            </SubmitButton>
-          </AlertDialogFooter>
-        </Form>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{props.title}</AlertDialogTitle>
+            <AlertDialogDescription>{props.description}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete(props.updateId);
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -573,13 +584,14 @@ function DeleteEncouragementForm(props: {
   onDelete: (encouragementId: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const overlay = useFormOverlay({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
   });
 
   return (
-    <AlertDialog>
+    <AlertDialog {...overlay.rootProps}>
       <AlertDialogTrigger
         render={
           <Button
@@ -593,33 +605,37 @@ function DeleteEncouragementForm(props: {
         }
       />
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
-          <AlertDialogDescription>
-            {t(
-              "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
-              { name: props.authorName },
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <Form
-          form={form}
-          handleSubmit={async () => {
-            await props.onDelete(props.encouragementId, props.visitorId);
-          }}
-        >
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("Cancel")}</AlertDialogCancel>
-            <SubmitButton
-              form="context"
-              variant="destructive"
-              IconComponent={Trash}
-              iconPosition="start"
-            >
-              {t("Delete")}
-            </SubmitButton>
-          </AlertDialogFooter>
-        </Form>
+        <FormOverlayProvider overlay={overlay}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                "Are you sure you want to delete this encouragement from {{name}}? This action cannot be undone.",
+                { name: props.authorName },
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Form
+            form={form}
+            handleSubmit={async () => {
+              await props.onDelete(props.encouragementId, props.visitorId);
+            }}
+          >
+            <AlertDialogFooter>
+              <AlertDialogCancel render={<FormCancelButton form="context" />}>
+                {t("Cancel")}
+              </AlertDialogCancel>
+              <SubmitButton
+                form="context"
+                variant="destructive"
+                IconComponent={Trash}
+                iconPosition="start"
+              >
+                {t("Delete")}
+              </SubmitButton>
+            </AlertDialogFooter>
+          </Form>
+        </FormOverlayProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -867,8 +883,6 @@ function EncouragementEditForm(props: {
     }),
     defaultValues: { message: props.initialMessage },
   });
-  const isSaving = form.formState.isSubmitting;
-
   return (
     <Form
       form={form}
@@ -894,9 +908,7 @@ function EncouragementEditForm(props: {
           <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
-          <PopoverClose
-            render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
-          >
+          <PopoverClose render={<FormCancelButton form="context" size="sm" />}>
             <X className="w-3 h-3" />
             {t("Cancel")}
           </PopoverClose>
@@ -909,7 +921,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const actionsRef = useRef<PopoverActions | null>(null);
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
@@ -950,7 +962,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
           {(canEdit || canDelete) && (
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canEdit && (
-                <Popover actionsRef={actionsRef}>
+                <Popover {...overlay.rootProps}>
                   <PopoverTrigger
                     render={
                       <Button
@@ -964,15 +976,15 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                     <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-                    <EncouragementEditForm
-                      initialMessage={encouragement.message}
-                      encouragementId={encouragement._id}
-                      visitorId={props.currentVisitorId}
-                      onSave={props.onUpdate}
-                      onClose={() => {
-                        actionsRef.current?.close();
-                      }}
-                    />
+                    <FormOverlayProvider overlay={overlay}>
+                      <EncouragementEditForm
+                        initialMessage={encouragement.message}
+                        encouragementId={encouragement._id}
+                        visitorId={props.currentVisitorId}
+                        onSave={props.onUpdate}
+                        onClose={overlay.close}
+                      />
+                    </FormOverlayProvider>
                   </PopoverContent>
                 </Popover>
               )}
