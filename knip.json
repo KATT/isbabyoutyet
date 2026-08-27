@@ -10,7 +10,7 @@
   "tags": ["-@internal"],
   "workspaces": {
     ".": {
-      "entry": ["scripts/compareCoverage.ts!", "scripts/nodePins.ts!"]
+      "entry": ["scripts/compareCoverage.ts!"]
     },
     "apps/web": {
       "tanstack-router": {

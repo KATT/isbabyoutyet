@@ -2,7 +2,8 @@
 
 ## Node.js
 
-Node 24 everywhere. Pin checklist and how to bump: [`docs/node.md`](docs/node.md).
+Node 24. To bump the major, follow
+[`.agents/skills/update-node/SKILL.md`](.agents/skills/update-node/SKILL.md).
 
 ## Routing / scroll / overlays
 

@@ -14,14 +14,7 @@
         "VERCEL",
         "VERCEL_ENV"
       ],
-      "passThroughEnv": [
-        "VERCEL",
-        "VERCEL_ENV",
-        "VERCEL_URL",
-        "VERCEL_GIT_COMMIT_REF",
-        "VERCEL_BRANCH_URL",
-        "VERCEL_PROJECT_PRODUCTION_URL"
-      ]
+      "passThroughEnv": ["VERCEL", "VERCEL_ENV", "VERCEL_URL", "VERCEL_GIT_COMMIT_REF", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL"]
     },
     "dev": {
       "cache": false,
@@ -31,17 +24,20 @@
       "dependsOn": ["^build"]
     },
     "test": {},
-    "lint": {},
-    "lint-fix": {},
-    "format": {},
+    "lint": {
+    },
+    "lint-fix": {
+    },
+    "format": {
+    },
     "//#test:coverage": {
-      "outputs": ["coverage/coverage-summary.json", "coverage/lcov.info"],
+      "outputs": [
+        "coverage/coverage-summary.json",
+        "coverage/lcov.info"
+      ],
       "inputs": [
         "$TURBO_ROOT$/package.json",
         "$TURBO_ROOT$/vitest.config.ts",
-        "$TURBO_ROOT$/.nvmrc",
-        "$TURBO_ROOT$/scripts/**",
-        "$TURBO_ROOT$/.github/workflows/main.yml",
         "$TURBO_ROOT$/apps/**",
         "$TURBO_ROOT$/packages/**",
         "$TURBO_ROOT$/oxlint-plugins/**",

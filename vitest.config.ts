@@ -13,14 +13,6 @@ const oxlintPluginsProject = {
   },
 };
 
-const scriptsProject = {
-  test: {
-    name: "scripts",
-    include: ["scripts/**/*.test.ts"],
-    environment: "node" as const,
-  },
-};
-
 export default defineConfig({
   test: {
     projects: [
@@ -29,7 +21,6 @@ export default defineConfig({
       "packages/convex-prefetch",
       webUnitProject,
       oxlintPluginsProject,
-      scriptsProject,
     ],
     experimental: {
       fsModuleCache: true,
