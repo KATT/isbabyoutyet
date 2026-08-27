@@ -26,6 +26,7 @@ import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
 import { authClient } from "@/lib/auth-client";
+import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
@@ -46,11 +47,6 @@ import { Inline } from "@workspace/ui-patterns/components/inline";
 
 /** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
 const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
-
-const progressSweep = stylex.keyframes({
-  from: { transform: "translateX(-100%)" },
-  to: { transform: "translateX(400%)" },
-});
 
 const styles = stylex.create({
   page: {
@@ -109,30 +105,6 @@ const styles = stylex.create({
     lineHeight: "1rem",
     color: colors.mutedForeground,
     margin: 0,
-  },
-  navProgress: {
-    pointerEvents: "none",
-    position: "fixed",
-    insetInline: 0,
-    top: 0,
-    zIndex: 50,
-    height: "0.5rem",
-    overflow: "hidden",
-    backgroundColor: `color-mix(in oklab, ${colors.primary} 20%, transparent)`,
-  },
-  navProgressIndicator: {
-    height: "100%",
-    width: "25%",
-    borderRadius: "9999px",
-    backgroundColor: colors.primary,
-    animationName: progressSweep,
-    animationDuration: "1s",
-    animationTimingFunction: "ease-in-out",
-    animationIterationCount: "infinite",
-    "@media (prefers-reduced-motion: reduce)": {
-      animationName: "none",
-      width: "100%",
-    },
   },
 });
 
@@ -420,18 +392,11 @@ export function NavigationProgressBar(props: { isNavigating: boolean }) {
     return null;
   }
   return (
-    <div
-      {...stylex.props(styles.navProgress)}
-      role="progressbar"
+    <Progress
+      value={null}
+      placement="navigation"
       aria-label={t("Loading")}
-      data-slot="navigation-progress"
-      data-indeterminate=""
-    >
-      <div
-        {...stylex.props(styles.navProgressIndicator)}
-        data-slot="navigation-progress-indicator"
-      />
-    </div>
+    />
   );
 }
 

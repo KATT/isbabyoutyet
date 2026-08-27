@@ -526,7 +526,11 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
   return (
     <span {...stylex.props(styles.swatchRow)}>
       {props.colors.map((color, index) => (
-        <span key={index} {...stylex.props(styles.swatch)} style={{ backgroundColor: color }} />
+        <span
+          key={index}
+          {...stylex.props(styles.swatch)}
+          style={{ backgroundColor: color }}
+        />
       ))}
     </span>
   );

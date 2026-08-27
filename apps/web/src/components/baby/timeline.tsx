@@ -77,23 +77,37 @@ import { Stack } from "@workspace/ui-patterns/components/stack";
 import { Text } from "@workspace/ui-patterns/components/text";
 import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
-const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
 const styles = stylex.create({
+  composer: {},
   headerRow: {
     alignItems: "center",
     display: "flex",
     gap: spacing.s2,
   },
-  iconPrimary: { color: colors.primary, flexShrink: 0 },
-  iconMuted: { color: colors.mutedForeground, flexShrink: 0 },
+  iconPrimary: {
+    color: colors.primary,
+    flexShrink: 0,
+  },
+  iconMuted: {
+    color: colors.mutedForeground,
+    flexShrink: 0,
+  },
   iconMutedHoverFg: {
-    color: { ":hover": colors.foreground, default: colors.mutedForeground },
+    color: {
+      ":hover": colors.foreground,
+      default: colors.mutedForeground,
+    },
   },
   iconMutedHoverDestructive: {
-    color: { ":hover": colors.destructive, default: colors.mutedForeground },
+    color: {
+      ":hover": colors.destructive,
+      default: colors.mutedForeground,
+    },
   },
-  photoPreviewWrap: { position: "relative", width: "fit-content" },
+  photoPreviewWrap: {
+    position: "relative",
+    width: "fit-content",
+  },
   photoPreview: {
     borderColor: colors.border,
     borderRadius: radius.lg,
@@ -102,7 +116,11 @@ const styles = stylex.create({
     maxHeight: "10rem",
     objectFit: "cover",
   },
-  photoRemoveBtn: { position: "absolute", right: "-0.5rem", top: "-0.5rem" },
+  photoRemoveBtn: {
+    position: "absolute",
+    right: "-0.5rem",
+    top: "-0.5rem",
+  },
   radioLabel: {
     alignItems: "center",
     cursor: "pointer",
@@ -111,8 +129,12 @@ const styles = stylex.create({
     gap: spacing.s2,
     lineHeight: "1.25rem",
   },
-  occurredLabel: { display: "block" },
-  hiddenInput: { display: "none" },
+  occurredLabel: {
+    display: "block",
+  },
+  hiddenInput: {
+    display: "none",
+  },
   avatar: {
     alignItems: "center",
     borderRadius: "9999px",
@@ -138,8 +160,8 @@ const styles = stylex.create({
     fontWeight: 900,
   },
   bubble: {
-    borderBottomLeftRadius: radius.lg,
     borderRadius: "1.5rem",
+    borderBottomLeftRadius: radius.lg,
     borderStyle: "solid",
     borderWidth: "2px",
     flexGrow: 1,
@@ -154,7 +176,11 @@ const styles = stylex.create({
     backgroundColor: `color-mix(in oklab, ${colors.muted} 30%, transparent)`,
     borderColor: `color-mix(in oklab, ${colors.border} 70%, transparent)`,
   },
-  itemRow: { alignItems: "flex-start", display: "flex", gap: spacing.s3 },
+  itemRow: {
+    alignItems: "flex-start",
+    display: "flex",
+    gap: spacing.s3,
+  },
   metaRow: {
     alignItems: "flex-start",
     display: "flex",
@@ -169,7 +195,10 @@ const styles = stylex.create({
     gap: spacing.s2,
     minWidth: 0,
   },
-  metaLeftEnc: { flexGrow: 1, minWidth: 0 },
+  metaLeftEnc: {
+    flexGrow: 1,
+    minWidth: 0,
+  },
   authorName: {
     color: colors.foreground,
     fontWeight: 500,
@@ -189,11 +218,30 @@ const styles = stylex.create({
     fontSize: "0.75rem",
     lineHeight: "1rem",
   },
-  occurredNote: { fontWeight: 400, opacity: 0.9 },
+  occurredNote: {
+    fontWeight: 400,
+    opacity: 0.9,
+  },
   actionRow: {
     display: "flex",
     flexShrink: 0,
     gap: spacing.s1,
+    opacity: {
+      "@media (min-width: 768px)": 0,
+      default: 1,
+    },
+    transitionDuration: "150ms",
+    transitionProperty: "opacity",
+    transitionTimingFunction: "ease",
+  },
+  // Reveal actions on group hover/focus — StyleX parent selectors
+  itemRowHover: {
+    ":hover > div:last-child > div:last-child": {
+      opacity: 1,
+    },
+    ":focus-within > div:last-child > div:last-child": {
+      opacity: 1,
+    },
   },
   markdown: {
     color: `color-mix(in oklab, ${colors.foreground} 90%, transparent)`,
@@ -224,12 +272,24 @@ const styles = stylex.create({
     marginTop: spacing.s2,
     maxWidth: "100%",
     overflow: "hidden",
-    outline: { ":focus-visible": `2px solid ${colors.primary}`, default: "none" },
+    outline: {
+      ":focus-visible": `2px solid ${colors.primary}`,
+      default: "none",
+    },
     outlineOffset: "2px",
-    transform: { ":hover": "scale(1.02)", default: null },
+    transform: {
+      ":hover": "scale(1.02)",
+      default: null,
+    },
     transitionDuration: "150ms",
     transitionProperty: "transform",
     transitionTimingFunction: "ease",
+    width: "100%",
+  },
+  photoImg: {
+    aspectRatio: "1 / 1",
+    maxHeight: "16rem",
+    objectFit: "cover",
     width: "100%",
   },
   emptyState: {
@@ -240,29 +300,88 @@ const styles = stylex.create({
     paddingBlock: spacing.s10,
     textAlign: "center",
   },
-  emptyEmoji: { fontSize: "1.875rem", lineHeight: 1, margin: 0 },
-  loadMore: { paddingBlock: spacing.s2 },
+  emptyEmoji: {
+    fontSize: "1.875rem",
+    lineHeight: 1,
+    margin: 0,
+  },
+  loadMore: {
+    paddingBlock: spacing.s2,
+  },
   loadMoreInner: {
     color: colors.mutedForeground,
     display: "flex",
     justifyContent: "center",
   },
-  tooltipAnchor: { display: "inline-flex" },
-  headerBlock: { marginBottom: spacing.s4 },
+  section: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s4,
+  },
+  sectionHeader: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+    marginBottom: spacing.s4,
+  },
+  sectionTitle: {
+    color: colors.foreground,
+    fontSize: "1.125rem",
+    fontWeight: 800,
+    lineHeight: "1.75rem",
+    margin: 0,
+  },
+  emptyTitle: {
+    color: colors.foreground,
+    fontWeight: 700,
+    marginTop: spacing.s3,
+  },
+  emptyBody: {
+    color: colors.mutedForeground,
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    lineHeight: "1.25rem",
+    marginTop: spacing.s1,
+  },
+  editForm: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s2,
+  },
+  editActions: {
+    display: "flex",
+    gap: spacing.s2,
+  },
+  iconSm: {
+    height: "0.75rem",
+    width: "0.75rem",
+  },
+  iconMd: {
+    height: "1rem",
+    width: "1rem",
+  },
+  iconLg: {
+    height: "1.25rem",
+    width: "1.25rem",
+  },
+  tooltipAnchor: {
+    display: "inline-flex",
+  },
+  headerBlock: {
+    marginBottom: spacing.s4,
+  },
   encAuthorRow: {
     alignItems: "center",
     display: "flex",
     gap: spacing.s2,
     marginBottom: spacing.s1,
   },
-  dateInputFit: { width: "fit-content" },
-  timelinePhoto: {
-    aspectRatio: "1",
-    maxHeight: "16rem",
-    objectFit: "cover",
-    width: "100%",
+  dateInputFit: {
+    width: "fit-content",
   },
 });
+
+const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -591,12 +710,13 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                               {t("When did it happen? (optional)")}
                             </Text>
                             <FormControl>
-                              <Input
-                                type="datetime-local"
-                                max={htmlDateTimeNow(props.baby.timeZone)}
-                                style={styles.dateInputFit}
-                                {...renderProps.field}
-                              />
+                              <div {...stylex.props(styles.dateInputFit)}>
+                                <Input
+                                  type="datetime-local"
+                                  max={htmlDateTimeNow(props.baby.timeZone)}
+                                  {...renderProps.field}
+                                />
+                              </div>
                             </FormControl>
                           </Stack>
                         </label>
@@ -713,7 +833,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   );
 
   return (
-    <div data-timeline-item="" {...stylex.props(styles.itemRow)}>
+    <div {...stylex.props(styles.itemRow)}>
       <span {...stylex.props(styles.avatar, styles.avatarUpdate)} aria-hidden="true">
         {bubbleEmoji}
       </span>
@@ -839,6 +959,8 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
           )}
         </div>
 
+        {/* Photo first when present; the caption/message sits last so long
+            copy doesn't push the image below the fold of the card. */}
         {update.photoUrl && (
           <TimelinePhoto
             publicId={props.publicId}
@@ -886,8 +1008,13 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         alt={t("Baby update")}
         blurDataUrl={props.blurDataUrl}
         objectFit="cover"
+        style={{
+          aspectRatio: "1",
+          maxHeight: "16rem",
+          objectFit: "cover",
+          width: "100%",
+        }}
         loading="lazy"
-        {...stylex.props(styles.timelinePhoto)}
       />
     </Link>
   );
@@ -944,31 +1071,31 @@ function EncouragementEditForm(props: {
         props.onClose();
       }}
     >
-      <Stack gap="s2">
+      <div {...stylex.props(styles.editForm)}>
         <FormField
           control={form.control}
           name="message"
-          render={(renderProps) => (
+          render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Textarea aria-label={t("Edit your message")} {...renderProps.field} />
+                <Textarea aria-label={t("Edit your message")} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Inline gap="s2">
+        <div {...stylex.props(styles.editActions)}>
           <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
           <PopoverClose
             render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
           >
-            <X size={12} />
+            <X size={12} {...stylex.props(styles.iconSm)} />
             {t("Cancel")}
           </PopoverClose>
-        </Inline>
-      </Stack>
+        </div>
+      </div>
     </Form>
   );
 }
@@ -984,15 +1111,17 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const initial = encouragement.authorName.trim().charAt(0).toUpperCase() || "💛";
 
   return (
-    <div data-timeline-item="" {...stylex.props(styles.itemRow)}>
+    <div {...stylex.props(styles.itemRow, styles.itemRowHover)}>
       <span {...stylex.props(styles.avatar, styles.avatarEncouragement)} aria-hidden="true">
         {initial}
       </span>
       <div {...stylex.props(styles.bubble, styles.bubbleEncouragement)}>
         <div {...stylex.props(styles.metaRow)}>
           <div {...stylex.props(styles.metaLeftEnc)}>
-            <div {...stylex.props(styles.encAuthorRow)}>
-              <span {...stylex.props(styles.authorName)}>{encouragement.authorName}</span>
+            <div {...stylex.props(styles.metaLeft)}>
+              <span {...stylex.props(styles.authorName)}>
+                {encouragement.authorName}
+              </span>
               <span
                 {...stylex.props(styles.relativeTime)}
                 title={new Date(encouragement.createdAt).toLocaleString(locale, {
@@ -1001,8 +1130,9 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               >
                 {getRelativeTimeFromTimestamp(encouragement.createdAt, locale)}
               </span>
-              {isOwnPost && <span {...stylex.props(styles.youTag)}>{t("(you)")}</span>}
+              {isOwnPost ? <span {...stylex.props(styles.youTag)}>{t("(you)")}</span> : null}
             </div>
+
             <div {...stylex.props(styles.markdownMuted)}>
               <Streamdown>{encouragement.message}</Streamdown>
             </div>
@@ -1014,7 +1144,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 <Popover actionsRef={actionsRef}>
                   <PopoverTrigger
                     render={
-                      <Button variant="ghost" size="icon-sm" aria-label={t("Edit encouragement")} />
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t("Edit encouragement")}
+                      />
                     }
                   >
                     <PencilSimple size={16} {...stylex.props(styles.iconMutedHoverFg)} />
@@ -1036,7 +1170,11 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 <AlertDialog>
                   <AlertDialogTrigger
                     render={
-                      <Button variant="ghost" size="icon-sm" aria-label={t("Delete encouragement")}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        aria-label={t("Delete encouragement")}
+                      >
                         <Trash size={16} {...stylex.props(styles.iconMutedHoverDestructive)} />
                       </Button>
                     }
@@ -1217,40 +1355,38 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
     }
   };
 
-  const feedHeader = (
-    <div {...stylex.props(styles.headerRow, styles.headerBlock)}>
-      <Heart size={20} {...stylex.props(styles.iconPrimary)} />
-      <Text as="h3" size="lg" weight="extrabold">
-        {t("Updates & encouragements")}
-      </Text>
-    </div>
-  );
-
   if (props.items.length === 0) {
     return (
-      <Stack gap="s4">
-        {feedHeader}
+      <div {...stylex.props(styles.section)}>
+        <div {...stylex.props(styles.sectionHeader)}>
+          <Heart size={20} {...stylex.props(styles.iconPrimary, styles.iconLg)} />
+          <h3 {...stylex.props(styles.sectionTitle)}>
+            {t("Updates & encouragements")}
+          </h3>
+        </div>
         <div {...stylex.props(styles.emptyState)}>
           <p {...stylex.props(styles.emptyEmoji)} aria-hidden="true">
             💌
           </p>
-          <Stack gap="s1" align="center">
-            <Text weight="bold">{t("Nothing here yet")}</Text>
-            <Text size="sm" weight="medium" tone="muted">
-              {props.isOwner
-                ? t("Post your first update to keep everyone in the loop!")
-                : t("Updates from the family will show up here.")}
-            </Text>
-          </Stack>
+          <p {...stylex.props(styles.emptyTitle)}>{t("Nothing here yet")}</p>
+          <p {...stylex.props(styles.emptyBody)}>
+            {props.isOwner
+              ? t("Post your first update to keep everyone in the loop!")
+              : t("Updates from the family will show up here.")}
+          </p>
         </div>
-      </Stack>
+      </div>
     );
   }
 
   return (
-    <Stack gap="s4">
-      {feedHeader}
-      <Stack gap="s4">
+    <div {...stylex.props(styles.section)}>
+      <div {...stylex.props(styles.sectionHeader)}>
+        <Heart size={20} {...stylex.props(styles.iconPrimary, styles.iconLg)} />
+        <h3 {...stylex.props(styles.sectionTitle)}>{t("Updates & encouragements")}</h3>
+      </div>
+
+      <div {...stylex.props(styles.section)}>
         {props.items.map((item) =>
           item.kind === "update" ? (
             <UpdateTimelineItem
@@ -1284,7 +1420,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
             </div>
           ) : null}
         </div>
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 }

@@ -146,7 +146,7 @@ async function renderTimelineFeed(
 
 async function updateRow(view: ReturnType<typeof render>, message: string) {
   const messageNode = await view.findByText(message);
-  const row = messageNode.closest("[data-timeline-item]");
+  const row = messageNode.closest(".group");
   if (!row) throw new Error(`Timeline row missing for "${message}"`);
   return within(row as HTMLElement);
 }

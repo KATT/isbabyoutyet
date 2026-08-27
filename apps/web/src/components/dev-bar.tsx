@@ -93,7 +93,7 @@ export function DevBar() {
           </DropdownMenuTrigger>
         </span>
 
-        <DropdownMenuContent align="center" side="bottom" sideOffset={8}>
+        <DropdownMenuContent align="center" side="bottom" sideOffset={8} size="md">
           <DropdownMenuGroup>
             <DropdownMenuLabel>Seeded babies · {DEMO_USER.email}</DropdownMenuLabel>
           </DropdownMenuGroup>

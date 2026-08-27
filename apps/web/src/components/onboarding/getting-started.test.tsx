@@ -136,8 +136,10 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
     }),
   );
   await screen.findByRole("dialog", { name: "Getting started" });
-  // DrawerContent no longer accepts style (StyleX ui API). Dock CSS vars still track the viewport.
-  expect(document.querySelector('[data-slot="drawer-popup"]')).toBeTruthy();
+  const drawer = document.querySelector<HTMLElement>('[data-slot="drawer-popup"]');
+  expect(drawer?.style.bottom).toBe("115px");
+  expect(drawer?.style.left).toBe("0px");
+  expect(drawer?.style.width).toBe("390px");
 
   Object.defineProperty(visualViewport, "height", { configurable: true, value: 800 });
   act(() => {
@@ -408,7 +410,7 @@ test("next-step hint See page runs the dashboard deep link", async () => {
 
   const hintTitles = screen.getAllByText("Peek at settings");
   expect(hintTitles.length).toBeGreaterThan(0);
-  const hintPanel = hintTitles[hintTitles.length - 1]!.closest('[data-slot="next-step-hint"]');
+  const hintPanel = hintTitles[hintTitles.length - 1]!.closest("[data-getting-started-hint]");
   expect(hintPanel).toBeTruthy();
   const seePage =
     within(hintPanel as HTMLElement).queryByRole("link", { name: /see ada's page/i }) ||
