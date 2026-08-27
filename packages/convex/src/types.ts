@@ -203,7 +203,7 @@ export function getMilestonePolicy(baby: MilestonePolicyInput): MilestonePolicy 
   let currentStatus: BabyStatus = { type: "not_yet" };
   for (const milestone of [...visibleMilestones].toReversed()) {
     const date = baby[MILESTONE_FIELDS[milestone].date];
-    if (typeof date === "string" && date) {
+    if (date) {
       currentStatus = { type: milestone, date };
       break;
     }

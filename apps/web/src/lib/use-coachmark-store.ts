@@ -15,7 +15,7 @@ type CoachmarkSnapshot = {
 };
 
 function mobileMediaQuery() {
-  if (typeof window.matchMedia !== "function") {
+  if (Object.prototype.toString.call(window.matchMedia) !== "[object Function]") {
     return null;
   }
   return window.matchMedia("(max-width: 767px)");
@@ -45,7 +45,7 @@ function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current:
         }
         resizeObserver?.disconnect();
         target = nextTarget;
-        if (target && typeof ResizeObserver !== "undefined") {
+        if (target && globalThis.ResizeObserver !== undefined) {
           resizeObserver = new ResizeObserver(measure);
           resizeObserver.observe(target);
         }
@@ -106,7 +106,7 @@ function createCoachmarkStore(opts: { targetId: string; onDismissRef: { current:
       mediaQuery?.addEventListener("change", measure);
       const interval = window.setInterval(measure, 500);
       const mutationObserver =
-        typeof MutationObserver === "undefined" ? null : new MutationObserver(measure);
+        globalThis.MutationObserver === undefined ? null : new MutationObserver(measure);
       mutationObserver?.observe(document.body, { childList: true, subtree: true });
 
       return () => {

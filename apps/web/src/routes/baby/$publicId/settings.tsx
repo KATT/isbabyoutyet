@@ -18,7 +18,7 @@ import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 export const Route = createFileRoute("/baby/$publicId/settings")({
   beforeLoad: async (opts) => {
     const token = await authenticateManagerOverlaySsr(opts.context);
-    if (typeof window === "undefined" && !token) {
+    if (globalThis.window === undefined && !token) {
       throw redirect({
         to: "/baby/$publicId",
         params: { publicId: opts.params.publicId },

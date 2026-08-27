@@ -504,7 +504,7 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
     wrap: null,
   });
 
-  expect(typeof holder.completeStep).toBe("function");
+  expect(holder.completeStep).toEqual(expect.any(Function));
   await holder.completeStep!({ stepId: "share_link" });
   await vi.waitFor(async () => {
     const progress = await harness.client.query(api.onboarding.getMine, {});

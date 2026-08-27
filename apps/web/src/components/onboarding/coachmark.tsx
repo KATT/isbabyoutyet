@@ -32,7 +32,7 @@ function CoachmarkTarget(props: CoachmarkProps) {
     onDismiss: props.onDismiss,
   });
 
-  if (!snapshot || typeof document === "undefined") {
+  if (!snapshot || globalThis.document === undefined) {
     return null;
   }
 

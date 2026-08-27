@@ -19,7 +19,7 @@ function previewEntry(search: PreviewSearch) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
     if (value === null || value === undefined) continue;
-    if (typeof value === "boolean") {
+    if (value === true || value === false) {
       if (value) params.set(key, "true");
       continue;
     }

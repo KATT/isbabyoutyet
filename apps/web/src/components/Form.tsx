@@ -118,22 +118,13 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
   const { isSubmitting } = useFormState<TFieldValues>(
-    props.form === "context"
-      ? {}
-      : { control: props.form.control },
+    props.form === "context" ? {} : { control: props.form.control },
   );
   if (!form) {
     throw new Error("SubmitButton must be used within a Form or have a form prop");
   }
 
-  const {
-    form: formProp,
-    IconComponent,
-    iconPosition,
-    disabled,
-    children,
-    ...buttonProps
-  } = props;
+  const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
 
   const icon = (
     <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
@@ -141,7 +132,7 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         <span className="submit-icon-swap-in inline-grid place-items-center">
           <Spinner className="size-4" />
         </span>
-      ) : typeof IconComponent === "string" ? (
+      ) : `${IconComponent}` === IconComponent ? (
         <span className="text-base leading-none">{IconComponent}</span>
       ) : (
         <IconComponent className="size-4" />

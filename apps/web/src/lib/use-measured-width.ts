@@ -14,7 +14,7 @@ export function useMeasuredWidth() {
     };
     measure();
     window.addEventListener("resize", measure);
-    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    const observer = globalThis.ResizeObserver === undefined ? null : new ResizeObserver(measure);
     observer?.observe(node);
     if (document.fonts) {
       void document.fonts.ready.then(measure);

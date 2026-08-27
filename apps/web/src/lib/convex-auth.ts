@@ -70,17 +70,20 @@ function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | u
     return undefined;
   }
   const session = atoms.session;
-  if (session === null || typeof session !== "object") {
+  if (Object.prototype.toString.call(session) !== "[object Object]") {
     return undefined;
   }
-  if (!("subscribe" in session) || typeof session.subscribe !== "function") {
+  if (
+    !("subscribe" in session) ||
+    Object.prototype.toString.call(session.subscribe) !== "[object Function]"
+  ) {
     return undefined;
   }
   const subscribe = session.subscribe;
   return {
     subscribe: (listener) => {
       const unsubscribe = subscribe.call(session, listener);
-      if (typeof unsubscribe === "function") {
+      if (Object.prototype.toString.call(unsubscribe) === "[object Function]") {
         return unsubscribe;
       }
       return () => {};

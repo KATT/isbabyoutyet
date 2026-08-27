@@ -5,7 +5,7 @@ const VISITOR_ID_CHANGE_EVENT = "encouragement-visitor-id-change";
 
 /** Get or create a unique visitor ID (immutable once created) — client only. */
 export function getVisitorId(): string {
-  if (typeof window === "undefined") return "";
+  if (globalThis.window === undefined) return "";
   let visitorId = localStorage.getItem(STORAGE_KEY_VISITOR_ID);
   if (!visitorId) {
     visitorId = crypto.randomUUID();
@@ -16,7 +16,7 @@ export function getVisitorId(): string {
 }
 
 function getStoredVisitorId(): string {
-  if (typeof window === "undefined") return "";
+  if (globalThis.window === undefined) return "";
   return localStorage.getItem(STORAGE_KEY_VISITOR_ID) ?? "";
 }
 

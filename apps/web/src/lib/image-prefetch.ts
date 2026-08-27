@@ -8,7 +8,7 @@ const browserImagePrefetchQueryKey = ["browserImagePrefetch"] as const;
 function browserImageQueryOptions(imageUrl: string) {
   return queryOptions({
     queryKey: [...browserImagePrefetchQueryKey, imageUrl],
-    queryFn: typeof window !== "undefined" ? () => loadBrowserImage(imageUrl) : skipToken,
+    queryFn: globalThis.window !== undefined ? () => loadBrowserImage(imageUrl) : skipToken,
   });
 }
 
@@ -35,7 +35,7 @@ export function prefetchBrowserImage(
   queryClient: QueryClient,
   imageUrl: string,
 ): InitiatedQuery<BrowserImageFactory> {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return initiatedBrowserImage(imageUrl);
   }
   return getQueryInitiator(queryClient).ensureQueryData(browserImageFactory, imageUrl);

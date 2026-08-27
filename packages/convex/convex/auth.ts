@@ -8,6 +8,7 @@ import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 import { TIME_ZONE_HINT_HEADER } from "../src/timeZone";
+import { isJsonObjectValue, parseOptionalString } from "../src/jsonValue";
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.
@@ -32,22 +33,19 @@ type AuthEndpointUser = {
 };
 
 function parseAuthUserFromReturned<TReturned>(returned: TReturned): AuthEndpointUser | null {
-  if (typeof returned !== "object" || returned === null || Array.isArray(returned)) {
-    return null;
-  }
-  if (!("user" in returned)) {
+  if (!isJsonObjectValue(returned) || !("user" in returned)) {
     return null;
   }
   const user = returned.user;
-  if (typeof user !== "object" || user === null || Array.isArray(user)) {
+  if (!isJsonObjectValue(user)) {
     return null;
   }
-  const userId = "id" in user ? user.id : null;
-  if (typeof userId !== "string") {
+  const userId = "id" in user ? parseOptionalString(user.id) : null;
+  if (userId === null) {
     return null;
   }
-  const email = "email" in user && typeof user.email === "string" ? user.email : null;
-  const name = "name" in user && typeof user.name === "string" ? user.name : null;
+  const email = "email" in user ? parseOptionalString(user.email) : null;
+  const name = "name" in user ? parseOptionalString(user.name) : null;
   return { userId, email, name };
 }
 
@@ -75,7 +73,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
               {
                 userId: user.id,
                 email: String(user.email),
-                name: typeof user.name === "string" ? user.name : null,
+                name: user.name ?? null,
               },
             );
           },

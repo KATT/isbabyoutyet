@@ -56,5 +56,5 @@ test("a saved locale takes precedence over Accept-Language", () => {
 });
 
 test("registers the request locale server function", () => {
-  expect(typeof detectRequestLocale).toBe("function");
+  expect(detectRequestLocale).toEqual(expect.any(Function));
 });

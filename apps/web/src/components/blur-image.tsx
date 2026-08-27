@@ -7,13 +7,30 @@ type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
 };
 
 function imageSrcKey(src: BlurImageProps["src"]) {
-  return typeof src === "string" ? src : "";
+  if (
+    src === undefined ||
+    Object.prototype.toString.call(src) === "[object Object]" ||
+    Array.isArray(src)
+  ) {
+    return "";
+  }
+  // Blob/File and other non-string src values are objects with specialized tags.
+  if (Object.prototype.toString.call(src) !== "[object String]" && `${src}` !== src) {
+    return "";
+  }
+  return src;
 }
 
 function numericDimension(value: BlurImageProps["width"] | BlurImageProps["height"]) {
-  if (typeof value === "number") return value;
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (value === undefined) {
+    return undefined;
+  }
+  const asText = `${value}`;
+  if (asText === value) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  return Number(asText);
 }
 
 function placeholderObjectFit(props: BlurImageProps) {

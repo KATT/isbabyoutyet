@@ -43,9 +43,7 @@ function ContextSubmitForm(props: {
   );
 }
 
-function ExplicitSubmitForm(props: {
-  onSubmit: (values: { note: string }) => Promise<void>;
-}) {
+function ExplicitSubmitForm(props: { onSubmit: (values: { note: string }) => Promise<void> }) {
   const form = useZodForm({
     schema: z.object({ note: z.string() }),
     defaultValues: { note: "hi" },

@@ -10,7 +10,13 @@ export const CANONICAL_ORIGIN = "https://isbabyoutyet.com";
  */
 function getSiteOrigin() {
   const fromEnv = import.meta.env.VITE_SITE_URL;
-  if (typeof fromEnv === "string" && fromEnv.length > 0) {
+  if (
+    fromEnv !== undefined &&
+    fromEnv !== true &&
+    fromEnv !== false &&
+    `${fromEnv}` === fromEnv &&
+    fromEnv.length > 0
+  ) {
     return fromEnv.replace(/\/$/, "");
   }
   return CANONICAL_ORIGIN;

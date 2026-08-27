@@ -103,6 +103,7 @@
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-unknown-returns": "error",
     "anti-slop/no-unknown-parameters": "error",
+    "anti-slop/no-runtime-typeof": "error",
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",

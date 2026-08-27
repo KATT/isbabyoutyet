@@ -6,7 +6,7 @@
 /** @internal Keeps this file a module under `noUncheckedSideEffectImports`. */
 export const serviceWorkerRegistered = true;
 
-if (typeof navigator !== "undefined" && "serviceWorker" in navigator) {
+if (globalThis.navigator !== undefined && "serviceWorker" in navigator) {
   void navigator.serviceWorker
     .register("/sw.js")
     .then((registration) => {

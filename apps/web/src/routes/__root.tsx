@@ -57,7 +57,7 @@ export async function resolveRootBeforeLoad(opts: {
 }) {
   // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
   // then Accept-Language) via the server function.
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return {
       locale: await opts.detectLocale(),
       isAuthenticated: false,
@@ -187,25 +187,37 @@ export const Route = createRootRouteWithContext<{
 
 /** Loose match-context bag before locale/token narrowing. */
 export function contextLocale<TContext>(context: TContext): SupportedLocale | undefined {
-  if (
-    typeof context !== "object" ||
-    context === null ||
-    !("locale" in context) ||
-    typeof context.locale !== "string" ||
-    !isSupportedLocale(context.locale)
-  ) {
+  if (!isPlainContext(context) || !("locale" in context)) {
     return undefined;
   }
-  return context.locale;
+  const locale = context.locale;
+  if (locale === null || locale === undefined || locale === true || locale === false) {
+    return undefined;
+  }
+  const localeText = `${locale}`;
+  if (localeText !== locale || !isSupportedLocale(localeText)) {
+    return undefined;
+  }
+  return localeText;
 }
 
 function contextToken<TContext>(context: TContext) {
-  return typeof context === "object" &&
-    context !== null &&
-    "token" in context &&
-    (typeof context.token === "string" || context.token === null)
-    ? context.token
-    : undefined;
+  if (!isPlainContext(context) || !("token" in context)) {
+    return undefined;
+  }
+  const token = context.token;
+  if (token === null) {
+    return token;
+  }
+  if (token === undefined || token === true || token === false) {
+    return undefined;
+  }
+  const tokenText = `${token}`;
+  return tokenText === token ? tokenText : undefined;
+}
+
+function isPlainContext<TContext>(context: TContext): context is TContext & object {
+  return Object.prototype.toString.call(context) === "[object Object]";
 }
 
 // better-auth and @convex-dev/better-auth currently expose structurally

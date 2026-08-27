@@ -46,7 +46,7 @@ export function browserPushQueryOptions(queryClient: QueryClient, babyRef: strin
   return queryOptions({
     queryKey: [...browserPushCapabilityQueryKey, babyRef],
     queryFn:
-      typeof window !== "undefined"
+      globalThis.window !== undefined
         ? () => resolveBrowserPushCapability(queryClient, babyRef)
         : skipToken,
   });
@@ -73,7 +73,7 @@ export function prefetchBrowserPushCapability(
   queryClient: QueryClient,
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory> {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return initiatedBrowserPushCapability(babyRef);
   }
   const factory = browserPushCapabilityFactory(queryClient);
@@ -356,7 +356,7 @@ function hasStandaloneFlag(
 }
 
 function getIOSStatus() {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return { isIOS: false, isStandalone: false };
   }
 
@@ -368,7 +368,7 @@ function getIOSStatus() {
   }
 
   const isStandalone =
-    (typeof window.matchMedia === "function" &&
+    (Object.prototype.toString.call(window.matchMedia) === "[object Function]" &&
       window.matchMedia("(display-mode: standalone)").matches) ||
     (hasStandaloneFlag(navigator) && navigator.standalone === true);
 
@@ -377,7 +377,7 @@ function getIOSStatus() {
 
 function isPushSupported() {
   return (
-    typeof window !== "undefined" &&
+    globalThis.window !== undefined &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window

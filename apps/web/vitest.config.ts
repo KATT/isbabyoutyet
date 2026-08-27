@@ -49,7 +49,7 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
           const rect = element.getBoundingClientRect();
           return {
             tagName: element.tagName,
-            className: typeof element.className === "string" ? element.className : "",
+            className: `${element.className}` === element.className ? element.className : "",
             right: rect.right,
           };
         })

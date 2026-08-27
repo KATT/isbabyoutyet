@@ -10,6 +10,12 @@ import {
   homepageDemoLocales,
 } from "../src/homepageDemoFeed";
 import type { HomepageDemoPhotoKey } from "../src/homepageDemoFeed";
+import {
+  isJsonObjectValue,
+  parseJsonBoolean,
+  parseJsonString,
+  type JsonValue,
+} from "../src/jsonValue";
 
 const LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1";
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
@@ -47,19 +53,17 @@ export function convexRun(opts: {
   return parseConvexRunOutput(result);
 }
 
-function parseConvexRunOutput(stdout: string) {
+function parseConvexRunOutput(stdout: string): JsonValue {
   const trimmed = stdout.trim();
   try {
-    const parsed: unknown = JSON.parse(trimmed);
-    return parsed;
+    return JSON.parse(trimmed);
   } catch {
     const lines = trimmed.split("\n");
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i]?.trim();
       if (!line) continue;
       try {
-        const parsed: unknown = JSON.parse(line);
-        return parsed;
+        return JSON.parse(line);
       } catch {
         // keep looking
       }
@@ -112,26 +116,30 @@ function isLoopbackUploadUrl(uploadUrl: string) {
  * resized JPEGs exceed Linux MAX_ARG_STRLEN (~128KiB) as a `convex run` argv.
  */
 async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
-  const uploadUrl = convexRun({
-    functionName: "homepageDemo:generateUploadUrl",
-    args: {},
-    extraConvexArgs: opts.extraConvexArgs,
-  });
-  if (typeof uploadUrl !== "string") {
-    throw new Error(`Expected upload URL string, got ${JSON.stringify(uploadUrl)}`);
+  const uploadUrl = parseJsonString(
+    convexRun({
+      functionName: "homepageDemo:generateUploadUrl",
+      args: {},
+      extraConvexArgs: opts.extraConvexArgs,
+    }),
+  );
+  if (uploadUrl === null) {
+    throw new Error(`Expected upload URL string, got invalid convex run output`);
   }
 
   if (isLoopbackUploadUrl(uploadUrl)) {
-    const storageId = convexRun({
-      functionName: "homepageDemo:storePhoto",
-      args: {
-        bytes: { $bytes: opts.bytes.toString("base64") },
-        contentType: "image/jpeg",
-      },
-      extraConvexArgs: opts.extraConvexArgs,
-    });
-    if (typeof storageId !== "string") {
-      throw new Error(`Expected storage id string, got ${JSON.stringify(storageId)}`);
+    const storageId = parseJsonString(
+      convexRun({
+        functionName: "homepageDemo:storePhoto",
+        args: {
+          bytes: { $bytes: opts.bytes.toString("base64") },
+          contentType: "image/jpeg",
+        },
+        extraConvexArgs: opts.extraConvexArgs,
+      }),
+    );
+    if (storageId === null) {
+      throw new Error(`Expected storage id string, got invalid convex run output`);
     }
     return storageId;
   }
@@ -144,17 +152,15 @@ async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
   }
-  const payload: unknown = await response.json();
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    !("storageId" in payload) ||
-    typeof payload.storageId !== "string" ||
-    !payload.storageId
-  ) {
+  const payload: JsonValue = await response.json();
+  if (!isJsonObjectValue(payload) || !("storageId" in payload)) {
     throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
   }
-  return payload.storageId;
+  const storageId = parseJsonString(payload.storageId);
+  if (storageId === null || !storageId) {
+    throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
+  }
+  return storageId;
 }
 
 function hasAllHomepageDemoPhotos(photos: Partial<UploadedPhotos>): photos is UploadedPhotos {
@@ -180,13 +186,15 @@ function refreshHomepageDemoLocales(opts: {
 }
 
 function hasCompleteHomepageDemoPhotoSet(extraConvexArgs: string[]) {
-  const result = convexRun({
-    functionName: "homepageDemo:hasCompletePhotoSet",
-    args: {},
-    extraConvexArgs,
-  });
-  if (typeof result !== "boolean") {
-    throw new Error(`Expected homepage photo sentinel boolean, got ${JSON.stringify(result)}`);
+  const result = parseJsonBoolean(
+    convexRun({
+      functionName: "homepageDemo:hasCompletePhotoSet",
+      args: {},
+      extraConvexArgs,
+    }),
+  );
+  if (result === null) {
+    throw new Error(`Expected homepage photo sentinel boolean, got invalid convex run output`);
   }
   return result;
 }

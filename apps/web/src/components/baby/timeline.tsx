@@ -137,7 +137,7 @@ const MILESTONE_META = {
 } as const satisfies Record<Milestone, { labelKey: TranslationKey; icon: typeof Heartbeat }>;
 
 const uploadResponseSchema = z.object({
-  storageId: z.custom<Id<"_storage">>((value) => typeof value === "string"),
+  storageId: z.string().refine((value): value is Id<"_storage"> => value.length > 0),
 });
 
 function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {

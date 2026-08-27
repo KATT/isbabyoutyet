@@ -22,7 +22,7 @@ test("default theme option has no css payload", () => {
 test("named themes expose a css string for head.styles injection", () => {
   const named = THEME_OPTIONS.filter((option) => option.value !== null);
   expect(named.length).toBeGreaterThan(0);
-  expect(named.map((option) => typeof option.css)).toEqual(named.map(() => "string"));
+  expect(named.map((option) => option.css)).toEqual(named.map((_option) => expect.any(String)));
   expect(named.map((option) => getThemeCss(option.value))).toEqual(
     named.map((option) => option.css),
   );

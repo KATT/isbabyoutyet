@@ -3,7 +3,7 @@ import { convexClient } from "@convex-dev/better-auth/client/plugins";
 import { isValidTimeZone, TIME_ZONE_HINT_HEADER } from "@workspace/convex/src/timeZone";
 
 export function getBrowserAuthHeaders(): Record<string, string> {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return {};
   }
   try {

@@ -78,7 +78,7 @@ export function useRotatingIndex(opts: { intervalMs: number; itemCount: number }
 
   useEffect(() => {
     const reducedMotion =
-      typeof window.matchMedia === "function" &&
+      Object.prototype.toString.call(window.matchMedia) === "[object Function]" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion || opts.itemCount < 2) return;
     const interval = window.setInterval(() => {

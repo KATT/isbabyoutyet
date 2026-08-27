@@ -23,7 +23,7 @@ subtle.digest = (algorithm, data) => {
   return nodeDigest(algorithm, bytes);
 };
 
-if (typeof window.matchMedia !== "function") {
+if (Object.prototype.toString.call(window.matchMedia) !== "[object Function]") {
   window.matchMedia = (query: string) => ({
     matches: false,
     media: query,
@@ -45,17 +45,17 @@ class StubObserver {
   }
 }
 
-if (typeof window.IntersectionObserver !== "function") {
+if (Object.prototype.toString.call(window.IntersectionObserver) !== "[object Function]") {
   window.IntersectionObserver = StubObserver as unknown as typeof IntersectionObserver;
 }
 
-if (typeof window.ResizeObserver !== "function") {
+if (Object.prototype.toString.call(window.ResizeObserver) !== "[object Function]") {
   window.ResizeObserver = StubObserver as unknown as typeof ResizeObserver;
 }
 
 // jsdom leaves Element#scrollIntoView unimplemented; coachmarks / tour targets
 // call it and would otherwise throw into the router error boundary.
 function stubScrollIntoView(this: Element) {}
-if (typeof Element.prototype.scrollIntoView !== "function") {
+if (Object.prototype.toString.call(Element.prototype.scrollIntoView) !== "[object Function]") {
   Element.prototype.scrollIntoView = stubScrollIntoView;
 }

@@ -1,16 +1,14 @@
 import { appendFile, readFile } from "node:fs/promises";
+import {
+  isJsonObjectValue,
+  parseJsonNumber,
+  type JsonObject,
+  type JsonValue,
+} from "../packages/convex/src/jsonValue.js";
 
 const metrics = ["statements", "branches", "functions", "lines"] as const;
 
 type CoverageMetric = (typeof metrics)[number];
-type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
-type JsonObject = { readonly [key: string]: JsonValue };
 type CoverageSummary = { total: JsonObject };
 type CoverageResult = {
   metric: CoverageMetric;
@@ -28,10 +26,6 @@ if (baselinePath === undefined || currentPath === undefined) {
   );
 }
 
-function isJsonObject<TValue>(value: TValue): value is TValue & JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 function formatPct(value: number) {
   return `${value.toFixed(2)}%`;
 }
@@ -45,11 +39,7 @@ async function readSummary(path: string) {
   const contents = await readFile(path, "utf8");
   const summary: JsonValue = JSON.parse(contents);
 
-  if (
-    !isJsonObject(summary) ||
-    !("total" in summary) ||
-    !isJsonObject(summary["total"])
-  ) {
+  if (!isJsonObjectValue(summary) || !("total" in summary) || !isJsonObjectValue(summary["total"])) {
     throw new Error(`Invalid coverage summary: ${path}`);
   }
 
@@ -62,11 +52,11 @@ function getPercentage(
 ) {
   const metric = summary.total[options.metric];
   const percentage =
-    metric !== undefined && isJsonObject(metric) && "pct" in metric
-      ? metric["pct"]
-      : undefined;
+    metric !== undefined && isJsonObjectValue(metric) && "pct" in metric
+      ? parseJsonNumber(metric["pct"])
+      : null;
 
-  if (typeof percentage !== "number" || !Number.isFinite(percentage)) {
+  if (percentage === null || !Number.isFinite(percentage)) {
     throw new Error(
       `Invalid ${options.metric} coverage percentage: ${options.path}`,
     );

@@ -126,7 +126,7 @@ function BabyLanguageSelect(props: {
       onValueChange={(value) => {
         if (value === "inherit") {
           void props.onUpdate({ locale: null });
-        } else if (typeof value === "string" && isSupportedLocale(value)) {
+        } else if (value !== null && isSupportedLocale(value)) {
           void props.onUpdate({ locale: value });
         }
       }}

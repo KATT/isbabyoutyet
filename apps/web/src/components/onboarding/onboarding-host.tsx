@@ -33,7 +33,10 @@ type OnboardingHostProps = {
 
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
+  if (
+    !(el instanceof HTMLElement) ||
+    Object.prototype.toString.call(el.scrollIntoView) !== "[object Function]"
+  ) {
     return;
   }
   el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });

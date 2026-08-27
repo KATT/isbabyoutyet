@@ -66,7 +66,8 @@ function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfinit
   return (
     "initialPageParam" in options &&
     "getNextPageParam" in options &&
-    typeof options.getNextPageParam === "function"
+    (Object.prototype.toString.call(options.getNextPageParam) === "[object Function]" ||
+      Object.prototype.toString.call(options.getNextPageParam) === "[object AsyncFunction]")
   );
 }
 

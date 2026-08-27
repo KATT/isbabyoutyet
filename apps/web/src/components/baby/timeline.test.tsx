@@ -22,6 +22,10 @@ import {
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
+function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
+  return Object.prototype.toString.call(args) === "[object Object]";
+}
+
 const notYetBaby: BabyData = {
   name: "Baby Smith",
   timeZone: "Europe/London",
@@ -603,7 +607,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
   const mutationSpy = vi
     .spyOn(harness.convexClient, "mutation")
     .mockImplementation(async (mutation, args) => {
-      if (args && typeof args === "object" && "updateId" in args && !("encouragementId" in args)) {
+      if (isMutationArgsRecord(args) && "updateId" in args && !("encouragementId" in args)) {
         throw new Error("nope");
       }
       return await originalMutation(mutation, args);
@@ -634,7 +638,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
     message: "Pin fail",
   });
   vi.spyOn(harness.convexClient, "mutation").mockImplementation(async (mutation, args) => {
-    if (args && typeof args === "object" && "updateId" in args && !("encouragementId" in args)) {
+    if (isMutationArgsRecord(args) && "updateId" in args && !("encouragementId" in args)) {
       throw new Error("offline");
     }
     return await originalMutation(mutation, args);

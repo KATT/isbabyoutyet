@@ -11,6 +11,7 @@ import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
+import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "../src/jsonValue";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 
@@ -121,15 +122,15 @@ export const backfillEncouragementTimeline = migrations.define({
 const SKIP_TOUR_BATCH_SIZE = 50;
 
 function authUserId<TUser>(user: TUser) {
-  if (user && typeof user === "object" && "_id" in user) {
+  if (isJsonObjectValue(user) && "_id" in user) {
     return String(user._id);
   }
   throw new Error("Better Auth user is missing _id");
 }
 
 function authUserEmail<TUser>(user: TUser) {
-  if (user && typeof user === "object" && "email" in user && typeof user.email === "string") {
-    return user.email;
+  if (isJsonObjectValue(user) && "email" in user) {
+    return parseJsonString(user.email);
   }
   return null;
 }
@@ -500,7 +501,7 @@ type MigrationRunnerReport = {
 };
 
 function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
-  if (typeof result !== "object" || result === null || Array.isArray(result)) {
+  if (!isJsonObjectValue(result)) {
     throw new Error("Migration runner returned an invalid report");
   }
   if (
@@ -509,23 +510,33 @@ function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerRe
     !("processed" in result) ||
     !("lastFinished" in result) ||
     !("lastStarted" in result) ||
-    !("toStartOver" in result) ||
-    typeof result.Name !== "string" ||
-    typeof result.Status !== "string" ||
-    typeof result.processed !== "number" ||
-    typeof result.lastFinished !== "string" ||
-    typeof result.lastStarted !== "string" ||
-    typeof result.toStartOver !== "string"
+    !("toStartOver" in result)
+  ) {
+    throw new Error("Migration runner returned an invalid report");
+  }
+  const Name = parseJsonString(result.Name);
+  const Status = parseJsonString(result.Status);
+  const processed = parseJsonNumber(result.processed);
+  const lastFinished = parseJsonString(result.lastFinished);
+  const lastStarted = parseJsonString(result.lastStarted);
+  const toStartOver = parseJsonString(result.toStartOver);
+  if (
+    Name === null ||
+    Status === null ||
+    processed === null ||
+    lastFinished === null ||
+    lastStarted === null ||
+    toStartOver === null
   ) {
     throw new Error("Migration runner returned an invalid report");
   }
   return {
-    Name: result.Name,
-    Status: result.Status,
-    processed: result.processed,
-    lastFinished: result.lastFinished,
-    lastStarted: result.lastStarted,
-    toStartOver: result.toStartOver,
+    Name,
+    Status,
+    processed,
+    lastFinished,
+    lastStarted,
+    toStartOver,
   };
 }
 

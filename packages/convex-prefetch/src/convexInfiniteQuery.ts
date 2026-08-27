@@ -105,7 +105,7 @@ async function fetchConvexInfinitePage(
   const args = opts.queryKey[2];
   const queryArgs = { ...args, paginationOpts: opts.pageParam };
 
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     const http = convexQueryClient.serverHttpClient;
     if (!http) {
       throw new Error("Convex SSR HTTP client is not available");
