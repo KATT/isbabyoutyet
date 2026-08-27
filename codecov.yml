@@ -1,22 +1,13 @@
-# Optional Codecov upload from the `codecov` CI job. Statuses are informational
-# only — the merge gate is the local compareCoverage ratchet in that job, which
-# compares vitest json-summary vs the PR base SHA (works for stacks).
+# Upload on PRs and pushes for dashboard history. Do not enable GitHub statuses,
+# checks, or PR comments — the merge gate is local compareCoverage in CI.
 coverage:
   status:
-    project:
-      default:
-        informational: true
-    patch:
-      default:
-        informational: true
+    project: off
+    patch: off
 
-comment:
-  layout: "diff, flags, files"
-  behavior: default
-  require_changes: false
-  require_base: false
-  require_head: true
-  hide_project_coverage: false
+comment: false
+
+github_checks: false
 
 ignore:
   - "**/_generated/**"
