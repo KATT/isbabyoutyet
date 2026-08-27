@@ -160,6 +160,8 @@ jobs:
           files: coverage/lcov.info
           flags: unit
           name: vitest
+          # Prefer upload token when present; otherwise OIDC via Codecov GitHub App.
           token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
           fail_ci_if_error: true
           verbose: true
