@@ -4,7 +4,6 @@ import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { Button } from "@workspace/ui/components/button";
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { cn } from "@workspace/ui/lib/utils";
 import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
@@ -190,12 +189,11 @@ const AlertDialogDescription = ({
   />
 );
 
-const AlertDialogAction = ({ className, ...props }: React.ComponentProps<typeof Button>) => (
-  <Button data-slot="alert-dialog-action" className={cn(className)} {...props} />
+const AlertDialogAction = (props: React.ComponentProps<typeof Button>) => (
+  <Button data-slot="alert-dialog-action" {...props} />
 );
 
 const AlertDialogCancel = ({
-  className,
   variant = "outline",
   size = "default",
   ...props
@@ -203,7 +201,6 @@ const AlertDialogCancel = ({
   Pick<React.ComponentProps<typeof Button>, "variant" | "size">) => (
   <AlertDialogPrimitive.Close
     data-slot="alert-dialog-cancel"
-    className={cn(className)}
     render={<Button variant={variant} size={size} />}
     {...props}
   />

@@ -3,7 +3,6 @@ import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   base: {
@@ -95,10 +94,17 @@ const styles = stylex.create({
     height: "2rem",
     paddingInline: "0.75rem",
   },
+  shapePill: {
+    borderRadius: "9999px",
+  },
+  touchTarget: {
+    minHeight: "2.75rem",
+  },
 });
 
 type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
+type ButtonShape = "default" | "pill";
 
 const variantStyles: Record<ButtonVariant, StyleXStyles> = {
   default: styles.default,
@@ -118,24 +124,34 @@ const sizeStyles: Record<ButtonSize, StyleXStyles> = {
   sm: styles.sizeSm,
 };
 
-export type ButtonProps = Omit<ButtonPrimitive.Props, "className"> & {
+export type ButtonProps = Omit<ButtonPrimitive.Props, "className" | "style"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  className?: string;
+  shape?: ButtonShape;
+  touchTarget?: boolean;
 };
+
 
 function Button(props: ButtonProps) {
   const variant = props.variant ?? "default";
   const size = props.size ?? "default";
+  const shape = props.shape ?? "default";
+  const touchTarget = props.touchTarget ?? false;
   const stylexProps = stylex.props(
     styles.base,
     styles.focusable,
     variantStyles[variant],
     sizeStyles[size],
-    customClassName(props.className),
-    props.style as StyleXStyles,
+    shape === "pill" ? styles.shapePill : null,
+    touchTarget ? styles.touchTarget : null,
   );
-  const { className: _className, style: _style, variant: _variant, size: _size, ...rest } = props;
+  const {
+    variant: _variant,
+    size: _size,
+    shape: _shape,
+    touchTarget: _touchTarget,
+    ...rest
+  } = props;
 
   return (
     <ButtonPrimitive
