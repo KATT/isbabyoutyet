@@ -3,12 +3,7 @@ import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import {
-  modules,
-  registerComponents,
-  createBabyArgs,
-  createEncouragementArgs,
-} from "./test.setup";
+import { modules, registerComponents, createBabyArgs, createEncouragementArgs } from "./test.setup";
 
 test("baby and related writes leave a durable targeted purge job", async () => {
   const t = convexTest(schema, modules);
@@ -22,13 +17,10 @@ test("baby and related writes leave a durable targeted purge job", async () => {
       dueDate: "2026-09-01",
     }),
   );
-  await asAlice.mutation(
-    api.baby.update,
-    {
-      babyId: created.babyId,
-      name: "Baby Jones",
-    },
-  );
+  await asAlice.mutation(api.baby.update, {
+    babyId: created.babyId,
+    name: "Baby Jones",
+  });
   await t.mutation(
     api.encouragements.create,
     createEncouragementArgs({

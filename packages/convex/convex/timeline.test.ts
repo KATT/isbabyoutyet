@@ -296,13 +296,10 @@ test("an invalid persisted milestone timestamp fails closed", async () => {
 
 test("journey selection does not block backend milestone writes", async () => {
   const { t, asAlice, babyId } = await setup();
-  await asAlice.mutation(
-    api.baby.update,
-    {
-      babyId,
-      birthJourney: "planned_c_section",
-    },
-  );
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
 
   await asAlice.mutation(
     api.updates.post,
@@ -340,13 +337,10 @@ test("changing selection leaves existing updates and notifications untouched", a
   );
 
   const notificationsBefore = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
-  await asAlice.mutation(
-    api.baby.update,
-    {
-      babyId,
-      birthJourney: "planned_c_section",
-    },
-  );
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId,
@@ -368,7 +362,7 @@ test("changing selection leaves existing updates and notifications untouched", a
 
 test("changing selection then unmarking cancels the pending milestone push", async () => {
   await using _timers = useFakeTimersResource();
-  const { t, asAlice, babyId } = await setup();
+  const { asAlice, babyId } = await setup();
   await asAlice.mutation(
     api.updates.post,
     postUpdateArgs({
@@ -377,13 +371,10 @@ test("changing selection then unmarking cancels the pending milestone push", asy
     }),
   );
 
-  await asAlice.mutation(
-    api.baby.update,
-    {
-      babyId,
-      birthJourney: "planned_c_section",
-    },
-  );
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
   await asAlice.mutation(api.updates.unmarkMilestone, {
     babyId,
     milestone: "labor_started",
@@ -397,13 +388,10 @@ test("selection changes do not filter empty historical milestone rows", async ()
   const { t, asAlice, babyId } = await setup();
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
 
-  await asAlice.mutation(
-    api.baby.update,
-    {
-      babyId,
-      birthJourney: "planned_c_section",
-    },
-  );
+  await asAlice.mutation(api.baby.update, {
+    babyId,
+    birthJourney: "planned_c_section",
+  });
 
   const feed = await t.query(api.timeline.listByBaby, {
     babyId,
