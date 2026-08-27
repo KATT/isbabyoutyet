@@ -25,10 +25,15 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/component
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useRef, useTransition } from "react";
+import { useFormState, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import type { api } from "@workspace/convex/convex/_generated/api";
-import { getBlockingLaterMilestone, MILESTONE_LABELS } from "@workspace/convex/src/types";
+import {
+  BIRTH_JOURNEYS,
+  getBlockingLaterMilestone,
+  MILESTONE_LABELS,
+} from "@workspace/convex/src/types";
 import type {
   BabyData,
   BabyUpdateHandler,
@@ -55,12 +60,16 @@ type EditorFormProps = {
   onClose: () => void;
 };
 
-function EditorActions(props: { isSubmitting: boolean; isDirty: boolean }) {
+function EditorActions(props: { isBusy: boolean }) {
   const { t } = useI18n();
+  // Subscribe via useFormState — reading form.formState via the Proxy is not a
+  // reliable re-render under the React Compiler.
+  const { isSubmitting, isDirty } = useFormState();
+  const busy = isSubmitting || props.isBusy;
   return (
     <div className="flex gap-2 justify-end">
       <PopoverClose
-        render={<Button type="button" variant="outline" size="sm" disabled={props.isSubmitting} />}
+        render={<Button type="button" variant="outline" size="sm" disabled={busy} />}
       >
         {t("Cancel")}
       </PopoverClose>
@@ -69,7 +78,7 @@ function EditorActions(props: { isSubmitting: boolean; isDirty: boolean }) {
         IconComponent={Check}
         iconPosition="start"
         size="sm"
-        disabled={!props.isDirty}
+        disabled={!isDirty || busy}
       >
         {t("Save")}
       </SubmitButton>
@@ -178,7 +187,7 @@ function DueDateForm(props: EditorFormProps) {
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}
       />
-      <EditorActions isSubmitting={form.formState.isSubmitting} isDirty={form.formState.isDirty} />
+      <EditorActions isBusy={false} />
     </Form>
   );
 }
@@ -332,10 +341,7 @@ function StatusDateForm(props: {
             </AlertDialogContent>
           </AlertDialog>
         )}
-        <EditorActions
-          isSubmitting={form.formState.isSubmitting || isDeleting}
-          isDirty={form.formState.isDirty}
-        />
+        <EditorActions isBusy={isDeleting} />
       </div>
     </Form>
   );
@@ -412,7 +418,7 @@ function NameForm(props: EditorFormProps) {
           "Renaming may change the page address, but links you have already shared will keep working.",
         )}
       </p>
-      <EditorActions isSubmitting={form.formState.isSubmitting} isDirty={form.formState.isDirty} />
+      <EditorActions isBusy={false} />
     </Form>
   );
 }
@@ -422,11 +428,20 @@ type JourneyEditorProps = {
   onUpdate: BabyUpdateHandler;
 };
 
+function journeySchema() {
+  return z
+    .object({
+      birthJourney: z.enum(BIRTH_JOURNEYS),
+    })
+    .transform((values): Pick<BabyPatch, "birthJourney"> => values);
+}
+
 export function JourneyEditor(props: JourneyEditorProps) {
   const { t } = useI18n();
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   return (
-    <Popover>
+    <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm" aria-label={t("Edit journey")}>
@@ -435,13 +450,48 @@ export function JourneyEditor(props: JourneyEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
-        <JourneyMilestoneEditor
+        <JourneyForm
           birthJourney={props.birthJourney}
-          idPrefix="settings-journey"
-          onBirthJourneyChange={(birthJourney) => props.onUpdate({ birthJourney })}
+          onUpdate={props.onUpdate}
+          onClose={() => {
+            actionsRef.current?.close();
+          }}
         />
       </PopoverContent>
     </Popover>
+  );
+}
+
+function JourneyForm(props: {
+  birthJourney: BirthJourney;
+  onUpdate: BabyUpdateHandler;
+  onClose: () => void;
+}) {
+  const form = useZodForm({
+    schema: journeySchema(),
+    defaultValues: { birthJourney: props.birthJourney },
+  });
+  const birthJourney = useWatch({ control: form.control, name: "birthJourney" });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onUpdate(values);
+        props.onClose();
+      }}
+    >
+      <div className="mb-3">
+        <JourneyMilestoneEditor
+          birthJourney={birthJourney}
+          idPrefix="settings-journey"
+          onBirthJourneyChange={(next) => {
+            form.setValue("birthJourney", next, { shouldDirty: true, shouldTouch: true });
+          }}
+        />
+      </div>
+      <EditorActions isBusy={false} />
+    </Form>
   );
 }
 
@@ -449,6 +499,20 @@ type ThemeSelectorProps = {
   baby: BabyData;
   onUpdate: BabyUpdateHandler;
 };
+
+function ThemeSwatches(props: { colors: readonly string[] }) {
+  return (
+    <span className="flex gap-0.5">
+      {props.colors.map((color, index) => (
+        <span
+          key={index}
+          className="size-4 rounded-sm border border-border/50"
+          style={{ backgroundColor: color }}
+        />
+      ))}
+    </span>
+  );
+}
 
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
@@ -460,8 +524,15 @@ export function ThemeSelector(props: ThemeSelectorProps) {
     <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm">
-            {t("Change")}
+          <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
+            {selectedTheme ? (
+              <>
+                <ThemeSwatches colors={selectedTheme.colors} />
+                {t(selectedTheme.labelKey)}
+              </>
+            ) : (
+              t("Change")
+            )}
           </Button>
         }
       />
@@ -486,15 +557,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
                 });
               }}
             >
-              <div className="flex gap-0.5">
-                {option.colors.map((color, i) => (
-                  <div
-                    key={i}
-                    className="w-4 h-4 rounded-sm border border-border/50"
-                    style={{ backgroundColor: color }}
-                  />
-                ))}
-              </div>
+              <ThemeSwatches colors={option.colors} />
               {t(option.labelKey)}
             </Button>
           ))}

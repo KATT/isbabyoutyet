@@ -52,6 +52,13 @@ function openJourneyEditor(view: ReturnType<typeof render>) {
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
 }
 
+function selectJourneyPreset(view: ReturnType<typeof render>, label: string) {
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const option = view.getByRole("option", { name: label });
+  fireEvent.pointerDown(option, { pointerType: "mouse" });
+  fireEvent.click(option);
+}
+
 test("settings dialog shows page fields when open and stays closed when not", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
@@ -178,7 +185,12 @@ test("page language selection saves the locale override", async () => {
     />,
   );
 
-  fireEvent.click(view.getByRole("combobox", { name: "Language" }));
+  const languageTrigger = view.getByRole("combobox", { name: "Language" });
+  // Closed value matches the dropdown label, not the raw "inherit" sentinel
+  expect(languageTrigger.textContent).toContain("Use my profile language (British English)");
+  expect(languageTrigger.className).toMatch(/max-w-44/);
+
+  fireEvent.click(languageTrigger);
   const swedish = view.getByRole("option", { name: "Swedish" });
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
@@ -193,7 +205,7 @@ test("page language selection saves the locale override", async () => {
   expect(onUpdate).toHaveBeenCalledWith({ locale: null });
 });
 
-test("journey selection saves the chosen preset", async () => {
+test("journey selection saves the chosen preset after Save", async () => {
   const onOpenChange = vi.fn<(open: boolean) => void>();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
 
@@ -209,8 +221,13 @@ test("journey selection saves the chosen preset", async () => {
 
   expect(view.getByText("Journey")).toBeTruthy();
   openJourneyEditor(view);
-  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Labour");
+  const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+  expect(saveButton.disabled).toBe(true);
+  selectJourneyPreset(view, "Home birth");
+  expect(onUpdate).not.toHaveBeenCalled();
+  expect(saveButton.disabled).toBe(false);
+  fireEvent.click(saveButton);
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" });
   });
@@ -232,12 +249,13 @@ test("journey editor reports a failed save and remains open", async () => {
   );
 
   openJourneyEditor(view);
-  fireEvent.click(view.getByRole("button", { name: "Home birth" }));
+  selectJourneyPreset(view, "Home birth");
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => {
     expect(toastError).toHaveBeenCalledWith("Could not save journey");
   });
-  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Home birth");
 });
 
 test("turning off visitor visibility does not remove a marked milestone", async () => {
@@ -258,6 +276,7 @@ test("turning off visitor visibility does not remove a marked milestone", async 
   openJourneyEditor(view);
 
   fireEvent.click(view.getByRole("switch", { name: "Labour started" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
 
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
@@ -283,8 +302,9 @@ test("journey selection stays changeable after milestone updates", async () => {
 
   expect(view.getAllByText("Gone to hospital").length).toBeGreaterThan(0);
   openJourneyEditor(view);
-  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Planned C-section" }));
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Home birth");
+  selectJourneyPreset(view, "Planned C-section");
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() => {
     expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "planned_c_section" });
   });
@@ -313,8 +333,9 @@ test("theme constants render through the active translation catalog", async () =
   );
 
   expect(view.getByText("Tema")).toBeTruthy();
-  expect(view.getByText("Mango")).toBeTruthy();
+  expect(view.getAllByText("Mango").length).toBeGreaterThan(0);
   expect(view.getByText("Resa")).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Redigera resa" }));
-  expect(view.getByRole("button", { name: "Förlossning" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Förval" })).toBeTruthy();
+  expect(view.getByRole("button", { name: "Spara" })).toBeTruthy();
 });

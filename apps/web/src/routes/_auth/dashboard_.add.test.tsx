@@ -48,7 +48,7 @@ test("optional settings stay collapsed until expanded", async () => {
   await using view = await renderDefaultAddBaby();
 
   expect(view.getByRole("button", { name: "Customize your page (optional)" })).toBeTruthy();
-  expect(view.queryByRole("button", { name: "Labour" })).toBeNull();
+  expect(view.queryByRole("combobox", { name: "Presets" })).toBeNull();
   expect(view.queryByText("Birth journey")).toBeNull();
 
   expandOptionalSettings(view);
@@ -59,7 +59,7 @@ test("optional settings stay collapsed until expanded", async () => {
     ),
   ).toBeTruthy();
 
-  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Presets" })).toBeTruthy();
   expect(view.getByText("Birth journey")).toBeTruthy();
   expect(view.getByText("Theme")).toBeTruthy();
 });
@@ -80,9 +80,7 @@ test("journey choices explain visible statuses and privacy", async () => {
 
   expandOptionalSettings(view);
 
-  expect(view.getByRole("button", { name: "Labour" })).toBeTruthy();
-  expect(view.getByRole("button", { name: "Home birth" })).toBeTruthy();
-  expect(view.getByRole("button", { name: "Planned C-section" })).toBeTruthy();
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Labour");
   expect(view.getByRole("switch", { name: "Labour started" }).getAttribute("aria-checked")).toBe(
     "true",
   );
@@ -163,7 +161,12 @@ test.each([
     target: { value: "2026-09-09" },
   });
   expandOptionalSettings(view);
-  fireEvent.click(view.getByRole("button", { name: testCase.label }));
+  if (testCase.birthJourney !== "labor") {
+    fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+    const option = view.getByRole("option", { name: testCase.label });
+    fireEvent.pointerDown(option, { pointerType: "mouse" });
+    fireEvent.click(option);
+  }
   fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
