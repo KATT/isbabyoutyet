@@ -43,7 +43,10 @@ const babyId = "jd7baby000000000000000000" as Id<"baby">;
 function stubBrowserPush(stub: Partial<BrowserPushStub>) {
   const restore: Array<() => void> = [];
 
-  function replaceProperty(target: object, opts: { key: string; descriptor: PropertyDescriptor }) {
+  function replaceProperty<$Target extends object>(
+    target: $Target,
+    opts: { key: string; descriptor: PropertyDescriptor },
+  ) {
     const existing = Object.getOwnPropertyDescriptor(target, opts.key);
     Object.defineProperty(target, opts.key, { configurable: true, ...opts.descriptor });
     restore.push(() => {
