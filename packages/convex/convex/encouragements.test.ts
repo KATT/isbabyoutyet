@@ -63,6 +63,17 @@ test("visitors can create encouragements and list them", async () => {
   ]);
   expect(result.page[0]).not.toHaveProperty("visitorId");
   expect(result.page[0]).not.toHaveProperty("userAgent");
+
+  const stored = await t.run(async (ctx) => {
+    return await ctx.db
+      .query("encouragements")
+      .withIndex("by_babyId", (q) => q.eq("babyId", babyId))
+      .collect();
+  });
+  expect(stored).toMatchObject([
+    { userAgent: null, locale: null, timezone: null },
+    { userAgent: null, locale: null, timezone: null },
+  ]);
 });
 
 test("create persists visitor metadata when provided", async () => {

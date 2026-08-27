@@ -1,6 +1,5 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
 import { query } from "./_generated/server";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
 import { appIdentity } from "./authIdentity";
@@ -52,37 +51,17 @@ export const create = mutationWithTriggers({
       babyId: args.babyId,
       postedAt: createdAt,
     });
-    const fields: {
-      babyId: Id<"baby">;
-      authorName: string;
-      message: string;
-      createdAt: number;
-      timelineItemId: Id<"timelineItems">;
-      visitorId: string;
-    } & Partial<{
-      userAgent: string;
-      locale: string;
-      timezone: string;
-    }> = {
+    const encouragementId = await ctx.db.insert("encouragements", {
       babyId: args.babyId,
       authorName: trimmedName,
       message: trimmedMessage,
       createdAt,
       timelineItemId,
       visitorId: args.visitorId,
-    };
-    // Schema still uses `v.optional(v.string())`; omit until the backfill
-    // tightens those columns to `v.union(v.string(), v.null())`.
-    if (args.userAgent !== null) {
-      fields.userAgent = args.userAgent;
-    }
-    if (args.locale !== null) {
-      fields.locale = args.locale;
-    }
-    if (args.timezone !== null) {
-      fields.timezone = args.timezone;
-    }
-    const encouragementId = await ctx.db.insert("encouragements", fields);
+      userAgent: args.userAgent,
+      locale: args.locale,
+      timezone: args.timezone,
+    });
 
     return encouragementId;
   },
