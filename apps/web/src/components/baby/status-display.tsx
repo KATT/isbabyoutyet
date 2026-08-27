@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { BabyData, BabyStatus } from "@workspace/convex/src/types";
 import { getMilestonePolicy } from "@workspace/convex/src/types";
+import { Text } from "@workspace/ui-patterns/components/text";
 import {
   formatDate,
   getOverdueDays,
@@ -11,6 +12,8 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useBabyPhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type PhotoAvatarProps = {
   publicId: string | null;
@@ -22,24 +25,139 @@ type PhotoAvatarProps = {
   variant: "default" | "born";
 };
 
+const styles = stylex.create({
+  root: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    paddingBlock: spacing.s8,
+  },
+  avatar: {
+    alignItems: "center",
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "4px",
+    display: "inline-flex",
+    height: {
+      "@media (min-width: 768px)": "8rem",
+      default: "7rem",
+    },
+    justifyContent: "center",
+    marginBottom: spacing.s6,
+    overflow: "hidden",
+    width: {
+      "@media (min-width: 768px)": "8rem",
+      default: "7rem",
+    },
+  },
+  avatarDefault: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 25%, transparent)`,
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+  },
+  avatarBorn: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderColor: colors.primary,
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+  },
+  avatarLink: {
+    cursor: "pointer",
+    transition: "transform 0.15s",
+    ":hover": { transform: "scale(1.05) rotate(-2deg)" },
+    ":focus": {
+      outline: `2px solid ${colors.primary}`,
+      outlineOffset: "2px",
+    },
+  },
+  emoji: {
+    fontSize: {
+      "@media (min-width: 768px)": "4.5rem",
+      default: "3.75rem",
+    },
+  },
+  photo: {
+    height: "100%",
+    objectFit: "cover",
+    width: "100%",
+  },
+  headline: {
+    color: colors.primary,
+    fontSize: {
+      "@media (min-width: 768px)": "3rem",
+      default: "2.25rem",
+    },
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    margin: 0,
+    textWrap: "balance",
+  },
+  subline: {
+    color: colors.mutedForeground,
+    fontSize: "1.125rem",
+    fontWeight: 700,
+    margin: 0,
+    marginTop: spacing.s3,
+  },
+  sinceChip: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.muted} 60%, transparent)`,
+    borderRadius: "9999px",
+    color: colors.mutedForeground,
+    display: "inline-flex",
+    fontSize: "0.875rem",
+    fontWeight: 600,
+    gap: spacing.s1_5,
+    marginTop: spacing.s3,
+    paddingBlock: spacing.s1_5,
+    paddingInline: spacing.s4,
+  },
+  dueBox: {
+    borderRadius: "1.5rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    marginTop: spacing.s6,
+    paddingBlock: spacing.s5,
+    paddingInline: spacing.s8,
+    transform: "rotate(-2deg)",
+  },
+  dueBoxOverdue: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 40%, transparent)`,
+  },
+  dueBoxNormal: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+  },
+  latest: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 25%, transparent)`,
+    borderRadius: "1.5rem",
+    borderBottomLeftRadius: "0.5rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    marginTop: spacing.s8,
+    maxWidth: "28rem",
+    paddingBlock: spacing.s5,
+    paddingInline: spacing.s6,
+    textAlign: "left",
+    transform: "rotate(-1deg)",
+    width: "100%",
+  },
+});
+
 function PhotoAvatar(props: PhotoAvatarProps) {
   const { t } = useI18n();
   const photo = useBabyPhotoOverlayNav(props.publicId ?? "");
-
-  const baseClasses =
-    "inline-flex items-center justify-center w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden border-4 mb-6";
-  const variantClasses =
-    props.variant === "born"
-      ? "bg-primary/15 border-primary pop-shadow-strong"
-      : "bg-primary/10 border-primary/25 pop-shadow";
-
-  // Use thumbnail for avatar, fallback to full photo if thumbnail not available
+  const variantStyle = props.variant === "born" ? styles.avatarBorn : styles.avatarDefault;
   const avatarImageUrl = props.thumbnailUrl ?? props.photoUrl;
+  const photoSx = stylex.props(styles.photo);
 
   if (!avatarImageUrl && !props.photoUrl) {
     return (
-      <div className={`${baseClasses} ${variantClasses}`}>
-        <span className="text-6xl md:text-7xl" aria-hidden="true">
+      <div {...stylex.props(styles.avatar, variantStyle)}>
+        <span {...stylex.props(styles.emoji)} aria-hidden="true">
           {props.fallbackEmoji}
         </span>
       </div>
@@ -53,7 +171,8 @@ function PhotoAvatar(props: PhotoAvatarProps) {
       width={160}
       height={160}
       blurDataUrl={props.blurDataUrl}
-      className="h-full w-full object-cover"
+      className={photoSx.className}
+      style={{ ...photoSx.style, objectFit: "cover" }}
     />
   ) : null;
 
@@ -62,20 +181,16 @@ function PhotoAvatar(props: PhotoAvatarProps) {
       <Link
         {...photo.openLink}
         aria-label={t("Photo of {{name}}", { name: props.babyName })}
-        className={`${baseClasses} ${variantClasses} cursor-pointer transition-transform hover:scale-105 hover:-rotate-2 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2`}
+        {...stylex.props(styles.avatar, variantStyle, styles.avatarLink)}
       >
         {avatarImage}
       </Link>
     );
   }
 
-  return <div className={`${baseClasses} ${variantClasses}`}>{avatarImage}</div>;
+  return <div {...stylex.props(styles.avatar, variantStyle)}>{avatarImage}</div>;
 }
 
-/**
- * The newest owner update, shown on top of the status card regardless of
- * stage — a text-only post refreshes it without a status change.
- */
 type LatestUpdateMessage = {
   message: string | null;
   postedAt: number;
@@ -98,18 +213,18 @@ function LatestUpdateBox(props: { latestUpdate: LatestUpdateMessage | null }) {
     return null;
   }
   return (
-    <div className="mt-8 w-full max-w-md rounded-3xl rounded-bl-lg border-2 border-primary/25 bg-primary/10 px-6 py-5 text-left rotate-[-1deg] pop-shadow">
-      <p className="text-xs font-black uppercase tracking-widest text-primary/80">
+    <div {...stylex.props(styles.latest)}>
+      <Text size="xs" weight="black" tone="primary">
         {t("Latest from the family")} 💬
-      </p>
-      <p className="mt-2 text-lg font-bold leading-snug text-foreground break-words">
+      </Text>
+      <Text size="lg" weight="bold">
         {latestUpdate.message}
-      </p>
-      <p className="mt-2 text-xs font-semibold text-muted-foreground">
+      </Text>
+      <Text size="xs" weight="semibold" tone="muted">
         {t("Updated {{relative}}", {
           relative: getRelativeTime(new Date(latestUpdate.postedAt).toISOString(), locale),
         })}
-      </p>
+      </Text>
     </div>
   );
 }
@@ -154,7 +269,7 @@ export function StatusDisplay(props: StatusDisplayProps) {
       : meta.sublineKey;
 
   return (
-    <div className="flex flex-col items-center py-8">
+    <div {...stylex.props(styles.root)}>
       <PhotoAvatar
         publicId={props.publicId}
         babyName={props.baby.name}
@@ -165,13 +280,11 @@ export function StatusDisplay(props: StatusDisplayProps) {
         variant={isBorn ? "born" : "default"}
       />
 
-      <h2 className="text-4xl md:text-5xl font-black tracking-tight text-primary text-balance">
-        {t(meta.answerKey)}
-      </h2>
-      <p className="mt-3 text-lg font-bold text-muted-foreground">{t(sublineKey)}</p>
+      <h2 {...stylex.props(styles.headline)}>{t(meta.answerKey)}</h2>
+      <p {...stylex.props(styles.subline)}>{t(sublineKey)}</p>
 
       {props.currentStatus.type !== "not_yet" && (
-        <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-4 py-1.5 text-sm font-semibold text-muted-foreground">
+        <p {...stylex.props(styles.sinceChip)}>
           {isBorn
             ? t("Born")
             : props.currentStatus.type === "labor_started"
@@ -187,16 +300,15 @@ export function StatusDisplay(props: StatusDisplayProps) {
 
       {showDueDateBox ? (
         <div
-          className={`mt-6 rotate-[-2deg] rounded-3xl border-2 px-8 py-5 pop-shadow ${
-            !isMessageMode && overdueDays > 0
-              ? "border-primary/40 bg-primary/10"
-              : "border-border bg-card"
-          }`}
+          {...stylex.props(
+            styles.dueBox,
+            !isMessageMode && overdueDays > 0 ? styles.dueBoxOverdue : styles.dueBoxNormal,
+          )}
         >
-          <p
-            className={`text-2xl font-black ${
-              !isMessageMode && overdueDays > 0 ? "text-primary" : "text-foreground"
-            }`}
+          <Text
+            size="2xl"
+            weight="black"
+            tone={!isMessageMode && overdueDays > 0 ? "primary" : "foreground"}
           >
             {isMessageMode
               ? publicDueDateText
@@ -210,13 +322,13 @@ export function StatusDisplay(props: StatusDisplayProps) {
                       : "{{count}} days until due date",
                     { count: daysUntilDueDate },
                   )}
-          </p>
+          </Text>
           {!isMessageMode ? (
-            <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            <Text size="sm" weight="semibold" tone="muted">
               {t("Due date: {{date}}", {
                 date: exactDueDate ? formatDueDate(exactDueDate, locale) : "",
               })}
-            </p>
+            </Text>
           ) : null}
         </div>
       ) : null}

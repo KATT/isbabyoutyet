@@ -47,12 +47,57 @@ import { htmlDate, htmlDateTime, htmlDateTimeNow } from "@/lib/html-date";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { getThemeOption, THEME_OPTIONS } from "./utils";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose;
 // successful save/delete closes via the root actionsRef.
+
+
+const styles = stylex.create({
+  actions: {
+    display: "flex",
+    gap: spacing.s2,
+    justifyContent: "flex-end",
+  },
+  fieldGap: {
+    marginBottom: spacing.s3,
+  },
+  betweenRow: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+    justifyContent: "space-between",
+  },
+  hint: {
+    marginBottom: spacing.s3,
+  },
+  swatchRow: {
+    display: "flex",
+    gap: spacing.s0_5,
+  },
+  swatch: {
+    borderColor: `color-mix(in oklab, ${colors.border} 50%, transparent)`,
+    borderRadius: radius.sm,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    height: "1rem",
+    width: "1rem",
+  },
+  themeList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s1,
+  },
+  inlineFlex: {
+    display: "inline-flex",
+  },
+});
 
 type EditorFormProps = {
   baby: BabyData;
@@ -67,7 +112,7 @@ function EditorActions(props: { isBusy: boolean }) {
   const { isSubmitting, isDirty } = useFormState();
   const busy = isSubmitting || props.isBusy;
   return (
-    <div className="flex gap-2 justify-end">
+    <div {...stylex.props(styles.actions)}>
       <PopoverClose render={<Button type="button" variant="outline" size="sm" disabled={busy} />}>
         {t("Cancel")}
       </PopoverClose>
@@ -146,7 +191,7 @@ export function DueDateEditor(props: DueDateEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <DueDateForm
           baby={props.baby}
           onUpdate={props.onUpdate}
@@ -210,12 +255,12 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            <Clock className="w-4 h-4 mr-2" />
+            <Clock size={16} data-icon="inline-start" />
             {t("Edit")}
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <StatusDateForm
           baby={props.baby}
           status={props.status}
@@ -268,7 +313,7 @@ function StatusDateForm(props: {
         control={form.control}
         name="dateTime"
         render={({ field }) => (
-          <FormItem className="mb-3">
+          <FormItem>
             <FormControl>
               <Input
                 type="datetime-local"
@@ -281,13 +326,13 @@ function StatusDateForm(props: {
           </FormItem>
         )}
       />
-      <div className="flex items-center justify-between gap-2">
+      <div {...stylex.props(styles.betweenRow)}>
         {blocker ? (
           <Tooltip>
             <TooltipTrigger
               render={
                 <span
-                  className="inline-flex"
+                  {...stylex.props(styles.inlineFlex)}
                   aria-label={t("Delete the {{status}} status first", {
                     status: MILESTONE_LABELS[blocker],
                   })}
@@ -370,7 +415,7 @@ export function NameEditor(props: NameEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <NameForm
           baby={props.baby}
           onUpdate={props.onUpdate}
@@ -402,7 +447,7 @@ function NameForm(props: EditorFormProps) {
         control={form.control}
         name="name"
         render={({ field }) => (
-          <FormItem className="mb-3">
+          <FormItem>
             <FormControl>
               <Input placeholder={t("Baby Name")} aria-label={t("Baby Name")} {...field} />
             </FormControl>
@@ -410,11 +455,11 @@ function NameForm(props: EditorFormProps) {
           </FormItem>
         )}
       />
-      <p className="text-xs text-muted-foreground mb-3">
+      <Text size="xs" tone="muted">
         {t(
           "Renaming may change the page address, but links you have already shared will keep working.",
         )}
-      </p>
+      </Text>
       <EditorActions isBusy={false} />
     </Form>
   );
@@ -446,7 +491,7 @@ export function JourneyEditor(props: JourneyEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <JourneyForm
           birthJourney={props.birthJourney}
           onUpdate={props.onUpdate}
@@ -478,7 +523,7 @@ function JourneyForm(props: {
         props.onClose();
       }}
     >
-      <div className="mb-3">
+      <div {...stylex.props(styles.fieldGap)}>
         <JourneyMilestoneEditor
           birthJourney={birthJourney}
           idPrefix="settings-journey"
@@ -499,11 +544,11 @@ type ThemeSelectorProps = {
 
 function ThemeSwatches(props: { colors: readonly string[] }) {
   return (
-    <span className="flex gap-0.5">
+    <span {...stylex.props(styles.swatchRow)}>
       {props.colors.map((color, index) => (
         <span
           key={index}
-          className="size-4 rounded-sm border border-border/50"
+          {...stylex.props(styles.swatch)}
           style={{ backgroundColor: color }}
         />
       ))}
@@ -521,7 +566,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
     <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
+          <Button variant="outline" size="sm" aria-label={t("Change theme")}>
             {selectedTheme ? (
               <>
                 <ThemeSwatches colors={selectedTheme.colors} />
@@ -533,15 +578,14 @@ export function ThemeSelector(props: ThemeSelectorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-56">
-        <div className="flex flex-col gap-1">
+      <PopoverContent align="end">
+        <Stack gap="s1">
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
               variant={selectedTheme?.value === option.value ? "default" : "ghost"}
               aria-pressed={selectedTheme?.value === option.value}
               size="sm"
-              className="justify-start gap-2"
               disabled={isPending}
               onClick={() => {
                 startThemeTransition(async () => {
@@ -558,7 +602,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
               {t(option.labelKey)}
             </Button>
           ))}
-        </div>
+        </Stack>
       </PopoverContent>
     </Popover>
   );

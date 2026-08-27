@@ -67,6 +67,30 @@ import {
 import { getLanguageName, useI18n } from "@/lib/i18n";
 import { JOURNEY_OPTION_BY_VALUE } from "./journey-options";
 import type { ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+
+
+const styles = stylex.create({
+  sectionShell: {
+    backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    overflow: "hidden",
+  },
+  sectionTitle: {
+    paddingInline: spacing.s0_5,
+  },
+  body: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s5,
+  },
+});
 
 type SettingsPanelProps = {
   baby: BabyData;
@@ -91,14 +115,16 @@ type SettingsPanelProps = {
 
 function SettingsSection(props: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        {props.title}
-      </h3>
-      <div className="overflow-hidden rounded-xl border border-border bg-card/50">
-        <ItemGroup className="gap-0">{props.children}</ItemGroup>
+    <Stack gap="s2">
+      <div {...stylex.props(styles.sectionTitle)}>
+        <Text size="xs" weight="bold" tone="muted">
+          {props.title}
+        </Text>
       </div>
-    </section>
+      <div {...stylex.props(styles.sectionShell)}>
+        <ItemGroup>{props.children}</ItemGroup>
+      </div>
+    </Stack>
   );
 }
 
@@ -131,11 +157,11 @@ function BabyLanguageSelect(props: {
         }
       }}
     >
-      <SelectTrigger aria-label={t("Language")} size="sm" className="max-w-44">
+      <SelectTrigger aria-label={t("Language")} size="sm">
         <SelectValue />
       </SelectTrigger>
       {/* Wider than the capped trigger so long inherit labels are not clipped */}
-      <SelectContent alignItemWithTrigger={false} className="w-auto min-w-44">
+      <SelectContent alignItemWithTrigger={false}>
         <SelectGroup>
           {languageItems.map((item) => (
             <SelectItem key={item.value} value={item.value}>
@@ -166,15 +192,15 @@ export function SettingsPanel(props: SettingsPanelProps) {
       onOpenChange={props.onOpenChange}
       onOpenChangeComplete={props.onOpenChangeComplete ?? undefined}
     >
-      <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("Settings")}</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-5">
+        <div {...stylex.props(styles.body)}>
           <SettingsSection title={t("Page details")}>
             <Item>
               <ItemMedia variant="icon">
-                <Baby className="w-4 h-4" />
+                <Baby size={16} />
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{t("Baby Name")}</ItemTitle>
@@ -189,7 +215,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
             <Item>
               <ItemMedia variant="icon">
-                <CalendarHeart className="w-4 h-4" />
+                <CalendarHeart size={16} />
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{t("Due Date")}</ItemTitle>
@@ -217,7 +243,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           <SettingsSection title={t("Birth journey")}>
             <Item>
               <ItemMedia variant="icon">
-                <Heartbeat className="w-4 h-4" />
+                <Heartbeat size={16} />
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{t("Journey")}</ItemTitle>
@@ -236,7 +262,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <ItemSeparator />
                 <Item>
                   <ItemMedia variant="icon">
-                    <Heartbeat className="w-4 h-4" />
+                    <Heartbeat size={16} />
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{t("Labour started")}</ItemTitle>
@@ -266,7 +292,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <ItemSeparator />
                 <Item>
                   <ItemMedia variant="icon">
-                    <Hospital className="w-4 h-4" />
+                    <Hospital size={16} />
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{t("Gone to hospital")}</ItemTitle>
@@ -296,7 +322,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <ItemSeparator />
                 <Item>
                   <ItemMedia variant="icon">
-                    <Confetti className="w-4 h-4" />
+                    <Confetti size={16} />
                   </ItemMedia>
                   <ItemContent>
                     <ItemTitle>{t("Baby born")}</ItemTitle>
@@ -325,7 +351,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
           <SettingsSection title={t("Appearance")}>
             <Item>
               <ItemMedia variant="icon">
-                <Palette className="w-4 h-4" />
+                <Palette size={16} />
               </ItemMedia>
               <ItemContent>
                 <ItemTitle>{t("Theme")}</ItemTitle>
@@ -364,11 +390,11 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
           {coParents && (
             <SettingsSection title={t("Access")}>
-              <Item variant="default" className="items-start">
+              <Item variant="default">
                 <ItemMedia variant="icon">
-                  <Users className="w-4 h-4" />
+                  <Users size={16} />
                 </ItemMedia>
-                <ItemContent className="gap-3">
+                <ItemContent>
                   <div>
                     <ItemTitle>{t("Co-parents")}</ItemTitle>
                     <ItemDescription>
@@ -391,7 +417,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             <SettingsSection title={t("Danger zone")}>
               <Item>
                 <ItemMedia variant="icon">
-                  <Trash className="w-4 h-4" />
+                  <Trash size={16} />
                 </ItemMedia>
                 <ItemContent>
                   <ItemTitle>{t("Delete page")}</ItemTitle>

@@ -29,6 +29,8 @@ import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 import { useTransientFlag } from "@/lib/use-transient-flag";
+import * as stylex from "@stylexjs/stylex";
+import { Text } from "@workspace/ui-patterns/components/text";
 
 export const Route = createFileRoute("/baby/$publicId/share")({
   beforeLoad: async (opts) => {
@@ -73,6 +75,28 @@ export const Route = createFileRoute("/baby/$publicId/share")({
     };
   },
   component: BabyShareOverlay,
+});
+
+const styles = stylex.create({
+  previewImage: {
+    aspectRatio: "1200 / 630",
+    objectFit: "cover",
+    width: "100%",
+  },
+  linkText: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  fullWidth: {
+    width: "100%",
+  },
+  clamp2: {
+    display: "-webkit-box",
+    overflow: "hidden",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+  },
 });
 
 export function BabyShareOverlay() {
@@ -137,7 +161,7 @@ export function BabyShareOverlay() {
       onOpenChange={share.onOpenChange}
       onOpenChangeComplete={share.onOpenChangeComplete}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("Share the Link")}</DialogTitle>
           <DialogDescription>{t("This is how your page will look when shared.")}</DialogDescription>
@@ -148,18 +172,24 @@ export function BabyShareOverlay() {
             alt={sharePreview.title}
             width={1200}
             height={630}
-            className="aspect-[1200/630] w-full object-cover"
+            {...stylex.props(styles.previewImage)}
           />
           <CardHeader>
-            <CardTitle className="line-clamp-2">{sharePreview.title}</CardTitle>
-            <CardDescription className="line-clamp-2">{sharePreview.description}</CardDescription>
+            <div {...stylex.props(styles.clamp2)}>
+              <CardTitle>{sharePreview.title}</CardTitle>
+            </div>
+            <div {...stylex.props(styles.clamp2)}>
+              <CardDescription>{sharePreview.description}</CardDescription>
+            </div>
           </CardHeader>
           <CardContent>
-            <p className="truncate text-xs text-muted-foreground">{loaderData.shareLink}</p>
+            <Text size="xs" tone="muted" truncate>
+              {loaderData.shareLink}
+            </Text>
           </CardContent>
           <CardFooter>
+            <div {...stylex.props(styles.fullWidth)}>
             <Button
-              className="w-full"
               onClick={() => {
                 void copyShareLink();
               }}
@@ -167,6 +197,7 @@ export function BabyShareOverlay() {
               {copied ? <CheckCircle data-icon="inline-start" /> : null}
               {copied ? t("Copied!") : t("Copy link to share")}
             </Button>
+            </div>
           </CardFooter>
         </Card>
       </DialogContent>
