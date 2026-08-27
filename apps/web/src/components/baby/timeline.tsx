@@ -379,6 +379,12 @@ const styles = stylex.create({
   dateInputFit: {
     width: "fit-content",
   },
+  timelinePhoto: {
+    aspectRatio: "1",
+    maxHeight: "16rem",
+    objectFit: "cover",
+    width: "100%",
+  },
 });
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
@@ -833,7 +839,7 @@ function UpdateTimelineItem(props: UpdateTimelineItemProps) {
   );
 
   return (
-    <div {...stylex.props(styles.itemRow)}>
+    <div data-timeline-item="" {...stylex.props(styles.itemRow)}>
       <span {...stylex.props(styles.avatar, styles.avatarUpdate)} aria-hidden="true">
         {bubbleEmoji}
       </span>
@@ -1008,13 +1014,8 @@ function TimelinePhoto(props: TimelinePhotoProps) {
         alt={t("Baby update")}
         blurDataUrl={props.blurDataUrl}
         objectFit="cover"
-        style={{
-          aspectRatio: "1",
-          maxHeight: "16rem",
-          objectFit: "cover",
-          width: "100%",
-        }}
         loading="lazy"
+        {...stylex.props(styles.timelinePhoto)}
       />
     </Link>
   );
@@ -1111,7 +1112,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const initial = encouragement.authorName.trim().charAt(0).toUpperCase() || "💛";
 
   return (
-    <div {...stylex.props(styles.itemRow, styles.itemRowHover)}>
+    <div data-timeline-item="" {...stylex.props(styles.itemRow, styles.itemRowHover)}>
       <span {...stylex.props(styles.avatar, styles.avatarEncouragement)} aria-hidden="true">
         {initial}
       </span>
