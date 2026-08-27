@@ -151,6 +151,18 @@ test("SubmitButton honors an extra disabled prop while idle", async () => {
   expect((view.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
+test("SubmitButton throws when used outside a Form without an explicit form", () => {
+  expect(() => {
+    render(
+      <LocaleProvider locale="en-GB">
+        <SubmitButton form="context" IconComponent={Check} iconPosition="start">
+          Send
+        </SubmitButton>
+      </LocaleProvider>,
+    );
+  }).toThrow("SubmitButton must be used within a Form or have a form prop");
+});
+
 test("Form surfaces uncaught submit errors as a toast", async () => {
   await using _timers = makeResource({}, () => {
     vi.useRealTimers();
@@ -174,6 +186,32 @@ test("Form surfaces uncaught submit errors as a toast", async () => {
 
   await vi.waitFor(() => {
     expect(toastError).toHaveBeenCalledWith("Nope");
+  });
+});
+
+test("Form toasts a generic message for non-Error throws", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+
+  await using toastError = spyOnToastErrorResource();
+
+  const onSubmit = vi.fn(async () => {
+    throw "string-fail";
+  });
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Send" }));
+  await vi.advanceTimersByTimeAsync(500);
+
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("Something went wrong. Try again.");
   });
 });
 
@@ -265,7 +303,7 @@ test("FormCancelButton honors an extra disabled prop while idle", async () => {
     });
     return (
       <Form form={form} handleSubmit={async () => undefined}>
-        <FormCancelButton form="context" disabled={true}>
+        <FormCancelButton form="context" disabled={true} variant="secondary">
           Cancel
         </FormCancelButton>
       </Form>
@@ -486,9 +524,22 @@ test("useFormOverlay close is a no-op without an actions handle", async () => {
   function IdleOverlay() {
     const overlay = useFormOverlay({ onOpenChange: undefined });
     return (
-      <button type="button" onClick={() => overlay.close()}>
-        Close
-      </button>
+      <>
+        <button type="button" onClick={() => overlay.close()}>
+          Close
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            overlay.rootProps.onOpenChange(false, {
+              reason: "escape-key",
+              cancel: () => undefined,
+            });
+          }}
+        >
+          EscapeIdle
+        </button>
+      </>
     );
   }
 
@@ -500,5 +551,8 @@ test("useFormOverlay close is a no-op without an actions handle", async () => {
 
   expect(() => {
     fireEvent.click(view.getByRole("button", { name: "Close" }));
+  }).not.toThrow();
+  expect(() => {
+    fireEvent.click(view.getByRole("button", { name: "EscapeIdle" }));
   }).not.toThrow();
 });

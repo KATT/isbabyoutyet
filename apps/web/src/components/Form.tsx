@@ -176,6 +176,8 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
           return rest.handleSubmit(async (values) => {
             lock?.acquire();
             try {
+              // Dev-only pause so submit spinners are visible while clicking around locally.
+              /* v8 ignore next 3 */
               if (import.meta.env.DEV) {
                 await new Promise((resolve) => setTimeout(resolve, DEV_SUBMIT_DELAY_MS));
               }
@@ -260,6 +262,9 @@ export function SubmitButton<TFieldValues extends FieldValues>(
 ) {
   const context = useFormContext();
   const form = props.form === "context" ? context : props.form;
+  if (!form) {
+    throw new Error("SubmitButton must be used within a Form or have a form prop");
+  }
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
   const { isSubmitting } = useFormState(
@@ -268,9 +273,6 @@ export function SubmitButton<TFieldValues extends FieldValues>(
       : // RHF Control is invariant; cast so useFormState accepts any field map.
         { control: props.form.control as Control<FieldValues> },
   );
-  if (!form) {
-    throw new Error("SubmitButton must be used within a Form or have a form prop");
-  }
 
   const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
 
@@ -283,9 +285,13 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         </span>
       ) : typeof IconComponent === "string" ? (
         <span className="text-base leading-none">{IconComponent}</span>
-      ) : IconComponent ? (
-        <IconComponent className="size-4" />
-      ) : null}
+      ) : (
+        // showIcon requires a non-null IconComponent when idle.
+        (() => {
+          const IdleIcon = IconComponent as Icon;
+          return <IdleIcon className="size-4" />;
+        })()
+      )}
     </span>
   ) : null;
 
