@@ -284,6 +284,19 @@ test("theme selector reports a failed update and remains open", async () => {
   expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
 });
 
+test("theme selector toasts a generic message for non-Error failures", async () => {
+  await using toastError = spyOnToastErrorResource();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue("nope");
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
+  fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
+
+  await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Failed to update theme"));
+});
+
 test("journey editor saves only when dirty", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
   await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);

@@ -99,3 +99,29 @@ test("selecting a preset notifies the caller", async () => {
 
   expect(onBirthJourneyChange).toHaveBeenCalledWith("home_birth");
 });
+
+test("selecting the current preset is a no-op", async () => {
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
+
+  await using view = renderEditor({
+    birthJourney: "labor",
+    onBirthJourneyChange,
+  });
+
+  selectPreset(view, "Labour");
+
+  expect(onBirthJourneyChange).not.toHaveBeenCalled();
+});
+
+test("leaving custom via a preset notifies the caller", async () => {
+  const onBirthJourneyChange = vi.fn<(birthJourney: BirthJourney) => void>();
+
+  await using view = renderEditor({
+    birthJourney: "custom",
+    onBirthJourneyChange,
+  });
+
+  selectPreset(view, "Labour");
+
+  expect(onBirthJourneyChange).toHaveBeenCalledWith("labor");
+});

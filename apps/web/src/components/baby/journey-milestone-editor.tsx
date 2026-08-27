@@ -7,10 +7,13 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Switch } from "@workspace/ui/components/switch";
-import type { BirthJourney, MilestoneVisibility } from "@workspace/convex/src/types";
+import type {
+  BirthJourney,
+  MilestoneVisibility,
+  PresetBirthJourney,
+} from "@workspace/convex/src/types";
 import {
   birthJourneyForVisibility,
-  isPresetBirthJourney,
   milestoneVisibilityForPreset,
 } from "@workspace/convex/src/types";
 import { useI18n } from "@/lib/i18n";
@@ -42,8 +45,8 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
     props.onBirthJourneyChange(birthJourneyForVisibility(nextVisibility));
   }
 
-  function handlePresetSelect(preset: BirthJourney) {
-    if (preset === props.birthJourney || !isPresetBirthJourney(preset)) {
+  function handlePresetSelect(preset: PresetBirthJourney) {
+    if (preset === props.birthJourney) {
       return;
     }
     requestVisibilityChange(milestoneVisibilityForPreset(preset));
