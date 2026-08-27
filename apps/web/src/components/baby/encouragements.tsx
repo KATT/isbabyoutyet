@@ -155,11 +155,7 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
           />
 
           <div {...stylex.props(styles.fullWidth)}>
-            <SubmitButton
-              form="context"
-              IconComponent={PaperPlaneTilt}
-              iconPosition="start"
-            >
+            <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
               {t("Send Encouragement")}
             </SubmitButton>
           </div>

@@ -63,75 +63,71 @@ export function DueDateDisplayFields<
   return (
     <div {...stylex.props(styles.root)}>
       <FormItem>
-      <Text
-        as="div"
-        size="sm"
-        weight={props.sectionLabelWeight === "bold" ? "bold" : "medium"}
-      >
-        {t("Due Date")}
-      </Text>
-      <div {...stylex.props(styles.panel)}>
-        <ShowExactDueDateToggleField
-          control={props.control}
-          name={"showExactDueDate" as FieldPath<TFieldValues>}
-        />
-        <div {...stylex.props(styles.nested)}>
-          {showExactDueDate ? (
-            <FormField
-              control={props.control}
-              name={props.dateFieldName}
-              render={(renderProps) => (
-                <FormItem>
-                  <VisuallyHidden>
-                    <FormLabel>{t("Due Date")}</FormLabel>
-                  </VisuallyHidden>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      onMouseDown={
-                        props.stopPopoverPropagation
-                          ? (event) => event.stopPropagation()
-                          : undefined
-                      }
-                      onFocus={
-                        props.stopPopoverPropagation
-                          ? (event) => event.stopPropagation()
-                          : undefined
-                      }
-                      {...renderProps.field}
-                      value={renderProps.field.value ?? ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          ) : (
-            <FormField
-              control={props.control}
-              name={"publicDueDateText" as FieldPath<TFieldValues>}
-              render={(renderProps) => (
-                <FormItem>
-                  <FormLabel>
-                    <Text as="span" size="sm" weight="normal" tone="muted">
-                      {t("Public due date message")}
-                    </Text>
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder={t("September baby")}
-                      maxLength={80}
-                      {...renderProps.field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+        <Text as="div" size="sm" weight={props.sectionLabelWeight === "bold" ? "bold" : "medium"}>
+          {t("Due Date")}
+        </Text>
+        <div {...stylex.props(styles.panel)}>
+          <ShowExactDueDateToggleField
+            control={props.control}
+            name={"showExactDueDate" as FieldPath<TFieldValues>}
+          />
+          <div {...stylex.props(styles.nested)}>
+            {showExactDueDate ? (
+              <FormField
+                control={props.control}
+                name={props.dateFieldName}
+                render={(renderProps) => (
+                  <FormItem>
+                    <VisuallyHidden>
+                      <FormLabel>{t("Due Date")}</FormLabel>
+                    </VisuallyHidden>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        onMouseDown={
+                          props.stopPopoverPropagation
+                            ? (event) => event.stopPropagation()
+                            : undefined
+                        }
+                        onFocus={
+                          props.stopPopoverPropagation
+                            ? (event) => event.stopPropagation()
+                            : undefined
+                        }
+                        {...renderProps.field}
+                        value={renderProps.field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={props.control}
+                name={"publicDueDateText" as FieldPath<TFieldValues>}
+                render={(renderProps) => (
+                  <FormItem>
+                    <FormLabel>
+                      <Text as="span" size="sm" weight="normal" tone="muted">
+                        {t("Public due date message")}
+                      </Text>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder={t("September baby")}
+                        maxLength={80}
+                        {...renderProps.field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
         </div>
-      </div>
-    </FormItem>
+      </FormItem>
     </div>
   );
 }

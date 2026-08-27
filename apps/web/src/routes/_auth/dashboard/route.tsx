@@ -191,8 +191,7 @@ export function DashboardPage(props: DashboardLoaderData) {
         <div {...stylex.props(styles.intro)}>
           <Stack gap="s2" align="center">
             <h1 {...stylex.props(styles.title)}>
-              {t("Your")}{" "}
-              <span {...stylex.props(styles.titleAccent)}>{t("babies")}</span> 👶
+              {t("Your")} <span {...stylex.props(styles.titleAccent)}>{t("babies")}</span> 👶
             </h1>
             <Text weight="semibold" tone="muted">
               {t("Track and manage all your babies' journeys")}
@@ -220,12 +219,7 @@ export function DashboardHeader() {
           <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
         </Link>
         <div {...stylex.props(styles.headerActions)}>
-          <Button
-            size="sm"
-            shape="pill"
-            render={<Link to="/dashboard/add" />}
-            nativeButton={false}
-          >
+          <Button size="sm" shape="pill" render={<Link to="/dashboard/add" />} nativeButton={false}>
             <Plus data-icon="inline-start" />
             {t("Add Baby")}
           </Button>

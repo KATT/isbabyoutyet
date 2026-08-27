@@ -131,8 +131,7 @@ const styles = stylex.create({
     backgroundColor: "rgb(0 0 0 / 0.1)",
     inset: 0,
     minHeight: "100dvh",
-    opacity:
-      "max(var(--drawer-overlay-min-opacity, 0), calc(1 - var(--drawer-swipe-progress)))",
+    opacity: "max(var(--drawer-overlay-min-opacity, 0), calc(1 - var(--drawer-swipe-progress)))",
     position: {
       default: "fixed",
       "@supports (-webkit-touch-callout: none)": "absolute",
@@ -468,10 +467,7 @@ function DrawerContent({
 function DrawerHeader(props: Omit<React.ComponentProps<"div">, "className" | "style">) {
   const { swipeDirection } = useDrawer();
   const swipeAxis = swipeDirection === "down" || swipeDirection === "up" ? "y" : "x";
-  const stylexProps = stylex.props(
-    styles.header,
-    swipeAxis === "y" ? styles.headerAxisY : null,
-  );
+  const stylexProps = stylex.props(styles.header, swipeAxis === "y" ? styles.headerAxisY : null);
   return (
     <div
       data-slot="drawer-header"

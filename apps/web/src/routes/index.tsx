@@ -717,12 +717,7 @@ export function HomePage() {
           </span>
           <Inline gap="s2" wrap={false}>
             {sessionData.data ? (
-              <Button
-                size="sm"
-                shape="pill"
-                render={<Link to="/dashboard" />}
-                nativeButton={false}
-              >
+              <Button size="sm" shape="pill" render={<Link to="/dashboard" />} nativeButton={false}>
                 {t("Dashboard")}
               </Button>
             ) : (

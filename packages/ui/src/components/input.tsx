@@ -50,12 +50,7 @@ const styles = stylex.create({
 });
 
 const Input = ({ type, ...props }: Omit<React.ComponentProps<"input">, "className" | "style">) => (
-  <input
-    type={type}
-    data-slot="input"
-    {...stylex.props(styles.root)}
-    {...props}
-  />
+  <input type={type} data-slot="input" {...stylex.props(styles.root)} {...props} />
 );
 
 export { Input };

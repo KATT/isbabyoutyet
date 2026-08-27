@@ -1109,9 +1109,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
         <div {...stylex.props(styles.metaRow)}>
           <div {...stylex.props(styles.metaLeftEnc)}>
             <div {...stylex.props(styles.metaLeft)}>
-              <span {...stylex.props(styles.authorName)}>
-                {encouragement.authorName}
-              </span>
+              <span {...stylex.props(styles.authorName)}>{encouragement.authorName}</span>
               <span
                 {...stylex.props(styles.relativeTime)}
                 title={new Date(encouragement.createdAt).toLocaleString(locale, {
@@ -1134,11 +1132,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 <Popover actionsRef={actionsRef}>
                   <PopoverTrigger
                     render={
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t("Edit encouragement")}
-                      />
+                      <Button variant="ghost" size="icon-sm" aria-label={t("Edit encouragement")} />
                     }
                   >
                     <PencilSimple size={16} {...stylex.props(styles.iconMutedHoverFg)} />
@@ -1160,11 +1154,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                 <AlertDialog>
                   <AlertDialogTrigger
                     render={
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        aria-label={t("Delete encouragement")}
-                      >
+                      <Button variant="ghost" size="icon-sm" aria-label={t("Delete encouragement")}>
                         <Trash size={16} {...stylex.props(styles.iconMutedHoverDestructive)} />
                       </Button>
                     }
@@ -1350,9 +1340,7 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
       <div {...stylex.props(styles.section)}>
         <div {...stylex.props(styles.sectionHeader)}>
           <Heart size={20} {...stylex.props(styles.iconPrimary, styles.iconLg)} />
-          <h3 {...stylex.props(styles.sectionTitle)}>
-            {t("Updates & encouragements")}
-          </h3>
+          <h3 {...stylex.props(styles.sectionTitle)}>{t("Updates & encouragements")}</h3>
         </div>
         <div {...stylex.props(styles.emptyState)}>
           <p {...stylex.props(styles.emptyEmoji)} aria-hidden="true">

@@ -18,16 +18,14 @@ const styles = stylex.create({
   },
 });
 
-const Separator = ({ orientation = "horizontal",
+const Separator = ({
+  orientation = "horizontal",
   ...props
 }: Omit<React.ComponentProps<typeof SeparatorPrimitive>, "className">) => (
   <SeparatorPrimitive
     data-slot="separator"
     orientation={orientation}
-    {...stylex.props(
-      styles.root,
-      orientation === "vertical" ? styles.vertical : styles.horizontal
-    )}
+    {...stylex.props(styles.root, orientation === "vertical" ? styles.vertical : styles.horizontal)}
     {...props}
   />
 );

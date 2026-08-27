@@ -42,22 +42,17 @@ const styles = stylex.create({
   },
 });
 
-const RadioGroup = ({ ...props
+const RadioGroup = ({
+  ...props
 }: Omit<React.ComponentProps<typeof RadioGroupPrimitive>, "className">) => (
-  <RadioGroupPrimitive
-    {...stylex.props(styles.group)}
-    data-slot="radio-group"
-    {...props}
-  />
+  <RadioGroupPrimitive {...stylex.props(styles.group)} data-slot="radio-group" {...props} />
 );
 
-const RadioGroupItem = ({ ...props
+const RadioGroupItem = ({
+  ...props
 }: Omit<React.ComponentProps<typeof RadioPrimitive.Root>, "className">) => (
   <RadioPrimitive.Root
-    className={(state) =>
-      stylex.props(styles.item, state.checked && styles.itemChecked)
-        .className
-    }
+    className={(state) => stylex.props(styles.item, state.checked && styles.itemChecked).className}
     data-slot="radio-group-item"
     {...props}
   >

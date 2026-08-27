@@ -67,29 +67,19 @@ const styles = stylex.create({
 });
 
 const Empty = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.empty)}
-    data-slot="empty"
-    {...props}
-  />
+  <div {...stylex.props(styles.empty)} data-slot="empty" {...props} />
 );
 
 const EmptyHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.header)}
-    data-slot="empty-header"
-    {...props}
-  />
+  <div {...stylex.props(styles.header)} data-slot="empty-header" {...props} />
 );
 
-const EmptyMedia = ({ variant = "default",
+const EmptyMedia = ({
+  variant = "default",
   ...props
 }: Omit<React.ComponentProps<"div">, "className" | "style"> & { variant?: "default" | "icon" }) => (
   <div
-    {...stylex.props(
-      styles.mediaBase,
-      variant === "icon" ? styles.mediaIcon : styles.mediaDefault
-    )}
+    {...stylex.props(styles.mediaBase, variant === "icon" ? styles.mediaIcon : styles.mediaDefault)}
     data-slot="empty-icon"
     data-variant={variant}
     {...props}
@@ -97,27 +87,15 @@ const EmptyMedia = ({ variant = "default",
 );
 
 const EmptyTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.title)}
-    data-slot="empty-title"
-    {...props}
-  />
+  <div {...stylex.props(styles.title)} data-slot="empty-title" {...props} />
 );
 
 const EmptyDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
-  <p
-    {...stylex.props(styles.description)}
-    data-slot="empty-description"
-    {...props}
-  />
+  <p {...stylex.props(styles.description)} data-slot="empty-description" {...props} />
 );
 
 const EmptyContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.content)}
-    data-slot="empty-content"
-    {...props}
-  />
+  <div {...stylex.props(styles.content)} data-slot="empty-content" {...props} />
 );
 
 export { Empty, EmptyHeader, EmptyTitle, EmptyDescription, EmptyContent, EmptyMedia };

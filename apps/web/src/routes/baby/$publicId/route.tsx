@@ -204,7 +204,6 @@ const styles = stylex.create({
   },
 });
 
-
 export const Route = createFileRoute("/baby/$publicId")({
   component: BabyPageLayout,
   validateSearch: z.object({
@@ -505,9 +504,7 @@ function BabyPageLayout() {
       </header>
 
       <main {...stylex.props(styles.main)}>
-        <h1 {...stylex.props(styles.title)}>
-          {t("Is {{name}} out yet?", { name: baby.name })}
-        </h1>
+        <h1 {...stylex.props(styles.title)}>{t("Is {{name}} out yet?", { name: baby.name })}</h1>
 
         {/* Split layout: sticky status card on the left, feed on the right.
             No internal scroll on the card — that steals wheel/trackpad from the page. */}
@@ -546,7 +543,10 @@ function BabyPageLayout() {
               to scroll past every message to post; the owner posts via the
               "Post update" button in the dock. */}
           <div {...stylex.props(styles.feedColumn)}>
-            <section {...stylex.props(styles.encouragementCard)} data-tour-id="learn_encouragements">
+            <section
+              {...stylex.props(styles.encouragementCard)}
+              data-tour-id="learn_encouragements"
+            >
               <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
             </section>
 

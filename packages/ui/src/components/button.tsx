@@ -136,7 +136,6 @@ export type ButtonProps = Omit<ButtonPrimitive.Props, "className" | "style"> & {
   weight?: ButtonWeight;
 };
 
-
 function Button(props: ButtonProps) {
   const variant = props.variant ?? "default";
   const size = props.size ?? "default";

@@ -141,7 +141,8 @@ const SheetClose = (props: React.ComponentProps<typeof DialogPrimitive.Close>) =
   <DialogPrimitive.Close data-slot="sheet-close" {...props} />
 );
 
-const SheetContent = ({ children,
+const SheetContent = ({
+  children,
   side = "right",
   showCloseButton = true,
   ...props
@@ -164,11 +165,7 @@ const SheetContent = ({ children,
       <DialogPrimitive.Popup
         data-slot="sheet-content"
         className={(state) =>
-          stylex.props(
-            styles.content,
-            base,
-            hidden(state.transitionStatus) && off
-          ).className
+          stylex.props(styles.content, base, hidden(state.transitionStatus) && off).className
         }
         {...props}
       >
@@ -191,31 +188,21 @@ const SheetContent = ({ children,
 };
 
 const SheetHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    data-slot="sheet-header"
-    {...stylex.props(styles.header)}
-    {...props}
-  />
+  <div data-slot="sheet-header" {...stylex.props(styles.header)} {...props} />
 );
 
 const SheetFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    data-slot="sheet-footer"
-    {...stylex.props(styles.footer)}
-    {...props}
-  />
+  <div data-slot="sheet-footer" {...stylex.props(styles.footer)} {...props} />
 );
 
-const SheetTitle = ({ ...props
+const SheetTitle = ({
+  ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className">) => (
-  <DialogPrimitive.Title
-    data-slot="sheet-title"
-    {...stylex.props(styles.title)}
-    {...props}
-  />
+  <DialogPrimitive.Title data-slot="sheet-title" {...stylex.props(styles.title)} {...props} />
 );
 
-const SheetDescription = ({ ...props
+const SheetDescription = ({
+  ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className">) => (
   <DialogPrimitive.Description
     data-slot="sheet-description"

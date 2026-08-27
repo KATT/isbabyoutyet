@@ -52,15 +52,13 @@ const variantMap: Record<BadgeVariant, StyleXStyles> = {
 };
 
 const Badge = ({
-  variant = "default", ...props
+  variant = "default",
+  ...props
 }: Omit<React.ComponentProps<"span">, "className" | "style"> & { variant?: BadgeVariant }) => (
   <span
     data-slot="badge"
     data-variant={variant}
-    {...stylex.props(
-      styles.base,
-      variantMap[variant]
-    )}
+    {...stylex.props(styles.base, variantMap[variant])}
     {...props}
   />
 );

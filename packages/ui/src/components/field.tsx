@@ -117,21 +117,17 @@ const orientationStyles: Record<FieldOrientation, StyleXStyles> = {
 };
 
 const FieldSet = ({ ...props }: Omit<React.ComponentProps<"fieldset">, "className" | "style">) => (
-  <fieldset
-    {...stylex.props(styles.set)}
-    data-slot="field-set"
-    {...props}
-  />
+  <fieldset {...stylex.props(styles.set)} data-slot="field-set" {...props} />
 );
 
-const FieldLegend = ({ variant = "legend",
+const FieldLegend = ({
+  variant = "legend",
   ...props
-}: Omit<React.ComponentProps<"legend">, "className" | "style"> & { variant?: "legend" | "label" }) => (
+}: Omit<React.ComponentProps<"legend">, "className" | "style"> & {
+  variant?: "legend" | "label";
+}) => (
   <legend
-    {...stylex.props(
-      styles.legend,
-      variant === "label" ? styles.legendLabel : styles.legendLegend
-    )}
+    {...stylex.props(styles.legend, variant === "label" ? styles.legendLabel : styles.legendLegend)}
     data-slot="field-legend"
     data-variant={variant}
     {...props}
@@ -139,21 +135,17 @@ const FieldLegend = ({ variant = "legend",
 );
 
 const FieldGroup = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.group)}
-    data-slot="field-group"
-    {...props}
-  />
+  <div {...stylex.props(styles.group)} data-slot="field-group" {...props} />
 );
 
-const Field = ({ orientation = "vertical",
+const Field = ({
+  orientation = "vertical",
   ...props
-}: Omit<React.ComponentProps<"div">, "className" | "style"> & { orientation?: FieldOrientation }) => (
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & {
+  orientation?: FieldOrientation;
+}) => (
   <div
-    {...stylex.props(
-      styles.fieldBase,
-      orientationStyles[orientation]
-    )}
+    {...stylex.props(styles.fieldBase, orientationStyles[orientation])}
     data-orientation={orientation}
     data-slot="field"
     role="group"
@@ -162,11 +154,7 @@ const Field = ({ orientation = "vertical",
 );
 
 const FieldContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.content)}
-    data-slot="field-content"
-    {...props}
-  />
+  <div {...stylex.props(styles.content)} data-slot="field-content" {...props} />
 );
 
 const FieldLabel = (props: React.ComponentProps<typeof Label>) => (
@@ -174,19 +162,11 @@ const FieldLabel = (props: React.ComponentProps<typeof Label>) => (
 );
 
 const FieldTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.title)}
-    data-slot="field-label"
-    {...props}
-  />
+  <div {...stylex.props(styles.title)} data-slot="field-label" {...props} />
 );
 
 const FieldDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
-  <p
-    {...stylex.props(styles.description)}
-    data-slot="field-description"
-    {...props}
-  />
+  <p {...stylex.props(styles.description)} data-slot="field-description" {...props} />
 );
 
 const FieldSeparator = ({
@@ -218,7 +198,8 @@ const FieldSeparator = ({
   );
 };
 
-const FieldError = ({ children,
+const FieldError = ({
+  children,
   errors,
   ...props
 }: Omit<React.ComponentProps<"div">, "className" | "style"> & {
@@ -249,12 +230,7 @@ const FieldError = ({ children,
     return null;
   }
   return (
-    <div
-      {...stylex.props(styles.error)}
-      data-slot="field-error"
-      role="alert"
-      {...props}
-    >
+    <div {...stylex.props(styles.error)} data-slot="field-error" role="alert" {...props}>
       {content}
     </div>
   );

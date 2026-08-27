@@ -76,7 +76,9 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   const input = view.getByLabelText("Due date") as HTMLInputElement;
   expect(input.value).toBe("2026-09-01");
   expect(
-    view.getAllByText("Due date").filter((element) => !element.closest('[data-slot="visually-hidden"]')),
+    view
+      .getAllByText("Due date")
+      .filter((element) => !element.closest('[data-slot="visually-hidden"]')),
   ).toHaveLength(1);
   expect(
     view.getByRole("switch", { name: "Show exact due date" }).getAttribute("aria-checked"),

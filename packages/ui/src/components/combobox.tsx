@@ -191,7 +191,8 @@ const Combobox = ComboboxPrimitive.Root;
 
 const ComboboxValue = ComboboxPrimitive.Value;
 
-const ComboboxTrigger = ({ children,
+const ComboboxTrigger = ({
+  children,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Trigger>, "className">) => (
   <ComboboxPrimitive.Trigger
@@ -203,19 +204,17 @@ const ComboboxTrigger = ({ children,
   </ComboboxPrimitive.Trigger>
 );
 
-const ComboboxClear = ({ children,
+const ComboboxClear = ({
+  children,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Clear>, "className">) => (
-  <ComboboxPrimitive.Clear
-    {...stylex.props(styles.clear)}
-    data-slot="combobox-clear"
-    {...props}
-  >
+  <ComboboxPrimitive.Clear {...stylex.props(styles.clear)} data-slot="combobox-clear" {...props}>
     {children ?? <XIcon size={16} />}
   </ComboboxPrimitive.Clear>
 );
 
-const ComboboxInput = ({ showTrigger = true,
+const ComboboxInput = ({
+  showTrigger = true,
   showClear = false,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Input>, "className"> & {
@@ -236,16 +235,14 @@ const ComboboxInput = ({ showTrigger = true,
   );
 };
 
-const ComboboxChips = ({ ...props
+const ComboboxChips = ({
+  ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Chips>, "className">) => (
-  <ComboboxPrimitive.Chips
-    {...stylex.props(styles.chips)}
-    data-slot="combobox-chips"
-    {...props}
-  />
+  <ComboboxPrimitive.Chips {...stylex.props(styles.chips)} data-slot="combobox-chips" {...props} />
 );
 
-const ComboboxChip = ({ children,
+const ComboboxChip = ({
+  children,
   showRemove = true,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Chip>, "className"> & {
@@ -253,11 +250,7 @@ const ComboboxChip = ({ children,
 }) => {
   const remove = stylex.props(styles.chipRemove);
   return (
-    <ComboboxPrimitive.Chip
-      {...stylex.props(styles.chip)}
-      data-slot="combobox-chip"
-      {...props}
-    >
+    <ComboboxPrimitive.Chip {...stylex.props(styles.chip)} data-slot="combobox-chip" {...props}>
       {children}
       {showRemove ? (
         <ComboboxPrimitive.ChipRemove
@@ -272,7 +265,8 @@ const ComboboxChip = ({ children,
   );
 };
 
-const ComboboxChipsInput = ({ ...props
+const ComboboxChipsInput = ({
+  ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Input>, "className">) => (
   <ComboboxPrimitive.Input
     {...stylex.props(styles.chipsInput)}
@@ -281,7 +275,8 @@ const ComboboxChipsInput = ({ ...props
   />
 );
 
-const ComboboxContent = ({ side = "bottom",
+const ComboboxContent = ({
+  side = "bottom",
   sideOffset = 6,
   align = "start",
   anchor,
@@ -305,7 +300,7 @@ const ComboboxContent = ({ side = "bottom",
           stylex.props(
             styles.content,
             (state.transitionStatus === "starting" || state.transitionStatus === "ending") &&
-              styles.contentHidden
+              styles.contentHidden,
           ).className
         }
         data-slot="combobox-content"
@@ -315,26 +310,21 @@ const ComboboxContent = ({ side = "bottom",
   </ComboboxPrimitive.Portal>
 );
 
-const ComboboxList = ({ ...props
+const ComboboxList = ({
+  ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.List>, "className">) => (
-  <ComboboxPrimitive.List
-    {...stylex.props(styles.list)}
-    data-slot="combobox-list"
-    {...props}
-  />
+  <ComboboxPrimitive.List {...stylex.props(styles.list)} data-slot="combobox-list" {...props} />
 );
 
-const ComboboxItem = ({ children,
+const ComboboxItem = ({
+  children,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Item>, "className">) => {
   const indicator = stylex.props(styles.itemIndicator);
   return (
     <ComboboxPrimitive.Item
       className={(state) =>
-        stylex.props(
-          styles.item,
-          state.highlighted && styles.itemHighlighted
-        ).className
+        stylex.props(styles.item, state.highlighted && styles.itemHighlighted).className
       }
       data-slot="combobox-item"
       {...props}
@@ -355,17 +345,12 @@ const ComboboxCollection = (props: React.ComponentProps<typeof ComboboxPrimitive
   <ComboboxPrimitive.Collection {...props} />
 );
 
-const ComboboxSeparator = (
-  props: Omit<React.ComponentProps<"div">, "className" | "style">,
-) => (
-  <div
-    {...stylex.props(styles.separator)}
-    data-slot="combobox-separator"
-    {...props}
-  />
+const ComboboxSeparator = (props: Omit<React.ComponentProps<"div">, "className" | "style">) => (
+  <div {...stylex.props(styles.separator)} data-slot="combobox-separator" {...props} />
 );
 
-const ComboboxGroupLabel = ({ ...props
+const ComboboxGroupLabel = ({
+  ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.GroupLabel>, "className" | "style">) => (
   <ComboboxPrimitive.GroupLabel
     {...stylex.props(styles.groupLabel)}
@@ -374,13 +359,10 @@ const ComboboxGroupLabel = ({ ...props
   />
 );
 
-const ComboboxEmpty = ({ ...props
+const ComboboxEmpty = ({
+  ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Empty>, "className" | "style">) => (
-  <ComboboxPrimitive.Empty
-    {...stylex.props(styles.empty)}
-    data-slot="combobox-empty"
-    {...props}
-  />
+  <ComboboxPrimitive.Empty {...stylex.props(styles.empty)} data-slot="combobox-empty" {...props} />
 );
 
 export {

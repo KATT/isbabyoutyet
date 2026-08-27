@@ -112,26 +112,20 @@ const SelectGroup = (props: React.ComponentProps<typeof SelectPrimitive.Group>) 
   <SelectPrimitive.Group data-slot="select-group" {...props} />
 );
 
-const SelectValue = ({ ...props
+const SelectValue = ({
+  ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Value>, "className">) => (
-  <SelectPrimitive.Value
-    {...stylex.props(styles.value)}
-    data-slot="select-value"
-    {...props}
-  />
+  <SelectPrimitive.Value {...stylex.props(styles.value)} data-slot="select-value" {...props} />
 );
 
-const SelectTrigger = ({ size: _size,
+const SelectTrigger = ({
+  size: _size,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Trigger>, "className"> & {
   size?: "sm" | "default";
 }) => (
-  <SelectPrimitive.Trigger
-    {...stylex.props(styles.trigger)}
-    data-slot="select-trigger"
-    {...props}
-  >
+  <SelectPrimitive.Trigger {...stylex.props(styles.trigger)} data-slot="select-trigger" {...props}>
     {children}
     <SelectPrimitive.Icon className={stylex.props(styles.icon).className}>
       <ChevronDownIcon size={16} />
@@ -139,7 +133,8 @@ const SelectTrigger = ({ size: _size,
   </SelectPrimitive.Trigger>
 );
 
-const SelectContent = ({ children,
+const SelectContent = ({
+  children,
   sideOffset = 4,
   alignItemWithTrigger = false,
   ...props
@@ -155,10 +150,7 @@ const SelectContent = ({ children,
     >
       <SelectPrimitive.Popup
         className={(state) =>
-          stylex.props(
-            styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden
-          ).className
+          stylex.props(styles.popup, hidden(state.transitionStatus) && styles.popupHidden).className
         }
         data-slot="select-content"
         {...props}
@@ -169,7 +161,8 @@ const SelectContent = ({ children,
   </SelectPrimitive.Portal>
 );
 
-const SelectLabel = ({ ...props
+const SelectLabel = ({
+  ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.GroupLabel>, "className">) => (
   <SelectPrimitive.GroupLabel
     {...stylex.props(styles.groupLabel)}
@@ -178,14 +171,11 @@ const SelectLabel = ({ ...props
   />
 );
 
-const SelectItem = ({ children,
+const SelectItem = ({
+  children,
   ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Item>, "className">) => (
-  <SelectPrimitive.Item
-    {...stylex.props(styles.item)}
-    data-slot="select-item"
-    {...props}
-  >
+  <SelectPrimitive.Item {...stylex.props(styles.item)} data-slot="select-item" {...props}>
     <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
     <SelectPrimitive.ItemIndicator className={stylex.props(styles.itemIndicator).className}>
       <CheckIcon size={16} />
@@ -193,7 +183,8 @@ const SelectItem = ({ children,
   </SelectPrimitive.Item>
 );
 
-const SelectSeparator = ({ ...props
+const SelectSeparator = ({
+  ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Separator>, "className">) => (
   <SelectPrimitive.Separator
     {...stylex.props(styles.separator)}

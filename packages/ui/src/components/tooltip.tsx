@@ -55,7 +55,8 @@ const TooltipTrigger = (props: React.ComponentProps<typeof TooltipPrimitive.Trig
   <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 );
 
-const TooltipContent = ({ sideOffset = 4,
+const TooltipContent = ({
+  sideOffset = 4,
   side = "top",
   align = "center",
   children,
@@ -72,10 +73,8 @@ const TooltipContent = ({ sideOffset = 4,
         <TooltipPrimitive.Popup
           data-slot="tooltip-content"
           className={(state) =>
-            stylex.props(
-              styles.popup,
-              hidden(state.transitionStatus) && styles.popupHidden
-            ).className
+            stylex.props(styles.popup, hidden(state.transitionStatus) && styles.popupHidden)
+              .className
           }
           {...props}
         >

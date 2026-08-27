@@ -80,11 +80,7 @@ export type ProgressProps = Omit<
 function Progress(props: ProgressProps) {
   const placement = props.placement ?? "default";
   const isNavigation = placement === "navigation";
-  const {
-    placement: _placement,
-    children,
-    ...rest
-  } = props;
+  const { placement: _placement, children, ...rest } = props;
 
   const rootStylex = stylex.props(isNavigation ? styles.navigation : styles.rootWrapper);
   const trackStylex = stylex.props(styles.root);

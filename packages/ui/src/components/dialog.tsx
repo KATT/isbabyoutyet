@@ -146,10 +146,7 @@ const DialogContent = ({
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={(state) =>
-          stylex.props(
-            styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden
-          ).className
+          stylex.props(styles.popup, hidden(state.transitionStatus) && styles.popupHidden).className
         }
         {...props}
       >
@@ -172,31 +169,21 @@ const DialogContent = ({
 };
 
 const DialogHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    data-slot="dialog-header"
-    {...stylex.props(styles.header)}
-    {...props}
-  />
+  <div data-slot="dialog-header" {...stylex.props(styles.header)} {...props} />
 );
 
 const DialogFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    data-slot="dialog-footer"
-    {...stylex.props(styles.footer)}
-    {...props}
-  />
+  <div data-slot="dialog-footer" {...stylex.props(styles.footer)} {...props} />
 );
 
-const DialogTitle = ({ ...props
+const DialogTitle = ({
+  ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className">) => (
-  <DialogPrimitive.Title
-    data-slot="dialog-title"
-    {...stylex.props(styles.title)}
-    {...props}
-  />
+  <DialogPrimitive.Title data-slot="dialog-title" {...stylex.props(styles.title)} {...props} />
 );
 
-const DialogDescription = ({ ...props
+const DialogDescription = ({
+  ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className">) => (
   <DialogPrimitive.Description
     data-slot="dialog-description"

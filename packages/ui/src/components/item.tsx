@@ -140,19 +140,15 @@ const mediaVariantStyles: Record<"default" | "icon" | "image", StyleXStyles> = {
 };
 
 const ItemGroup = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.group)}
-    data-slot="item-group"
-    role="list"
-    {...props}
-  />
+  <div {...stylex.props(styles.group)} data-slot="item-group" role="list" {...props} />
 );
 
 const ItemSeparator = (props: React.ComponentProps<typeof Separator>) => (
   <Separator data-slot="item-separator" orientation="horizontal" {...props} />
 );
 
-const Item = ({ variant = "default",
+const Item = ({
+  variant = "default",
   size = "default",
   render,
   ...props
@@ -163,11 +159,7 @@ const Item = ({ variant = "default",
 }) =>
   useRender({
     props: {
-      ...stylex.props(
-        styles.base,
-        variantStyles[variant],
-        sizeStyles[size]
-      ),
+      ...stylex.props(styles.base, variantStyles[variant], sizeStyles[size]),
       "data-size": size,
       "data-slot": "item",
       "data-variant": variant,
@@ -176,16 +168,14 @@ const Item = ({ variant = "default",
     render: render ?? <div />,
   });
 
-const ItemMedia = ({ variant = "default",
+const ItemMedia = ({
+  variant = "default",
   ...props
 }: Omit<React.ComponentProps<"div">, "className" | "style"> & {
   variant?: "default" | "icon" | "image";
 }) => (
   <div
-    {...stylex.props(
-      styles.mediaBase,
-      mediaVariantStyles[variant]
-    )}
+    {...stylex.props(styles.mediaBase, mediaVariantStyles[variant])}
     data-slot="item-media"
     data-variant={variant}
     {...props}
@@ -193,51 +183,27 @@ const ItemMedia = ({ variant = "default",
 );
 
 const ItemContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.content)}
-    data-slot="item-content"
-    {...props}
-  />
+  <div {...stylex.props(styles.content)} data-slot="item-content" {...props} />
 );
 
 const ItemTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.title)}
-    data-slot="item-title"
-    {...props}
-  />
+  <div {...stylex.props(styles.title)} data-slot="item-title" {...props} />
 );
 
 const ItemDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
-  <p
-    {...stylex.props(styles.description)}
-    data-slot="item-description"
-    {...props}
-  />
+  <p {...stylex.props(styles.description)} data-slot="item-description" {...props} />
 );
 
 const ItemActions = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.actions)}
-    data-slot="item-actions"
-    {...props}
-  />
+  <div {...stylex.props(styles.actions)} data-slot="item-actions" {...props} />
 );
 
 const ItemHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.header)}
-    data-slot="item-header"
-    {...props}
-  />
+  <div {...stylex.props(styles.header)} data-slot="item-header" {...props} />
 );
 
 const ItemFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.footer)}
-    data-slot="item-footer"
-    {...props}
-  />
+  <div {...stylex.props(styles.footer)} data-slot="item-footer" {...props} />
 );
 
 export {

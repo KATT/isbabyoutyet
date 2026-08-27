@@ -60,9 +60,7 @@ export function ModeToggle() {
       <Tooltip>
         <TooltipTrigger
           render={
-            <DropdownMenuTrigger
-              render={<Button variant="outline" size="icon" shape="pill" />}
-            />
+            <DropdownMenuTrigger render={<Button variant="outline" size="icon" shape="pill" />} />
           }
         >
           <Sun {...stylex.props(styles.icon, styles.sun)} />

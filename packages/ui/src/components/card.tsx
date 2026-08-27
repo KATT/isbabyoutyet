@@ -66,15 +66,9 @@ const styles = stylex.create({
 
 type DivProps = Omit<ComponentProps<"div">, "className" | "style">;
 
-const makeSlot =
-  (slot: string, style: StyleXStyles) =>
-  (props: DivProps) => (
-      <div
-        data-slot={slot}
-        {...stylex.props(style)}
-        {...props}
-      />
-  );
+const makeSlot = (slot: string, style: StyleXStyles) => (props: DivProps) => (
+  <div data-slot={slot} {...stylex.props(style)} {...props} />
+);
 
 export type CardProps = DivProps & {
   size?: "default" | "sm";
@@ -91,7 +85,7 @@ function Card(props: CardProps) {
       {...stylex.props(
         styles.card,
         size === "sm" ? styles.sizeSm : null,
-        emphasis ? styles.emphasis : null
+        emphasis ? styles.emphasis : null,
       )}
       data-size={size}
       data-slot="card"

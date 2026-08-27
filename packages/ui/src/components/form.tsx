@@ -106,14 +106,7 @@ export type FormLabelProps = React.ComponentProps<typeof Label>;
 function FormLabel(props: FormLabelProps) {
   const { error, formItemId } = useFormField();
 
-  return (
-    <Label
-      data-slot="form-label"
-      data-error={!!error}
-      htmlFor={formItemId}
-      {...props}
-    />
-  );
+  return <Label data-slot="form-label" data-error={!!error} htmlFor={formItemId} {...props} />;
 }
 
 function FormControl(

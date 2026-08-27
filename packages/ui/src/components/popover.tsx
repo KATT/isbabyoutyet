@@ -60,7 +60,8 @@ const PopoverAnchor = (props: React.ComponentProps<typeof PopoverPrimitive.Trigg
   <PopoverPrimitive.Trigger data-slot="popover-anchor" {...props} />
 );
 
-const PopoverContent = ({ sideOffset = 4,
+const PopoverContent = ({
+  sideOffset = 4,
   align = "center",
   side = "bottom",
   alignOffset,
@@ -85,10 +86,7 @@ const PopoverContent = ({ sideOffset = 4,
       <PopoverPrimitive.Popup
         data-slot="popover-content"
         className={(state) =>
-          stylex.props(
-            styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden
-          ).className
+          stylex.props(styles.popup, hidden(state.transitionStatus) && styles.popupHidden).className
         }
         {...props}
       >
@@ -99,23 +97,17 @@ const PopoverContent = ({ sideOffset = 4,
 );
 
 const PopoverHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.header)}
-    data-slot="popover-header"
-    {...props}
-  />
+  <div {...stylex.props(styles.header)} data-slot="popover-header" {...props} />
 );
 
-const PopoverTitle = ({ ...props
+const PopoverTitle = ({
+  ...props
 }: Omit<React.ComponentProps<typeof PopoverPrimitive.Title>, "className">) => (
-  <PopoverPrimitive.Title
-    {...stylex.props(styles.title)}
-    data-slot="popover-title"
-    {...props}
-  />
+  <PopoverPrimitive.Title {...stylex.props(styles.title)} data-slot="popover-title" {...props} />
 );
 
-const PopoverDescription = ({ ...props
+const PopoverDescription = ({
+  ...props
 }: Omit<React.ComponentProps<typeof PopoverPrimitive.Description>, "className">) => (
   <PopoverPrimitive.Description
     {...stylex.props(styles.description)}

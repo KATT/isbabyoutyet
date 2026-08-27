@@ -391,13 +391,7 @@ export function NavigationProgressBar(props: { isNavigating: boolean }) {
   if (!showBar) {
     return null;
   }
-  return (
-    <Progress
-      value={null}
-      placement="navigation"
-      aria-label={t("Loading")}
-    />
-  );
+  return <Progress value={null} placement="navigation" aria-label={t("Loading")} />;
 }
 
 /** @internal exported for tests — document shell without Convex/auth providers. */

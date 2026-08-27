@@ -53,7 +53,8 @@ const styles = stylex.create({
   },
 });
 
-const Switch = ({ size = "default",
+const Switch = ({
+  size = "default",
   ...props
 }: Omit<React.ComponentProps<typeof SwitchPrimitive.Root>, "className"> & {
   size?: "default" | "sm";
@@ -62,11 +63,8 @@ const Switch = ({ size = "default",
   return (
     <SwitchPrimitive.Root
       className={(state) =>
-        stylex.props(
-          styles.root,
-          sm && styles.rootSm,
-          state.checked && styles.rootChecked
-        ).className
+        stylex.props(styles.root, sm && styles.rootSm, state.checked && styles.rootChecked)
+          .className
       }
       data-size={size}
       data-slot="switch"

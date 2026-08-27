@@ -80,25 +80,19 @@ const styles = stylex.create({
 
 const TabsListContext = createContext<"default" | "line">("default");
 
-const Tabs = ({ ...props
-}: Omit<React.ComponentProps<typeof TabsPrimitive.Root>, "className">) => (
-  <TabsPrimitive.Root
-    data-slot="tabs"
-    {...stylex.props(styles.root)}
-    {...props}
-  />
+const Tabs = ({ ...props }: Omit<React.ComponentProps<typeof TabsPrimitive.Root>, "className">) => (
+  <TabsPrimitive.Root data-slot="tabs" {...stylex.props(styles.root)} {...props} />
 );
 
-const TabsList = ({ variant = "default",
+const TabsList = ({
+  variant = "default",
   ...props
 }: Omit<React.ComponentProps<typeof TabsPrimitive.List>, "className"> & {
   variant?: "default" | "line";
 }) => (
   <TabsListContext.Provider value={variant}>
     <TabsPrimitive.List
-      {...stylex.props(
-        variant === "line" ? styles.listLine : styles.list
-      )}
+      {...stylex.props(variant === "line" ? styles.listLine : styles.list)}
       data-slot="tabs-list"
       data-variant={variant}
       {...props}
@@ -106,7 +100,8 @@ const TabsList = ({ variant = "default",
   </TabsListContext.Provider>
 );
 
-const TabsTrigger = ({ ...props
+const TabsTrigger = ({
+  ...props
 }: Omit<React.ComponentProps<typeof TabsPrimitive.Tab>, "className">) => {
   const variant = useContext(TabsListContext);
   const line = variant === "line";
@@ -114,11 +109,8 @@ const TabsTrigger = ({ ...props
   return (
     <TabsPrimitive.Tab
       className={(state) =>
-        stylex.props(
-          styles.trigger,
-          line && styles.triggerLine,
-          state.active && activeStyle
-        ).className
+        stylex.props(styles.trigger, line && styles.triggerLine, state.active && activeStyle)
+          .className
       }
       data-slot="tabs-trigger"
       {...props}
@@ -126,13 +118,10 @@ const TabsTrigger = ({ ...props
   );
 };
 
-const TabsContent = ({ ...props
+const TabsContent = ({
+  ...props
 }: Omit<React.ComponentProps<typeof TabsPrimitive.Panel>, "className">) => (
-  <TabsPrimitive.Panel
-    data-slot="tabs-content"
-    {...stylex.props(styles.panel)}
-    {...props}
-  />
+  <TabsPrimitive.Panel data-slot="tabs-content" {...stylex.props(styles.panel)} {...props} />
 );
 
 export { Tabs, TabsContent, TabsList, TabsTrigger };

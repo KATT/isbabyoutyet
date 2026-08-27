@@ -56,11 +56,7 @@ const Table = ({ ...props }: Omit<React.ComponentProps<"table">, "className" | "
   const wrapper = stylex.props(styles.wrapper);
   return (
     <div className={wrapper.className} data-slot="table-container" style={wrapper.style}>
-      <table
-        {...stylex.props(styles.root)}
-        data-slot="table"
-        {...props}
-      />
+      <table {...stylex.props(styles.root)} data-slot="table" {...props} />
     </div>
   );
 };
@@ -74,43 +70,25 @@ const TableBody = (props: Omit<React.ComponentProps<"tbody">, "className" | "sty
 );
 
 const TableFooter = ({ ...props }: Omit<React.ComponentProps<"tfoot">, "className" | "style">) => (
-  <tfoot
-    {...stylex.props(styles.footer)}
-    data-slot="table-footer"
-    {...props}
-  />
+  <tfoot {...stylex.props(styles.footer)} data-slot="table-footer" {...props} />
 );
 
 const TableRow = ({ ...props }: Omit<React.ComponentProps<"tr">, "className" | "style">) => (
-  <tr
-    {...stylex.props(styles.row)}
-    data-slot="table-row"
-    {...props}
-  />
+  <tr {...stylex.props(styles.row)} data-slot="table-row" {...props} />
 );
 
 const TableHead = ({ ...props }: Omit<React.ComponentProps<"th">, "className" | "style">) => (
-  <th
-    {...stylex.props(styles.head)}
-    data-slot="table-head"
-    {...props}
-  />
+  <th {...stylex.props(styles.head)} data-slot="table-head" {...props} />
 );
 
 const TableCell = ({ ...props }: Omit<React.ComponentProps<"td">, "className" | "style">) => (
-  <td
-    {...stylex.props(styles.cell)}
-    data-slot="table-cell"
-    {...props}
-  />
+  <td {...stylex.props(styles.cell)} data-slot="table-cell" {...props} />
 );
 
-const TableCaption = ({ ...props }: Omit<React.ComponentProps<"caption">, "className" | "style">) => (
-  <caption
-    {...stylex.props(styles.caption)}
-    data-slot="table-caption"
-    {...props}
-  />
+const TableCaption = ({
+  ...props
+}: Omit<React.ComponentProps<"caption">, "className" | "style">) => (
+  <caption {...stylex.props(styles.caption)} data-slot="table-caption" {...props} />
 );
 
 export { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow };

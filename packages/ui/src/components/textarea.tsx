@@ -31,13 +31,8 @@ const styles = stylex.create({
   },
 });
 
-const Textarea = ({ ...props
-}: Omit<React.ComponentProps<"textarea">, "className" | "style">) => (
-  <textarea
-    {...stylex.props(styles.root)}
-    data-slot="textarea"
-    {...props}
-  />
+const Textarea = ({ ...props }: Omit<React.ComponentProps<"textarea">, "className" | "style">) => (
+  <textarea {...stylex.props(styles.root)} data-slot="textarea" {...props} />
 );
 
 export { Textarea };

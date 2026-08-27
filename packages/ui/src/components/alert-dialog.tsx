@@ -118,7 +118,7 @@ const AlertDialogContent = ({
         stylex.props(
           styles.popup,
           size === "sm" && styles.popupSm,
-          hidden(state.transitionStatus) && styles.popupHidden
+          hidden(state.transitionStatus) && styles.popupHidden,
         ).className
       }
       data-size={size}
@@ -130,31 +130,26 @@ const AlertDialogContent = ({
   </AlertDialogPrimitive.Portal>
 );
 
-const AlertDialogMedia = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.media)}
-    data-slot="alert-dialog-media"
-    {...props}
-  />
+const AlertDialogMedia = ({
+  ...props
+}: Omit<React.ComponentProps<"div">, "className" | "style">) => (
+  <div {...stylex.props(styles.media)} data-slot="alert-dialog-media" {...props} />
 );
 
-const AlertDialogHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.header)}
-    data-slot="alert-dialog-header"
-    {...props}
-  />
+const AlertDialogHeader = ({
+  ...props
+}: Omit<React.ComponentProps<"div">, "className" | "style">) => (
+  <div {...stylex.props(styles.header)} data-slot="alert-dialog-header" {...props} />
 );
 
-const AlertDialogFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
-  <div
-    {...stylex.props(styles.footer)}
-    data-slot="alert-dialog-footer"
-    {...props}
-  />
+const AlertDialogFooter = ({
+  ...props
+}: Omit<React.ComponentProps<"div">, "className" | "style">) => (
+  <div {...stylex.props(styles.footer)} data-slot="alert-dialog-footer" {...props} />
 );
 
-const AlertDialogTitle = ({ ...props
+const AlertDialogTitle = ({
+  ...props
 }: Omit<React.ComponentProps<typeof AlertDialogPrimitive.Title>, "className">) => (
   <AlertDialogPrimitive.Title
     {...stylex.props(styles.title)}
@@ -163,7 +158,8 @@ const AlertDialogTitle = ({ ...props
   />
 );
 
-const AlertDialogDescription = ({ ...props
+const AlertDialogDescription = ({
+  ...props
 }: Omit<React.ComponentProps<typeof AlertDialogPrimitive.Description>, "className">) => (
   <AlertDialogPrimitive.Description
     {...stylex.props(styles.description)}
