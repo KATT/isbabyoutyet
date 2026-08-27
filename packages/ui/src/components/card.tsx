@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import type { StyleXStyles } from "@stylexjs/stylex";
 import * as stylex from "@stylexjs/stylex";
 
@@ -14,7 +15,9 @@ const styles = stylex.create({
   },
   card: {
     backgroundColor: colors.card,
-    border: `1px solid ${colors.border}`,
+    borderColor: colors.border,
+    borderStyle: "solid",
+    borderWidth: "1px",
     borderRadius: radius.xl,
     boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
     color: colors.cardForeground,
@@ -23,6 +26,11 @@ const styles = stylex.create({
     gap: "var(--card-spacing, 1.5rem)",
     paddingBottom: "var(--card-spacing, 1.5rem)",
     paddingTop: "var(--card-spacing, 1.5rem)",
+  },
+  emphasis: {
+    borderRadius: "2rem",
+    borderWidth: "2px",
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
   },
   content: {
     paddingInline: "var(--card-spacing, 1.5rem)",
@@ -50,33 +58,53 @@ const styles = stylex.create({
     letterSpacing: "-0.025em",
     lineHeight: 1,
   },
+  sizeSm: {
+    gap: "var(--card-spacing, 1rem)",
+    paddingBottom: "var(--card-spacing, 1rem)",
+    paddingTop: "var(--card-spacing, 1rem)",
+  },
 });
 
-type DivProps = React.ComponentProps<"div">;
+type DivProps = ComponentProps<"div">;
 
 const makeSlot =
   (slot: string, style: StyleXStyles) =>
-  ({ className, style: styleProp, ...props }: DivProps) => (
+  (props: DivProps) => {
+    const { className, style: styleProp, ...rest } = props;
+    return (
+      <div
+        data-slot={slot}
+        {...stylex.props(style, customClassName(className), styleProp as StyleXStyles)}
+        {...rest}
+      />
+    );
+  };
+
+export type CardProps = DivProps & {
+  size?: "default" | "sm";
+  emphasis?: boolean;
+};
+
+function Card(props: CardProps) {
+  const size = props.size ?? "default";
+  const emphasis = props.emphasis ?? false;
+  const { className, style, size: _size, emphasis: _emphasis, ...rest } = props;
+
+  return (
     <div
-      data-slot={slot}
-      {...stylex.props(style, customClassName(className), styleProp as StyleXStyles)}
-      {...props}
+      {...stylex.props(
+        styles.card,
+        size === "sm" ? styles.sizeSm : null,
+        emphasis ? styles.emphasis : null,
+        customClassName(className),
+        style as StyleXStyles,
+      )}
+      data-size={size}
+      data-slot="card"
+      {...rest}
     />
   );
-
-const Card = ({
-  className,
-  style,
-  size = "default",
-  ...props
-}: DivProps & { size?: "default" | "sm" }) => (
-  <div
-    {...stylex.props(styles.card, customClassName(className), style as StyleXStyles)}
-    data-size={size}
-    data-slot="card"
-    {...props}
-  />
-);
+}
 
 const CardHeader = makeSlot("card-header", styles.header);
 const CardTitle = makeSlot("card-title", styles.title);

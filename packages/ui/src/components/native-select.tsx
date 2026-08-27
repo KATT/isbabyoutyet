@@ -1,9 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { ChevronDownIcon } from "lucide-react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   icon: {
@@ -63,35 +61,42 @@ const styles = stylex.create({
     position: "relative",
     width: "fit-content",
   },
+  wrapperFull: {
+    width: "100%",
+  },
 });
 
-const NativeSelect = ({
-  className,
-  style,
-  size = "default",
-  ...props
-}: Omit<React.ComponentProps<"select">, "size"> & {
+export type NativeSelectProps = Omit<
+  React.ComponentProps<"select">,
+  "size" | "className" | "style"
+> & {
   size?: "sm" | "default";
-}) => {
+  fullWidth?: boolean;
+};
+
+function NativeSelect(props: NativeSelectProps) {
+  const size = props.size ?? "default";
+  const fullWidth = props.fullWidth ?? false;
   const select = stylex.props(styles.select, size === "sm" && styles.selectSm);
   const icon = stylex.props(styles.icon, size === "sm" && styles.iconSm);
+  const { size: _size, fullWidth: _fullWidth, ...rest } = props;
   return (
     <div
       data-slot="native-select-wrapper"
       data-size={size}
-      {...stylex.props(styles.wrapper, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.wrapper, fullWidth ? styles.wrapperFull : null)}
     >
       <select
         data-slot="native-select"
         data-size={size}
         className={select.className}
         style={select.style}
-        {...props}
+        {...rest}
       />
       <ChevronDownIcon aria-hidden="true" data-slot="native-select-icon" {...icon} />
     </div>
   );
-};
+}
 
 const NativeSelectOption = (props: React.ComponentProps<"option">) => (
   <option data-slot="native-select-option" {...props} />

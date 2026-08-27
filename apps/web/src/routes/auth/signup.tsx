@@ -1,14 +1,9 @@
+import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
 import { Input } from "@workspace/ui/components/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
+import { Card, CardContent, CardHeader } from "@workspace/ui/components/card";
 import {
   FormControl,
   FormField,
@@ -23,6 +18,92 @@ import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { authPageCacheHeaders } from "@/lib/cachePolicy";
 import { waitForConvexAuth } from "@/lib/convexAuthHandoff";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
+
+const styles = stylex.create({
+  page: {
+    alignItems: "center",
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    display: "flex",
+    justifyContent: "center",
+    minHeight: "100vh",
+    padding: spacing.s6,
+  },
+  column: {
+    maxWidth: "28rem",
+    width: "100%",
+  },
+  brandLink: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    display: "flex",
+    gap: spacing.s2,
+    marginBottom: spacing.s6,
+    marginInline: "auto",
+    paddingBlock: spacing.s1_5,
+    paddingInlineEnd: spacing.s4,
+    paddingInlineStart: spacing.s2,
+    textDecoration: "none",
+    transition: "transform 0.15s ease",
+    width: "fit-content",
+    ":hover": {
+      transform: "rotate(-2deg)",
+    },
+  },
+  brandMark: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: "9999px",
+    color: colors.primary,
+    display: "flex",
+    height: "1.75rem",
+    justifyContent: "center",
+    width: "1.75rem",
+  },
+  brandName: {
+    color: colors.foreground,
+    fontSize: "0.875rem",
+    fontWeight: 800,
+    letterSpacing: "-0.025em",
+  },
+  emoji: {
+    fontSize: "2.25rem",
+    lineHeight: "2.5rem",
+    margin: 0,
+  },
+  formFields: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s5,
+    width: "100%",
+  },
+  submitHost: {
+    display: "grid",
+    width: "100%",
+  },
+  footer: {
+    marginTop: spacing.s6,
+    textAlign: "center",
+  },
+  footerLink: {
+    color: {
+      ":hover": `color-mix(in oklab, ${colors.primary} 80%, transparent)`,
+      default: colors.primary,
+    },
+    fontWeight: 500,
+    textDecorationLine: "underline",
+    textUnderlineOffset: "4px",
+  },
+});
 
 function signupSchema(t: TranslationFunction) {
   return z.object({
@@ -142,30 +223,31 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
   });
 
   return (
-    <div className="min-h-screen bg-background bg-dots flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
-        <Link
-          to="/"
-          className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 shadow-sm transition-transform hover:-rotate-2"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-            <Baby className="h-4 w-4 text-primary" />
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.column)}>
+        <Link to="/" {...stylex.props(styles.brandLink)}>
+          <span {...stylex.props(styles.brandMark)}>
+            <Baby size={16} />
           </span>
-          <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+          <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
         </Link>
-        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
-          <CardHeader className="text-center">
-            <p className="text-4xl" aria-hidden="true">
-              🎈
-            </p>
-            <CardTitle className="text-2xl font-black">{t("Join the fun!")}</CardTitle>
-            <CardDescription className="font-medium">
-              {t("Create an account to share your baby's arrival")}
-            </CardDescription>
+        <Card emphasis>
+          <CardHeader>
+            <Stack gap="s1_5" align="center" fullWidth>
+              <p {...stylex.props(styles.emoji)} aria-hidden="true">
+                🎈
+              </p>
+              <Text as="h2" size="2xl" weight="black" align="center">
+                {t("Join the fun!")}
+              </Text>
+              <Text tone="muted" weight="medium" align="center" size="sm">
+                {t("Create an account to share your baby's arrival")}
+              </Text>
+            </Stack>
           </CardHeader>
           <CardContent>
             <Form form={form} handleSubmit={(values) => props.onSignUp(values)}>
-              <div className="space-y-5">
+              <div {...stylex.props(styles.formFields)}>
                 <FormField
                   control={form.control}
                   name="name"
@@ -208,24 +290,25 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
                   )}
                 />
 
-                <SubmitButton
-                  form="context"
-                  IconComponent={UserPlus}
-                  iconPosition="start"
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  size="lg"
-                >
-                  {t("Sign Up")}
-                </SubmitButton>
+                <div {...stylex.props(styles.submitHost)}>
+                  <SubmitButton
+                    form="context"
+                    IconComponent={UserPlus}
+                    iconPosition="start"
+                    size="lg"
+                    shape="pill"
+                  >
+                    {t("Sign Up")}
+                  </SubmitButton>
+                </div>
               </div>
             </Form>
 
-            <div className="mt-6 text-center text-sm text-muted-foreground">
-              {t("Already have an account?")}{" "}
-              <Link
-                to="/auth/login"
-                className="text-primary hover:text-primary/80 font-medium underline underline-offset-4"
-              >
+            <div {...stylex.props(styles.footer)}>
+              <Text as="span" size="sm" tone="muted">
+                {t("Already have an account?")}{" "}
+              </Text>
+              <Link to="/auth/login" {...stylex.props(styles.footerLink)}>
                 {t("Sign in")}
               </Link>
             </div>
