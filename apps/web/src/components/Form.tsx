@@ -6,7 +6,13 @@ import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { useId, useRef } from "react";
 import type { ComponentProps, RefObject } from "react";
-import type { DefaultValues, FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
+import type {
+  Control,
+  DefaultValues,
+  FieldValues,
+  UseFormProps,
+  UseFormReturn,
+} from "react-hook-form";
 import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -77,10 +83,13 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   );
 };
 
-type AnyZodForm = UseZodForm<FieldValues, unknown, FieldValues>;
-
 /** Phosphor icon component, or a single glyph/emoji (e.g. `"🍼"`). */
 type SubmitIcon = Icon | string;
+
+type SubmitTargetForm<TFieldValues extends FieldValues> = {
+  id: string;
+  control: Control<TFieldValues>;
+};
 
 /**
  * Submit control wired to the nearest {@link Form} context (or an explicit `form`).
@@ -91,13 +100,13 @@ type SubmitIcon = Icon | string;
  *
  * @see https://github.com/trpc/examples-kitchen-sink/blob/main/src/feature/react-hook-form/Form.tsx
  */
-export function SubmitButton(
+export function SubmitButton<TFieldValues extends FieldValues>(
   props: Omit<ComponentProps<typeof Button>, "type" | "form"> & {
     /**
      * Form to submit, or `"context"` to use the nearest {@link Form} provider.
      * A concrete form sets the HTML `form` attribute to that form's id (useful outside the `<form>`).
      */
-    form: AnyZodForm | "context";
+    form: SubmitTargetForm<TFieldValues> | "context";
     /** Idle icon (Phosphor component or one glyph/emoji); replaced by a spinner while submitting. */
     IconComponent: SubmitIcon;
     /** Whether the icon/spinner sits before (`start`) or after (`end`) the label. */
@@ -109,7 +118,10 @@ export function SubmitButton(
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
   const { isSubmitting } = useFormState(
-    props.form === "context" ? {} : { control: props.form.control },
+    props.form === "context"
+      ? {}
+      : // RHF Control is invariant; cast so useFormState accepts any field map.
+        { control: props.form.control as Control<FieldValues> },
   );
   if (!form) {
     throw new Error("SubmitButton must be used within a Form or have a form prop");
