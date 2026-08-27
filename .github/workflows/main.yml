@@ -158,7 +158,6 @@ jobs:
           # Base tip may not emit lcov via config; force reporters on the CLI.
           CI=true pnpm exec vitest run --coverage \
             --coverage.reporter=text-summary \
-            --coverage.reporter=json-summary \
             --coverage.reporter=lcov
           test -f coverage/lcov.info
           cp coverage/lcov.info /tmp/base-lcov.info
