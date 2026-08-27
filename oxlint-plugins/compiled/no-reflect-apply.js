@@ -1,5 +1,5 @@
 import { defineRule } from "@oxlint/plugins";
-import { isGlobalReflectMethodCall } from "../shared/reflect-method.js";
+import { isGlobalReflectMethodCall } from "./reflect-method.js";
 /** Ban Reflect.apply, which bypasses ordinary typed function calls. */
 export const noReflectApplyRule = defineRule({
     meta: {

@@ -13,6 +13,14 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["index.ts", "rules/*.ts", "shared/*.ts"],
-  "exclude": ["rules/*.test.ts"]
+  "files": [
+    "anti-slop.ts",
+    "no-chained-type-assertions.ts",
+    "no-module-mocking.ts",
+    "no-reflect-apply.ts",
+    "no-unknown-type-aliases.ts",
+    "no-widen-then-assert.ts",
+    "require-safety-comment-for-type-assertion.ts",
+    "reflect-method.ts"
+  ]
 }

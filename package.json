@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:anti-slop": "tsc -p oxlint-plugins/anti-slop/tsconfig.json",
+    "build:anti-slop": "tsc -p oxlint-plugins/tsconfig.anti-slop.json",
     "build": "turbo build",
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",

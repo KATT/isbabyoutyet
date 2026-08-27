@@ -4,6 +4,6 @@
   "ignorePatterns": [
     "**/_generated/**",
     "**/routeTree.gen.ts",
-    "oxlint-plugins/anti-slop/**"
+    "oxlint-plugins/compiled/**"
   ]
 }

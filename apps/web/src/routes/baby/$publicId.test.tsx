@@ -322,7 +322,7 @@ async function setupBabyLoader(
   const setAuth = options?.convexClient?.setAuth ?? vi.fn();
   const mutation =
     options?.convexClient?.mutation ??
-    vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
+    vi.fn<() => Promise<{ locale: string }>>(() => Promise.resolve({ locale: "en-GB" }));
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
