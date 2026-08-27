@@ -48,6 +48,10 @@
     {
       "name": "infer-callback-params",
       "specifier": "./oxlint-plugins/infer-callback-params.mjs"
+    },
+    {
+      "name": "no-rhf-watch",
+      "specifier": "./oxlint-plugins/no-rhf-watch.mjs"
     }
   ],
   "settings": {
@@ -82,6 +86,7 @@
         "inline-jsx-callback/inline-jsx-callback": "error",
         "no-optional/no-optional": "error",
         "no-overzealous-destructuring/no-overzealous-destructuring": "error",
+        "no-rhf-watch/no-rhf-watch": "error",
         "query-prefetch/require-preloaded-query-options": "error",
         "query-prefetch/use-loader-preloads": "error",
         // Automatic JSX runtime — no React import required.
