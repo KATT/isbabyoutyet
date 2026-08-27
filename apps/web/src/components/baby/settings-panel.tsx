@@ -72,7 +72,6 @@ import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { Stack } from "@workspace/ui-patterns/components/stack";
 import { Text } from "@workspace/ui-patterns/components/text";
 
-
 const styles = stylex.create({
   sectionShell: {
     backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
@@ -117,7 +116,7 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
   return (
     <Stack gap="s2">
       <div {...stylex.props(styles.sectionTitle)}>
-        <Text size="xs" weight="bold" tone="muted">
+        <Text as="h3" size="xs" weight="bold" tone="muted">
           {props.title}
         </Text>
       </div>

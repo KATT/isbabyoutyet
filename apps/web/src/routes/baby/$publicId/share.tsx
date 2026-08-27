@@ -189,14 +189,14 @@ export function BabyShareOverlay() {
           </CardContent>
           <CardFooter>
             <div {...stylex.props(styles.fullWidth)}>
-            <Button
-              onClick={() => {
-                void copyShareLink();
-              }}
-            >
-              {copied ? <CheckCircle data-icon="inline-start" /> : null}
-              {copied ? t("Copied!") : t("Copy link to share")}
-            </Button>
+              <Button
+                onClick={() => {
+                  void copyShareLink();
+                }}
+              >
+                {copied ? <CheckCircle data-icon="inline-start" /> : null}
+                {copied ? t("Copied!") : t("Copy link to share")}
+              </Button>
             </div>
           </CardFooter>
         </Card>

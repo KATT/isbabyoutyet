@@ -22,6 +22,8 @@ import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import * as stylex from "@stylexjs/stylex";
+import { spacing } from "@workspace/ui/lib/tokens.stylex";
 
 function addBabySchema(t: TranslationFunction) {
   return z
@@ -63,6 +65,11 @@ export const Route = createFileRoute("/_auth/dashboard_/add")({
 
 type CreateBaby = (args: FunctionArgs<typeof api.baby.create>) => Promise<{ publicId: string }>;
 
+const styles = stylex.create({
+  backWrap: { marginBottom: spacing.s8 },
+  fullWidth: { width: "100%" },
+});
+
 export function AddBabyPage() {
   const router = useRouter();
   const createBaby = useMutation(api.baby.create);
@@ -97,16 +104,18 @@ export function AddBabyPageView(props: {
   return (
     <div className="min-h-screen bg-background bg-dots">
       <div className="mx-auto max-w-xl px-6 py-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="mb-8 rounded-full border-2 font-bold"
-          render={<Link to="/dashboard" />}
-          nativeButton={false}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("Back to Dashboard")}
-        </Button>
+        <div {...stylex.props(styles.backWrap)}>
+          <Button
+            variant="outline"
+            size="sm"
+            shape="pill"
+            render={<Link to="/dashboard" />}
+            nativeButton={false}
+          >
+            <ArrowLeft size={16} data-icon="inline-start" />
+            {t("Back to Dashboard")}
+          </Button>
+        </div>
 
         <div className="mb-8 text-center">
           <p className="text-5xl" aria-hidden="true">
@@ -169,15 +178,17 @@ export function AddBabyPageView(props: {
                   themeFieldName="theme"
                 />
 
-                <SubmitButton
-                  form="context"
-                  IconComponent="🍼"
-                  iconPosition="end"
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  size="lg"
-                >
-                  {t("Add Baby")}
-                </SubmitButton>
+                <div {...stylex.props(styles.fullWidth)}>
+                  <SubmitButton
+                    form="context"
+                    IconComponent="🍼"
+                    iconPosition="end"
+                    shape="pill"
+                    size="lg"
+                  >
+                    {t("Add Baby")}
+                  </SubmitButton>
+                </div>
               </div>
             </Form>
           </CardContent>

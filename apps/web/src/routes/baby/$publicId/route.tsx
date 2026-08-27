@@ -248,7 +248,6 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
   };
 }
 
-
 const styles = stylex.create({
   page: {
     backgroundColor: colors.background,
@@ -515,9 +514,7 @@ function BabyPageLayout() {
       </header>
 
       <main {...stylex.props(styles.main)}>
-        <h1 {...stylex.props(styles.title)}>
-          {t("Is {{name}} out yet?", { name: baby.name })}
-        </h1>
+        <h1 {...stylex.props(styles.title)}>{t("Is {{name}} out yet?", { name: baby.name })}</h1>
 
         {/* Split layout: sticky status card on the left, feed on the right.
             No internal scroll on the card — that steals wheel/trackpad from the page. */}

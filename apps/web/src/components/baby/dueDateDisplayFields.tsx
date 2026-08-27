@@ -7,7 +7,6 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Text } from "@workspace/ui-patterns/components/text";
-import { VisuallyHidden } from "@workspace/ui-patterns/components/visually-hidden";
 import * as stylex from "@stylexjs/stylex";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useWatch } from "react-hook-form";
@@ -74,12 +73,10 @@ export function DueDateDisplayFields<
               name={props.dateFieldName}
               render={(renderProps) => (
                 <FormItem>
-                  <VisuallyHidden>
-                    <FormLabel>{t("Due Date")}</FormLabel>
-                  </VisuallyHidden>
                   <FormControl>
                     <Input
                       type="date"
+                      aria-label={t("Due Date")}
                       onMouseDown={
                         props.stopPopoverPropagation
                           ? (event) => event.stopPropagation()

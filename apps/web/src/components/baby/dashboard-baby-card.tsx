@@ -156,12 +156,7 @@ export function DashboardBabyCard(props: DashboardBabyCardProps) {
       {...stylex.props(styles.link)}
       data-tour-id={props.dataTourId}
     >
-      <div
-        {...stylex.props(
-          styles.card,
-          props.index % 2 === 0 ? styles.cardEven : styles.cardOdd,
-        )}
-      >
+      <div {...stylex.props(styles.card, props.index % 2 === 0 ? styles.cardEven : styles.cardOdd)}>
         <Inline gap="s3" justify="between" align="start" wrap={false}>
           <span {...stylex.props(styles.emoji)}>{STATUS_EMOJI[currentStatus.type]}</span>
           <ArrowRight {...stylex.props(styles.arrow)} />

@@ -30,7 +30,6 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { toast } from "sonner";
 import * as stylex from "@stylexjs/stylex";
-import { spacing } from "@workspace/ui/lib/tokens.stylex";
 import { Stack } from "@workspace/ui-patterns/components/stack";
 import { Text } from "@workspace/ui-patterns/components/text";
 import { Inline } from "@workspace/ui-patterns/components/inline";
@@ -222,7 +221,6 @@ function toastSubscribe(mutateAsync: () => Promise<unknown>, t: TranslationFunct
   });
 }
 
-
 const styles = stylex.create({
   stepNum: {
     fontWeight: 500,
@@ -323,11 +321,7 @@ function NotificationSubscribeControls(props: {
           >
             {props.isSubscribed ? (
               <>
-                {props.isLoading ? (
-                  <Spinner />
-                ) : (
-                  <BellSlash size={20} />
-                )}
+                {props.isLoading ? <Spinner /> : <BellSlash size={20} />}
                 {t("Unsubscribe")}
               </>
             ) : (

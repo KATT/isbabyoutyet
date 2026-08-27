@@ -58,7 +58,6 @@ type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 // defaultValues stay current without a reset. Cancel uses PopoverClose;
 // successful save/delete closes via the root actionsRef.
 
-
 const styles = stylex.create({
   actions: {
     display: "flex",
@@ -546,11 +545,7 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
   return (
     <span {...stylex.props(styles.swatchRow)}>
       {props.colors.map((color, index) => (
-        <span
-          key={index}
-          {...stylex.props(styles.swatch)}
-          style={{ backgroundColor: color }}
-        />
+        <span key={index} {...stylex.props(styles.swatch)} style={{ backgroundColor: color }} />
       ))}
     </span>
   );
