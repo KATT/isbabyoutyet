@@ -1,6 +1,10 @@
 import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
 import { createPortal } from "react-dom";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { Inline } from "@workspace/ui-patterns/components/inline";
 import { useI18n } from "@/lib/i18n";
 import { useCoachmarkSnapshot } from "@/lib/use-coachmark-store";
 import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
@@ -15,6 +19,62 @@ type CoachmarkProps = {
   completeOnDismiss: boolean | undefined;
   onComplete: (() => void) | undefined;
 };
+
+const pulse = stylex.keyframes({
+  "0%, 100%": { opacity: 1 },
+  "50%": { opacity: 0.55 },
+});
+
+const styles = stylex.create({
+  overlay: {
+    pointerEvents: "none",
+    position: "fixed",
+    inset: 0,
+    zIndex: 45,
+  },
+  spotlight: {
+    position: "absolute",
+    borderRadius: "0.75rem",
+    boxShadow: `0 0 0 2px color-mix(in oklab, ${colors.primary} 70%, transparent)`,
+    outline: `2px solid ${colors.background}`,
+    outlineOffset: 2,
+    transition: "all 0.3s ease",
+    "@media (prefers-reduced-motion: no-preference)": {
+      animationName: pulse,
+      animationDuration: "2s",
+      animationIterationCount: "infinite",
+    },
+  },
+  tip: {
+    pointerEvents: "auto",
+    borderRadius: "0.75rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.primary} 20%, transparent)`,
+    backgroundColor: colors.popover,
+    padding: spacing.s4,
+    fontSize: "0.875rem",
+    lineHeight: "1.25rem",
+    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+    outline: `1px solid color-mix(in oklab, ${colors.foreground} 10%, transparent)`,
+  },
+  tipMobile: {
+    position: "fixed",
+    left: "50%",
+    bottom: "calc(4rem + env(safe-area-inset-bottom) + var(--visual-viewport-bottom, 0px))",
+    width: "calc(100dvw - 1.5rem)",
+    maxWidth: "20rem",
+    transform: "translateX(-50%)",
+  },
+  tipDesktop: {
+    position: "absolute",
+    width: "18rem",
+    padding: spacing.s3,
+  },
+  tipDesktopAbove: {
+    transform: "translateY(-100%)",
+  },
+});
 
 /**
  * Soft spotlight + tip bubble anchored to `[data-tour-id=…]`.
@@ -52,9 +112,9 @@ function CoachmarkTarget(props: CoachmarkProps) {
   }
 
   return createPortal(
-    <div className="pointer-events-none fixed inset-0 z-[45]" aria-live="polite">
+    <div {...stylex.props(styles.overlay)} aria-live="polite">
       <div
-        className="motion-safe:animate-pulse absolute rounded-xl ring-2 ring-primary/70 ring-offset-2 ring-offset-background transition-all duration-300"
+        {...stylex.props(styles.spotlight)}
         style={{
           top: rect.top - 4,
           left: rect.left - 4,
@@ -64,36 +124,47 @@ function CoachmarkTarget(props: CoachmarkProps) {
       />
       {snapshot.isMobile ? (
         <div
-          className="pointer-events-auto fixed left-1/2 bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] w-[calc(100dvw-1.5rem)] max-w-xs -translate-x-1/2 rounded-xl border border-primary/20 bg-popover p-4 text-sm shadow-xl ring-1 ring-foreground/10"
+          {...stylex.props(styles.tip, styles.tipMobile)}
           style={visualViewport.style}
           role="dialog"
           aria-label={props.title}
+          data-coachmark-tip="mobile"
         >
-          <p className="mb-1 font-medium text-foreground">{props.title}</p>
-          <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{props.description}</p>
-          <div className="flex justify-end">
-            <Button className="min-h-11" variant="outline" onClick={dismiss}>
-              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
-            </Button>
-          </div>
+          <Stack gap="s3">
+            <Text weight="medium">{props.title}</Text>
+            <Text size="sm" tone="muted">
+              {props.description}
+            </Text>
+            <Inline justify="end">
+              <Button touchTarget variant="outline" onClick={dismiss}>
+                {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+              </Button>
+            </Inline>
+          </Stack>
         </div>
       ) : (
         <div
-          className={cn(
-            "pointer-events-auto absolute w-72 rounded-xl border border-primary/20 bg-popover p-3 text-sm shadow-xl ring-1 ring-foreground/10",
-            snapshot.placement === "above" && "-translate-y-full",
+          {...stylex.props(
+            styles.tip,
+            styles.tipDesktop,
+            snapshot.placement === "above" ? styles.tipDesktopAbove : null,
           )}
           style={{ top: tipTop, left: tipLeft }}
           role="dialog"
           aria-label={props.title}
+          data-coachmark-tip="desktop"
         >
-          <p className="mb-1 font-medium text-foreground">{props.title}</p>
-          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">{props.description}</p>
-          <div className="flex justify-end">
-            <Button size="sm" className="min-h-11" variant="ghost" onClick={dismiss}>
-              {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
-            </Button>
-          </div>
+          <Stack gap="s3">
+            <Text weight="medium">{props.title}</Text>
+            <Text size="xs" tone="muted">
+              {props.description}
+            </Text>
+            <Inline justify="end">
+              <Button size="sm" touchTarget variant="ghost" onClick={dismiss}>
+                {props.completeOnDismiss ? t("Got it") : t("Hide tip")}
+              </Button>
+            </Inline>
+          </Stack>
         </div>
       )}
     </div>,

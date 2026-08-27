@@ -91,6 +91,9 @@ const styles = stylex.create({
     opacity: 0,
     transform: "scale(0.95)",
   },
+  popupSizeMd: {
+    width: "18rem",
+  },
   separator: {
     backgroundColor: colors.border,
     height: "1px",
@@ -133,23 +136,24 @@ const DropdownMenuSub = (props: React.ComponentProps<typeof MenuPrimitive.Submen
   <MenuPrimitive.SubmenuRoot data-slot="dropdown-menu-sub" {...props} />
 );
 
+type DropdownMenuContentSize = "default" | "md";
+
 const DropdownMenuContent = ({
-  className,
-  style,
   sideOffset = 4,
   align = "center",
   side = "bottom",
   alignOffset,
   collisionPadding,
   children,
+  size = "default",
   ...props
-}: Omit<React.ComponentProps<typeof MenuPrimitive.Popup>, "className"> & {
-  className?: string;
+}: Omit<React.ComponentProps<typeof MenuPrimitive.Popup>, "className" | "style"> & {
   align?: "start" | "center" | "end";
   side?: "top" | "bottom" | "left" | "right";
   alignOffset?: number;
   sideOffset?: number;
   collisionPadding?: number;
+  size?: DropdownMenuContentSize;
 }) => (
   <MenuPrimitive.Portal>
     <MenuPrimitive.Positioner
@@ -164,11 +168,10 @@ const DropdownMenuContent = ({
         className={(state) =>
           stylex.props(
             styles.popup,
+            size === "md" ? styles.popupSizeMd : null,
             hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
           ).className
         }
-        style={style}
         {...props}
       >
         {children}

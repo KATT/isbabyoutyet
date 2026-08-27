@@ -29,6 +29,8 @@ import {
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { toast } from "sonner";
+import * as stylex from "@stylexjs/stylex";
+import { spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type BrowserPushCapability =
   | { kind: "unsupported" }
@@ -41,6 +43,44 @@ const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 
 const SERVICE_WORKER_READY_TIMEOUT_MS = 5000;
 const SERVICE_WORKER_READY_TIMEOUT_MESSAGE = "Service worker ready timeout";
+
+const styles = stylex.create({
+  iconMd: {
+    height: "1.25rem",
+    width: "1.25rem",
+  },
+  iconInline: {
+    display: "inline",
+    height: "1rem",
+    marginInline: spacing.s1,
+    verticalAlign: "middle",
+    width: "1rem",
+  },
+  steps: {
+    display: "flex",
+    flexDirection: "column",
+    fontSize: "0.875rem",
+    gap: spacing.s3,
+    lineHeight: "1.25rem",
+    listStylePosition: "inside",
+    listStyleType: "decimal",
+    margin: 0,
+    padding: 0,
+  },
+  step: {
+    alignItems: "flex-start",
+    display: "flex",
+    gap: spacing.s2,
+  },
+  stepNum: {
+    fontWeight: 500,
+    minWidth: "1.25rem",
+  },
+  tooltipWide: {
+    maxWidth: "20rem",
+  },
+});
+
 
 export function browserPushQueryOptions(queryClient: QueryClient, babyRef: string) {
   return queryOptions({
@@ -221,7 +261,7 @@ function GetNotificationsPending() {
   const { t } = useI18n();
   return (
     <Button variant="default" size="lg" disabled>
-      <Bell className="w-5 h-5" />
+      <Bell size={20} {...stylex.props(styles.iconMd)} />
       {t("Get Notifications")}
     </Button>
   );
@@ -238,15 +278,15 @@ function IosPwaInstallPrompt() {
             <DialogTrigger
               render={
                 <Button variant="default" size="lg">
-                  <Bell className="w-5 h-5" />
+                  <Bell size={20} {...stylex.props(styles.iconMd)} />
                   {t("Get Notifications")}
                 </Button>
               }
             />
           }
         />
-        <TooltipContent className="max-w-xs">
-          <p>
+        <TooltipContent>
+          <p {...stylex.props(styles.tooltipWide)}>
             {t(
               "To receive notifications on iOS, add this page to your Home Screen first. Tap for instructions.",
             )}
@@ -260,23 +300,24 @@ function IosPwaInstallPrompt() {
             {t("Install this app on your Home Screen before enabling push notifications on iOS.")}
           </DialogDescription>
         </DialogHeader>
-        <ol className="list-decimal list-inside space-y-3 text-sm">
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">1.</span>
+        <ol {...stylex.props(styles.steps)}>
+          <li {...stylex.props(styles.step)}>
+            <span {...stylex.props(styles.stepNum)}>1.</span>
             <span>
-              {t("Tap the Share button in Safari")} <Export className="inline w-4 h-4 mx-1" />
+              {t("Tap the Share button in Safari")}{" "}
+              <Export size={16} {...stylex.props(styles.iconInline)} />
             </span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">2.</span>
+          <li {...stylex.props(styles.step)}>
+            <span {...stylex.props(styles.stepNum)}>2.</span>
             <span>{t('Scroll down and tap "Add to Home Screen"')}</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">3.</span>
+          <li {...stylex.props(styles.step)}>
+            <span {...stylex.props(styles.stepNum)}>3.</span>
             <span>{t("Open the app from your Home Screen")}</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">4.</span>
+          <li {...stylex.props(styles.step)}>
+            <span {...stylex.props(styles.stepNum)}>4.</span>
             <span>{t('Come back here and tap "Get Notifications"')}</span>
           </li>
         </ol>
@@ -305,15 +346,19 @@ function NotificationSubscribeControls(props: {
             {props.isSubscribed ? (
               <>
                 {props.isLoading ? (
-                  <Spinner className="w-5 h-5" />
+                  <Spinner {...stylex.props(styles.iconMd)} />
                 ) : (
-                  <BellSlash className="w-5 h-5" />
+                  <BellSlash size={20} {...stylex.props(styles.iconMd)} />
                 )}
                 {t("Unsubscribe")}
               </>
             ) : (
               <>
-                {props.isLoading ? <Spinner className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                {props.isLoading ? (
+                  <Spinner {...stylex.props(styles.iconMd)} />
+                ) : (
+                  <Bell size={20} {...stylex.props(styles.iconMd)} />
+                )}
                 {t("Get Notifications")}
               </>
             )}

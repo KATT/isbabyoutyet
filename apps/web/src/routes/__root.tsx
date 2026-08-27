@@ -14,6 +14,7 @@ import type { ConvexQueryPreloader } from "@workspace/convex-prefetch";
 import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
+import * as stylex from "@stylexjs/stylex";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
 import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
@@ -29,7 +30,7 @@ import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
@@ -40,9 +41,72 @@ import "@/lib/register-service-worker";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { Inline } from "@workspace/ui-patterns/components/inline";
 
 /** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
 const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
+
+const styles = stylex.create({
+  page: {
+    minHeight: "100vh",
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingInline: spacing.s6,
+  },
+  card: {
+    textAlign: "center",
+    maxWidth: "28rem",
+    borderRadius: "2rem",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    padding: spacing.s10,
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+  },
+  iconWell: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "5rem",
+    height: "5rem",
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.primary} 20%, transparent)`,
+  },
+  babyIcon: {
+    width: "2.5rem",
+    height: "2.5rem",
+    color: colors.primary,
+  },
+  notFoundCode: {
+    margin: 0,
+    fontSize: "3.75rem",
+    lineHeight: 1,
+    fontWeight: 900,
+    color: colors.foreground,
+  },
+  errorPre: {
+    maxHeight: "10rem",
+    overflow: "auto",
+    borderRadius: "0.5rem",
+    backgroundColor: colors.muted,
+    padding: spacing.s3,
+    textAlign: "left",
+    fontSize: "0.75rem",
+    lineHeight: "1rem",
+    color: colors.mutedForeground,
+    margin: 0,
+  },
+});
 
 /**
  * Root `beforeLoad` with locale detection injected so tests can drive the SSR
@@ -229,40 +293,42 @@ function RootComponent() {
 export function RootErrorComponent(props: { error: Error }) {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
-      <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
-          <Baby className="w-10 h-10 text-primary" />
-        </div>
-        <h1 className="text-2xl font-black text-foreground">{t("Something went wrong")}</h1>
-        <p className="text-muted-foreground font-medium">
-          {t("An unexpected error occurred. Reloading usually fixes it.")}
-        </p>
-        {import.meta.env.DEV ? (
-          <pre className="max-h-40 overflow-auto rounded-lg bg-muted p-3 text-left text-xs text-muted-foreground">
-            {props.error.message}
-          </pre>
-        ) : null}
-        <div className="flex justify-center gap-3">
-          <Button
-            size="lg"
-            className="rounded-full"
-            onClick={() => {
-              window.location.reload();
-            }}
-          >
-            {t("Reload page")}
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="rounded-full"
-            render={<Link to="/" />}
-            nativeButton={false}
-          >
-            {t("Go Home")}
-          </Button>
-        </div>
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.card)}>
+        <Stack gap="s5" align="center">
+          <span {...stylex.props(styles.iconWell)}>
+            <Baby {...stylex.props(styles.babyIcon)} />
+          </span>
+          <Text as="h1" size="2xl" weight="black">
+            {t("Something went wrong")}
+          </Text>
+          <Text tone="muted" weight="medium">
+            {t("An unexpected error occurred. Reloading usually fixes it.")}
+          </Text>
+          {import.meta.env.DEV ? (
+            <pre {...stylex.props(styles.errorPre)}>{props.error.message}</pre>
+          ) : null}
+          <Inline gap="s3" justify="center">
+            <Button
+              size="lg"
+              shape="pill"
+              onClick={() => {
+                window.location.reload();
+              }}
+            >
+              {t("Reload page")}
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              shape="pill"
+              render={<Link to="/" />}
+              nativeButton={false}
+            >
+              {t("Go Home")}
+            </Button>
+          </Inline>
+        </Stack>
       </div>
     </div>
   );
@@ -271,19 +337,23 @@ export function RootErrorComponent(props: { error: Error }) {
 export function NotFoundComponent() {
   const { t } = useI18n();
   return (
-    <div className="min-h-screen bg-background bg-dots flex items-center justify-center px-6">
-      <div className="text-center space-y-5 max-w-md rounded-[2rem] border-2 border-border bg-card p-10 pop-shadow">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 border-2 border-primary/20">
-          <Baby className="w-10 h-10 text-primary" />
-        </div>
-        <h1 className="text-6xl font-black text-foreground">404</h1>
-        <h2 className="text-2xl font-black text-foreground">{t("Not arrived yet!")}</h2>
-        <p className="text-muted-foreground font-medium">
-          {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
-        </p>
-        <Button size="lg" className="rounded-full" render={<Link to="/" />} nativeButton={false}>
-          {t("Go Home")}
-        </Button>
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.card)}>
+        <Stack gap="s5" align="center">
+          <span {...stylex.props(styles.iconWell)}>
+            <Baby {...stylex.props(styles.babyIcon)} />
+          </span>
+          <h1 {...stylex.props(styles.notFoundCode)}>404</h1>
+          <Text as="h2" size="2xl" weight="black">
+            {t("Not arrived yet!")}
+          </Text>
+          <Text tone="muted" weight="medium">
+            {t("Looks like this page hasn't arrived yet. Let's get you back home!")}
+          </Text>
+          <Button size="lg" shape="pill" render={<Link to="/" />} nativeButton={false}>
+            {t("Go Home")}
+          </Button>
+        </Stack>
       </div>
     </div>
   );
@@ -300,7 +370,6 @@ export const NAVIGATION_PROGRESS_DELAY_MS = 200;
 // slow connections the next page's chunks/loaders can take a while — without
 // this the app looks frozen. SPAs can't trigger the browser's native loading
 // indicator, so we show a top progress bar while the router is loading.
-// value={null} puts Progress in its indeterminate (sweeping) state.
 export function NavigationProgress() {
   const isNavigating = useRouterState({ select: (state) => state.isLoading });
   return <NavigationProgressBar isNavigating={isNavigating} />;
@@ -325,12 +394,8 @@ export function NavigationProgressBar(props: { isNavigating: boolean }) {
   return (
     <Progress
       value={null}
+      placement="navigation"
       aria-label={t("Loading")}
-      className={cn(
-        "pointer-events-none fixed inset-x-0 top-0 z-50",
-        "[&_[data-slot=progress-indicator]]:w-1/4 [&_[data-slot=progress-indicator]]:rounded-full [&_[data-slot=progress-indicator]]:animate-progress-indeterminate",
-        "motion-reduce:[&_[data-slot=progress-indicator]]:w-full motion-reduce:[&_[data-slot=progress-indicator]]:animate-none",
-      )}
     />
   );
 }

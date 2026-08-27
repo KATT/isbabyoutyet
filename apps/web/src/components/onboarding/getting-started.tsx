@@ -9,8 +9,7 @@ import {
   DrawerTitle,
   DrawerTrigger,
 } from "@workspace/ui/components/drawer";
-import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
-import { cn } from "@workspace/ui/lib/utils";
+import { Progress, ProgressValue } from "@workspace/ui/components/progress";
 import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
@@ -19,6 +18,12 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { ONBOARDING_STEPS } from "./steps";
 import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { Box } from "@workspace/ui-patterns/components/box";
 
 type OnboardingStep = (typeof ONBOARDING_STEPS)[number];
 
@@ -38,7 +43,6 @@ type GettingStartedCardProps = {
   tourBaby: TourBaby | null;
   /** Baby-page: scroll to and highlight a control */
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  className: string | undefined;
 };
 
 type StepAction =
@@ -115,6 +119,191 @@ function getStepAction(opts: {
   return null;
 }
 
+const fadeSlideIn = stylex.keyframes({
+  from: { opacity: 0, transform: "translateY(0.5rem)" },
+  to: { opacity: 1, transform: "translateY(0)" },
+});
+
+const styles = stylex.create({
+  minimized: {
+    position: "fixed",
+    zIndex: 40,
+    display: "flex",
+    minHeight: "2.75rem",
+    alignItems: "center",
+    gap: spacing.s2,
+    borderRadius: "9999px",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.primary} 20%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${colors.popover} 95%, transparent)`,
+    paddingInline: spacing.s3,
+    paddingBlock: spacing.s2,
+    fontSize: "0.875rem",
+    fontWeight: 500,
+    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+    outline: `1px solid color-mix(in oklab, ${colors.foreground} 10%, transparent)`,
+    backdropFilter: "blur(4px)",
+    right: "calc(0.75rem + env(safe-area-inset-right) + max(0px, 100vw - 100dvw))",
+    bottom: "calc(4rem + env(safe-area-inset-bottom) + var(--visual-viewport-bottom, 0px))",
+    "@media (min-width: 640px)": { right: "1rem", bottom: "5rem" },
+  },
+  iconWellSm: {
+    display: "flex",
+    width: "1.75rem",
+    height: "1.75rem",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    color: colors.primary,
+  },
+  iconWellMd: {
+    display: "flex",
+    width: "2.5rem",
+    height: "2.5rem",
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "0.75rem",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    color: colors.primary,
+  },
+  iconWellLg: {
+    display: "flex",
+    width: "2rem",
+    height: "2rem",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "0.5rem",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    color: colors.primary,
+  },
+  iconXs: { width: "0.875rem", height: "0.875rem" },
+  iconSm: { width: "1rem", height: "1rem" },
+  iconMd: { width: "1.25rem", height: "1.25rem" },
+  iconCheckTiny: { width: "0.625rem", height: "0.625rem" },
+  tabular: { fontVariantNumeric: "tabular-nums", color: colors.foreground },
+  mutedIcon: { color: colors.mutedForeground },
+  mobileAside: {
+    position: "fixed",
+    left: "calc(0.75rem + env(safe-area-inset-left))",
+    bottom: "calc(4rem + env(safe-area-inset-bottom) + var(--visual-viewport-bottom, 0px))",
+    zIndex: 40,
+    width: "calc(100dvw - 1.5rem - env(safe-area-inset-left) - env(safe-area-inset-right))",
+    borderRadius: "0.75rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${colors.popover} 95%, transparent)`,
+    padding: spacing.s3,
+    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+    outline: `1px solid color-mix(in oklab, ${colors.foreground} 10%, transparent)`,
+    backdropFilter: "blur(12px)",
+    animationName: fadeSlideIn,
+    animationDuration: "0.2s",
+    "@media (min-width: 768px)": { display: "none" },
+  },
+  growMin: { minWidth: 0, flexGrow: 1 },
+  desktopAside: {
+    position: "fixed",
+    right: "1rem",
+    bottom: "5rem",
+    zIndex: 40,
+    display: "none",
+    width: "min(100% - 2rem, 22rem)",
+    borderRadius: "0.75rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${colors.popover} 95%, transparent)`,
+    padding: spacing.s4,
+    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+    outline: `1px solid color-mix(in oklab, ${colors.foreground} 10%, transparent)`,
+    backdropFilter: "blur(12px)",
+    animationName: fadeSlideIn,
+    animationDuration: "0.2s",
+    "@media (min-width: 768px)": { display: "block" },
+  },
+  drawerBody: { flexGrow: 1, overflowY: "auto", padding: spacing.s4, paddingTop: spacing.s3 },
+  stepList: {
+    margin: 0,
+    marginBottom: spacing.s3,
+    padding: 0,
+    listStyle: "none",
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s1_5,
+  },
+  stepItem: { borderRadius: "0.5rem", fontSize: "0.875rem", lineHeight: "1.25rem" },
+  stepItemNext: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 8%, transparent)`,
+    outline: `1px solid color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+  },
+  stepRow: {
+    display: "flex",
+    minHeight: "2.75rem",
+    width: "100%",
+    alignItems: "center",
+    gap: spacing.s2,
+    borderRadius: "0.5rem",
+    paddingInline: spacing.s2,
+    paddingBlock: spacing.s1_5,
+    textAlign: "left",
+    textDecoration: "none",
+    color: "inherit",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    cursor: "pointer",
+    ":hover": { backgroundColor: `color-mix(in oklab, ${colors.primary} 6%, transparent)` },
+  },
+  checkCircle: {
+    marginTop: "0.125rem",
+    display: "flex",
+    width: "1rem",
+    height: "1rem",
+    flexShrink: 0,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "9999px",
+    borderWidth: 1,
+    borderStyle: "solid",
+  },
+  checkDone: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
+    color: colors.primaryForeground,
+  },
+  checkTodo: { borderColor: `color-mix(in oklab, ${colors.mutedForeground} 30%, transparent)` },
+  stepTitleDone: {
+    lineHeight: 1.375,
+    color: colors.mutedForeground,
+    textDecorationLine: "line-through",
+  },
+  stepTitle: { lineHeight: 1.375 },
+  nextHint: {
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s2,
+    borderRadius: "0.5rem",
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 5%, transparent)`,
+    padding: spacing.s3,
+  },
+  nextHintIcon: {
+    marginTop: "0.125rem",
+    width: "1rem",
+    height: "1rem",
+    flexShrink: 0,
+    color: colors.primary,
+  },
+  progressSpacer: { marginTop: spacing.s3 },
+  headerRow: { marginBottom: spacing.s3 },
+  widthFull: { width: "100%" },
+});
+
 export function GettingStartedCard(props: GettingStartedCardProps) {
   const { t } = useI18n();
   const visualViewport = useVisualViewportMetrics();
@@ -131,24 +320,20 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
       <button
         type="button"
         onClick={() => props.onMinimize(false)}
+        {...stylex.props(styles.minimized)}
         style={visualViewport.style}
-        className={cn(
-          "fixed z-40 flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-popover/95 px-3 py-2 text-sm font-medium shadow-lg ring-1 ring-foreground/10 backdrop-blur-sm transition hover:border-primary/40",
-          "right-[calc(0.75rem+env(safe-area-inset-right)+max(0px,100vw-100dvw))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] sm:right-4 sm:bottom-20",
-          props.className,
-        )}
         aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
           completed: completedCount,
           total,
         })}
       >
-        <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-primary">
-          <Sparkle className="size-3.5" />
+        <span {...stylex.props(styles.iconWellSm)}>
+          <Sparkle {...stylex.props(styles.iconXs)} />
         </span>
-        <span className="tabular-nums text-foreground">
+        <span {...stylex.props(styles.tabular)}>
           {completedCount}/{total}
         </span>
-        <CaretUp className="size-4 text-muted-foreground" />
+        <CaretUp {...stylex.props(styles.iconSm, styles.mutedIcon)} />
       </button>
     );
   }
@@ -157,32 +342,31 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
     <>
       <Drawer showSwipeHandle>
         <aside
+          {...stylex.props(styles.mobileAside)}
           style={visualViewport.style}
-          className={cn(
-            "fixed left-[calc(0.75rem+env(safe-area-inset-left))] bottom-[calc(4rem+env(safe-area-inset-bottom)+var(--visual-viewport-bottom))] z-40 w-[calc(100dvw-1.5rem-env(safe-area-inset-left)-env(safe-area-inset-right))] rounded-xl border border-border/60 bg-popover/95 p-3 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:hidden",
-            "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
-            props.className,
-          )}
           aria-label={t("Getting started checklist")}
         >
-          <div className="flex items-center gap-3">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              {NextStepIcon ? <NextStepIcon className="size-5" /> : <Check className="size-5" />}
+          <Inline gap="s3" wrap={false} fullWidth>
+            <span {...stylex.props(styles.iconWellMd)}>
+              {NextStepIcon ? (
+                <NextStepIcon {...stylex.props(styles.iconMd)} />
+              ) : (
+                <Check {...stylex.props(styles.iconMd)} />
+              )}
             </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-medium text-muted-foreground">
+            <div {...stylex.props(styles.growMin)}>
+              <Text size="xs" weight="medium" tone="muted">
                 {t("Getting started")} · {completedCount}/{total}
-              </p>
-              <p className="truncate text-sm font-semibold text-foreground">
+              </Text>
+              <Text size="sm" weight="semibold" truncate>
                 {nextStep ? t(nextStep.title) : t("You're all set")}
-              </p>
+              </Text>
             </div>
             <DrawerTrigger
               render={
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-11"
                   aria-label={t("Getting started: {{completed}} of {{total}} done. Expand.", {
                     completed: completedCount,
                     total,
@@ -192,46 +376,32 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             >
               <CaretUp />
             </DrawerTrigger>
+          </Inline>
+          <div {...stylex.props(styles.progressSpacer)}>
+            <Progress value={percent} aria-label={t("Tour progress")} />
           </div>
-          <Progress value={percent} className="mt-3">
-            <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
-          </Progress>
         </aside>
 
-        <DrawerContent
-          className="right-auto w-dvw max-w-dvw max-h-[calc(100dvh-2rem)] md:hidden"
-          style={{
-            bottom: `${visualViewport.bottom}px`,
-            left: `${visualViewport.left}px`,
-            right: "auto",
-            width: visualViewport.width > 0 ? `${visualViewport.width}px` : "100dvw",
-            maxWidth: visualViewport.width > 0 ? `${visualViewport.width}px` : "100dvw",
-          }}
-        >
-          <DrawerHeader className="flex-row items-start text-left">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
-              <Sparkle className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <DrawerTitle>{t("Getting started")}</DrawerTitle>
-              <DrawerDescription>
-                {allDone ? t("You're all set") : t("Tap a step to jump there")}
-              </DrawerDescription>
-            </div>
-            <DrawerClose
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-11"
-                  aria-label={t("Close checklist")}
-                />
-              }
-            >
-              <X />
-            </DrawerClose>
+        <DrawerContent>
+          <DrawerHeader>
+            <Inline gap="s3" align="start" wrap={false} fullWidth>
+              <span {...stylex.props(styles.iconWellMd)}>
+                <Sparkle {...stylex.props(styles.iconMd)} />
+              </span>
+              <div {...stylex.props(styles.growMin)}>
+                <DrawerTitle>{t("Getting started")}</DrawerTitle>
+                <DrawerDescription>
+                  {allDone ? t("You're all set") : t("Tap a step to jump there")}
+                </DrawerDescription>
+              </div>
+              <DrawerClose
+                render={<Button variant="ghost" size="icon" aria-label={t("Close checklist")} />}
+              >
+                <X />
+              </DrawerClose>
+            </Inline>
           </DrawerHeader>
-          <div className="flex-1 overflow-y-auto p-4 pt-3">
+          <div {...stylex.props(styles.drawerBody)}>
             <ChecklistContents
               {...props}
               done={done}
@@ -245,51 +415,44 @@ export function GettingStartedCard(props: GettingStartedCardProps) {
             />
           </div>
           {nextStep ? (
-            <DrawerFooter className="relative bg-popover pt-2">
-              <DrawerClose
-                render={
-                  <Button
-                    variant="secondary"
-                    className="min-h-11 w-full"
-                    onClick={props.onDismiss}
-                  />
-                }
-              >
-                {t("Dismiss guide")}
-              </DrawerClose>
+            <DrawerFooter>
+              <div {...stylex.props(styles.widthFull)}>
+                <DrawerClose
+                  render={<Button variant="secondary" touchTarget onClick={props.onDismiss} />}
+                >
+                  {t("Dismiss guide")}
+                </DrawerClose>
+              </div>
             </DrawerFooter>
           ) : null}
         </DrawerContent>
       </Drawer>
 
-      <aside
-        className={cn(
-          "fixed right-4 bottom-20 z-40 hidden w-[min(100%-2rem,22rem)] rounded-xl border border-border/60 bg-popover/95 p-4 shadow-xl ring-1 ring-foreground/10 backdrop-blur-md md:block",
-          "animate-in fade-in-0 slide-in-from-bottom-2 duration-200",
-          props.className,
-        )}
-        aria-label={t("Getting started checklist")}
-      >
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary/15 text-primary">
-              <Sparkle className="size-4" />
-            </span>
-            <div>
-              <p className="text-sm font-semibold text-foreground">{t("Getting started")}</p>
-              <p className="text-xs text-muted-foreground">
-                {allDone ? t("You're all set") : t("Tap a step to jump there")}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label={t("Minimize")}
-            onClick={() => props.onMinimize(true)}
-          >
-            <CaretDown />
-          </Button>
+      <aside {...stylex.props(styles.desktopAside)} aria-label={t("Getting started checklist")}>
+        <div {...stylex.props(styles.headerRow)}>
+          <Inline gap="s2" justify="between" align="start" wrap={false} fullWidth>
+            <Inline gap="s2" wrap={false}>
+              <span {...stylex.props(styles.iconWellLg)}>
+                <Sparkle {...stylex.props(styles.iconSm)} />
+              </span>
+              <Stack gap="s1">
+                <Text size="sm" weight="semibold">
+                  {t("Getting started")}
+                </Text>
+                <Text size="xs" tone="muted">
+                  {allDone ? t("You're all set") : t("Tap a step to jump there")}
+                </Text>
+              </Stack>
+            </Inline>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("Minimize")}
+              onClick={() => props.onMinimize(true)}
+            >
+              <CaretDown />
+            </Button>
+          </Inline>
         </div>
         <ChecklistContents
           {...props}
@@ -322,12 +485,13 @@ function ChecklistContents(props: ChecklistContentsProps) {
   const { t } = props;
   return (
     <>
-      <Progress value={props.percent} className="mb-3">
-        <ProgressLabel className="sr-only">{t("Tour progress")}</ProgressLabel>
-        <ProgressValue />
-      </Progress>
+      <Box padY="none">
+        <Progress value={props.percent} aria-label={t("Tour progress")}>
+          <ProgressValue />
+        </Progress>
+      </Box>
 
-      <ul className="mb-3 flex flex-col gap-1.5">
+      <ul {...stylex.props(styles.stepList)}>
         {ONBOARDING_STEPS.map((step) => {
           const isDone = props.done.has(step.id);
           const isNext = props.nextStep?.id === step.id;
@@ -343,7 +507,7 @@ function ChecklistContents(props: ChecklistContentsProps) {
           return (
             <li
               key={step.id}
-              className={cn("rounded-lg text-sm", isNext && "bg-primary/8 ring-1 ring-primary/15")}
+              {...stylex.props(styles.stepItem, isNext ? styles.stepItemNext : null)}
             >
               <StepRow
                 step={step}
@@ -370,25 +534,22 @@ function ChecklistContents(props: ChecklistContentsProps) {
             t={t}
           />
           {props.showDismissAction ? (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="mt-2 min-h-11 w-full"
-              onClick={props.onRequestDismiss}
-            >
-              {t("Dismiss guide")}
-            </Button>
+            <div {...stylex.props(styles.widthFull)}>
+              <Button size="sm" variant="secondary" touchTarget onClick={props.onRequestDismiss}>
+                {t("Dismiss guide")}
+              </Button>
+            </div>
           ) : null}
         </>
       ) : (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-muted-foreground">
+        <Stack gap="s2">
+          <Text size="xs" tone="muted">
             {t("Nice work — share your page and enjoy the quiet inbox.")}
-          </p>
+          </Text>
           <Button size="sm" variant="outline" onClick={props.onDismiss}>
             {t("Close checklist")}
           </Button>
-        </div>
+        </Stack>
       )}
     </>
   );
@@ -405,29 +566,22 @@ function StepRow(props: {
   const inner = (
     <>
       <span
-        className={cn(
-          "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
-          props.isDone
-            ? "border-primary bg-primary text-primary-foreground"
-            : "border-muted-foreground/30",
-        )}
+        {...stylex.props(styles.checkCircle, props.isDone ? styles.checkDone : styles.checkTodo)}
       >
-        {props.isDone ? <Check className="size-2.5" /> : null}
+        {props.isDone ? <Check {...stylex.props(styles.iconCheckTiny)} /> : null}
       </span>
-      <span className={cn("leading-snug", props.isDone && "text-muted-foreground line-through")}>
+      <span {...stylex.props(props.isDone ? styles.stepTitleDone : styles.stepTitle)}>
         {props.title}
       </span>
     </>
   );
-
-  const rowClass = "flex min-h-11 w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left";
 
   if (props.action?.kind === "link") {
     const action = props.action;
     const link = (
       <Link
         {...action.link}
-        className={cn(rowClass, "transition hover:bg-primary/6")}
+        {...stylex.props(styles.stepRow)}
         aria-label={action.label}
         onClick={() => {
           if (props.onBeforeAction) {
@@ -452,7 +606,7 @@ function StepRow(props: {
     const button = (
       <button
         type="button"
-        className={cn(rowClass, "transition hover:bg-primary/6")}
+        {...stylex.props(styles.stepRow)}
         onClick={() => {
           if (props.onBeforeAction) {
             props.onBeforeAction();
@@ -470,7 +624,7 @@ function StepRow(props: {
     return button;
   }
 
-  return <div className={rowClass}>{inner}</div>;
+  return <div {...stylex.props(styles.stepRow)}>{inner}</div>;
 }
 
 function NextStepHint(props: {
@@ -493,25 +647,27 @@ function NextStepHint(props: {
   });
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-primary/15 bg-primary/5 p-3">
-      <div className="flex items-start gap-2">
-        <Icon className="mt-0.5 size-4 shrink-0 text-primary" />
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-medium text-foreground">{t(props.step.title)}</p>
-          <p className="text-xs text-muted-foreground leading-relaxed">
+    <div {...stylex.props(styles.nextHint)} data-slot="next-step-hint">
+      <Inline gap="s2" align="start" wrap={false}>
+        <Icon {...stylex.props(styles.nextHintIcon)} />
+        <Stack gap="s1">
+          <Text size="sm" weight="medium">
+            {t(props.step.title)}
+          </Text>
+          <Text size="xs" tone="muted">
             {t(props.step.description)}
-          </p>
-        </div>
-      </div>
+          </Text>
+        </Stack>
+      </Inline>
       {action ? (
-        <div className="flex flex-wrap gap-2">
+        <Inline gap="s2">
           <StepActionControl
             action={action}
             onBeforeAction={props.onBeforeAction}
             size="sm"
             closeWithDrawerClose={props.closeWithDrawerClose}
           />
-        </div>
+        </Inline>
       ) : null}
     </div>
   );
@@ -528,7 +684,7 @@ function StepActionControl(props: {
     const button = (
       <Button
         size={props.size}
-        className="min-h-11"
+        touchTarget
         render={
           <Link
             {...action.link}
@@ -557,7 +713,7 @@ function StepActionControl(props: {
   const button = (
     <Button
       size={props.size}
-      className="min-h-11"
+      touchTarget
       onClick={() => {
         if (props.onBeforeAction) {
           props.onBeforeAction();

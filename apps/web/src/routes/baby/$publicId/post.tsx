@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
+import { VisuallyHidden } from "@workspace/ui-patterns/components/visually-hidden";
 import { UpdateComposer } from "@/components/baby/timeline";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { allKeyed } from "@workspace/query-prefetch";
@@ -81,8 +82,10 @@ export function BabyPostUpdateOverlay() {
       onOpenChange={post.onOpenChange}
       onOpenChangeComplete={post.onOpenChangeComplete}
     >
-      <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-lg">
-        <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
+      <DialogContent ref={contentRef} initialFocus={contentRef}>
+        <VisuallyHidden>
+          <DialogTitle>{t("Post an update")}</DialogTitle>
+        </VisuallyHidden>
         <UpdateComposer
           babyId={managerBabyDoc._id}
           baby={baby}

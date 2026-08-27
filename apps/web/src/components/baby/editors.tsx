@@ -21,6 +21,10 @@ import {
 } from "@workspace/ui/components/popover";
 import type { PopoverActions } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Text } from "@workspace/ui-patterns/components/text";
+import * as stylex from "@stylexjs/stylex";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
@@ -50,6 +54,21 @@ import { getThemeOption, THEME_OPTIONS } from "./utils";
 
 type BabyPatch = Omit<FunctionArgs<typeof api.baby.update>, "babyId">;
 
+const styles = stylex.create({
+  fieldBlock: { marginBottom: spacing.s3 },
+  themeList: { display: "flex", flexDirection: "column", gap: spacing.s1 },
+  swatchRow: { display: "flex", gap: "0.125rem" },
+  swatch: {
+    borderColor: `color-mix(in oklab, ${colors.border} 50%, transparent)`,
+    borderRadius: radius.sm,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    height: "1rem",
+    width: "1rem",
+  },
+  tooltipAnchor: { display: "inline-flex" },
+});
+
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose;
 // successful save/delete closes via the root actionsRef.
@@ -67,7 +86,7 @@ function EditorActions(props: { isBusy: boolean }) {
   const { isSubmitting, isDirty } = useFormState();
   const busy = isSubmitting || props.isBusy;
   return (
-    <div className="flex gap-2 justify-end">
+    <Inline gap="s2" justify="end">
       <PopoverClose render={<Button type="button" variant="outline" size="sm" disabled={busy} />}>
         {t("Cancel")}
       </PopoverClose>
@@ -80,7 +99,7 @@ function EditorActions(props: { isBusy: boolean }) {
       >
         {t("Save")}
       </SubmitButton>
-    </div>
+    </Inline>
   );
 }
 
@@ -146,7 +165,7 @@ export function DueDateEditor(props: DueDateEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <DueDateForm
           baby={props.baby}
           onUpdate={props.onUpdate}
@@ -178,12 +197,14 @@ function DueDateForm(props: EditorFormProps) {
         props.onClose();
       }}
     >
-      <DueDateDisplayFields
-        control={form.control}
-        dateFieldName="date"
-        sectionLabelWeight="normal"
-        stopPopoverPropagation={true}
-      />
+      <div {...stylex.props(styles.fieldBlock)}>
+        <DueDateDisplayFields
+          control={form.control}
+          dateFieldName="date"
+          sectionLabelWeight="normal"
+          stopPopoverPropagation={true}
+        />
+      </div>
       <EditorActions isBusy={false} />
     </Form>
   );
@@ -210,12 +231,12 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
       <PopoverTrigger
         render={
           <Button variant="outline" size="sm">
-            <Clock className="w-4 h-4 mr-2" />
+            <Clock size={16} data-icon="inline-start" />
             {t("Edit")}
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <StatusDateForm
           baby={props.baby}
           status={props.status}
@@ -268,26 +289,28 @@ function StatusDateForm(props: {
         control={form.control}
         name="dateTime"
         render={({ field }) => (
-          <FormItem className="mb-3">
-            <FormControl>
-              <Input
-                type="datetime-local"
-                aria-label={t("Status date and time")}
-                max={htmlDateTimeNow(props.baby.timeZone)}
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
+          <FormItem>
+            <div {...stylex.props(styles.fieldBlock)}>
+              <FormControl>
+                <Input
+                  type="datetime-local"
+                  aria-label={t("Status date and time")}
+                  max={htmlDateTimeNow(props.baby.timeZone)}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </div>
           </FormItem>
         )}
       />
-      <div className="flex items-center justify-between gap-2">
+      <Inline gap="s2" justify="between" wrap={false} fullWidth>
         {blocker ? (
           <Tooltip>
             <TooltipTrigger
               render={
                 <span
-                  className="inline-flex"
+                  {...stylex.props(styles.tooltipAnchor)}
                   aria-label={t("Delete the {{status}} status first", {
                     status: MILESTONE_LABELS[blocker],
                   })}
@@ -339,7 +362,7 @@ function StatusDateForm(props: {
           </AlertDialog>
         )}
         <EditorActions isBusy={isDeleting} />
-      </div>
+      </Inline>
     </Form>
   );
 }
@@ -370,7 +393,7 @@ export function NameEditor(props: NameEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <NameForm
           baby={props.baby}
           onUpdate={props.onUpdate}
@@ -402,7 +425,7 @@ function NameForm(props: EditorFormProps) {
         control={form.control}
         name="name"
         render={({ field }) => (
-          <FormItem className="mb-3">
+          <FormItem>
             <FormControl>
               <Input placeholder={t("Baby Name")} aria-label={t("Baby Name")} {...field} />
             </FormControl>
@@ -410,11 +433,13 @@ function NameForm(props: EditorFormProps) {
           </FormItem>
         )}
       />
-      <p className="text-xs text-muted-foreground mb-3">
-        {t(
-          "Renaming may change the page address, but links you have already shared will keep working.",
-        )}
-      </p>
+      <div {...stylex.props(styles.fieldBlock)}>
+        <Text size="xs" tone="muted">
+          {t(
+            "Renaming may change the page address, but links you have already shared will keep working.",
+          )}
+        </Text>
+      </div>
       <EditorActions isBusy={false} />
     </Form>
   );
@@ -446,7 +471,7 @@ export function JourneyEditor(props: JourneyEditorProps) {
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
+      <PopoverContent align="end">
         <JourneyForm
           birthJourney={props.birthJourney}
           onUpdate={props.onUpdate}
@@ -478,7 +503,7 @@ function JourneyForm(props: {
         props.onClose();
       }}
     >
-      <div className="mb-3">
+      <div {...stylex.props(styles.fieldBlock)}>
         <JourneyMilestoneEditor
           birthJourney={birthJourney}
           idPrefix="settings-journey"
@@ -499,11 +524,11 @@ type ThemeSelectorProps = {
 
 function ThemeSwatches(props: { colors: readonly string[] }) {
   return (
-    <span className="flex gap-0.5">
+    <span {...stylex.props(styles.swatchRow)}>
       {props.colors.map((color, index) => (
         <span
           key={index}
-          className="size-4 rounded-sm border border-border/50"
+          {...stylex.props(styles.swatch)}
           style={{ backgroundColor: color }}
         />
       ))}
@@ -521,27 +546,26 @@ export function ThemeSelector(props: ThemeSelectorProps) {
     <Popover actionsRef={actionsRef}>
       <PopoverTrigger
         render={
-          <Button variant="outline" size="sm" className="gap-2" aria-label={t("Change theme")}>
+          <Button variant="outline" size="sm" aria-label={t("Change theme")}>
             {selectedTheme ? (
-              <>
+              <Inline gap="s2" wrap={false}>
                 <ThemeSwatches colors={selectedTheme.colors} />
                 {t(selectedTheme.labelKey)}
-              </>
+              </Inline>
             ) : (
               t("Change")
             )}
           </Button>
         }
       />
-      <PopoverContent align="end" className="w-56">
-        <div className="flex flex-col gap-1">
+      <PopoverContent align="end">
+        <div {...stylex.props(styles.themeList)}>
           {THEME_OPTIONS.map((option) => (
             <Button
               key={option.value ?? "default"}
               variant={selectedTheme?.value === option.value ? "default" : "ghost"}
               aria-pressed={selectedTheme?.value === option.value}
               size="sm"
-              className="justify-start gap-2"
               disabled={isPending}
               onClick={() => {
                 startThemeTransition(async () => {
@@ -554,8 +578,10 @@ export function ThemeSelector(props: ThemeSelectorProps) {
                 });
               }}
             >
-              <ThemeSwatches colors={option.colors} />
-              {t(option.labelKey)}
+              <Inline gap="s2" wrap={false}>
+                <ThemeSwatches colors={option.colors} />
+                {t(option.labelKey)}
+              </Inline>
             </Button>
           ))}
         </div>
