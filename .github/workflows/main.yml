@@ -20,26 +20,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           lfs: true
           # Need enough history for `vitest --changed <base.sha>` merge-base.
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Cache Vitest modules
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules/.experimental-vitest-cache
           key: vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
@@ -47,7 +47,7 @@ jobs:
             vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
 
       - name: Cache Turborepo tasks
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
@@ -92,7 +92,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           lfs: true
           fetch-depth: 0
@@ -100,19 +100,19 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Cache Vitest modules
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules/.experimental-vitest-cache
           key: vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
@@ -120,7 +120,7 @@ jobs:
             vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
 
       - name: Cache Turborepo tasks
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
@@ -137,7 +137,7 @@ jobs:
       - name: Restore PR base coverage baseline
         id: baseline
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: .coverage-baseline
           key: coverage-summary-${{ github.event.pull_request.base.sha }}
@@ -174,7 +174,7 @@ jobs:
 
       - name: Save coverage baseline
         continue-on-error: true
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: .coverage-baseline
           key: coverage-summary-${{ github.event.pull_request.head.sha || github.sha }}
@@ -182,7 +182,7 @@ jobs:
       - name: Upload coverage to Codecov
         if: hashFiles('coverage/lcov.info') != ''
         continue-on-error: true
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: coverage/lcov.info
           flags: unit
