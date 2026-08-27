@@ -145,7 +145,7 @@ test("an indeterminate progress bar renders once loading outlasts the delay", as
 
   const progressbar = view.getByRole("progressbar", { name: "Loading" });
   expect(progressbar.dataset.indeterminate).toBeDefined();
-  expect(progressbar.className).toContain("animate-progress-indeterminate");
+  expect(progressbar.getAttribute("data-slot")).toBe("navigation-progress");
 });
 
 test("fast navigations never flash the progress bar", async () => {

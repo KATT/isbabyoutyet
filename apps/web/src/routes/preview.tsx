@@ -16,6 +16,8 @@ import { translate, useI18n } from "@/lib/i18n";
 import { robotsNoIndexMeta } from "@/lib/seo";
 import { DEFAULT_TIME_ZONE } from "@workspace/convex/src/timeZone";
 import { previewCacheHeaders } from "@/lib/cachePolicy";
+import * as stylex from "@stylexjs/stylex";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 function getDefaultBabyData(): PreviewBabyData {
   const now = new Date();
@@ -66,6 +68,134 @@ const searchSchema = z.object({
 });
 
 export type PreviewSearch = z.infer<typeof searchSchema>;
+
+const styles = stylex.create({
+  page: {
+    minHeight: "100vh",
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+  },
+  header: {
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+    paddingInline: spacing.s4,
+    paddingTop: spacing.s3,
+    paddingBottom: spacing.s1,
+  },
+  headerInner: {
+    marginInline: "auto",
+    maxWidth: "48rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.s2,
+  },
+  brandLink: {
+    display: "flex",
+    alignItems: "center",
+    gap: spacing.s2,
+    borderRadius: "9999px",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: colors.border,
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
+    paddingBlock: spacing.s1_5,
+    paddingLeft: spacing.s2,
+    paddingRight: spacing.s4,
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    textDecoration: "none",
+    color: colors.foreground,
+    transition: "transform 0.15s ease",
+    ":hover": { transform: "rotate(-2deg)" },
+  },
+  brandIconWell: {
+    display: "flex",
+    height: "1.75rem",
+    width: "1.75rem",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+  },
+  brandIcon: {
+    height: "1rem",
+    width: "1rem",
+    color: colors.primary,
+  },
+  brandName: {
+    fontSize: "0.875rem",
+    lineHeight: "1.25rem",
+    fontWeight: 800,
+    letterSpacing: "-0.025em",
+  },
+  main: {
+    marginInline: "auto",
+    width: "100%",
+    maxWidth: "42rem",
+    paddingInline: spacing.s4,
+    paddingBottom: spacing.s16,
+  },
+  title: {
+    margin: 0,
+    paddingInline: spacing.s2,
+    paddingTop: spacing.s10,
+    paddingBottom: spacing.s10,
+    textAlign: "center",
+    fontSize: "2.25rem",
+    lineHeight: "2.5rem",
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    color: colors.foreground,
+    textWrap: "balance",
+    "@media (min-width: 768px)": {
+      paddingTop: "3.5rem",
+      fontSize: "3.75rem",
+      lineHeight: 1,
+    },
+  },
+  statusCard: {
+    borderRadius: "2rem",
+    borderWidth: 2,
+    borderStyle: "solid",
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+    paddingInline: spacing.s6,
+    paddingBottom: spacing.s8,
+    textAlign: "center",
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    "@media (min-width: 768px)": { paddingInline: spacing.s10 },
+  },
+  divider: {
+    marginBlock: spacing.s8,
+    borderTopWidth: 2,
+    borderTopStyle: "dashed",
+    borderTopColor: colors.border,
+  },
+  footer: {
+    borderTopWidth: 2,
+    borderTopStyle: "solid",
+    borderTopColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    backgroundColor: `color-mix(in oklab, ${colors.background} 60%, transparent)`,
+    paddingBlock: spacing.s8,
+    textAlign: "center",
+  },
+  footerLink: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: spacing.s1,
+    paddingInline: spacing.s6,
+    fontSize: "0.875rem",
+    lineHeight: "1.25rem",
+    fontWeight: 700,
+    color: colors.mutedForeground,
+    textDecoration: "none",
+    transition: "color 0.15s ease",
+    ":hover": { color: colors.foreground },
+  },
+});
 
 export const Route = createFileRoute("/preview")({
   component: PreviewPage,
@@ -173,17 +303,14 @@ export function PreviewPage() {
         coParents={null}
       />
 
-      <div className="min-h-screen bg-background bg-dots">
-        <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-2">
-            <Link
-              to="/"
-              className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-                <Baby className="h-4 w-4 text-primary" />
+      <div {...stylex.props(styles.page)}>
+        <header {...stylex.props(styles.header)}>
+          <div {...stylex.props(styles.headerInner)}>
+            <Link to="/" {...stylex.props(styles.brandLink)}>
+              <span {...stylex.props(styles.brandIconWell)}>
+                <Baby {...stylex.props(styles.brandIcon)} />
               </span>
-              <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+              <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
             </Link>
             <BabyNav
               shareButton={null}
@@ -208,12 +335,10 @@ export function PreviewPage() {
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-2xl px-4 pb-16">
-          <h1 className="px-2 pt-10 pb-10 text-center text-4xl font-black tracking-tight text-foreground text-balance md:pt-14 md:text-6xl">
-            {t("Is {{name}} out yet?", { name: baby.name })}
-          </h1>
+        <main {...stylex.props(styles.main)}>
+          <h1 {...stylex.props(styles.title)}>{t("Is {{name}} out yet?", { name: baby.name })}</h1>
 
-          <section className="rounded-[2rem] border-2 border-border bg-card px-6 pb-8 text-center pop-shadow-strong md:px-10">
+          <section {...stylex.props(styles.statusCard)}>
             <StatusDisplay
               publicId={null}
               baby={baby}
@@ -223,16 +348,13 @@ export function PreviewPage() {
               thumbnailUrl={null}
               blurDataUrl={null}
             />
-            <div className="my-8 border-t-2 border-dashed border-border" aria-hidden="true" />
+            <div {...stylex.props(styles.divider)} aria-hidden="true" />
             <ProgressIndicator baby={baby} currentStatus={currentStatus} />
           </section>
         </main>
 
-        <footer className="border-t-2 border-border/60 bg-background/60 py-8 text-center">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 px-6 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"
-          >
+        <footer {...stylex.props(styles.footer)}>
+          <Link to="/" {...stylex.props(styles.footerLink)}>
             {t("Having a baby? Are people messaging you non-stop? Create your own page →")}
           </Link>
         </footer>

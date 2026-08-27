@@ -187,7 +187,7 @@ test("uses a bounded mobile card on narrow viewports", async () => {
 
   const dialog = screen.getByRole("dialog", { name: "Share the link" });
   await vi.waitFor(() => {
-    expect(dialog.className).toContain("max-w-xs");
+    expect(dialog.getAttribute("data-coachmark-tip")).toBe("mobile");
   });
   fireEvent.click(screen.getByRole("button", { name: /hide tip/i }));
   expect(onDismiss).toHaveBeenCalledOnce();
