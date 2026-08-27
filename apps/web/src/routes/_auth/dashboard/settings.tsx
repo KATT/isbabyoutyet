@@ -3,10 +3,10 @@ import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
+import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { Button } from "@workspace/ui/components/button";
 import {
   Item,
   ItemActions,
@@ -25,6 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
@@ -177,16 +178,30 @@ export function DashboardSettingsSheetView(props: {
         </div>
 
         <SheetFooter>
-          <Button
-            onClick={() => {
-              void props.onSignOut();
-            }}
-          >
-            <SignOut data-icon="inline-start" />
-            {t("Logout")}
-          </Button>
+          <SignOutForm onSignOut={props.onSignOut} />
         </SheetFooter>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function SignOutForm(props: { onSignOut: () => void | Promise<void> }) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: z.object({}),
+    defaultValues: {},
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async () => {
+        await props.onSignOut();
+      }}
+    >
+      <SubmitButton form="context" IconComponent={SignOut} iconPosition="start">
+        {t("Logout")}
+      </SubmitButton>
+    </Form>
   );
 }
