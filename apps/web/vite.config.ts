@@ -166,7 +166,6 @@ const config = defineConfig({
     stylex.vite({
       useCSSLayers: true,
       runtimeInjection: false,
-      externalPackages: ["@workspace/ui-cssinjs"],
     }),
     tailwindcss(),
     tanstackStart({

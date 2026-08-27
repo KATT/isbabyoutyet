@@ -75,7 +75,6 @@ export const webUnitProject = defineProject({
     stylex.vite({
       useCSSLayers: true,
       runtimeInjection: false,
-      externalPackages: ["@workspace/ui-cssinjs"],
     }),
     viteReact(),
   ],
