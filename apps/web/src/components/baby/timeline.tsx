@@ -59,6 +59,7 @@ import {
 } from "@workspace/convex/src/types";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import { useStoredVisitorId } from "@/lib/use-visitor-id";
@@ -246,19 +247,19 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
       photo: null,
     },
   });
-  const isPosting = form.formState.isSubmitting;
 
-  const draft = form.watch();
+  const milestone = useWatch({ control: form.control, name: "milestone" });
+  const photoFile = useWatch({ control: form.control, name: "photo" });
 
   // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
-    draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
-      ? draft.milestone
+    milestone != null &&
+    milestone !== "none" &&
+    futureMilestones.includes(milestone)
+      ? milestone
       : null;
 
-  const photoPreviewUrl = useObjectUrl(draft.photo);
-
-  const canPost = schema.safeParse(draft).success;
+const photoPreviewUrl = useObjectUrl(photoFile ?? null);
 
   return (
     <div className="space-y-3">
@@ -452,7 +453,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               onClick={() => fileInputRef.current?.click()}
             >
               <Images className="w-4 h-4" />
-              {draft.photo ? t("Change photo") : t("Add photo (optional)")}
+              {photoFile ? t("Change photo") : t("Add photo (optional)")}
             </Button>
             <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
               {selectedMilestone
@@ -463,11 +464,9 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
             </SubmitButton>
           </div>
 
-          {!canPost && !isPosting && (
-            <p className="text-xs text-muted-foreground text-right">
-              {t("Add a message, a photo, or a milestone — any one is enough.")}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground text-right">
+            {t("Add a message, a photo, or a milestone — any one is enough.")}
+          </p>
         </div>
       </Form>
     </div>
