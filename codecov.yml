@@ -1,8 +1,8 @@
 # https://docs.codecov.com/docs/commit-status
 # Full-suite uploads only (never vitest --changed). Codecov is the coverage gate.
 #
-# Project `target: auto` needs a base report. The codecov job uploads coverage for
-# `pull_request.base.sha` before the head upload so stacked tips still compare.
+# Project `target: auto` compares to the PR base commit. That report comes from
+# the codecov job on push to main (not from remeasuring the base on every PR).
 coverage:
   status:
     project:
