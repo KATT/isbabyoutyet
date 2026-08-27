@@ -9,6 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@workspace/ui/components/select";
+import * as z from "zod";
+import { useWatch } from "react-hook-form";
+import { Form, useZodForm } from "@/components/Form";
 import { getLanguageName } from "@/lib/i18n";
 import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
 
@@ -24,32 +27,55 @@ const languageOptions = SUPPORTED_LOCALES.map((locale) => ({
   value: locale,
 }));
 
+const localeSchema = z.object({
+  locale: z.enum(SUPPORTED_LOCALES),
+});
+
 export function LanguagePicker(props: LanguagePickerProps) {
+  const form = useZodForm({
+    schema: localeSchema,
+    defaultValues: { locale: props.value },
+  });
+  const selectedLocale = useWatch({ control: form.control, name: "locale" });
+
   return (
-    <Select
-      items={languageOptions}
-      value={props.value}
-      onValueChange={(value) => {
-        if (!shouldApplyLocaleChange(value, props.value)) {
-          return;
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        try {
+          await props.onValueChange(values.locale);
+        } catch (error) {
+          form.reset({ locale: props.value });
+          throw error;
         }
-        void props.onValueChange(value);
       }}
-      disabled={props.disabled}
     >
-      <SelectTrigger aria-label={props.label}>
-        <Translate data-icon="inline-start" />
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent alignItemWithTrigger={false}>
-        <SelectGroup>
-          {languageOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
+      <Select
+        items={languageOptions}
+        value={selectedLocale}
+        onValueChange={(value) => {
+          if (!shouldApplyLocaleChange(value, selectedLocale)) {
+            return;
+          }
+          form.setValue("locale", value, { shouldDirty: true });
+          form.formRef.current?.requestSubmit();
+        }}
+        disabled={props.disabled}
+      >
+        <SelectTrigger aria-label={props.label}>
+          <Translate data-icon="inline-start" />
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent alignItemWithTrigger={false}>
+          <SelectGroup>
+            {languageOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </Form>
   );
 }

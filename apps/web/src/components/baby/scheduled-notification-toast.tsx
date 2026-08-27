@@ -1,4 +1,3 @@
-import { Button } from "@workspace/ui/components/button";
 import {
   Item,
   ItemActions,
@@ -7,10 +6,10 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
-import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { toast } from "sonner";
+import * as z from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -19,6 +18,7 @@ import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { useI18n } from "@/lib/i18n";
 import { useTimedTransition } from "@/lib/use-delayed-action";
 import { useCurrentSecond } from "@/lib/use-current-second";
@@ -30,6 +30,7 @@ type ScheduledNotificationsResult = Exclude<
 >;
 
 const EMPTY_NOTIFICATIONS: ScheduledNotificationsResult = [];
+const emptyActionSchema = z.object({});
 
 type ScheduledNotificationToastProps = {
   notifications: PreloadedConvexQuery<typeof api.baby.getScheduledNotifications>;
@@ -137,12 +138,10 @@ function NotificationToastContent(props: NotificationToastContentProps) {
 
   const cancelMutation = useTanstackMutation({
     mutationFn: useConvexMutation(api.baby.cancelScheduledNotification),
-    onSuccess: () => {
-      toast.success(t("Notification cancelled"));
-    },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : t("Failed to cancel notification"));
-    },
+  });
+  const form = useZodForm({
+    schema: emptyActionSchema,
+    defaultValues: {},
   });
 
   if (cancelMutation.isSuccess) return null;
@@ -162,15 +161,23 @@ function NotificationToastContent(props: NotificationToastContentProps) {
         </ItemDescription>
       </ItemContent>
       <ItemActions>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={cancelMutation.isPending}
-          onClick={() => cancelMutation.mutate({ notificationId: props.notificationId })}
+        <Form
+          form={form}
+          handleSubmit={async () => {
+            await cancelMutation.mutateAsync({ notificationId: props.notificationId });
+            toast.success(t("Notification cancelled"));
+          }}
         >
-          {cancelMutation.isPending ? <Spinner className="size-4" /> : <X className="size-4" />}
-          {t("Cancel")}
-        </Button>
+          <SubmitButton
+            form="context"
+            variant="outline"
+            size="sm"
+            IconComponent={X}
+            iconPosition="start"
+          >
+            {t("Cancel")}
+          </SubmitButton>
+        </Form>
       </ItemActions>
     </Item>
   );
