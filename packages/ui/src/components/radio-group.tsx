@@ -1,10 +1,8 @@
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   group: {
@@ -44,34 +42,23 @@ const styles = stylex.create({
   },
 });
 
-const RadioGroup = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof RadioGroupPrimitive>, "className"> & {
-  className?: string;
-}) => (
+const RadioGroup = ({ ...props
+}: Omit<React.ComponentProps<typeof RadioGroupPrimitive>, "className">) => (
   <RadioGroupPrimitive
-    {...stylex.props(styles.group, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.group)}
     data-slot="radio-group"
     {...props}
   />
 );
 
-const RadioGroupItem = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof RadioPrimitive.Root>, "className"> & {
-  className?: string;
-}) => (
+const RadioGroupItem = ({ ...props
+}: Omit<React.ComponentProps<typeof RadioPrimitive.Root>, "className">) => (
   <RadioPrimitive.Root
     className={(state) =>
-      stylex.props(styles.item, state.checked && styles.itemChecked, customClassName(className))
+      stylex.props(styles.item, state.checked && styles.itemChecked)
         .className
     }
     data-slot="radio-group-item"
-    style={style}
     {...props}
   >
     <RadioPrimitive.Indicator

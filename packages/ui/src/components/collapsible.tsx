@@ -1,8 +1,6 @@
 import { Collapsible as CollapsiblePrimitive } from "@base-ui/react/collapsible";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   panel: {
@@ -27,30 +25,20 @@ const Collapsible = (props: React.ComponentProps<typeof CollapsiblePrimitive.Roo
   <CollapsiblePrimitive.Root data-slot="collapsible" {...props} />
 );
 
-const CollapsibleTrigger = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof CollapsiblePrimitive.Trigger>, "className"> & {
-  className?: string;
-}) => (
+const CollapsibleTrigger = ({ ...props
+}: Omit<React.ComponentProps<typeof CollapsiblePrimitive.Trigger>, "className">) => (
   <CollapsiblePrimitive.Trigger
     data-slot="collapsible-trigger"
-    {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.trigger)}
     {...props}
   />
 );
 
-const CollapsibleContent = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof CollapsiblePrimitive.Panel>, "className"> & {
-  className?: string;
-}) => (
+const CollapsibleContent = ({ ...props
+}: Omit<React.ComponentProps<typeof CollapsiblePrimitive.Panel>, "className">) => (
   <CollapsiblePrimitive.Panel
     data-slot="collapsible-content"
-    {...stylex.props(styles.panel, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.panel)}
     {...props}
   />
 );

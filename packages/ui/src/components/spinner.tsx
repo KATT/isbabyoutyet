@@ -1,8 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { Loader2Icon } from "lucide-react";
 
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const spin = stylex.keyframes({
   from: { transform: "rotate(0deg)" },
@@ -21,14 +19,11 @@ const styles = stylex.create({
   },
 });
 
-const Spinner = ({
-  className,
-  style,
-  ...props
-}: React.ComponentProps<typeof Loader2Icon> & { className?: string }) => (
+const Spinner = ({ ...props
+}: Omit<React.ComponentProps<typeof Loader2Icon>, "className" | "style">) => (
   <Loader2Icon
     aria-label="Loading"
-    {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.root)}
     data-slot="spinner"
     role="status"
     {...props}

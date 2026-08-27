@@ -2,7 +2,6 @@ import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   base: {
@@ -53,19 +52,14 @@ const variantMap: Record<BadgeVariant, StyleXStyles> = {
 };
 
 const Badge = ({
-  variant = "default",
-  className,
-  style,
-  ...props
-}: React.ComponentProps<"span"> & { variant?: BadgeVariant }) => (
+  variant = "default", ...props
+}: Omit<React.ComponentProps<"span">, "className" | "style"> & { variant?: BadgeVariant }) => (
   <span
     data-slot="badge"
     data-variant={variant}
     {...stylex.props(
       styles.base,
-      variantMap[variant],
-      customClassName(className),
-      style as StyleXStyles,
+      variantMap[variant]
     )}
     {...props}
   />

@@ -1,9 +1,7 @@
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   description: {
@@ -62,10 +60,7 @@ const PopoverAnchor = (props: React.ComponentProps<typeof PopoverPrimitive.Trigg
   <PopoverPrimitive.Trigger data-slot="popover-anchor" {...props} />
 );
 
-const PopoverContent = ({
-  className,
-  style,
-  sideOffset = 4,
+const PopoverContent = ({ sideOffset = 4,
   align = "center",
   side = "bottom",
   alignOffset,
@@ -73,7 +68,6 @@ const PopoverContent = ({
   children,
   ...props
 }: Omit<React.ComponentProps<typeof PopoverPrimitive.Popup>, "className"> & {
-  className?: string;
   align?: "start" | "center" | "end";
   side?: "top" | "bottom" | "left" | "right";
   sideOffset?: number;
@@ -93,11 +87,9 @@ const PopoverContent = ({
         className={(state) =>
           stylex.props(
             styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
+            hidden(state.transitionStatus) && styles.popupHidden
           ).className
         }
-        style={style}
         {...props}
       >
         {children}
@@ -106,37 +98,27 @@ const PopoverContent = ({
   </PopoverPrimitive.Portal>
 );
 
-const PopoverHeader = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const PopoverHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.header, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.header)}
     data-slot="popover-header"
     {...props}
   />
 );
 
-const PopoverTitle = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof PopoverPrimitive.Title>, "className"> & {
-  className?: string;
-}) => (
+const PopoverTitle = ({ ...props
+}: Omit<React.ComponentProps<typeof PopoverPrimitive.Title>, "className">) => (
   <PopoverPrimitive.Title
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     data-slot="popover-title"
     {...props}
   />
 );
 
-const PopoverDescription = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof PopoverPrimitive.Description>, "className"> & {
-  className?: string;
-}) => (
+const PopoverDescription = ({ ...props
+}: Omit<React.ComponentProps<typeof PopoverPrimitive.Description>, "className">) => (
   <PopoverPrimitive.Description
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     data-slot="popover-description"
     {...props}
   />

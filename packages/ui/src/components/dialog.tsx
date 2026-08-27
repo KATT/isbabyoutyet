@@ -1,10 +1,8 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { XIcon } from "lucide-react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   backdrop: {
@@ -135,12 +133,9 @@ const DialogOverlay = (props: React.ComponentProps<typeof DialogPrimitive.Backdr
 
 const DialogContent = ({
   children,
-  className,
-  style,
   showCloseButton = true,
   ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Popup>, "className"> & {
-  className?: string;
   showCloseButton?: boolean;
 }) => {
   const close = stylex.props(styles.closeButton);
@@ -153,11 +148,9 @@ const DialogContent = ({
         className={(state) =>
           stylex.props(
             styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
+            hidden(state.transitionStatus) && styles.popupHidden
           ).className
         }
-        style={style}
         {...props}
       >
         {children}
@@ -178,46 +171,36 @@ const DialogContent = ({
   );
 };
 
-const DialogHeader = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const DialogHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
     data-slot="dialog-header"
-    {...stylex.props(styles.header, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.header)}
     {...props}
   />
 );
 
-const DialogFooter = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const DialogFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
     data-slot="dialog-footer"
-    {...stylex.props(styles.footer, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.footer)}
     {...props}
   />
 );
 
-const DialogTitle = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className"> & {
-  className?: string;
-}) => (
+const DialogTitle = ({ ...props
+}: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className">) => (
   <DialogPrimitive.Title
     data-slot="dialog-title"
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     {...props}
   />
 );
 
-const DialogDescription = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className"> & {
-  className?: string;
-}) => (
+const DialogDescription = ({ ...props
+}: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className">) => (
   <DialogPrimitive.Description
     data-slot="dialog-description"
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     {...props}
   />
 );

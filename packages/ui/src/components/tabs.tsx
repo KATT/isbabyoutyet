@@ -1,10 +1,8 @@
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { createContext, useContext } from "react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   list: {
@@ -82,35 +80,24 @@ const styles = stylex.create({
 
 const TabsListContext = createContext<"default" | "line">("default");
 
-const Tabs = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof TabsPrimitive.Root>, "className"> & {
-  className?: string;
-}) => (
+const Tabs = ({ ...props
+}: Omit<React.ComponentProps<typeof TabsPrimitive.Root>, "className">) => (
   <TabsPrimitive.Root
     data-slot="tabs"
-    {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.root)}
     {...props}
   />
 );
 
-const TabsList = ({
-  className,
-  style,
-  variant = "default",
+const TabsList = ({ variant = "default",
   ...props
 }: Omit<React.ComponentProps<typeof TabsPrimitive.List>, "className"> & {
-  className?: string;
   variant?: "default" | "line";
 }) => (
   <TabsListContext.Provider value={variant}>
     <TabsPrimitive.List
       {...stylex.props(
-        variant === "line" ? styles.listLine : styles.list,
-        customClassName(className),
-        style as StyleXStyles,
+        variant === "line" ? styles.listLine : styles.list
       )}
       data-slot="tabs-list"
       data-variant={variant}
@@ -119,13 +106,8 @@ const TabsList = ({
   </TabsListContext.Provider>
 );
 
-const TabsTrigger = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof TabsPrimitive.Tab>, "className"> & {
-  className?: string;
-}) => {
+const TabsTrigger = ({ ...props
+}: Omit<React.ComponentProps<typeof TabsPrimitive.Tab>, "className">) => {
   const variant = useContext(TabsListContext);
   const line = variant === "line";
   const activeStyle = line ? styles.triggerLineActive : styles.triggerActive;
@@ -135,27 +117,20 @@ const TabsTrigger = ({
         stylex.props(
           styles.trigger,
           line && styles.triggerLine,
-          state.active && activeStyle,
-          customClassName(className),
+          state.active && activeStyle
         ).className
       }
       data-slot="tabs-trigger"
-      style={style}
       {...props}
     />
   );
 };
 
-const TabsContent = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof TabsPrimitive.Panel>, "className"> & {
-  className?: string;
-}) => (
+const TabsContent = ({ ...props
+}: Omit<React.ComponentProps<typeof TabsPrimitive.Panel>, "className">) => (
   <TabsPrimitive.Panel
     data-slot="tabs-content"
-    {...stylex.props(styles.panel, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.panel)}
     {...props}
   />
 );

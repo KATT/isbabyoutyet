@@ -1,8 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   root: {
@@ -33,13 +31,10 @@ const styles = stylex.create({
   },
 });
 
-const Textarea = ({
-  className,
-  style,
-  ...props
-}: React.ComponentProps<"textarea"> & { className?: string }) => (
+const Textarea = ({ ...props
+}: Omit<React.ComponentProps<"textarea">, "className" | "style">) => (
   <textarea
-    {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.root)}
     data-slot="textarea"
     {...props}
   />

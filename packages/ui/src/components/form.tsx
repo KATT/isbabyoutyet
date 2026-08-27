@@ -9,11 +9,27 @@ import {
   type FieldPath,
   type FieldValues,
 } from "react-hook-form";
+import * as stylex from "@stylexjs/stylex";
 
-import { cn } from "@workspace/ui/lib/utils";
+import { colors } from "@workspace/ui/lib/tokens.stylex";
 import { Label } from "@workspace/ui/components/label";
 
 const Form = FormProvider;
+
+const styles = stylex.create({
+  description: {
+    color: colors.mutedForeground,
+    fontSize: "0.875rem",
+  },
+  item: {
+    display: "grid",
+    gap: "0.5rem",
+  },
+  message: {
+    color: colors.destructive,
+    fontSize: "0.875rem",
+  },
+});
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -67,24 +83,33 @@ type FormItemContextValue = {
 
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
-function FormItem({ className, ...props }: React.ComponentProps<"div">) {
+export type FormItemProps = Omit<React.ComponentProps<"div">, "className" | "style">;
+
+function FormItem(props: FormItemProps) {
   const id = React.useId();
+  const stylexProps = stylex.props(styles.item);
 
   return (
     <FormItemContext.Provider value={{ id }}>
-      <div data-slot="form-item" className={cn("grid gap-2", className)} {...props} />
+      <div
+        data-slot="form-item"
+        className={stylexProps.className}
+        style={stylexProps.style}
+        {...props}
+      />
     </FormItemContext.Provider>
   );
 }
 
-function FormLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
+export type FormLabelProps = React.ComponentProps<typeof Label>;
+
+function FormLabel(props: FormLabelProps) {
   const { error, formItemId } = useFormField();
 
   return (
     <Label
       data-slot="form-label"
       data-error={!!error}
-      className={cn("data-[error=true]:text-destructive", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -109,22 +134,29 @@ function FormControl(
   });
 }
 
-function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
+export type FormDescriptionProps = Omit<React.ComponentProps<"p">, "className" | "style">;
+
+function FormDescription(props: FormDescriptionProps) {
   const { formDescriptionId } = useFormField();
+  const stylexProps = stylex.props(styles.description);
 
   return (
     <p
       data-slot="form-description"
       id={formDescriptionId}
-      className={cn("text-muted-foreground text-sm", className)}
+      className={stylexProps.className}
+      style={stylexProps.style}
       {...props}
     />
   );
 }
 
-function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
+export type FormMessageProps = Omit<React.ComponentProps<"p">, "className" | "style">;
+
+function FormMessage(props: FormMessageProps) {
   const { error, formMessageId } = useFormField();
   const body = error ? String(error?.message ?? "") : props.children;
+  const stylexProps = stylex.props(styles.message);
 
   if (!body) {
     return null;
@@ -134,7 +166,8 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
     <p
       data-slot="form-message"
       id={formMessageId}
-      className={cn("text-destructive text-sm", className)}
+      className={stylexProps.className}
+      style={stylexProps.style}
       {...props}
     >
       {body}

@@ -1,8 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   root: {
@@ -51,11 +49,11 @@ const styles = stylex.create({
   },
 });
 
-const Input = ({ className, style, type, ...props }: React.ComponentProps<"input">) => (
+const Input = ({ type, ...props }: Omit<React.ComponentProps<"input">, "className" | "style">) => (
   <input
     type={type}
     data-slot="input"
-    {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.root)}
     {...props}
   />
 );

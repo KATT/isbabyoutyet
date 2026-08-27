@@ -3,7 +3,6 @@ import type { StyleXStyles } from "@stylexjs/stylex";
 import * as stylex from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   action: {
@@ -65,20 +64,17 @@ const styles = stylex.create({
   },
 });
 
-type DivProps = ComponentProps<"div">;
+type DivProps = Omit<ComponentProps<"div">, "className" | "style">;
 
 const makeSlot =
   (slot: string, style: StyleXStyles) =>
-  (props: DivProps) => {
-    const { className, style: styleProp, ...rest } = props;
-    return (
+  (props: DivProps) => (
       <div
         data-slot={slot}
-        {...stylex.props(style, customClassName(className), styleProp as StyleXStyles)}
-        {...rest}
+        {...stylex.props(style)}
+        {...props}
       />
-    );
-  };
+  );
 
 export type CardProps = DivProps & {
   size?: "default" | "sm";
@@ -88,16 +84,14 @@ export type CardProps = DivProps & {
 function Card(props: CardProps) {
   const size = props.size ?? "default";
   const emphasis = props.emphasis ?? false;
-  const { className, style, size: _size, emphasis: _emphasis, ...rest } = props;
+  const { size: _size, emphasis: _emphasis, ...rest } = props;
 
   return (
     <div
       {...stylex.props(
         styles.card,
         size === "sm" ? styles.sizeSm : null,
-        emphasis ? styles.emphasis : null,
-        customClassName(className),
-        style as StyleXStyles,
+        emphasis ? styles.emphasis : null
       )}
       data-size={size}
       data-slot="card"

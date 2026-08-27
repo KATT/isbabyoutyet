@@ -1,10 +1,8 @@
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   groupLabel: {
@@ -114,32 +112,23 @@ const SelectGroup = (props: React.ComponentProps<typeof SelectPrimitive.Group>) 
   <SelectPrimitive.Group data-slot="select-group" {...props} />
 );
 
-const SelectValue = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof SelectPrimitive.Value>, "className"> & {
-  className?: string;
-}) => (
+const SelectValue = ({ ...props
+}: Omit<React.ComponentProps<typeof SelectPrimitive.Value>, "className">) => (
   <SelectPrimitive.Value
-    {...stylex.props(styles.value, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.value)}
     data-slot="select-value"
     {...props}
   />
 );
 
-const SelectTrigger = ({
-  className,
-  style,
-  size: _size,
+const SelectTrigger = ({ size: _size,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Trigger>, "className"> & {
-  className?: string;
   size?: "sm" | "default";
 }) => (
   <SelectPrimitive.Trigger
-    {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.trigger)}
     data-slot="select-trigger"
     {...props}
   >
@@ -150,15 +139,11 @@ const SelectTrigger = ({
   </SelectPrimitive.Trigger>
 );
 
-const SelectContent = ({
-  className,
-  style,
-  children,
+const SelectContent = ({ children,
   sideOffset = 4,
   alignItemWithTrigger = false,
   ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Popup>, "className"> & {
-  className?: string;
   sideOffset?: number;
   alignItemWithTrigger?: boolean;
 }) => (
@@ -172,12 +157,10 @@ const SelectContent = ({
         className={(state) =>
           stylex.props(
             styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
+            hidden(state.transitionStatus) && styles.popupHidden
           ).className
         }
         data-slot="select-content"
-        style={style}
         {...props}
       >
         {children}
@@ -186,30 +169,20 @@ const SelectContent = ({
   </SelectPrimitive.Portal>
 );
 
-const SelectLabel = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof SelectPrimitive.GroupLabel>, "className"> & {
-  className?: string;
-}) => (
+const SelectLabel = ({ ...props
+}: Omit<React.ComponentProps<typeof SelectPrimitive.GroupLabel>, "className">) => (
   <SelectPrimitive.GroupLabel
-    {...stylex.props(styles.groupLabel, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.groupLabel)}
     data-slot="select-label"
     {...props}
   />
 );
 
-const SelectItem = ({
-  className,
-  style,
-  children,
+const SelectItem = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof SelectPrimitive.Item>, "className"> & {
-  className?: string;
-}) => (
+}: Omit<React.ComponentProps<typeof SelectPrimitive.Item>, "className">) => (
   <SelectPrimitive.Item
-    {...stylex.props(styles.item, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.item)}
     data-slot="select-item"
     {...props}
   >
@@ -220,15 +193,10 @@ const SelectItem = ({
   </SelectPrimitive.Item>
 );
 
-const SelectSeparator = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof SelectPrimitive.Separator>, "className"> & {
-  className?: string;
-}) => (
+const SelectSeparator = ({ ...props
+}: Omit<React.ComponentProps<typeof SelectPrimitive.Separator>, "className">) => (
   <SelectPrimitive.Separator
-    {...stylex.props(styles.separator, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.separator)}
     data-slot="select-separator"
     {...props}
   />

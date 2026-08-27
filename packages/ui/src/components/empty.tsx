@@ -1,8 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   content: {
@@ -68,34 +66,29 @@ const styles = stylex.create({
   },
 });
 
-const Empty = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const Empty = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.empty, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.empty)}
     data-slot="empty"
     {...props}
   />
 );
 
-const EmptyHeader = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const EmptyHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.header, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.header)}
     data-slot="empty-header"
     {...props}
   />
 );
 
-const EmptyMedia = ({
-  className,
-  style,
-  variant = "default",
+const EmptyMedia = ({ variant = "default",
   ...props
-}: React.ComponentProps<"div"> & { variant?: "default" | "icon" }) => (
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & { variant?: "default" | "icon" }) => (
   <div
     {...stylex.props(
       styles.mediaBase,
-      variant === "icon" ? styles.mediaIcon : styles.mediaDefault,
-      customClassName(className),
-      style as StyleXStyles,
+      variant === "icon" ? styles.mediaIcon : styles.mediaDefault
     )}
     data-slot="empty-icon"
     data-variant={variant}
@@ -103,25 +96,25 @@ const EmptyMedia = ({
   />
 );
 
-const EmptyTitle = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const EmptyTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     data-slot="empty-title"
     {...props}
   />
 );
 
-const EmptyDescription = ({ className, style, ...props }: React.ComponentProps<"p">) => (
+const EmptyDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
   <p
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     data-slot="empty-description"
     {...props}
   />
 );
 
-const EmptyContent = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const EmptyContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.content, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.content)}
     data-slot="empty-content"
     {...props}
   />

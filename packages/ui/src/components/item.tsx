@@ -3,7 +3,6 @@ import type { StyleXStyles } from "@stylexjs/stylex";
 import * as stylex from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 import { Separator } from "@workspace/ui/components/separator";
 
 const styles = stylex.create({
@@ -140,32 +139,24 @@ const mediaVariantStyles: Record<"default" | "icon" | "image", StyleXStyles> = {
   image: styles.mediaImage,
 };
 
-const ItemGroup = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemGroup = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.group, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.group)}
     data-slot="item-group"
     role="list"
     {...props}
   />
 );
 
-const ItemSeparator = ({ className, ...props }: React.ComponentProps<typeof Separator>) => (
-  <Separator
-    {...stylex.props(styles.separator, customClassName(className))}
-    data-slot="item-separator"
-    orientation="horizontal"
-    {...props}
-  />
+const ItemSeparator = (props: React.ComponentProps<typeof Separator>) => (
+  <Separator data-slot="item-separator" orientation="horizontal" {...props} />
 );
 
-const Item = ({
-  className,
-  style,
-  variant = "default",
+const Item = ({ variant = "default",
   size = "default",
   render,
   ...props
-}: React.ComponentProps<"div"> & {
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & {
   variant?: ItemVariant;
   size?: ItemSize;
   render?: useRender.RenderProp;
@@ -175,9 +166,7 @@ const Item = ({
       ...stylex.props(
         styles.base,
         variantStyles[variant],
-        sizeStyles[size],
-        customClassName(className),
-        style as StyleXStyles,
+        sizeStyles[size]
       ),
       "data-size": size,
       "data-slot": "item",
@@ -187,20 +176,15 @@ const Item = ({
     render: render ?? <div />,
   });
 
-const ItemMedia = ({
-  className,
-  style,
-  variant = "default",
+const ItemMedia = ({ variant = "default",
   ...props
-}: React.ComponentProps<"div"> & {
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & {
   variant?: "default" | "icon" | "image";
 }) => (
   <div
     {...stylex.props(
       styles.mediaBase,
-      mediaVariantStyles[variant],
-      customClassName(className),
-      style as StyleXStyles,
+      mediaVariantStyles[variant]
     )}
     data-slot="item-media"
     data-variant={variant}
@@ -208,49 +192,49 @@ const ItemMedia = ({
   />
 );
 
-const ItemContent = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.content, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.content)}
     data-slot="item-content"
     {...props}
   />
 );
 
-const ItemTitle = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     data-slot="item-title"
     {...props}
   />
 );
 
-const ItemDescription = ({ className, style, ...props }: React.ComponentProps<"p">) => (
+const ItemDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
   <p
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     data-slot="item-description"
     {...props}
   />
 );
 
-const ItemActions = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemActions = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.actions, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.actions)}
     data-slot="item-actions"
     {...props}
   />
 );
 
-const ItemHeader = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.header, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.header)}
     data-slot="item-header"
     {...props}
   />
 );
 
-const ItemFooter = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ItemFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.footer, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.footer)}
     data-slot="item-footer"
     {...props}
   />

@@ -4,7 +4,6 @@ import * as stylex from "@stylexjs/stylex";
 import { XIcon } from "lucide-react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   backdrop: {
@@ -142,15 +141,11 @@ const SheetClose = (props: React.ComponentProps<typeof DialogPrimitive.Close>) =
   <DialogPrimitive.Close data-slot="sheet-close" {...props} />
 );
 
-const SheetContent = ({
-  className,
-  style,
-  children,
+const SheetContent = ({ children,
   side = "right",
   showCloseButton = true,
   ...props
 }: Omit<React.ComponentProps<typeof DialogPrimitive.Popup>, "className"> & {
-  className?: string;
   side?: Side;
   showCloseButton?: boolean;
 }) => {
@@ -172,11 +167,9 @@ const SheetContent = ({
           stylex.props(
             styles.content,
             base,
-            hidden(state.transitionStatus) && off,
-            customClassName(className),
+            hidden(state.transitionStatus) && off
           ).className
         }
-        style={style}
         {...props}
       >
         {children}
@@ -197,46 +190,36 @@ const SheetContent = ({
   );
 };
 
-const SheetHeader = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const SheetHeader = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
     data-slot="sheet-header"
-    {...stylex.props(styles.header, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.header)}
     {...props}
   />
 );
 
-const SheetFooter = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const SheetFooter = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
     data-slot="sheet-footer"
-    {...stylex.props(styles.footer, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.footer)}
     {...props}
   />
 );
 
-const SheetTitle = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className"> & {
-  className?: string;
-}) => (
+const SheetTitle = ({ ...props
+}: Omit<React.ComponentProps<typeof DialogPrimitive.Title>, "className">) => (
   <DialogPrimitive.Title
     data-slot="sheet-title"
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     {...props}
   />
 );
 
-const SheetDescription = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className"> & {
-  className?: string;
-}) => (
+const SheetDescription = ({ ...props
+}: Omit<React.ComponentProps<typeof DialogPrimitive.Description>, "className">) => (
   <DialogPrimitive.Description
     data-slot="sheet-description"
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     {...props}
   />
 );

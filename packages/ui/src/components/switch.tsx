@@ -2,7 +2,6 @@ import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
 import * as stylex from "@stylexjs/stylex";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   root: {
@@ -54,13 +53,9 @@ const styles = stylex.create({
   },
 });
 
-const Switch = ({
-  className,
-  style,
-  size = "default",
+const Switch = ({ size = "default",
   ...props
 }: Omit<React.ComponentProps<typeof SwitchPrimitive.Root>, "className"> & {
-  className?: string;
   size?: "default" | "sm";
 }) => {
   const sm = size === "sm";
@@ -70,13 +65,11 @@ const Switch = ({
         stylex.props(
           styles.root,
           sm && styles.rootSm,
-          state.checked && styles.rootChecked,
-          customClassName(className),
+          state.checked && styles.rootChecked
         ).className
       }
       data-size={size}
       data-slot="switch"
-      style={style}
       {...props}
     >
       <SwitchPrimitive.Thumb

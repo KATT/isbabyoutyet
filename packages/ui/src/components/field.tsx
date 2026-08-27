@@ -3,7 +3,6 @@ import * as stylex from "@stylexjs/stylex";
 import { useMemo } from "react";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 import { Label } from "@workspace/ui/components/label";
 import { Separator } from "@workspace/ui/components/separator";
 
@@ -25,6 +24,11 @@ const styles = stylex.create({
     color: colors.destructive,
     fontSize: "0.875rem",
     fontWeight: 400,
+  },
+  errorList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.25rem",
   },
   fieldBase: {
     display: "flex",
@@ -112,26 +116,21 @@ const orientationStyles: Record<FieldOrientation, StyleXStyles> = {
   vertical: styles.vertical,
 };
 
-const FieldSet = ({ className, style, ...props }: React.ComponentProps<"fieldset">) => (
+const FieldSet = ({ ...props }: Omit<React.ComponentProps<"fieldset">, "className" | "style">) => (
   <fieldset
-    {...stylex.props(styles.set, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.set)}
     data-slot="field-set"
     {...props}
   />
 );
 
-const FieldLegend = ({
-  className,
-  style,
-  variant = "legend",
+const FieldLegend = ({ variant = "legend",
   ...props
-}: React.ComponentProps<"legend"> & { variant?: "legend" | "label" }) => (
+}: Omit<React.ComponentProps<"legend">, "className" | "style"> & { variant?: "legend" | "label" }) => (
   <legend
     {...stylex.props(
       styles.legend,
-      variant === "label" ? styles.legendLabel : styles.legendLegend,
-      customClassName(className),
-      style as StyleXStyles,
+      variant === "label" ? styles.legendLabel : styles.legendLegend
     )}
     data-slot="field-legend"
     data-variant={variant}
@@ -139,26 +138,21 @@ const FieldLegend = ({
   />
 );
 
-const FieldGroup = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const FieldGroup = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.group, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.group)}
     data-slot="field-group"
     {...props}
   />
 );
 
-const Field = ({
-  className,
-  style,
-  orientation = "vertical",
+const Field = ({ orientation = "vertical",
   ...props
-}: React.ComponentProps<"div"> & { orientation?: FieldOrientation }) => (
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & { orientation?: FieldOrientation }) => (
   <div
     {...stylex.props(
       styles.fieldBase,
-      orientationStyles[orientation],
-      customClassName(className),
-      style as StyleXStyles,
+      orientationStyles[orientation]
     )}
     data-orientation={orientation}
     data-slot="field"
@@ -167,49 +161,50 @@ const Field = ({
   />
 );
 
-const FieldContent = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const FieldContent = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.content, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.content)}
     data-slot="field-content"
     {...props}
   />
 );
 
-const FieldLabel = ({ className, ...props }: React.ComponentProps<typeof Label>) => (
-  <Label
-    {...stylex.props(styles.label, customClassName(className))}
-    data-slot="field-label"
-    {...props}
-  />
+const FieldLabel = (props: React.ComponentProps<typeof Label>) => (
+  <Label data-slot="field-label" {...props} />
 );
 
-const FieldTitle = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const FieldTitle = ({ ...props }: Omit<React.ComponentProps<"div">, "className" | "style">) => (
   <div
-    {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.title)}
     data-slot="field-label"
     {...props}
   />
 );
 
-const FieldDescription = ({ className, style, ...props }: React.ComponentProps<"p">) => (
+const FieldDescription = ({ ...props }: Omit<React.ComponentProps<"p">, "className" | "style">) => (
   <p
-    {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.description)}
     data-slot="field-description"
     {...props}
   />
 );
 
-const FieldSeparator = ({ children, className, style, ...props }: React.ComponentProps<"div">) => {
+const FieldSeparator = ({
+  children,
+  ...props
+}: Omit<React.ComponentProps<"div">, "className" | "style">) => {
   const line = stylex.props(styles.separatorLine);
   const content = stylex.props(styles.separatorContent);
   return (
     <div
-      {...stylex.props(styles.separator, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.separator)}
       data-content={Boolean(children)}
       data-slot="field-separator"
       {...props}
     >
-      <Separator className={line.className} style={line.style} />
+      <div className={line.className} style={line.style} data-slot="field-separator-line">
+        <Separator />
+      </div>
       {children ? (
         <span
           className={content.className}
@@ -223,13 +218,10 @@ const FieldSeparator = ({ children, className, style, ...props }: React.Componen
   );
 };
 
-const FieldError = ({
-  className,
-  style,
-  children,
+const FieldError = ({ children,
   errors,
   ...props
-}: React.ComponentProps<"div"> & {
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & {
   errors?: ({ message?: string } | undefined)[];
 }) => {
   const content = useMemo(() => {
@@ -243,8 +235,9 @@ const FieldError = ({
     if (uniqueErrors.length === 1) {
       return uniqueErrors[0]?.message;
     }
+    const list = stylex.props(styles.errorList);
     return (
-      <ul style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+      <ul className={list.className} style={list.style}>
         {uniqueErrors.map((error) =>
           error?.message ? <li key={error.message}>{error.message}</li> : null,
         )}
@@ -257,7 +250,7 @@ const FieldError = ({
   }
   return (
     <div
-      {...stylex.props(styles.error, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.error)}
       data-slot="field-error"
       role="alert"
       {...props}

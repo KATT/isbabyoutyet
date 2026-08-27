@@ -1,11 +1,9 @@
 import { Combobox as ComboboxPrimitive } from "@base-ui/react/combobox";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { CheckIcon, ChevronsUpDownIcon, XIcon } from "lucide-react";
 import { useRef } from "react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   chip: {
@@ -100,6 +98,12 @@ const styles = stylex.create({
     paddingBlock: "1.5rem",
     textAlign: "center",
   },
+  separator: {
+    backgroundColor: colors.border,
+    height: "1px",
+    marginBlock: "0.25rem",
+    marginInline: "-0.25rem",
+  },
   groupLabel: {
     color: colors.mutedForeground,
     fontSize: "0.75rem",
@@ -187,16 +191,11 @@ const Combobox = ComboboxPrimitive.Root;
 
 const ComboboxValue = ComboboxPrimitive.Value;
 
-const ComboboxTrigger = ({
-  className,
-  style,
-  children,
+const ComboboxTrigger = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Trigger>, "className"> & {
-  className?: string;
-}) => (
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Trigger>, "className">) => (
   <ComboboxPrimitive.Trigger
-    {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.trigger)}
     data-slot="combobox-trigger"
     {...props}
   >
@@ -204,16 +203,11 @@ const ComboboxTrigger = ({
   </ComboboxPrimitive.Trigger>
 );
 
-const ComboboxClear = ({
-  className,
-  style,
-  children,
+const ComboboxClear = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Clear>, "className"> & {
-  className?: string;
-}) => (
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Clear>, "className">) => (
   <ComboboxPrimitive.Clear
-    {...stylex.props(styles.clear, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.clear)}
     data-slot="combobox-clear"
     {...props}
   >
@@ -221,14 +215,10 @@ const ComboboxClear = ({
   </ComboboxPrimitive.Clear>
 );
 
-const ComboboxInput = ({
-  className,
-  style,
-  showTrigger = true,
+const ComboboxInput = ({ showTrigger = true,
   showClear = false,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Input>, "className"> & {
-  className?: string;
   showTrigger?: boolean;
   showClear?: boolean;
 }) => {
@@ -236,7 +226,7 @@ const ComboboxInput = ({
   return (
     <div className={wrap.className} style={wrap.style}>
       <ComboboxPrimitive.Input
-        {...stylex.props(styles.input, customClassName(className), style as StyleXStyles)}
+        {...stylex.props(styles.input)}
         data-slot="combobox-input"
         {...props}
       />
@@ -246,34 +236,25 @@ const ComboboxInput = ({
   );
 };
 
-const ComboboxChips = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Chips>, "className"> & {
-  className?: string;
-}) => (
+const ComboboxChips = ({ ...props
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Chips>, "className">) => (
   <ComboboxPrimitive.Chips
-    {...stylex.props(styles.chips, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.chips)}
     data-slot="combobox-chips"
     {...props}
   />
 );
 
-const ComboboxChip = ({
-  className,
-  style,
-  children,
+const ComboboxChip = ({ children,
   showRemove = true,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Chip>, "className"> & {
-  className?: string;
   showRemove?: boolean;
 }) => {
   const remove = stylex.props(styles.chipRemove);
   return (
     <ComboboxPrimitive.Chip
-      {...stylex.props(styles.chip, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.chip)}
       data-slot="combobox-chip"
       {...props}
     >
@@ -291,30 +272,21 @@ const ComboboxChip = ({
   );
 };
 
-const ComboboxChipsInput = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Input>, "className"> & {
-  className?: string;
-}) => (
+const ComboboxChipsInput = ({ ...props
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Input>, "className">) => (
   <ComboboxPrimitive.Input
-    {...stylex.props(styles.chipsInput, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.chipsInput)}
     data-slot="combobox-chips-input"
     {...props}
   />
 );
 
-const ComboboxContent = ({
-  className,
-  style,
-  side = "bottom",
+const ComboboxContent = ({ side = "bottom",
   sideOffset = 6,
   align = "start",
   anchor,
   ...props
 }: Omit<React.ComponentProps<typeof ComboboxPrimitive.Popup>, "className"> & {
-  className?: string;
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
   sideOffset?: number;
@@ -333,52 +305,38 @@ const ComboboxContent = ({
           stylex.props(
             styles.content,
             (state.transitionStatus === "starting" || state.transitionStatus === "ending") &&
-              styles.contentHidden,
-            customClassName(className),
+              styles.contentHidden
           ).className
         }
         data-slot="combobox-content"
-        style={style}
         {...props}
       />
     </ComboboxPrimitive.Positioner>
   </ComboboxPrimitive.Portal>
 );
 
-const ComboboxList = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.List>, "className"> & {
-  className?: string;
-}) => (
+const ComboboxList = ({ ...props
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.List>, "className">) => (
   <ComboboxPrimitive.List
-    {...stylex.props(styles.list, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.list)}
     data-slot="combobox-list"
     {...props}
   />
 );
 
-const ComboboxItem = ({
-  className,
-  style,
-  children,
+const ComboboxItem = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Item>, "className"> & {
-  className?: string;
-}) => {
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Item>, "className">) => {
   const indicator = stylex.props(styles.itemIndicator);
   return (
     <ComboboxPrimitive.Item
       className={(state) =>
         stylex.props(
           styles.item,
-          state.highlighted && styles.itemHighlighted,
-          customClassName(className),
+          state.highlighted && styles.itemHighlighted
         ).className
       }
       data-slot="combobox-item"
-      style={style}
       {...props}
     >
       {children}
@@ -397,44 +355,29 @@ const ComboboxCollection = (props: React.ComponentProps<typeof ComboboxPrimitive
   <ComboboxPrimitive.Collection {...props} />
 );
 
-const ComboboxSeparator = ({ className, style, ...props }: React.ComponentProps<"div">) => (
+const ComboboxSeparator = (
+  props: Omit<React.ComponentProps<"div">, "className" | "style">,
+) => (
   <div
-    className={className}
+    {...stylex.props(styles.separator)}
     data-slot="combobox-separator"
-    style={{
-      backgroundColor: "var(--border)",
-      height: 1,
-      marginBlock: "0.25rem",
-      marginInline: "-0.25rem",
-      ...style,
-    }}
     {...props}
   />
 );
 
-const ComboboxGroupLabel = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.GroupLabel>, "className"> & {
-  className?: string;
-}) => (
+const ComboboxGroupLabel = ({ ...props
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.GroupLabel>, "className" | "style">) => (
   <ComboboxPrimitive.GroupLabel
-    {...stylex.props(styles.groupLabel, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.groupLabel)}
     data-slot="combobox-group-label"
     {...props}
   />
 );
 
-const ComboboxEmpty = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Empty>, "className"> & {
-  className?: string;
-}) => (
+const ComboboxEmpty = ({ ...props
+}: Omit<React.ComponentProps<typeof ComboboxPrimitive.Empty>, "className" | "style">) => (
   <ComboboxPrimitive.Empty
-    {...stylex.props(styles.empty, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.empty)}
     data-slot="combobox-empty"
     {...props}
   />

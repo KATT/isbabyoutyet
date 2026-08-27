@@ -4,7 +4,6 @@ import type { StyleXStyles } from "@stylexjs/stylex";
 import { Children, cloneElement, isValidElement } from "react";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   badge: {
@@ -34,9 +33,6 @@ const styles = stylex.create({
     justifyContent: "center",
     width: "100%",
   },
-  fallbackSm: {
-    fontSize: "0.75rem",
-  },
   group: {
     display: "flex",
   },
@@ -51,6 +47,7 @@ const styles = stylex.create({
     fontSize: "0.875rem",
     height: "2rem",
     justifyContent: "center",
+    marginInlineStart: "-0.5rem",
     position: "relative",
     width: "2rem",
   },
@@ -78,105 +75,135 @@ const styles = stylex.create({
     height: "1.5rem",
     width: "1.5rem",
   },
+  stacked: {
+    boxShadow: `0 0 0 2px ${colors.background}`,
+    marginInlineStart: "-0.5rem",
+  },
+  stackedFirst: {
+    boxShadow: `0 0 0 2px ${colors.background}`,
+    marginInlineStart: 0,
+  },
 });
 
 type AvatarSize = "default" | "sm" | "lg";
 
 const sizeStyles: Record<AvatarSize, StyleXStyles> = {
-  default: null,
+  default: null as unknown as StyleXStyles,
   lg: styles.rootLg,
   sm: styles.rootSm,
 };
 
-const Avatar = ({
-  className,
-  style,
-  size = "default",
-  ...props
-}: Omit<React.ComponentProps<typeof AvatarPrimitive.Root>, "className"> & {
-  className?: string;
+export type AvatarProps = Omit<
+  React.ComponentProps<typeof AvatarPrimitive.Root>,
+  "className" | "style"
+> & {
   size?: AvatarSize;
-}) => (
-  <AvatarPrimitive.Root
-    {...stylex.props(
-      styles.root,
-      sizeStyles[size],
-      customClassName(className),
-      style as StyleXStyles,
-    )}
-    data-size={size}
-    data-slot="avatar"
-    {...props}
-  />
-);
+  /** Overlap offset when rendered inside `AvatarGroup`. */
+  stackIndex?: number | null;
+};
 
-const AvatarImage = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof AvatarPrimitive.Image>, "className"> & {
-  className?: string;
-}) => (
-  <AvatarPrimitive.Image
-    {...stylex.props(styles.image, customClassName(className), style as StyleXStyles)}
-    data-slot="avatar-image"
-    {...props}
-  />
-);
+function Avatar(props: AvatarProps) {
+  const size = props.size ?? "default";
+  const stackIndex = props.stackIndex ?? null;
+  const { size: _size, stackIndex: _stackIndex, ...rest } = props;
+  const stylexProps = stylex.props(
+    styles.root,
+    sizeStyles[size],
+    stackIndex === null ? null : stackIndex === 0 ? styles.stackedFirst : styles.stacked,
+  );
 
-const AvatarFallback = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof AvatarPrimitive.Fallback>, "className"> & {
-  className?: string;
-}) => (
-  <AvatarPrimitive.Fallback
-    {...stylex.props(styles.fallback, customClassName(className), style as StyleXStyles)}
-    data-slot="avatar-fallback"
-    {...props}
-  />
-);
+  return (
+    <AvatarPrimitive.Root
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-size={size}
+      data-slot="avatar"
+      {...rest}
+    />
+  );
+}
 
-const AvatarBadge = ({ className, style, ...props }: React.ComponentProps<"span">) => (
-  <span
-    {...stylex.props(styles.badge, customClassName(className), style as StyleXStyles)}
-    data-slot="avatar-badge"
-    {...props}
-  />
-);
+export type AvatarImageProps = Omit<
+  React.ComponentProps<typeof AvatarPrimitive.Image>,
+  "className" | "style"
+>;
 
-const AvatarGroup = ({ className, style, children, ...props }: React.ComponentProps<"div">) => (
-  <div
-    {...stylex.props(styles.group, customClassName(className), style as StyleXStyles)}
-    data-slot="avatar-group"
-    {...props}
-  >
-    {Children.map(children, (child, index) =>
-      isValidElement<{ style?: React.CSSProperties }>(child)
-        ? cloneElement(child, {
-            style: {
-              boxShadow: "0 0 0 2px var(--background)",
-              marginInlineStart: index === 0 ? 0 : "-0.5rem",
-              ...child.props.style,
-            },
-          })
-        : child,
-    )}
-  </div>
-);
+function AvatarImage(props: AvatarImageProps) {
+  const stylexProps = stylex.props(styles.image);
+  return (
+    <AvatarPrimitive.Image
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-slot="avatar-image"
+      {...props}
+    />
+  );
+}
 
-const AvatarGroupCount = ({ className, style, ...props }: React.ComponentProps<"div">) => (
-  <div
-    {...stylex.props(
-      styles.groupCount,
-      customClassName(className),
-      { marginInlineStart: "-0.5rem" } as StyleXStyles,
-      style as StyleXStyles,
-    )}
-    data-slot="avatar-group-count"
-    {...props}
-  />
-);
+export type AvatarFallbackProps = Omit<
+  React.ComponentProps<typeof AvatarPrimitive.Fallback>,
+  "className" | "style"
+>;
+
+function AvatarFallback(props: AvatarFallbackProps) {
+  const stylexProps = stylex.props(styles.fallback);
+  return (
+    <AvatarPrimitive.Fallback
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-slot="avatar-fallback"
+      {...props}
+    />
+  );
+}
+
+export type AvatarBadgeProps = Omit<React.ComponentProps<"span">, "className" | "style">;
+
+function AvatarBadge(props: AvatarBadgeProps) {
+  const stylexProps = stylex.props(styles.badge);
+  return (
+    <span
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-slot="avatar-badge"
+      {...props}
+    />
+  );
+}
+
+export type AvatarGroupProps = Omit<React.ComponentProps<"div">, "className" | "style">;
+
+function AvatarGroup(props: AvatarGroupProps) {
+  const { children, ...rest } = props;
+  const stylexProps = stylex.props(styles.group);
+  return (
+    <div
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-slot="avatar-group"
+      {...rest}
+    >
+      {Children.map(children, (child, index) =>
+        isValidElement<{ stackIndex?: number | null }>(child)
+          ? cloneElement(child, { stackIndex: index })
+          : child,
+      )}
+    </div>
+  );
+}
+
+export type AvatarGroupCountProps = Omit<React.ComponentProps<"div">, "className" | "style">;
+
+function AvatarGroupCount(props: AvatarGroupCountProps) {
+  const stylexProps = stylex.props(styles.groupCount);
+  return (
+    <div
+      className={stylexProps.className}
+      style={stylexProps.style}
+      data-slot="avatar-group-count"
+      {...props}
+    />
+  );
+}
 
 export { Avatar, AvatarFallback, AvatarImage, AvatarBadge, AvatarGroup, AvatarGroupCount };

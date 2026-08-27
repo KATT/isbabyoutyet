@@ -1,9 +1,7 @@
 import { Separator as SeparatorPrimitive } from "@base-ui/react";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   horizontal: {
@@ -20,22 +18,15 @@ const styles = stylex.create({
   },
 });
 
-const Separator = ({
-  className,
-  style,
-  orientation = "horizontal",
+const Separator = ({ orientation = "horizontal",
   ...props
-}: Omit<React.ComponentProps<typeof SeparatorPrimitive>, "className"> & {
-  className?: string;
-}) => (
+}: Omit<React.ComponentProps<typeof SeparatorPrimitive>, "className">) => (
   <SeparatorPrimitive
     data-slot="separator"
     orientation={orientation}
     {...stylex.props(
       styles.root,
-      orientation === "vertical" ? styles.vertical : styles.horizontal,
-      customClassName(className),
-      style as StyleXStyles,
+      orientation === "vertical" ? styles.vertical : styles.horizontal
     )}
     {...props}
   />

@@ -2,7 +2,6 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import * as stylex from "@stylexjs/stylex";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   arrow: {
@@ -56,16 +55,12 @@ const TooltipTrigger = (props: React.ComponentProps<typeof TooltipPrimitive.Trig
   <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
 );
 
-const TooltipContent = ({
-  className,
-  style,
-  sideOffset = 4,
+const TooltipContent = ({ sideOffset = 4,
   side = "top",
   align = "center",
   children,
   ...props
 }: Omit<React.ComponentProps<typeof TooltipPrimitive.Popup>, "className"> & {
-  className?: string;
   sideOffset?: number;
   side?: "top" | "bottom" | "left" | "right";
   align?: "start" | "center" | "end";
@@ -79,11 +74,9 @@ const TooltipContent = ({
           className={(state) =>
             stylex.props(
               styles.popup,
-              hidden(state.transitionStatus) && styles.popupHidden,
-              customClassName(className),
+              hidden(state.transitionStatus) && styles.popupHidden
             ).className
           }
-          style={style}
           {...props}
         >
           {children}

@@ -64,9 +64,6 @@ const styles = stylex.create({
     borderColor: colors.border,
     backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
   },
-  itemGroup: {
-    gap: 0,
-  },
 });
 
 export const Route = createFileRoute("/_auth/dashboard/settings")({
@@ -83,7 +80,7 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
     <Stack gap="s2">
       <h3 {...stylex.props(styles.sectionTitle)}>{props.title}</h3>
       <div {...stylex.props(styles.sectionCard)}>
-        <ItemGroup style={styles.itemGroup}>{props.children}</ItemGroup>
+        <ItemGroup>{props.children}</ItemGroup>
       </div>
     </Stack>
   );

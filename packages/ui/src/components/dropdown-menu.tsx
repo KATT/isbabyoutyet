@@ -1,10 +1,8 @@
 import { Menu as MenuPrimitive } from "@base-ui/react/menu";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 
 import { colors, radius } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   icon: {
@@ -169,7 +167,7 @@ const DropdownMenuContent = ({
           stylex.props(
             styles.popup,
             size === "md" ? styles.popupSizeMd : null,
-            hidden(state.transitionStatus) && styles.popupHidden,
+            hidden(state.transitionStatus) && styles.popupHidden
           ).className
         }
         {...props}
@@ -180,14 +178,10 @@ const DropdownMenuContent = ({
   </MenuPrimitive.Portal>
 );
 
-const DropdownMenuItem = ({
-  className,
-  style,
-  inset,
+const DropdownMenuItem = ({ inset,
   variant = "default",
   ...props
 }: Omit<React.ComponentProps<typeof MenuPrimitive.Item>, "className"> & {
-  className?: string;
   inset?: boolean;
   variant?: "default" | "destructive";
 }) => (
@@ -202,23 +196,16 @@ const DropdownMenuItem = ({
         variant === "destructive" && styles.itemDestructive,
         state.highlighted &&
           (variant === "destructive" ? styles.itemDestructiveHighlighted : styles.itemHighlighted),
-        state.disabled && styles.itemDisabled,
-        customClassName(className),
+        state.disabled && styles.itemDisabled
       ).className
     }
-    style={style}
     {...props}
   />
 );
 
-const DropdownMenuCheckboxItem = ({
-  className,
-  style,
-  children,
+const DropdownMenuCheckboxItem = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof MenuPrimitive.CheckboxItem>, "className"> & {
-  className?: string;
-}) => {
+}: Omit<React.ComponentProps<typeof MenuPrimitive.CheckboxItem>, "className">) => {
   const indicator = stylex.props(styles.indicatorWrap);
   const icon = stylex.props(styles.icon);
   return (
@@ -229,11 +216,9 @@ const DropdownMenuCheckboxItem = ({
           styles.item,
           styles.itemIndented,
           state.highlighted && styles.itemHighlighted,
-          state.disabled && styles.itemDisabled,
-          customClassName(className),
+          state.disabled && styles.itemDisabled
         ).className
       }
-      style={style}
       {...props}
     >
       <span className={indicator.className} style={indicator.style}>
@@ -246,14 +231,9 @@ const DropdownMenuCheckboxItem = ({
   );
 };
 
-const DropdownMenuRadioItem = ({
-  className,
-  style,
-  children,
+const DropdownMenuRadioItem = ({ children,
   ...props
-}: Omit<React.ComponentProps<typeof MenuPrimitive.RadioItem>, "className"> & {
-  className?: string;
-}) => {
+}: Omit<React.ComponentProps<typeof MenuPrimitive.RadioItem>, "className">) => {
   const indicator = stylex.props(styles.indicatorWrap);
   return (
     <MenuPrimitive.RadioItem
@@ -263,11 +243,9 @@ const DropdownMenuRadioItem = ({
           styles.item,
           styles.itemIndented,
           state.highlighted && styles.itemHighlighted,
-          state.disabled && styles.itemDisabled,
-          customClassName(className),
+          state.disabled && styles.itemDisabled
         ).className
       }
-      style={style}
       {...props}
     >
       <span className={indicator.className} style={indicator.style}>
@@ -280,55 +258,41 @@ const DropdownMenuRadioItem = ({
   );
 };
 
-const DropdownMenuLabel = ({
-  className,
-  style,
-  inset,
+const DropdownMenuLabel = ({ inset,
   ...props
-}: React.ComponentProps<"div"> & { inset?: boolean }) => (
+}: Omit<React.ComponentProps<"div">, "className" | "style"> & { inset?: boolean }) => (
   <div
     data-slot="dropdown-menu-label"
     data-inset={inset ? "" : undefined}
     {...stylex.props(
       styles.label,
-      inset && styles.labelInset,
-      customClassName(className),
-      style as StyleXStyles,
+      inset && styles.labelInset
     )}
     {...props}
   />
 );
 
-const DropdownMenuSeparator = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof MenuPrimitive.Separator>, "className"> & {
-  className?: string;
-}) => (
+const DropdownMenuSeparator = ({ ...props
+}: Omit<React.ComponentProps<typeof MenuPrimitive.Separator>, "className">) => (
   <MenuPrimitive.Separator
     data-slot="dropdown-menu-separator"
-    {...stylex.props(styles.separator, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.separator)}
     {...props}
   />
 );
 
-const DropdownMenuShortcut = ({ className, style, ...props }: React.ComponentProps<"span">) => (
+const DropdownMenuShortcut = ({ ...props }: Omit<React.ComponentProps<"span">, "className" | "style">) => (
   <span
     data-slot="dropdown-menu-shortcut"
-    {...stylex.props(styles.shortcut, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.shortcut)}
     {...props}
   />
 );
 
-const DropdownMenuSubTrigger = ({
-  className,
-  style,
-  inset,
+const DropdownMenuSubTrigger = ({ inset,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof MenuPrimitive.SubmenuTrigger>, "className"> & {
-  className?: string;
   inset?: boolean;
 }) => {
   const icon = stylex.props(styles.icon);
@@ -340,11 +304,9 @@ const DropdownMenuSubTrigger = ({
         stylex.props(
           styles.item,
           inset && styles.itemInset,
-          state.highlighted && styles.itemHighlighted,
-          customClassName(className),
+          state.highlighted && styles.itemHighlighted
         ).className
       }
-      style={style}
       {...props}
     >
       {children}
@@ -356,13 +318,8 @@ const DropdownMenuSubTrigger = ({
   );
 };
 
-const DropdownMenuSubContent = ({
-  className,
-  style,
-  ...props
-}: Omit<React.ComponentProps<typeof MenuPrimitive.Popup>, "className"> & {
-  className?: string;
-}) => (
+const DropdownMenuSubContent = ({ ...props
+}: Omit<React.ComponentProps<typeof MenuPrimitive.Popup>, "className">) => (
   <MenuPrimitive.Portal>
     <MenuPrimitive.Positioner>
       <MenuPrimitive.Popup
@@ -370,11 +327,9 @@ const DropdownMenuSubContent = ({
         className={(state) =>
           stylex.props(
             styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
+            hidden(state.transitionStatus) && styles.popupHidden
           ).className
         }
-        style={style}
         {...props}
       />
     </MenuPrimitive.Positioner>

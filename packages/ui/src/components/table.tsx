@@ -1,8 +1,6 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 
 import { colors } from "@workspace/ui/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const styles = stylex.create({
   caption: {
@@ -54,12 +52,12 @@ const styles = stylex.create({
   },
 });
 
-const Table = ({ className, style, ...props }: React.ComponentProps<"table">) => {
+const Table = ({ ...props }: Omit<React.ComponentProps<"table">, "className" | "style">) => {
   const wrapper = stylex.props(styles.wrapper);
   return (
     <div className={wrapper.className} data-slot="table-container" style={wrapper.style}>
       <table
-        {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+        {...stylex.props(styles.root)}
         data-slot="table"
         {...props}
       />
@@ -67,49 +65,49 @@ const Table = ({ className, style, ...props }: React.ComponentProps<"table">) =>
   );
 };
 
-const TableHeader = (props: React.ComponentProps<"thead">) => (
+const TableHeader = (props: Omit<React.ComponentProps<"thead">, "className" | "style">) => (
   <thead data-slot="table-header" {...props} />
 );
 
-const TableBody = (props: React.ComponentProps<"tbody">) => (
+const TableBody = (props: Omit<React.ComponentProps<"tbody">, "className" | "style">) => (
   <tbody data-slot="table-body" {...props} />
 );
 
-const TableFooter = ({ className, style, ...props }: React.ComponentProps<"tfoot">) => (
+const TableFooter = ({ ...props }: Omit<React.ComponentProps<"tfoot">, "className" | "style">) => (
   <tfoot
-    {...stylex.props(styles.footer, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.footer)}
     data-slot="table-footer"
     {...props}
   />
 );
 
-const TableRow = ({ className, style, ...props }: React.ComponentProps<"tr">) => (
+const TableRow = ({ ...props }: Omit<React.ComponentProps<"tr">, "className" | "style">) => (
   <tr
-    {...stylex.props(styles.row, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.row)}
     data-slot="table-row"
     {...props}
   />
 );
 
-const TableHead = ({ className, style, ...props }: React.ComponentProps<"th">) => (
+const TableHead = ({ ...props }: Omit<React.ComponentProps<"th">, "className" | "style">) => (
   <th
-    {...stylex.props(styles.head, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.head)}
     data-slot="table-head"
     {...props}
   />
 );
 
-const TableCell = ({ className, style, ...props }: React.ComponentProps<"td">) => (
+const TableCell = ({ ...props }: Omit<React.ComponentProps<"td">, "className" | "style">) => (
   <td
-    {...stylex.props(styles.cell, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.cell)}
     data-slot="table-cell"
     {...props}
   />
 );
 
-const TableCaption = ({ className, style, ...props }: React.ComponentProps<"caption">) => (
+const TableCaption = ({ ...props }: Omit<React.ComponentProps<"caption">, "className" | "style">) => (
   <caption
-    {...stylex.props(styles.caption, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.caption)}
     data-slot="table-caption"
     {...props}
   />
