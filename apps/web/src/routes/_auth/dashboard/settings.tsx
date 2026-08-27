@@ -2,6 +2,7 @@ import { Palette, Shield, SignOut } from "@phosphor-icons/react";
 import { createFileRoute, getRouteApi, Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -25,6 +26,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
@@ -32,6 +35,35 @@ import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 
 const authRoute = getRouteApi("/_auth");
+
+const styles = stylex.create({
+  sectionTitle: {
+    color: colors.mutedForeground,
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    letterSpacing: "0.05em",
+    margin: 0,
+    paddingInline: spacing.s0_5,
+    textTransform: "uppercase",
+  },
+  sectionCard: {
+    backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: radius.xl,
+    borderStyle: "solid",
+    borderWidth: "1px",
+    overflow: "hidden",
+  },
+  body: {
+    display: "flex",
+    flex: 1,
+    flexDirection: "column",
+    gap: "1.5rem",
+    overflowY: "auto",
+    paddingBottom: "1rem",
+    paddingInline: "1rem",
+  },
+});
 
 export const Route = createFileRoute("/_auth/dashboard/settings")({
   component: DashboardSettingsRoute,
@@ -44,14 +76,12 @@ export function DashboardSettingsRoute() {
 
 function SettingsSection(props: { title: string; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="px-0.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        {props.title}
-      </h3>
-      <div className="overflow-hidden rounded-xl border border-border bg-card/50">
-        <ItemGroup className="gap-0">{props.children}</ItemGroup>
+    <Stack gap="s2">
+      <h3 {...stylex.props(styles.sectionTitle)}>{props.title}</h3>
+      <div {...stylex.props(styles.sectionCard)}>
+        <ItemGroup>{props.children}</ItemGroup>
       </div>
-    </section>
+    </Stack>
   );
 }
 
@@ -87,7 +117,7 @@ export function DashboardSettingsSheet(props: {
     <DashboardSettingsSheetView
       isAdmin={profileQuery.data?.isAdmin === true}
       overlay={settings}
-      languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
+      languageSettings={<LanguageSettings profile={props.profile} className={undefined} />}
       onSignOut={async () => {
         await settingsAuthAdapter.signOut({
           fetchOptions: {
@@ -125,18 +155,13 @@ export function DashboardSettingsSheetView(props: {
       onOpenChange={props.overlay.onOpenChange}
       onOpenChangeComplete={props.overlay.onOpenChangeComplete}
     >
-      <SheetContent
-        ref={contentRef}
-        initialFocus={contentRef}
-        side="right"
-        className="w-full sm:max-w-sm"
-      >
+      <SheetContent ref={contentRef} initialFocus={contentRef} side="right">
         <SheetHeader>
           <SheetTitle>{t("Settings")}</SheetTitle>
           <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 pb-4">
+        <div {...stylex.props(styles.body)}>
           <SettingsSection title={t("Language and time zone")}>
             <Item>
               <ItemContent>{props.languageSettings}</ItemContent>

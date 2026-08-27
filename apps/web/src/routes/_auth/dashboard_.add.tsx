@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { NavigateOptions } from "@tanstack/react-router";
+import * as stylex from "@stylexjs/stylex";
 import { z } from "zod";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
@@ -22,6 +23,52 @@ import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+
+const styles = stylex.create({
+  page: {
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    minHeight: "100vh",
+  },
+  inner: {
+    marginInline: "auto",
+    maxWidth: "36rem",
+    paddingBlock: spacing.s10,
+    paddingInline: spacing.s6,
+  },
+  backRow: {
+    marginBottom: spacing.s8,
+  },
+  heroEmoji: {
+    fontSize: "3rem",
+    lineHeight: 1,
+    margin: 0,
+  },
+  title: {
+    color: colors.foreground,
+    fontSize: {
+      default: "2.25rem",
+      "@media (min-width: 768px)": "3rem",
+    },
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    lineHeight: 1.1,
+    margin: 0,
+    textAlign: "center",
+  },
+  titleAccent: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: radius.xl,
+    color: colors.primary,
+    display: "inline-block",
+    paddingInline: spacing.s3,
+    transform: "rotate(-1deg)",
+  },
+});
 
 function addBabySchema(t: TranslationFunction) {
   return z
@@ -95,94 +142,95 @@ export function AddBabyPageView(props: {
   });
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
-      <div className="mx-auto max-w-xl px-6 py-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="mb-8 rounded-full border-2 font-bold"
-          render={<Link to="/dashboard" />}
-          nativeButton={false}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("Back to Dashboard")}
-        </Button>
-
-        <div className="mb-8 text-center">
-          <p className="text-5xl" aria-hidden="true">
-            🎉
-          </p>
-          <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground md:text-5xl">
-            {t("Add a")}{" "}
-            <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
-              {t("baby")}
-            </span>
-          </h1>
-          <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name and a due date — that's all it takes!")}
-          </p>
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.inner)}>
+        <div {...stylex.props(styles.backRow)}>
+          <Button
+            variant="outline"
+            size="sm"
+            shape="pill"
+            render={<Link to="/dashboard" />}
+            nativeButton={false}
+          >
+            <ArrowLeft data-icon="inline-start" />
+            {t("Back to Dashboard")}
+          </Button>
         </div>
 
-        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
-          <CardContent className="pt-6">
-            <Form
-              form={form}
-              handleSubmit={async (values) => {
-                const result = await props.createBaby(values);
+        <Stack gap="s8" fullWidth>
+          <Stack gap="s2" align="center" fullWidth>
+            <p {...stylex.props(styles.heroEmoji)} aria-hidden="true">
+              🎉
+            </p>
+            <h1 {...stylex.props(styles.title)}>
+              {t("Add a")} <span {...stylex.props(styles.titleAccent)}>{t("baby")}</span>
+            </h1>
+            <Text tone="muted" weight="semibold" align="center">
+              {t("A name and a due date — that's all it takes!")}
+            </Text>
+          </Stack>
 
-                await props.navigate({
-                  to: "/baby/$publicId",
-                  params: { publicId: result.publicId },
-                });
-              }}
-            >
-              <div className="flex flex-col gap-5">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
-                      </FormControl>
-                      <FormDescription>
-                        {t(
-                          "Optional — leave blank for now. You can change the time later in settings.",
-                        )}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+          <Card>
+            <CardContent>
+              <Form
+                form={form}
+                handleSubmit={async (values) => {
+                  const result = await props.createBaby(values);
 
-                <DueDateDisplayFields
-                  control={form.control}
-                  dateFieldName="dueDate"
-                  className={undefined}
-                  sectionLabelClassName="font-bold"
-                  stopPopoverPropagation={false}
-                />
+                  await props.navigate({
+                    to: "/baby/$publicId",
+                    params: { publicId: result.publicId },
+                  });
+                }}
+              >
+                <Stack gap="s5" fullWidth>
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={(renderProps) => (
+                      <FormItem>
+                        <FormLabel>{t("Baby Name")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            "Optional — leave blank for now. You can change the time later in settings.",
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <AddBabyOptionalSettings
-                  control={form.control}
-                  birthJourneyFieldName="birthJourney"
-                  themeFieldName="theme"
-                />
+                  <DueDateDisplayFields
+                    control={form.control}
+                    dateFieldName="dueDate"
+                    className={undefined}
+                    sectionLabelClassName={undefined}
+                    stopPopoverPropagation={false}
+                  />
 
-                <SubmitButton
-                  form="context"
-                  IconComponent="🍼"
-                  iconPosition="end"
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  size="lg"
-                >
-                  {t("Add Baby")}
-                </SubmitButton>
-              </div>
-            </Form>
-          </CardContent>
-        </Card>
+                  <AddBabyOptionalSettings
+                    control={form.control}
+                    birthJourneyFieldName="birthJourney"
+                    themeFieldName="theme"
+                  />
+
+                  <SubmitButton
+                    form="context"
+                    IconComponent="🍼"
+                    iconPosition="end"
+                    size="lg"
+                    shape="pill"
+                  >
+                    {t("Add Baby")}
+                  </SubmitButton>
+                </Stack>
+              </Form>
+            </CardContent>
+          </Card>
+        </Stack>
       </div>
     </div>
   );

@@ -102,7 +102,6 @@ test("journey choices explain visible statuses and privacy", async () => {
   ).toBe("true");
   const dueDateSectionLabel = view.container.querySelector("[data-slot='label']");
   expect(dueDateSectionLabel?.textContent).toBe("Due date");
-  expect(dueDateSectionLabel?.className).toContain("font-bold");
   expect(
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
   ).toHaveLength(1);

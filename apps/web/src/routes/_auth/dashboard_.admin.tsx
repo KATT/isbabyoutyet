@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -25,7 +26,11 @@ import {
   TableRow,
 } from "@workspace/ui/components/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { cn } from "@workspace/ui/lib/utils";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { VisuallyHidden } from "@workspace/ui-patterns/components/visually-hidden";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { z } from "zod";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -33,6 +38,103 @@ import { useI18n } from "@/lib/i18n";
 import { useIntersectionAction } from "@/lib/use-intersection-action";
 
 const ADMIN_PAGE_SIZE = 20;
+
+const styles = stylex.create({
+  page: {
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    minHeight: "100vh",
+  },
+  inner: {
+    marginInline: "auto",
+    maxWidth: "72rem",
+    paddingBlock: spacing.s10,
+    paddingInline: spacing.s6,
+  },
+  backRow: {
+    display: "flex",
+  },
+  iconMark: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: radius.lg,
+    color: colors.primary,
+    display: "flex",
+    flexShrink: 0,
+    height: "2.5rem",
+    justifyContent: "center",
+    width: "2.5rem",
+  },
+  headerBorder: {
+    borderBottomColor: colors.border,
+    borderBottomStyle: "solid",
+    borderBottomWidth: "1px",
+  },
+  loadingMore: {
+    borderTopColor: colors.border,
+    borderTopStyle: "solid",
+    borderTopWidth: "1px",
+    display: "flex",
+    justifyContent: "center",
+    paddingBlock: spacing.s3,
+  },
+  sentinel: {
+    height: "2rem",
+    width: "100%",
+  },
+  sortLink: {
+    alignItems: "center",
+    display: "inline-flex",
+    fontWeight: 500,
+    gap: spacing.s1,
+    textDecoration: "none",
+    textUnderlineOffset: "4px",
+    ":hover": {
+      textDecoration: "underline",
+    },
+  },
+  sortLinkActive: {
+    color: colors.foreground,
+  },
+  sortLinkMuted: {
+    color: colors.mutedForeground,
+  },
+  sortIconHidden: {
+    opacity: 0,
+  },
+  sortIconVisible: {
+    opacity: 1,
+  },
+  cellLink: {
+    color: "inherit",
+    textDecoration: "none",
+    textUnderlineOffset: "4px",
+    ":hover": {
+      textDecoration: "underline",
+    },
+  },
+  wrapCell: {
+    maxWidth: "20rem",
+    whiteSpace: "normal",
+  },
+  tabToolbar: {
+    alignItems: {
+      default: "stretch",
+      "@media (min-width: 640px)": "center",
+    },
+    display: "flex",
+    flexDirection: {
+      default: "column",
+      "@media (min-width: 640px)": "row",
+    },
+    gap: spacing.s3,
+    justifyContent: {
+      default: "flex-start",
+      "@media (min-width: 640px)": "space-between",
+    },
+  },
+});
 
 const adminSearchSchema = z.object({
   tab: z.enum(["babies", "languages", "users"]).default("babies"),
@@ -165,7 +267,7 @@ function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () =>
     onIntersect: props.onLoadMore,
     threshold: 0.1,
   });
-  return <div ref={sentinelRef} className="h-8 w-full" aria-hidden="true" />;
+  return <div ref={sentinelRef} {...stylex.props(styles.sentinel)} aria-hidden="true" />;
 }
 
 function AdminTableCard(props: {
@@ -175,14 +277,16 @@ function AdminTableCard(props: {
   onLoadMore: () => void;
 }) {
   return (
-    <Card className="relative gap-0 py-0">
-      <CardContent className="p-0">{props.children}</CardContent>
-      <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
-      {props.isLoadingMore ? (
-        <div className="flex justify-center border-t py-3">
-          <Spinner className="size-5 text-primary" />
-        </div>
-      ) : null}
+    <Card>
+      <CardContent>
+        {props.children}
+        <InfiniteScrollSentinel canLoadMore={props.canLoadMore} onLoadMore={props.onLoadMore} />
+        {props.isLoadingMore ? (
+          <div {...stylex.props(styles.loadingMore)}>
+            <Spinner />
+          </div>
+        ) : null}
+      </CardContent>
     </Card>
   );
 }
@@ -202,6 +306,7 @@ function SortableHeaderLink(props: {
     clicked: props.column,
   });
   const SortIcon = active && props.order === "asc" ? CaretUp : CaretDown;
+  const iconStyle = stylex.props(active ? styles.sortIconVisible : styles.sortIconHidden);
 
   return (
     <TableHead>
@@ -215,15 +320,13 @@ function SortableHeaderLink(props: {
         }}
         replace
         resetScroll={false}
-        className={cn(
-          "inline-flex items-center gap-1 font-medium underline-offset-4 hover:underline",
-          active ? "text-foreground" : "text-muted-foreground",
-        )}
+        {...stylex.props(styles.sortLink, active ? styles.sortLinkActive : styles.sortLinkMuted)}
       >
         {props.label}
         <SortIcon
           data-icon="inline-end"
-          className={cn("opacity-0", active && "opacity-100")}
+          className={iconStyle.className}
+          style={iconStyle.style}
           aria-hidden="true"
         />
       </Link>
@@ -241,7 +344,7 @@ export function LanguageRequestsSection(props: {
 
   if (props.requests.length === 0) {
     return (
-      <Empty className="border border-dashed">
+      <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <Translate />
@@ -269,7 +372,11 @@ export function LanguageRequestsSection(props: {
         <TableBody>
           {props.requests.map((request) => (
             <TableRow key={request._id}>
-              <TableCell className="font-medium">{request.requestedLocale}</TableCell>
+              <TableCell>
+                <Text as="span" weight="medium">
+                  {request.requestedLocale}
+                </Text>
+              </TableCell>
               <TableCell>{request.userEmail ?? request.userId}</TableCell>
               <TableCell>{formatWhen(request.createdAt, locale)}</TableCell>
             </TableRow>
@@ -290,7 +397,7 @@ export function UsersSection(props: {
 
   if (props.users.length === 0) {
     return (
-      <Empty className="border border-dashed">
+      <Empty>
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <Users />
@@ -319,26 +426,34 @@ export function UsersSection(props: {
         <TableBody>
           {props.users.map((user) => (
             <TableRow key={user._id}>
-              <TableCell className="font-medium">{user.name}</TableCell>
+              <TableCell>
+                <Text as="span" weight="medium">
+                  {user.name}
+                </Text>
+              </TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell className="max-w-xs whitespace-normal">
-                {user.babies.length === 0 ? (
-                  <span className="text-muted-foreground">—</span>
-                ) : (
-                  user.babies.map((baby, index) => (
-                    <span key={baby.publicId}>
-                      {index > 0 ? ", " : null}
-                      <Link
-                        to="/baby/$publicId"
-                        params={{ publicId: baby.publicId }}
-                        className="underline-offset-4 hover:underline"
-                      >
-                        {baby.name}
-                      </Link>
-                      {baby.demo ? ` (${t("Demo")})` : null}
-                    </span>
-                  ))
-                )}
+              <TableCell>
+                <div {...stylex.props(styles.wrapCell)}>
+                  {user.babies.length === 0 ? (
+                    <Text as="span" tone="muted">
+                      —
+                    </Text>
+                  ) : (
+                    user.babies.map((baby, index) => (
+                      <span key={baby.publicId}>
+                        {index > 0 ? ", " : null}
+                        <Link
+                          to="/baby/$publicId"
+                          params={{ publicId: baby.publicId }}
+                          {...stylex.props(styles.cellLink)}
+                        >
+                          {baby.name}
+                        </Link>
+                        {baby.demo ? ` (${t("Demo")})` : null}
+                      </span>
+                    ))
+                  )}
+                </div>
               </TableCell>
               <TableCell>{formatWhen(user.createdAt, locale)}</TableCell>
             </TableRow>
@@ -390,22 +505,24 @@ export function BabiesSection(props: {
               hideDemo={props.hideDemo}
             />
             <TableHead>
-              <span className="sr-only">{t("Open")}</span>
+              <VisuallyHidden>{t("Open")}</VisuallyHidden>
             </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {props.babies.map((baby) => (
             <TableRow key={baby._id}>
-              <TableCell className="font-medium">
-                <span className="inline-flex items-center gap-2">
-                  {baby.name}
+              <TableCell>
+                <Inline gap="s2" wrap={false}>
+                  <Text as="span" weight="medium">
+                    {baby.name}
+                  </Text>
                   {baby.demo ? <Badge variant="outline">{t("Demo")}</Badge> : null}
-                </span>
+                </Inline>
               </TableCell>
               <TableCell>{statusLabel(baby.status, t)}</TableCell>
-              <TableCell className="max-w-xs whitespace-normal">
-                {baby.managerEmails.join(", ")}
+              <TableCell>
+                <div {...stylex.props(styles.wrapCell)}>{baby.managerEmails.join(", ")}</div>
               </TableCell>
               <TableCell>{formatWhen(baby.createdAt, locale)}</TableCell>
               <TableCell>{formatWhen(baby.updatedAt, locale)}</TableCell>
@@ -554,122 +671,122 @@ export function AdminDashboardView(props: {
   });
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          render={<Link to="/dashboard" />}
-          nativeButton={false}
-        >
-          <ArrowLeft data-icon="inline-start" />
-          {t("Back to Dashboard")}
-        </Button>
-
-        <Card>
-          <CardHeader className="border-b">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/15">
-                <Shield className="size-5 text-primary" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <CardTitle className="text-2xl font-semibold tracking-tight">
-                  {t("Admin dashboard")}
-                </CardTitle>
-                <CardDescription>
-                  {t("Review babies, users, and language requests across the platform.")}
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 pt-(--card-spacing)">
-            <Tabs
-              value={props.tab}
-              orientation="horizontal"
-              className="flex w-full flex-col gap-4"
-              onValueChange={(value) => {
-                if (isAdminTab(value)) {
-                  props.onTabChange(value);
-                }
-              }}
+    <div {...stylex.props(styles.page)}>
+      <div {...stylex.props(styles.inner)}>
+        <Stack gap="s6" fullWidth>
+          <div {...stylex.props(styles.backRow)}>
+            <Button
+              variant="outline"
+              size="sm"
+              render={<Link to="/dashboard" />}
+              nativeButton={false}
             >
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <TabsList variant="default">
-                  <TabsTrigger
-                    value="babies"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("babies")}
-                        replace
-                        resetScroll={false}
-                      />
+              <ArrowLeft data-icon="inline-start" />
+              {t("Back to Dashboard")}
+            </Button>
+          </div>
+
+          <Card>
+            <div {...stylex.props(styles.headerBorder)}>
+              <CardHeader>
+                <Inline gap="s3" align="start" wrap={false}>
+                  <div {...stylex.props(styles.iconMark)}>
+                    <Shield size={20} />
+                  </div>
+                  <Stack gap="s1">
+                    <CardTitle>{t("Admin dashboard")}</CardTitle>
+                    <CardDescription>
+                      {t("Review babies, users, and language requests across the platform.")}
+                    </CardDescription>
+                  </Stack>
+                </Inline>
+              </CardHeader>
+            </div>
+            <CardContent>
+              <Stack gap="s4" fullWidth>
+                <Tabs
+                  value={props.tab}
+                  orientation="horizontal"
+                  onValueChange={(value) => {
+                    if (isAdminTab(value)) {
+                      props.onTabChange(value);
                     }
-                  >
-                    {t("All babies")}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="users"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("users")}
-                        replace
-                        resetScroll={false}
-                      />
-                    }
-                  >
-                    {t("Recent users")}
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="languages"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        to="/dashboard/admin"
-                        search={tabSearch("languages")}
-                        replace
-                        resetScroll={false}
-                      />
-                    }
-                  >
-                    {t("Requested languages")}
-                  </TabsTrigger>
-                </TabsList>
+                  }}
+                >
+                  <div {...stylex.props(styles.tabToolbar)}>
+                    <TabsList variant="default">
+                      <TabsTrigger
+                        value="babies"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            to="/dashboard/admin"
+                            search={tabSearch("babies")}
+                            replace
+                            resetScroll={false}
+                          />
+                        }
+                      >
+                        {t("All babies")}
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="users"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            to="/dashboard/admin"
+                            search={tabSearch("users")}
+                            replace
+                            resetScroll={false}
+                          />
+                        }
+                      >
+                        {t("Recent users")}
+                      </TabsTrigger>
+                      <TabsTrigger
+                        value="languages"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            to="/dashboard/admin"
+                            search={tabSearch("languages")}
+                            replace
+                            resetScroll={false}
+                          />
+                        }
+                      >
+                        {t("Requested languages")}
+                      </TabsTrigger>
+                    </TabsList>
 
-                {props.tab === "babies" ? (
-                  <Field orientation="horizontal" className="w-auto">
-                    <Switch
-                      id="admin-hide-demo"
-                      checked={props.hideDemo}
-                      onCheckedChange={(hideDemo) => {
-                        props.onHideDemoChange(hideDemo);
-                      }}
-                    />
-                    <FieldLabel htmlFor="admin-hide-demo" className="font-normal">
-                      {t("Hide demo babies")}
-                    </FieldLabel>
-                  </Field>
-                ) : null}
-              </div>
+                    {props.tab === "babies" ? (
+                      <Field orientation="horizontal">
+                        <Switch
+                          id="admin-hide-demo"
+                          checked={props.hideDemo}
+                          onCheckedChange={(hideDemo) => {
+                            props.onHideDemoChange(hideDemo);
+                          }}
+                        />
+                        <FieldLabel htmlFor="admin-hide-demo">{t("Hide demo babies")}</FieldLabel>
+                      </Field>
+                    ) : null}
+                  </div>
 
-              <TabsContent value="babies" className="mt-0">
-                {props.tab === "babies" ? props.babiesTab : null}
-              </TabsContent>
+                  <TabsContent value="babies">
+                    {props.tab === "babies" ? props.babiesTab : null}
+                  </TabsContent>
 
-              <TabsContent value="users" className="mt-0">
-                {props.tab === "users" ? props.usersTab : null}
-              </TabsContent>
+                  <TabsContent value="users">{props.tab === "users" ? props.usersTab : null}</TabsContent>
 
-              <TabsContent value="languages" className="mt-0">
-                {props.tab === "languages" ? props.languagesTab : null}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                  <TabsContent value="languages">
+                    {props.tab === "languages" ? props.languagesTab : null}
+                  </TabsContent>
+                </Tabs>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Stack>
       </div>
     </div>
   );
