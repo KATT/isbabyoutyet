@@ -499,13 +499,8 @@ type MigrationRunnerReport = {
   readonly toStartOver: string;
 };
 
-<<<<<<< HEAD
-function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
+export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
   if (typeof result !== "object" || result === null || Array.isArray(result)) {
-=======
-export function parseMigrationRunnerReport(result: unknown): MigrationRunnerReport {
-  if (typeof result !== "object" || result === null) {
->>>>>>> cursor/anti-slop-unknown-returns-d6df
     throw new Error("Migration runner returned an invalid report");
   }
   if (
