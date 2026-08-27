@@ -31,10 +31,7 @@
     "format": {
     },
     "//#test:coverage": {
-      "outputs": [
-        "coverage/coverage-summary.json",
-        "coverage/lcov.info"
-      ],
+      "outputs": ["coverage/coverage-summary.json"],
       "inputs": [
         "$TURBO_ROOT$/package.json",
         "$TURBO_ROOT$/vitest.config.ts",

@@ -73,14 +73,14 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      # PRs: Vitest --changed only (no coverage). Full coverage lives in the codecov job.
+      # PRs: Vitest --changed only (no coverage). Coverage reporting is a later stack slice.
       - name: Test (changed vs base)
         if: github.event_name == 'pull_request'
         run: |
           pnpm pretest:coverage
           pnpm exec vitest run --changed "${{ github.event.pull_request.base.sha }}"
 
-      # main/push: keep a Turbo-cached full coverage run so remote cache stays warm for codecov.
+      # main/push: Turbo-cached full coverage (warms remote cache for optional Codecov slice).
       - name: Test coverage (full)
         if: github.event_name != 'pull_request'
         run: pnpm exec turbo run test:coverage --summarize
@@ -91,76 +91,6 @@ jobs:
           summary="$(ls -t .turbo/runs/*.json | head -1)"
           jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
           test -f coverage/coverage-summary.json
-          test -f coverage/lcov.info
 
       - name: Knip
         run: pnpm knip
-
-  # Parallel with `checks`. Always full-suite coverage for Codecov (ok to be slower).
-  codecov:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          lfs: true
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "24"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Cache Vitest modules
-        uses: actions/cache@v4
-        with:
-          path: node_modules/.experimental-vitest-cache
-          key: vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
-          restore-keys: |
-            vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
-
-      - name: Cache Turborepo tasks
-        uses: actions/cache@v4
-        with:
-          path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
-          restore-keys: |
-            turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
-
-      - name: Set up Turborepo Remote Cache
-        if: ${{ vars.TURBO_TEAM != '' }}
-        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
-        with:
-          team: ${{ vars.TURBO_TEAM }}
-
-      - name: Full coverage (Turbo-cached)
-        run: pnpm exec turbo run test:coverage --summarize
-
-      - name: Report Turbo coverage cache
-        if: always()
-        run: |
-          summary="$(ls -t .turbo/runs/*.json | head -1)"
-          jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
-          test -f coverage/lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          files: coverage/lcov.info
-          flags: unit
-          name: vitest
-          token: ${{ secrets.CODECOV_TOKEN }}
-          # Token may be unset until Codecov is configured; don't fail the parallel job.
-          fail_ci_if_error: false
-          verbose: true
