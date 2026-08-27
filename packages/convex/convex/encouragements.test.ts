@@ -65,6 +65,28 @@ test("visitors can create encouragements and list them", async () => {
   expect(result.page[0]).not.toHaveProperty("userAgent");
 });
 
+test("create persists visitor metadata when provided", async () => {
+  const { t, babyId } = await setupWithBaby();
+  const encouragementId = await t.mutation(
+    api.encouragements.create,
+    createEncouragementArgs({
+      babyId,
+      authorName: "Grandma",
+      message: "Hi!",
+      visitorId: "visitor-1",
+      userAgent: "Mozilla/5.0",
+      locale: "en-US",
+      timezone: "Europe/Stockholm",
+    }),
+  );
+  const stored = await t.run(async (ctx) => ctx.db.get(encouragementId));
+  expect(stored).toMatchObject({
+    userAgent: "Mozilla/5.0",
+    locale: "en-US",
+    timezone: "Europe/Stockholm",
+  });
+});
+
 test("the author can edit their encouragement within the edit window", async () => {
   const { t, babyId } = await setupWithBaby();
 

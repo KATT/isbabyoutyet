@@ -470,6 +470,35 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   expect(impostorBaby.publicId).toBe("working-title-1");
 });
 
+test("renaming a baby without changing the slug keeps the publicId", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Baby Smith",
+      dueDate: "2026-09-01",
+    }),
+  );
+  expect(created.publicId).toBe("baby-smith");
+
+  await asAlice.mutation(
+    api.baby.update,
+    await loadBabyUpdateArgs(t, {
+      babyId: created.babyId,
+      name: "Baby smith",
+    }),
+  );
+
+  const after = await t.query(api.baby.getByPublicId, { id: "baby-smith" });
+  expect(after).toMatchObject({
+    _id: created.babyId,
+    name: "Baby smith",
+    publicId: "baby-smith",
+  });
+});
+
 test("homepage demo publicIds are reserved and never assigned to real babies", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
