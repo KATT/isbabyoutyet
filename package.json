@@ -16,6 +16,7 @@
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
+    "test:changed": "vitest run --changed",
     "test:coverage:changed": "vitest run --coverage --changed",
     "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
