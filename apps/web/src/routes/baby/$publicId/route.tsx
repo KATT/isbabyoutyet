@@ -21,7 +21,6 @@ import {
   Outlet,
   redirect,
   useMatchRoute,
-  useNavigate,
 } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -250,7 +249,6 @@ export function managerDocToBabyData(doc: ManagerBabyDoc): BabyData {
 function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
-  const navigate = useNavigate({ from: Route.fullPath });
   const matchRoute = useMatchRoute();
   const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
@@ -300,17 +298,7 @@ function BabyPageLayout() {
           surface="baby"
           onboarding={loaderData.onboarding}
           enabled={undefined}
-          babyPublicId={babyDoc.publicId}
           spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
-          onGoToStep={(stepId) => {
-            if (stepId === "post_update") {
-              void navigate(post.openLink);
-              return;
-            }
-            if (stepId === "explore_settings") {
-              void navigate(settings.openLink);
-            }
-          }}
         />
       ) : null}
 

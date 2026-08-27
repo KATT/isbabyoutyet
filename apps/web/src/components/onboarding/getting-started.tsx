@@ -17,7 +17,6 @@ import type { LinkProps } from "@tanstack/react-router";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
-import { openOverlayLink } from "@/lib/overlay-nav";
 import { ONBOARDING_STEPS } from "./steps";
 import { useVisualViewportMetrics } from "@/lib/use-visual-viewport";
 
@@ -33,12 +32,11 @@ type GettingStartedCardProps = {
   minimized: boolean;
   onMinimize: (minimized: boolean) => void;
   onDismiss: () => void;
-  onAcknowledgeStep: (stepId: OnboardingStepId) => void;
   /** Current route context for CTAs */
   surface: "dashboard" | "baby";
-  /** First created baby — checklist links go here, not to later babies */
+  /** First owned baby — preferred deep-link target from dashboard CTAs only */
   tourBaby: TourBaby | null;
-  /** Baby-page actions: open a dialog or scroll to a control */
+  /** Baby-page: scroll to and highlight a control */
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
   className: string | undefined;
 };
@@ -47,31 +45,10 @@ type StepAction =
   | { kind: "link"; link: LinkProps; label: string; onClick: (() => void) | undefined }
   | { kind: "button"; onClick: () => void; label: string };
 
-function babyPageLink(opts: {
-  publicId: string;
-  overlay: "settings" | "post" | "share" | null;
-}): LinkProps {
-  if (opts.overlay === "settings") {
-    return openOverlayLink({
-      to: "/baby/$publicId/settings",
-      params: { publicId: opts.publicId },
-    });
-  }
-  if (opts.overlay === "post") {
-    return openOverlayLink({
-      to: "/baby/$publicId/post",
-      params: { publicId: opts.publicId },
-    });
-  }
-  if (opts.overlay === "share") {
-    return openOverlayLink({
-      to: "/baby/$publicId/share",
-      params: { publicId: opts.publicId },
-    });
-  }
+function babyPageLink(publicId: string): LinkProps {
   return {
     to: "/baby/$publicId",
-    params: { publicId: opts.publicId },
+    params: { publicId },
   };
 }
 
@@ -80,7 +57,6 @@ function getStepAction(opts: {
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  onAcknowledge: (stepId: OnboardingStepId) => void;
   t: TranslationFunction;
 }): StepAction | null {
   const step = opts.step;
@@ -107,34 +83,16 @@ function getStepAction(opts: {
     }
     const publicId = opts.tourBaby.publicId;
     const name = opts.tourBaby.name;
-    if (step.id === "share_link") {
+    // Preferred-baby deep link onto the page (not overlays). Highlight tips run on the baby surface.
+    if (
+      step.id === "share_link" ||
+      step.id === "post_update" ||
+      step.id === "explore_settings" ||
+      step.id === "learn_encouragements"
+    ) {
       return {
         kind: "link",
-        link: babyPageLink({ publicId, overlay: "share" }),
-        label: t("Show Share"),
-        onClick: undefined,
-      };
-    }
-    if (step.id === "post_update") {
-      return {
-        kind: "link",
-        link: babyPageLink({ publicId, overlay: "post" }),
-        label: t("Post an update"),
-        onClick: undefined,
-      };
-    }
-    if (step.id === "explore_settings") {
-      return {
-        kind: "link",
-        link: babyPageLink({ publicId, overlay: "settings" }),
-        label: t("Open settings"),
-        onClick: () => opts.onAcknowledge(step.id),
-      };
-    }
-    if (step.id === "learn_encouragements") {
-      return {
-        kind: "link",
-        link: babyPageLink({ publicId, overlay: null }),
+        link: babyPageLink(publicId),
         label: t("See {{name}}'s page", { name }),
         onClick: undefined,
       };
@@ -142,36 +100,12 @@ function getStepAction(opts: {
     return null;
   }
 
-  if (step.id === "post_update") {
-    if (!opts.tourBaby) {
-      return null;
-    }
-    return {
-      kind: "link",
-      link: babyPageLink({ publicId: opts.tourBaby.publicId, overlay: "post" }),
-      label: t("Post an update"),
-      onClick: undefined,
-    };
-  }
-  if (step.id === "explore_settings") {
-    return {
-      kind: "button",
-      onClick: () => opts.onGoToStep?.(step.id),
-      label: t("Open settings"),
-    };
-  }
-  if (step.id === "share_link") {
-    if (!opts.tourBaby) {
-      return null;
-    }
-    return {
-      kind: "link",
-      link: babyPageLink({ publicId: opts.tourBaby.publicId, overlay: "share" }),
-      label: t("Show Share"),
-      onClick: undefined,
-    };
-  }
-  if (step.id === "learn_encouragements") {
+  if (
+    step.id === "share_link" ||
+    step.id === "post_update" ||
+    step.id === "explore_settings" ||
+    step.id === "learn_encouragements"
+  ) {
     return {
       kind: "button",
       onClick: () => opts.onGoToStep?.(step.id),
@@ -404,7 +338,6 @@ function ChecklistContents(props: ChecklistContentsProps) {
                 surface: props.surface,
                 tourBaby: props.tourBaby,
                 onGoToStep: props.onGoToStep,
-                onAcknowledge: props.onAcknowledgeStep,
                 t,
               });
           return (
@@ -432,11 +365,6 @@ function ChecklistContents(props: ChecklistContentsProps) {
             surface={props.surface}
             tourBaby={props.tourBaby}
             onGoToStep={props.onGoToStep}
-            onAcknowledge={() => {
-              if (props.nextStep) {
-                props.onAcknowledgeStep(props.nextStep.id);
-              }
-            }}
             onBeforeAction={props.onBeforeAction}
             closeWithDrawerClose={props.closeWithDrawerClose}
             t={t}
@@ -550,7 +478,6 @@ function NextStepHint(props: {
   surface: "dashboard" | "baby";
   tourBaby: TourBaby | null;
   onGoToStep: ((stepId: OnboardingStepId) => void) | undefined;
-  onAcknowledge: () => void;
   onBeforeAction: (() => void) | undefined;
   closeWithDrawerClose: boolean;
   t: TranslationFunction;
@@ -562,11 +489,6 @@ function NextStepHint(props: {
     surface: props.surface,
     tourBaby: props.tourBaby,
     onGoToStep: props.onGoToStep,
-    onAcknowledge: (stepId) => {
-      if (stepId === props.step.id) {
-        props.onAcknowledge();
-      }
-    },
     t,
   });
 
