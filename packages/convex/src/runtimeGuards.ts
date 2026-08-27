@@ -1,6 +1,7 @@
 /**
  * Runtime representation guards for unparsed external values.
- * `typeof` checks live only in this module at the I/O boundary.
+ * `typeof` is allowed here via `no-runtime-typeof` + `allowInTypeGuards`
+ * (see oxlint-plugins/no-runtime-typeof.test.ts).
  */
 
 export function isString(value: unknown): value is string {

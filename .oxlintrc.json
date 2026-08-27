@@ -103,7 +103,7 @@
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-unknown-returns": "error",
     "anti-slop/no-unknown-parameters": "error",
-    "anti-slop/no-runtime-typeof": "error",
+    "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
@@ -205,10 +205,9 @@
       }
     },
     {
-      // Central runtime representation guards for unparsed external values.
+      // Boundary module: accepts unparsed external values (unknown / Record).
       "files": ["**/runtimeGuards.ts"],
       "rules": {
-        "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
         "anti-slop/no-unknown-parameters": "off",
         "anti-slop/no-unknown-returns": "off",
         "anti-slop/no-unsafe-dictionary-type": "off"
