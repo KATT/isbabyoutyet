@@ -38,6 +38,14 @@ import {
   testUpdateInsert,
 } from "./test.setup";
 
+function withoutKeys<TDoc extends object>(doc: TDoc, keys: ReadonlyArray<keyof TDoc>) {
+  const copy: Record<string, unknown> = { ...doc };
+  for (const key of keys) {
+    delete copy[String(key)];
+  }
+  return copy as unknown as TDoc;
+}
+
 test("retained migrations skip linked rows and backfill update metadata and counts", async () => {
   const t = convexTest(schema, modules);
   await registerMigrationsComponent(t);
@@ -348,7 +356,7 @@ test("optional-key backfills are idempotent and do not clobber set values", asyn
     };
   });
 
-  async function runBackfills() {
+  async function runBackfills(omitKeys: boolean) {
     await t.run(async (ctx) => {
       const sparseBaby = await ctx.db.get(ids.sparseBabyId);
       const themedBaby = await ctx.db.get(ids.themedBabyId);
@@ -380,24 +388,100 @@ test("optional-key backfills are idempotent and do not clobber set values", asyn
       ) {
         throw new Error("Fixture missing");
       }
-      await backfillBabyOptionalKeysDoc(ctx, sparseBaby);
-      await backfillBabyOptionalKeysDoc(ctx, themedBaby);
-      await backfillUserProfileOptionalKeysDoc(ctx, sparseProfile);
+      await backfillBabyOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(sparseBaby, [
+              "theme",
+              "locale",
+              "photoId",
+              "thumbnailId",
+              "blurDataUrl",
+              "demo",
+              "deletedAt",
+            ])
+          : sparseBaby,
+      );
+      await backfillBabyOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(themedBaby, [
+              "locale",
+              "photoId",
+              "thumbnailId",
+              "blurDataUrl",
+              "deletedAt",
+            ])
+          : themedBaby,
+      );
+      await backfillUserProfileOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(sparseProfile, ["timeZone"]) : sparseProfile,
+      );
       await backfillUserProfileOptionalKeysDoc(ctx, zonedProfile);
-      await backfillPushSubscriptionOptionalKeysDoc(ctx, subscription);
-      await backfillScheduledNotificationOptionalKeysDoc(ctx, notification);
-      await backfillTimelineItemOptionalKeysDoc(ctx, encouragementItem);
-      await backfillEncouragementOptionalKeysDoc(ctx, encouragement);
-      await backfillTimelineItemOptionalKeysDoc(ctx, updateItem);
-      await backfillUpdateOptionalKeysDoc(ctx, update);
-      await backfillUserOnboardingOptionalKeysDoc(ctx, onboarding);
-      await backfillCoParentOptionalKeysDoc(ctx, coParent);
-      await backfillCoParentInviteOptionalKeysDoc(ctx, invite);
+      await backfillPushSubscriptionOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(subscription, ["userAgent"]) : subscription,
+      );
+      await backfillScheduledNotificationOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(notification, ["scheduledId", "customMessage", "photoId", "updateId"])
+          : notification,
+      );
+      await backfillTimelineItemOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(encouragementItem, ["deletedAt"]) : encouragementItem,
+      );
+      await backfillEncouragementOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(encouragement, [
+              "demoFixture",
+              "userAgent",
+              "locale",
+              "timezone",
+              "deletedAt",
+            ])
+          : encouragement,
+      );
+      await backfillTimelineItemOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(updateItem, ["deletedAt"]) : updateItem,
+      );
+      await backfillUpdateOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(update, [
+              "milestone",
+              "occurredAt",
+              "photoId",
+              "thumbnailId",
+              "blurDataUrl",
+              "pushImageId",
+              "deletedAt",
+            ])
+          : update,
+      );
+      await backfillUserOnboardingOptionalKeysDoc(
+        ctx,
+        omitKeys
+          ? withoutKeys(onboarding, ["activeCoachmarkStepId", "restartHintVisible"])
+          : onboarding,
+      );
+      await backfillCoParentOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(coParent, ["name", "deletedAt"]) : coParent,
+      );
+      await backfillCoParentInviteOptionalKeysDoc(
+        ctx,
+        omitKeys ? withoutKeys(invite, ["deletedAt"]) : invite,
+      );
     });
   }
 
-  await runBackfills();
-  await runBackfills();
+  await runBackfills(true);
+  await runBackfills(false);
 
   const result = await t.run(async (ctx) => {
     return {
