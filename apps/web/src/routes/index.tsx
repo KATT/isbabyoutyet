@@ -1,4 +1,11 @@
+import type { SVGProps } from "react";
+import * as stylex from "@stylexjs/stylex";
 import { Button } from "@workspace/ui/components/button";
+import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import { Stack } from "@workspace/ui-patterns/components/stack";
+import { Text } from "@workspace/ui-patterns/components/text";
+import { VisuallyHidden } from "@workspace/ui-patterns/components/visually-hidden";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";
@@ -19,6 +26,404 @@ import { useMeasuredWidth } from "@/lib/use-measured-width";
 // Static date snapshot for SSR/hydration
 // This ensures the same date is used on both server and client during hydration
 const SERVER_DATE_SNAPSHOT = "2026-01-01T10:30:00.000Z";
+
+const heroWordIn = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform: "translateY(105%) rotate(6deg)",
+  },
+  to: {
+    opacity: 1,
+    transform: "translateY(0) rotate(0deg)",
+  },
+});
+
+const heroWordOut = stylex.keyframes({
+  from: {
+    opacity: 1,
+    transform: "translateY(0) rotate(0deg)",
+  },
+  to: {
+    opacity: 0,
+    transform: "translateY(-105%) rotate(-6deg)",
+  },
+});
+
+const styles = stylex.create({
+  page: {
+    backgroundColor: colors.background,
+    backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
+    backgroundSize: "22px 22px",
+    minHeight: "100vh",
+  },
+  header: {
+    paddingBottom: spacing.s1,
+    paddingInline: spacing.s4,
+    paddingTop: spacing.s3,
+    position: "sticky",
+    top: 0,
+    zIndex: 20,
+  },
+  headerInner: {
+    alignItems: "center",
+    display: "flex",
+    gap: spacing.s2,
+    justifyContent: "space-between",
+    marginInline: "auto",
+    maxWidth: "64rem",
+  },
+  brandChip: {
+    alignItems: "center",
+    backdropFilter: "blur(12px)",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
+    borderColor: colors.border,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    display: "flex",
+    gap: spacing.s2,
+    paddingBottom: spacing.s1_5,
+    paddingLeft: spacing.s2,
+    paddingRight: spacing.s4,
+    paddingTop: spacing.s1_5,
+  },
+  brandIcon: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: "9999px",
+    color: colors.primary,
+    display: "flex",
+    height: "1.75rem",
+    justifyContent: "center",
+    width: "1.75rem",
+  },
+  brandName: {
+    fontSize: "0.875rem",
+    fontWeight: 800,
+    letterSpacing: "-0.025em",
+  },
+  main: {
+    marginInline: "auto",
+    maxWidth: "64rem",
+    paddingInline: spacing.s6,
+  },
+  hero: {
+    paddingBlock: {
+      "@media (min-width: 768px)": spacing.s16,
+      default: "4rem",
+    },
+    textAlign: "center",
+  },
+  freeBadge: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    color: colors.primary,
+    display: "inline-block",
+    fontSize: "0.875rem",
+    fontWeight: 800,
+    paddingBlock: spacing.s1_5,
+    paddingInline: spacing.s4,
+    transform: "rotate(-2deg)",
+  },
+  heroTitle: {
+    color: colors.foreground,
+    fontSize: {
+      "@media (min-width: 768px)": "4.5rem",
+      default: "3rem",
+    },
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    lineHeight: {
+      "@media (min-width: 768px)": 1,
+      default: 1.1,
+    },
+    marginInline: "auto",
+    marginTop: spacing.s8,
+    maxWidth: "48rem",
+    textWrap: "balance",
+  },
+  heroNamePill: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderRadius: "1.5rem",
+    color: colors.primary,
+    display: "inline-block",
+    paddingInline: spacing.s4,
+    transform: "rotate(-1deg)",
+  },
+  heroWordFrame: {
+    display: "inline-block",
+    overflow: "hidden",
+    position: "relative",
+    transitionDuration: "500ms",
+    transitionProperty: "width",
+    transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+    whiteSpace: "nowrap",
+    "@media (prefers-reduced-motion: reduce)": {
+      transitionProperty: "none",
+    },
+  },
+  heroWordIncoming: {
+    animationDuration: "0.55s",
+    animationFillMode: "both",
+    animationName: heroWordIn,
+    animationTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)",
+    display: "inline-block",
+    "@media (prefers-reduced-motion: reduce)": {
+      animationName: "none",
+    },
+  },
+  heroWordOutgoing: {
+    animationDuration: "0.45s",
+    animationFillMode: "both",
+    animationName: heroWordOut,
+    animationTimingFunction: "cubic-bezier(0.55, 0.055, 0.675, 0.19)",
+    left: 0,
+    position: "absolute",
+    top: 0,
+    "@media (prefers-reduced-motion: reduce)": {
+      display: "none",
+    },
+  },
+  heroLead: {
+    color: colors.mutedForeground,
+    fontSize: {
+      "@media (min-width: 768px)": "1.25rem",
+      default: "1.125rem",
+    },
+    fontWeight: 600,
+    lineHeight: 1.625,
+    marginInline: "auto",
+    marginTop: spacing.s6,
+    maxWidth: "42rem",
+  },
+  heroActions: {
+    marginTop: spacing.s8,
+  },
+  section: {
+    paddingBlock: spacing.s12,
+  },
+  sectionTitle: {
+    color: colors.foreground,
+    fontSize: {
+      "@media (min-width: 768px)": "2.25rem",
+      default: "1.875rem",
+    },
+    fontWeight: 900,
+    letterSpacing: "-0.025em",
+    lineHeight: 1.15,
+    margin: 0,
+  },
+  featureGrid: {
+    display: "grid",
+    gap: spacing.s5,
+    marginTop: spacing.s10,
+    "@media (min-width: 640px)": {
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    },
+    "@media (min-width: 1024px)": {
+      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    },
+  },
+  featureCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: "1.5rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    padding: spacing.s6,
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+  },
+  featureCardTiltLeft: {
+    transform: {
+      ":hover": "translateY(-0.25rem) rotate(-1deg)",
+      default: null,
+    },
+  },
+  featureCardTiltRight: {
+    transform: {
+      ":hover": "translateY(-0.25rem) rotate(1deg)",
+      default: null,
+    },
+  },
+  featureEmoji: {
+    fontSize: "1.875rem",
+    lineHeight: 1,
+  },
+  demoLink: {
+    display: "block",
+    marginTop: spacing.s10,
+    textDecoration: "none",
+  },
+  demoCard: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    borderRadius: "2rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    padding: {
+      "@media (min-width: 768px)": spacing.s10,
+      default: spacing.s8,
+    },
+    textAlign: "center",
+    transform: {
+      ":hover": "translateY(-0.25rem)",
+      default: null,
+    },
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+  },
+  demoEmoji: {
+    fontSize: "3rem",
+    lineHeight: 1,
+  },
+  previewIntro: {
+    marginTop: spacing.s10,
+  },
+  previewGrid: {
+    display: "grid",
+    gap: spacing.s5,
+    marginTop: spacing.s5,
+    "@media (min-width: 640px)": {
+      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    },
+    "@media (min-width: 1024px)": {
+      gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+    },
+  },
+  previewLink: {
+    display: "block",
+    height: "100%",
+    textDecoration: "none",
+  },
+  previewCard: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: "1.5rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    height: "100%",
+    padding: spacing.s6,
+    textAlign: "center",
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+  },
+  previewCardTiltLeft: {
+    transform: {
+      ":hover": "translateY(-0.25rem) rotate(-1deg)",
+      default: null,
+    },
+  },
+  previewCardTiltRight: {
+    transform: {
+      ":hover": "translateY(-0.25rem) rotate(1deg)",
+      default: null,
+    },
+  },
+  previewEmoji: {
+    fontSize: "2.25rem",
+    lineHeight: 1,
+  },
+  howGrid: {
+    display: "grid",
+    gap: spacing.s8,
+    marginTop: spacing.s10,
+    "@media (min-width: 768px)": {
+      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+    },
+  },
+  howStep: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    textAlign: "center",
+  },
+  howBadge: {
+    alignItems: "center",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    borderRadius: radius.xl,
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `4px 4px 0 0 color-mix(in oklab, ${colors.primary} 18%, transparent)`,
+    color: colors.primary,
+    display: "flex",
+    fontSize: "1.5rem",
+    fontWeight: 900,
+    height: "3.5rem",
+    justifyContent: "center",
+    marginBottom: spacing.s4,
+    transform: "rotate(-3deg)",
+    width: "3.5rem",
+  },
+  ctaSection: {
+    paddingBlock: "4rem",
+    textAlign: "center",
+  },
+  ctaCard: {
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 10%, transparent)`,
+    borderColor: `color-mix(in oklab, ${colors.primary} 25%, transparent)`,
+    borderRadius: "2rem",
+    borderStyle: "solid",
+    borderWidth: "2px",
+    boxShadow: `6px 6px 0 0 color-mix(in oklab, ${colors.primary} 30%, transparent)`,
+    marginInline: "auto",
+    maxWidth: "42rem",
+    paddingBlock: spacing.s12,
+    paddingInline: spacing.s8,
+  },
+  ctaEmoji: {
+    fontSize: "2.25rem",
+    lineHeight: 1,
+    margin: 0,
+  },
+  footer: {
+    backgroundColor: `color-mix(in oklab, ${colors.background} 60%, transparent)`,
+    borderTopColor: `color-mix(in oklab, ${colors.border} 60%, transparent)`,
+    borderTopStyle: "solid",
+    borderTopWidth: "2px",
+    paddingBlock: spacing.s8,
+    paddingInline: spacing.s4,
+    textAlign: "center",
+  },
+  footerInner: {
+    alignItems: "center",
+    display: "flex",
+    flexDirection: "column",
+    gap: spacing.s4,
+    marginInline: "auto",
+    maxWidth: "64rem",
+  },
+  githubLink: {
+    alignItems: "center",
+    color: {
+      ":hover": colors.foreground,
+      default: colors.mutedForeground,
+    },
+    display: "inline-flex",
+    fontWeight: 700,
+    gap: spacing.s2,
+    textDecoration: "none",
+    transitionDuration: "150ms",
+    transitionProperty: "color",
+    transitionTimingFunction: "ease",
+  },
+  githubIcon: {
+    height: "1.25rem",
+    width: "1.25rem",
+  },
+});
 
 export const Route = createFileRoute("/")({
   component: HomePage,
@@ -73,9 +478,15 @@ export const Route = createFileRoute("/")({
 });
 
 // lucide-react v1 removed brand icons (including Github), so inline the mark
-function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
+function GithubIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      {...stylex.props(styles.githubIcon)}
+      {...props}
+    >
       <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
     </svg>
   );
@@ -139,13 +550,13 @@ function RotatingBabyName(props: { words: readonly string[] }) {
   return (
     <span
       aria-hidden="true"
-      className="relative inline-block overflow-hidden whitespace-nowrap transition-[width] duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none"
+      {...stylex.props(styles.heroWordFrame)}
       style={width === null ? undefined : { width }}
     >
       {indices.previous !== null ? (
         <span
           key={`out-${indices.previous}-${indices.current}`}
-          className="hero-word-out absolute left-0 top-0"
+          {...stylex.props(styles.heroWordOutgoing)}
         >
           {props.words[indices.previous]}
         </span>
@@ -153,7 +564,8 @@ function RotatingBabyName(props: { words: readonly string[] }) {
       <span
         key={`in-${indices.current}`}
         ref={measureCurrentWord}
-        className="hero-word-in inline-block"
+        {...stylex.props(styles.heroWordIncoming)}
+        data-hero-word="in"
       >
         {props.words[indices.current]}
       </span>
@@ -232,6 +644,8 @@ const HOW_IT_WORKS = [
   description: TranslationKey;
 }>;
 
+type PreviewTilt = "left" | "right";
+
 export function HomePage() {
   const { t, locale } = useI18n();
   const demoBaby = homepageDemoBabyFor(locale);
@@ -252,21 +666,21 @@ export function HomePage() {
       emoji: "👶",
       title: "Waiting",
       description: "Before labour starts",
-      rotate: "group-hover:-rotate-1",
+      tilt: "left" as const satisfies PreviewTilt,
       search: { name: "Emma" },
     },
     {
       emoji: "💫",
       title: "Labour started",
       description: "Things are happening!",
-      rotate: "group-hover:rotate-1",
+      tilt: "right" as const satisfies PreviewTilt,
       search: { name: "Oliver", dueDate: hoursAgo(0), laborStarted: hoursAgo(2) },
     },
     {
       emoji: "🏥",
       title: "Gone to hospital",
       description: "Almost there!",
-      rotate: "group-hover:-rotate-1",
+      tilt: "left" as const satisfies PreviewTilt,
       search: {
         name: "Sophia",
         laborStarted: hoursAgo(4),
@@ -279,7 +693,7 @@ export function HomePage() {
       emoji: "🎉",
       title: "Baby born!",
       description: "Celebrate the arrival",
-      rotate: "group-hover:rotate-1",
+      tilt: "right" as const satisfies PreviewTilt,
       search: {
         name: "Liam",
         laborStarted: hoursAgo(6),
@@ -292,24 +706,18 @@ export function HomePage() {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
-      {/* Floating header */}
-      <header className="sticky top-0 z-20 px-4 pt-3 pb-1">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
-          <span className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm">
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
-              <Baby className="h-4 w-4 text-primary" />
+    <div {...stylex.props(styles.page)}>
+      <header {...stylex.props(styles.header)}>
+        <div {...stylex.props(styles.headerInner)}>
+          <span {...stylex.props(styles.brandChip)}>
+            <span {...stylex.props(styles.brandIcon)}>
+              <Baby size={16} weight="bold" />
             </span>
-            <span className="text-sm font-extrabold tracking-tight">isbabyoutyet</span>
+            <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
           </span>
-          <div className="flex items-center gap-2">
+          <Inline gap="s2" wrap={false}>
             {sessionData.data ? (
-              <Button
-                size="sm"
-                className="rounded-full font-bold"
-                render={<Link to="/dashboard" />}
-                nativeButton={false}
-              >
+              <Button size="sm" render={<Link to="/dashboard" />} nativeButton={false}>
                 {t("Dashboard")}
               </Button>
             ) : (
@@ -317,245 +725,236 @@ export function HomePage() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="rounded-full font-bold border-2"
                   render={<Link to="/auth/login" />}
                   nativeButton={false}
                 >
                   {t("Sign in")}
                 </Button>
-                <Button
-                  size="sm"
-                  className="rounded-full font-bold"
-                  render={<Link to="/auth/signup" />}
-                  nativeButton={false}
-                >
+                <Button size="sm" render={<Link to="/auth/signup" />} nativeButton={false}>
                   {t("Get started")}
                 </Button>
               </>
             )}
-          </div>
+          </Inline>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6">
-        {/* Hero */}
-        <section className="py-16 text-center md:py-24">
-          <span className="inline-block -rotate-2 rounded-full border-2 border-primary/30 bg-primary/10 px-4 py-1.5 text-sm font-extrabold text-primary pop-shadow">
-            ✨ {t("Free forever, no ads")}
-          </span>
-          <h1 className="mx-auto mt-8 max-w-3xl text-5xl font-black tracking-tight text-foreground text-balance md:text-7xl">
+      <main {...stylex.props(styles.main)}>
+        <section {...stylex.props(styles.hero)}>
+          <span {...stylex.props(styles.freeBadge)}>✨ {t("Free forever, no ads")}</span>
+          <h1 {...stylex.props(styles.heroTitle)}>
             {headline.before === "" ? null : <>{headline.before} </>}
-            <span className="inline-block -rotate-1 rounded-3xl bg-primary/15 px-4 text-primary">
-              <span className="sr-only">{headline.words[0]}</span>
+            <span {...stylex.props(styles.heroNamePill)}>
+              <VisuallyHidden>{headline.words[0]}</VisuallyHidden>
               <RotatingBabyName words={headline.words} />
             </span>{" "}
             {headline.after}
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-relaxed text-muted-foreground md:text-xl">
+          <p {...stylex.props(styles.heroLead)}>
             {t(
               'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼',
             )}
           </p>
-          <div className="mt-8 flex flex-col items-center gap-3">
-            <div className="flex flex-wrap justify-center gap-3">
-              {sessionData.data ? (
-                <Button
-                  size="lg"
-                  className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                  render={<Link to="/dashboard" />}
-                  nativeButton={false}
-                >
-                  {t("Go to Dashboard")}
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    size="lg"
-                    className="h-auto rounded-full px-8 py-4 text-base font-extrabold pop-shadow-strong"
-                    render={<Link to="/auth/signup" />}
-                    nativeButton={false}
-                  >
-                    {t("Create your page 🎈")}
+          <div {...stylex.props(styles.heroActions)}>
+            <Stack gap="s3" align="center">
+              <Inline gap="s3" justify="center">
+                {sessionData.data ? (
+                  <Button size="lg" render={<Link to="/dashboard" />} nativeButton={false}>
+                    {t("Go to Dashboard")}
                   </Button>
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="h-auto rounded-full border-2 bg-background/70 px-8 py-4 text-base font-extrabold"
-                    render={<Link to="/auth/login" />}
-                    nativeButton={false}
-                  >
-                    {t("Sign in")}
-                  </Button>
-                </>
-              )}
-            </div>
-            <Button
-              size="lg"
-              variant="secondary"
-              className="h-auto rounded-full border-2 border-primary/30 bg-primary/10 px-6 py-3 text-sm font-extrabold text-primary pop-shadow hover:bg-primary/20 hover:text-primary"
-              render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
-              nativeButton={false}
-            >
-              {t("See a live page")} 👀
-            </Button>
+                ) : (
+                  <>
+                    <Button size="lg" render={<Link to="/auth/signup" />} nativeButton={false}>
+                      {t("Create your page 🎈")}
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      render={<Link to="/auth/login" />}
+                      nativeButton={false}
+                    >
+                      {t("Sign in")}
+                    </Button>
+                  </>
+                )}
+              </Inline>
+              <Button
+                size="lg"
+                variant="secondary"
+                render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
+                nativeButton={false}
+              >
+                {t("See a live page")} 👀
+              </Button>
+            </Stack>
           </div>
         </section>
 
-        {/* Features */}
-        <section className="py-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              {t("Everything the family needs")}
-            </h2>
-            <p className="mt-2 font-semibold text-muted-foreground">
+        <section {...stylex.props(styles.section)}>
+          <Stack gap="s2" align="center">
+            <h2 {...stylex.props(styles.sectionTitle)}>{t("Everything the family needs")}</h2>
+            <Text tone="muted" weight="semibold" align="center">
               {t("For you, and for everyone waiting by the phone")}
-            </p>
-          </div>
-          <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            </Text>
+          </Stack>
+          <div {...stylex.props(styles.featureGrid)}>
             {FEATURES.map((feature, index) => (
               <div
                 key={feature.title}
-                className={`rounded-3xl border-2 border-border bg-card p-6 pop-shadow transition-transform hover:-translate-y-1 ${
-                  index % 2 === 0 ? "hover:-rotate-1" : "hover:rotate-1"
-                }`}
+                {...stylex.props(
+                  styles.featureCard,
+                  index % 2 === 0 ? styles.featureCardTiltLeft : styles.featureCardTiltRight,
+                )}
               >
-                <span className="text-3xl" aria-hidden="true">
-                  {feature.emoji}
-                </span>
-                <h3 className="mt-3 text-lg font-extrabold text-foreground">{t(feature.title)}</h3>
-                <p className="mt-1.5 text-sm font-medium leading-relaxed text-muted-foreground">
-                  {t(feature.description)}
-                </p>
+                <Stack gap="s3">
+                  <span {...stylex.props(styles.featureEmoji)} aria-hidden="true">
+                    {feature.emoji}
+                  </span>
+                  <Stack gap="s1_5">
+                    <Text as="h3" size="lg" weight="extrabold">
+                      {t(feature.title)}
+                    </Text>
+                    <Text as="p" size="sm" tone="muted" weight="medium">
+                      {t(feature.description)}
+                    </Text>
+                  </Stack>
+                </Stack>
               </div>
             ))}
           </div>
         </section>
 
-        {/* See it in action */}
-        <section className="py-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              {t("See it in action")}
-            </h2>
-            <p className="mt-2 font-semibold text-muted-foreground">
+        <section {...stylex.props(styles.section)}>
+          <Stack gap="s2" align="center">
+            <h2 {...stylex.props(styles.sectionTitle)}>{t("See it in action")}</h2>
+            <Text tone="muted" weight="semibold" align="center">
               {t("{{name}}'s page is a live demo — leave a note, look around, try it out", {
                 name: demoBaby.name,
               })}
-            </p>
-          </div>
+            </Text>
+          </Stack>
           <Link
             to="/baby/$publicId"
             params={{ publicId: demoBaby.publicId }}
-            className="group mt-10 block"
+            {...stylex.props(styles.demoLink)}
           >
-            <div className="rounded-[2rem] border-2 border-primary/30 bg-primary/10 p-8 text-center pop-shadow-strong transition-transform group-hover:-translate-y-1 md:p-10">
-              <span className="text-5xl" aria-hidden="true">
-                🍼
-              </span>
-              <h3 className="mt-4 text-2xl font-black text-foreground">
-                {t("Follow {{name}}'s arrival", { name: demoBaby.name })}
-              </h3>
-              <p className="mx-auto mt-2 max-w-lg font-medium text-muted-foreground">
-                {t(
-                  "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
-                )}
-              </p>
-              <p className="mt-4 text-sm font-extrabold text-primary">
-                {t("Open the live page →")}
-              </p>
+            <div {...stylex.props(styles.demoCard)}>
+              <Stack gap="s4" align="center">
+                <span {...stylex.props(styles.demoEmoji)} aria-hidden="true">
+                  🍼
+                </span>
+                <Stack gap="s2" align="center">
+                  <Text as="h3" size="2xl" weight="black">
+                    {t("Follow {{name}}'s arrival", { name: demoBaby.name })}
+                  </Text>
+                  <Text tone="muted" weight="medium" align="center">
+                    {t(
+                      "A live demo with a two-day labour story, photos, and messages. Send a test encouragement — this is the full experience.",
+                    )}
+                  </Text>
+                </Stack>
+                <Text size="sm" tone="primary" weight="extrabold">
+                  {t("Open the live page →")}
+                </Text>
+              </Stack>
             </div>
           </Link>
-          <p className="mt-10 text-center font-semibold text-muted-foreground">
-            {t("Or preview how each stage looks")}
-          </p>
-          <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div {...stylex.props(styles.previewIntro)}>
+            <Text tone="muted" weight="semibold" align="center">
+              {t("Or preview how each stage looks")}
+            </Text>
+          </div>
+          <div {...stylex.props(styles.previewGrid)}>
             {previewStages.map((stage) => (
-              <Link key={stage.title} to="/preview" search={stage.search} className="group">
+              <Link
+                key={stage.title}
+                to="/preview"
+                search={stage.search}
+                {...stylex.props(styles.previewLink)}
+              >
                 <div
-                  className={`h-full rounded-3xl border-2 border-border bg-card p-6 text-center pop-shadow transition-transform group-hover:-translate-y-1 ${stage.rotate}`}
+                  {...stylex.props(
+                    styles.previewCard,
+                    stage.tilt === "left"
+                      ? styles.previewCardTiltLeft
+                      : styles.previewCardTiltRight,
+                  )}
                 >
-                  <span className="text-4xl" aria-hidden="true">
-                    {stage.emoji}
-                  </span>
-                  <h3 className="mt-3 font-extrabold text-foreground">{t(stage.title)}</h3>
-                  <p className="mt-0.5 text-sm font-medium text-muted-foreground">
-                    {t(stage.description)}
-                  </p>
+                  <Stack gap="s3" align="center">
+                    <span {...stylex.props(styles.previewEmoji)} aria-hidden="true">
+                      {stage.emoji}
+                    </span>
+                    <Stack gap="s1" align="center">
+                      <Text as="h3" weight="extrabold">
+                        {t(stage.title)}
+                      </Text>
+                      <Text as="p" size="sm" tone="muted" weight="medium">
+                        {t(stage.description)}
+                      </Text>
+                    </Stack>
+                  </Stack>
                 </div>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* How it works */}
-        <section className="py-12">
-          <div className="text-center">
-            <h2 className="text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              {t("How it works")}
-            </h2>
-            <p className="mt-2 font-semibold text-muted-foreground">
+        <section {...stylex.props(styles.section)}>
+          <Stack gap="s2" align="center">
+            <h2 {...stylex.props(styles.sectionTitle)}>{t("How it works")}</h2>
+            <Text tone="muted" weight="semibold" align="center">
               {t("Up and running in under a minute")}
-            </p>
-          </div>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            </Text>
+          </Stack>
+          <div {...stylex.props(styles.howGrid)}>
             {HOW_IT_WORKS.map((item) => (
-              <div key={item.step} className="flex flex-col items-center text-center">
-                <div className="flex h-14 w-14 -rotate-3 items-center justify-center rounded-2xl border-2 border-primary/30 bg-primary/15 text-2xl font-black text-primary pop-shadow">
-                  {item.step}
-                </div>
-                <h3 className="mt-4 text-lg font-extrabold text-foreground">{t(item.title)}</h3>
-                <p className="mt-1.5 font-medium leading-relaxed text-muted-foreground">
-                  {t(item.description)}
-                </p>
+              <div key={item.step} {...stylex.props(styles.howStep)}>
+                <div {...stylex.props(styles.howBadge)}>{item.step}</div>
+                <Stack gap="s1_5" align="center">
+                  <Text as="h3" size="lg" weight="extrabold">
+                    {t(item.title)}
+                  </Text>
+                  <Text tone="muted" weight="medium" align="center">
+                    {t(item.description)}
+                  </Text>
+                </Stack>
               </div>
             ))}
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-16 text-center">
-          <div className="mx-auto max-w-2xl rounded-[2rem] border-2 border-primary/25 bg-primary/10 px-8 py-12 pop-shadow-strong">
-            <p className="text-4xl" aria-hidden="true">
-              💖
-            </p>
-            <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">
-              {t("Ready to share the journey?")}
-            </h2>
-            <p className="mx-auto mt-3 max-w-xl text-lg font-semibold text-muted-foreground">
-              {sessionData.data
-                ? t("Head back to your dashboard to keep everyone updated.")
-                : t(
-                    "Join families who've already shared their special moments. Takes less than a minute.",
-                  )}
-            </p>
-            <div className="mt-7">
+        <section {...stylex.props(styles.ctaSection)}>
+          <div {...stylex.props(styles.ctaCard)}>
+            <Stack gap="s4" align="center">
+              <p {...stylex.props(styles.ctaEmoji)} aria-hidden="true">
+                💖
+              </p>
+              <Stack gap="s3" align="center">
+                <h2 {...stylex.props(styles.sectionTitle)}>{t("Ready to share the journey?")}</h2>
+                <Text size="lg" tone="muted" weight="semibold" align="center">
+                  {sessionData.data
+                    ? t("Head back to your dashboard to keep everyone updated.")
+                    : t(
+                        "Join families who've already shared their special moments. Takes less than a minute.",
+                      )}
+                </Text>
+              </Stack>
               {sessionData.data ? (
-                <Button
-                  size="lg"
-                  className="rounded-full font-extrabold"
-                  render={<Link to="/dashboard" />}
-                  nativeButton={false}
-                >
+                <Button size="lg" render={<Link to="/dashboard" />} nativeButton={false}>
                   {t("Go to Dashboard")}
                 </Button>
               ) : (
-                <Button
-                  size="lg"
-                  className="rounded-full font-extrabold"
-                  render={<Link to="/auth/signup" />}
-                  nativeButton={false}
-                >
+                <Button size="lg" render={<Link to="/auth/signup" />} nativeButton={false}>
                   {t("Get Started Free 🎉")}
                 </Button>
               )}
-            </div>
+            </Stack>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t-2 border-border/60 bg-background/60 px-4 py-8 text-center">
-        <div className="mx-auto flex max-w-5xl flex-col items-center gap-4">
+      <footer {...stylex.props(styles.footer)}>
+        <div {...stylex.props(styles.footerInner)}>
           <LanguagePicker
             value={locale}
             disabled={false}
@@ -570,9 +969,9 @@ export function HomePage() {
             href="https://github.com/KATT/isbabyoutyet"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 font-bold text-muted-foreground transition-colors hover:text-foreground"
+            {...stylex.props(styles.githubLink)}
           >
-            <GithubIcon className="h-5 w-5" />
+            <GithubIcon />
             <span>{t("Open source on GitHub")}</span>
           </a>
         </div>

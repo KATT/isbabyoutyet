@@ -36,7 +36,7 @@ test("hero headline cycles through baby names", async () => {
   expect(screen.getByRole("heading", { name: /is baby out yet/i })).toBeTruthy();
   expect(screen.queryByText("Juniper")).toBeNull();
   act(() => vi.advanceTimersByTime(2400));
-  expect(screen.getByText("Juniper").classList.contains("hero-word-in")).toBe(true);
+  expect(screen.getByText("Juniper").getAttribute("data-hero-word")).toBe("in");
 });
 
 test("Swedish homepage hero uses Swedish name pool", async () => {
@@ -49,7 +49,7 @@ test("Swedish homepage hero uses Swedish name pool", async () => {
   );
 
   act(() => vi.advanceTimersByTime(2400));
-  expect(screen.getByText("Ella").classList.contains("hero-word-in")).toBe(true);
+  expect(screen.getByText("Ella").getAttribute("data-hero-word")).toBe("in");
 });
 
 test("Swedish homepage links visitors to Ella Holm", async () => {
