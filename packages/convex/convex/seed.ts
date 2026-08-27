@@ -297,13 +297,19 @@ export async function seedBabiesForUser(ctx: MutationCtx, userId: string) {
       publicId: spec.publicId,
       birthJourney: "labor",
       theme: null,
+      locale: null,
+      photoId: null,
+      thumbnailId: null,
+      blurDataUrl: null,
       demo: true,
       subscriptionCount: 0,
       lastActivityAt: now.getTime(),
+      deletedAt: null,
     });
 
     await seedMilestoneUpdates(ctx, {
       babyId,
+      postedByUserId: userId,
       laborStarted,
       wentToHospital,
       babyBorn,
@@ -353,6 +359,11 @@ async function seedEncouragements(options: {
       createdAt,
       timelineItemId,
       visitorId,
+      demoFixture: false,
+      userAgent: null,
+      locale: null,
+      timezone: null,
+      deletedAt: null,
     });
   }
 }
@@ -368,6 +379,7 @@ async function seedMilestoneUpdates(
   ctx: MutationCtx,
   opts: {
     babyId: Id<"baby">;
+    postedByUserId: string;
     laborStarted: string | null;
     wentToHospital: string | null;
     babyBorn: string | null;
@@ -407,6 +419,7 @@ async function seedMilestoneUpdates(
       occurredAt,
       milestone: entry.milestone,
       message: entry.message,
+      postedByUserId: opts.postedByUserId,
     });
   }
 }

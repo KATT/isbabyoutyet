@@ -213,7 +213,9 @@ async function ensureBabyDoc(ctx: MutationCtx, opts: { now: number; locale: Supp
     publicId: demo.publicId,
     photoId: null,
     thumbnailId: null,
+    blurDataUrl: null,
     subscriptionCount: 0,
+    deletedAt: null,
   });
 }
 
@@ -312,6 +314,10 @@ async function insertFeedDocs(
         timelineItemId,
         visitorId: `homepage-demo-${locale}-${slugAuthor(item.authorName)}`,
         demoFixture: true,
+        userAgent: null,
+        locale: null,
+        timezone: null,
+        deletedAt: null,
       });
       continue;
     }
@@ -327,6 +333,7 @@ async function insertFeedDocs(
       thumbnailId: photo?.thumbnailId ?? null,
       pushImageId: photo?.pushImageId ?? null,
       blurDataUrl: photo?.blurDataUrl ?? null,
+      postedByUserId: HOMEPAGE_DEMO_OWNER_USER_ID,
     });
 
     if (photo) {

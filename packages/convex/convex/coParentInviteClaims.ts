@@ -77,6 +77,7 @@ export async function claimPendingInvitesForAuthUser(
         name,
         addedByUserId: invite.invitedByUserId,
         addedAt: Date.now(),
+        deletedAt: null,
       });
       claimed += 1;
     }
