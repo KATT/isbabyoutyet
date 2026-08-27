@@ -45,7 +45,7 @@
     },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
-    "packages/ui-cssinjs": {},
+    "packages/ui": {},
     "packages/ui-patterns": {}
   }
 }

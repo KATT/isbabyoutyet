@@ -1,4 +1,4 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import { authClient } from "@/lib/auth-client";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Baby } from "@phosphor-icons/react";

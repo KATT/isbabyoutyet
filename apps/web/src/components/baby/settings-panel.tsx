@@ -7,7 +7,7 @@ import {
   ItemMedia,
   ItemSeparator,
   ItemTitle,
-} from "@workspace/ui-cssinjs/components/item";
+} from "@workspace/ui/components/item";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@workspace/ui-cssinjs/components/alert-dialog";
-import { Button } from "@workspace/ui-cssinjs/components/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui-cssinjs/components/dialog";
+} from "@workspace/ui/components/alert-dialog";
+import { Button } from "@workspace/ui/components/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
 import {
   Select,
   SelectContent,
@@ -28,7 +28,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui-cssinjs/components/select";
+} from "@workspace/ui/components/select";
 import {
   Baby,
   CalendarHeart,

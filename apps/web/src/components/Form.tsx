@@ -2,8 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Icon } from "@phosphor-icons/react";
-import { Button } from "@workspace/ui-cssinjs/components/button";
-import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
+import { Button } from "@workspace/ui/components/button";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { useId, useRef } from "react";
 import type { ComponentProps, RefObject } from "react";
 import type {

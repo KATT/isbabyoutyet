@@ -28,7 +28,7 @@
         "../../packages/convex-prefetch/src/test-helpers.ts"
       ],
       "@workspace/query-prefetch": ["../../packages/query-prefetch/src/index.ts"],
-      "@workspace/ui-cssinjs/*": ["../../packages/ui-cssinjs/src/*"],
+      "@workspace/ui/*": ["../../packages/ui/src/*"],
       "@workspace/ui-patterns/*": ["../../packages/ui-patterns/src/*"]
     }
   }

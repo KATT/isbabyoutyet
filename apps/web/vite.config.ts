@@ -161,7 +161,7 @@ const config = defineConfig({
     viteTsConfigPaths({
       projects: ["./tsconfig.json"],
     }),
-    // Compile StyleX in `@workspace/ui-cssinjs` (and the app) before Tailwind /
+    // Compile StyleX in `@workspace/ui` (and the app) before Tailwind /
     // React. Keep Tailwind for app layout while StyleX owns component chrome.
     stylex.vite({
       useCSSLayers: true,
@@ -181,7 +181,7 @@ const config = defineConfig({
   ssr: {
     noExternal: [
       "@convex-dev/better-auth",
-      "@workspace/ui-cssinjs",
+      "@workspace/ui",
       "@workspace/ui-patterns",
       "@stylexjs/stylex",
     ],

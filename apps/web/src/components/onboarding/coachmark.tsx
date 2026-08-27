@@ -1,5 +1,5 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
-import { cn } from "@workspace/ui-cssinjs/lib/utils";
+import { Button } from "@workspace/ui/components/button";
+import { cn } from "@workspace/ui/lib/utils";
 import { createPortal } from "react-dom";
 import { useI18n } from "@/lib/i18n";
 import { useCoachmarkSnapshot } from "@/lib/use-coachmark-store";

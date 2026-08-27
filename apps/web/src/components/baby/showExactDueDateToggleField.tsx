@@ -1,6 +1,6 @@
-import { FormControl, FormField, FormItem, useFormField } from "@workspace/ui-cssinjs/components/form";
-import { Switch } from "@workspace/ui-cssinjs/components/switch";
-import { cn } from "@workspace/ui-cssinjs/lib/utils";
+import { FormControl, FormField, FormItem, useFormField } from "@workspace/ui/components/form";
+import { Switch } from "@workspace/ui/components/switch";
+import { cn } from "@workspace/ui/lib/utils";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import { useI18n } from "@/lib/i18n";
 

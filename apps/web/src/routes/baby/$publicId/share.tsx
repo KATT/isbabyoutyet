@@ -1,4 +1,4 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Card,
   CardContent,
@@ -6,14 +6,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@workspace/ui-cssinjs/components/card";
+} from "@workspace/ui/components/card";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@workspace/ui-cssinjs/components/dialog";
+} from "@workspace/ui/components/dialog";
 import { CheckCircle } from "@phosphor-icons/react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";

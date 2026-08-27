@@ -1,6 +1,6 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
-import { ModeToggle } from "@workspace/ui-cssinjs/components/mode-toggle";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui-cssinjs/components/tooltip";
+import { Button } from "@workspace/ui/components/button";
+import { ModeToggle } from "@workspace/ui/components/mode-toggle";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { ChatCircleText, GearSix, ShareNetwork } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";

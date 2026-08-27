@@ -15,7 +15,7 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@workspace/ui-patterns/*": ["./src/*"],
-      "@workspace/ui-cssinjs/*": ["../ui-cssinjs/src/*"]
+      "@workspace/ui/*": ["../ui/src/*"]
     }
   },
   "include": ["src"],

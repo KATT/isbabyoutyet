@@ -1,4 +1,4 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Drawer,
   DrawerClose,
@@ -8,9 +8,9 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-} from "@workspace/ui-cssinjs/components/drawer";
-import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui-cssinjs/components/progress";
-import { cn } from "@workspace/ui-cssinjs/lib/utils";
+} from "@workspace/ui/components/drawer";
+import { Progress, ProgressLabel, ProgressValue } from "@workspace/ui/components/progress";
+import { cn } from "@workspace/ui/lib/utils";
 import { CaretDown, CaretUp, Check, Sparkle, X } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";

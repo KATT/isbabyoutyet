@@ -2,7 +2,7 @@ import type { ComponentProps } from "react";
 import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 
-import { customClassName } from "@workspace/ui-cssinjs/lib/utils.stylex";
+import { customClassName } from "@workspace/ui/lib/utils.stylex";
 import { gapStyles, type StackGap } from "@workspace/ui-patterns/components/stack";
 
 const inlineStyles = stylex.create({

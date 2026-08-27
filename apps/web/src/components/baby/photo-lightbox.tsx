@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from "@workspace/ui-cssinjs/components/dialog";
+import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
 import { X } from "@phosphor-icons/react";
 import { useI18n } from "@/lib/i18n";
 import { BlurImage } from "@/components/blur-image";

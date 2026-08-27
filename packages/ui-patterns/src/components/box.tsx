@@ -2,8 +2,8 @@ import type { ComponentProps } from "react";
 import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 
-import { spacing } from "@workspace/ui-cssinjs/lib/tokens.stylex";
-import { customClassName } from "@workspace/ui-cssinjs/lib/utils.stylex";
+import { spacing } from "@workspace/ui/lib/tokens.stylex";
+import { customClassName } from "@workspace/ui/lib/utils.stylex";
 
 const padStyles = stylex.create({
   none: { padding: spacing.none },

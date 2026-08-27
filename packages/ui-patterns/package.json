@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@stylexjs/stylex": "^0.19.0",
-    "@workspace/ui-cssinjs": "workspace:*",
+    "@workspace/ui": "workspace:*",
     "react": "catalog:"
   },
   "devDependencies": {

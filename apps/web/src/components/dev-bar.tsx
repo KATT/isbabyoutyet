@@ -4,7 +4,7 @@ import {
   HOMEPAGE_DEMO_BABIES,
 } from "@workspace/convex/src/seedCredentials";
 import { SUPPORTED_LOCALES } from "@workspace/convex/src/i18n";
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@workspace/ui-cssinjs/components/dropdown-menu";
+} from "@workspace/ui/components/dropdown-menu";
 import { Check, Code, House, SignIn } from "@phosphor-icons/react";
 import { Link, useRouterState } from "@tanstack/react-router";
 

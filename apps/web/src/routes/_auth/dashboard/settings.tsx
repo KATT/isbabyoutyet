@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Item,
   ItemActions,
@@ -15,8 +15,8 @@ import {
   ItemGroup,
   ItemMedia,
   ItemTitle,
-} from "@workspace/ui-cssinjs/components/item";
-import { ModeToggle } from "@workspace/ui-cssinjs/components/mode-toggle";
+} from "@workspace/ui/components/item";
+import { ModeToggle } from "@workspace/ui/components/mode-toggle";
 import {
   Sheet,
   SheetContent,
@@ -24,7 +24,7 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-} from "@workspace/ui-cssinjs/components/sheet";
+} from "@workspace/ui/components/sheet";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";

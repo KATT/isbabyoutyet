@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogTitle } from "@workspace/ui-cssinjs/components/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
 import { UpdateComposer } from "@/components/baby/timeline";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { allKeyed } from "@workspace/query-prefetch";

@@ -1,7 +1,7 @@
 import { useI18n } from "@/lib/i18n";
 import { Info, X } from "@phosphor-icons/react";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Item,
   ItemActions,
@@ -9,7 +9,7 @@ import {
   ItemDescription,
   ItemMedia,
   ItemTitle,
-} from "@workspace/ui-cssinjs/components/item";
+} from "@workspace/ui/components/item";
 import { createDismissedIdsStore } from "@/lib/use-dismissed-ids";
 
 type HomepageDemoToastProps = {

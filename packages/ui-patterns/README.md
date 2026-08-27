@@ -2,7 +2,7 @@
 
 Layout primitives styled with StyleX, for screens that should not lean on
 Tailwind spacing utilities. Uses the shared spacing tokens from
-`@workspace/ui-cssinjs`.
+`@workspace/ui`.
 
 App migration can keep Tailwind layout classes; reach for these when building
 new StyleX-first compositions.

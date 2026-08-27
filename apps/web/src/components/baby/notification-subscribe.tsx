@@ -17,7 +17,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -25,9 +25,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@workspace/ui-cssinjs/components/dialog";
-import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui-cssinjs/components/tooltip";
+} from "@workspace/ui/components/dialog";
+import { Spinner } from "@workspace/ui/components/spinner";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { toast } from "sonner";
 
 type BrowserPushCapability =

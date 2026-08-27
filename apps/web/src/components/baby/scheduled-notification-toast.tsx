@@ -1,4 +1,4 @@
-import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Button } from "@workspace/ui/components/button";
 import {
   Item,
   ItemActions,
@@ -6,8 +6,8 @@ import {
   ItemDescription,
   ItemMedia,
   ItemTitle,
-} from "@workspace/ui-cssinjs/components/item";
-import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
+} from "@workspace/ui/components/item";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { useMutation as useTanstackMutation } from "@tanstack/react-query";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { toast } from "sonner";

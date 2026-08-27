@@ -9,7 +9,7 @@ import {
   ThemeSelector,
 } from "@/components/baby/editors";
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { TooltipProvider } from "@workspace/ui-cssinjs/components/tooltip";
+import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { BABY_BLUE_THEME } from "@workspace/convex/src/theme";
 import type {
   BabyData,

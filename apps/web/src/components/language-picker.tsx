@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui-cssinjs/components/select";
+} from "@workspace/ui/components/select";
 import { getLanguageName } from "@/lib/i18n";
 import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
 

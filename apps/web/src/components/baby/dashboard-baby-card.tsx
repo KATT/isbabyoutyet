@@ -1,6 +1,6 @@
 import { ArrowRight, CalendarHeart } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { Badge } from "@workspace/ui-cssinjs/components/badge";
+import { Badge } from "@workspace/ui/components/badge";
 import { getCurrentStatus } from "@workspace/convex/src/types";
 import type { BirthJourney } from "@workspace/convex/src/types";
 import { formatDueDate, getDaysUntilDueDate, getOverdueDays } from "./utils";

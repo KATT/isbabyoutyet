@@ -9,19 +9,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@workspace/ui-cssinjs/components/alert-dialog";
-import { Button } from "@workspace/ui-cssinjs/components/button";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui-cssinjs/components/form";
-import { Input } from "@workspace/ui-cssinjs/components/input";
+} from "@workspace/ui/components/alert-dialog";
+import { Button } from "@workspace/ui/components/button";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { Input } from "@workspace/ui/components/input";
 import {
   Popover,
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
-} from "@workspace/ui-cssinjs/components/popover";
-import type { PopoverActions } from "@workspace/ui-cssinjs/components/popover";
+} from "@workspace/ui/components/popover";
+import type { PopoverActions } from "@workspace/ui/components/popover";
 import { DueDateDisplayFields } from "@/components/baby/dueDateDisplayFields";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui-cssinjs/components/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
 import { Check, Clock, Trash } from "@phosphor-icons/react";
 import type { FunctionArgs } from "convex/server";
 import { useRef, useTransition } from "react";
