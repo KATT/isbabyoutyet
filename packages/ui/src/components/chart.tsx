@@ -7,11 +7,9 @@ import type { TooltipValueType } from "recharts";
 import { cn } from "@workspace/ui/lib/utils";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
-type ThemeName = "light" | "dark";
+const THEMES = { light: "", dark: ".dark" } as const;
 
-const THEMES: Record<ThemeName, string> = { light: "", dark: ".dark" };
-const THEME_NAMES: ThemeName[] = ["light", "dark"];
-const INITIAL_DIMENSION = { width: 320, height: 200 };
+const INITIAL_DIMENSION = { width: 320, height: 200 } as const;
 type TooltipNameType = number | string;
 
 export type ChartConfig = Record<
@@ -89,18 +87,20 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
   return (
     <style
       dangerouslySetInnerHTML={{
-        __html: THEME_NAMES.map(
-          (theme) => `
-${THEMES[theme]} [data-chart=${id}] {
+        __html: Object.entries(THEMES)
+          .map(
+            ([theme, prefix]) => `
+${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
-    const color = itemConfig.theme?.[theme] ?? itemConfig.color;
+    const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ?? itemConfig.color;
     return color ? `  --color-${key}: ${color};` : null;
   })
   .join("\n")}
 }
 `,
-        ).join("\n"),
+          )
+          .join("\n"),
       }}
     />
   );
@@ -180,11 +180,6 @@ function ChartTooltipContent({
             const key = `${nameKey ?? item.name ?? item.dataKey ?? "value"}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
             const indicatorColor = color ?? item.payload?.fill ?? item.color;
-            const indicatorStyle: React.CSSProperties &
-              Record<"--color-bg" | "--color-border", string | number | undefined> = {
-              "--color-bg": indicatorColor,
-              "--color-border": indicatorColor,
-            };
 
             return (
               <div
@@ -213,7 +208,12 @@ function ChartTooltipContent({
                               "my-0.5": nestLabel && indicator === "dashed",
                             },
                           )}
-                          style={indicatorStyle}
+                          style={
+                            {
+                              "--color-bg": indicatorColor,
+                              "--color-border": indicatorColor,
+                            } as React.CSSProperties
+                          }
                         />
                       )
                     )}
@@ -314,17 +314,19 @@ function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key:
       ? payload.payload
       : undefined;
 
-  const configLabelKey =
-    getStringProperty(payload, key) ??
-    (payloadPayload ? getStringProperty(payloadPayload, key) : undefined) ??
-    key;
+  let configLabelKey: string = key;
+
+  if (key in payload && typeof payload[key as keyof typeof payload] === "string") {
+    configLabelKey = payload[key as keyof typeof payload] as string;
+  } else if (
+    payloadPayload &&
+    key in payloadPayload &&
+    typeof payloadPayload[key as keyof typeof payloadPayload] === "string"
+  ) {
+    configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string;
+  }
 
   return configLabelKey in config ? config[configLabelKey] : config[key];
-}
-
-function getStringProperty(value: object, key: string) {
-  const property: unknown = Reflect.get(value, key);
-  return typeof property === "string" ? property : undefined;
 }
 
 export {
