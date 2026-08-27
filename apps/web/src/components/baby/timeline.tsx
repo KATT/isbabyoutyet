@@ -258,7 +258,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
       photo: null,
     },
   });
-  const isPosting = form.formState.isSubmitting;
 
   const message = useWatch({ control: form.control, name: "message" });
   const milestone = useWatch({ control: form.control, name: "milestone" });
@@ -495,7 +494,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
             </SubmitButton>
           </div>
 
-          {!canPost && !isPosting && (
+          {!canPost && (
             <p className="text-xs text-muted-foreground text-right">
               {t("Add a message, a photo, or a milestone — any one is enough.")}
             </p>
