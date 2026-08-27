@@ -127,7 +127,7 @@ test("submits optional theme selection", async () => {
   });
   expandOptionalSettings(view);
   fireEvent.click(view.getByRole("button", { name: "Violet Bloom" }));
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
@@ -164,7 +164,7 @@ test.each([
   });
   expandOptionalSettings(view);
   fireEvent.click(view.getByRole("button", { name: testCase.label }));
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
@@ -193,7 +193,7 @@ test("allows a hidden public due date when message mode has no text", async () =
     target: { value: "Baby Fern" },
   });
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
@@ -222,7 +222,7 @@ test("submits a custom public due date message when provided", async () => {
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
@@ -275,7 +275,7 @@ test("keeps entered date and message values while toggling fields", async () => 
   expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
     "Any day now",
   );
-  fireEvent.click(view.getByRole("button", { name: "Add Baby 🍼" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {
     expect(createBaby).toHaveBeenCalledWith({
