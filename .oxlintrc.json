@@ -191,6 +191,7 @@
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/**"],
       "rules": {
+        "typescript/consistent-type-assertions": "off",
         "anti-slop/no-chained-type-assertions": "off",
         "anti-slop/no-conditional-empty-object-spread": "off",
         "anti-slop/no-known-value-widening": "off",
