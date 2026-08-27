@@ -131,11 +131,11 @@ function BabyLanguageSelect(props: {
         }
       }}
     >
-      <SelectTrigger aria-label={t("Language")} size="sm">
+      <SelectTrigger aria-label={t("Language")} size="sm" className="max-w-44">
         <SelectValue />
       </SelectTrigger>
-      {/* Grow beyond the trigger so long inherit labels are not clipped */}
-      <SelectContent alignItemWithTrigger={false} className="w-auto min-w-(--anchor-width)">
+      {/* Wider than the capped trigger so long inherit labels are not clipped */}
+      <SelectContent alignItemWithTrigger={false} className="w-auto min-w-44">
         <SelectGroup>
           {languageItems.map((item) => (
             <SelectItem key={item.value} value={item.value}>

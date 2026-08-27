@@ -181,6 +181,7 @@ test("page language selection saves the locale override", async () => {
   const languageTrigger = view.getByRole("combobox", { name: "Language" });
   // Closed value matches the dropdown label, not the raw "inherit" sentinel
   expect(languageTrigger.textContent).toContain("Use my profile language (British English)");
+  expect(languageTrigger.className).toMatch(/max-w-44/);
 
   fireEvent.click(languageTrigger);
   const swedish = view.getByRole("option", { name: "Swedish" });
