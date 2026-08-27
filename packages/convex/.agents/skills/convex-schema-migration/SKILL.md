@@ -41,12 +41,12 @@ theme: v.optional(v.union(v.string(), v.null())),
 
 Callers and rows must set the key (`null` / `false` / a concrete value). Stack this so each deploy stays valid:
 
-| Phase | Schema | RPC args | Migration | Stack PR |
-| --- | --- | --- | --- | --- |
-| **1. Document** | Keep `v.optional(...)` + `@todo` | Keep `v.optional(...)` + `@todo` | None | **1/N** lint/docs |
-| **2. Require RPC** | Still optional (rows may omit the key) | `v.union(..., v.null())` or a concrete validator; callers pass `null` instead of omitting | None | **2/N** |
-| **3. Backfill** | Still optional. Widen with `v.union(..., v.null())` if RPC now persists `null` | Already required | Idempotent walkers write missing keys (`undefined` only; do not clobber set values). Register on `runTableMigrations` **and** `TABLE_MIGRATION_NAMES` (`deploymentStatus`) | **3/N** — separate deploy |
-| **4. Require schema** | Drop `v.optional()` | Already required | No new migration. Deploy only after `deploymentStatus` is done on the target backend | **4/N** — separate deploy |
+| Phase                 | Schema                                                                         | RPC args                                                                                  | Migration                                                                                                                                                                  | Stack PR                  |
+| --------------------- | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| **1. Document**       | Keep `v.optional(...)` + `@todo`                                               | Keep `v.optional(...)` + `@todo`                                                          | None                                                                                                                                                                       | **1/N** lint/docs         |
+| **2. Require RPC**    | Still optional (rows may omit the key)                                         | `v.union(..., v.null())` or a concrete validator; callers pass `null` instead of omitting | None                                                                                                                                                                       | **2/N**                   |
+| **3. Backfill**       | Still optional. Widen with `v.union(..., v.null())` if RPC now persists `null` | Already required                                                                          | Idempotent walkers write missing keys (`undefined` only; do not clobber set values). Register on `runTableMigrations` **and** `TABLE_MIGRATION_NAMES` (`deploymentStatus`) | **3/N** — separate deploy |
+| **4. Require schema** | Drop `v.optional()`                                                            | Already required                                                                          | No new migration. Deploy only after `deploymentStatus` is done on the target backend                                                                                       | **4/N** — separate deploy |
 
 Skip phase 2 when the key is schema-only (no RPC arg). Skip phase 3 when every row already has the key (prove it in tests).
 
@@ -56,11 +56,11 @@ Leave `migrations.runAll` runner args optional (`@todo Keep mirroring @convex-de
 
 ## Removing fields or enum values
 
-| Phase | Action | Schema | Migration | Stack PR |
-| --- | --- | --- | --- | --- |
-| **1. Tolerate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)` + `@todo` | None yet, or register the strip migration in the same PR | **1/N** |
-| **2. Strip** | Remove legacy data from all rows | Same permissive schema as phase 1 | `migrateOne` deletes the field / filters enum from arrays; register in `runTableMigrations` + `TABLE_MIGRATION_NAMES` (add `HISTORICAL_MIGRATION_NAMES` only when seed/deploy must wait on this walker forever) | **1/N** (same deploy as phase 1) |
-| **3. Remove** | Tighten schema and delete dead code | Drop field from `schema.ts` / remove enum literal | Migration already ran; no new migration | **2/N** |
+| Phase                      | Action                                 | Schema                                                                | Migration                                                                                                                                                                                                       | Stack PR                         |
+| -------------------------- | -------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **1. Tolerate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)` + `@todo` | None yet, or register the strip migration in the same PR                                                                                                                                                        | **1/N**                          |
+| **2. Strip**               | Remove legacy data from all rows       | Same permissive schema as phase 1                                     | `migrateOne` deletes the field / filters enum from arrays; register in `runTableMigrations` + `TABLE_MIGRATION_NAMES` (add `HISTORICAL_MIGRATION_NAMES` only when seed/deploy must wait on this walker forever) | **1/N** (same deploy as phase 1) |
+| **3. Remove**              | Tighten schema and delete dead code    | Drop field from `schema.ts` / remove enum literal                     | Migration already ran; no new migration                                                                                                                                                                         | **2/N**                          |
 
 ## Stacked PRs (required for breaking changes)
 
@@ -128,12 +128,12 @@ Removal:
 
 ## Pattern examples
 
-| Change | First PR(s) | Last PR |
-| --- | --- | --- |
-| Require a schema field that rows omit | `@todo` + backfill missing keys to `null`/`false` | Drop `v.optional()` |
-| Require an RPC arg callers omit | `@todo` then `v.union(..., v.null())`; callers pass `null` | (schema PR only if the column is optional too) |
-| Remove optional boolean flag | Keep `v.optional(...)` + strip migration | Drop field from `schema.ts` |
-| Remove enum literal from union | Keep literal + `@todo` + filter migration | Drop literal from validator |
+| Change                                | First PR(s)                                                | Last PR                                        |
+| ------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------- |
+| Require a schema field that rows omit | `@todo` + backfill missing keys to `null`/`false`          | Drop `v.optional()`                            |
+| Require an RPC arg callers omit       | `@todo` then `v.union(..., v.null())`; callers pass `null` | (schema PR only if the column is optional too) |
+| Remove optional boolean flag          | Keep `v.optional(...)` + strip migration                   | Drop field from `schema.ts`                    |
+| Remove enum literal from union        | Keep literal + `@todo` + filter migration                  | Drop literal from validator                    |
 
 ## References
 
