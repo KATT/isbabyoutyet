@@ -117,11 +117,10 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   const form = props.form === "context" ? context : props.form;
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
-  const { isSubmitting } = useFormState(
+  const { isSubmitting } = useFormState<TFieldValues>(
     props.form === "context"
       ? {}
-      : // RHF Control is invariant; cast so useFormState accepts any field map.
-        { control: props.form.control as Control<FieldValues> },
+      : { control: props.form.control },
   );
   if (!form) {
     throw new Error("SubmitButton must be used within a Form or have a form prop");
