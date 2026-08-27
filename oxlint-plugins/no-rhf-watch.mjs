@@ -1,16 +1,16 @@
 /**
  * Disallow react-hook-form's imperative `.watch()` / `watch()`, and require
- * `useWatch({ name })` (never a whole-form watch without `name`).
+ * `useWatch({ control, name })` (never a whole-form watch without `name`).
  *
  * Named `useWatch` subscriptions re-render under the React Compiler the same
  * way `useFormState` does for submit state.
  */
 
 const WATCH_MESSAGE =
-  "Do not use react-hook-form `.watch()` / `watch()`. Use `useWatch({ name })` so the subscription re-renders under the React Compiler.";
+  "Do not use react-hook-form `.watch()` / `watch()`. Use `useWatch({ control, name })` so the subscription re-renders under the React Compiler.";
 
 const USE_WATCH_NAME_MESSAGE =
-  "Pass `name` to `useWatch()` (a field path or path array). Whole-form `useWatch({ control })` is not allowed.";
+  "Pass `control` and `name` to `useWatch()` (`name` is a field path or path array). Whole-form `useWatch({ control })` without `name` is not allowed.";
 
 function memberName(property, computed) {
   if (!computed && property.type === "Identifier") {
@@ -134,7 +134,7 @@ const noRhfWatch = {
     type: "problem",
     docs: {
       description:
-        "Disallow react-hook-form `.watch()` / `watch()` and require `useWatch({ name })`",
+        "Disallow react-hook-form `.watch()` / `watch()` and require `useWatch({ control, name })`",
     },
     schema: [],
   },

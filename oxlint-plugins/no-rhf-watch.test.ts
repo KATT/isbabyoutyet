@@ -27,30 +27,33 @@ tester.run("no-rhf-watch", plugin.rules["no-rhf-watch"], {
   invalid: [
     {
       code: `const draft = form.watch();`,
-      errors: [{ message: /useWatch\(\{ name \}\)/ }],
+      errors: [{ message: /useWatch\(\{ control, name \}\)/ }],
     },
     {
       code: `const milestone = form.watch("milestone");`,
-      errors: [{ message: /useWatch\(\{ name \}\)/ }],
+      errors: [{ message: /useWatch\(\{ control, name \}\)/ }],
     },
     {
       code: `const draft = form["watch"]();`,
-      errors: [{ message: /useWatch\(\{ name \}\)/ }],
+      errors: [{ message: /useWatch\(\{ control, name \}\)/ }],
     },
     {
       code: `const { watch } = form;
              const draft = watch();`,
-      errors: [{ message: /useWatch\(\{ name \}\)/ }, { message: /useWatch\(\{ name \}\)/ }],
+      errors: [
+        { message: /useWatch\(\{ control, name \}\)/ },
+        { message: /useWatch\(\{ control, name \}\)/ },
+      ],
     },
     {
       code: `import { watch } from "react-hook-form";
              const draft = watch(control);`,
-      errors: [{ message: /useWatch\(\{ name \}\)/ }],
+      errors: [{ message: /useWatch\(\{ control, name \}\)/ }],
     },
     {
       code: `import { useWatch } from "react-hook-form";
              const draft = useWatch({ control: form.control });`,
-      errors: [{ message: /Pass `name` to `useWatch/ }],
+      errors: [{ message: /Pass `control` and `name` to `useWatch/ }],
     },
     {
       code: `import { useWatch } from "react-hook-form";
@@ -58,7 +61,7 @@ tester.run("no-rhf-watch", plugin.rules["no-rhf-watch"], {
                control: form.control,
                defaultValue: form.getValues(),
              });`,
-      errors: [{ message: /Pass `name` to `useWatch/ }],
+      errors: [{ message: /Pass `control` and `name` to `useWatch/ }],
     },
   ],
 });
