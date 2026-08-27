@@ -6,6 +6,8 @@ import { z } from "zod";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
   Form,
+  FormCancelButton,
+  shouldBlockOverlayDismiss,
   SubmitButton,
   useZodForm,
 } from "@/components/Form";
@@ -35,6 +37,7 @@ function ContextSubmitForm(props: {
   });
   return (
     <Form form={form} handleSubmit={props.onSubmit}>
+      <FormCancelButton form="context">Cancel</FormCancelButton>
       <SubmitButton
         form="context"
         IconComponent={Check}
@@ -196,4 +199,86 @@ test("SubmitButton supports an emoji glyph at the end of the label", async () =>
   const button = view.getByRole("button", { name: "Add Baby" });
   expect(button.textContent).toContain("🍼");
   expect(button.textContent?.endsWith("🍼")).toBe(true);
+});
+
+test("FormCancelButton disables while its form is submitting", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+
+  let releaseSubmit: (() => void) | undefined;
+  const onSubmit = vi.fn(async () => {
+    await new Promise<void>((resolve) => {
+      releaseSubmit = resolve;
+    });
+  });
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
+    </LocaleProvider>,
+  );
+
+  const cancel = view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement;
+  expect(cancel.disabled).toBe(false);
+
+  fireEvent.click(view.getByRole("button", { name: "Send" }));
+  await vi.advanceTimersByTimeAsync(500);
+
+  await vi.waitFor(() => {
+    expect(cancel.disabled).toBe(true);
+  });
+
+  releaseSubmit?.();
+  await vi.advanceTimersByTimeAsync(0);
+
+  await vi.waitFor(() => {
+    expect(cancel.disabled).toBe(false);
+  });
+});
+
+test("shouldBlockOverlayDismiss locks user dismissals but allows imperative closes", () => {
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: true,
+      open: false,
+      reason: "escape-key",
+    }),
+  ).toBe(true);
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: true,
+      open: false,
+      reason: "outside-press",
+    }),
+  ).toBe(true);
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: true,
+      open: false,
+      reason: "close-press",
+    }),
+  ).toBe(true);
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: true,
+      open: false,
+      reason: "imperative-action",
+    }),
+  ).toBe(false);
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: false,
+      open: false,
+      reason: "escape-key",
+    }),
+  ).toBe(false);
+  expect(
+    shouldBlockOverlayDismiss({
+      isLocked: true,
+      open: true,
+      reason: "trigger-press",
+    }),
+  ).toBe(false);
 });

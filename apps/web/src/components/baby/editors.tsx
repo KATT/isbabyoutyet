@@ -74,9 +74,7 @@ function EditorActions(props: { isBusy: boolean }) {
   const { isDirty } = useFormState();
   return (
     <div className="flex gap-2 justify-end">
-      <PopoverClose
-        render={<FormCancelButton form="context" size="sm" disabled={props.isBusy} />}
-      >
+      <PopoverClose render={<FormCancelButton form="context" size="sm" disabled={props.isBusy} />}>
         {t("Cancel")}
       </PopoverClose>
       <SubmitButton

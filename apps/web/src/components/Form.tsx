@@ -85,10 +85,7 @@ type OverlayDismissEventDetails = {
   cancel: () => void;
 };
 
-type OverlayOpenChangeHandler = (
-  open: boolean,
-  eventDetails: OverlayDismissEventDetails,
-) => void;
+type OverlayOpenChangeHandler = (open: boolean, eventDetails: OverlayDismissEventDetails) => void;
 
 /** Identical shape across Popover / Dialog / AlertDialog Root.Actions. */
 type OverlayActions = {
@@ -154,10 +151,7 @@ export function useFormOverlay(opts: {
 }
 
 /** Wrap the overlay's content so child {@link Form}s register submits with the lock. */
-export function FormOverlayProvider(props: {
-  overlay: FormOverlayHandle;
-  children: ReactNode;
-}) {
+export function FormOverlayProvider(props: { overlay: FormOverlayHandle; children: ReactNode }) {
   return (
     <FormSubmitLockContext.Provider value={props.overlay.lock}>
       {props.children}
@@ -226,9 +220,7 @@ export function FormCancelButton<TFieldValues extends FieldValues>(
   },
 ) {
   const { isSubmitting } = useFormState(
-    props.form === "context"
-      ? {}
-      : { control: props.form.control as Control<FieldValues> },
+    props.form === "context" ? {} : { control: props.form.control as Control<FieldValues> },
   );
   const { form: _form, disabled, variant, ...buttonProps } = props;
   return (
