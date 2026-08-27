@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
 import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
-import type { VariantProps } from "class-variance-authority";
+import { type VariantProps } from "class-variance-authority";
 
 import { cn } from "@workspace/ui/lib/utils";
 import { toggleVariants } from "@workspace/ui/components/toggle";
@@ -33,10 +33,6 @@ function ToggleGroup({
     spacing?: number;
     orientation?: "horizontal" | "vertical";
   }) {
-  const style: React.CSSProperties & Record<"--gap", number> = {
-    "--gap": spacing,
-  };
-
   return (
     <ToggleGroupPrimitive
       data-slot="toggle-group"
@@ -44,7 +40,7 @@ function ToggleGroup({
       data-size={size}
       data-spacing={spacing}
       data-orientation={orientation}
-      style={style}
+      style={{ "--gap": spacing } as React.CSSProperties}
       className={cn(
         "group/toggle-group flex w-fit flex-row items-center gap-[--spacing(var(--gap))] rounded-lg data-[size=sm]:rounded-[min(var(--radius-md),10px)] data-vertical:flex-col data-vertical:items-stretch",
         className,
