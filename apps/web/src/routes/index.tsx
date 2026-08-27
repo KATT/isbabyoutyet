@@ -717,20 +717,31 @@ export function HomePage() {
           </span>
           <Inline gap="s2" wrap={false}>
             {sessionData.data ? (
-              <Button size="sm" render={<Link to="/dashboard" />} nativeButton={false}>
+              <Button
+                size="sm"
+                shape="pill"
+                render={<Link to="/dashboard" />}
+                nativeButton={false}
+              >
                 {t("Dashboard")}
               </Button>
             ) : (
               <>
                 <Button
                   size="sm"
+                  shape="pill"
                   variant="outline"
                   render={<Link to="/auth/login" />}
                   nativeButton={false}
                 >
                   {t("Sign in")}
                 </Button>
-                <Button size="sm" render={<Link to="/auth/signup" />} nativeButton={false}>
+                <Button
+                  size="sm"
+                  shape="pill"
+                  render={<Link to="/auth/signup" />}
+                  nativeButton={false}
+                >
                   {t("Get started")}
                 </Button>
               </>
@@ -759,16 +770,27 @@ export function HomePage() {
             <Stack gap="s3" align="center">
               <Inline gap="s3" justify="center">
                 {sessionData.data ? (
-                  <Button size="lg" render={<Link to="/dashboard" />} nativeButton={false}>
+                  <Button
+                    size="lg"
+                    shape="pill"
+                    render={<Link to="/dashboard" />}
+                    nativeButton={false}
+                  >
                     {t("Go to Dashboard")}
                   </Button>
                 ) : (
                   <>
-                    <Button size="lg" render={<Link to="/auth/signup" />} nativeButton={false}>
+                    <Button
+                      size="lg"
+                      shape="pill"
+                      render={<Link to="/auth/signup" />}
+                      nativeButton={false}
+                    >
                       {t("Create your page 🎈")}
                     </Button>
                     <Button
                       size="lg"
+                      shape="pill"
                       variant="outline"
                       render={<Link to="/auth/login" />}
                       nativeButton={false}
@@ -780,6 +802,7 @@ export function HomePage() {
               </Inline>
               <Button
                 size="lg"
+                shape="pill"
                 variant="secondary"
                 render={<Link to="/baby/$publicId" params={{ publicId: demoBaby.publicId }} />}
                 nativeButton={false}
@@ -940,11 +963,21 @@ export function HomePage() {
                 </Text>
               </Stack>
               {sessionData.data ? (
-                <Button size="lg" render={<Link to="/dashboard" />} nativeButton={false}>
+                <Button
+                  size="lg"
+                  shape="pill"
+                  render={<Link to="/dashboard" />}
+                  nativeButton={false}
+                >
                   {t("Go to Dashboard")}
                 </Button>
               ) : (
-                <Button size="lg" render={<Link to="/auth/signup" />} nativeButton={false}>
+                <Button
+                  size="lg"
+                  shape="pill"
+                  render={<Link to="/auth/signup" />}
+                  nativeButton={false}
+                >
                   {t("Get Started Free 🎉")}
                 </Button>
               )}
