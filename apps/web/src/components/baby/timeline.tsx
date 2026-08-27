@@ -480,7 +480,12 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               <Images className="w-4 h-4" />
               {draft.photo ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <SubmitButton form="context" IconComponent={PaperPlaneTilt} disabled={!canPost}>
+            <SubmitButton
+              form="context"
+              IconComponent={PaperPlaneTilt}
+              iconPosition="start"
+              disabled={!canPost}
+            >
               {selectedMilestone
                 ? t('Post & mark "{{status}}"', {
                     status: t(MILESTONE_META[selectedMilestone].labelKey),
@@ -803,7 +808,7 @@ function EncouragementEditForm(props: {
           )}
         />
         <div className="flex gap-2">
-          <SubmitButton form="context" IconComponent={Check} size="sm">
+          <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
             {t("Save")}
           </SubmitButton>
           <Button

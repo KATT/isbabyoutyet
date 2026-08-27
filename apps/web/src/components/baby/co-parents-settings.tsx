@@ -70,7 +70,13 @@ function InviteCoParentForm(props: {
             </FormItem>
           )}
         />
-        <SubmitButton form="context" IconComponent={UserPlus} size="sm" disabled={!email.trim()}>
+        <SubmitButton
+          form="context"
+          IconComponent={UserPlus}
+          iconPosition="start"
+          size="sm"
+          disabled={!email.trim()}
+        >
           {t("Add")}
         </SubmitButton>
       </div>

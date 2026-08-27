@@ -149,7 +149,12 @@ export function EncouragementForm(props: EncouragementFormProps) {
             )}
           />
 
-          <SubmitButton form="context" IconComponent={PaperPlaneTilt} className="w-full">
+          <SubmitButton
+            form="context"
+            IconComponent={PaperPlaneTilt}
+            iconPosition="start"
+            className="w-full"
+          >
             {t("Send Encouragement")}
           </SubmitButton>
         </div>

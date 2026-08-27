@@ -91,7 +91,7 @@ function LanguageRequestForm(props: {
         )}
       />
       <DialogFooter>
-        <SubmitButton form="context" IconComponent={PaperPlaneTilt}>
+        <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
           {t("Send request")}
         </SubmitButton>
       </DialogFooter>

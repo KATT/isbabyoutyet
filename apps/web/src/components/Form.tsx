@@ -79,6 +79,9 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
 
 type AnyZodForm = UseZodForm<FieldValues, unknown, FieldValues>;
 
+/** Phosphor icon component, or a single glyph/emoji (e.g. `"🍼"`). */
+type SubmitIcon = Icon | string;
+
 /**
  * Submit control wired to the nearest {@link Form} context (or an explicit `form`).
  * Keeps the label; swaps `IconComponent` for a spinner while submitting.
@@ -95,8 +98,10 @@ export function SubmitButton(
      * A concrete form sets the HTML `form` attribute to that form's id (useful outside the `<form>`).
      */
     form: AnyZodForm | "context";
-    /** Idle icon; replaced by a spinner while the form is submitting. */
-    IconComponent: Icon;
+    /** Idle icon (Phosphor component or one glyph/emoji); replaced by a spinner while submitting. */
+    IconComponent: SubmitIcon;
+    /** Whether the icon/spinner sits before (`start`) or after (`end`) the label. */
+    iconPosition: "start" | "end";
   },
 ) {
   const context = useFormContext();
@@ -110,7 +115,31 @@ export function SubmitButton(
     throw new Error("SubmitButton must be used within a Form or have a form prop");
   }
 
-  const { form: formProp, IconComponent, disabled, children, ...buttonProps } = props;
+  const {
+    form: formProp,
+    IconComponent,
+    iconPosition,
+    disabled,
+    children,
+    ...buttonProps
+  } = props;
+
+  const icon = (
+    <span className="relative inline-grid size-4 shrink-0 place-items-center">
+      {isSubmitting ? (
+        <span className="submit-icon-swap-in inline-grid place-items-center">
+          <Spinner className="size-4" />
+        </span>
+      ) : typeof IconComponent === "string" ? (
+        <span className="text-base leading-none" aria-hidden>
+          {IconComponent}
+        </span>
+      ) : (
+        <IconComponent className="size-4" aria-hidden />
+      )}
+    </span>
+  );
+
   return (
     <Button
       {...buttonProps}
@@ -118,16 +147,9 @@ export function SubmitButton(
       type="submit"
       disabled={isSubmitting || Boolean(disabled)}
     >
-      <span className="relative inline-grid size-4 shrink-0 place-items-center">
-        {isSubmitting ? (
-          <span className="submit-icon-swap-in inline-grid place-items-center">
-            <Spinner className="size-4" />
-          </span>
-        ) : (
-          <IconComponent className="size-4" aria-hidden />
-        )}
-      </span>
+      {iconPosition === "start" ? icon : null}
       {children}
+      {iconPosition === "end" ? icon : null}
     </Button>
   );
 }

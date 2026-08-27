@@ -31,7 +31,12 @@ function ContextSubmitForm(props: {
   });
   return (
     <Form form={form} handleSubmit={props.onSubmit}>
-      <SubmitButton form="context" IconComponent={Check} disabled={props.disabled}>
+      <SubmitButton
+        form="context"
+        IconComponent={Check}
+        iconPosition="start"
+        disabled={props.disabled}
+      >
         Send
       </SubmitButton>
     </Form>
@@ -50,7 +55,7 @@ function ExplicitSubmitForm(props: {
       <Form form={form} handleSubmit={props.onSubmit}>
         <span>fields</span>
       </Form>
-      <SubmitButton form={form} IconComponent={Check}>
+      <SubmitButton form={form} IconComponent={Check} iconPosition="end">
         Send
       </SubmitButton>
     </div>
@@ -161,4 +166,30 @@ test("Form surfaces uncaught submit errors as a toast", async () => {
   await vi.waitFor(() => {
     expect(toastError).toHaveBeenCalledWith("Nope");
   });
+});
+
+test("SubmitButton supports an emoji glyph at the end of the label", async () => {
+  function EmojiSubmitForm() {
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+    return (
+      <Form form={form} handleSubmit={async () => undefined}>
+        <SubmitButton form="context" IconComponent="🍼" iconPosition="end">
+          Add Baby
+        </SubmitButton>
+      </Form>
+    );
+  }
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <EmojiSubmitForm />
+    </LocaleProvider>,
+  );
+
+  const button = view.getByRole("button", { name: "Add Baby" });
+  expect(button.textContent).toContain("🍼");
+  expect(button.textContent?.endsWith("🍼")).toBe(true);
 });

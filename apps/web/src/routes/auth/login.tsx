@@ -218,6 +218,7 @@ export function LoginCard(props: {
                 <SubmitButton
                   form="context"
                   IconComponent={SignIn}
+                  iconPosition="start"
                   className="w-full rounded-full font-extrabold pop-shadow"
                   size="lg"
                 >

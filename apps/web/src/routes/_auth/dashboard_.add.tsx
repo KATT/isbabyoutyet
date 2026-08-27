@@ -19,7 +19,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
-import { ArrowLeft, Baby } from "@phosphor-icons/react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 
@@ -172,11 +172,12 @@ export function AddBabyPageView(props: {
 
                 <SubmitButton
                   form="context"
-                  IconComponent={Baby}
+                  IconComponent="🍼"
+                  iconPosition="end"
                   className="w-full rounded-full font-extrabold pop-shadow"
                   size="lg"
                 >
-                  {t("Add Baby 🍼")}
+                  {t("Add Baby")}
                 </SubmitButton>
               </div>
             </Form>

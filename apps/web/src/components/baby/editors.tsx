@@ -65,6 +65,7 @@ function EditorActions(props: { onClose: () => void; isSubmitting: boolean; isDi
       <SubmitButton
         form="context"
         IconComponent={Check}
+        iconPosition="start"
         size="sm"
         disabled={props.isSubmitting || !props.isDirty}
       >

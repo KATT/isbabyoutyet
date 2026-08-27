@@ -211,6 +211,7 @@ export function SignupCard(props: { onSignUp: (values: NewAccount) => Promise<vo
                 <SubmitButton
                   form="context"
                   IconComponent={UserPlus}
+                  iconPosition="start"
                   className="w-full rounded-full font-extrabold pop-shadow"
                   size="lg"
                 >
