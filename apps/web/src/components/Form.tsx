@@ -107,8 +107,11 @@ export function SubmitButton<TFieldValues extends FieldValues>(
      * A concrete form sets the HTML `form` attribute to that form's id (useful outside the `<form>`).
      */
     form: SubmitTargetForm<TFieldValues> | "context";
-    /** Idle icon (Phosphor component or one glyph/emoji); replaced by a spinner while submitting. */
-    IconComponent: SubmitIcon;
+    /**
+     * Idle icon (Phosphor component or one glyph/emoji); replaced by a spinner while
+     * submitting. Pass `null` for label-only actions (e.g. theme swatches, dialog confirms).
+     */
+    IconComponent: SubmitIcon | null;
     /** Whether the icon/spinner sits before (`start`) or after (`end`) the label. */
     iconPosition: "start" | "end";
   },
@@ -127,16 +130,10 @@ export function SubmitButton<TFieldValues extends FieldValues>(
     throw new Error("SubmitButton must be used within a Form or have a form prop");
   }
 
-  const {
-    form: formProp,
-    IconComponent,
-    iconPosition,
-    disabled,
-    children,
-    ...buttonProps
-  } = props;
+  const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
 
-  const icon = (
+  const showIcon = IconComponent != null || isSubmitting;
+  const icon = showIcon ? (
     <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
       {isSubmitting ? (
         <span className="submit-icon-swap-in inline-grid place-items-center">
@@ -144,11 +141,11 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         </span>
       ) : typeof IconComponent === "string" ? (
         <span className="text-base leading-none">{IconComponent}</span>
-      ) : (
+      ) : IconComponent ? (
         <IconComponent className="size-4" />
-      )}
+      ) : null}
     </span>
-  );
+  ) : null;
 
   return (
     <Button
