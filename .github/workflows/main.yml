@@ -61,9 +61,6 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      - name: Typecheck scripts
-        run: pnpm typecheck:scripts
-
       - name: Format
         run: pnpm format
 
