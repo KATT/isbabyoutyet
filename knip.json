@@ -7,14 +7,21 @@
     "**/paraglide/**",
     "oxlint-plugins/**"
   ],
-  "tags": ["-@internal"],
+  "tags": [
+    "-@internal"
+  ],
   "workspaces": {
     ".": {
-      "entry": ["scripts/compareCoverage.ts!"]
+      "entry": [
+        "scripts/compareCoverage.ts!"
+      ]
     },
     "apps/web": {
       "tanstack-router": {
-        "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
+        "entry": [
+          "src/routes/**/*.{ts,tsx}!",
+          "src/router.tsx!"
+        ]
       },
       "entry": [
         "public/sw.js!",
@@ -28,10 +35,16 @@
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
+      ],
+      "ignoreDependencies": [
+        "@workspace/ui-cssinjs"
       ]
     },
     "packages/convex": {
-      "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
+      "entry": [
+        "scripts/seedHomepageDemo.ts!",
+        "scripts/seedHomepagePhotosDeferred.ts!"
+      ]
     },
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},

@@ -20,15 +20,10 @@
     "@base-ui/react": "^1.7.0",
     "@stylexjs/stylex": "^0.19.0",
     "clsx": "^2.1.1",
-    "lucide-react": "catalog:",
-    "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-hook-form": "catalog:",
-    "sonner": "catalog:",
     "tailwind-merge": "^3.6.0",
-    "tailwindcss": "catalog:",
-    "tw-animate-css": "catalog:"
+    "tailwindcss": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
