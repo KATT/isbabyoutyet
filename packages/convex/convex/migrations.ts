@@ -500,7 +500,7 @@ type MigrationRunnerReport = {
   readonly toStartOver: string;
 };
 
-function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
+export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationRunnerReport {
   if (!isJsonObjectValue(result)) {
     throw new Error("Migration runner returned an invalid report");
   }

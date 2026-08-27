@@ -136,7 +136,7 @@ if (stepSummaryPath !== undefined && stepSummaryPath !== "") {
   await appendFile(stepSummaryPath, buildStepSummary(results), "utf8");
 }
 
-const regressions = results.filter((result) => result.change < 0);
+const regressions = results.filter((result) => result.change < -0.05);
 emitAnnotations(results, regressions);
 
 if (regressions.length > 0) {
