@@ -279,7 +279,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
 
   const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
 
-  const canPost = !isPosting && schema.safeParse(draft).success;
+  const canPost = schema.safeParse(draft).success;
 
   return (
     <div className="space-y-3">
@@ -332,7 +332,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                     aria-label={t("Update message (optional)")}
                     className="min-h-20"
                     maxLength={MAX_UPDATE_MESSAGE_LENGTH}
-                    disabled={isPosting}
                     {...field}
                   />
                 </FormControl>
@@ -357,7 +356,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                   form.setValue("photo", null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
-                disabled={isPosting}
                 aria-label={t("Remove photo")}
               >
                 <X className="w-3 h-3" />
@@ -382,7 +380,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}
-                    disabled={isPosting}
                     className="gap-1.5"
                   >
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -429,7 +426,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                             <Input
                               type="datetime-local"
                               max={htmlDateTimeNow(props.baby.timeZone)}
-                              disabled={isPosting}
                               className="w-fit"
                               {...field}
                             />
@@ -475,7 +471,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isPosting}
             >
               <Images className="w-4 h-4" />
               {draft.photo ? t("Change photo") : t("Add photo (optional)")}
@@ -794,7 +789,6 @@ function EncouragementEditForm(props: {
                 <Textarea
                   aria-label={t("Edit your message")}
                   className="min-h-20"
-                  disabled={isSaving}
                   {...field}
                 />
               </FormControl>
