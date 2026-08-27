@@ -186,6 +186,12 @@ test("highlights how to restore the guide after dismissal", async () => {
     expect(view.getByText("Guide dismissed")).toBeTruthy();
   });
   expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "auto" });
+
+  fireEvent.click(view.getByRole("button", { name: "Hide tip" }));
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.restartHintVisible).toBe(false);
+  });
 });
 
 test("renders on the tour baby page when babyPublicId matches", async () => {
@@ -355,6 +361,58 @@ test("checklist CTAs complete steps and open baby overlays", async () => {
   });
 });
 
+test("messages-from-visitors tip scrolls, highlights, and completes on Got it without posting", async () => {
+  await using _target = plantTourTarget("learn_encouragements");
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.updates.post, {
+    babyId: baby.babyId,
+    message: "First update",
+  });
+  for (const stepId of ["share_link", "explore_settings"] as const) {
+    await harness.client.mutation(api.onboarding.completeStep, { stepId });
+  }
+
+  const encouragementsBefore = await harness.client.query(api.encouragements.listByBaby, {
+    babyId: baby.babyId,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: baby.publicId,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
+  await vi.waitFor(() => {
+    expect(view.getByRole("button", { name: "Got it" })).toBeTruthy();
+  });
+  expect(view.getByText("Messages from visitors")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Got it" }));
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("learn_encouragements");
+    expect(progress.activeCoachmarkStepId).toBeNull();
+  });
+
+  const encouragementsAfter = await harness.client.query(api.encouragements.listByBaby, {
+    babyId: baby.babyId,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(encouragementsAfter.page).toEqual(encouragementsBefore.page);
+});
+
 test("authed onboarding host wires Convex mutations into the view", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
@@ -377,9 +435,18 @@ test("authed onboarding host wires Convex mutations into the view", async () => 
 });
 
 test("useCompleteOnboardingStep returns the Convex mutation", async () => {
-  await using harness = await createConvexTestHarness({ identity: { subject: "user-1" } });
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
-  const holder: { completeStep: unknown } = { completeStep: null };
+  const holder: {
+    completeStep: ((args: { stepId: OnboardingStepId }) => Promise<unknown>) | null;
+  } = { completeStep: null };
   function Probe() {
     holder.completeStep = useCompleteOnboardingStep();
     return null;
@@ -392,4 +459,37 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   });
 
   expect(typeof holder.completeStep).toBe("function");
+  await holder.completeStep!({ stepId: "share_link" });
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("share_link");
+  });
+});
+
+test("dashboard settings CTA acknowledges the step through the host", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.onboarding.completeStep, { stepId: "add_baby" });
+  await harness.client.mutation(api.onboarding.completeStep, { stepId: "share_link" });
+  await harness.client.mutation(api.onboarding.completeStep, { stepId: "post_update" });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "dashboard",
+    babyPublicId: undefined,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("link", { name: /open settings/i })[0]!);
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("explore_settings");
+  });
 });

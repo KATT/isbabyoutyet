@@ -514,6 +514,7 @@ const enGB = {
   "See {{name}}'s page": "See {{name}}'s page",
   "Open settings": "Open settings",
   "Show Share": "Show Share",
+  "Show me": "Show me",
   "Got it": "Got it",
   "Hide tip": "Hide tip",
   "Open {{name}}'s page to do this — or tap the step in the checklist.":
@@ -1065,6 +1066,7 @@ const sv: Record<TranslationKey, string> = {
   "See {{name}}'s page": "Se sidan för {{name}}",
   "Open settings": "Öppna inställningar",
   "Show Share": "Visa knappen Dela",
+  "Show me": "Visa mig",
   "Got it": "Okej",
   "Hide tip": "Dölj tipset",
   "Open {{name}}'s page to do this — or tap the step in the checklist.":
@@ -1602,6 +1604,7 @@ const es: Record<TranslationKey, string> = {
   "See {{name}}'s page": "Ver la página de {{name}}",
   "Open settings": "Abrir Configuración",
   "Show Share": "Mostrar el botón Compartir",
+  "Show me": "Muéstrame",
   "Got it": "Entendido",
   "Hide tip": "Ocultar consejo",
   "Open {{name}}'s page to do this — or tap the step in the checklist.":
@@ -2145,6 +2148,7 @@ const ptBR: Record<TranslationKey, string> = {
   "See {{name}}'s page": "Ver a página de {{name}}",
   "Open settings": "Abrir configurações",
   "Show Share": "Mostrar botão Compartilhar",
+  "Show me": "Mostrar",
   "Got it": "Entendi",
   "Hide tip": "Ocultar dica",
   "Open {{name}}'s page to do this — or tap the step in the checklist.":

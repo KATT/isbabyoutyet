@@ -177,7 +177,6 @@
       // refs written during render. Feature components stay banned.
       "files": [
         "apps/web/src/lib/use-*.{ts,tsx}",
-        "apps/web/src/lib/onboarding-ui-store.ts",
         "apps/web/src/lib/overlay-nav.ts",
         "apps/web/src/lib/convexAuthHandoff.ts"
       ],
