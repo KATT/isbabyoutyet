@@ -77,14 +77,6 @@ jobs:
           pnpm pretest:coverage
           pnpm exec vitest run --changed "${{ github.event.pull_request.base.sha }}"
 
-      # Push: full suite without coverage so `checks` still gates merges if it is
-      # the required job. Coverage + upload stay in the parallel codecov job.
-      - name: Test (full)
-        if: github.event_name != 'pull_request'
-        run: |
-          pnpm pretest:coverage
-          pnpm exec vitest run
-
       - name: Knip
         run: pnpm knip
 
