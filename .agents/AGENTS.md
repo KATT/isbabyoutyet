@@ -2,11 +2,6 @@
 
 Project skills live under [`.agents/skills/`](skills/).
 
-## Node.js
-
-To bump the Node major (`.nvmrc`, `engines`, Convex, CI action runtimes), follow
-[`update-node/SKILL.md`](skills/update-node/SKILL.md).
-
 ## Route loaders
 
 When adding or changing TanStack Router loaders or SSR prefetch, follow

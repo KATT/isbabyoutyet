@@ -3,22 +3,25 @@ name: update-node
 description: >-
   Bump the repo Node.js major everywhere it is pinned. Use when upgrading Node,
   changing .nvmrc, engines.node, Convex nodeVersion, GitHub Actions setup-node,
-  or fixing CI warnings that Node 20 actions are deprecated.
+  Vercel Node.js Version, or fixing CI warnings that Node 20 actions are
+  deprecated.
 ---
 
 # Update Node.js
 
 Current major: **24**. Edit every pin below in the same change.
 
-| File | What to set |
+| Place | What to set |
 | --- | --- |
 | [`.nvmrc`](../../../.nvmrc) | The major (`24`). Source of truth for nvm/fnm and CI. |
-| [`package.json`](../../../package.json) | `engines.node`: `^<major>.0.0` (pnpm + Vercel). |
-| [`packages/convex/convex.json`](../../../packages/convex/convex.json) | `node.nodeVersion`: the major (Convex `"use node"` actions). |
+| [`package.json`](../../../package.json) `engines.node` | `^<major>.0.0`. pnpm, and Vercel (overrides Project Settings on the next deploy). |
+| [`packages/convex/convex.json`](../../../packages/convex/convex.json) `node.nodeVersion` | The major (Convex `"use node"` actions). |
 | [`.github/workflows/main.yml`](../../../.github/workflows/main.yml) | Keep `node-version-file: .nvmrc`. Do not hardcode a second version. |
-| [`pnpm-workspace.yaml`](../../../pnpm-workspace.yaml) | catalog `@types/node` only if types need a bump. |
+| [`pnpm-workspace.yaml`](../../../pnpm-workspace.yaml) catalog `@types/node` | Only if types need a bump. |
+| Vercel → Project → Settings → Build and Deployment → Node.js Version | Same major (`24.x`). Dashboard deprecation still follows this setting even when `engines.node` overrides the deploy. |
+| Cursor Cloud environment snapshot | Install the same major so agents match `.nvmrc`. |
 
-Outside the repo: Vercel project Node.js Version, Cursor Cloud snapshot.
+There is no Node pin in [`apps/web/vercel.json`](../../../apps/web/vercel.json).
 
 ## GitHub Actions runtimes
 

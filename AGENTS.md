@@ -1,10 +1,5 @@
 # Agent notes
 
-## Node.js
-
-Node 24. To bump the major, follow
-[`.agents/skills/update-node/SKILL.md`](.agents/skills/update-node/SKILL.md).
-
 ## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`), post-update (`/baby/$publicId/post`),
