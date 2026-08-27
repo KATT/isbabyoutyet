@@ -8,7 +8,7 @@
     "verbatimModuleSyntax": true,
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
-    "outDir": "dist",
+    "outDir": "compiled",
     "rootDir": ".",
     "declaration": false,
     "sourceMap": false

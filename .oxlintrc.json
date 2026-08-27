@@ -67,7 +67,7 @@
     },
     {
       "name": "anti-slop",
-      "specifier": "./oxlint-plugins/anti-slop/dist/index.js"
+      "specifier": "./oxlint-plugins/anti-slop/compiled/index.js"
     }
   ],
   "settings": {
