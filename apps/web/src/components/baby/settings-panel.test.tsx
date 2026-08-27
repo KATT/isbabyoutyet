@@ -155,7 +155,9 @@ test("delete page control appears when onDelete is provided", async () => {
   fireEvent.click(view.getByRole("button", { name: "Delete" }));
   expect(view.getByRole("heading", { name: "Delete Nova's page?" })).toBeTruthy();
   fireEvent.click(view.getByRole("button", { name: "Delete page" }));
-  expect(onDelete).toHaveBeenCalled();
+  await vi.waitFor(() => {
+    expect(onDelete).toHaveBeenCalled();
+  });
 });
 test("falls back to the default label for an unknown legacy theme", async () => {
   await using view = renderResource(
@@ -194,7 +196,9 @@ test("page language selection saves the locale override", async () => {
   const swedish = view.getByRole("option", { name: "Swedish" });
   fireEvent.pointerDown(swedish, { pointerType: "mouse" });
   fireEvent.click(swedish);
-  expect(onUpdate).toHaveBeenCalledWith({ locale: "sv" });
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ locale: "sv" });
+  });
 
   fireEvent.click(view.getByRole("combobox", { name: "Language" }));
   const inherited = view.getByRole("option", {
@@ -202,7 +206,9 @@ test("page language selection saves the locale override", async () => {
   });
   fireEvent.pointerDown(inherited, { pointerType: "mouse" });
   fireEvent.click(inherited);
-  expect(onUpdate).toHaveBeenCalledWith({ locale: null });
+  await vi.waitFor(() => {
+    expect(onUpdate).toHaveBeenCalledWith({ locale: null });
+  });
 });
 
 test("journey selection saves the chosen preset after Save", async () => {
