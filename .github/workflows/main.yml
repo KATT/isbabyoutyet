@@ -161,12 +161,15 @@ jobs:
             --coverage.reporter=json-summary \
             --coverage.reporter=lcov
           test -f coverage/lcov.info
+          test -f coverage/coverage-summary.json
+          cp coverage/lcov.info /tmp/base-lcov.info
+          cp coverage/coverage-summary.json /tmp/base-coverage-summary.json
 
       - name: Upload PR base coverage to Codecov
         if: github.event_name == 'pull_request'
         uses: codecov/codecov-action@v5
         with:
-          files: coverage/lcov.info
+          files: /tmp/base-lcov.info
           flags: unit
           name: vitest-base
           override_commit: ${{ github.event.pull_request.base.sha }}
@@ -191,6 +194,34 @@ jobs:
           summary="$(ls -t .turbo/runs/*.json | head -1)"
           jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
           test -f coverage/lcov.info
+
+      # Hard gate in Actions too: Codecov statuses need a processed base report and
+      # can stay green with "No report found to compare against" on stacked tips.
+      - name: Fail if coverage dropped vs PR base
+        if: github.event_name == 'pull_request'
+        run: |
+          node <<'NODE'
+          const fs = require("node:fs");
+          const base = JSON.parse(
+            fs.readFileSync("/tmp/base-coverage-summary.json", "utf8"),
+          );
+          const head = JSON.parse(
+            fs.readFileSync("coverage/coverage-summary.json", "utf8"),
+          );
+          const basePct = base.total.lines.pct;
+          const headPct = head.total.lines.pct;
+          const drop = basePct - headPct;
+          const threshold = 0.5;
+          console.log(
+            `Coverage lines: base=${basePct}% head=${headPct}% drop=${drop.toFixed(2)}% threshold=${threshold}%`,
+          );
+          if (drop > threshold) {
+            console.error(
+              `::error::Coverage dropped ${drop.toFixed(2)}% vs PR base (threshold ${threshold}%)`,
+            );
+            process.exit(1);
+          }
+          NODE
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
