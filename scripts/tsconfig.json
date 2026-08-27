@@ -8,6 +8,7 @@
     "noEmit": true,
     "noUncheckedSideEffectImports": true,
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
     "types": ["node"]
   },
   "include": ["*.ts"]

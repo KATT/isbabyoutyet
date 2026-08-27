@@ -1,5 +1,9 @@
 # Agent notes
 
+## Node.js
+
+Node 24 everywhere. Pin checklist and how to bump: [`docs/node.md`](docs/node.md).
+
 ## Routing / scroll / overlays
 
 Baby settings (`/baby/$publicId/settings`), post-update (`/baby/$publicId/post`),

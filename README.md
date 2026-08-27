@@ -2,6 +2,9 @@ mainly vibe coded
 
 ## dev setup
 
+Requires **Node.js 24** (see [`.nvmrc`](.nvmrc)). How to bump it, and every
+file that pins Node, is in [`docs/node.md`](docs/node.md).
+
 ### install
 
 ```sh
