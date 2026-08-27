@@ -13,32 +13,64 @@ Safe migrations on a **live** Convex deployment. Read
 [`convex-migrate`](../convex-migrate/SKILL.md) for the generic `@convex-dev/migrations`
 basics; this skill covers **this project's** workflow and deploy ordering.
 
+Do **not** edit [`convex-migrate`](../convex-migrate/SKILL.md) or other
+`npx convex ai-files` skills — those are maintained by Convex.
+
 ## Critical deploy order
 
 On `convex deploy`, Convex **validates every existing document against the new schema before any migration runs**. A tightened validator that rejects legacy rows will fail deploy even if a backfill migration is registered.
 
-If you remove an enum literal or field from the schema in the same deploy as the migration that strips it, validation fails first — the migration never runs.
+Never combine "write missing keys / strip legacy values" and "make the field required / drop the field" in the same deploy.
 
-## Three-phase pattern (removing fields or enum values)
+## JSDoc on `v.optional()`
 
-| Phase                       | Action                                 | Schema                                                                                                                                                                            | Migration                                                                                                              | Stack PR                         |
-| --------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **1. Deprecate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)`; mark `v.optional` with JSDoc `@deprecated` or `@todo` (`no-convex-optional/no-undocumented-optional` requires a tag) | None yet (or register idempotent strip migration in same PR)                                                           | **1/N**                          |
-| **2. Migrate**              | Strip legacy data from all rows        | Same permissive schema as phase 1                                                                                                                                                 | `migrateOne` removes field / filters enum from arrays; register in `runTableMigrations` + `HISTORICAL_MIGRATION_NAMES` | **1/N** (same deploy as phase 1) |
-| **3. Remove**               | Tighten schema and delete dead code    | Drop field from `schema.ts` / remove enum literal from validators                                                                                                                 | Migration already ran; no new migration                                                                                | **2/N**                          |
+`no-convex-optional/no-undocumented-optional` rejects undocumented `v.optional()`.
 
-**Never tighten before backfill/strip completes** — same rule as adding required fields, applied in reverse for removal.
+Prefer **`@todo`**: the optional is still in use; remaining work is to require the key (or keep a documented exception such as `migrations.runAll` runner args).
 
-For **adding** required fields, use the inverse: optional → backfill → required.
+```typescript
+/** @todo Optional until every row sets this key. */
+theme: v.optional(v.union(v.string(), v.null())),
+```
+
+`@deprecated` also satisfies the lint. Use it only when the optional itself is a deprecated API, not for fields callers still send.
+
+`convex.config.ts` env validators are exempt.
+
+## Adding a required field (or banning omit-key)
+
+Callers and rows must set the key (`null` / `false` / a concrete value). Stack this so each deploy stays valid:
+
+| Phase | Schema | RPC args | Migration | Stack PR |
+| --- | --- | --- | --- | --- |
+| **1. Document** | Keep `v.optional(...)` + `@todo` | Keep `v.optional(...)` + `@todo` | None | **1/N** lint/docs |
+| **2. Require RPC** | Still optional (rows may omit the key) | `v.union(..., v.null())` or a concrete validator; callers pass `null` instead of omitting | None | **2/N** |
+| **3. Backfill** | Still optional. Widen with `v.union(..., v.null())` if RPC now persists `null` | Already required | Idempotent walkers write missing keys (`undefined` only; do not clobber set values). Register on `runTableMigrations` **and** `TABLE_MIGRATION_NAMES` (`deploymentStatus`) | **3/N** — separate deploy |
+| **4. Require schema** | Drop `v.optional()` | Already required | No new migration. Deploy only after `deploymentStatus` is done on the target backend | **4/N** — separate deploy |
+
+Skip phase 2 when the key is schema-only (no RPC arg). Skip phase 3 when every row already has the key (prove it in tests).
+
+**Do not merge/deploy phase 4 until phase 3 has finished on that backend.** Convex would reject omitted keys before the backfill runs.
+
+Leave `migrations.runAll` runner args optional (`@todo Keep mirroring @convex-dev/migrations runner options`).
+
+## Removing fields or enum values
+
+| Phase | Action | Schema | Migration | Stack PR |
+| --- | --- | --- | --- | --- |
+| **1. Tolerate + optional** | Keep validator tolerant of legacy data | Re-add retired enum literal or make field `v.optional(...)` + `@todo` | None yet, or register the strip migration in the same PR | **1/N** |
+| **2. Strip** | Remove legacy data from all rows | Same permissive schema as phase 1 | `migrateOne` deletes the field / filters enum from arrays; register in `runTableMigrations` + `TABLE_MIGRATION_NAMES` (add `HISTORICAL_MIGRATION_NAMES` only when seed/deploy must wait on this walker forever) | **1/N** (same deploy as phase 1) |
+| **3. Remove** | Tighten schema and delete dead code | Drop field from `schema.ts` / remove enum literal | Migration already ran; no new migration | **2/N** |
 
 ## Stacked PRs (required for breaking changes)
 
 Use [`.agents/skills/create-stacked-prs/SKILL.md`](../../../../.agents/skills/create-stacked-prs/SKILL.md).
 
-- **PR 1/N:** Permissive schema + migration(s) that clean legacy data + tests. One deploy runs migrations via `runAll`.
-- **PR 2/N:** Remove deprecated schema fields after PR 1 has deployed and migrations finished.
+- **PR 1/N:** Permissive schema + `@todo` on remaining optionals (+ RPC require, if that is a separate slice).
+- **Backfill PR:** Migrations that write or strip data. One deploy runs them via `runAll`.
+- **Final PR:** Require the key or drop the field **after** the backfill deploy has finished.
 
-Do not combine phase 3 with phase 1 in a single deploy — existing rows must validate first, then migrations strip legacy data, then a follow-up deploy may tighten.
+Do not combine the tighten/remove PR with the backfill PR.
 
 ## Repo conventions (`packages/convex/convex/migrations.ts`)
 
@@ -57,12 +89,13 @@ export const removeLegacyField = migrations.define({
 });
 ```
 
-For enum values in arrays, filter to the current allowed set in `migrateOne` (strip unknown strings, keep valid ids).
+For omitted keys, patch only `undefined` properties (do not overwrite stored `null` / `false` / values). For enum values in arrays, filter to the current allowed set in `migrateOne`.
 
 ### Register runners
 
-1. Add to `runTableMigrations` array (runs on every deploy via `runAll`).
-2. If the migration must complete before **any** future deploy is safe, add to `HISTORICAL_MIGRATION_NAMES` (used by `historicalDeploymentStatus`).
+1. Add to the `runTableMigrations` array (runs on every deploy via `runAll`).
+2. Add the function name to `TABLE_MIGRATION_NAMES` so `deploymentStatus` waits on it (preview seed uses this gate).
+3. Add to `HISTORICAL_MIGRATION_NAMES` only when a later deploy is unsafe until this walker has finished on every existing backend (the older seed/deploy subset).
 
 ### Deprecate in validators, not only schema
 
@@ -70,31 +103,40 @@ Union literals and table fields both participate in deploy validation. When remo
 
 ### Tests
 
-Add convex-test coverage in `migrations.test.ts`: insert a doc with legacy shape, run `migrateOne` helper (or `runTableMigrations`), assert clean state and idempotency.
+Add convex-test coverage in `migrations.test.ts`: insert a doc with the legacy/sparse shape, run `migrateOne` (or `runTableMigrations`), assert clean state and idempotency. After the schema is required, sparse inserts are impossible — keep missing-key coverage on the backfill PR, and test idempotency on complete docs in the tighten PR.
 
 ## Checklist
 
 ```
-Removal migration:
-- [ ] Phase 1: validator/schema still accepts legacy rows (`v.optional` + `@deprecated`/`@todo` JSDoc; enforced by `no-convex-optional/no-undocumented-optional`)
-- [ ] Phase 2: idempotent migration in runTableMigrations (+ HISTORICAL if gate)
+Add required field:
+- [ ] Phase 1: `@todo` on remaining `v.optional()` (lint)
+- [ ] Phase 2: RPC args required (`null` or concrete); callers updated
+- [ ] Phase 3: backfill missing keys; `deploymentStatus` lists the walkers
+- [ ] Deploy phase 3; wait until deploymentStatus is done
+- [ ] Phase 4: drop `v.optional()` from schema; always write keys on insert
+- [ ] pnpm checks
+
+Removal:
+- [ ] Phase 1: validator/schema still accepts legacy rows (`v.optional` + `@todo`)
+- [ ] Phase 2: idempotent migration in runTableMigrations (+ TABLE_MIGRATION_NAMES)
 - [ ] Test in migrations.test.ts
 - [ ] PR 1/N: permissive schema + migration + deploy
 - [ ] Verify deploy + migration status
-- [ ] Phase 3 / PR 2/N: remove deprecated schema fields only
+- [ ] Phase 3 / follow-up PR: remove the field or enum literal
 - [ ] pnpm checks
 ```
 
 ## Pattern examples
 
-| Change                         | PR 1/N                                             | PR 2/N                      |
-| ------------------------------ | -------------------------------------------------- | --------------------------- |
-| Remove optional boolean flag   | Keep `v.optional(...)` + strip migration           | Drop field from `schema.ts` |
-| Remove enum literal from union | Keep literal with `@deprecated` + filter migration | Drop literal from validator |
-| Add required field             | Optional field + backfill migration                | Make field required         |
+| Change | First PR(s) | Last PR |
+| --- | --- | --- |
+| Require a schema field that rows omit | `@todo` + backfill missing keys to `null`/`false` | Drop `v.optional()` |
+| Require an RPC arg callers omit | `@todo` then `v.union(..., v.null())`; callers pass `null` | (schema PR only if the column is optional too) |
+| Remove optional boolean flag | Keep `v.optional(...)` + strip migration | Drop field from `schema.ts` |
+| Remove enum literal from union | Keep literal + `@todo` + filter migration | Drop literal from validator |
 
 ## References
 
-- Generic migrate skill: [`convex-migrate`](../convex-migrate/SKILL.md)
+- Generic migrate skill (Convex-maintained, do not edit): [`convex-migrate`](../convex-migrate/SKILL.md)
 - Rehearse on preview: [`convex-migrate-rehearse`](../convex-migrate-rehearse/SKILL.md)
 - Package agent notes: [`AGENTS.md`](../../AGENTS.md)

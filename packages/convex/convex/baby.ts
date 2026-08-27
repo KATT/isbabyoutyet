@@ -298,13 +298,13 @@ export const create = mutationWithTriggers({
   args: {
     name: v.string(),
     dueDate: v.union(v.string(), v.null()),
-    /** @deprecated Optional until callers pass an explicit value. */
+    /** @todo Optional until callers pass an explicit value. */
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    /** @deprecated Optional until callers pass an explicit value or `null`. */
+    /** @todo Optional until callers pass an explicit value or `null`. */
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    /** Optional for stale clients; the document always stores a concrete selection. @deprecated Optional until callers pass an explicit value. */
+    /** Optional for stale clients; the document always stores a concrete selection. @todo Optional until callers pass an explicit value. */
     birthJourney: v.optional(birthJourneyValidator),
-    /** @deprecated Optional until callers pass an explicit value or `null`. */
+    /** @todo Optional until callers pass an explicit value or `null`. */
     theme: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
@@ -443,11 +443,11 @@ export const updateThumbnail = internalMutationWithTriggers({
     babyId: v.id("baby"),
     thumbnailId: v.id("_storage"),
     pushImageId: v.union(v.id("_storage"), v.null()),
-    /** Photo the derivatives were generated from. @deprecated Optional until callers pass `null`. */
+    /** Photo the derivatives were generated from. @todo Optional until callers pass `null`. */
     photoId: v.optional(v.id("_storage")),
-    /** Timeline update row to also patch. @deprecated Optional until callers pass `null`. */
+    /** Timeline update row to also patch. @todo Optional until callers pass `null`. */
     updateId: v.optional(v.id("updates")),
-    /** @deprecated Optional until callers pass an explicit value or `null`. */
+    /** @todo Optional until callers pass an explicit value or `null`. */
     blurDataUrl: v.optional(v.union(v.string(), v.null())),
   },
   handler: async (ctx, args) => {
@@ -489,7 +489,7 @@ export const updateBlurDataUrl = internalMutationWithTriggers({
     babyId: v.id("baby"),
     photoId: v.id("_storage"),
     blurDataUrl: v.string(),
-    /** @deprecated Optional until callers pass `null`. */
+    /** @todo Optional until callers pass `null`. */
     updateId: v.optional(v.id("updates")),
   },
   handler: async (ctx, args) => {
@@ -590,19 +590,19 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     dueDate: v.optional(v.union(v.string(), v.null())),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     name: v.optional(v.string()),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     theme: v.optional(v.union(v.string(), v.null())),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    /** @deprecated Sparse patch; omit means unchanged. Optional until callers send a full document. */
+    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {

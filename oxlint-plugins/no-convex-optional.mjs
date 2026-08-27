@@ -4,15 +4,15 @@
  * Optional schema fields and RPC args are a migration transient only. Prefer a
  * required validator (`v.union(..., v.null())` or a concrete value) so callers
  * and rows must set the key. Keep `v.optional()` only while backfilling, and
- * mark it with JSDoc `@deprecated` (the optional is going away) or `@todo`
- * (remaining work, or a documented exception).
+ * mark it with JSDoc `@todo` (still in use; remaining work to require the key)
+ * or `@deprecated`.
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
  * schema/RPC.
  */
 
 const MESSAGE =
-  "`v.optional()` is only allowed as a migration transient. Add a JSDoc `@deprecated` or `@todo` explaining the follow-up, or use a required validator (`v.union(..., v.null())` or a concrete value).";
+  "`v.optional()` is only allowed as a migration transient. Add a JSDoc `@todo` (or `@deprecated`) explaining the follow-up, or use a required validator (`v.union(..., v.null())` or a concrete value).";
 
 const DOCUMENTED_TAG = /@(?:todo|deprecated)\b/i;
 const CONFIG_FILE = /(?:^|[/\\])convex\.config\.[cm]?[jt]sx?$/;
@@ -45,7 +45,7 @@ function nodeStart(node) {
 }
 
 /**
- * True when a `/**` JSDoc block containing `@deprecated` or `@todo` sits
+ * True when a `/**` JSDoc block containing `@todo` or `@deprecated` sits
  * immediately before `index` (whitespace only in between).
  */
 function hasDocumentedJsdocBefore(text, index) {
@@ -183,7 +183,7 @@ const noUndocumentedOptional = {
     type: "problem",
     docs: {
       description:
-        "Disallow Convex `v.optional()` unless marked `@deprecated` or `@todo` as a migration transient",
+        "Disallow Convex `v.optional()` unless marked `@todo` or `@deprecated` as a migration transient",
     },
     schema: [],
     messages: {

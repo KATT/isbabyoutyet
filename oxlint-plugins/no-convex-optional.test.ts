@@ -30,7 +30,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
        export default defineSchema({
          baby: defineTable({
            /**
-            * @deprecated Optional until every row sets this key.
+            * @todo Optional until every row sets this key.
             */
            theme: v.optional(v.union(v.string(), v.null())),
          }),
