@@ -8,17 +8,18 @@
     "dev-convex": "cd packages/convex && pnpm dev",
     "reset-dev": "pnpm --filter @workspace/convex reset-dev",
     "lint": "turbo lint",
+    "lint-fix": "turbo lint-fix",
     "typecheck": "turbo typecheck",
-    "typecheck:scripts": "tsc --noEmit -p scripts",
     "format": "turbo format",
     "pretest": "pnpm --filter web i18n:compile",
     "test": "vitest run",
+    "typecheck:scripts": "tsc --noEmit -p scripts",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
     "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm typecheck:scripts && turbo run format lint-fix typecheck test:coverage knip"
+    "checks": "pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
   },
   "devDependencies": {
     "@rrazvan.dev/oxlint-plugin-i18n-literal": "^1.0.1",

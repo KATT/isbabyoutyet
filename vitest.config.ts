@@ -22,6 +22,10 @@ export default defineConfig({
       webUnitProject,
       oxlintPluginsProject,
     ],
+    experimental: {
+      fsModuleCache: true,
+      fsModuleCachePath: "node_modules/.experimental-vitest-cache",
+    },
     coverage: {
       provider: "v8",
       // In Vitest 4, listing patterns in `include` also pulls *untested*
@@ -41,7 +45,11 @@ export default defineConfig({
         "**/test.setup.ts",
         "**/test.resource.ts",
       ],
-      reporter: ["text-summary", "html", "json", "json-summary"],
+      // CI: json-summary for the local coverage ratchet; lcov for Codecov history uploads.
+      // Local: full HTML/JSON reports for browsing.
+      reporter: process.env.CI
+        ? ["text-summary", "json-summary", "lcov"]
+        : ["text-summary", "html", "json", "json-summary"],
     },
   },
 });

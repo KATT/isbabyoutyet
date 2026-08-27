@@ -14,56 +14,182 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           lfs: true
+          # Need enough history for `vitest --changed <base.sha>` merge-base.
+          fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: "24"
+          node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Restore main coverage baseline
+      - name: Cache Vitest modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.experimental-vitest-cache
+          key: vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
+
+      - name: Cache Turborepo tasks
+        uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
+
+      # OIDC exchange via TURBO_TEAM + Vercel Turborepo CLI policy (no TURBO_TOKEN secret).
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      - name: Format
+        run: pnpm format
+
+      - name: Lint
+        run: pnpm lint-fix
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # PRs: Vitest --changed only (no coverage). Full coverage lives in the codecov job.
+      - name: Test (changed vs base)
+        if: github.event_name == 'pull_request'
+        run: |
+          pnpm pretest:coverage
+          pnpm exec vitest run --changed "${{ github.event.pull_request.base.sha }}"
+
+      - name: Knip
+        run: pnpm knip
+
+  # Parallel with `checks`. Full-suite coverage + local ratchet vs PR base SHA
+  # (main push or stacked inner-PR tip). Codecov.io upload is history-only (no statuses).
+  codecov:
+    runs-on: ubuntu-latest
+    # Probe/HIT path should stay fast; a hang or MISS-heavy path means fix CI.
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+          fetch-depth: 0
+          # On PRs, start from the branch tip (not the merge commit).
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Vitest modules
+        uses: actions/cache@v6
+        with:
+          path: node_modules/.experimental-vitest-cache
+          key: vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            vitest-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml') }}-
+
+      - name: Cache Turborepo tasks
+        uses: actions/cache@v6
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-${{ hashFiles('.nvmrc', 'pnpm-lock.yaml', 'turbo.json') }}-
+
+      - name: Set up Turborepo Remote Cache
+        if: ${{ vars.TURBO_TEAM != '' }}
+        uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+        with:
+          team: ${{ vars.TURBO_TEAM }}
+
+      # Exact SHA only — no restore-keys fallback (would compare against the wrong tip).
+      - name: Restore PR base coverage baseline
+        id: baseline
         if: github.event_name == 'pull_request'
         uses: actions/cache/restore@v6
         with:
           path: .coverage-baseline
-          key: coverage-main-${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            coverage-main-
+          key: coverage-summary-${{ github.event.pull_request.base.sha }}
 
-      - name: Run checks
-        run: pnpm checks
+      # Stacked tips / races: remeasure base when no Actions cache entry exists yet.
+      - name: Measure PR base coverage baseline
+        if: github.event_name == 'pull_request' && steps.baseline.outputs.cache-hit != 'true'
+        run: |
+          git checkout --force "${{ github.event.pull_request.base.sha }}"
+          pnpm install --frozen-lockfile
+          pnpm exec turbo run test:coverage
+          test -f coverage/coverage-summary.json
+          mkdir -p .coverage-baseline
+          cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
+          git checkout --force "${{ github.event.pull_request.head.sha }}"
+          pnpm install --frozen-lockfile
 
-      - name: Compare coverage with main
+      - name: Full coverage (Turbo-cached)
+        run: |
+          pnpm exec turbo run test:coverage
+          test -f coverage/coverage-summary.json
+
+      - name: Compare coverage with PR base
         if: github.event_name == 'pull_request'
         run: |
-          if [[ ! -f .coverage-baseline/coverage-summary.json ]]; then
-            echo "::notice::No main coverage baseline is cached yet; the first green main run will create one."
-            exit 0
-          fi
-
+          test -f .coverage-baseline/coverage-summary.json
           pnpm coverage:compare
 
-      - name: Prepare main coverage baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      # Cache this tip so stacked outer PRs can restore it as their base.
+      - name: Prepare coverage baseline for cache
         run: |
           mkdir -p .coverage-baseline
           cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
 
-      - name: Save main coverage baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: Save coverage baseline
+        continue-on-error: true
         uses: actions/cache/save@v6
         with:
           path: .coverage-baseline
-          key: coverage-main-${{ github.sha }}
+          key: coverage-summary-${{ github.event.pull_request.head.sha || github.sha }}
+
+      # History only — codecov.yml disables GitHub statuses/comments/checks.
+      - name: Upload coverage to Codecov
+        if: hashFiles('coverage/lcov.info') != ''
+        continue-on-error: true
+        uses: codecov/codecov-action@v7
+        with:
+          files: coverage/lcov.info
+          flags: unit
+          name: vitest
+          override_commit: ${{ github.event.pull_request.head.sha || github.sha }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: ${{ secrets.CODECOV_TOKEN == '' }}
+          fail_ci_if_error: false
+          verbose: true

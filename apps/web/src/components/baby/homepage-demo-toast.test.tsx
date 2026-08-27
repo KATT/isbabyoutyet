@@ -1,7 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { toast } from "sonner";
-import type { ReactElement } from "react";
-import { expect, test, vi } from "vitest";
+import { fireEvent, render } from "@testing-library/react";
+import { expect, test } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
 import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
@@ -13,56 +11,33 @@ function renderToastResource(publicId: string) {
   });
 }
 
-function spyOnToastResource() {
-  const custom = vi.spyOn(toast, "custom").mockReturnValue("toast-id");
-  const dismiss = vi.spyOn(toast, "dismiss").mockReturnValue("toast-id");
-  return makeResource({ custom, dismiss }, () => {
-    custom.mockRestore();
-    dismiss.mockRestore();
-  });
-}
-
 test("shows a persistent demo toast on the homepage demo baby", async () => {
-  await using spies = spyOnToastResource();
-  await using _view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
 
-  expect(spies.custom).toHaveBeenCalledTimes(1);
-  const [renderToast, options] = spies.custom.mock.calls[0] ?? [];
-  expect(options).toMatchObject({
-    duration: Infinity,
-    closeButton: true,
-  });
-  if (typeof renderToast !== "function") throw new Error("expected a custom toast renderer");
-  const content = render(renderToast("toast-id") as ReactElement);
-  await using _content = makeResource(content, () => {
-    content.unmount();
-  });
+  // English locale maps the key "This is a demo baby" → "This is a demo page"
+  expect(view.getByText("This is a demo page")).toBeTruthy();
   expect(
-    screen.getByText("Feel free to post test messages — we reset this demo daily."),
+    view.getByText("Feel free to post test messages — we reset this demo daily."),
   ).toBeTruthy();
+  expect(view.getByRole("complementary")).toBeTruthy();
 });
 
-test("does not toast on a real baby page, and dismisses when leaving the demo", async () => {
-  await using spies = spyOnToastResource();
-
-  {
-    await using _demo = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
-    expect(spies.custom).toHaveBeenCalledTimes(1);
-  }
-
-  const options = spies.custom.mock.calls[0]?.[1];
-  if (!options || typeof options !== "object" || !("id" in options)) {
-    throw new Error("expected toast options with an id");
-  }
-  expect(spies.dismiss).toHaveBeenCalledWith(options.id);
-
-  spies.custom.mockClear();
-  await using _other = renderToastResource("baby-waiting");
-  expect(spies.custom).not.toHaveBeenCalled();
+test("does not render the notice on a real baby page", async () => {
+  await using view = renderToastResource("baby-waiting");
+  expect(view.container.firstChild).toBeNull();
 });
 
 test("shows the demo toast on every locale homepage baby", async () => {
-  await using spies = spyOnToastResource();
-  await using _view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
-  expect(spies.custom).toHaveBeenCalledTimes(1);
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABIES.sv.publicId);
+  expect(view.getByRole("complementary")).toBeTruthy();
+});
+
+test("can dismiss the notice and shows it again for another demo baby", async () => {
+  await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
+
+  fireEvent.click(view.getByRole("button", { name: "Hide tip" }));
+  expect(view.container.firstChild).toBeNull();
+
+  view.rerender(<HomepageDemoToast publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} />);
+  expect(view.getByRole("complementary")).toBeTruthy();
 });

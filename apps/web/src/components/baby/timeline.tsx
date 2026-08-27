@@ -16,6 +16,13 @@ import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+import {
+  Popover,
+  PopoverClose,
+  PopoverContent,
+  PopoverTrigger,
+} from "@workspace/ui/components/popover";
+import type { PopoverActions } from "@workspace/ui/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -33,7 +40,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRef } from "react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -50,23 +57,22 @@ import {
   getMilestonePolicy,
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
-import { Form, useZodForm } from "@/components/Form";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
-import { getVisitorId } from "./encouragements";
+import { useStoredVisitorId } from "@/lib/use-visitor-id";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useIntersectionAction } from "@/lib/use-intersection-action";
+import { useObjectUrl } from "@/lib/use-object-url";
 import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
-function subscribeVisitorId() {
-  return () => {};
-}
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -74,30 +80,6 @@ type EncouragementItemData = Extract<TimelineItemData, { kind: "encouragement" }
 
 const MAX_UPDATE_MESSAGE_LENGTH = 1000;
 const MAX_PHOTO_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
-
-function usePhotoPreviewUrl(photo: File | null) {
-  const [cached, setCached] = useState<{ photo: File | null; url: string | null }>({
-    photo: null,
-    url: null,
-  });
-
-  let url = cached.url;
-  if (cached.photo !== photo) {
-    if (cached.url) {
-      URL.revokeObjectURL(cached.url);
-    }
-    url = photo ? URL.createObjectURL(photo) : null;
-    setCached({ photo, url });
-  }
-
-  useEffect(() => {
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [url]);
-
-  return url;
-}
 
 /**
  * A post's three fields are mutually inclusive: any combination works, as
@@ -228,8 +210,16 @@ type UpdateComposerFormProps = UpdateComposerProps & {
 export function UpdateComposer(props: UpdateComposerProps) {
   const postUpdate = useMutation(api.updates.post);
   const generateUploadUrl = useMutation(api.baby.generateUploadUrl);
+  const currentStatus = getMilestonePolicy(props.baby).currentStatus;
+  // Remount when the journey stage advances so a stale milestone selection
+  // cannot resurface after an unmark — no sync effect needed.
   return (
-    <UpdateComposerForm {...props} postUpdate={postUpdate} generateUploadUrl={generateUploadUrl} />
+    <UpdateComposerForm
+      key={currentStatus.type}
+      {...props}
+      postUpdate={postUpdate}
+      generateUploadUrl={generateUploadUrl}
+    />
   );
 }
 
@@ -261,29 +251,19 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
       photo: null,
     },
   });
-  const isPosting = form.formState.isSubmitting;
 
-  const draft = form.watch();
+  const milestone = useWatch({ control: form.control, name: "milestone" });
+  const photoFile = useWatch({ control: form.control, name: "photo" });
 
-  // Guard against a stale selection: the status may have advanced from
-  // another tab while a milestone was selected here. The mask keeps the
-  // current render correct; the effect clears the value so the old choice
-  // can't resurface if the status regresses later via unmarking.
+  // Mask stale selections while the form remounts on status change via key.
   const selectedMilestone =
-    draft.milestone !== "none" && futureMilestones.includes(draft.milestone)
-      ? draft.milestone
+    milestone != null &&
+    milestone !== "none" &&
+    futureMilestones.includes(milestone)
+      ? milestone
       : null;
-  useEffect(() => {
-    const value = form.getValues("milestone");
-    if (value !== "none" && !futureMilestones.includes(value)) {
-      form.setValue("milestone", "none");
-      form.resetField("occurredAt");
-    }
-  }, [form, futureMilestones]);
 
-  const photoPreviewUrl = usePhotoPreviewUrl(draft.photo);
-
-  const canPost = !isPosting && schema.safeParse(draft).success;
+  const photoPreviewUrl = useObjectUrl(photoFile ?? null);
 
   return (
     <div className="space-y-3">
@@ -336,7 +316,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                     aria-label={t("Update message (optional)")}
                     className="min-h-20"
                     maxLength={MAX_UPDATE_MESSAGE_LENGTH}
-                    disabled={isPosting}
                     {...field}
                   />
                 </FormControl>
@@ -361,7 +340,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                   form.setValue("photo", null);
                   if (fileInputRef.current) fileInputRef.current.value = "";
                 }}
-                disabled={isPosting}
                 aria-label={t("Remove photo")}
               >
                 <X className="w-3 h-3" />
@@ -386,7 +364,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                       // Deselecting forgets any backdate; reselecting starts from "now"
                       if (value === "none") form.resetField("occurredAt");
                     }}
-                    disabled={isPosting}
                     className="gap-1.5"
                   >
                     <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -433,7 +410,6 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
                             <Input
                               type="datetime-local"
                               max={htmlDateTimeNow(props.baby.timeZone)}
-                              disabled={isPosting}
                               className="w-fit"
                               {...field}
                             />
@@ -479,28 +455,22 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
               variant="outline"
               size="sm"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isPosting}
             >
               <Images className="w-4 h-4" />
-              {draft.photo ? t("Change photo") : t("Add photo (optional)")}
+              {photoFile ? t("Change photo") : t("Add photo (optional)")}
             </Button>
-            <Button type="submit" disabled={!canPost}>
-              <PaperPlaneTilt className="w-4 h-4" />
-              {isPosting
-                ? t("Posting...")
-                : selectedMilestone
-                  ? t('Post & mark "{{status}}"', {
-                      status: t(MILESTONE_META[selectedMilestone].labelKey),
-                    })
-                  : t("Post update")}
-            </Button>
+            <SubmitButton form="context" IconComponent={PaperPlaneTilt} iconPosition="start">
+              {selectedMilestone
+                ? t('Post & mark "{{status}}"', {
+                    status: t(MILESTONE_META[selectedMilestone].labelKey),
+                  })
+                : t("Post update")}
+            </SubmitButton>
           </div>
 
-          {!canPost && !isPosting && (
-            <p className="text-xs text-muted-foreground text-right">
-              {t("Add a message, a photo, or a milestone — any one is enough.")}
-            </p>
-          )}
+          <p className="text-xs text-muted-foreground text-right">
+            {t("Add a message, a photo, or a milestone — any one is enough.")}
+          </p>
         </div>
       </Form>
     </div>
@@ -764,15 +734,15 @@ function encouragementEditSchema(
     }));
 }
 /**
- * Mounted only while editing, so the form initializes from the current
- * message on every reveal — no reset bookkeeping.
+ * Mounted only while the edit popover is open, so the form initializes from
+ * the current message on every reveal — no reset bookkeeping.
  */
 function EncouragementEditForm(props: {
   initialMessage: string;
   encouragementId: Id<"encouragements">;
   visitorId: string;
   onSave: (args: FunctionArgs<typeof api.encouragements.update>) => Promise<void>;
-  onCancel: () => void;
+  onClose: () => void;
 }) {
   const { t } = useI18n();
   const form = useZodForm({
@@ -789,6 +759,7 @@ function EncouragementEditForm(props: {
       form={form}
       handleSubmit={async (values) => {
         await props.onSave(values);
+        props.onClose();
       }}
     >
       <div className="space-y-2">
@@ -801,7 +772,6 @@ function EncouragementEditForm(props: {
                 <Textarea
                   aria-label={t("Edit your message")}
                   className="min-h-20"
-                  disabled={isSaving}
                   {...field}
                 />
               </FormControl>
@@ -810,20 +780,15 @@ function EncouragementEditForm(props: {
           )}
         />
         <div className="flex gap-2">
-          <Button size="sm" type="submit" disabled={isSaving}>
-            <Check className="w-3 h-3" />
-            {isSaving ? t("Saving...") : t("Save")}
-          </Button>
-          <Button
-            size="sm"
-            type="button"
-            variant="outline"
-            onClick={props.onCancel}
-            disabled={isSaving}
+          <SubmitButton form="context" IconComponent={Check} iconPosition="start" size="sm">
+            {t("Save")}
+          </SubmitButton>
+          <PopoverClose
+            render={<Button size="sm" type="button" variant="outline" disabled={isSaving} />}
           >
             <X className="w-3 h-3" />
             {t("Cancel")}
-          </Button>
+          </PopoverClose>
         </div>
       </div>
     </Form>
@@ -833,7 +798,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const [isEditing, setIsEditing] = useState(false);
+  const actionsRef = useRef<PopoverActions | null>(null);
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
@@ -866,36 +831,39 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
               {isOwnPost && <span className="text-xs text-primary/70 shrink-0">{t("(you)")}</span>}
             </div>
 
-            {isEditing ? (
-              <EncouragementEditForm
-                initialMessage={encouragement.message}
-                encouragementId={encouragement._id}
-                visitorId={props.currentVisitorId}
-                onSave={async (args) => {
-                  await props.onUpdate(args);
-                  setIsEditing(false);
-                }}
-                onCancel={() => setIsEditing(false)}
-              />
-            ) : (
-              <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
-                <Streamdown>{encouragement.message}</Streamdown>
-              </div>
-            )}
+            <div className="min-w-0 max-w-none break-words text-sm text-muted-foreground prose prose-sm [overflow-wrap:anywhere] dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-a:text-primary [&_code]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
+              <Streamdown>{encouragement.message}</Streamdown>
+            </div>
           </div>
 
-          {!isEditing && (canEdit || canDelete) && (
+          {(canEdit || canDelete) && (
             <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 transition-opacity shrink-0">
               {canEdit && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  aria-label={t("Edit encouragement")}
-                  onClick={() => setIsEditing(true)}
-                >
-                  <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                </Button>
+                <Popover actionsRef={actionsRef}>
+                  <PopoverTrigger
+                    render={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={t("Edit encouragement")}
+                      />
+                    }
+                  >
+                    <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
+                    <EncouragementEditForm
+                      initialMessage={encouragement.message}
+                      encouragementId={encouragement._id}
+                      visitorId={props.currentVisitorId}
+                      onSave={props.onUpdate}
+                      onClose={() => {
+                        actionsRef.current?.close();
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
               )}
               {canDelete && (
                 <AlertDialog>
@@ -976,8 +944,7 @@ type UpdateEncouragementFn = (
 export function TimelineFeed(props: TimelineFeedProps) {
   // Client visitor id for isMine; SSR snapshot is "" so the first paint matches
   // the loader handle (no visitorId), then remixArgs picks it up on the client.
-  // getVisitorId returns "" without window, so it is safe as the SSR snapshot too.
-  const currentVisitorId = useSyncExternalStore(subscribeVisitorId, getVisitorId, getVisitorId);
+  const currentVisitorId = useStoredVisitorId();
   // visitorId only marks the caller's own encouragements (isMine); the
   // credential itself is never returned by the query. Remix after mount so
   // the first render matches the SSR handle (no visitorId).
@@ -1035,35 +1002,16 @@ type TimelineFeedViewProps = {
  */
 function TimelineFeedView(props: TimelineFeedViewProps) {
   const { t } = useI18n();
-  const loadMoreRef = useRef<HTMLDivElement>(null);
   const hasNextPage = props.hasNextPage;
   const isFetchingNextPage = props.isFetchingNextPage;
   const fetchNextPage = props.fetchNextPage;
-
-  // Infinite scroll with IntersectionObserver
-  useEffect(() => {
-    if (!hasNextPage || isFetchingNextPage) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          void fetchNextPage();
-        }
-      },
-      { threshold: 0.1 },
-    );
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  const loadMoreRef = useIntersectionAction({
+    enabled: hasNextPage && !isFetchingNextPage,
+    onIntersect: () => {
+      void fetchNextPage();
+    },
+    threshold: 0.1,
+  });
 
   const handleDeleteUpdate = async (updateId: Id<"updates">) => {
     try {

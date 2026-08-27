@@ -5,6 +5,10 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Button } from "@workspace/ui/components/button";
 import { XIcon } from "lucide-react";
 
+/** Imperative actions exposed via `Dialog` `actionsRef` (close / unmount). */
+// local addition — keep on shadcn/Base UI re-sync
+type DialogActions = DialogPrimitive.Root.Actions;
+
 function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
@@ -134,3 +138,4 @@ export {
   DialogTitle,
   DialogTrigger,
 };
+export type { DialogActions };

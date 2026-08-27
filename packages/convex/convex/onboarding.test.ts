@@ -26,6 +26,8 @@ test("getMine returns empty defaults for anonymous callers", async () => {
     effectiveSteps: [],
     allDone: false,
     tourBaby: null,
+    activeCoachmarkStepId: null,
+    restartHintVisible: false,
   });
 });
 
@@ -93,6 +95,37 @@ test("dismissChecklist hides the tour; restart brings it back without wiping ste
     welcomeDismissed: false,
     minimized: false,
     completedSteps: ["share_link"],
+    activeCoachmarkStepId: null,
+    restartHintVisible: false,
+  });
+});
+
+// Presentation chrome on the onboarding progress doc (not URL state).
+test("coachmark and restart-hint presentation persist on userOnboarding", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+
+  await asAlice.mutation(api.onboarding.setActiveCoachmarkStepId, { stepId: "share_link" });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    activeCoachmarkStepId: "share_link",
+  });
+
+  await asAlice.mutation(api.onboarding.setRestartHintVisible, { visible: true });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    restartHintVisible: true,
+  });
+
+  await asAlice.mutation(api.onboarding.completeStep, { stepId: "share_link" });
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    activeCoachmarkStepId: null,
+    completedSteps: ["share_link"],
+  });
+
+  await asAlice.mutation(api.onboarding.setActiveCoachmarkStepId, { stepId: "post_update" });
+  await asAlice.mutation(api.onboarding.dismissChecklist, {});
+  expect(await asAlice.query(api.onboarding.getMine, {})).toMatchObject({
+    activeCoachmarkStepId: null,
+    checklistDismissed: true,
   });
 });
 

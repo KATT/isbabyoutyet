@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import {
   DueDateEditor,
+  JourneyEditor,
   NameEditor,
   StatusDateEditor,
   ThemeSelector,
@@ -54,7 +55,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   expect(input.value).toBe("Nova");
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
-  // Save is dirty-gated
+  // Save is dirty-gated until the name changes
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
   expect(saveButton.disabled).toBe(true);
 
@@ -243,7 +244,10 @@ test("theme selector marks Baby Blue selected", async () => {
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
-  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  // Closed trigger shows the selected theme the same way open options do
+  expect(view.getByRole("button", { name: "Change theme" }).textContent).toContain("Baby Blue");
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
 
   const babyBlueButton = view.getByRole("button", { name: "Baby Blue" });
   expect(babyBlueButton.getAttribute("aria-pressed")).toBe("true");
@@ -261,7 +265,7 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
     />,
   );
 
-  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
 
   expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("false");
 });
@@ -273,11 +277,64 @@ test("theme selector reports a failed update and remains open", async () => {
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
-  fireEvent.click(view.getByRole("button", { name: "Change" }));
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
   fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
 
   await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Theme update failed"));
   expect(view.getByRole("button", { name: "Bubblegum" })).toBeTruthy();
+});
+
+test("theme selector toasts a generic message for non-Error failures", async () => {
+  await using toastError = spyOnToastErrorResource();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue("nope");
+  await using view = renderResource(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
+  fireEvent.click(view.getByRole("button", { name: "Bubblegum" }));
+
+  await vi.waitFor(() => expect(toastError).toHaveBeenCalledWith("Failed to update theme"));
+});
+
+test("journey editor saves only when dirty", async () => {
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
+  const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+  expect(saveButton.disabled).toBe(true);
+
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const homeBirth = view.getByRole("option", { name: "Home birth" });
+  fireEvent.pointerDown(homeBirth, { pointerType: "mouse" });
+  fireEvent.click(homeBirth);
+  expect(saveButton.disabled).toBe(false);
+  expect(onUpdate).not.toHaveBeenCalled();
+
+  fireEvent.click(saveButton);
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ birthJourney: "home_birth" }));
+  await vi.waitFor(() => expect(view.queryByRole("combobox", { name: "Presets" })).toBeNull());
+});
+
+test("journey editor reports a failed save and remains open", async () => {
+  await using toastError = spyOnToastErrorResource();
+  const onUpdate = vi
+    .fn<BabyUpdateHandler>()
+    .mockRejectedValue(new Error("Could not save journey"));
+  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
+
+  fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
+  fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
+  const homeBirth = view.getByRole("option", { name: "Home birth" });
+  fireEvent.pointerDown(homeBirth, { pointerType: "mouse" });
+  fireEvent.click(homeBirth);
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(toastError).toHaveBeenCalledWith("Could not save journey");
+  });
+  expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Home birth");
 });
 
 test("status editor confirms destructive deletion", async () => {

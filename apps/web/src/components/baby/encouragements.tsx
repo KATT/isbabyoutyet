@@ -1,5 +1,4 @@
-import { Form, useZodForm } from "@/components/Form";
-import { Button } from "@workspace/ui/components/button";
+import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import {
   FormControl,
   FormField,
@@ -12,13 +11,14 @@ import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useClientHydration } from "@/lib/use-client-hydration";
+import { getVisitorId } from "@/lib/use-visitor-id";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -27,17 +27,10 @@ type EncouragementFormProps = {
 
 const MAX_NAME_LENGTH = 50;
 const STORAGE_KEY_NAME = "encouragement-author-name";
-const STORAGE_KEY_VISITOR_ID = "encouragement-visitor-id";
 
-// Get or create a unique visitor ID (immutable once created) - client-side only
-export function getVisitorId(): string {
+function getStoredAuthorName() {
   if (typeof window === "undefined") return "";
-  let visitorId = localStorage.getItem(STORAGE_KEY_VISITOR_ID);
-  if (!visitorId) {
-    visitorId = crypto.randomUUID();
-    localStorage.setItem(STORAGE_KEY_VISITOR_ID, visitorId);
-  }
-  return visitorId;
+  return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
 // Trim before validating, so whitespace-only input doesn't pass "required"
@@ -66,6 +59,18 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
 }
 
 export function EncouragementForm(props: EncouragementFormProps) {
+  const hydrated = useClientHydration();
+  return (
+    <EncouragementFormFields
+      key={hydrated ? "hydrated" : "server"}
+      babyId={props.babyId}
+      babyName={props.babyName}
+      initialAuthorName={hydrated ? getStoredAuthorName() : ""}
+    />
+  );
+}
+
+function EncouragementFormFields(props: EncouragementFormProps & { initialAuthorName: string }) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
   const schema = encouragementSchema(t, props.babyId);
@@ -73,19 +78,10 @@ export function EncouragementForm(props: EncouragementFormProps) {
   const form = useZodForm({
     schema,
     defaultValues: {
-      authorName: "",
+      authorName: props.initialAuthorName,
       message: "",
     },
   });
-
-  // Load saved name from localStorage on mount (client-side only)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedName = localStorage.getItem(STORAGE_KEY_NAME);
-    if (savedName) {
-      form.setValue("authorName", savedName);
-    }
-  }, [form]);
 
   return (
     <div className="space-y-4">
@@ -118,8 +114,8 @@ export function EncouragementForm(props: EncouragementFormProps) {
             error: (err) =>
               err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
-          form.reset({ authorName: values.authorName, message: "" });
           await promise;
+          form.reset({ authorName: values.authorName, message: "" });
         }}
       >
         <div className="space-y-3">
@@ -155,10 +151,14 @@ export function EncouragementForm(props: EncouragementFormProps) {
             )}
           />
 
-          <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-            <PaperPlaneTilt className="w-4 h-4" />
-            {form.formState.isSubmitting ? t("Sending...") : t("Send Encouragement")}
-          </Button>
+          <SubmitButton
+            form="context"
+            IconComponent={PaperPlaneTilt}
+            iconPosition="start"
+            className="w-full"
+          >
+            {t("Send Encouragement")}
+          </SubmitButton>
         </div>
       </Form>
     </div>

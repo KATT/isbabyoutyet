@@ -26,6 +26,8 @@ const emptyState: OnboardingClientState = {
   effectiveSteps: [],
   allDone: false,
   tourBaby: null,
+  activeCoachmarkStepId: null,
+  restartHintVisible: false,
 };
 
 async function requireUserId(ctx: QueryCtx | MutationCtx) {
@@ -128,6 +130,8 @@ function toClientState(doc: Doc<"userOnboarding"> | null, auto: AutoProgress) {
     effectiveSteps,
     allDone: effectiveSteps.length >= ONBOARDING_STEP_IDS.length,
     tourBaby: auto.tourBaby,
+    activeCoachmarkStepId: doc?.activeCoachmarkStepId ?? null,
+    restartHintVisible: doc?.restartHintVisible ?? false,
   };
 }
 
@@ -176,6 +180,32 @@ export const setMinimized = mutation({
   },
 });
 
+export const setActiveCoachmarkStepId = mutation({
+  args: { stepId: v.union(onboardingStepIdValidator, v.null()) },
+  handler: async (ctx, args) => {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    const doc = await getOrCreateOnboarding(ctx, identity);
+    await ctx.db.patch(doc._id, { activeCoachmarkStepId: args.stepId });
+    return null;
+  },
+});
+
+export const setRestartHintVisible = mutation({
+  args: { visible: v.boolean() },
+  handler: async (ctx, args) => {
+    const identity = await requireUserId(ctx);
+    if (!identity) {
+      throw new Error("Not authenticated");
+    }
+    const doc = await getOrCreateOnboarding(ctx, identity);
+    await ctx.db.patch(doc._id, { restartHintVisible: args.visible });
+    return null;
+  },
+});
+
 export const dismissChecklist = mutation({
   args: {},
   handler: async (ctx) => {
@@ -188,6 +218,7 @@ export const dismissChecklist = mutation({
       checklistDismissed: true,
       welcomeDismissed: true,
       minimized: true,
+      activeCoachmarkStepId: null,
     });
     return null;
   },
@@ -207,6 +238,7 @@ export const completeStep = mutation({
     await ctx.db.patch(doc._id, {
       completedSteps: [...doc.completedSteps, args.stepId],
       welcomeDismissed: true,
+      ...(doc.activeCoachmarkStepId === args.stepId ? { activeCoachmarkStepId: null } : {}),
     });
     return null;
   },
@@ -227,6 +259,8 @@ export const restart = mutation({
       welcomeDismissed: auto.hasBaby,
       checklistDismissed: false,
       minimized: false,
+      activeCoachmarkStepId: null,
+      restartHintVisible: false,
     });
     return null;
   },
@@ -263,6 +297,8 @@ export async function skipUserOnboarding(ctx: MutationCtx, userId: string) {
     welcomeDismissed: true,
     checklistDismissed: true,
     minimized: true,
+    activeCoachmarkStepId: null,
+    restartHintVisible: false,
   };
 
   if (existing) {

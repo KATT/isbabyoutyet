@@ -1,0 +1,18 @@
+# Upload on PRs and pushes for dashboard history. Do not enable GitHub statuses,
+# checks, or PR comments — the merge gate is local compareCoverage in CI.
+coverage:
+  status:
+    project: off
+    patch: off
+
+comment: false
+
+github_checks: false
+
+ignore:
+  - "**/_generated/**"
+  - "**/routeTree.gen.ts"
+  - "**/*.test.{ts,tsx}"
+  - "**/test.setup.ts"
+  - "**/test.resource.ts"
+  - "**/paraglide/**"

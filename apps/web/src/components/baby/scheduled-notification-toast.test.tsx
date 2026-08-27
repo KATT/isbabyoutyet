@@ -1,6 +1,5 @@
-import { toast } from "sonner";
+import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import {
@@ -11,20 +10,6 @@ import {
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { ScheduledNotificationToast } from "./scheduled-notification-toast";
-
-/**
- * Sonner queues toasts on a module-level observer with no `<Toaster />`
- * mounted, so the rendered toast body is only reachable through the render
- * callback handed to `toast.custom`.
- */
-function spyOnToastResource() {
-  const custom = vi.spyOn(toast, "custom").mockReturnValue("toast-id");
-  const dismiss = vi.spyOn(toast, "dismiss").mockReturnValue("toast-id");
-  return makeResource({ custom, dismiss }, () => {
-    custom.mockRestore();
-    dismiss.mockRestore();
-  });
-}
 
 async function renderToastResource(
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
@@ -51,7 +36,6 @@ test("runs with empty notifications and no subscriptions", async () => {
     { babyId: baby.babyId },
   );
 
-  await using toastSpy = spyOnToastResource();
   await using view = await renderToastResource(
     harness,
     <ScheduledNotificationToast
@@ -61,7 +45,6 @@ test("runs with empty notifications and no subscriptions", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("treats forbidden notification data as empty", async () => {
@@ -88,7 +71,6 @@ test("treats forbidden notification data as empty", async () => {
     api.pushSubscriptions.getSubscriptionCount,
     { babyId: baby.babyId },
   );
-  await using toastSpy = spyOnToastResource();
   await using view = await renderToastResource(
     harness,
     <ScheduledNotificationToast
@@ -98,7 +80,6 @@ test("treats forbidden notification data as empty", async () => {
   );
 
   expect(view.container.firstChild).toBeNull();
-  expect(toastSpy.custom).not.toHaveBeenCalled();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {
@@ -122,7 +103,6 @@ test("shows the exact subscriber count in a pending notification toast", async (
     { babyId: baby.babyId },
   );
 
-  await using toastSpy = spyOnToastResource();
   await using view = await renderToastResource(
     harness,
     <ScheduledNotificationToast
@@ -131,14 +111,10 @@ test("shows the exact subscriber count in a pending notification toast", async (
     />,
   );
 
-  expect(view.container.firstChild).toBeNull();
-  expect(toastSpy.custom).toHaveBeenCalled();
-  const renderToast = toastSpy.custom.mock.calls[0]?.[0];
-  if (typeof renderToast !== "function") throw new Error("Toast renderer missing");
-  await using toastView = await renderWithConvexTest({
-    harness,
-    ui: renderToast("toast-id") as React.ReactElement,
-    wrap: null,
+  expect(view.container.textContent).toContain("3 people");
+  expect(view.container.textContent).toContain("Sending notification...");
+  fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+  await vi.waitFor(() => {
+    expect(view.queryByText("Sending notification...")).toBeNull();
   });
-  expect(toastView.container.textContent).toContain("3 people");
 });

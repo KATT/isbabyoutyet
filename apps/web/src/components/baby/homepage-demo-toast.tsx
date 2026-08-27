@@ -1,21 +1,22 @@
 import { useI18n } from "@/lib/i18n";
-import { Info } from "@phosphor-icons/react";
+import { Info, X } from "@phosphor-icons/react";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
+import { Button } from "@workspace/ui/components/button";
 import {
   Item,
+  ItemActions,
   ItemContent,
   ItemDescription,
   ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
-import { useEffect } from "react";
-import { toast } from "sonner";
-
-const HOMEPAGE_DEMO_TOAST_ID = "homepage-demo-baby";
+import { createDismissedIdsStore } from "@/lib/use-dismissed-ids";
 
 type HomepageDemoToastProps = {
   publicId: string;
 };
+
+const homepageDemoDismissals = createDismissedIdsStore();
 
 /**
  * Persistent notice on the public homepage demo baby so visitors know they
@@ -23,37 +24,35 @@ type HomepageDemoToastProps = {
  */
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
   const { t } = useI18n();
-  useEffect(() => {
-    if (!isHomepageDemoPublicId(props.publicId)) return;
+  const dismissed = homepageDemoDismissals.useIsDismissed(props.publicId);
+  if (!isHomepageDemoPublicId(props.publicId) || dismissed) return null;
 
-    toast.custom(
-      () => (
-        <Item
-          variant="outline"
-          className="min-w-[300px] max-w-sm border-primary/40 bg-background shadow-lg"
-        >
-          <ItemMedia className="size-10 rounded-full bg-primary/10">
-            <Info className="size-5 text-primary" />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>{t("This is a demo baby")}</ItemTitle>
-            <ItemDescription>
-              {t("Feel free to post test messages — we reset this demo daily.")}
-            </ItemDescription>
-          </ItemContent>
-        </Item>
-      ),
-      {
-        id: HOMEPAGE_DEMO_TOAST_ID,
-        duration: Infinity,
-        closeButton: true,
-      },
-    );
-
-    return () => {
-      toast.dismiss(HOMEPAGE_DEMO_TOAST_ID);
-    };
-  }, [props.publicId, t]);
-
-  return null;
+  return (
+    <aside className="fixed bottom-4 left-4 z-40 max-w-[calc(100vw-2rem)]" aria-live="polite">
+      <Item
+        variant="outline"
+        className="min-w-[300px] max-w-sm border-primary/40 bg-background shadow-lg"
+      >
+        <ItemMedia className="size-10 rounded-full bg-primary/10">
+          <Info className="size-5 text-primary" />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle>{t("This is a demo baby")}</ItemTitle>
+          <ItemDescription>
+            {t("Feel free to post test messages — we reset this demo daily.")}
+          </ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("Hide tip")}
+            onClick={() => homepageDemoDismissals.dismiss(props.publicId)}
+          >
+            <X />
+          </Button>
+        </ItemActions>
+      </Item>
+    </aside>
+  );
 }

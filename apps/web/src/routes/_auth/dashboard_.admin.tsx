@@ -1,4 +1,3 @@
-import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
@@ -31,6 +30,7 @@ import { z } from "zod";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { useIntersectionAction } from "@/lib/use-intersection-action";
 
 const ADMIN_PAGE_SIZE = 20;
 
@@ -160,30 +160,12 @@ export function nextSortSearch(opts: {
 }
 
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {
-  const loadMoreRef = useRef<HTMLDivElement>(null);
-  const canLoadMore = props.canLoadMore;
-  const onLoadMore = props.onLoadMore;
-
-  useEffect(() => {
-    if (!canLoadMore) return;
-    const node = loadMoreRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          onLoadMore();
-        }
-      },
-      { threshold: 0.1 },
-    );
-    observer.observe(node);
-    return () => {
-      observer.unobserve(node);
-    };
-  }, [canLoadMore, onLoadMore]);
-
-  return <div ref={loadMoreRef} className="h-8 w-full" aria-hidden="true" />;
+  const sentinelRef = useIntersectionAction({
+    enabled: props.canLoadMore,
+    onIntersect: props.onLoadMore,
+    threshold: 0.1,
+  });
+  return <div ref={sentinelRef} className="h-8 w-full" aria-hidden="true" />;
 }
 
 function AdminTableCard(props: {
