@@ -31,11 +31,30 @@
     "format": {
     },
     "//#test:coverage": {
-      "cache": false
+      "outputs": ["coverage/coverage-summary.json"],
+      "inputs": [
+        "$TURBO_ROOT$/package.json",
+        "$TURBO_ROOT$/vitest.config.ts",
+        "$TURBO_ROOT$/apps/**",
+        "$TURBO_ROOT$/packages/**",
+        "$TURBO_ROOT$/oxlint-plugins/**",
+        "!$TURBO_ROOT$/**/node_modules/**",
+        "!$TURBO_ROOT$/**/.turbo/**",
+        "!$TURBO_ROOT$/coverage/**",
+        "!$TURBO_ROOT$/**/paraglide/**",
+        "!$TURBO_ROOT$/**/project.inlang/cache/**",
+        "!$TURBO_ROOT$/**/project.inlang/.gitignore",
+        "!$TURBO_ROOT$/**/project.inlang/.meta.json",
+        "!$TURBO_ROOT$/**/project.inlang/README.md",
+        "!$TURBO_ROOT$/**/*.md",
+        "!$TURBO_ROOT$/.github/**",
+        "!$TURBO_ROOT$/**/.agents/**",
+        "!$TURBO_ROOT$/.cursor/**"
+      ],
+      "env": ["CI"]
     },
     "//#knip": {
       "cache": false
     }
   }
 }
-
