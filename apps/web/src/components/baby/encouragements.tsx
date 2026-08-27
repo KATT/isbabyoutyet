@@ -112,8 +112,8 @@ export function EncouragementForm(props: EncouragementFormProps) {
             error: (err) =>
               err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
-          form.reset({ authorName: values.authorName, message: "" });
           await promise;
+          form.reset({ authorName: values.authorName, message: "" });
         }}
       >
         <div className="space-y-3">

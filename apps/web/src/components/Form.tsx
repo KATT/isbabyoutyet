@@ -7,7 +7,7 @@ import { Spinner } from "@workspace/ui/components/spinner";
 import { useId, useRef } from "react";
 import type { ComponentProps, RefObject } from "react";
 import type { DefaultValues, FieldValues, UseFormProps, UseFormReturn } from "react-hook-form";
-import { FormProvider, useForm, useFormContext } from "react-hook-form";
+import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { useI18n } from "@/lib/i18n";
@@ -83,6 +83,9 @@ type AnyZodForm = UseZodForm<FieldValues, unknown, FieldValues>;
  * Submit control wired to the nearest {@link Form} context (or an explicit `form`).
  * Keeps the label; swaps `IconComponent` for a spinner while submitting.
  *
+ * Uses {@link useFormState} so React Compiler still re-renders on `isSubmitting`
+ * (reading `form.formState.isSubmitting` via the Proxy is not a reliable subscription).
+ *
  * @see https://github.com/trpc/examples-kitchen-sink/blob/main/src/feature/react-hook-form/Form.tsx
  */
 export function SubmitButton(
@@ -98,13 +101,16 @@ export function SubmitButton(
 ) {
   const context = useFormContext();
   const form = props.form === "context" ? context : props.form;
+  // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
+  // (RHF Proxy + React Compiler often skips re-renders).
+  const { isSubmitting } = useFormState(
+    props.form === "context" ? {} : { control: props.form.control },
+  );
   if (!form) {
     throw new Error("SubmitButton must be used within a Form or have a form prop");
   }
 
   const { form: formProp, IconComponent, disabled, children, ...buttonProps } = props;
-  const isSubmitting = form.formState.isSubmitting;
-
   return (
     <Button
       {...buttonProps}
