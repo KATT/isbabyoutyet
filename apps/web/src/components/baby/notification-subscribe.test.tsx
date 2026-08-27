@@ -5,7 +5,7 @@ import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.r
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
-import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { TooltipProvider } from "@workspace/ui-cssinjs/components/tooltip";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";

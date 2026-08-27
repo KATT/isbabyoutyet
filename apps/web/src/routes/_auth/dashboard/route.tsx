@@ -1,10 +1,10 @@
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui-cssinjs/components/button";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { allKeyed } from "@workspace/query-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
-import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
+import { Avatar, AvatarFallback } from "@workspace/ui-cssinjs/components/avatar";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import type { BirthJourney } from "@workspace/convex/src/types";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";

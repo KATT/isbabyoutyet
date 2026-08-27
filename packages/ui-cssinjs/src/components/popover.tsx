@@ -54,6 +54,10 @@ const PopoverTrigger = (props: React.ComponentProps<typeof PopoverPrimitive.Trig
   <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />
 );
 
+const PopoverClose = (props: React.ComponentProps<typeof PopoverPrimitive.Close>) => (
+  <PopoverPrimitive.Close data-slot="popover-close" {...props} />
+);
+
 const PopoverAnchor = (props: React.ComponentProps<typeof PopoverPrimitive.Trigger>) => (
   <PopoverPrimitive.Trigger data-slot="popover-anchor" {...props} />
 );
@@ -138,12 +142,17 @@ const PopoverDescription = ({
   />
 );
 
+/** Imperative actions exposed via `Popover` `actionsRef` (close / unmount). */
+type PopoverActions = PopoverPrimitive.Root.Actions;
+
 export {
   Popover,
   PopoverAnchor,
+  PopoverClose,
   PopoverContent,
   PopoverDescription,
   PopoverHeader,
   PopoverTitle,
   PopoverTrigger,
 };
+export type { PopoverActions };

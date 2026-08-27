@@ -8,7 +8,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
+} from "@workspace/ui-cssinjs/components/select";
 import { getLanguageName } from "@/lib/i18n";
 import { shouldApplyLocaleChange } from "@/lib/should-apply-locale-change";
 
@@ -30,10 +30,11 @@ export function LanguagePicker(props: LanguagePickerProps) {
       items={languageOptions}
       value={props.value}
       onValueChange={(value) => {
-        if (!shouldApplyLocaleChange(value, props.value)) {
+        const next = typeof value === "string" ? value : null;
+        if (!shouldApplyLocaleChange(next, props.value)) {
           return;
         }
-        void props.onValueChange(value);
+        void props.onValueChange(next);
       }}
       disabled={props.disabled}
     >

@@ -1,5 +1,4 @@
-import type { ComponentProps } from "react";
-import { useRender } from "@base-ui/react";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 
@@ -119,46 +118,35 @@ const sizeStyles: Record<ButtonSize, StyleXStyles> = {
   sm: styles.sizeSm,
 };
 
-export type ButtonProps = Omit<ComponentProps<"button">, "className"> & {
+export type ButtonProps = Omit<ButtonPrimitive.Props, "className"> & {
   variant?: ButtonVariant;
   size?: ButtonSize;
   className?: string;
-  /** Render as a different element (Base UI render API). */
-  render?: useRender.RenderProp;
 };
 
 function Button(props: ButtonProps) {
   const variant = props.variant ?? "default";
   const size = props.size ?? "default";
-  return useRender({
-    props: {
-      ...stylex.props(
-        styles.base,
-        styles.focusable,
-        variantStyles[variant],
-        sizeStyles[size],
-        customClassName(props.className),
-        props.style as StyleXStyles,
-      ),
-      "data-size": size,
-      "data-slot": "button",
-      "data-variant": variant,
-      ...omitButtonStyleProps(props),
-    },
-    render: props.render ?? <button type="button" />,
-  });
-}
+  const stylexProps = stylex.props(
+    styles.base,
+    styles.focusable,
+    variantStyles[variant],
+    sizeStyles[size],
+    customClassName(props.className),
+    props.style as StyleXStyles,
+  );
+  const { className: _className, style: _style, variant: _variant, size: _size, ...rest } = props;
 
-function omitButtonStyleProps(props: ButtonProps) {
-  const {
-    className: _className,
-    style: _style,
-    variant: _variant,
-    size: _size,
-    render: _render,
-    ...rest
-  } = props;
-  return rest;
+  return (
+    <ButtonPrimitive
+      data-size={size}
+      data-slot="button"
+      data-variant={variant}
+      className={stylexProps.className}
+      style={stylexProps.style}
+      {...rest}
+    />
+  );
 }
 
 export { Button, styles as buttonStyles };

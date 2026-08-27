@@ -3,19 +3,19 @@ import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-ro
 import { ArrowLeft, CaretDown, CaretUp, Shield, Translate, Users } from "@phosphor-icons/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { allKeyed } from "@workspace/query-prefetch";
-import { Badge } from "@workspace/ui/components/badge";
-import { Button } from "@workspace/ui/components/button";
+import { Badge } from "@workspace/ui-cssinjs/components/badge";
+import { Button } from "@workspace/ui-cssinjs/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@workspace/ui/components/empty";
-import { Field, FieldLabel } from "@workspace/ui/components/field";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Switch } from "@workspace/ui/components/switch";
+} from "@workspace/ui-cssinjs/components/card";
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@workspace/ui-cssinjs/components/empty";
+import { Field, FieldLabel } from "@workspace/ui-cssinjs/components/field";
+import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
+import { Switch } from "@workspace/ui-cssinjs/components/switch";
 import {
   Table,
   TableBody,
@@ -23,9 +23,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@workspace/ui/components/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { cn } from "@workspace/ui/lib/utils";
+} from "@workspace/ui-cssinjs/components/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui-cssinjs/components/tabs";
+import { cn } from "@workspace/ui-cssinjs/lib/utils";
 import { z } from "zod";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";
 import type { TranslationFunction } from "@/lib/i18n";

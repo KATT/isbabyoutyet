@@ -1,6 +1,6 @@
 import { DEMO_ACCOUNTS } from "@workspace/convex/src/seedCredentials";
-import { NativeSelect, NativeSelectOption } from "@workspace/ui/components/native-select";
-import { Label } from "@workspace/ui/components/label";
+import { NativeSelect, NativeSelectOption } from "@workspace/ui-cssinjs/components/native-select";
+import { Label } from "@workspace/ui-cssinjs/components/label";
 
 /**
  * Preview/local-only picker of seeded test accounts. The parent prefills and

@@ -4,7 +4,7 @@ import type { FunctionArgs } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { Button } from "@workspace/ui/components/button";
+import { Button } from "@workspace/ui-cssinjs/components/button";
 import {
   Dialog,
   DialogContent,
@@ -13,16 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@workspace/ui/components/dialog";
-import type { DialogActions } from "@workspace/ui/components/dialog";
+} from "@workspace/ui-cssinjs/components/dialog";
+import type { DialogActions } from "@workspace/ui-cssinjs/components/dialog";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@workspace/ui/components/form";
-import { Input } from "@workspace/ui/components/input";
+} from "@workspace/ui-cssinjs/components/form";
+import { Input } from "@workspace/ui-cssinjs/components/input";
 import {
   Combobox,
   ComboboxContent,
@@ -30,7 +30,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
-} from "@workspace/ui/components/combobox";
+} from "@workspace/ui-cssinjs/components/combobox";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { LanguagePicker } from "@/components/language-picker";
@@ -41,7 +41,7 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
 import { useOptimisticOverride } from "@/lib/use-optimistic-override";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@workspace/ui-cssinjs/lib/utils";
 
 function languageRequestSchema(t: TranslationFunction) {
   return z

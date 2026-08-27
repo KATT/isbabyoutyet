@@ -15,7 +15,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { TooltipProvider } from "@workspace/ui-cssinjs/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashboard/route";

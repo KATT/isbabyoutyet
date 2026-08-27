@@ -1,21 +1,21 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { z } from "zod";
 import { authClient, getBrowserAuthHeaders } from "@/lib/auth-client";
-import { Input } from "@workspace/ui/components/input";
+import { Input } from "@workspace/ui-cssinjs/components/input";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@workspace/ui/components/card";
+} from "@workspace/ui-cssinjs/components/card";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@workspace/ui/components/form";
+} from "@workspace/ui-cssinjs/components/form";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { Baby, UserPlus } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";

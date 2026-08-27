@@ -7,7 +7,7 @@ import {
 import { render } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { ThemeProvider } from "next-themes";
-import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { TooltipProvider } from "@workspace/ui-cssinjs/components/tooltip";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 
 /**

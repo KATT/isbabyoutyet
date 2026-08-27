@@ -8,21 +8,21 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@workspace/ui/components/alert-dialog";
-import { Badge } from "@workspace/ui/components/badge";
-import { Button } from "@workspace/ui/components/button";
-import { Input } from "@workspace/ui/components/input";
-import { RadioGroup, RadioGroupItem } from "@workspace/ui/components/radio-group";
-import { Spinner } from "@workspace/ui/components/spinner";
-import { Textarea } from "@workspace/ui/components/textarea";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
+} from "@workspace/ui-cssinjs/components/alert-dialog";
+import { Badge } from "@workspace/ui-cssinjs/components/badge";
+import { Button } from "@workspace/ui-cssinjs/components/button";
+import { Input } from "@workspace/ui-cssinjs/components/input";
+import { RadioGroup, RadioGroupItem } from "@workspace/ui-cssinjs/components/radio-group";
+import { Spinner } from "@workspace/ui-cssinjs/components/spinner";
+import { Textarea } from "@workspace/ui-cssinjs/components/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui-cssinjs/components/tooltip";
 import {
   Popover,
   PopoverClose,
   PopoverContent,
   PopoverTrigger,
-} from "@workspace/ui/components/popover";
-import type { PopoverActions } from "@workspace/ui/components/popover";
+} from "@workspace/ui-cssinjs/components/popover";
+import type { PopoverActions } from "@workspace/ui-cssinjs/components/popover";
 import { useMutation } from "convex/react";
 import {
   Camera,
@@ -58,7 +58,7 @@ import {
   MILESTONE_LABELS,
 } from "@workspace/convex/src/types";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
-import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
+import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui-cssinjs/components/form";
 import { useWatch } from "react-hook-form";
 import { htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 import { usePreloadedConvexInfiniteQuery } from "@workspace/convex-prefetch";

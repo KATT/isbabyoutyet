@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { vi } from "vitest";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
-import { TooltipProvider } from "@workspace/ui/components/tooltip";
+import { TooltipProvider } from "@workspace/ui-cssinjs/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 import { routeContextFromHarness } from "@/test/routeTestContext";

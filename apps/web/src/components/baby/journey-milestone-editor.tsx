@@ -5,8 +5,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@workspace/ui/components/select";
-import { Switch } from "@workspace/ui/components/switch";
+} from "@workspace/ui-cssinjs/components/select";
+import { Switch } from "@workspace/ui-cssinjs/components/switch";
 import type {
   BirthJourney,
   MilestoneVisibility,

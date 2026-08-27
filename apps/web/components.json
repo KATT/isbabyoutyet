@@ -14,7 +14,7 @@
     "components": "@/components",
     "hooks": "@/hooks",
     "lib": "@/lib",
-    "utils": "@workspace/ui/lib/utils",
-    "ui": "@workspace/ui/components"
+    "utils": "@workspace/ui-cssinjs/lib/utils",
+    "ui": "@workspace/ui-cssinjs/components"
   }
 }

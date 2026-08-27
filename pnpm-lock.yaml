@@ -161,9 +161,6 @@ importers:
       '@workspace/query-prefetch':
         specifier: workspace:*
         version: link:../../packages/query-prefetch
-      '@workspace/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@workspace/ui-cssinjs':
         specifier: workspace:*
         version: link:../../packages/ui-cssinjs

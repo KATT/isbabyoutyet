@@ -131,10 +131,12 @@ const SelectValue = ({
 const SelectTrigger = ({
   className,
   style,
+  size: _size,
   children,
   ...props
 }: Omit<React.ComponentProps<typeof SelectPrimitive.Trigger>, "className"> & {
   className?: string;
+  size?: "sm" | "default";
 }) => (
   <SelectPrimitive.Trigger
     {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}

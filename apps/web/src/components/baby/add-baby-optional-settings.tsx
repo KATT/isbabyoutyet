@@ -2,18 +2,18 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@workspace/ui/components/collapsible";
+} from "@workspace/ui-cssinjs/components/collapsible";
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@workspace/ui/components/form";
-import { Button } from "@workspace/ui/components/button";
+} from "@workspace/ui-cssinjs/components/form";
+import { Button } from "@workspace/ui-cssinjs/components/button";
 import { CaretDown } from "@phosphor-icons/react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
-import { cn } from "@workspace/ui/lib/utils";
+import { cn } from "@workspace/ui-cssinjs/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { JourneyMilestoneEditor } from "./journey-milestone-editor";
 import { THEME_OPTIONS } from "./utils";
