@@ -23,6 +23,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           lfs: true
+          # Need enough history for `vitest --changed <base.sha>` merge-base.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -59,15 +61,6 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      - name: Restore main coverage baseline
-        if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v6
-        with:
-          path: .coverage-baseline
-          key: coverage-main-${{ github.event.pull_request.base.sha }}
-          restore-keys: |
-            coverage-main-
-
       - name: Typecheck scripts
         run: pnpm typecheck:scripts
 
@@ -80,11 +73,20 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test coverage
+      # PRs: Vitest --changed only (no coverage). Coverage reporting is a later stack slice.
+      - name: Test (changed vs base)
+        if: github.event_name == 'pull_request'
+        run: |
+          pnpm pretest:coverage
+          pnpm exec vitest run --changed "${{ github.event.pull_request.base.sha }}"
+
+      # main/push: Turbo-cached full coverage (warms remote cache for optional Codecov slice).
+      - name: Test coverage (full)
+        if: github.event_name != 'pull_request'
         run: pnpm exec turbo run test:coverage --summarize
 
       - name: Report Turbo coverage cache
-        if: always()
+        if: github.event_name != 'pull_request' && always()
         run: |
           summary="$(ls -t .turbo/runs/*.json | head -1)"
           jq -r '.tasks[] | select(.taskId=="//#test:coverage") | "::notice title=Turbo coverage cache::cache=\(.cache.status) source=\(.cache.source // "n/a") timeSaved=\(.cache.timeSaved // 0)ms"' "$summary"
@@ -92,26 +94,3 @@ jobs:
 
       - name: Knip
         run: pnpm knip
-
-      - name: Compare coverage with main
-        if: github.event_name == 'pull_request'
-        run: |
-          if [[ ! -f .coverage-baseline/coverage-summary.json ]]; then
-            echo "::notice::No main coverage baseline is cached yet; the first green main run will create one."
-            exit 0
-          fi
-
-          pnpm coverage:compare
-
-      - name: Prepare main coverage baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: |
-          mkdir -p .coverage-baseline
-          cp coverage/coverage-summary.json .coverage-baseline/coverage-summary.json
-
-      - name: Save main coverage baseline
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v6
-        with:
-          path: .coverage-baseline
-          key: coverage-main-${{ github.sha }}
