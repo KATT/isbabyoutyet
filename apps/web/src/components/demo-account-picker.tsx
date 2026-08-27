@@ -1,6 +1,7 @@
 import { DEMO_ACCOUNTS } from "@workspace/convex/src/seedCredentials";
 import { NativeSelect, NativeSelectOption } from "@workspace/ui-cssinjs/components/native-select";
 import { Label } from "@workspace/ui-cssinjs/components/label";
+import { Stack } from "@workspace/ui-patterns/components/stack";
 
 /**
  * Preview/local-only picker of seeded test accounts. The parent prefills and
@@ -13,29 +14,34 @@ export function DemoAccountPicker(props: {
   if (!props.enabled) return null;
 
   return (
-    <div className="mb-5 flex flex-col gap-1.5 rounded-2xl border-2 border-dashed border-border bg-muted/40 p-3">
-      <Label htmlFor="demo-account-picker" className="text-xs font-extrabold text-muted-foreground">
-        Test account
-      </Label>
-      <NativeSelect
-        id="demo-account-picker"
-        className="w-full"
-        defaultValue=""
-        onChange={(event) => {
-          const account = DEMO_ACCOUNTS.find((item) => item.email === event.currentTarget.value);
-          if (!account) return;
-          props.onPrefill(account);
-        }}
-      >
-        <NativeSelectOption value="" disabled>
-          Choose a test account…
-        </NativeSelectOption>
-        {DEMO_ACCOUNTS.map((account) => (
-          <NativeSelectOption key={account.email} value={account.email}>
-            {account.label}
+    <div className="mb-5 rounded-2xl border-2 border-dashed border-border bg-muted/40 p-3">
+      <Stack gap="s1_5">
+        <Label
+          htmlFor="demo-account-picker"
+          className="text-xs font-extrabold text-muted-foreground"
+        >
+          Test account
+        </Label>
+        <NativeSelect
+          id="demo-account-picker"
+          className="w-full"
+          defaultValue=""
+          onChange={(event) => {
+            const account = DEMO_ACCOUNTS.find((item) => item.email === event.currentTarget.value);
+            if (!account) return;
+            props.onPrefill(account);
+          }}
+        >
+          <NativeSelectOption value="" disabled>
+            Choose a test account…
           </NativeSelectOption>
-        ))}
-      </NativeSelect>
+          {DEMO_ACCOUNTS.map((account) => (
+            <NativeSelectOption key={account.email} value={account.email}>
+              {account.label}
+            </NativeSelectOption>
+          ))}
+        </NativeSelect>
+      </Stack>
     </div>
   );
 }

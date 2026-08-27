@@ -42,6 +42,7 @@
     "@workspace/convex-prefetch": "workspace:*",
     "@workspace/query-prefetch": "workspace:*",
     "@workspace/ui-cssinjs": "workspace:*",
+    "@workspace/ui-patterns": "workspace:*",
     "better-auth": "catalog:",
     "convex": "catalog:",
     "date-fns": "^4.4.0",

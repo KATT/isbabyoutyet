@@ -35,9 +35,6 @@
         "vite.config.ts!",
         "scripts/deploy-convex.ts!",
         "scripts/build-web.mjs!"
-      ],
-      "ignoreDependencies": [
-        "@workspace/ui-cssinjs"
       ]
     },
     "packages/convex": {

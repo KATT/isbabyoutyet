@@ -164,6 +164,9 @@ importers:
       '@workspace/ui-cssinjs':
         specifier: workspace:*
         version: link:../../packages/ui-cssinjs
+      '@workspace/ui-patterns':
+        specifier: workspace:*
+        version: link:../../packages/ui-patterns
       better-auth:
         specifier: 'catalog:'
         version: 1.6.30(@tanstack/react-start@1.168.47(crossws@0.4.10(srvx@0.11.22))(esbuild@0.28.2)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.4)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(solid-js@1.9.10)(vitest@4.1.11)
