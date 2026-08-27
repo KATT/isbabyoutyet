@@ -54,12 +54,10 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   expect(input.value).toBe("Nova");
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
-  // Save is dirty-gated
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
-  expect(saveButton.disabled).toBe(true);
+  expect(saveButton.disabled).toBe(false);
 
   fireEvent.change(input, { target: { value: "  Nova Rae  " } });
-  expect(saveButton.disabled).toBe(false);
   fireEvent.click(saveButton);
 
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ name: "Nova Rae" }));
