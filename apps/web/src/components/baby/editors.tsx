@@ -54,12 +54,12 @@ type EditorFormProps = {
   onClose: () => void;
 };
 
-function EditorActions(props: { onClose: () => void; disabled: boolean | undefined }) {
+function EditorActions(props: { onClose: () => void; disabled: boolean }) {
   const { t } = useI18n();
   // Subscribe via useFormState — reading form.formState via the Proxy is not a
   // reliable re-render under the React Compiler.
   const { isSubmitting, isDirty } = useFormState();
-  const busy = isSubmitting || Boolean(props.disabled);
+  const busy = isSubmitting || props.disabled;
   return (
     <div className="flex gap-2 justify-end">
       <Button type="button" onClick={props.onClose} variant="outline" size="sm" disabled={busy}>
@@ -70,7 +70,7 @@ function EditorActions(props: { onClose: () => void; disabled: boolean | undefin
         IconComponent={Check}
         iconPosition="start"
         size="sm"
-        disabled={!isDirty || Boolean(props.disabled)}
+        disabled={!isDirty || props.disabled}
       >
         {t("Save")}
       </SubmitButton>
@@ -179,7 +179,7 @@ function DueDateForm(props: EditorFormProps) {
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}
       />
-      <EditorActions onClose={props.onClose} disabled={undefined} />
+      <EditorActions onClose={props.onClose} disabled={false} />
     </Form>
   );
 }
@@ -403,7 +403,7 @@ function NameForm(props: EditorFormProps) {
           "Renaming may change the page address, but links you have already shared will keep working.",
         )}
       </p>
-      <EditorActions onClose={props.onClose} disabled={undefined} />
+      <EditorActions onClose={props.onClose} disabled={false} />
     </Form>
   );
 }
@@ -473,7 +473,7 @@ function JourneyForm(props: {
           }}
         />
       </div>
-      <EditorActions onClose={props.onClose} disabled={undefined} />
+      <EditorActions onClose={props.onClose} disabled={false} />
     </Form>
   );
 }
