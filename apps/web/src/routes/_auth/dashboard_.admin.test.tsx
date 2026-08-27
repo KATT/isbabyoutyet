@@ -392,7 +392,22 @@ test("users tab body renders without the hide-demo filter", async () => {
 
 const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
-function makeAdminLoaderQueryClient(handlers: Record<string, unknown>) {
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+type AdminQueryHandler = JsonValue | (() => never);
+type AdminQueryHandlers = Record<string, AdminQueryHandler>;
+type AdminLoaderResult = {
+  babies: unknown;
+  languages: unknown;
+  users: unknown;
+};
+
+function makeAdminLoaderQueryClient(handlers: AdminQueryHandlers) {
   return new QueryClient({
     defaultOptions: {
       queries: {
@@ -410,7 +425,7 @@ function makeAdminLoaderQueryClient(handlers: Record<string, unknown>) {
 }
 
 async function runAdminLoader(
-  handlers: Record<string, unknown>,
+  handlers: AdminQueryHandlers,
   profile: { locale: string; timeZone: string; isAdmin: boolean },
 ) {
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
@@ -427,7 +442,7 @@ async function runAdminLoader(
           profile: { input: Record<string, never>; initialData: typeof profile };
         };
         deps: { tab: string; sort: string; order: string; hideDemo: boolean };
-      }) => Promise<Record<string, unknown>>;
+      }) => Promise<AdminLoaderResult>;
     };
   };
   const queryClient = makeAdminLoaderQueryClient(handlers);

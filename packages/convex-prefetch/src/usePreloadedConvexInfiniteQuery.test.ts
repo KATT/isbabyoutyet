@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
-import { makeFunctionReference } from "convex/server";
+import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
@@ -14,7 +14,7 @@ type WatchHandle = {
   localQueryResult: () => undefined;
 };
 
-type WatchQuery = (funcRef: unknown, args: Record<string, unknown>) => WatchHandle;
+type WatchQuery = (funcRef: unknown, args: DefaultFunctionArgs) => WatchHandle;
 
 function idleWatchQuery() {
   return vi.fn<WatchQuery>(() => ({

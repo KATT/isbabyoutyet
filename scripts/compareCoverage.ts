@@ -3,7 +3,14 @@ import { appendFile, readFile } from "node:fs/promises";
 const metrics = ["statements", "branches", "functions", "lines"] as const;
 
 type CoverageMetric = (typeof metrics)[number];
-type JsonObject = Record<string, unknown>;
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+type JsonObject = { readonly [key: string]: JsonValue };
 type CoverageSummary = { total: JsonObject };
 type CoverageResult = {
   metric: CoverageMetric;
@@ -22,7 +29,7 @@ if (baselinePath === undefined || currentPath === undefined) {
 }
 
 function isJsonObject(value: unknown): value is JsonObject {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function formatPct(value: number) {

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
-import { anyApi, makeFunctionReference } from "convex/server";
+import { anyApi, makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
@@ -14,7 +14,7 @@ type WatchHandle = {
   localQueryResult: () => LivePage | undefined;
 };
 
-type WatchQuery = (funcRef: unknown, args: Record<string, unknown>) => WatchHandle;
+type WatchQuery = (funcRef: unknown, args: DefaultFunctionArgs) => WatchHandle;
 
 const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCursor: "" };
 
@@ -225,7 +225,7 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
   const { rerender, unmount } = renderHook(
     (props: {
       queryKey: readonly unknown[];
-      args: Record<string, unknown>;
+      args: DefaultFunctionArgs;
       pageParams: { numItems: number; cursor: string | null }[];
     }) =>
       useLiveConvexInfinitePages({
@@ -239,7 +239,7 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
       wrapper: wrapperFor(client, watchQuery),
       initialProps: {
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1", tag: "x" }],
-        args: { babyId: "b1", tag: "x" } as Record<string, unknown>,
+        args: { babyId: "b1", tag: "x" },
         pageParams: [{ numItems: 20, cursor: null }],
       },
     },
@@ -284,8 +284,9 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
     localQueryResult: () => localResult,
   }));
 
+  const initialProps: { args: DefaultFunctionArgs } = { args: { babyId: "b1" } };
   const { rerender, unmount } = renderHook(
-    (props: { args: Record<string, unknown> }) =>
+    (props: { args: DefaultFunctionArgs }) =>
       useLiveConvexInfinitePages({
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args] as never,
         funcRef: anyApi.timeline.listByBaby as never,
@@ -294,13 +295,14 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
       }),
     {
       wrapper: wrapperFor(client, watchQuery),
-      initialProps: { args: { babyId: "b1" } as Record<string, unknown> },
+      initialProps,
     },
   );
 
   expect(watchQuery).toHaveBeenCalledTimes(1);
 
-  rerender({ args: { babyId: "b1", visitorId: "v1" } as Record<string, unknown> });
+  const nextArgs: DefaultFunctionArgs = { babyId: "b1", visitorId: "v1" };
+  rerender({ args: nextArgs });
 
   expect(unsubscribers[0]).toHaveBeenCalledTimes(1);
   expect(watchQuery).toHaveBeenCalledTimes(2);
