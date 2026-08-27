@@ -332,7 +332,8 @@ test("dashboard learn encouragements step links to the first baby's page", async
   expect(links[0]?.getAttribute("href")).toContain("baby-waiting");
 });
 
-test("baby-page learn encouragements acknowledges with Got it", async () => {
+test("baby-page learn encouragements opens the highlight tip via Show me", async () => {
+  const onGoToStep = vi.fn<(stepId: string) => void>();
   const onAcknowledge = vi.fn<(stepId: string) => void>();
   await using _view = await renderWithTestRouter(
     <GettingStartedCard
@@ -342,12 +343,13 @@ test("baby-page learn encouragements acknowledges with Got it", async () => {
       onDismiss={vi.fn<() => void>()}
       onAcknowledgeStep={onAcknowledge}
       surface="baby"
-      onGoToStep={undefined}
+      onGoToStep={onGoToStep}
       className={undefined}
       tourBaby={{ publicId: "baby-waiting", name: "Ada" }}
     />,
   );
 
-  fireEvent.click(screen.getAllByRole("button", { name: /got it/i })[0]!);
-  expect(onAcknowledge).toHaveBeenCalledWith("learn_encouragements");
+  fireEvent.click(screen.getAllByRole("button", { name: /show me/i })[0]!);
+  expect(onGoToStep).toHaveBeenCalledWith("learn_encouragements");
+  expect(onAcknowledge).not.toHaveBeenCalled();
 });

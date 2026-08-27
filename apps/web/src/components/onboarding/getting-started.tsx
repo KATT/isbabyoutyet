@@ -174,8 +174,8 @@ function getStepAction(opts: {
   if (step.id === "learn_encouragements") {
     return {
       kind: "button",
-      onClick: () => opts.onAcknowledge(step.id),
-      label: t("Got it"),
+      onClick: () => opts.onGoToStep?.(step.id),
+      label: t("Show me"),
     };
   }
   return null;

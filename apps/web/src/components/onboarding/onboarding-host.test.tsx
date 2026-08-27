@@ -355,6 +355,58 @@ test("checklist CTAs complete steps and open baby overlays", async () => {
   });
 });
 
+test("messages-from-visitors tip scrolls, highlights, and completes on Got it without posting", async () => {
+  await using _target = plantTourTarget("learn_encouragements");
+
+  await using harness = await createConvexTestHarness({ identity: null });
+  const userId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: userId });
+  const baby = await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.updates.post, {
+    babyId: baby.babyId,
+    message: "First update",
+  });
+  for (const stepId of ["share_link", "explore_settings"] as const) {
+    await harness.client.mutation(api.onboarding.completeStep, { stepId });
+  }
+
+  const encouragementsBefore = await harness.client.query(api.encouragements.listByBaby, {
+    babyId: baby.babyId,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+
+  await using view = await renderOnboardingHost({
+    harness,
+    surface: "baby",
+    babyPublicId: baby.publicId,
+    onGoToStep: undefined,
+    session: { data: { user: { id: userId } }, isPending: false },
+  });
+
+  fireEvent.click(view.getAllByRole("button", { name: /show me/i })[0]!);
+  await vi.waitFor(() => {
+    expect(view.getByRole("button", { name: "Got it" })).toBeTruthy();
+  });
+  expect(view.getByText("Messages from visitors")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Got it" }));
+  await vi.waitFor(async () => {
+    const progress = await harness.client.query(api.onboarding.getMine, {});
+    expect(progress.completedSteps).toContain("learn_encouragements");
+    expect(progress.activeCoachmarkStepId).toBeNull();
+  });
+
+  const encouragementsAfter = await harness.client.query(api.encouragements.listByBaby, {
+    babyId: baby.babyId,
+    paginationOpts: { numItems: 20, cursor: null },
+  });
+  expect(encouragementsAfter.page).toEqual(encouragementsBefore.page);
+});
+
 test("authed onboarding host wires Convex mutations into the view", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const userId = await signUpTestUser(harness, {
