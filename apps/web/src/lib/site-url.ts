@@ -1,3 +1,5 @@
+import { isString } from "@workspace/convex/src/runtimeGuards";
+
 /**
  * Canonical production origin — used for rel=canonical and og:url so search
  * engines and crawlers consolidate on the live site, not preview/local hosts.
@@ -10,13 +12,7 @@ export const CANONICAL_ORIGIN = "https://isbabyoutyet.com";
  */
 function getSiteOrigin() {
   const fromEnv = import.meta.env.VITE_SITE_URL;
-  if (
-    fromEnv !== undefined &&
-    fromEnv !== true &&
-    fromEnv !== false &&
-    `${fromEnv}` === fromEnv &&
-    fromEnv.length > 0
-  ) {
+  if (isString(fromEnv) && fromEnv.length > 0) {
     return fromEnv.replace(/\/$/, "");
   }
   return CANONICAL_ORIGIN;

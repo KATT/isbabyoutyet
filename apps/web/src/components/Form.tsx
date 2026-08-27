@@ -23,6 +23,7 @@ import type {
 import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { isString } from "@workspace/convex/src/runtimeGuards";
 import { useI18n } from "@/lib/i18n";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
@@ -280,7 +281,7 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         <span className="submit-icon-swap-in inline-grid place-items-center">
           <Spinner className="size-4" />
         </span>
-      ) : `${IconComponent}` === IconComponent ? (
+      ) : isString(IconComponent) ? (
         <span className="text-base leading-none">{IconComponent}</span>
       ) : IconComponent == null ? null : (
         <IconComponent className="size-4" />

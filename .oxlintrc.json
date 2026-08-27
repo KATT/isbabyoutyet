@@ -205,6 +205,13 @@
       }
     },
     {
+      // Service worker: plain JS JSON boundary (no TS type predicates).
+      "files": ["apps/web/public/sw.js"],
+      "rules": {
+        "anti-slop/no-runtime-typeof": "off"
+      }
+    },
+    {
       // Boundary module: accepts unparsed external values (unknown / Record).
       "files": ["**/runtimeGuards.ts"],
       "rules": {

@@ -187,7 +187,7 @@ export const Route = createRootRouteWithContext<{
 
 /** Loose match-context bag before locale/token narrowing. */
 export function contextLocale<TContext>(context: TContext): SupportedLocale | undefined {
-  if (!isPlainContext(context) || !("locale" in context)) {
+  if (!isPlainObject(context) || !("locale" in context)) {
     return undefined;
   }
   const locale = context.locale;
@@ -198,7 +198,7 @@ export function contextLocale<TContext>(context: TContext): SupportedLocale | un
 }
 
 export function contextToken<TContext>(context: TContext) {
-  if (!isPlainContext(context) || !("token" in context)) {
+  if (!isPlainObject(context) || !("token" in context)) {
     return undefined;
   }
   const token = context.token;
@@ -209,10 +209,6 @@ export function contextToken<TContext>(context: TContext) {
     return undefined;
   }
   return token;
-}
-
-function isPlainContext<TContext>(context: TContext): context is TContext & object {
-  return isPlainObject(context);
 }
 
 // better-auth and @convex-dev/better-auth currently expose structurally

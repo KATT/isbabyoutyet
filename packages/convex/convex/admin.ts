@@ -59,15 +59,11 @@ const userRowValidator = v.object({
   babies: v.array(userBabySummaryValidator),
 });
 
-function isRecord<TValue>(value: TValue): value is TValue & JsonObject {
-  return isJsonObjectValue(value);
-}
-
 export function parseAuthUserPage<TResult>(result: TResult) {
-  if (!isRecord(result) || !Array.isArray(result.page)) {
+  if (!isJsonObjectValue(result) || !Array.isArray(result.page)) {
     throw new Error("Better Auth returned an invalid user page");
   }
-  const users = result.page.filter(isRecord);
+  const users = result.page.filter(isJsonObjectValue);
   const isDone = "isDone" in result ? parseJsonBoolean(result.isDone) : null;
   const continueCursor = "continueCursor" in result ? parseJsonString(result.continueCursor) : null;
   if (users.length !== result.page.length || isDone === null || continueCursor === null) {
