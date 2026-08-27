@@ -100,11 +100,15 @@ const styles = stylex.create({
   touchTarget: {
     minHeight: "2.75rem",
   },
+  weightBold: {
+    fontWeight: 700,
+  },
 });
 
 type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
 type ButtonShape = "default" | "pill";
+type ButtonWeight = "medium" | "bold";
 
 const variantStyles: Record<ButtonVariant, StyleXStyles> = {
   default: styles.default,
@@ -129,6 +133,7 @@ export type ButtonProps = Omit<ButtonPrimitive.Props, "className" | "style"> & {
   size?: ButtonSize;
   shape?: ButtonShape;
   touchTarget?: boolean;
+  weight?: ButtonWeight;
 };
 
 
@@ -137,6 +142,7 @@ function Button(props: ButtonProps) {
   const size = props.size ?? "default";
   const shape = props.shape ?? "default";
   const touchTarget = props.touchTarget ?? false;
+  const weight = props.weight ?? "medium";
   const stylexProps = stylex.props(
     styles.base,
     styles.focusable,
@@ -144,12 +150,14 @@ function Button(props: ButtonProps) {
     sizeStyles[size],
     shape === "pill" ? styles.shapePill : null,
     touchTarget ? styles.touchTarget : null,
+    weight === "bold" ? styles.weightBold : null,
   );
   const {
     variant: _variant,
     size: _size,
     shape: _shape,
     touchTarget: _touchTarget,
+    weight: _weight,
     ...rest
   } = props;
 

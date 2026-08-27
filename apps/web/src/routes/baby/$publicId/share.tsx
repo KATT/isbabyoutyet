@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@workspace/ui/components/dialog";
 import { CheckCircle } from "@phosphor-icons/react";
+import * as stylex from "@stylexjs/stylex";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -29,6 +30,34 @@ import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
 import { babyOgImageUrl } from "@/lib/seo";
 import { canonicalUrl } from "@/lib/site-url";
 import { useTransientFlag } from "@/lib/use-transient-flag";
+import { colors } from "@workspace/ui/lib/tokens.stylex";
+
+const styles = stylex.create({
+  previewImage: {
+    aspectRatio: "1200 / 630",
+    objectFit: "cover",
+    width: "100%",
+  },
+  titleClamp: {
+    display: "-webkit-box",
+    overflow: "hidden",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+  },
+  linkRow: {
+    color: colors.mutedForeground,
+    fontSize: "0.75rem",
+    lineHeight: "1rem",
+    margin: 0,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  copyButtonWrap: {
+    display: "grid",
+    width: "100%",
+  },
+});
 
 export const Route = createFileRoute("/baby/$publicId/share")({
   beforeLoad: async (opts) => {
@@ -137,7 +166,7 @@ export function BabyShareOverlay() {
       onOpenChange={share.onOpenChange}
       onOpenChangeComplete={share.onOpenChangeComplete}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("Share the Link")}</DialogTitle>
           <DialogDescription>{t("This is how your page will look when shared.")}</DialogDescription>
@@ -148,25 +177,31 @@ export function BabyShareOverlay() {
             alt={sharePreview.title}
             width={1200}
             height={630}
-            className="aspect-[1200/630] w-full object-cover"
+            {...stylex.props(styles.previewImage)}
           />
           <CardHeader>
-            <CardTitle className="line-clamp-2">{sharePreview.title}</CardTitle>
-            <CardDescription className="line-clamp-2">{sharePreview.description}</CardDescription>
+            <CardTitle>
+              <span {...stylex.props(styles.titleClamp)}>{sharePreview.title}</span>
+            </CardTitle>
+            <CardDescription>
+              <span {...stylex.props(styles.titleClamp)}>{sharePreview.description}</span>
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="truncate text-xs text-muted-foreground">{loaderData.shareLink}</p>
+            <p {...stylex.props(styles.linkRow)}>{loaderData.shareLink}</p>
           </CardContent>
           <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => {
-                void copyShareLink();
-              }}
-            >
-              {copied ? <CheckCircle data-icon="inline-start" /> : null}
-              {copied ? t("Copied!") : t("Copy link to share")}
-            </Button>
+            <div {...stylex.props(styles.copyButtonWrap)}>
+              <Button
+                shape="pill"
+                onClick={() => {
+                  void copyShareLink();
+                }}
+              >
+                {copied ? <CheckCircle data-icon="inline-start" /> : null}
+                {copied ? t("Copied!") : t("Copy link to share")}
+              </Button>
+            </div>
           </CardFooter>
         </Card>
       </DialogContent>

@@ -8,6 +8,10 @@ import { useI18n } from "@/lib/i18n";
 import { spacing } from "@workspace/ui/lib/tokens.stylex";
 
 const styles = stylex.create({
+  item: {
+    borderStyle: "none",
+    padding: 0,
+  },
   row: {
     alignItems: "center",
     cursor: "pointer",
@@ -68,7 +72,7 @@ export function ShowExactDueDateToggleField<
       control={props.control}
       name={props.name}
       render={(renderProps) => (
-        <FormItem>
+        <FormItem {...stylex.props(styles.item)}>
           <ShowExactDueDateToggleRow
             checked={renderProps.field.value}
             onCheckedChange={renderProps.field.onChange}

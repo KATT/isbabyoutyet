@@ -185,7 +185,6 @@ function OnboardingHostAuthed(props: OnboardingHostProps) {
           }}
           surface={props.surface}
           tourBaby={progress.tourBaby}
-          className={undefined}
         />
       ) : null}
 

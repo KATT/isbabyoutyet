@@ -16,6 +16,9 @@ import { useI18n } from "@/lib/i18n";
 import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 const styles = stylex.create({
+  root: {
+    marginBottom: spacing.s3,
+  },
   panel: {
     borderColor: colors.border,
     borderRadius: radius.lg,
@@ -40,7 +43,7 @@ type DueDateDisplayFieldsProps<
 > = {
   control: Control<TFieldValues, unknown, unknown>;
   dateFieldName: TDateName;
-  sectionLabelWeight: "normal" | "bold";
+  sectionLabelWeight: "bold" | "normal";
   stopPopoverPropagation: boolean;
 };
 
@@ -58,8 +61,12 @@ export function DueDateDisplayFields<
   });
 
   return (
-    <FormItem>
-      <Text as="div" size="sm" weight={props.sectionLabelWeight === "bold" ? "bold" : "medium"}>
+    <FormItem {...stylex.props(styles.root)}>
+      <Text
+        as="div"
+        size="sm"
+        weight={props.sectionLabelWeight === "bold" ? "bold" : "medium"}
+      >
         {t("Due Date")}
       </Text>
       <div {...stylex.props(styles.panel)}>
@@ -104,7 +111,11 @@ export function DueDateDisplayFields<
               name={"publicDueDateText" as FieldPath<TFieldValues>}
               render={(renderProps) => (
                 <FormItem>
-                  <FormLabel>{t("Public due date message")}</FormLabel>
+                  <FormLabel>
+                    <Text as="span" size="sm" weight="normal" tone="muted">
+                      {t("Public due date message")}
+                    </Text>
+                  </FormLabel>
                   <FormControl>
                     <Input
                       placeholder={t("September baby")}

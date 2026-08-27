@@ -14,7 +14,7 @@ async function renderLanguageSettings(
   const profileHandle = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
   return renderWithConvexTest({
     harness,
-    ui: <LanguageSettings profile={profileHandle} className={undefined} />,
+    ui: <LanguageSettings profile={profileHandle} justify={undefined} />,
     wrap: null,
   });
 }

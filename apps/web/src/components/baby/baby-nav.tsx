@@ -61,6 +61,7 @@ export function BabyNav(props: BabyNavProps) {
           <Button
             variant="default"
             shape="pill"
+            weight="bold"
             data-tour-id="post_update"
             onClick={props.onDismissPostUpdate}
           >
@@ -71,6 +72,7 @@ export function BabyNav(props: BabyNavProps) {
           <Button
             variant="ghost"
             shape="pill"
+            weight="bold"
             render={<Link {...(props.postUpdateButton as any)} />}
             nativeButton={false}
             data-tour-id="post_update"

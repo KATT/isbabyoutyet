@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Icon } from "@phosphor-icons/react";
 import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
+import * as stylex from "@stylexjs/stylex";
 import { useId, useRef } from "react";
 import type { ComponentProps, RefObject } from "react";
 import type {
@@ -17,6 +18,47 @@ import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-
 import { toast } from "sonner";
 import type { z } from "zod";
 import { useI18n } from "@/lib/i18n";
+
+const submitIconSwapIn = stylex.keyframes({
+  from: {
+    opacity: 0,
+    transform: "scale(0.35) rotate(-50deg)",
+  },
+  to: {
+    opacity: 1,
+    transform: "scale(1) rotate(0deg)",
+  },
+});
+
+const styles = stylex.create({
+  iconSlot: {
+    position: "relative",
+    display: "inline-grid",
+    width: "1rem",
+    height: "1rem",
+    flexShrink: 0,
+    placeItems: "center",
+  },
+  iconSwapIn: {
+    display: "inline-grid",
+    placeItems: "center",
+    animationName: submitIconSwapIn,
+    animationDuration: "0.4s",
+    animationTimingFunction: "cubic-bezier(0.34, 1.45, 0.64, 1)",
+    animationFillMode: "both",
+    "@media (prefers-reduced-motion: reduce)": {
+      animationName: "none",
+    },
+  },
+  glyph: {
+    fontSize: "1rem",
+    lineHeight: 1,
+  },
+  phosphorIcon: {
+    width: "1rem",
+    height: "1rem",
+  },
+});
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
   TInput,
@@ -130,15 +172,15 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
 
   const icon = (
-    <span className="relative inline-grid size-4 shrink-0 place-items-center" aria-hidden="true">
+    <span {...stylex.props(styles.iconSlot)} aria-hidden="true">
       {isSubmitting ? (
-        <span className="submit-icon-swap-in inline-grid place-items-center">
-          <Spinner className="size-4" />
+        <span {...stylex.props(styles.iconSwapIn)}>
+          <Spinner />
         </span>
       ) : typeof IconComponent === "string" ? (
-        <span className="text-base leading-none">{IconComponent}</span>
+        <span {...stylex.props(styles.glyph)}>{IconComponent}</span>
       ) : (
-        <IconComponent className="size-4" />
+        <IconComponent {...stylex.props(styles.phosphorIcon)} />
       )}
     </span>
   );

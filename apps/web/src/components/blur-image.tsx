@@ -1,10 +1,27 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
+import * as stylex from "@stylexjs/stylex";
+import { customClassName } from "@workspace/ui/lib/utils.stylex";
 import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
   alt: string;
   blurDataUrl: string | null;
 };
+
+const styles = stylex.create({
+  wrapper: {
+    display: "inline-grid",
+    position: "relative",
+  },
+  placeholder: {
+    borderRadius: "inherit",
+    height: "100%",
+    inset: 0,
+    pointerEvents: "none",
+    position: "absolute",
+    width: "100%",
+  },
+});
 
 function imageSrcKey(src: BlurImageProps["src"]) {
   return typeof src === "string" ? src : "";
@@ -113,27 +130,20 @@ export function BlurImage(props: BlurImageProps) {
 
   return (
     <span
-      className={props.className}
+      {...stylex.props(styles.wrapper, customClassName(props.className))}
       data-blur-image-wrapper=""
-      style={{ display: "inline-grid", position: "relative" }}
     >
       {image}
       {placeholderSrc ? (
         <img
           aria-hidden="true"
           alt=""
-          className={props.className}
+          {...stylex.props(styles.placeholder, customClassName(props.className))}
           data-blur-image-placeholder=""
           src={placeholderSrc}
           style={{
-            borderRadius: "inherit",
-            height: "100%",
-            inset: 0,
             objectFit,
             objectPosition: props.style?.objectPosition ?? "50% 50%",
-            pointerEvents: "none",
-            position: "absolute",
-            width: "100%",
           }}
         />
       ) : null}

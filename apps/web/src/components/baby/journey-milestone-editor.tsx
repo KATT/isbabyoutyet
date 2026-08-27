@@ -18,10 +18,10 @@ import {
   birthJourneyForVisibility,
   milestoneVisibilityForPreset,
 } from "@workspace/convex/src/types";
-import { useI18n } from "@/lib/i18n";
-import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-options";
 import * as stylex from "@stylexjs/stylex";
-import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { useI18n } from "@/lib/i18n";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { JOURNEY_OPTION_BY_VALUE, JOURNEY_PRESET_OPTIONS } from "./journey-options";
 
 type JourneyMilestoneEditorProps = {
   birthJourney: BirthJourney;
@@ -32,23 +32,27 @@ type JourneyMilestoneEditorProps = {
 const styles = stylex.create({
   panel: {
     borderColor: colors.border,
-    borderRadius: radius.xl,
+    borderRadius: "1rem",
     borderStyle: "solid",
     borderWidth: "1px",
-    display: "flex",
-    flexDirection: "column",
-    gap: spacing.s3,
     padding: spacing.s4,
   },
-  row: {
+  toggleRow: {
     alignItems: "center",
     cursor: "pointer",
     display: "flex",
     gap: spacing.s3,
     justifyContent: "space-between",
   },
-  rowLocked: {
+  toggleRowDisabled: {
     opacity: 0.7,
+  },
+  sectionLabel: {
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+  },
+  selectWidth: {
+    width: "100%",
   },
 });
 
@@ -64,6 +68,7 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
       value: option.value,
       label: t(option.labelKey),
     })),
+    // Included so the closed trigger can show "Custom" when toggles diverge
     { value: "custom" as const, label: t("Custom") },
   ];
 
@@ -85,73 +90,77 @@ export function JourneyMilestoneEditor(props: JourneyMilestoneEditorProps) {
       </Text>
 
       <Stack gap="s2">
-        <Text size="xs" weight="bold" tone="muted">
-          {t("Presets")}
+        <Text as="p" size="xs" weight="bold" tone="muted">
+          <span {...stylex.props(styles.sectionLabel)}>{t("Presets")}</span>
         </Text>
-        <Select
-          items={presetItems}
-          value={props.birthJourney}
-          onValueChange={(value) => {
-            if (value === "labor" || value === "home_birth" || value === "planned_c_section") {
-              handlePresetSelect(value);
-            }
-          }}
-        >
-          <SelectTrigger aria-label={t("Presets")} size="sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent alignItemWithTrigger={false}>
-            <SelectGroup>
-              {JOURNEY_PRESET_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {t(option.labelKey)}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <div {...stylex.props(styles.selectWidth)}>
+          <Select
+            items={presetItems}
+            value={props.birthJourney}
+            onValueChange={(value) => {
+              if (value === "labor" || value === "home_birth" || value === "planned_c_section") {
+                handlePresetSelect(value);
+              }
+            }}
+          >
+            <SelectTrigger aria-label={t("Presets")} size="sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent alignItemWithTrigger={false}>
+              <SelectGroup>
+                {JOURNEY_PRESET_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {t(option.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
       </Stack>
 
       <div {...stylex.props(styles.panel)}>
-        <Text size="xs" weight="bold" tone="muted">
-          {t("Milestones visitors see")}
-        </Text>
-
-        <label htmlFor={`${props.idPrefix}-show-labor`} {...stylex.props(styles.row)}>
-          <Text as="span" size="sm" weight="medium">
-            {t("Labour started")}
+        <Stack gap="s3">
+          <Text as="p" size="xs" weight="bold" tone="muted">
+            <span {...stylex.props(styles.sectionLabel)}>{t("Milestones visitors see")}</span>
           </Text>
-          <Switch
-            id={`${props.idPrefix}-show-labor`}
-            checked={visibility.showLabor}
-            onCheckedChange={(checked) => {
-              requestVisibilityChange({ ...visibility, showLabor: checked });
-            }}
-          />
-        </label>
 
-        <label htmlFor={`${props.idPrefix}-show-hospital`} {...stylex.props(styles.row)}>
-          <Text as="span" size="sm" weight="medium">
-            {t("Gone to hospital")}
-          </Text>
-          <Switch
-            id={`${props.idPrefix}-show-hospital`}
-            checked={visibility.showHospital}
-            onCheckedChange={(checked) => {
-              requestVisibilityChange({ ...visibility, showHospital: checked });
-            }}
-          />
-        </label>
+          <label htmlFor={`${props.idPrefix}-show-labor`} {...stylex.props(styles.toggleRow)}>
+            <Text as="span" size="sm" weight="medium">
+              {t("Labour started")}
+            </Text>
+            <Switch
+              id={`${props.idPrefix}-show-labor`}
+              checked={visibility.showLabor}
+              onCheckedChange={(checked) => {
+                requestVisibilityChange({ ...visibility, showLabor: checked });
+              }}
+            />
+          </label>
 
-        <label
-          htmlFor={`${props.idPrefix}-show-born`}
-          {...stylex.props(styles.row, styles.rowLocked)}
-        >
-          <Text as="span" size="sm" weight="medium">
-            {t("Baby born")}
-          </Text>
-          <Switch id={`${props.idPrefix}-show-born`} checked={true} disabled={true} />
-        </label>
+          <label htmlFor={`${props.idPrefix}-show-hospital`} {...stylex.props(styles.toggleRow)}>
+            <Text as="span" size="sm" weight="medium">
+              {t("Gone to hospital")}
+            </Text>
+            <Switch
+              id={`${props.idPrefix}-show-hospital`}
+              checked={visibility.showHospital}
+              onCheckedChange={(checked) => {
+                requestVisibilityChange({ ...visibility, showHospital: checked });
+              }}
+            />
+          </label>
+
+          <label
+            htmlFor={`${props.idPrefix}-show-born`}
+            {...stylex.props(styles.toggleRow, styles.toggleRowDisabled)}
+          >
+            <Text as="span" size="sm" weight="medium">
+              {t("Baby born")}
+            </Text>
+            <Switch id={`${props.idPrefix}-show-born`} checked={true} disabled={true} />
+          </label>
+        </Stack>
       </div>
 
       <Text size="sm" tone="muted">

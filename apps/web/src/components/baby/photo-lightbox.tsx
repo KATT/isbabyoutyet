@@ -1,10 +1,10 @@
+import * as stylex from "@stylexjs/stylex";
 import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { X } from "@phosphor-icons/react";
 import { useI18n } from "@/lib/i18n";
 import { BlurImage } from "@/components/blur-image";
 import type { OverlayControl } from "@/lib/overlay-nav";
-import * as stylex from "@stylexjs/stylex";
-import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type PhotoLightboxProps = {
   photoUrl: string;
@@ -19,7 +19,11 @@ const styles = stylex.create({
   },
   close: {
     alignItems: "center",
-    backgroundColor: `color-mix(in oklab, ${colors.background} 80%, transparent)`,
+    backdropFilter: "blur(4px)",
+    backgroundColor: {
+      ":hover": colors.background,
+      default: `color-mix(in oklab, ${colors.background} 80%, transparent)`,
+    },
     borderRadius: "9999px",
     borderStyle: "none",
     color: colors.foreground,
@@ -31,19 +35,18 @@ const styles = stylex.create({
     right: 0,
     top: `calc(-1 * ${spacing.s12})`,
     transition: "background-color 0.15s",
-    backdropFilter: "blur(4px)",
   },
   image: {
     borderRadius: "0.5rem",
     height: "auto",
     maxHeight: "80vh",
+    objectFit: "contain",
     width: "100%",
   },
 });
 
 export function PhotoLightbox(props: PhotoLightboxProps) {
   const { t } = useI18n();
-  const imageSx = stylex.props(styles.image);
 
   return (
     <Dialog
@@ -65,8 +68,7 @@ export function PhotoLightbox(props: PhotoLightboxProps) {
             src={props.photoUrl}
             alt={props.alt}
             blurDataUrl={props.blurDataUrl}
-            className={imageSx.className}
-            style={{ ...imageSx.style, objectFit: "contain" }}
+            {...stylex.props(styles.image)}
           />
         </div>
       </DialogContent>

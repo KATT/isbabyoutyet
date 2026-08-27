@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -11,16 +12,16 @@ import {
   FormMessage,
 } from "@workspace/ui/components/form";
 import { Button } from "@workspace/ui/components/button";
+import { Inline } from "@workspace/ui-patterns/components/inline";
 import { Stack } from "@workspace/ui-patterns/components/stack";
 import { Text } from "@workspace/ui-patterns/components/text";
-import { Inline } from "@workspace/ui-patterns/components/inline";
 import { CaretDown } from "@phosphor-icons/react";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
+import * as stylex from "@stylexjs/stylex";
 import { useI18n } from "@/lib/i18n";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { JourneyMilestoneEditor } from "./journey-milestone-editor";
 import { THEME_OPTIONS } from "./utils";
-import * as stylex from "@stylexjs/stylex";
-import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
 
 type AddBabyOptionalSettingsProps<
   TFieldValues extends FieldValues,
@@ -35,47 +36,61 @@ type AddBabyOptionalSettingsProps<
 const styles = stylex.create({
   shell: {
     borderColor: colors.border,
-    borderRadius: radius.xl,
+    borderRadius: "1rem",
     borderStyle: "solid",
     borderWidth: "2px",
     overflow: "hidden",
   },
   trigger: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    borderStyle: "none",
+    backgroundColor: {
+      ":hover": `color-mix(in oklab, ${colors.muted} 40%, transparent)`,
+      default: "transparent",
+    },
+    borderBottomColor: colors.border,
+    borderBottomStyle: "solid",
+    borderBottomWidth: 0,
     cursor: "pointer",
-    display: "flex",
-    fontWeight: 700,
-    gap: spacing.s3,
-    justifyContent: "space-between",
+    display: "block",
     paddingBlock: spacing.s3,
     paddingInline: spacing.s4,
-    textAlign: "left",
+    textAlign: "start",
     width: "100%",
+  },
+  triggerOpen: {
+    borderBottomWidth: "1px",
   },
   caret: {
     flexShrink: 0,
-    height: "1rem",
-    transition: "transform 0.15s",
-    width: "1rem",
+    transitionDuration: "150ms",
+    transitionProperty: "transform",
+    transitionTimingFunction: "ease",
+  },
+  caretOpen: {
+    transform: "rotate(180deg)",
   },
   content: {
-    paddingBottom: spacing.s4,
+    paddingBlockEnd: spacing.s4,
+    paddingBlockStart: spacing.s1,
     paddingInline: spacing.s4,
-    paddingTop: spacing.s1,
+  },
+  themeGrid: {
+    display: "grid",
+    gap: spacing.s2,
+  },
+  swatchRow: {
+    display: "flex",
+    gap: "0.125rem",
   },
   swatch: {
     borderColor: `color-mix(in oklab, ${colors.border} 50%, transparent)`,
-    borderRadius: radius.sm,
+    borderRadius: "0.125rem",
     borderStyle: "solid",
     borderWidth: "1px",
     height: "1rem",
     width: "1rem",
   },
-  themeGrid: {
-    display: "grid",
-    gap: spacing.s2,
+  themeButton: {
+    justifyContent: "flex-start",
   },
 });
 
@@ -85,15 +100,25 @@ export function AddBabyOptionalSettings<
   TThemeName extends FieldPath<TFieldValues>,
 >(props: AddBabyOptionalSettingsProps<TFieldValues, TBirthJourneyName, TThemeName>) {
   const { t } = useI18n();
+  const [open, setOpen] = useState(false);
 
   return (
     <div {...stylex.props(styles.shell)}>
-      <Collapsible>
-        <CollapsibleTrigger>
-          <span {...stylex.props(styles.trigger)}>
-            <span>{t("Customize your page (optional)")}</span>
-            <CaretDown {...stylex.props(styles.caret)} />
-          </span>
+      <Collapsible open={open} onOpenChange={setOpen}>
+        <CollapsibleTrigger
+          render={
+            <button
+              type="button"
+              {...stylex.props(styles.trigger, open ? styles.triggerOpen : null)}
+            />
+          }
+        >
+          <Inline gap="s3" justify="between" wrap={false} fullWidth>
+            <Text as="span" weight="bold">
+              {t("Customize your page (optional)")}
+            </Text>
+            <CaretDown size={16} {...stylex.props(styles.caret, open ? styles.caretOpen : null)} />
+          </Inline>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <div {...stylex.props(styles.content)}>
@@ -137,12 +162,13 @@ export function AddBabyOptionalSettings<
                               key={option.value ?? "default"}
                               type="button"
                               variant={selected ? "default" : "outline"}
+                              shape="pill"
                               aria-pressed={selected}
                               onClick={() => {
                                 renderProps.field.onChange(option.value);
                               }}
                             >
-                              <Inline gap="s1" wrap={false}>
+                              <span {...stylex.props(styles.swatchRow)}>
                                 {option.colors.map((color, index) => (
                                   <span
                                     key={index}
@@ -150,7 +176,7 @@ export function AddBabyOptionalSettings<
                                     style={{ backgroundColor: color }}
                                   />
                                 ))}
-                              </Inline>
+                              </span>
                               {t(option.labelKey)}
                             </Button>
                           );

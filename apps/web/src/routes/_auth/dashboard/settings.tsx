@@ -26,8 +26,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
-import { Stack } from "@workspace/ui-patterns/components/stack";
 import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import { Stack } from "@workspace/ui-patterns/components/stack";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
@@ -37,31 +37,35 @@ import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 const authRoute = getRouteApi("/_auth");
 
 const styles = stylex.create({
-  sectionTitle: {
-    color: colors.mutedForeground,
-    fontSize: "0.75rem",
-    fontWeight: 700,
-    letterSpacing: "0.05em",
-    margin: 0,
-    paddingInline: spacing.s0_5,
-    textTransform: "uppercase",
-  },
-  sectionCard: {
-    backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
-    borderColor: colors.border,
-    borderRadius: radius.xl,
-    borderStyle: "solid",
-    borderWidth: "1px",
-    overflow: "hidden",
-  },
   body: {
     display: "flex",
-    flex: 1,
+    flexGrow: 1,
     flexDirection: "column",
-    gap: "1.5rem",
+    gap: spacing.s6,
     overflowY: "auto",
-    paddingBottom: "1rem",
-    paddingInline: "1rem",
+    paddingInline: spacing.s4,
+    paddingBottom: spacing.s4,
+  },
+  sectionTitle: {
+    margin: 0,
+    paddingInline: spacing.s0_5,
+    fontSize: "0.75rem",
+    lineHeight: "1rem",
+    fontWeight: 700,
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
+    color: colors.mutedForeground,
+  },
+  sectionCard: {
+    overflow: "hidden",
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: colors.border,
+    backgroundColor: `color-mix(in oklab, ${colors.card} 50%, transparent)`,
+  },
+  itemGroup: {
+    gap: 0,
   },
 });
 
@@ -79,7 +83,7 @@ function SettingsSection(props: { title: string; children: ReactNode }) {
     <Stack gap="s2">
       <h3 {...stylex.props(styles.sectionTitle)}>{props.title}</h3>
       <div {...stylex.props(styles.sectionCard)}>
-        <ItemGroup>{props.children}</ItemGroup>
+        <ItemGroup style={styles.itemGroup}>{props.children}</ItemGroup>
       </div>
     </Stack>
   );
@@ -117,7 +121,7 @@ export function DashboardSettingsSheet(props: {
     <DashboardSettingsSheetView
       isAdmin={profileQuery.data?.isAdmin === true}
       overlay={settings}
-      languageSettings={<LanguageSettings profile={props.profile} className={undefined} />}
+      languageSettings={<LanguageSettings profile={props.profile} justify={undefined} />}
       onSignOut={async () => {
         await settingsAuthAdapter.signOut({
           fetchOptions: {

@@ -6,12 +6,11 @@ import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { Baby as BabyIcon, Plus, User } from "@phosphor-icons/react";
 import { Avatar, AvatarFallback } from "@workspace/ui/components/avatar";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import type { BirthJourney } from "@workspace/convex/src/types";
-import { Inline } from "@workspace/ui-patterns/components/inline";
+import { colors, spacing } from "@workspace/ui/lib/tokens.stylex";
 import { Stack } from "@workspace/ui-patterns/components/stack";
 import { Text } from "@workspace/ui-patterns/components/text";
-import { colors, radius, spacing } from "@workspace/ui/lib/tokens.stylex";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { BirthJourney } from "@workspace/convex/src/types";
 import { DashboardBabyCard } from "@/components/baby/dashboard-baby-card";
 import { OnboardingHost } from "@/components/onboarding/onboarding-host";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -20,37 +19,40 @@ import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 
 const styles = stylex.create({
   page: {
+    display: "flex",
+    minHeight: "100vh",
+    flexDirection: "column",
     backgroundColor: colors.background,
     backgroundImage: `radial-gradient(color-mix(in oklab, ${colors.border} 80%, transparent) 1.5px, transparent 1.5px)`,
     backgroundSize: "22px 22px",
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
   },
   header: {
-    paddingBottom: spacing.s1,
-    paddingInline: spacing.s4,
-    paddingTop: spacing.s3,
     position: "sticky",
     top: 0,
     zIndex: 20,
+    paddingInline: spacing.s4,
+    paddingTop: spacing.s3,
+    paddingBottom: spacing.s1,
   },
   headerInner: {
     marginInline: "auto",
+    display: "flex",
     maxWidth: "64rem",
-    width: "100%",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.s2,
   },
   brandLink: {
-    alignItems: "center",
-    backdropFilter: "blur(12px)",
-    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
-    borderRadius: "9999px",
-    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
     display: "flex",
+    alignItems: "center",
     gap: spacing.s2,
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
     paddingBlock: spacing.s1_5,
-    paddingInlineEnd: spacing.s4,
-    paddingInlineStart: spacing.s2,
+    paddingLeft: spacing.s2,
+    paddingRight: spacing.s4,
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    backdropFilter: "blur(12px)",
     textDecoration: "none",
     transition: "transform 0.15s ease",
     ":hover": {
@@ -58,87 +60,87 @@ const styles = stylex.create({
     },
   },
   brandMark: {
-    alignItems: "center",
-    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
-    borderRadius: "9999px",
-    color: colors.primary,
     display: "flex",
-    height: "1.75rem",
-    justifyContent: "center",
     width: "1.75rem",
+    height: "1.75rem",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    color: colors.primary,
   },
   brandName: {
-    color: colors.foreground,
     fontSize: "0.875rem",
     fontWeight: 800,
     letterSpacing: "-0.025em",
   },
   headerActions: {
-    alignItems: "center",
-    backdropFilter: "blur(12px)",
-    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
-    borderRadius: "9999px",
-    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
     display: "flex",
+    alignItems: "center",
     gap: spacing.s1,
+    borderRadius: "9999px",
+    backgroundColor: `color-mix(in oklab, ${colors.background} 85%, transparent)`,
     padding: spacing.s1,
+    boxShadow: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    backdropFilter: "blur(12px)",
   },
   main: {
-    flex: 1,
     marginInline: "auto",
-    maxWidth: "64rem",
-    paddingBlock: spacing.s10,
-    paddingInline: spacing.s6,
     width: "100%",
+    maxWidth: "64rem",
+    flexGrow: 1,
+    paddingInline: spacing.s6,
+    paddingBlock: spacing.s10,
+  },
+  intro: {
+    marginBottom: spacing.s10,
+    textAlign: "center",
   },
   title: {
-    color: colors.foreground,
+    margin: 0,
     fontSize: {
       default: "2.25rem",
       "@media (min-width: 768px)": "3rem",
     },
     fontWeight: 900,
     letterSpacing: "-0.025em",
-    lineHeight: 1.1,
-    margin: 0,
-    textAlign: "center",
+    color: colors.foreground,
   },
   titleAccent: {
-    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
-    borderRadius: radius.xl,
-    color: colors.primary,
     display: "inline-block",
-    paddingInline: spacing.s3,
     transform: "rotate(-1deg)",
+    borderRadius: "1rem",
+    backgroundColor: `color-mix(in oklab, ${colors.primary} 15%, transparent)`,
+    paddingInline: spacing.s3,
+    color: colors.primary,
   },
-  emptyState: {
-    backgroundColor: `color-mix(in oklab, ${colors.card} 60%, transparent)`,
-    borderColor: colors.border,
-    borderRadius: "2rem",
-    borderStyle: "dashed",
-    borderWidth: "2px",
+  empty: {
     marginInline: "auto",
     maxWidth: "36rem",
-    paddingBlock: spacing.s12,
+    borderRadius: "2rem",
+    borderWidth: 2,
+    borderStyle: "dashed",
+    borderColor: colors.border,
+    backgroundColor: `color-mix(in oklab, ${colors.card} 60%, transparent)`,
+    paddingBlock: "3.5rem",
     textAlign: "center",
   },
   emptyEmoji: {
+    margin: 0,
     fontSize: "3rem",
     lineHeight: 1,
-    margin: 0,
   },
   emptyCta: {
-    display: "flex",
-    justifyContent: "center",
+    marginTop: spacing.s6,
   },
-  babyGrid: {
+  grid: {
     display: "grid",
-    gap: spacing.s5,
     gridTemplateColumns: {
       default: "1fr",
       "@media (min-width: 768px)": "repeat(2, minmax(0, 1fr))",
       "@media (min-width: 1024px)": "repeat(3, minmax(0, 1fr))",
     },
+    gap: spacing.s5,
   },
 });
 
@@ -186,18 +188,19 @@ export function DashboardPage(props: DashboardLoaderData) {
       <DashboardHeader />
 
       <main {...stylex.props(styles.main)}>
-        <Stack gap="s10" fullWidth>
-          <Stack gap="s2" align="center" fullWidth>
+        <div {...stylex.props(styles.intro)}>
+          <Stack gap="s2" align="center">
             <h1 {...stylex.props(styles.title)}>
-              {t("Your")} <span {...stylex.props(styles.titleAccent)}>{t("babies")}</span> 👶
+              {t("Your")}{" "}
+              <span {...stylex.props(styles.titleAccent)}>{t("babies")}</span> 👶
             </h1>
-            <Text tone="muted" weight="semibold" align="center">
+            <Text weight="semibold" tone="muted">
               {t("Track and manage all your babies' journeys")}
             </Text>
           </Stack>
+        </div>
 
-          <DashboardBabyList babies={babies} tourBabyPublicId={progress.tourBaby?.publicId} />
-        </Stack>
+        <DashboardBabyList babies={babies} tourBabyPublicId={progress.tourBaby?.publicId} />
       </main>
     </div>
   );
@@ -210,39 +213,37 @@ export function DashboardHeader() {
   return (
     <header {...stylex.props(styles.header)}>
       <div {...stylex.props(styles.headerInner)}>
-        <Inline gap="s2" align="center" justify="between" wrap={false} fullWidth>
-          <Link to="/" {...stylex.props(styles.brandLink)}>
-            <span {...stylex.props(styles.brandMark)}>
-              <BabyIcon size={16} />
-            </span>
-            <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
-          </Link>
-          <div {...stylex.props(styles.headerActions)}>
-            <Button
-              size="sm"
-              shape="pill"
-              render={<Link to="/dashboard/add" />}
-              nativeButton={false}
-            >
-              <Plus data-icon="inline-start" />
-              {t("Add Baby")}
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              shape="pill"
-              render={<Link {...settings.openLink} />}
-              nativeButton={false}
-              aria-label={t("Settings")}
-            >
-              <Avatar size="sm">
-                <AvatarFallback>
-                  <User />
-                </AvatarFallback>
-              </Avatar>
-            </Button>
-          </div>
-        </Inline>
+        <Link to="/" {...stylex.props(styles.brandLink)}>
+          <span {...stylex.props(styles.brandMark)}>
+            <BabyIcon size={16} />
+          </span>
+          <span {...stylex.props(styles.brandName)}>isbabyoutyet</span>
+        </Link>
+        <div {...stylex.props(styles.headerActions)}>
+          <Button
+            size="sm"
+            shape="pill"
+            render={<Link to="/dashboard/add" />}
+            nativeButton={false}
+          >
+            <Plus data-icon="inline-start" />
+            {t("Add Baby")}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            shape="pill"
+            render={<Link {...settings.openLink} />}
+            nativeButton={false}
+            aria-label={t("Settings")}
+          >
+            <Avatar size="sm">
+              <AvatarFallback>
+                <User />
+              </AvatarFallback>
+            </Avatar>
+          </Button>
+        </div>
       </div>
     </header>
   );
@@ -272,17 +273,19 @@ export function DashboardBabyList(props: {
 
   if (props.babies.length === 0) {
     return (
-      <div {...stylex.props(styles.emptyState)}>
+      <div {...stylex.props(styles.empty)}>
         <Stack gap="s4" align="center">
           <p {...stylex.props(styles.emptyEmoji)} aria-hidden="true">
             🍼
           </p>
-          <Text as="h3" size="2xl" weight="black">
-            {t("No babies added yet")}
-          </Text>
-          <Text tone="muted" weight="medium" align="center">
-            {t("Get started by adding your first baby to track their journey")}
-          </Text>
+          <Stack gap="s2" align="center">
+            <Text as="h3" size="2xl" weight="black">
+              {t("No babies added yet")}
+            </Text>
+            <Text tone="muted" weight="medium" align="center">
+              {t("Get started by adding your first baby to track their journey")}
+            </Text>
+          </Stack>
           <div {...stylex.props(styles.emptyCta)}>
             <Button
               size="lg"
@@ -291,7 +294,7 @@ export function DashboardBabyList(props: {
               nativeButton={false}
               data-tour-id="add_baby"
             >
-              <Plus data-icon="inline-start" />
+              <Plus size={16} />
               {t("Add Your First Baby")}
             </Button>
           </div>
@@ -301,7 +304,7 @@ export function DashboardBabyList(props: {
   }
 
   return (
-    <div {...stylex.props(styles.babyGrid)}>
+    <div {...stylex.props(styles.grid)}>
       {props.babies.map((baby, index) => (
         <DashboardBabyCard
           key={baby._id}

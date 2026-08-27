@@ -41,7 +41,15 @@ import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { setLocale } from "@/lib/paraglide-setup";
 import { useOptimisticOverride } from "@/lib/use-optimistic-override";
-import { cn } from "@workspace/ui/lib/utils";
+import * as stylex from "@stylexjs/stylex";
+import { Inline } from "@workspace/ui-patterns/components/inline";
+import type { StackJustify } from "@workspace/ui-patterns/components/stack";
+
+const styles = stylex.create({
+  timeZoneField: {
+    width: "14rem",
+  },
+});
 
 function languageRequestSchema(t: TranslationFunction) {
   return z
@@ -125,7 +133,7 @@ const defaultTimeZoneOption = {
 
 export function LanguageSettings(props: {
   profile: PreloadedConvexQuery<typeof api.profile.get>;
-  className: string | undefined;
+  justify: StackJustify | undefined;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const onUpdateLocale = useMutation(api.profile.updateLocale);
@@ -144,47 +152,48 @@ export function LanguageSettings(props: {
   const languageRequestActionsRef = useRef<DialogActions | null>(null);
 
   return (
-    <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
-      <Combobox
-        items={timeZoneOptions}
-        itemToStringValue={(option) => option.label}
-        value={selectedTimeZoneOption}
-        onValueChange={(option) => {
-          if (!option || option.value === optimisticTimeZone) {
-            return;
-          }
-          const previousTimeZone = optimisticTimeZone;
-          setOptimisticTimeZone(option.value);
-          void onUpdateTimeZone({ timeZone: option.value })
-            .then(() => {
-              toast.success(t("Time zone saved"));
-            })
-            .catch((error) => {
-              setOptimisticTimeZone(previousTimeZone);
-              toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
-            });
-        }}
-        disabled={!profile}
-      >
-        <ComboboxInput
-          className="w-56"
-          aria-label={t("Profile time zone")}
-          placeholder={t("Search time zones")}
-          onFocus={(event) => {
-            event.currentTarget.select();
+    <Inline gap="s2" justify={props.justify ?? "center"} align="center">
+      <div {...stylex.props(styles.timeZoneField)}>
+        <Combobox
+          items={timeZoneOptions}
+          itemToStringValue={(option) => option.label}
+          value={selectedTimeZoneOption}
+          onValueChange={(option) => {
+            if (!option || option.value === optimisticTimeZone) {
+              return;
+            }
+            const previousTimeZone = optimisticTimeZone;
+            setOptimisticTimeZone(option.value);
+            void onUpdateTimeZone({ timeZone: option.value })
+              .then(() => {
+                toast.success(t("Time zone saved"));
+              })
+              .catch((error) => {
+                setOptimisticTimeZone(previousTimeZone);
+                toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
+              });
           }}
-        />
-        <ComboboxContent>
-          <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
-          <ComboboxList>
-            {(option) => (
-              <ComboboxItem key={option.value} value={option}>
-                {option.label}
-              </ComboboxItem>
-            )}
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
+          disabled={!profile}
+        >
+          <ComboboxInput
+            aria-label={t("Profile time zone")}
+            placeholder={t("Search time zones")}
+            onFocus={(event) => {
+              event.currentTarget.select();
+            }}
+          />
+          <ComboboxContent>
+            <ComboboxEmpty>{t("No time zones found")}</ComboboxEmpty>
+            <ComboboxList>
+              {(option) => (
+                <ComboboxItem key={option.value} value={option}>
+                  {option.label}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxContent>
+        </Combobox>
+      </div>
 
       <LanguagePicker
         value={selectedLocale}
@@ -219,6 +228,6 @@ export function LanguageSettings(props: {
           />
         </DialogContent>
       </Dialog>
-    </div>
+    </Inline>
   );
 }
