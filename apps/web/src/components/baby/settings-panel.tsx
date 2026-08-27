@@ -157,7 +157,7 @@ function BabyLanguageSelect(props: {
         items={languageItems}
         value={selectedLocale}
         onValueChange={(value) => {
-          if (value !== "inherit" && !(typeof value === "string" && isSupportedLocale(value))) {
+          if (value !== "inherit" && !(value !== null && isSupportedLocale(value))) {
             return;
           }
           form.setValue("locale", value, { shouldDirty: true });
