@@ -107,7 +107,8 @@ function load(id: string, visitorId?: string) {}
 Enforced by `no-convex-optional/no-undocumented-optional` in `.oxlintrc.json`.
 Do not use `v.optional()` on Convex schema fields or RPC args unless the
 optional is a **temporary** migration hatch. In that case mark it with JSDoc
-`@deprecated` describing the follow-up (backfill, then a required validator).
+`@deprecated` (the optional is going away) or `@todo` (remaining work, or a
+documented exception such as the migrations runner).
 
 Prefer a required key with an explicit absence union so callers and rows must
 set the value:
@@ -119,10 +120,16 @@ args: {
   theme: v.union(v.string(), v.null()),
 }
 
-// ✅ CORRECT — migration transient only
+// ✅ CORRECT — going away in a later migration
 args: {
   /** @deprecated Optional until callers pass `null`. */
   visitorId: v.optional(v.string()),
+}
+
+// ✅ CORRECT — remaining work / documented exception
+args: {
+  /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
+  dryRun: v.optional(v.boolean()),
 }
 
 // ❌ INCORRECT — banned by lint

@@ -4,16 +4,17 @@
  * Optional schema fields and RPC args are a migration transient only. Prefer a
  * required validator (`v.union(..., v.null())` or a concrete value) so callers
  * and rows must set the key. Keep `v.optional()` only while backfilling, and
- * mark it with JSDoc `@deprecated`.
+ * mark it with JSDoc `@deprecated` (the optional is going away) or `@todo`
+ * (remaining work, or a documented exception).
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
  * schema/RPC.
  */
 
 const MESSAGE =
-  "`v.optional()` is only allowed as a migration transient. Add a JSDoc `@deprecated` explaining the follow-up, or use a required validator (`v.union(..., v.null())` or a concrete value).";
+  "`v.optional()` is only allowed as a migration transient. Add a JSDoc `@deprecated` or `@todo` explaining the follow-up, or use a required validator (`v.union(..., v.null())` or a concrete value).";
 
-const DEPRECATED_TAG = /@deprecated\b/;
+const DOCUMENTED_TAG = /@(?:todo|deprecated)\b/i;
 const CONFIG_FILE = /(?:^|[/\\])convex\.config\.[cm]?[jt]sx?$/;
 const CONVEX_VALUES = "convex/values";
 
@@ -44,10 +45,10 @@ function nodeStart(node) {
 }
 
 /**
- * True when a `/**` JSDoc block containing `@deprecated` sits immediately
- * before `index` (whitespace only in between).
+ * True when a `/**` JSDoc block containing `@deprecated` or `@todo` sits
+ * immediately before `index` (whitespace only in between).
  */
-function hasDeprecatedJsdocBefore(text, index) {
+function hasDocumentedJsdocBefore(text, index) {
   let i = index;
   while (i > 0 && /\s/.test(text[i - 1])) {
     i -= 1;
@@ -63,10 +64,10 @@ function hasDeprecatedJsdocBefore(text, index) {
   if (text.indexOf("*/", opener + 3) !== closer) {
     return false;
   }
-  return DEPRECATED_TAG.test(text.slice(opener, i));
+  return DOCUMENTED_TAG.test(text.slice(opener, i));
 }
 
-function commentsHaveDeprecated(comments) {
+function commentsHaveDocumentedTag(comments) {
   if (!Array.isArray(comments)) {
     return false;
   }
@@ -75,7 +76,7 @@ function commentsHaveDeprecated(comments) {
       continue;
     }
     const value = comment.value ?? "";
-    if (value.startsWith("*") && DEPRECATED_TAG.test(value)) {
+    if (value.startsWith("*") && DOCUMENTED_TAG.test(value)) {
       return true;
     }
   }
@@ -117,7 +118,7 @@ function jsdocTargets(node) {
   return targets;
 }
 
-function hasDeprecatedJsdoc(context, node) {
+function hasDocumentedJsdoc(context, node) {
   const sourceCode = context.sourceCode;
   const text = sourceText(context);
   const getCommentsBefore =
@@ -126,14 +127,14 @@ function hasDeprecatedJsdoc(context, node) {
       : null;
 
   for (const target of jsdocTargets(node)) {
-    if (getCommentsBefore && commentsHaveDeprecated(getCommentsBefore(target))) {
+    if (getCommentsBefore && commentsHaveDocumentedTag(getCommentsBefore(target))) {
       return true;
     }
-    if (commentsHaveDeprecated(target.leadingComments)) {
+    if (commentsHaveDocumentedTag(target.leadingComments)) {
       return true;
     }
     const start = nodeStart(target);
-    if (typeof start === "number" && hasDeprecatedJsdocBefore(text, start)) {
+    if (typeof start === "number" && hasDocumentedJsdocBefore(text, start)) {
       return true;
     }
   }
@@ -182,7 +183,7 @@ const noUndocumentedOptional = {
     type: "problem",
     docs: {
       description:
-        "Disallow Convex `v.optional()` unless marked `@deprecated` as a migration transient",
+        "Disallow Convex `v.optional()` unless marked `@deprecated` or `@todo` as a migration transient",
     },
     schema: [],
     messages: {
@@ -207,7 +208,7 @@ const noUndocumentedOptional = {
         if (!isVOptionalCallee(node.callee, vNames, nsNames)) {
           return;
         }
-        if (hasDeprecatedJsdoc(context, node)) {
+        if (hasDocumentedJsdoc(context, node)) {
           return;
         }
         context.report({ node, messageId: "undocumented" });

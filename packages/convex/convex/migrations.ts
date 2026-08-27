@@ -542,19 +542,19 @@ export function parseMigrationRunnerReport<TResult>(result: TResult): MigrationR
 
 export const runAll = internalMutation({
   args: {
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     fn: v.optional(v.string()),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     cursor: v.optional(v.union(v.string(), v.null())),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     batchSize: v.optional(v.number()),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     dryRun: v.optional(v.boolean()),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     next: v.optional(v.array(v.string())),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     reset: v.optional(v.boolean()),
-    /** @deprecated Mirrors `@convex-dev/migrations` runner options. */
+    /** @todo Keep mirroring `@convex-dev/migrations` runner options. */
     oneBatchOnly: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<MigrationRunnerReport> => {

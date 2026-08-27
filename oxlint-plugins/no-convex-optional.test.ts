@@ -36,13 +36,13 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
          }),
        });`,
     `import { v } from "convex/values";
-       /** @deprecated Optional until callers pass null. */
+       /** @todo Optional until callers pass null. */
        const localeArg = v.optional(v.string());`,
     `import { v } from "convex/values";
-       /** @deprecated Mirrors the migrations runner. */
+       /** @todo Keep mirroring the migrations runner. */
        export const runAll = internalMutation({
          args: {
-           /** @deprecated Mirrors the migrations runner. */
+           /** @todo Keep mirroring the migrations runner. */
            dryRun: v.optional(v.boolean()),
          },
        });`,
@@ -53,7 +53,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
        };`,
     `import * as values from "convex/values";
        const args = {
-         /** @deprecated Optional until callers pass null. */
+         /** @todo Optional until callers pass null. */
          visitorId: values.v.optional(values.v.string()),
        };`,
     // Not from convex/values.
@@ -101,7 +101,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
     {
       // Non-JSDoc block comments do not count.
       code: `import { v } from "convex/values";
-               /* @deprecated not a jsdoc */
+               /* @todo not a jsdoc */
                const localeArg = v.optional(v.string());`,
       errors: [undocumented],
     },
