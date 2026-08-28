@@ -10,11 +10,14 @@ import { webcrypto } from "node:crypto";
 import { isFunction } from "@workspace/runtime/guards";
 
 const kAuthBroadcastChannel = Symbol.for("better-auth:broadcast-channel");
+const kAuthFocusManager = Symbol.for("better-auth:focus-manager");
+const kAuthOnlineManager = Symbol.for("better-auth:online-manager");
 
-class StubAuthBroadcastChannel {
-  listeners = new Set<(message: unknown) => void>();
+class StubAuthWindowManager {
+  listeners = new Set<(value: unknown) => void>();
+  isOnline = true;
 
-  subscribe(listener: (message: unknown) => void) {
+  subscribe(listener: (value: unknown) => void) {
     this.listeners.add(listener);
     return () => {
       this.listeners.delete(listener);
@@ -23,15 +26,23 @@ class StubAuthBroadcastChannel {
 
   post(_message: unknown) {}
 
+  setFocused(_focused: boolean) {}
+
+  setOnline(online: boolean) {
+    this.isOnline = online;
+  }
+
   setup() {
     return () => {};
   }
 }
 
-// better-auth's default channel cleanup calls window.removeEventListener after
-// jsdom tears down, which vitest reports as an unhandled error. Install a stub
-// before each test file so async session-refresh cleanup stays a no-op.
-Reflect.set(globalThis, kAuthBroadcastChannel, new StubAuthBroadcastChannel());
+// better-auth's default window managers call document/window event APIs in
+// cleanup after jsdom tears down, which vitest reports as an unhandled error.
+// Install stubs before each test file so async session-refresh cleanup is a no-op.
+Reflect.set(globalThis, kAuthBroadcastChannel, new StubAuthWindowManager());
+Reflect.set(globalThis, kAuthFocusManager, new StubAuthWindowManager());
+Reflect.set(globalThis, kAuthOnlineManager, new StubAuthWindowManager());
 
 // jsdom's SubtleCrypto rejects ArrayBuffers from Blob#arrayBuffer(); route storage
 // hashing in convex-test through Node's webcrypto instead.

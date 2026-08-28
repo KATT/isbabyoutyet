@@ -121,7 +121,7 @@
   },
   "overrides": [
     {
-      // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
+      // Global jsdom stubs for better-auth session-refresh window managers.
       "files": ["apps/web/src/test/setup.ts"],
       "rules": {
         "anti-slop/no-unknown-parameters": "off"
