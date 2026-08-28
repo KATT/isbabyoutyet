@@ -17,13 +17,17 @@ const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 const hasDemoLogin =
   process.env.VITE_HAS_DEMO_LOGIN === "true" || process.env.VERCEL_ENV === "preview";
 
+const buildEnv = {
+  ...process.env,
+  VITE_CONVEX_SITE_URL: convexUrl.replace(".convex.cloud", ".convex.site"),
+};
+// Preview backends are seeded with DEMO_USER — prefill login forms there.
+if (hasDemoLogin) {
+  buildEnv.VITE_HAS_DEMO_LOGIN = "true";
+}
+
 execFileSync("pnpm", ["turbo", "build", "--filter=web"], {
   cwd: workspaceRoot,
   stdio: "inherit",
-  env: {
-    ...process.env,
-    VITE_CONVEX_SITE_URL: convexUrl.replace(".convex.cloud", ".convex.site"),
-    // Preview backends are seeded with DEMO_USER — prefill login forms there.
-    ...(hasDemoLogin ? { VITE_HAS_DEMO_LOGIN: "true" } : {}),
-  },
+  env: buildEnv,
 });

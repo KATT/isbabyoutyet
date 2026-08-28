@@ -322,7 +322,7 @@ export const create = mutationWithTriggers({
       excludeTokenIdentifier: caller.tokenIdentifier,
     });
 
-    const babyId = await ctx.db.insert("baby", {
+    const babyFields = {
       userId: caller.authUserId,
       ownerTokenIdentifier: caller.tokenIdentifier,
       name: args.name,
@@ -331,10 +331,13 @@ export const create = mutationWithTriggers({
       publicDueDateText: dueDateDisplay.text,
       publicId,
       birthJourney: args.birthJourney ?? "labor",
-      ...(args.theme !== undefined ? { theme: args.theme } : {}),
       subscriptionCount: 0,
       lastActivityAt: Date.now(),
-    });
+    };
+    const babyId = await ctx.db.insert(
+      "baby",
+      args.theme !== undefined ? { ...babyFields, theme: args.theme } : babyFields,
+    );
 
     return { babyId, publicId };
   },
@@ -447,20 +450,25 @@ export const updateThumbnail = internalMutationWithTriggers({
     // generating — a newer generation owns the field now.
     const blurDataUrl = args.blurDataUrl;
     if (baby && (!args.photoId || baby.photoId === args.photoId)) {
-      await ctx.db.patch(args.babyId, {
-        thumbnailId: args.thumbnailId,
-        ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
-      });
+      await ctx.db.patch(
+        args.babyId,
+        blurDataUrl === undefined
+          ? { thumbnailId: args.thumbnailId }
+          : { thumbnailId: args.thumbnailId, blurDataUrl },
+      );
     }
 
     if (args.updateId) {
       const update = await ctx.db.get(args.updateId);
       if (update && (!args.photoId || update.photoId === args.photoId)) {
-        await ctx.db.patch(args.updateId, {
+        const updateFields = {
           thumbnailId: args.thumbnailId,
           pushImageId: args.pushImageId ?? update.pushImageId ?? null,
-          ...(blurDataUrl === undefined ? {} : { blurDataUrl }),
-        });
+        };
+        await ctx.db.patch(
+          args.updateId,
+          blurDataUrl === undefined ? updateFields : { ...updateFields, blurDataUrl },
+        );
       }
     }
   },
@@ -622,7 +630,7 @@ export const update = mutationWithTriggers({
     }
 
     if (Object.keys(patch).length > 0) {
-      await ctx.db.patch(babyId, { ...patch, ...(publicId ? { publicId } : {}) });
+      await ctx.db.patch(babyId, publicId ? { ...patch, publicId } : patch);
     }
   },
 });

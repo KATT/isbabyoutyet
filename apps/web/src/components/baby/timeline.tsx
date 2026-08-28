@@ -1045,10 +1045,13 @@ export function TimelineFeed(props: TimelineFeedProps) {
   // the first render matches the SSR handle (no visitorId).
   const timelineQuery = usePreloadedConvexInfiniteQuery(api.timeline.listByBaby, {
     handle: props.timeline,
-    remixArgs: (args) => ({
-      ...args,
-      ...(currentVisitorId ? { visitorId: currentVisitorId } : {}),
-    }),
+    remixArgs: (args) => {
+      const remixedArgs = { ...args };
+      if (currentVisitorId) {
+        remixedArgs.visitorId = currentVisitorId;
+      }
+      return remixedArgs;
+    },
   });
   const removeUpdate = useMutation(api.updates.remove);
   const setAsCurrentPhoto = useMutation(api.updates.setAsCurrentPhoto);

@@ -98,6 +98,7 @@
     "anti-slop/no-shape-in-symbol-names": "error",
     "anti-slop/no-reflect-get": "error",
     "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-conditional-empty-object-spread": "error",
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
