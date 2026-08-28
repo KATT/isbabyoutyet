@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -63,5 +62,3 @@ export const noRuntimeTypeofRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-runtime-typeof", noRuntimeTypeofRule);

@@ -5,7 +5,7 @@
  * callers must pass the value (including absence) rather than omitting it.
  */
 
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 const MESSAGE =
   "Optional `?` is not allowed. Use a required property/parameter with `| undefined` or `| null` instead.";
@@ -96,13 +96,4 @@ const noOptional = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-optional",
-  },
-  rules: {
-    "no-optional": noOptional,
-  },
-});
-
-export default plugin;
+export { noOptional };

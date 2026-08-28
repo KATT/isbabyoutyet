@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Disallow react-hook-form's imperative `.watch()` / `watch()`, and require
@@ -152,13 +152,4 @@ const noRhfWatch = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-rhf-watch",
-  },
-  rules: {
-    "no-rhf-watch": noRhfWatch,
-  },
-});
-
-export default plugin;
+export { noRhfWatch };

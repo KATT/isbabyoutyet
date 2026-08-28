@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Disallow React local-state / subscription hooks outside audited seams
@@ -144,13 +144,4 @@ const noUseState = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-use-state",
-  },
-  rules: {
-    "no-use-state": noUseState,
-  },
-});
-
-export default plugin;
+export { noUseState };

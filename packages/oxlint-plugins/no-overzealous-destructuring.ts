@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Prevent object destructuring that creates a local used fewer than three
@@ -265,11 +265,4 @@ const noOverzealousDestructuring = defineRule({
   },
 });
 
-export default eslintCompatPlugin({
-  meta: {
-    name: "no-overzealous-destructuring",
-  },
-  rules: {
-    "no-overzealous-destructuring": noOverzealousDestructuring,
-  },
-});
+export { noOverzealousDestructuring };

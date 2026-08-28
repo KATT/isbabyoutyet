@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import {
@@ -243,5 +242,3 @@ export const noKnownValueWideningRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-known-value-widening", noKnownValueWideningRule);

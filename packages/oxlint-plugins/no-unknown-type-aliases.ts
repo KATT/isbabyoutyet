@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -69,5 +68,3 @@ export const noUnknownTypeAliasesRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-unknown-type-aliases", noUnknownTypeAliasesRule);

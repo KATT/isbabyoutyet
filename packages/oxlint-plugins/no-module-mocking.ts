@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree, Scope, SourceCode, Variable } from "@oxlint/plugins";
@@ -92,5 +91,3 @@ export const noModuleMockingRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-module-mocking", noModuleMockingRule);

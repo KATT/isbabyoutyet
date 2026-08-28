@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Ban re-exporting React hooks that the project forbids in feature code.
@@ -133,13 +133,4 @@ const noBannedReactReexport = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-banned-react-reexport",
-  },
-  rules: {
-    "no-banned-react-reexport": noBannedReactReexport,
-  },
-});
-
-export default plugin;
+export { noBannedReactReexport };

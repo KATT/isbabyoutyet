@@ -1,6 +1,6 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./inline-jsx-callback.ts";
+import plugin from "./workspace.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;

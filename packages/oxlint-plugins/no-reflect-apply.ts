@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import { isGlobalReflectMethodCall } from "./reflect-method.ts";
@@ -27,5 +26,3 @@ export const noReflectApplyRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-reflect-apply", noReflectApplyRule);

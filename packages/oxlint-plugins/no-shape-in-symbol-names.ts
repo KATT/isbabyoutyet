@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree } from "@oxlint/plugins";
 
@@ -38,5 +37,3 @@ export const noForbiddenTermInSymbolNamesRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-shape-in-symbol-names", noForbiddenTermInSymbolNamesRule);

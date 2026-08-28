@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Require callback parameters to rely on their contextual types.
@@ -140,11 +140,4 @@ const inferCallbackParams = defineRule({
   },
 });
 
-export default eslintCompatPlugin({
-  meta: {
-    name: "infer-callback-params",
-  },
-  rules: {
-    "infer-callback-params": inferCallbackParams,
-  },
-});
+export { inferCallbackParams };

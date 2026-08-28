@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Disallow React's effect hooks outside the vendored UI package.
@@ -128,13 +128,4 @@ const noUseEffect = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-use-effect",
-  },
-  rules: {
-    "no-use-effect": noUseEffect,
-  },
-});
-
-export default plugin;
+export { noUseEffect };

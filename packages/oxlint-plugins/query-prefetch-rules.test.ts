@@ -1,6 +1,8 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./query-prefetch.ts";
+import { noConvexQueryHooks } from "./no-convex-query-hooks.ts";
+import { requirePreloadedQueryOptions } from "./require-preloaded-query-options.ts";
+import { useLoaderPreloads } from "./use-loader-preloads.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -15,7 +17,7 @@ const convexUseQuerySnippet = `import { useQuery } from "convex/react";
 const aliasedConvexUseQuerySnippet = `import { useQuery as useConvexQuery } from "convex/react";
      useConvexQuery(api.profile.get, {});`;
 
-tester.run("no-convex-query-hooks", plugin.rules["no-convex-query-hooks"], {
+tester.run("no-convex-query-hooks", noConvexQueryHooks, {
   valid: [
     `import { useMutation } from "convex/react";`,
     `import { useQuery } from "@tanstack/react-query";`,
@@ -40,7 +42,7 @@ tester.run("no-convex-query-hooks", plugin.rules["no-convex-query-hooks"], {
   ],
 });
 
-tester.run("require-preloaded-query-options", plugin.rules["require-preloaded-query-options"], {
+tester.run("require-preloaded-query-options", requirePreloadedQueryOptions, {
   valid: [
     `import { useSuspenseQuery } from "@tanstack/react-query";
      import { preloadedQueryOptions } from "@workspace/query-prefetch";
@@ -72,7 +74,7 @@ tester.run("require-preloaded-query-options", plugin.rules["require-preloaded-qu
   ],
 });
 
-tester.run("use-loader-preloads", plugin.rules["use-loader-preloads"], {
+tester.run("use-loader-preloads", useLoaderPreloads, {
   valid: [
     `import { allKeyed } from "@workspace/query-prefetch";
      import { getConvexQueryPreloader, usePreloadedConvexQuery } from "@workspace/convex-prefetch";

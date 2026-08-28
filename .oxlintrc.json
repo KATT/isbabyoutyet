@@ -18,112 +18,8 @@
       "specifier": "@rrazvan.dev/oxlint-plugin-i18n-literal"
     },
     {
-      "name": "no-optional",
-      "specifier": "./packages/oxlint-plugins/dist/no-optional.js"
-    },
-    {
-      "name": "no-mock",
-      "specifier": "./packages/oxlint-plugins/dist/no-mock.js"
-    },
-    {
-      "name": "no-convex-stubs",
-      "specifier": "./packages/oxlint-plugins/dist/no-convex-stubs.js"
-    },
-    {
-      "name": "query-prefetch",
-      "specifier": "./packages/oxlint-plugins/dist/query-prefetch.js"
-    },
-    {
-      "name": "no-overzealous-destructuring",
-      "specifier": "./packages/oxlint-plugins/dist/no-overzealous-destructuring.js"
-    },
-    {
-      "name": "inline-jsx-callback",
-      "specifier": "./packages/oxlint-plugins/dist/inline-jsx-callback.js"
-    },
-    {
-      "name": "no-use-effect",
-      "specifier": "./packages/oxlint-plugins/dist/no-use-effect.js"
-    },
-    {
-      "name": "no-use-state",
-      "specifier": "./packages/oxlint-plugins/dist/no-use-state.js"
-    },
-    {
-      "name": "no-banned-react-reexport",
-      "specifier": "./packages/oxlint-plugins/dist/no-banned-react-reexport.js"
-    },
-    {
-      "name": "react-compiler",
-      "specifier": "./packages/oxlint-plugins/dist/react-compiler.js"
-    },
-    {
-      "name": "infer-callback-params",
-      "specifier": "./packages/oxlint-plugins/dist/infer-callback-params.js"
-    },
-    {
-      "name": "no-rhf-watch",
-      "specifier": "./packages/oxlint-plugins/dist/no-rhf-watch.js"
-    },
-    {
-      "name": "no-chained-type-assertions",
-      "specifier": "./packages/oxlint-plugins/dist/no-chained-type-assertions.js"
-    },
-    {
-      "name": "no-conditional-empty-object-spread",
-      "specifier": "./packages/oxlint-plugins/dist/no-conditional-empty-object-spread.js"
-    },
-    {
-      "name": "no-known-value-widening",
-      "specifier": "./packages/oxlint-plugins/dist/no-known-value-widening.js"
-    },
-    {
-      "name": "no-module-mocking",
-      "specifier": "./packages/oxlint-plugins/dist/no-module-mocking.js"
-    },
-    {
-      "name": "no-object-parameters",
-      "specifier": "./packages/oxlint-plugins/dist/no-object-parameters.js"
-    },
-    {
-      "name": "no-reflect-apply",
-      "specifier": "./packages/oxlint-plugins/dist/no-reflect-apply.js"
-    },
-    {
-      "name": "no-reflect-get",
-      "specifier": "./packages/oxlint-plugins/dist/no-reflect-get.js"
-    },
-    {
-      "name": "no-runtime-typeof",
-      "specifier": "./packages/oxlint-plugins/dist/no-runtime-typeof.js"
-    },
-    {
-      "name": "no-shape-in-symbol-names",
-      "specifier": "./packages/oxlint-plugins/dist/no-shape-in-symbol-names.js"
-    },
-    {
-      "name": "no-unknown-parameters",
-      "specifier": "./packages/oxlint-plugins/dist/no-unknown-parameters.js"
-    },
-    {
-      "name": "no-unknown-returns",
-      "specifier": "./packages/oxlint-plugins/dist/no-unknown-returns.js"
-    },
-    {
-      "name": "no-unknown-type-aliases",
-      "specifier": "./packages/oxlint-plugins/dist/no-unknown-type-aliases.js"
-    },
-    {
-      "name": "no-unsafe-dictionary-type",
-      "specifier": "./packages/oxlint-plugins/dist/no-unsafe-dictionary-type.js"
-    },
-    {
-      "name": "no-widen-then-assert",
-      "specifier": "./packages/oxlint-plugins/dist/no-widen-then-assert.js"
-    },
-    {
-      "name": "require-safety-comment-for-type-assertion",
-      "specifier": "./packages/oxlint-plugins/dist/require-safety-comment-for-type-assertion.js"
+      "name": "workspace",
+      "specifier": "./packages/oxlint-plugins/dist/workspace.js"
     }
   ],
   "settings": {
@@ -140,42 +36,42 @@
     "vitest/no-hooks": "error",
     // Ban module mocking everywhere — tests *and* shared test helpers, so a
     // helper cannot reintroduce it behind a seam.
-    "no-mock/no-mock": "error",
+    "workspace/no-mock": "error",
     "eslint/max-params": ["error", 2],
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
     // Anti-Slop zero-cost rules (no current violations):
-    "no-chained-type-assertions/no-chained-type-assertions": "error",
-    "no-module-mocking/no-module-mocking": "error",
-    "no-reflect-apply/no-reflect-apply": "error",
-    "no-unknown-type-aliases/no-unknown-type-aliases": "error",
-    "no-widen-then-assert/no-widen-then-assert": "error",
-    "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "error",
-    "no-shape-in-symbol-names/no-shape-in-symbol-names": "error",
-    "no-reflect-get/no-reflect-get": "error",
-    "no-object-parameters/no-object-parameters": "error",
-    "no-conditional-empty-object-spread/no-conditional-empty-object-spread": "error",
-    "no-known-value-widening/no-known-value-widening": "error",
-    "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "error",
-    "no-unknown-returns/no-unknown-returns": "error",
-    "no-unknown-parameters/no-unknown-parameters": "error",
-    "no-runtime-typeof/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
+    "workspace/no-chained-type-assertions": "error",
+    "workspace/no-module-mocking": "error",
+    "workspace/no-reflect-apply": "error",
+    "workspace/no-unknown-type-aliases": "error",
+    "workspace/no-widen-then-assert": "error",
+    "workspace/require-safety-comment-for-type-assertion": "error",
+    "workspace/no-shape-in-symbol-names": "error",
+    "workspace/no-reflect-get": "error",
+    "workspace/no-object-parameters": "error",
+    "workspace/no-conditional-empty-object-spread": "error",
+    "workspace/no-known-value-widening": "error",
+    "workspace/no-unsafe-dictionary-type": "error",
+    "workspace/no-unknown-returns": "error",
+    "workspace/no-unknown-parameters": "error",
+    "workspace/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
-    "react-compiler/no-manual-memoization": "error",
-    "query-prefetch/no-convex-query-hooks": "error",
-    "no-use-effect/no-use-effect": "error",
-    "no-use-state/no-use-state": "error",
+    "workspace/no-manual-memoization": "error",
+    "workspace/no-convex-query-hooks": "error",
+    "workspace/no-use-effect": "error",
+    "workspace/no-use-state": "error",
     // Always on — including apps/web/src/lib — so banned hooks cannot be
     // laundered through a local re-export barrel.
-    "no-banned-react-reexport/no-banned-react-reexport": "error"
+    "workspace/no-banned-react-reexport": "error"
   },
   "overrides": [
     {
       // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
       "files": ["apps/web/src/test/setup.ts"],
       "rules": {
-        "no-unknown-parameters/no-unknown-parameters": "off"
+        "workspace/no-unknown-parameters": "off"
       }
     },
     {
@@ -189,26 +85,26 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "no-chained-type-assertions/no-chained-type-assertions": "off",
-        "no-widen-then-assert/no-widen-then-assert": "off",
-        "no-known-value-widening/no-known-value-widening": "off",
-        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
+        "workspace/no-chained-type-assertions": "off",
+        "workspace/no-widen-then-assert": "off",
+        "workspace/no-known-value-widening": "off",
+        "workspace/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
       }
     },
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
-        "infer-callback-params/infer-callback-params": "error",
+        "workspace/infer-callback-params": "error",
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
-        "inline-jsx-callback/inline-jsx-callback": "error",
-        "no-optional/no-optional": "error",
-        "no-overzealous-destructuring/no-overzealous-destructuring": "error",
-        "no-rhf-watch/no-rhf-watch": "error",
-        "query-prefetch/require-preloaded-query-options": "error",
-        "query-prefetch/use-loader-preloads": "error",
+        "workspace/inline-jsx-callback": "error",
+        "workspace/no-optional": "error",
+        "workspace/no-overzealous-destructuring": "error",
+        "workspace/no-rhf-watch": "error",
+        "workspace/require-preloaded-query-options": "error",
+        "workspace/use-loader-preloads": "error",
         // Automatic JSX runtime — no React import required.
         "react/react-in-jsx-scope": "off"
       }
@@ -227,8 +123,8 @@
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
         "i18n-literal/no-literal-template": "off",
-        "query-prefetch/require-preloaded-query-options": "off",
-        "query-prefetch/use-loader-preloads": "off"
+        "workspace/require-preloaded-query-options": "off",
+        "workspace/use-loader-preloads": "off"
       }
     },
     {
@@ -236,8 +132,8 @@
       // fake preloaded handles.
       "files": ["apps/web/src/**/*.test.{ts,tsx}"],
       "rules": {
-        "no-convex-stubs/no-invalid-convex-client": "error",
-        "no-convex-stubs/no-test-preloaded-query": "error"
+        "workspace/no-invalid-convex-client": "error",
+        "workspace/no-test-preloaded-query": "error"
       }
     },
     {
@@ -261,25 +157,25 @@
       "files": ["apps/web/src/lib/auth-client-bridge.ts"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "no-chained-type-assertions/no-chained-type-assertions": "off",
-        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
-        "no-widen-then-assert/no-widen-then-assert": "off"
+        "workspace/no-chained-type-assertions": "off",
+        "workspace/require-safety-comment-for-type-assertion": "off",
+        "workspace/no-widen-then-assert": "off"
       }
     },
     {
       // Service worker: plain JS JSON boundary (no TS type predicates).
       "files": ["apps/web/public/sw.js"],
       "rules": {
-        "no-runtime-typeof/no-runtime-typeof": "off"
+        "workspace/no-runtime-typeof": "off"
       }
     },
     {
       // Boundary module: accepts unparsed external values (unknown / Record).
       "files": ["packages/runtime/src/guards.ts"],
       "rules": {
-        "no-unknown-parameters/no-unknown-parameters": "off",
-        "no-unknown-returns/no-unknown-returns": "off",
-        "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "off"
+        "workspace/no-unknown-parameters": "off",
+        "workspace/no-unknown-returns": "off",
+        "workspace/no-unsafe-dictionary-type": "off"
       }
     },
     {
@@ -287,27 +183,27 @@
       "files": ["packages/ui/src/**"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "no-chained-type-assertions/no-chained-type-assertions": "off",
-        "no-conditional-empty-object-spread/no-conditional-empty-object-spread": "off",
-        "no-known-value-widening/no-known-value-widening": "off",
-        "no-module-mocking/no-module-mocking": "off",
-        "no-object-parameters/no-object-parameters": "off",
-        "no-reflect-apply/no-reflect-apply": "off",
-        "no-reflect-get/no-reflect-get": "off",
-        "no-runtime-typeof/no-runtime-typeof": "off",
-        "no-shape-in-symbol-names/no-shape-in-symbol-names": "off",
-        "no-unknown-parameters/no-unknown-parameters": "off",
-        "no-unknown-returns/no-unknown-returns": "off",
-        "no-unknown-type-aliases/no-unknown-type-aliases": "off",
-        "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "off",
-        "no-widen-then-assert/no-widen-then-assert": "off",
-        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
+        "workspace/no-chained-type-assertions": "off",
+        "workspace/no-conditional-empty-object-spread": "off",
+        "workspace/no-known-value-widening": "off",
+        "workspace/no-module-mocking": "off",
+        "workspace/no-object-parameters": "off",
+        "workspace/no-reflect-apply": "off",
+        "workspace/no-reflect-get": "off",
+        "workspace/no-runtime-typeof": "off",
+        "workspace/no-shape-in-symbol-names": "off",
+        "workspace/no-unknown-parameters": "off",
+        "workspace/no-unknown-returns": "off",
+        "workspace/no-unknown-type-aliases": "off",
+        "workspace/no-unsafe-dictionary-type": "off",
+        "workspace/no-widen-then-assert": "off",
+        "workspace/require-safety-comment-for-type-assertion": "off",
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
-        "no-use-effect/no-use-effect": "off",
-        "no-use-state/no-use-state": "off",
-        "react-compiler/no-manual-memoization": "off",
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off",
+        "workspace/no-manual-memoization": "off",
         "react/react-in-jsx-scope": "off",
         "react/no-unstable-nested-components": "off",
         "react/set-state-in-effect": "off",
@@ -326,8 +222,8 @@
         "apps/web/src/lib/convexAuthHandoff.ts"
       ],
       "rules": {
-        "no-use-effect/no-use-effect": "off",
-        "no-use-state/no-use-state": "off",
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off",
         "react/set-state-in-effect": "off",
         "react/refs": "off",
         "react/immutability": "off"
@@ -346,7 +242,7 @@
       // subscribe identity when watch deps are deeply equal.
       "files": ["packages/convex-prefetch/src/useLiveConvexInfinitePages.ts"],
       "rules": {
-        "no-use-state/no-use-state": "off"
+        "workspace/no-use-state": "off"
       }
     }
   ]

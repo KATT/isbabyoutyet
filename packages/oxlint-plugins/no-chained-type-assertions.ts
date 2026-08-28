@@ -1,4 +1,3 @@
-import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree } from "@oxlint/plugins";
 
@@ -76,5 +75,3 @@ export const noChainedTypeAssertionsRule = defineRule({
     };
   },
 });
-
-export default createRulePlugin("no-chained-type-assertions", noChainedTypeAssertionsRule);

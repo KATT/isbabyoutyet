@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Disallow Vitest/Jest module mocking (`vi.mock`, `vi.hoisted`, …).
@@ -135,13 +135,4 @@ const noMock = defineRule({
   },
 });
 
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "no-mock",
-  },
-  rules: {
-    "no-mock": noMock,
-  },
-});
-
-export default plugin;
+export { noMock };

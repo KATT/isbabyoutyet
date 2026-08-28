@@ -2,7 +2,7 @@
  * Rules for codebases that rely on React Compiler for memoization.
  */
 
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 const MESSAGE = "React Compiler handles memoization automatically.";
 const MANUAL_MEMOIZATION_HOOKS = new Set(["useCallback", "useMemo"]);
@@ -25,7 +25,7 @@ function reportManualMemoization(context, node) {
   context.report({ messageId: "banned", node });
 }
 
-const noManualMemoization = defineRule({
+export const noManualMemoization = defineRule({
   meta: {
     type: "problem",
     docs: {
@@ -64,14 +64,3 @@ const noManualMemoization = defineRule({
     };
   },
 });
-
-const plugin = eslintCompatPlugin({
-  meta: {
-    name: "react-compiler",
-  },
-  rules: {
-    "no-manual-memoization": noManualMemoization,
-  },
-});
-
-export default plugin;

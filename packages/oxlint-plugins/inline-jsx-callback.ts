@@ -1,4 +1,4 @@
-import { defineRule, eslintCompatPlugin } from "@oxlint/plugins";
+import { defineRule } from "@oxlint/plugins";
 
 /**
  * Require locally declared callbacks with one JSX attribute reference to be
@@ -198,11 +198,4 @@ const inlineJsxCallback = defineRule({
   },
 });
 
-export default eslintCompatPlugin({
-  meta: {
-    name: "inline-jsx-callback",
-  },
-  rules: {
-    "inline-jsx-callback": inlineJsxCallback,
-  },
-});
+export { inlineJsxCallback };

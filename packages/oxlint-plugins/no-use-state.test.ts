@@ -1,6 +1,6 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./no-use-state.ts";
+import plugin from "./workspace.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;

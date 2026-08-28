@@ -1,6 +1,6 @@
 import { RuleTester } from "oxlint/plugins-dev";
 import { describe, it } from "vitest";
-import plugin from "./react-compiler.ts";
+import { noManualMemoization } from "./no-manual-memoization.ts";
 
 RuleTester.describe = describe;
 RuleTester.it = it;
@@ -9,7 +9,7 @@ const tester = new RuleTester({
   languageOptions: { parserOptions: { lang: "tsx" } },
 });
 
-tester.run("no-manual-memoization", plugin.rules["no-manual-memoization"], {
+tester.run("no-manual-memoization", noManualMemoization, {
   valid: [
     `import * as React from "react";
      React.useState(0);`,
