@@ -8,8 +8,23 @@ export function lazyGetter(fn: () => object) {
         if (!value) {
           value = fn();
         }
-        return Reflect.get(value, prop);
+        return readProperty(value, prop);
       },
     },
   );
+}
+
+function readProperty(target: object, prop: string | symbol) {
+  let current: object | null = target;
+  while (current) {
+    const descriptor = Object.getOwnPropertyDescriptor(current, prop);
+    if (descriptor) {
+      if (descriptor.get) {
+        return descriptor.get.call(target);
+      }
+      return descriptor.value;
+    }
+    current = Object.getPrototypeOf(current);
+  }
+  return undefined;
 }
