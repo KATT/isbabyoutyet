@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation } from "./_generated/server";
 import { resolveSupportedLocale } from "../src/i18n";
@@ -28,6 +29,20 @@ export function localeFromAcceptLanguage(acceptLanguage: string | null | undefin
   return resolveSupportedLocale(primary);
 }
 
+export async function applyExistingProfileTimeZone(
+  ctx: MutationCtx,
+  opts: {
+    profile: Doc<"userProfiles">;
+    timeZoneHint: string | null | undefined;
+  },
+) {
+  const timeZone = resolveTimeZone(opts.profile.timeZone ?? opts.timeZoneHint);
+  if (opts.profile.timeZone === undefined) {
+    await ctx.db.patch(opts.profile._id, { timeZone });
+  }
+  return timeZone;
+}
+
 /** Creates the app profile row on first auth; idempotent on later calls. */
 export async function ensureUserProfileForAuthUser(
   ctx: MutationCtx,
@@ -40,10 +55,10 @@ export async function ensureUserProfileForAuthUser(
   const tokenIdentifier = tokenIdentifierForAuthUserId(opts.userId);
   const existing = await getProfileByTokenIdentifier(ctx, tokenIdentifier);
   if (existing) {
-    const timeZone = resolveTimeZone(existing.timeZone ?? opts.timeZoneHint);
-    if (existing.timeZone === undefined) {
-      await ctx.db.patch(existing._id, { timeZone });
-    }
+    const timeZone = await applyExistingProfileTimeZone(ctx, {
+      profile: existing,
+      timeZoneHint: opts.timeZoneHint,
+    });
     return {
       locale: resolveSupportedLocale(existing.locale),
       timeZone,

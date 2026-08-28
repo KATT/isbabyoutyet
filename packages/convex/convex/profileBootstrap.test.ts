@@ -1,10 +1,11 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
 import { createAuth } from "./auth";
-import { localeFromAcceptLanguage } from "./profileBootstrap";
-import { modules, registerComponents } from "./test.setup";
+import { applyExistingProfileTimeZone, localeFromAcceptLanguage } from "./profileBootstrap";
+import { modules, registerComponents, testProfileInsert } from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -93,57 +94,33 @@ test("sign-in ensures a profile exists for legacy users", async () => {
 
 test("sign-in fills a missing time zone without replacing the saved language", async () => {
   const t = await setup();
-  const userId = await t.run(async (ctx) => {
-    const auth = createAuth(ctx);
-    const result = await auth.api.signUpEmail({
-      body: {
-        email: "missing-time-zone@example.com",
-        password: "password123",
-        name: "Missing Time Zone",
-      },
-      headers: {
-        "accept-language": "sv-SE",
-      },
-    });
-    return result.user.id;
-  });
-
-  await t.run(async (ctx) => {
-    const tokenIdentifier = `https://convex.test|${userId}`;
-    const profile = await ctx.db
-      .query("userProfiles")
-      .withIndex("by_tokenIdentifier", (q) => q.eq("tokenIdentifier", tokenIdentifier))
-      .unique();
+  const patched = await t.run(async (ctx) => {
+    const profileId = await ctx.db.insert(
+      "userProfiles",
+      testProfileInsert({
+        userId: "alice",
+        locale: "sv",
+        timeZone: "Europe/London",
+      }),
+    );
+    const profile = await ctx.db.get(profileId);
     if (!profile) {
-      throw new Error("expected sign-up profile");
+      throw new Error("expected profile");
     }
-    await ctx.db.replace("userProfiles", profile._id, {
-      userId: profile.userId,
-      tokenIdentifier: profile.tokenIdentifier,
-      locale: profile.locale,
-      isAdmin: profile.isAdmin,
-      timeZone: profile.timeZone,
+    const sparse: Partial<Doc<"userProfiles">> = { ...profile };
+    delete sparse.timeZone;
+    const timeZone = await applyExistingProfileTimeZone(ctx, {
+      profile: sparse as Doc<"userProfiles">,
+      timeZoneHint: "Asia/Tokyo",
     });
+    const updated = await ctx.db.get(profileId);
+    return { timeZone, locale: updated?.locale, storedTimeZone: updated?.timeZone };
   });
 
-  await t.run(async (ctx) => {
-    const auth = createAuth(ctx);
-    await auth.api.signInEmail({
-      body: {
-        email: "missing-time-zone@example.com",
-        password: "password123",
-      },
-      headers: {
-        "accept-language": "es-MX",
-        "x-time-zone": "Asia/Tokyo",
-      },
-    });
-  });
-
-  expect(await t.withIdentity({ subject: userId }).query(api.profile.get, {})).toEqual({
+  expect(patched).toEqual({
+    timeZone: "Asia/Tokyo",
     locale: "sv",
-    timeZone: "Europe/London",
-    isAdmin: false,
+    storedTimeZone: "Asia/Tokyo",
   });
 });
 

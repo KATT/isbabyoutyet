@@ -3,7 +3,13 @@ import { expect, test, vi } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
 import { makeResource } from "./test.resource";
-import { modules, registerComponents, createBabyArgs, postUpdateArgs, testBabyInsert } from "./test.setup";
+import {
+  modules,
+  registerComponents,
+  createBabyArgs,
+  postUpdateArgs,
+  testBabyInsert,
+} from "./test.setup";
 
 async function setup() {
   const t = convexTest(schema, modules);
