@@ -392,13 +392,7 @@ test("users tab body renders without the hide-demo filter", async () => {
 
 const ADMIN_EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
-type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
+import type { JsonValue } from "@workspace/runtime/json";
 type AdminQueryHandler = JsonValue | (() => never);
 type AdminQueryHandlers = Record<string, AdminQueryHandler>;
 type AdminLoaderResult = {

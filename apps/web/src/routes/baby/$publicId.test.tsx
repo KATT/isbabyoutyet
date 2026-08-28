@@ -286,13 +286,7 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
 const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
 const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
-type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
+import type { JsonValue } from "@workspace/runtime/json";
 type QueryHandlers = Record<string, JsonValue>;
 type BabyLoaderResult = {
   baby: unknown;

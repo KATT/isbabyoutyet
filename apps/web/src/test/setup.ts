@@ -9,6 +9,30 @@ import { webcrypto } from "node:crypto";
 
 import { isFunction } from "@workspace/runtime/guards";
 
+const kAuthBroadcastChannel = Symbol.for("better-auth:broadcast-channel");
+
+class StubAuthBroadcastChannel {
+  listeners = new Set<(message: unknown) => void>();
+
+  subscribe(listener: (message: unknown) => void) {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  post(_message: unknown) {}
+
+  setup() {
+    return () => {};
+  }
+}
+
+// better-auth's default channel cleanup calls window.removeEventListener after
+// jsdom tears down, which vitest reports as an unhandled error. Install a stub
+// before each test file so async session-refresh cleanup stays a no-op.
+Reflect.set(globalThis, kAuthBroadcastChannel, new StubAuthBroadcastChannel());
+
 // jsdom's SubtleCrypto rejects ArrayBuffers from Blob#arrayBuffer(); route storage
 // hashing in convex-test through Node's webcrypto instead.
 const nodeDigest = webcrypto.subtle.digest.bind(webcrypto.subtle);

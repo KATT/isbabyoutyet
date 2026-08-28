@@ -116,7 +116,13 @@
   },
   "overrides": [
     {
-      // Tests sometimes need assertions to build deliberately incomplete or invalid values.
+      // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
+      "files": ["apps/web/src/test/setup.ts"],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off"
+      }
+    },
+    {
       "files": [
         "**/*.test.{js,jsx,ts,tsx}",
         "**/*.spec.{js,jsx,ts,tsx}",
