@@ -52,7 +52,7 @@ export function getRouter() {
 
   // Resolve auth (signed-in or anonymous) before React mounts — see the
   // function's doc comment for why the auth provider alone is not enough.
-  if (typeof window !== "undefined") {
+  if (globalThis.window !== undefined) {
     setupClientConvexAuth(convexQueryClient, queryClient);
   }
 

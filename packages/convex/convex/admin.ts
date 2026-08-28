@@ -5,6 +5,12 @@ import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { HOMEPAGE_DEMO_OWNER_USER_ID } from "../src/seedCredentials";
+import {
+  isJsonObjectValue,
+  parseJsonBoolean,
+  parseJsonString,
+  type JsonObject,
+} from "@workspace/runtime/json";
 import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
 import { loadCurrentStatus } from "./timeline";
@@ -53,35 +59,20 @@ const userRowValidator = v.object({
   babies: v.array(userBabySummaryValidator),
 });
 
-type JsonValue =
-  | null
-  | boolean
-  | number
-  | string
-  | JsonValue[]
-  | { readonly [key: string]: JsonValue };
-type JsonObject = { readonly [key: string]: JsonValue };
-
-function isRecord<TValue>(value: TValue): value is TValue & JsonObject {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
 export function parseAuthUserPage<TResult>(result: TResult) {
-  if (!isRecord(result) || !Array.isArray(result.page)) {
+  if (!isJsonObjectValue(result) || !Array.isArray(result.page)) {
     throw new Error("Better Auth returned an invalid user page");
   }
-  const users = result.page.filter(isRecord);
-  if (
-    users.length !== result.page.length ||
-    typeof result.isDone !== "boolean" ||
-    typeof result.continueCursor !== "string"
-  ) {
+  const users = result.page.filter(isJsonObjectValue);
+  const isDone = "isDone" in result ? parseJsonBoolean(result.isDone) : null;
+  const continueCursor = "continueCursor" in result ? parseJsonString(result.continueCursor) : null;
+  if (users.length !== result.page.length || isDone === null || continueCursor === null) {
     throw new Error("Better Auth returned invalid user pagination");
   }
   return {
     page: users,
-    isDone: result.isDone,
-    continueCursor: result.continueCursor,
+    isDone,
+    continueCursor,
   };
 }
 

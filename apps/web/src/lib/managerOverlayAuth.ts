@@ -28,7 +28,7 @@ export async function authenticateManagerOverlaySsrWithToken(opts: {
   context: ManagerOverlayAuthContext;
   fetchToken: () => Promise<string | null>;
 }) {
-  if (typeof window !== "undefined") {
+  if (globalThis.window !== undefined) {
     return null;
   }
 

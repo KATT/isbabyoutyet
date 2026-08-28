@@ -15,6 +15,7 @@ import { preloadedConvexQueryOptions } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import { isFunction } from "@workspace/runtime/guards";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { Button } from "@workspace/ui/components/button";
@@ -46,7 +47,7 @@ export function browserPushQueryOptions(queryClient: QueryClient, babyRef: strin
   return queryOptions({
     queryKey: [...browserPushCapabilityQueryKey, babyRef],
     queryFn:
-      typeof window !== "undefined"
+      globalThis.window !== undefined
         ? () => resolveBrowserPushCapability(queryClient, babyRef)
         : skipToken,
   });
@@ -73,7 +74,7 @@ export function prefetchBrowserPushCapability(
   queryClient: QueryClient,
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory> {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return initiatedBrowserPushCapability(babyRef);
   }
   const factory = browserPushCapabilityFactory(queryClient);
@@ -356,7 +357,7 @@ function hasStandaloneFlag(
 }
 
 function getIOSStatus() {
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return { isIOS: false, isStandalone: false };
   }
 
@@ -368,8 +369,7 @@ function getIOSStatus() {
   }
 
   const isStandalone =
-    (typeof window.matchMedia === "function" &&
-      window.matchMedia("(display-mode: standalone)").matches) ||
+    (isFunction(window.matchMedia) && window.matchMedia("(display-mode: standalone)").matches) ||
     (hasStandaloneFlag(navigator) && navigator.standalone === true);
 
   return { isIOS: true, isStandalone };
@@ -377,7 +377,7 @@ function getIOSStatus() {
 
 function isPushSupported() {
   return (
-    typeof window !== "undefined" &&
+    globalThis.window !== undefined &&
     "serviceWorker" in navigator &&
     "PushManager" in window &&
     "Notification" in window

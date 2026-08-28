@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { isFunction } from "@workspace/runtime/guards";
 
 /**
  * Delayed action after elapsed time. Callers supply domain-level actions;
@@ -78,7 +79,7 @@ export function useRotatingIndex(opts: { intervalMs: number; itemCount: number }
 
   useEffect(() => {
     const reducedMotion =
-      typeof window.matchMedia === "function" &&
+      isFunction(window.matchMedia) &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion || opts.itemCount < 2) return;
     const interval = window.setInterval(() => {

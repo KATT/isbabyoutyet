@@ -1,6 +1,10 @@
 // Service Worker for Push Notifications
 const CACHE_NAME = "isbabyoutyet-v1";
 
+function isString(value) {
+  return typeof value === "string";
+}
+
 // Install event - cache static assets
 self.addEventListener("install", (_event) => {
   self.skipWaiting();
@@ -40,7 +44,7 @@ self.addEventListener("push", (event) => {
       body: data.body,
       icon: data.icon,
       badge: data.icon, // Use same icon for badge
-      image: typeof data.image === "string" ? data.image : undefined,
+      image: isString(data.image) ? data.image : undefined,
       data: { url: data.url },
       tag: data.tag,
       requireInteraction: false,

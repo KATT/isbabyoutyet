@@ -14,6 +14,7 @@ import {
 import schema from "@workspace/convex/convex/schema";
 import { makeAsyncResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
+import { isPlainObject, isString } from "@workspace/runtime/guards";
 
 type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;
@@ -184,16 +185,16 @@ function createIntegrationQueryFn(
 
   return async (context: QueryFunctionContext) => {
     const tag = context.queryKey[0];
-    const funcName = context.queryKey[1];
+    const funcName = parseQueryKeyString(context.queryKey[1]);
     const caller = getClient();
-    if (tag === "convexQuery" && typeof funcName === "string") {
+    if (tag === "convexQuery" && funcName !== null) {
       const args = context.queryKey[2] ?? {};
       return await (caller.query as ConvexCallerQuery)(
         makeFunctionReference<"query">(funcName),
         args,
       );
     }
-    if (tag === "convexAction" && typeof funcName === "string") {
+    if (tag === "convexAction" && funcName !== null) {
       const args = context.queryKey[2] ?? {};
       return await (caller.action as ConvexCallerAction)(
         makeFunctionReference<"action">(funcName),
@@ -205,4 +206,21 @@ function createIntegrationQueryFn(
     }
     return undefined;
   };
+}
+
+function parseQueryKeyString(value: QueryFunctionContext["queryKey"][number]) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === true ||
+    value === false ||
+    Array.isArray(value) ||
+    isPlainObject(value)
+  ) {
+    return null;
+  }
+  if (!isString(value)) {
+    return null;
+  }
+  return value;
 }

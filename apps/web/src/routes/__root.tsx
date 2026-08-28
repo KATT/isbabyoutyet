@@ -15,7 +15,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import type { AuthClient } from "@convex-dev/better-auth/react";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { TanStackDevtools } from "@tanstack/react-devtools";
@@ -24,7 +23,7 @@ import appCss from "../../../../packages/ui/src/styles/globals.css?url";
 import typeCss from "@/styles/app.css?url";
 import nunitoCss from "@fontsource-variable/nunito/index.css?url";
 import { Analytics } from "@vercel/analytics/react";
-import { authClient } from "@/lib/auth-client";
+import { bridgedAuthClient } from "@/lib/auth-client-bridge";
 import { Progress } from "@workspace/ui/components/progress";
 import { Toaster } from "@workspace/ui/components/sonner";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
@@ -33,6 +32,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
+import { isPlainObject, isString } from "@workspace/runtime/guards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
@@ -57,7 +57,7 @@ export async function resolveRootBeforeLoad(opts: {
 }) {
   // SSR: resolve the locale from request headers (PARAGLIDE_LOCALE cookie,
   // then Accept-Language) via the server function.
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     return {
       locale: await opts.detectLocale(),
       isAuthenticated: false,
@@ -187,35 +187,33 @@ export const Route = createRootRouteWithContext<{
 
 /** Loose match-context bag before locale/token narrowing. */
 export function contextLocale<TContext>(context: TContext): SupportedLocale | undefined {
-  if (
-    typeof context !== "object" ||
-    context === null ||
-    !("locale" in context) ||
-    typeof context.locale !== "string" ||
-    !isSupportedLocale(context.locale)
-  ) {
+  if (!isPlainObject(context) || !("locale" in context)) {
     return undefined;
   }
-  return context.locale;
+  const locale = context.locale;
+  if (!isString(locale) || !isSupportedLocale(locale)) {
+    return undefined;
+  }
+  return locale;
 }
 
-function contextToken<TContext>(context: TContext) {
-  return typeof context === "object" &&
-    context !== null &&
-    "token" in context &&
-    (typeof context.token === "string" || context.token === null)
-    ? context.token
-    : undefined;
+export function contextToken<TContext>(context: TContext) {
+  if (!isPlainObject(context) || !("token" in context)) {
+    return undefined;
+  }
+  const token = context.token;
+  if (token === null) {
+    return token;
+  }
+  if (!isString(token)) {
+    return undefined;
+  }
+  return token;
 }
 
 // better-auth and @convex-dev/better-auth currently expose structurally
 // incompatible client types despite supporting the same peer-version range.
-function compatibleAuthClient(client: typeof authClient): AuthClient;
-function compatibleAuthClient(client: any): AuthClient {
-  return client;
-}
-
-const convexAuthClient = compatibleAuthClient(authClient);
+const convexAuthClient = bridgedAuthClient();
 
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });

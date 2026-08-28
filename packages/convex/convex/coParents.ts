@@ -12,6 +12,7 @@ import { FORBIDDEN } from "../src/types";
 import { toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
+import { parseOptionalString } from "@workspace/runtime/json";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -36,14 +37,14 @@ async function resolveCallerProfile(ctx: QueryCtx | MutationCtx, userId: string)
   if (authUser?.email) {
     return {
       email: normalizeEmail(String(authUser.email)),
-      name: typeof authUser.name === "string" ? authUser.name : null,
+      name: parseOptionalString(authUser.name),
     };
   }
   const byId = await findUserById(ctx, userId);
   if (!byId?.email) return null;
   return {
     email: normalizeEmail(String(byId.email)),
-    name: typeof byId.name === "string" ? byId.name : null,
+    name: parseOptionalString(byId.name),
   };
 }
 
@@ -188,7 +189,7 @@ export const invite = mutation({
         userId,
         tokenIdentifier,
         email,
-        name: typeof existingUser.name === "string" ? existingUser.name : null,
+        name: parseOptionalString(existingUser.name),
         addedByUserId: identity.authUserId,
         addedAt: Date.now(),
       });

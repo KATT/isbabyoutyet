@@ -29,7 +29,7 @@ const MAX_NAME_LENGTH = 50;
 const STORAGE_KEY_NAME = "encouragement-author-name";
 
 function getStoredAuthorName() {
-  if (typeof window === "undefined") return "";
+  if (globalThis.window === undefined) return "";
   return localStorage.getItem(STORAGE_KEY_NAME) ?? "";
 }
 
@@ -52,8 +52,8 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
       authorName: values.authorName,
       message: values.message,
       visitorId: getVisitorId(),
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
-      locale: typeof navigator !== "undefined" ? navigator.language : undefined,
+      userAgent: globalThis.navigator !== undefined ? navigator.userAgent : undefined,
+      locale: globalThis.navigator !== undefined ? navigator.language : undefined,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     }));
 }

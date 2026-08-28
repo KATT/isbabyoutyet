@@ -1,4 +1,5 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
+import { isNumber, isString } from "@workspace/runtime/guards";
 import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
@@ -7,13 +8,24 @@ type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {
 };
 
 function imageSrcKey(src: BlurImageProps["src"]) {
-  return typeof src === "string" ? src : "";
+  if (src === undefined) {
+    return "";
+  }
+  return isString(src) ? src : "";
 }
 
 function numericDimension(value: BlurImageProps["width"] | BlurImageProps["height"]) {
-  if (typeof value === "number") return value;
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (value === undefined) {
+    return undefined;
+  }
+  if (isString(value)) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+  if (isNumber(value)) {
+    return value;
+  }
+  return undefined;
 }
 
 function placeholderObjectFit(props: BlurImageProps) {

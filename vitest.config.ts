@@ -17,6 +17,7 @@ export default defineConfig({
   test: {
     projects: [
       "packages/convex",
+      "packages/runtime",
       "packages/query-prefetch",
       "packages/convex-prefetch",
       webUnitProject,
@@ -35,6 +36,7 @@ export default defineConfig({
         "apps/web/src/**/*.{ts,tsx}",
         "packages/convex/convex/**/*.ts",
         "packages/convex/src/**/*.ts",
+        "packages/runtime/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
       ],

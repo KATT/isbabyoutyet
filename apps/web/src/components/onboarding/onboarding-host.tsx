@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
+import { isFunction } from "@workspace/runtime/guards";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";
@@ -33,7 +34,7 @@ type OnboardingHostProps = {
 
 function scrollToTourTarget(targetId: string) {
   const el = document.querySelector(`[data-tour-id="${targetId}"]`);
-  if (!(el instanceof HTMLElement) || typeof el.scrollIntoView !== "function") {
+  if (!(el instanceof HTMLElement) || !isFunction(el.scrollIntoView)) {
     return;
   }
   el.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });

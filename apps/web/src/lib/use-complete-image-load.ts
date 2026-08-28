@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect } from "react";
 import type { RefObject } from "react";
 
-const useIsomorphicLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
+const useIsomorphicLayoutEffect = globalThis.window === undefined ? useEffect : useLayoutEffect;
 
 /**
  * Runs `onComplete` when an `<img>` is already complete after layout (or on

@@ -225,6 +225,38 @@ test("removes the placeholder and reveals alt text when loading fails", () => {
   expect(onError).toHaveBeenCalledOnce();
 });
 
+test("accepts string width/height attributes for the placeholder SVG", () => {
+  const view = render(
+    <BlurImage
+      src="https://example.com/photo.jpg"
+      alt="Nova"
+      blurDataUrl={BLUR}
+      width="240"
+      height="120"
+    />,
+  );
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
+    "[data-blur-image-placeholder]",
+  );
+  expect(img.getAttribute("width")).toBe("240");
+  expect(img.getAttribute("height")).toBe("120");
+  expect(placeholder?.src).toContain("data:image/svg+xml");
+});
+
+test("renders without a tracked src key when src is omitted", () => {
+  const view = render(<BlurImage alt="Nova" blurDataUrl={BLUR} />);
+  using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  expect(view.getByAltText("Nova")).toBeTruthy();
+});
+
 test("server HTML starts the real src beneath a foreground placeholder", () => {
   const html = renderToString(
     <BlurImage src="https://cdn.example/full.jpg" alt="Nova" blurDataUrl={BLUR} />,

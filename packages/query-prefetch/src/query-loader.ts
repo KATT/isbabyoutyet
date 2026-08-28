@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { isFunction } from "@workspace/runtime/guards";
 import type {
   AnyQueryOptions,
   InitiatedInfiniteQuery,
@@ -130,7 +131,7 @@ function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfinit
   return (
     "initialPageParam" in options &&
     "getNextPageParam" in options &&
-    typeof options.getNextPageParam === "function"
+    isFunction(options.getNextPageParam)
   );
 }
 

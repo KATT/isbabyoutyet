@@ -36,7 +36,7 @@ export async function resolveAuthGuard(opts: {
 }) {
   const preloader = opts.context.convexPreloader;
 
-  if (typeof window === "undefined") {
+  if (globalThis.window === undefined) {
     const token = opts.context.token ?? (await opts.fetchToken());
     if (!token) {
       throw redirect({ to: "/" });

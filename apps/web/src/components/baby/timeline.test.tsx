@@ -7,6 +7,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { isPlainObject } from "@workspace/runtime/guards";
 import { CONVEX_INFINITE_QUERY_KEY } from "@workspace/convex-prefetch";
 import { LocaleProvider } from "@/lib/i18n";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
@@ -21,6 +22,10 @@ import {
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+
+function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
+  return isPlainObject(args);
+}
 
 const notYetBaby: BabyData = {
   name: "Baby Smith",
@@ -603,7 +608,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
   const mutationSpy = vi
     .spyOn(harness.convexClient, "mutation")
     .mockImplementation(async (mutation, args) => {
-      if (args && typeof args === "object" && "updateId" in args && !("encouragementId" in args)) {
+      if (isMutationArgsRecord(args) && "updateId" in args && !("encouragementId" in args)) {
         throw new Error("nope");
       }
       return await originalMutation(mutation, args);
@@ -634,7 +639,7 @@ test("update delete and set-as-photo handlers toast on success and error", async
     message: "Pin fail",
   });
   vi.spyOn(harness.convexClient, "mutation").mockImplementation(async (mutation, args) => {
-    if (args && typeof args === "object" && "updateId" in args && !("encouragementId" in args)) {
+    if (isMutationArgsRecord(args) && "updateId" in args && !("encouragementId" in args)) {
       throw new Error("offline");
     }
     return await originalMutation(mutation, args);

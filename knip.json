@@ -33,6 +33,7 @@
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
     },
+    "packages/runtime": {},
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
     "packages/ui": {}

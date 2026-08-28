@@ -8,6 +8,7 @@ import {
   NavigationProgressBar,
   NotFoundComponent,
   contextLocale,
+  contextToken,
   resolveRootBeforeLoad,
   RootDocument,
   RootErrorComponent,
@@ -35,8 +36,21 @@ test("route context locales are narrowed to supported values", () => {
   expect(contextLocale({ locale: "sv" })).toBe("sv");
   expect(contextLocale({ locale: "unsupported" })).toBeUndefined();
   expect(contextLocale({ locale: 1 })).toBeUndefined();
+  expect(contextLocale({ locale: true })).toBeUndefined();
+  expect(contextLocale({ locale: null })).toBeUndefined();
   expect(contextLocale({})).toBeUndefined();
   expect(contextLocale(null)).toBeUndefined();
+  expect(contextLocale(["sv"])).toBeUndefined();
+});
+
+test("route context tokens accept strings or explicit null", () => {
+  expect(contextToken({ token: "abc" })).toBe("abc");
+  expect(contextToken({ token: null })).toBeNull();
+  expect(contextToken({ token: undefined })).toBeUndefined();
+  expect(contextToken({ token: true })).toBeUndefined();
+  expect(contextToken({ token: 1 })).toBeUndefined();
+  expect(contextToken({})).toBeUndefined();
+  expect(contextToken(null)).toBeUndefined();
 });
 
 test("beforeLoad keeps shared document rendering anonymous", async () => {

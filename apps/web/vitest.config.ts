@@ -47,9 +47,11 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
       [...document.querySelectorAll("body *")]
         .map((element) => {
           const rect = element.getBoundingClientRect();
+          // className is string | SVGAnimatedString; coerce without typeof (browser bundle).
+          const className = element.className;
           return {
             tagName: element.tagName,
-            className: typeof element.className === "string" ? element.className : "",
+            className: `${className}` === className ? className : "",
             right: rect.right,
           };
         })

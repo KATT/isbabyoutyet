@@ -23,6 +23,7 @@ import type {
 import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { isString } from "@workspace/runtime/guards";
 import { useI18n } from "@/lib/i18n";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
@@ -268,9 +269,7 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
   const { isSubmitting } = useFormState<TFieldValues>(
-    props.form === "context"
-      ? {}
-      : { control: props.form.control },
+    props.form === "context" ? {} : { control: props.form.control },
   );
 
   const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
@@ -282,7 +281,7 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         <span className="submit-icon-swap-in inline-grid place-items-center">
           <Spinner className="size-4" />
         </span>
-      ) : typeof IconComponent === "string" ? (
+      ) : isString(IconComponent) ? (
         <span className="text-base leading-none">{IconComponent}</span>
       ) : IconComponent == null ? null : (
         <IconComponent className="size-4" />

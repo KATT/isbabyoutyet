@@ -103,6 +103,7 @@
     "anti-slop/no-unsafe-dictionary-type": "error",
     "anti-slop/no-unknown-returns": "error",
     "anti-slop/no-unknown-parameters": "error",
+    "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
@@ -115,7 +116,13 @@
   },
   "overrides": [
     {
-      // Tests sometimes need assertions to build deliberately incomplete or invalid values.
+      // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
+      "files": ["apps/web/src/test/setup.ts"],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off"
+      }
+    },
+    {
       "files": [
         "**/*.test.{js,jsx,ts,tsx}",
         "**/*.spec.{js,jsx,ts,tsx}",
@@ -191,6 +198,32 @@
         "react-hooks/exhaustive-deps": "off",
         "unicorn/consistent-function-scoping": "off",
         "unicorn/prefer-add-event-listener": "off"
+      }
+    },
+    {
+      // Peer-type bridge for better-auth vs @convex-dev/better-auth AuthClient.
+      "files": ["apps/web/src/lib/auth-client-bridge.ts"],
+      "rules": {
+        "typescript/consistent-type-assertions": "off",
+        "anti-slop/no-chained-type-assertions": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-widen-then-assert": "off"
+      }
+    },
+    {
+      // Service worker: plain JS JSON boundary (no TS type predicates).
+      "files": ["apps/web/public/sw.js"],
+      "rules": {
+        "anti-slop/no-runtime-typeof": "off"
+      }
+    },
+    {
+      // Boundary module: accepts unparsed external values (unknown / Record).
+      "files": ["packages/runtime/src/guards.ts"],
+      "rules": {
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off"
       }
     },
     {

@@ -63,6 +63,7 @@ import {
   isSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
+import { isString } from "@workspace/runtime/guards";
 import {
   Form,
   FormCancelButton,
@@ -157,7 +158,7 @@ function BabyLanguageSelect(props: {
         items={languageItems}
         value={selectedLocale}
         onValueChange={(value) => {
-          if (value !== "inherit" && !(typeof value === "string" && isSupportedLocale(value))) {
+          if (value !== "inherit" && !(isString(value) && isSupportedLocale(value))) {
             return;
           }
           form.setValue("locale", value, { shouldDirty: true });

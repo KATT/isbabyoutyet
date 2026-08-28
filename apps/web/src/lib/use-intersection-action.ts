@@ -16,7 +16,7 @@ export function useIntersectionAction(opts: {
   onIntersectRef.current = opts.onIntersect;
 
   useEffect(() => {
-    if (!opts.enabled || node === null || typeof IntersectionObserver === "undefined") {
+    if (!opts.enabled || node === null || globalThis.IntersectionObserver === undefined) {
       return;
     }
     const observer = new IntersectionObserver(

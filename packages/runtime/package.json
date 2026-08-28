@@ -1,0 +1,24 @@
+{
+  "name": "@workspace/runtime",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./guards": "./src/guards.ts",
+    "./json": "./src/jsonValue.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "lint-fix": "oxlint --fix",
+    "format": "oxfmt && oxlint --fix",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^4.1.11"
+  }
+}

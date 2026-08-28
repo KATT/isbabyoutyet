@@ -35,9 +35,7 @@ test("registers the service worker during client bootstrap", async () => {
 
 test("reports service worker registration failures", async () => {
   const cause = new Error("registration failed");
-  const register = vi
-    .fn<() => Promise<ServiceWorkerRegistrationLike>>()
-    .mockRejectedValue(cause);
+  const register = vi.fn<() => Promise<ServiceWorkerRegistrationLike>>().mockRejectedValue(cause);
   await using _serviceWorker = serviceWorkerResource(register);
   const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
   await using _error = makeResource({}, () => error.mockRestore());
