@@ -37,7 +37,7 @@ export const Route = createFileRoute("/baby/$publicId/photo")({
       });
     }
     const imagePrefetch = prefetchBrowserImage(opts.context.queryClient, babyDoc.photoUrl);
-    // oxlint-disable-next-line query-prefetch/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
+    // oxlint-disable-next-line workspace/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
     return {
       baby,
       imagePrefetch,

@@ -63,7 +63,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         resetScroll: false,
       });
     }
-    // oxlint-disable-next-line query-prefetch/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
+    // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
     return data;
   },
   component: BabySettingsOverlay,

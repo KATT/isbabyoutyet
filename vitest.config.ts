@@ -5,23 +5,15 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
  * Monorepo Vitest projects (formerly "workspaces").
  * Run all packages from the repo root with `pnpm test` / `pnpm exec vitest run`.
  */
-const oxlintPluginsProject = {
-  test: {
-    name: "oxlint-plugins",
-    include: ["oxlint-plugins/**/*.test.ts"],
-    environment: "node" as const,
-  },
-};
-
 export default defineConfig({
   test: {
     projects: [
       "packages/convex",
       "packages/runtime",
+      "packages/oxlint-plugins",
       "packages/query-prefetch",
       "packages/convex-prefetch",
       webUnitProject,
-      oxlintPluginsProject,
     ],
     experimental: {
       fsModuleCache: true,
