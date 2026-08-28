@@ -9,6 +9,7 @@ import { useConvex } from "convex/react";
 import {
   getFunctionName,
   makeFunctionReference,
+  type DefaultFunctionArgs,
   type FunctionReference,
   type PaginationOptions,
 } from "convex/server";
@@ -21,13 +22,13 @@ type LivePage = {
 
 type LivePagesSnapshot = {
   queryKey: QueryKey;
-  args: Record<string, unknown>;
+  args: DefaultFunctionArgs;
   pageParams: PaginationOptions[];
 };
 
 type WatchDeps = {
   queryKey: QueryKey;
-  args: Record<string, unknown>;
+  args: DefaultFunctionArgs;
   pageParams: PaginationOptions[];
   funcName: string;
   queryClient: ReturnType<typeof useQueryClient>;
@@ -93,7 +94,7 @@ function createSubscribe(deps: WatchDeps) {
 export function useLiveConvexInfinitePages(opts: {
   queryKey: QueryKey;
   funcRef: FunctionReference<"query">;
-  args: Record<string, unknown>;
+  args: DefaultFunctionArgs;
   pageParams: PaginationOptions[];
 }) {
   const queryClient = useQueryClient();

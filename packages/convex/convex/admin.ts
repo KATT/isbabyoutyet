@@ -53,8 +53,17 @@ const userRowValidator = v.object({
   babies: v.array(userBabySummaryValidator),
 });
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+type JsonObject = { readonly [key: string]: JsonValue };
+
+function isRecord(value: unknown): value is JsonObject {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function parseAuthUserPage(result: unknown) {
@@ -76,7 +85,7 @@ export function parseAuthUserPage(result: unknown) {
   };
 }
 
-function authUserRow(user: Record<string, unknown>) {
+function authUserRow(user: JsonObject) {
   return {
     _id: String(user._id),
     email: String(user.email),

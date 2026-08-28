@@ -286,7 +286,28 @@ test("renders the public baby status in Brazilian Portuguese", async () => {
 const BABY_DOC = { _id: "baby-1", publicId: "baby-smith", resolvedLocale: "en-GB" };
 const EMPTY_PAGE = { page: [], isDone: true, continueCursor: "" };
 
-function makeLoaderQueryClient(handlers: Record<string, unknown>) {
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { readonly [key: string]: JsonValue };
+type QueryHandlers = Record<string, JsonValue>;
+type BabyLoaderResult = {
+  baby: unknown;
+  vapidPublicKey: unknown;
+  myAccess: unknown;
+  latestUpdate: unknown;
+  managerBaby: unknown;
+  timeline: unknown;
+  scheduledNotifications: unknown;
+  subscriptionCount: unknown;
+  onboarding: unknown;
+  browserPush: unknown;
+};
+
+function makeLoaderQueryClient(handlers: QueryHandlers) {
   return new QueryClient({
     defaultOptions: {
       queries: {
@@ -316,13 +337,13 @@ type LoaderOptions = {
 };
 
 async function setupBabyLoader(
-  handlers: Record<string, unknown>,
+  handlers: QueryHandlers,
   options: LoaderOptions | undefined = undefined,
 ) {
   const setAuth = options?.convexClient?.setAuth ?? vi.fn();
   const mutation =
     options?.convexClient?.mutation ??
-    vi.fn<() => Promise<unknown>>(() => Promise.resolve({ locale: "en-GB" }));
+    vi.fn<() => Promise<{ locale: string }>>(() => Promise.resolve({ locale: "en-GB" }));
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
@@ -339,7 +360,7 @@ async function setupBabyLoader(
       locale: string;
     };
     params: { publicId: string };
-  }) => Promise<Record<string, unknown>>;
+  }) => Promise<BabyLoaderResult>;
   const queryClient = makeLoaderQueryClient(handlers);
   const result = await loader({
     context: {
@@ -356,7 +377,7 @@ async function setupBabyLoader(
 }
 
 async function runBabyLoader(
-  handlers: Record<string, unknown>,
+  handlers: QueryHandlers,
   options: LoaderOptions | undefined = undefined,
 ) {
   const setup = await setupBabyLoader(handlers, options);
@@ -413,7 +434,7 @@ test("beforeLoad 404s unknown babies", async () => {
     };
     params: { publicId: string };
     search: { settings: boolean | undefined };
-    location: { search: Record<string, unknown> };
+    location: { search: Record<string, string | boolean> };
   }) => Promise<unknown>;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
@@ -438,7 +459,7 @@ test("beforeLoad redirects legacy settings links", async () => {
     };
     params: { publicId: string };
     search: { settings: boolean | undefined };
-    location: { search: Record<string, unknown> };
+    location: { search: Record<string, string | boolean> };
   }) => Promise<unknown>;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 

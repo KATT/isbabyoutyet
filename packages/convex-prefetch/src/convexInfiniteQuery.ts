@@ -6,6 +6,7 @@ import {
   type QueryKey,
 } from "@tanstack/react-query";
 import {
+  type DefaultFunctionArgs,
   type FunctionArgs,
   type FunctionReference,
   type FunctionReturnType,
@@ -40,7 +41,7 @@ type ConvexInfiniteQueryKey<TQuery extends PaginatedQueryReference = PaginatedQu
 type RuntimeConvexInfiniteQueryKey = readonly [
   typeof CONVEX_INFINITE_QUERY_KEY,
   FunctionReference<"query">,
-  Record<string, unknown>,
+  DefaultFunctionArgs,
 ];
 
 type ResolvedPaginatedQuery<TQuery extends PaginatedQueryReference> = [TQuery] extends [never]
@@ -64,7 +65,7 @@ function paginatedArgs<TQuery extends PaginatedQueryReference>(
   args: PaginationArgs<TQuery>,
   paginationOpts: PaginationOptions,
 ): FunctionArgs<TQuery>;
-function paginatedArgs(args: Record<string, unknown>, paginationOpts: PaginationOptions) {
+function paginatedArgs(args: DefaultFunctionArgs, paginationOpts: PaginationOptions) {
   return { ...args, paginationOpts };
 }
 
