@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build:anti-slop": "tsc -p oxlint-plugins/tsconfig.anti-slop.json",
     "build": "turbo build",
     "dev": "turbo dev",
     "dev-convex": "cd packages/convex && pnpm dev",
@@ -20,7 +19,7 @@
     "coverage:compare": "tsx scripts/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm build:anti-slop && pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
+    "checks": "pnpm build && pnpm typecheck:scripts && pnpm format && pnpm lint-fix && pnpm typecheck && turbo run test:coverage && pnpm knip"
   },
   "devDependencies": {
     "@oxlint/plugins": "^1.80.0",

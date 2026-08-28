@@ -5,7 +5,7 @@
     "**/routeTree.gen.ts",
     "coverage/**",
     "**/paraglide/**",
-    "oxlint-plugins/**"
+    "packages/oxlint-plugins/dist/**"
   ],
   "tags": ["-@internal"],
   "workspaces": {
@@ -32,6 +32,23 @@
     },
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
+    },
+    "packages/oxlint-plugins": {
+      "entry": [
+        "src/anti-slop.ts!",
+        "src/infer-callback-params.ts!",
+        "src/inline-jsx-callback.ts!",
+        "src/no-banned-react-reexport.ts!",
+        "src/no-convex-stubs.ts!",
+        "src/no-mock.ts!",
+        "src/no-optional.ts!",
+        "src/no-overzealous-destructuring.ts!",
+        "src/no-rhf-watch.ts!",
+        "src/no-use-effect.ts!",
+        "src/no-use-state.ts!",
+        "src/query-prefetch.ts!",
+        "src/react-compiler.ts!"
+      ]
     },
     "packages/runtime": {},
     "packages/query-prefetch": {},

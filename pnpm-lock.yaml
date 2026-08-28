@@ -9,6 +9,9 @@ catalogs:
     '@convex-dev/better-auth':
       specifier: ^0.12.5
       version: 0.12.5
+    '@oxlint/plugins':
+      specifier: ^1.80.0
+      version: 1.80.0
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
@@ -379,6 +382,25 @@ importers:
       react:
         specifier: 'catalog:'
         version: 19.2.8
+      typescript:
+        specifier: 'catalog:'
+        version: 7.0.2
+      vitest:
+        specifier: ^4.1.11
+        version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
+
+  packages/oxlint-plugins:
+    dependencies:
+      '@oxlint/plugins':
+        specifier: 'catalog:'
+        version: 1.80.0
+    devDependencies:
+      oxfmt:
+        specifier: 'catalog:'
+        version: 0.64.0
+      oxlint:
+        specifier: 'catalog:'
+        version: 1.80.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2

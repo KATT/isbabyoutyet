@@ -11,7 +11,7 @@
     "builtin": true
   },
   // Generated code is not ours to lint
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "oxlint-plugins/**"],
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/src/**"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -19,55 +19,55 @@
     },
     {
       "name": "no-optional",
-      "specifier": "./oxlint-plugins/no-optional.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-optional.js"
     },
     {
       "name": "no-mock",
-      "specifier": "./oxlint-plugins/no-mock.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-mock.js"
     },
     {
       "name": "no-convex-stubs",
-      "specifier": "./oxlint-plugins/no-convex-stubs.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-convex-stubs.js"
     },
     {
       "name": "query-prefetch",
-      "specifier": "./oxlint-plugins/query-prefetch.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/query-prefetch.js"
     },
     {
       "name": "no-overzealous-destructuring",
-      "specifier": "./oxlint-plugins/no-overzealous-destructuring.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-overzealous-destructuring.js"
     },
     {
       "name": "inline-jsx-callback",
-      "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/inline-jsx-callback.js"
     },
     {
       "name": "no-use-effect",
-      "specifier": "./oxlint-plugins/no-use-effect.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-use-effect.js"
     },
     {
       "name": "no-use-state",
-      "specifier": "./oxlint-plugins/no-use-state.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-use-state.js"
     },
     {
       "name": "no-banned-react-reexport",
-      "specifier": "./oxlint-plugins/no-banned-react-reexport.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-banned-react-reexport.js"
     },
     {
       "name": "react-compiler",
-      "specifier": "./oxlint-plugins/react-compiler.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/react-compiler.js"
     },
     {
       "name": "infer-callback-params",
-      "specifier": "./oxlint-plugins/infer-callback-params.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/infer-callback-params.js"
     },
     {
       "name": "no-rhf-watch",
-      "specifier": "./oxlint-plugins/no-rhf-watch.mjs"
+      "specifier": "./packages/oxlint-plugins/dist/no-rhf-watch.js"
     },
     {
       "name": "anti-slop",
-      "specifier": "./oxlint-plugins/compiled/anti-slop.js"
+      "specifier": "./packages/oxlint-plugins/dist/anti-slop.js"
     }
   ],
   "settings": {
