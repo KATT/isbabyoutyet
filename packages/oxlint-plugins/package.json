@@ -4,25 +4,13 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./anti-slop": "./dist/anti-slop.js",
-    "./infer-callback-params": "./dist/infer-callback-params.js",
-    "./inline-jsx-callback": "./dist/inline-jsx-callback.js",
-    "./no-banned-react-reexport": "./dist/no-banned-react-reexport.js",
-    "./no-convex-stubs": "./dist/no-convex-stubs.js",
-    "./no-mock": "./dist/no-mock.js",
-    "./no-optional": "./dist/no-optional.js",
-    "./no-overzealous-destructuring": "./dist/no-overzealous-destructuring.js",
-    "./no-rhf-watch": "./dist/no-rhf-watch.js",
-    "./no-use-effect": "./dist/no-use-effect.js",
-    "./no-use-state": "./dist/no-use-state.js",
-    "./query-prefetch": "./dist/query-prefetch.js",
-    "./react-compiler": "./dist/react-compiler.js"
+    "./*": "./dist/*"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "lint": "oxlint",
-    "lint-fix": "oxlint --fix",
-    "format": "oxfmt && oxlint --fix",
+    "lint": "oxfmt --check",
+    "lint-fix": "oxfmt",
+    "format": "oxfmt",
     "format:check": "oxfmt --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

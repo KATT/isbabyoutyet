@@ -12,7 +12,7 @@ const error = { messageId: "widening" };
 
 const prelude = "type Command = () => void; const startCommand = () => {};";
 
-tester.run("anti-slop/no-known-value-widening", noKnownValueWideningRule, {
+tester.run("no-known-value-widening", noKnownValueWideningRule, {
   valid: [
     `${prelude} const commands: Record<string, Command> = {};`,
     `${prelude} type Index<T> = Record<string, T>; const commands: Index<Command> = {};`,

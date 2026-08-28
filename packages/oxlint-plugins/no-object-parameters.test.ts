@@ -9,7 +9,7 @@ RuleTester.it = it;
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: "ts" } } });
 const error = { messageId: "objectParameter" };
 
-tester.run("anti-slop/no-object-parameters", noObjectParametersRule, {
+tester.run("no-object-parameters", noObjectParametersRule, {
   valid: [
     "type Alias = object;",
     "function f(value: Alias) {}",

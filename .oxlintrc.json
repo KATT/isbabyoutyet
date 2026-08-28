@@ -11,7 +11,7 @@
     "builtin": true
   },
   // Generated code is not ours to lint
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/src/**"],
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/*.ts"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
@@ -66,8 +66,64 @@
       "specifier": "./packages/oxlint-plugins/dist/no-rhf-watch.js"
     },
     {
-      "name": "anti-slop",
-      "specifier": "./packages/oxlint-plugins/dist/anti-slop.js"
+      "name": "no-chained-type-assertions",
+      "specifier": "./packages/oxlint-plugins/dist/no-chained-type-assertions.js"
+    },
+    {
+      "name": "no-conditional-empty-object-spread",
+      "specifier": "./packages/oxlint-plugins/dist/no-conditional-empty-object-spread.js"
+    },
+    {
+      "name": "no-known-value-widening",
+      "specifier": "./packages/oxlint-plugins/dist/no-known-value-widening.js"
+    },
+    {
+      "name": "no-module-mocking",
+      "specifier": "./packages/oxlint-plugins/dist/no-module-mocking.js"
+    },
+    {
+      "name": "no-object-parameters",
+      "specifier": "./packages/oxlint-plugins/dist/no-object-parameters.js"
+    },
+    {
+      "name": "no-reflect-apply",
+      "specifier": "./packages/oxlint-plugins/dist/no-reflect-apply.js"
+    },
+    {
+      "name": "no-reflect-get",
+      "specifier": "./packages/oxlint-plugins/dist/no-reflect-get.js"
+    },
+    {
+      "name": "no-runtime-typeof",
+      "specifier": "./packages/oxlint-plugins/dist/no-runtime-typeof.js"
+    },
+    {
+      "name": "no-shape-in-symbol-names",
+      "specifier": "./packages/oxlint-plugins/dist/no-shape-in-symbol-names.js"
+    },
+    {
+      "name": "no-unknown-parameters",
+      "specifier": "./packages/oxlint-plugins/dist/no-unknown-parameters.js"
+    },
+    {
+      "name": "no-unknown-returns",
+      "specifier": "./packages/oxlint-plugins/dist/no-unknown-returns.js"
+    },
+    {
+      "name": "no-unknown-type-aliases",
+      "specifier": "./packages/oxlint-plugins/dist/no-unknown-type-aliases.js"
+    },
+    {
+      "name": "no-unsafe-dictionary-type",
+      "specifier": "./packages/oxlint-plugins/dist/no-unsafe-dictionary-type.js"
+    },
+    {
+      "name": "no-widen-then-assert",
+      "specifier": "./packages/oxlint-plugins/dist/no-widen-then-assert.js"
+    },
+    {
+      "name": "require-safety-comment-for-type-assertion",
+      "specifier": "./packages/oxlint-plugins/dist/require-safety-comment-for-type-assertion.js"
     }
   ],
   "settings": {
@@ -89,21 +145,21 @@
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
     // Anti-Slop zero-cost rules (no current violations):
-    "anti-slop/no-chained-type-assertions": "error",
-    "anti-slop/no-module-mocking": "error",
-    "anti-slop/no-reflect-apply": "error",
-    "anti-slop/no-unknown-type-aliases": "error",
-    "anti-slop/no-widen-then-assert": "error",
-    "anti-slop/require-safety-comment-for-type-assertion": "error",
-    "anti-slop/no-shape-in-symbol-names": "error",
-    "anti-slop/no-reflect-get": "error",
-    "anti-slop/no-object-parameters": "error",
-    "anti-slop/no-conditional-empty-object-spread": "error",
-    "anti-slop/no-known-value-widening": "error",
-    "anti-slop/no-unsafe-dictionary-type": "error",
-    "anti-slop/no-unknown-returns": "error",
-    "anti-slop/no-unknown-parameters": "error",
-    "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
+    "no-chained-type-assertions/no-chained-type-assertions": "error",
+    "no-module-mocking/no-module-mocking": "error",
+    "no-reflect-apply/no-reflect-apply": "error",
+    "no-unknown-type-aliases/no-unknown-type-aliases": "error",
+    "no-widen-then-assert/no-widen-then-assert": "error",
+    "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "error",
+    "no-shape-in-symbol-names/no-shape-in-symbol-names": "error",
+    "no-reflect-get/no-reflect-get": "error",
+    "no-object-parameters/no-object-parameters": "error",
+    "no-conditional-empty-object-spread/no-conditional-empty-object-spread": "error",
+    "no-known-value-widening/no-known-value-widening": "error",
+    "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "error",
+    "no-unknown-returns/no-unknown-returns": "error",
+    "no-unknown-parameters/no-unknown-parameters": "error",
+    "no-runtime-typeof/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
@@ -119,7 +175,7 @@
       // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
       "files": ["apps/web/src/test/setup.ts"],
       "rules": {
-        "anti-slop/no-unknown-parameters": "off"
+        "no-unknown-parameters/no-unknown-parameters": "off"
       }
     },
     {
@@ -133,10 +189,10 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "anti-slop/no-chained-type-assertions": "off",
-        "anti-slop/no-widen-then-assert": "off",
-        "anti-slop/no-known-value-widening": "off",
-        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "no-chained-type-assertions/no-chained-type-assertions": "off",
+        "no-widen-then-assert/no-widen-then-assert": "off",
+        "no-known-value-widening/no-known-value-widening": "off",
+        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
       }
     },
@@ -205,25 +261,25 @@
       "files": ["apps/web/src/lib/auth-client-bridge.ts"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "anti-slop/no-chained-type-assertions": "off",
-        "anti-slop/require-safety-comment-for-type-assertion": "off",
-        "anti-slop/no-widen-then-assert": "off"
+        "no-chained-type-assertions/no-chained-type-assertions": "off",
+        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
+        "no-widen-then-assert/no-widen-then-assert": "off"
       }
     },
     {
       // Service worker: plain JS JSON boundary (no TS type predicates).
       "files": ["apps/web/public/sw.js"],
       "rules": {
-        "anti-slop/no-runtime-typeof": "off"
+        "no-runtime-typeof/no-runtime-typeof": "off"
       }
     },
     {
       // Boundary module: accepts unparsed external values (unknown / Record).
       "files": ["packages/runtime/src/guards.ts"],
       "rules": {
-        "anti-slop/no-unknown-parameters": "off",
-        "anti-slop/no-unknown-returns": "off",
-        "anti-slop/no-unsafe-dictionary-type": "off"
+        "no-unknown-parameters/no-unknown-parameters": "off",
+        "no-unknown-returns/no-unknown-returns": "off",
+        "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "off"
       }
     },
     {
@@ -231,21 +287,21 @@
       "files": ["packages/ui/src/**"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "anti-slop/no-chained-type-assertions": "off",
-        "anti-slop/no-conditional-empty-object-spread": "off",
-        "anti-slop/no-known-value-widening": "off",
-        "anti-slop/no-module-mocking": "off",
-        "anti-slop/no-object-parameters": "off",
-        "anti-slop/no-reflect-apply": "off",
-        "anti-slop/no-reflect-get": "off",
-        "anti-slop/no-runtime-typeof": "off",
-        "anti-slop/no-shape-in-symbol-names": "off",
-        "anti-slop/no-unknown-parameters": "off",
-        "anti-slop/no-unknown-returns": "off",
-        "anti-slop/no-unknown-type-aliases": "off",
-        "anti-slop/no-unsafe-dictionary-type": "off",
-        "anti-slop/no-widen-then-assert": "off",
-        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "no-chained-type-assertions/no-chained-type-assertions": "off",
+        "no-conditional-empty-object-spread/no-conditional-empty-object-spread": "off",
+        "no-known-value-widening/no-known-value-widening": "off",
+        "no-module-mocking/no-module-mocking": "off",
+        "no-object-parameters/no-object-parameters": "off",
+        "no-reflect-apply/no-reflect-apply": "off",
+        "no-reflect-get/no-reflect-get": "off",
+        "no-runtime-typeof/no-runtime-typeof": "off",
+        "no-shape-in-symbol-names/no-shape-in-symbol-names": "off",
+        "no-unknown-parameters/no-unknown-parameters": "off",
+        "no-unknown-returns/no-unknown-returns": "off",
+        "no-unknown-type-aliases/no-unknown-type-aliases": "off",
+        "no-unsafe-dictionary-type/no-unsafe-dictionary-type": "off",
+        "no-widen-then-assert/no-widen-then-assert": "off",
+        "require-safety-comment-for-type-assertion/require-safety-comment-for-type-assertion": "off",
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",

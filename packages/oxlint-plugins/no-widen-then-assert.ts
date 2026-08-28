@@ -1,3 +1,4 @@
+import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 import type { ESTree, Variable } from "@oxlint/plugins";
 
@@ -364,3 +365,5 @@ export const noWidenThenAssertRule = defineRule({
     };
   },
 });
+
+export default createRulePlugin("no-widen-then-assert", noWidenThenAssertRule);

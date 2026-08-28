@@ -9,7 +9,7 @@ RuleTester.it = it;
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: "ts" } } });
 const error = { messageId: "reflectGet" };
 
-tester.run("anti-slop/no-reflect-get", noReflectGetRule, {
+tester.run("no-reflect-get", noReflectGetRule, {
   valid: [
     "const value = owner.property;",
     "const value = owner[key];",

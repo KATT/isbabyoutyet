@@ -1,3 +1,4 @@
+import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree, SourceCode } from "@oxlint/plugins";
@@ -119,3 +120,5 @@ export const noObjectParametersRule = defineRule({
     };
   },
 });
+
+export default createRulePlugin("no-object-parameters", noObjectParametersRule);

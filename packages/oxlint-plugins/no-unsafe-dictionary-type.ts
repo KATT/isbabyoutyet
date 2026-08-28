@@ -1,3 +1,4 @@
+import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import {
@@ -132,3 +133,5 @@ export const noUnsafeDictionaryTypeRule = defineRule({
     };
   },
 });
+
+export default createRulePlugin("no-unsafe-dictionary-type", noUnsafeDictionaryTypeRule);

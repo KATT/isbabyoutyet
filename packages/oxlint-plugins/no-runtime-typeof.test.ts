@@ -10,7 +10,7 @@ const tester = new RuleTester({ languageOptions: { parserOptions: { lang: "ts" }
 const error = { messageId: "runtimeTypeof" };
 const allowInTypeGuards = [{ allowInTypeGuards: true }];
 
-tester.run("anti-slop/no-runtime-typeof", noRuntimeTypeofRule, {
+tester.run("no-runtime-typeof", noRuntimeTypeofRule, {
   valid: [
     "const value = input;",
     {

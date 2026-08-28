@@ -9,7 +9,7 @@ RuleTester.it = it;
 const tester = new RuleTester({ languageOptions: { parserOptions: { lang: "ts" } } });
 const error = { messageId: "unknownReturn" };
 
-tester.run("anti-slop/no-unknown-returns", noUnknownReturnsRule, {
+tester.run("no-unknown-returns", noUnknownReturnsRule, {
   valid: [
     "type ImportedValue = unknown;",
     "function parse(): ImportedValue { return input; }",

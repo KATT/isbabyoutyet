@@ -1,3 +1,4 @@
+import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree } from "@oxlint/plugins";
@@ -111,3 +112,5 @@ export const noUnknownReturnsRule = defineRule({
     };
   },
 });
+
+export default createRulePlugin("no-unknown-returns", noUnknownReturnsRule);

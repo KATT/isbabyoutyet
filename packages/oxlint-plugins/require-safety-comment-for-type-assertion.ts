@@ -1,3 +1,4 @@
+import { createRulePlugin } from "./createRulePlugin.ts";
 import { defineRule } from "@oxlint/plugins";
 
 import type { ESTree, SourceCode } from "@oxlint/plugins";
@@ -60,3 +61,8 @@ export const requireSafetyCommentForTypeAssertionRule = defineRule({
     };
   },
 });
+
+export default createRulePlugin(
+  "require-safety-comment-for-type-assertion",
+  requireSafetyCommentForTypeAssertionRule,
+);

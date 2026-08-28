@@ -4,6 +4,6 @@ export default defineConfig({
   test: {
     name: "oxlint-plugins",
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["**/*.test.ts"],
   },
 });
