@@ -36,7 +36,7 @@ type RemixInput<TFactory extends QueryOptionsFactory> = (
 ) => QueryInput<TFactory>;
 
 type RuntimeRemixInput = {
-  bivarianceHack(input: unknown): unknown;
+  bivarianceHack(input: unknown): QueryInput<QueryOptionsFactory>;
 }["bivarianceHack"];
 
 type RuntimeQueryOptionsFactory = {

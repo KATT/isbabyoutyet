@@ -65,9 +65,42 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 }
 
-function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient;
-function compatibleConvexAuthClient(client: unknown): unknown {
-  return client;
+/** @internal Exported for tests. */
+export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
+  if (!("session" in atoms)) {
+    return undefined;
+  }
+  const session = atoms.session;
+  if (session === null || typeof session !== "object") {
+    return undefined;
+  }
+  if (!("subscribe" in session) || typeof session.subscribe !== "function") {
+    return undefined;
+  }
+  const subscribe = session.subscribe;
+  return {
+    subscribe: (listener) => {
+      const unsubscribe = subscribe.call(session, listener);
+      if (typeof unsubscribe === "function") {
+        return unsubscribe;
+      }
+      return () => {};
+    },
+  };
+}
+
+/** @internal Exported for tests. */
+export function compatibleConvexAuthClient(client: typeof authClient): ConvexAuthClient {
+  return {
+    convex: {
+      token: (opts) => client.convex.token(opts),
+    },
+    $store: {
+      atoms: {
+        session: readSessionAtom(client.$store.atoms),
+      },
+    },
+  };
 }
 
 export function setupClientConvexAuth(

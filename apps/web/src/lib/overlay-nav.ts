@@ -61,7 +61,7 @@ export function dismissOverlay(opts: {
     canGoBack: () => boolean;
     back: () => void;
   };
-  navigate: (closeLink: LinkProps) => unknown;
+  navigate: (closeLink: LinkProps) => void;
   closeLink: LinkProps;
 }) {
   if (isOverlayHistoryState(opts.history.location.state) && opts.history.canGoBack()) {

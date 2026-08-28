@@ -1,5 +1,5 @@
 import { useMutation } from "convex/react";
-import type { FunctionArgs } from "convex/server";
+import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import { toast } from "sonner";
 import * as z from "zod";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -61,7 +61,7 @@ function languageRequestSchema(t: TranslationFunction) {
 
 type RequestLanguageHandler = (
   args: FunctionArgs<typeof api.profile.requestLanguage>,
-) => Promise<unknown>;
+) => Promise<FunctionReturnType<typeof api.profile.requestLanguage>>;
 
 function LanguageRequestForm(props: {
   onRequestLanguage: RequestLanguageHandler;

@@ -1,4 +1,5 @@
 import { QueryClient } from "@tanstack/react-query";
+import type { PaginationResult } from "convex/server";
 import { expect, test, vi } from "vitest";
 import {
   CONVEX_INFINITE_QUERY_KEY,
@@ -6,6 +7,8 @@ import {
   convexInfiniteQueryFn,
   registerConvexInfiniteQueryClient,
 } from "./convexInfiniteQuery";
+
+type TestInfinitePage = PaginationResult<object | string>;
 
 test("convexInfiniteQuery builds cursor pagination options", () => {
   const options = convexInfiniteQuery("timeline:listByBaby" as never, {
@@ -95,7 +98,7 @@ test("convexInfiniteQueryFn falls back for non-infinite keys", async () => {
   const fallback = vi.fn<() => Promise<string>>(async () => "ok");
   const convexQueryClient = {
     queryFn: () => fallback,
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
   };
 
@@ -134,7 +137,7 @@ test("convexInfiniteQuery queryFn rejects when the client was never registered",
 test("convexInfiniteQueryFn rejects without a pageParam", async () => {
   const convexQueryClient = {
     queryFn: () => async () => "unused",
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
   };
   const queryFn = convexInfiniteQueryFn(convexQueryClient as never);
@@ -159,7 +162,7 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
     queryFn: () => async () => {
       throw new Error("fallback should not run");
     },
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: { consistentQuery },
   };
 
@@ -192,7 +195,7 @@ test("convexInfiniteQueryFn uses the SSR HTTP client when window is undefined", 
 test("convexInfiniteQueryFn rejects on SSR when the HTTP client is missing", async () => {
   const convexQueryClient = {
     queryFn: () => async () => "unused",
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
   };
 

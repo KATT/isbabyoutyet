@@ -1,7 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
-import { makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
+import {
+  makeFunctionReference,
+  type DefaultFunctionArgs,
+  type PaginationResult,
+} from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
@@ -15,6 +19,8 @@ type WatchHandle = {
 };
 
 type WatchQuery = (funcRef: unknown, args: DefaultFunctionArgs) => WatchHandle;
+
+type TestInfinitePage = PaginationResult<{ id: string }>;
 
 function idleWatchQuery() {
   return vi.fn<WatchQuery>(() => ({
@@ -40,7 +46,7 @@ function createWrapper(queryClient: QueryClient, watchQuery: WatchQuery) {
 
 test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", async () => {
   registerConvexInfiniteQueryClient({
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
   } as never);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -80,7 +86,7 @@ test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", a
 });
 
 test("usePreloadedConvexInfiniteQuery fetches when the handle has no initialData", async () => {
-  const query = vi.fn<() => Promise<unknown>>(async () => ({
+  const query = vi.fn<() => Promise<TestInfinitePage>>(async () => ({
     page: [{ id: "fetched" }],
     isDone: true,
     continueCursor: "",
@@ -116,7 +122,7 @@ test("usePreloadedConvexInfiniteQuery fetches when the handle has no initialData
 
 test("usePreloadedConvexInfiniteQuery remixes args from local state", async () => {
   registerConvexInfiniteQueryClient({
-    convexClient: { query: vi.fn<() => Promise<unknown>>() },
+    convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
   } as never);
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

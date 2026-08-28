@@ -3,7 +3,12 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { expect, test, vi } from "vitest";
 import type { ConvexAuthClient } from "@/lib/convex-auth";
-import { setupClientConvexAuthWithClient } from "@/lib/convex-auth";
+import {
+  compatibleConvexAuthClient,
+  readSessionAtom,
+  setupClientConvexAuthWithClient,
+} from "@/lib/convex-auth";
+import { authClient as realAuthClient } from "@/lib/auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
 type SessionListener = (session: SessionSnapshot | undefined) => void;
@@ -112,4 +117,48 @@ test("a session resolving to none clears the cached profile; pending or signed-i
   // signal must go null so the next navigation re-checks the token.
   auth.emit({ data: null, isPending: false });
   expect(clients.queryClient.getQueryData(profileKey)).toBeNull();
+});
+
+test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
+  const emptyAtoms = {} as unknown as typeof realAuthClient.$store.atoms;
+  expect(readSessionAtom(emptyAtoms)).toBeUndefined();
+  expect(
+    readSessionAtom({ session: null } as unknown as typeof realAuthClient.$store.atoms),
+  ).toBeUndefined();
+  expect(
+    readSessionAtom({ session: "x" } as unknown as typeof realAuthClient.$store.atoms),
+  ).toBeUndefined();
+  expect(
+    readSessionAtom({
+      session: { subscribe: 1 },
+    } as unknown as typeof realAuthClient.$store.atoms),
+  ).toBeUndefined();
+
+  const unsub = vi.fn();
+  function subscribeWithUnsub(listener: SessionListener) {
+    listener({ data: null, isPending: false });
+    return unsub;
+  }
+  const atom = readSessionAtom({
+    session: {
+      subscribe: subscribeWithUnsub,
+    },
+  } as unknown as typeof realAuthClient.$store.atoms);
+  expect(atom).toBeTruthy();
+  const stop = atom?.subscribe(() => {});
+  stop?.();
+  expect(unsub).toHaveBeenCalledTimes(1);
+
+  const atomWithoutUnsub = readSessionAtom({
+    session: {
+      subscribe: () => undefined,
+    },
+  } as unknown as typeof realAuthClient.$store.atoms);
+  expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
+});
+
+test("compatibleConvexAuthClient bridges token and session", () => {
+  const bridged = compatibleConvexAuthClient(realAuthClient);
+  expect(bridged.convex.token).toBeTypeOf("function");
+  expect("session" in bridged.$store.atoms).toBe(true);
 });

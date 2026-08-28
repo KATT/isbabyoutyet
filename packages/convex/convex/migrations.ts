@@ -489,6 +489,46 @@ export const deploymentStatus = internalQuery({
 // Run all pending migrations - called automatically during deployment.
 // skipTourForExistingUsers is not a table walker (users live in the Better
 // Auth component), so it is kicked off alongside the serial table series.
+/** CLI-oriented report returned by `@convex-dev/migrations` runners. */
+type MigrationRunnerReport = {
+  readonly Name: string;
+  readonly Status: string;
+  readonly processed: number;
+  readonly lastFinished: string;
+  readonly lastStarted: string;
+  readonly toStartOver: string;
+};
+
+export function parseMigrationRunnerReport(result: unknown): MigrationRunnerReport {
+  if (typeof result !== "object" || result === null) {
+    throw new Error("Migration runner returned an invalid report");
+  }
+  if (
+    !("Name" in result) ||
+    !("Status" in result) ||
+    !("processed" in result) ||
+    !("lastFinished" in result) ||
+    !("lastStarted" in result) ||
+    !("toStartOver" in result) ||
+    typeof result.Name !== "string" ||
+    typeof result.Status !== "string" ||
+    typeof result.processed !== "number" ||
+    typeof result.lastFinished !== "string" ||
+    typeof result.lastStarted !== "string" ||
+    typeof result.toStartOver !== "string"
+  ) {
+    throw new Error("Migration runner returned an invalid report");
+  }
+  return {
+    Name: result.Name,
+    Status: result.Status,
+    processed: result.processed,
+    lastFinished: result.lastFinished,
+    lastStarted: result.lastStarted,
+    toStartOver: result.toStartOver,
+  };
+}
+
 export const runAll = internalMutation({
   args: {
     fn: v.optional(v.string()),
@@ -499,11 +539,13 @@ export const runAll = internalMutation({
     reset: v.optional(v.boolean()),
     oneBatchOnly: v.optional(v.boolean()),
   },
-  handler: async (ctx, args): Promise<unknown> => {
+  handler: async (ctx, args): Promise<MigrationRunnerReport> => {
     await ctx.scheduler.runAfter(0, internal.migrations.skipTourForExistingUsers, {
       cursor: null,
     });
-    const historical = await ctx.runMutation(internal.migrations.runTableMigrations, args);
+    const historical = parseMigrationRunnerReport(
+      await ctx.runMutation(internal.migrations.runTableMigrations, args),
+    );
     await ctx.runMutation(internal.migrations.runBirthJourneyBackfill, {});
     await ctx.runMutation(internal.migrations.runDueDateDisplayBackfill, {});
     await ctx.runMutation(internal.migrations.runPushImageBackfill, {});

@@ -65,9 +65,7 @@ type RuntimeInitiatedBrowserPushCapability = Partial<{
 function initiatedBrowserPushCapability(
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory>;
-function initiatedBrowserPushCapability(
-  babyRef: string,
-): RuntimeInitiatedBrowserPushCapability {
+function initiatedBrowserPushCapability(babyRef: string): RuntimeInitiatedBrowserPushCapability {
   return { input: babyRef };
 }
 
@@ -221,7 +219,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   }
 }
 
-function toastSubscribe(mutateAsync: () => Promise<unknown>, t: TranslationFunction) {
+function toastSubscribe(
+  mutateAsync: () => Promise<Id<"pushSubscriptions">>,
+  t: TranslationFunction,
+) {
   toast.promise(mutateAsync(), {
     loading: t("Subscribing to notifications..."),
     success: t("Subscribed to notifications!"),

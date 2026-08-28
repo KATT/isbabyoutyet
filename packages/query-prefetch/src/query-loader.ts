@@ -11,16 +11,19 @@ import type {
   QueryOptionsFactory,
 } from "./types.js";
 
+/** Page cursor/offset at the untyped infinite-query options boundary. */
+type InfiniteQueryPageParam = string | number | boolean | null | object;
+
 interface AnyInfiniteQueryOptions extends AnyQueryOptions {
-  initialPageParam: unknown;
+  initialPageParam: InfiniteQueryPageParam;
   getNextPageParam(
     ...args: [
       lastPage: unknown,
       allPages: unknown[],
-      lastPageParam: unknown,
-      allPageParams: unknown[],
+      lastPageParam: InfiniteQueryPageParam,
+      allPageParams: InfiniteQueryPageParam[],
     ]
-  ): unknown;
+  ): InfiniteQueryPageParam | null | undefined;
 }
 
 type RuntimeQueryOptionsFactory = {

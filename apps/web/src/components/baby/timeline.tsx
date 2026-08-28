@@ -1087,7 +1087,7 @@ type TimelineFeedViewProps = {
   items: TimelineItemData[];
   hasNextPage: boolean;
   isFetchingNextPage: boolean;
-  fetchNextPage: () => unknown;
+  fetchNextPage: () => void;
   currentVisitorId: string;
   removeUpdate: RemoveUpdateFn;
   setAsCurrentPhoto: SetAsCurrentPhotoFn;
