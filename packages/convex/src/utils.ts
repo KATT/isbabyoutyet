@@ -14,7 +14,7 @@ export function lazyGetter(fn: () => object) {
   );
 }
 
-function readProperty(target: object, prop: string | symbol) {
+function readProperty<TTarget extends object>(target: TTarget, prop: string | symbol) {
   let current: object | null = target;
   while (current) {
     const descriptor = Object.getOwnPropertyDescriptor(current, prop);
