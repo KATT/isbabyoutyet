@@ -411,6 +411,10 @@ export const backfillUserProfileIsAdmin = migrations.define({
   migrateOne: backfillUserProfileIsAdminDoc,
 });
 
+function isOwnKey<TRecord extends object>(record: TRecord, key: PropertyKey): key is keyof TRecord {
+  return Object.hasOwn(record, key);
+}
+
 async function patchMissingKeys<TTable extends keyof DataModel>(
   ctx: MutationCtx,
   opts: {
@@ -420,7 +424,8 @@ async function patchMissingKeys<TTable extends keyof DataModel>(
   },
 ) {
   const patch: Partial<Doc<TTable>> = {};
-  for (const key of Object.keys(opts.defaults) as (keyof Doc<TTable>)[]) {
+  for (const key in opts.defaults) {
+    if (!isOwnKey(opts.defaults, key)) continue;
     if (opts.doc[key] === undefined) {
       patch[key] = opts.defaults[key];
     }
