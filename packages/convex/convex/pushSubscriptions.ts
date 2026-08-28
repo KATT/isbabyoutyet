@@ -15,7 +15,7 @@ async function deleteSubscription(ctx: MutationCtx, subscription: Doc<"pushSubsc
   const baby = await ctx.db.get(subscription.babyId);
   if (baby) {
     await ctx.db.patch(baby._id, {
-      subscriptionCount: Math.max(0, (baby.subscriptionCount ?? 0) - 1),
+      subscriptionCount: Math.max(0, baby.subscriptionCount - 1),
     });
   }
 }
@@ -70,7 +70,7 @@ export const subscribe = mutation({
       userAgent: args.userAgent,
     });
     await ctx.db.patch(args.babyId, {
-      subscriptionCount: (baby.subscriptionCount ?? 0) + 1,
+      subscriptionCount: baby.subscriptionCount + 1,
     });
 
     return subscriptionId;
@@ -132,7 +132,7 @@ export const getSubscriptionCount = query({
     if (!access) {
       return FORBIDDEN;
     }
-    return access.baby.subscriptionCount ?? 0;
+    return access.baby.subscriptionCount;
   },
 });
 

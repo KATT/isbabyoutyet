@@ -240,7 +240,7 @@ async function advanceBabyActivity(
   opts: { babyId: Id<"baby">; activityAt: number },
 ) {
   const baby = await ctx.db.get(opts.babyId);
-  if (baby && (baby.lastActivityAt === undefined || opts.activityAt > baby.lastActivityAt)) {
+  if (baby && opts.activityAt > baby.lastActivityAt) {
     await ctx.db.patch(opts.babyId, { lastActivityAt: opts.activityAt });
   }
 }
