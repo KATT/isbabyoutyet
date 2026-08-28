@@ -7,6 +7,7 @@ import {
   NAVIGATION_PROGRESS_DELAY_MS,
   NavigationProgressBar,
   NotFoundComponent,
+  contextLocale,
   resolveRootBeforeLoad,
   RootDocument,
   RootErrorComponent,
@@ -29,6 +30,14 @@ function withoutBrowserWindow(run: () => Promise<void>) {
     }
   });
 }
+
+test("route context locales are narrowed to supported values", () => {
+  expect(contextLocale({ locale: "sv" })).toBe("sv");
+  expect(contextLocale({ locale: "unsupported" })).toBeUndefined();
+  expect(contextLocale({ locale: 1 })).toBeUndefined();
+  expect(contextLocale({})).toBeUndefined();
+  expect(contextLocale(null)).toBeUndefined();
+});
 
 test("beforeLoad keeps shared document rendering anonymous", async () => {
   const anonymous = await resolveRootBeforeLoad({

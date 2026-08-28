@@ -142,6 +142,10 @@ const MILESTONE_META = {
   born: { labelKey: MILESTONE_LABEL_KEYS.born, icon: Confetti },
 } as const satisfies Record<Milestone, { labelKey: TranslationKey; icon: typeof Heartbeat }>;
 
+const uploadResponseSchema = z.object({
+  storageId: z.custom<Id<"_storage">>((value) => typeof value === "string"),
+});
+
 function getRelativeTimeFromTimestamp(timestamp: number, locale: SupportedLocale): string {
   const now = Date.now();
   const diffInSeconds = Math.floor((timestamp - now) / 1000);
@@ -293,7 +297,7 @@ function UpdateComposerForm(props: UpdateComposerFormProps) {
             if (!response.ok) {
               throw new Error(t("Failed to upload photo"));
             }
-            const uploaded = (await response.json()) as { storageId: Id<"_storage"> };
+            const uploaded = uploadResponseSchema.parse(await response.json());
             photoId = uploaded.storageId;
           }
 

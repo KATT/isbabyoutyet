@@ -53,6 +53,29 @@ const userRowValidator = v.object({
   babies: v.array(userBabySummaryValidator),
 });
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+export function parseAuthUserPage(result: unknown) {
+  if (!isRecord(result) || !Array.isArray(result.page)) {
+    throw new Error("Better Auth returned an invalid user page");
+  }
+  const users = result.page.filter(isRecord);
+  if (
+    users.length !== result.page.length ||
+    typeof result.isDone !== "boolean" ||
+    typeof result.continueCursor !== "string"
+  ) {
+    throw new Error("Better Auth returned invalid user pagination");
+  }
+  return {
+    page: users,
+    isDone: result.isDone,
+    continueCursor: result.continueCursor,
+  };
+}
+
 function authUserRow(user: Record<string, unknown>) {
   return {
     _id: String(user._id),
@@ -192,7 +215,7 @@ export const listBabies = query({
         status: (await loadCurrentStatus(ctx, baby._id)).type,
         demo: baby.demo === true,
         createdAt,
-        updatedAt: Math.max(createdAt, baby.lastActivityAt ?? createdAt),
+        updatedAt: Math.max(createdAt, baby.lastActivityAt),
         managerEmails: await managerEmailsForBaby(ctx, baby),
       });
     }
@@ -213,8 +236,10 @@ export const listUsers = query({
       sortBy: { field: "createdAt", direction: "desc" },
       paginationOpts: args.paginationOpts,
     });
+    const validated = parseAuthUserPage(result);
+
     const page = [];
-    for (const user of result.page as Record<string, unknown>[]) {
+    for (const user of validated.page) {
       const row = authUserRow(user);
       page.push({
         ...row,
@@ -223,8 +248,8 @@ export const listUsers = query({
     }
     return {
       page,
-      isDone: result.isDone as boolean,
-      continueCursor: result.continueCursor as string,
+      isDone: validated.isDone,
+      continueCursor: validated.continueCursor,
     };
   },
 });

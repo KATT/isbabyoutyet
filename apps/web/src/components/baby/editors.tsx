@@ -132,10 +132,7 @@ export function DueDateEditor(props: DueDateEditorProps) {
         (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
       ) {
         const activeElement = document.activeElement;
-        if (
-          activeElement?.tagName === "INPUT" &&
-          (activeElement as HTMLInputElement).type === "date"
-        ) {
+        if (activeElement instanceof HTMLInputElement && activeElement.type === "date") {
           eventDetails.cancel();
         }
       }
@@ -182,6 +179,8 @@ function DueDateForm(props: EditorFormProps) {
       <DueDateDisplayFields
         control={form.control}
         dateFieldName="date"
+        showExactDueDateFieldName="showExactDueDate"
+        publicDueDateTextFieldName="publicDueDateText"
         className="mb-3"
         sectionLabelClassName={undefined}
         stopPopoverPropagation={true}

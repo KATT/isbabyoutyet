@@ -58,12 +58,19 @@ function browserPushCapabilityFactory(queryClient: QueryClient) {
 
 export type BrowserPushCapabilityFactory = ReturnType<typeof browserPushCapabilityFactory>;
 
+function initiatedBrowserPushCapability(
+  babyRef: string,
+): InitiatedQuery<BrowserPushCapabilityFactory>;
+function initiatedBrowserPushCapability(babyRef: string): unknown {
+  return { input: babyRef };
+}
+
 export function prefetchBrowserPushCapability(
   queryClient: QueryClient,
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory> {
   if (typeof window === "undefined") {
-    return { input: babyRef } as InitiatedQuery<BrowserPushCapabilityFactory>;
+    return initiatedBrowserPushCapability(babyRef);
   }
   const factory = browserPushCapabilityFactory(queryClient);
   return getQueryInitiator(queryClient).ensureQueryData(factory, babyRef);
@@ -116,7 +123,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
       const pushSubscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: applicationServerKey as BufferSource,
+        applicationServerKey,
       });
 
       const subscriptionData = pushSubscription.toJSON();
@@ -331,6 +338,16 @@ function NotificationSubscribeControls(props: {
   );
 }
 
+function hasLegacyMSStream(value: Window): value is Window & { MSStream: unknown } {
+  return "MSStream" in value;
+}
+
+function hasStandaloneFlag(
+  value: Navigator,
+): value is Navigator & { standalone: boolean | undefined } {
+  return "standalone" in value;
+}
+
 function getIOSStatus() {
   if (typeof window === "undefined") {
     return { isIOS: false, isStandalone: false };
@@ -338,7 +355,7 @@ function getIOSStatus() {
 
   const isIOS =
     /iPad|iPhone|iPod/.test(navigator.userAgent) &&
-    !(window as unknown as { MSStream: unknown | undefined }).MSStream;
+    (!hasLegacyMSStream(window) || !window.MSStream);
   if (!isIOS) {
     return { isIOS: false, isStandalone: false };
   }
@@ -346,7 +363,7 @@ function getIOSStatus() {
   const isStandalone =
     (typeof window.matchMedia === "function" &&
       window.matchMedia("(display-mode: standalone)").matches) ||
-    (navigator as unknown as { standalone: boolean | undefined }).standalone === true;
+    (hasStandaloneFlag(navigator) && navigator.standalone === true);
 
   return { isIOS: true, isStandalone };
 }
@@ -368,6 +385,15 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
   return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 }
 
+function fetchIsSubscribed(opts: { queryClient: QueryClient; babyRef: string; endpoint: string }) {
+  return opts.queryClient.fetchQuery(
+    convexQuery(api.pushSubscriptions.isSubscribed, {
+      babyId: opts.babyRef,
+      endpoint: opts.endpoint,
+    }),
+  );
+}
+
 async function resolveBrowserPushCapability(
   queryClient: QueryClient,
   babyRef: string,
@@ -385,12 +411,11 @@ async function resolveBrowserPushCapability(
     const registration = await waitForServiceWorkerWithTimeout(SERVICE_WORKER_READY_TIMEOUT_MS);
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
-      const isSubscribed = await queryClient.fetchQuery(
-        convexQuery(api.pushSubscriptions.isSubscribed, {
-          babyId: babyRef,
-          endpoint: subscription.endpoint,
-        }) as unknown as Parameters<QueryClient["fetchQuery"]>[0],
-      );
+      const isSubscribed = await fetchIsSubscribed({
+        queryClient,
+        babyRef,
+        endpoint: subscription.endpoint,
+      });
       return { kind: "subscribed", subscription, isSubscribed: Boolean(isSubscribed) };
     }
     return { kind: "unsubscribed" };
@@ -402,7 +427,8 @@ async function resolveBrowserPushCapability(
   }
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+// Convert VAPID key from base64 URL to Uint8Array
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 

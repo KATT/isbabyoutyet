@@ -16,6 +16,11 @@ const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "..");
 const assetsDir = path.join(convexPackageDir, "assets/homepage-demo");
 
+type UploadedPhotos = Record<
+  HomepageDemoPhotoKey,
+  { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
+>;
+
 export function extraConvexArgsFromArgv(argv: string[]) {
   const extra: string[] = [];
   for (let i = 0; i < argv.length; i++) {
@@ -45,14 +50,16 @@ export function convexRun(opts: {
 function parseConvexRunOutput(stdout: string) {
   const trimmed = stdout.trim();
   try {
-    return JSON.parse(trimmed) as unknown;
+    const parsed: unknown = JSON.parse(trimmed);
+    return parsed;
   } catch {
     const lines = trimmed.split("\n");
     for (let i = lines.length - 1; i >= 0; i--) {
       const line = lines[i]?.trim();
       if (!line) continue;
       try {
-        return JSON.parse(line) as unknown;
+        const parsed: unknown = JSON.parse(line);
+        return parsed;
       } catch {
         // keep looking
       }
@@ -137,17 +144,22 @@ async function uploadBytes(opts: { bytes: Buffer; extraConvexArgs: string[] }) {
   if (!response.ok) {
     throw new Error(`Photo upload failed: ${response.status} ${await response.text()}`);
   }
-  const payload = (await response.json()) as { storageId?: string };
-  if (!payload.storageId) {
+  const payload: unknown = await response.json();
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !("storageId" in payload) ||
+    typeof payload.storageId !== "string" ||
+    !payload.storageId
+  ) {
     throw new Error(`Upload response missing storageId: ${JSON.stringify(payload)}`);
   }
   return payload.storageId;
 }
 
-type UploadedPhotos = Record<
-  HomepageDemoPhotoKey,
-  { photoId: string; thumbnailId: string; pushImageId: string; blurDataUrl: string }
->;
+function hasAllHomepageDemoPhotos(photos: Partial<UploadedPhotos>): photos is UploadedPhotos {
+  return HOMEPAGE_DEMO_PHOTO_KEYS.every((key) => photos[key] !== undefined);
+}
 
 function refreshHomepageDemoLocales(opts: {
   extraConvexArgs: string[];
@@ -211,7 +223,7 @@ async function loadPhotosFromDisk() {
 async function uploadHomepageDemoPhotos(opts: { extraConvexArgs: string[] }) {
   const photosOnDisk = await loadPhotosFromDisk();
 
-  const photos: UploadedPhotos = {} as UploadedPhotos;
+  const photos: Partial<UploadedPhotos> = {};
 
   for (const photo of photosOnDisk) {
     const prepared = await jpegAndDerivatives(photo.buffer);
@@ -231,6 +243,9 @@ async function uploadHomepageDemoPhotos(opts: { extraConvexArgs: string[] }) {
     console.log(`Uploaded ${photo.key} (${photo.filePath})`);
   }
 
+  if (!hasAllHomepageDemoPhotos(photos)) {
+    throw new Error("Not all homepage demo photos were uploaded");
+  }
   return photos;
 }
 

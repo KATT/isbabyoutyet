@@ -1,7 +1,33 @@
 import { convexQuery } from "@convex-dev/react-query";
-import { useQuery, useSuspenseQuery, type UseSuspenseQueryResult } from "@tanstack/react-query";
+import {
+  useQuery,
+  useSuspenseQuery,
+  type UseSuspenseQueryOptions,
+  type UseSuspenseQueryResult,
+} from "@tanstack/react-query";
 import type { FunctionArgs, FunctionReturnType } from "convex/server";
 import type { InitiatedConvexQuery, PreloadedConvexQuery, QueryReference } from "./handles.js";
+
+type ConvexQueryOptions<TQuery extends QueryReference> = Pick<
+  UseSuspenseQueryOptions<
+    FunctionReturnType<TQuery>,
+    Error,
+    FunctionReturnType<TQuery>,
+    ["convexQuery", TQuery, FunctionArgs<TQuery>]
+  >,
+  "queryKey" | "queryFn" | "staleTime"
+>;
+
+function liveConvexQuery<TQuery extends QueryReference>(
+  funcRef: TQuery,
+  args: FunctionArgs<TQuery>,
+): ConvexQueryOptions<TQuery>;
+function liveConvexQuery<TQuery extends QueryReference>(
+  funcRef: TQuery,
+  args: FunctionArgs<TQuery>,
+) {
+  return convexQuery(funcRef, args);
+}
 
 /**
  * Rebuilds `convexQuery(funcRef, handle.input)` options from a loader handle,
@@ -11,7 +37,7 @@ export function preloadedConvexQueryOptions<TQuery extends QueryReference>(
   funcRef: TQuery,
   handle: InitiatedConvexQuery<TQuery> | PreloadedConvexQuery<TQuery>,
 ) {
-  const options = convexQuery(funcRef, handle.input as never);
+  const options = liveConvexQuery(funcRef, handle.input);
   if ("initialData" in handle) {
     return { ...options, initialData: handle.initialData };
   }
@@ -29,9 +55,7 @@ export function usePreloadedConvexQuery<TQuery extends QueryReference>(
   funcRef: TQuery,
   handle: InitiatedConvexQuery<TQuery> | PreloadedConvexQuery<TQuery>,
 ): UseSuspenseQueryResult<FunctionReturnType<TQuery>, Error> {
-  return useSuspenseQuery(
-    preloadedConvexQueryOptions(funcRef, handle) as never,
-  ) as UseSuspenseQueryResult<FunctionReturnType<TQuery>, Error>;
+  return useSuspenseQuery(preloadedConvexQueryOptions(funcRef, handle));
 }
 
 /**
@@ -44,13 +68,13 @@ export function useInitiateConvexQuery<TQuery extends QueryReference>(
   funcRef: TQuery,
   args: FunctionArgs<TQuery>,
 ): InitiatedConvexQuery<TQuery> {
-  const options = convexQuery(funcRef, args as never);
+  const options = liveConvexQuery(funcRef, args);
 
   // Start the fetch without subscribing; the downstream read surfaces data.
   useQuery({
     ...options,
     notifyOnChangeProps: [],
-  } as unknown as Parameters<typeof useQuery>[0]);
+  });
 
-  return { input: args } as InitiatedConvexQuery<TQuery>;
+  return { input: args };
 }

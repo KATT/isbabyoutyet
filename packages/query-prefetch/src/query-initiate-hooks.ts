@@ -1,10 +1,66 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import type {
+  AnyQueryOptions,
   InitiatedInfiniteQuery,
   InitiatedQuery,
+  QueryInput,
   QueryInputArgs,
   QueryOptionsFactory,
 } from "./types.js";
+
+interface AnyInfiniteQueryOptions extends AnyQueryOptions {
+  initialPageParam: unknown;
+  getNextPageParam(
+    ...args: [
+      lastPage: unknown,
+      allPages: unknown[],
+      lastPageParam: unknown,
+      allPageParams: unknown[],
+    ]
+  ): unknown;
+}
+
+type RuntimeQueryOptionsFactory = {
+  bivarianceHack(input: unknown): AnyQueryOptions;
+}["bivarianceHack"];
+
+function invokeFactory<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInput<TFactory> | undefined,
+): ReturnType<TFactory>;
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
+  return factory(input);
+}
+
+function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedQuery<TFactory>;
+function createInitiatedQuery(
+  _factory: RuntimeQueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
+
+function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
+  factory: TFactory,
+  input: QueryInputArgs<TFactory>,
+): InitiatedInfiniteQuery<TFactory>;
+function createInitiatedInfiniteQuery(
+  _factory: RuntimeQueryOptionsFactory,
+  input: readonly unknown[],
+): { input?: unknown } {
+  return { input: input[0] };
+}
+
+function isInfiniteQueryOptions(options: AnyQueryOptions): options is AnyInfiniteQueryOptions {
+  return (
+    "initialPageParam" in options &&
+    "getNextPageParam" in options &&
+    typeof options.getNextPageParam === "function"
+  );
+}
 
 /**
  * Starts a query during render and returns an {@link InitiatedQuery} handle, so
@@ -22,16 +78,16 @@ export function useInitiateQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   ...input: QueryInputArgs<TFactory>
 ): InitiatedQuery<TFactory> {
-  const options = factory(input[0] as never);
+  const options = invokeFactory(factory, input[0]);
 
   // Start the fetch on render without subscribing to updates; the read
   // downstream (via `preloadedQueryOptions`) is what surfaces data and errors.
   useQuery({
     ...options,
     notifyOnChangeProps: [],
-  } as unknown as Parameters<typeof useQuery>[0]);
+  });
 
-  return { input: input[0] } as InitiatedQuery<TFactory>;
+  return createInitiatedQuery(factory, input);
 }
 
 /**
@@ -43,12 +99,16 @@ export function useInitiateInfiniteQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   ...input: QueryInputArgs<TFactory>
 ): InitiatedInfiniteQuery<TFactory> {
-  const options = factory(input[0] as never);
+  const options = invokeFactory(factory, input[0]);
+
+  if (!isInfiniteQueryOptions(options)) {
+    throw new TypeError("Infinite query options require page parameters");
+  }
 
   useInfiniteQuery({
     ...options,
     notifyOnChangeProps: [],
-  } as unknown as Parameters<typeof useInfiniteQuery>[0]);
+  });
 
-  return { input: input[0] } as InitiatedInfiniteQuery<TFactory>;
+  return createInitiatedInfiniteQuery(factory, input);
 }

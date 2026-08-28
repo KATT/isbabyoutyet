@@ -47,7 +47,7 @@ export function BabyNav(props: BabyNavProps) {
           <Button
             variant="ghost"
             className="rounded-full font-bold"
-            render={<Link {...(props.postUpdateButton as any)} />}
+            render={<Link {...props.postUpdateButton} />}
             nativeButton={false}
             data-tour-id="post_update"
           >
@@ -75,7 +75,7 @@ export function BabyNav(props: BabyNavProps) {
                   variant="ghost"
                   size="icon"
                   className="rounded-full"
-                  render={<Link {...(props.settingsButton as any)} />}
+                  render={<Link {...props.settingsButton} />}
                   nativeButton={false}
                   aria-label={t("Settings")}
                   data-tour-id="explore_settings"
@@ -117,7 +117,7 @@ export function BabyNav(props: BabyNavProps) {
                 variant="ghost"
                 size="icon"
                 className="rounded-full"
-                render={props.shareButton ? <Link {...(props.shareButton as any)} /> : undefined}
+                render={props.shareButton ? <Link {...props.shareButton} /> : undefined}
                 nativeButton={!props.shareButton}
                 disabled={!props.shareButton}
                 aria-label={t("Share the link")}

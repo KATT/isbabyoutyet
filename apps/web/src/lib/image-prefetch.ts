@@ -18,6 +18,11 @@ export function browserImageFactory(imageUrl: string) {
 
 export type BrowserImageFactory = typeof browserImageFactory;
 
+function initiatedBrowserImage(imageUrl: string): InitiatedQuery<BrowserImageFactory>;
+function initiatedBrowserImage(imageUrl: string): unknown {
+  return { input: imageUrl };
+}
+
 /**
  * Fire-and-forget image warm in route loaders. On the server returns a
  * serializable handle without touching `Image` / the network.
@@ -27,7 +32,7 @@ export function prefetchBrowserImage(
   imageUrl: string,
 ): InitiatedQuery<BrowserImageFactory> {
   if (typeof window === "undefined") {
-    return { input: imageUrl } as InitiatedQuery<BrowserImageFactory>;
+    return initiatedBrowserImage(imageUrl);
   }
   return getQueryInitiator(queryClient).ensureQueryData(browserImageFactory, imageUrl);
 }

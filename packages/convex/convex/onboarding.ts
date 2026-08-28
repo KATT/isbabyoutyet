@@ -8,17 +8,25 @@ import { appIdentity, tokenIdentifierForAuthUserId } from "./authIdentity";
 import { isActive } from "./softDelete";
 import { onboardingStepIdValidator } from "./onboardingValidators";
 
-const emptyState = {
+type OnboardingClientState = Omit<
+  ReturnType<typeof toClientState>,
+  "completedSteps" | "effectiveSteps"
+> & {
+  completedSteps: string[];
+  effectiveSteps: string[];
+};
+
+const emptyState: OnboardingClientState = {
   welcomeDismissed: false,
   checklistDismissed: false,
   minimized: false,
-  completedSteps: [] as string[],
+  completedSteps: [],
   hasBaby: false,
   hasUpdate: false,
-  effectiveSteps: [] as string[],
+  effectiveSteps: [],
   allDone: false,
-  tourBaby: null as null | { publicId: string; name: string },
-  activeCoachmarkStepId: null as null | (typeof ONBOARDING_STEP_IDS)[number],
+  tourBaby: null,
+  activeCoachmarkStepId: null,
   restartHintVisible: false,
 };
 

@@ -45,7 +45,7 @@ function createSubscribe(deps: WatchDeps) {
       return watch.onUpdate(() => {
         let value: LivePage | undefined;
         try {
-          value = watch.localQueryResult() as LivePage | undefined;
+          value = watch.localQueryResult();
         } catch {
           return;
         }

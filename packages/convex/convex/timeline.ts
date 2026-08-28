@@ -198,7 +198,7 @@ export const latestUpdate = query({
 export const getUpdatePhoto = query({
   args: {
     babyId: babyIdOrPublicIdValidator,
-    updateId: v.id("updates"),
+    updateId: v.string(),
   },
   returns: v.union(
     v.object({
@@ -213,7 +213,11 @@ export const getUpdatePhoto = query({
     if (!baby || !isActive(baby)) {
       return null;
     }
-    const update = await ctx.db.get(args.updateId);
+    const updateId = ctx.db.normalizeId("updates", args.updateId);
+    if (!updateId) {
+      return null;
+    }
+    const update = await ctx.db.get(updateId);
     if (!update || !isActive(update) || update.babyId !== baby._id || !update.photoId) {
       return null;
     }

@@ -32,6 +32,7 @@ import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
+import { isSupportedLocale } from "@workspace/convex/src/i18n";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
@@ -184,26 +185,52 @@ export const Route = createRootRouteWithContext<{
   notFoundComponent: NotFoundComponent,
 });
 
+export function contextLocale(context: unknown): SupportedLocale | undefined {
+  if (
+    typeof context !== "object" ||
+    context === null ||
+    !("locale" in context) ||
+    typeof context.locale !== "string" ||
+    !isSupportedLocale(context.locale)
+  ) {
+    return undefined;
+  }
+  return context.locale;
+}
+
+function contextToken(context: unknown) {
+  return typeof context === "object" &&
+    context !== null &&
+    "token" in context &&
+    (typeof context.token === "string" || context.token === null)
+    ? context.token
+    : undefined;
+}
+
+// better-auth and @convex-dev/better-auth currently expose structurally
+// incompatible client types despite supporting the same peer-version range.
+function compatibleAuthClient(client: typeof authClient): AuthClient;
+function compatibleAuthClient(client: unknown) {
+  return client;
+}
+
+const convexAuthClient = compatibleAuthClient(authClient);
+
 function RootComponent() {
   const context = useRouteContext({ from: Route.id });
   const matches = useMatches();
   const token = matches.reduce<string | null | undefined>((currentToken, match) => {
-    const matchContext = match.context as { token: string | null | undefined };
-    return matchContext.token ?? currentToken;
+    return contextToken(match.context) ?? currentToken;
   }, context.token);
   const locale = matches.reduce((currentLocale, match) => {
-    const matchContext = match.context as { locale: SupportedLocale | undefined };
-    return matchContext.locale ?? currentLocale;
+    return contextLocale(match.context) ?? currentLocale;
   }, context.locale);
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      {/* Cast: better-auth >=1.6.18 broke assignability to @convex-dev/better-auth's
-          AuthClient type (upstream types against better-auth 1.6.15). Runtime is
-          compatible per the peer range (>=1.6.11 <1.7.0). */}
       <ConvexBetterAuthProvider
         client={context.convexQueryClient.convexClient}
-        authClient={authClient as unknown as AuthClient}
+        authClient={convexAuthClient}
         initialToken={token}
       >
         <ConvexAuthObserver />

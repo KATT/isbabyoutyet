@@ -162,7 +162,11 @@ export const MILESTONE_FIELDS = {
   { date: keyof MilestoneDates; message: keyof BabyPreviewMessages }
 >;
 
-export const MILESTONES = Object.keys(MILESTONE_FIELDS) as Milestone[];
+function isMilestone(value: string): value is Milestone {
+  return value === "labor_started" || value === "gone_to_hospital" || value === "born";
+}
+
+export const MILESTONES = Object.keys(MILESTONE_FIELDS).filter(isMilestone);
 
 type MilestonePolicyInput = {
   babyBorn?: string | null;

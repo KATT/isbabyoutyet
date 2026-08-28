@@ -13,5 +13,5 @@ export const ONBOARDING_STEP_IDS = [
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
 
 export function isOnboardingStepId(value: string): value is OnboardingStepId {
-  return (ONBOARDING_STEP_IDS as readonly string[]).includes(value);
+  return ONBOARDING_STEP_IDS.some((stepId) => stepId === value);
 }

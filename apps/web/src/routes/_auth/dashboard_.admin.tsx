@@ -152,11 +152,11 @@ export function nextSortSearch(opts: {
   currentSort: SortBy;
   currentOrder: SortOrder;
   clicked: SortBy;
-}) {
+}): { sort: SortBy; order: SortOrder } {
   if (opts.clicked === opts.currentSort && opts.currentOrder === "desc") {
-    return { sort: opts.clicked, order: "asc" as SortOrder };
+    return { sort: opts.clicked, order: "asc" };
   }
-  return { sort: opts.clicked, order: "desc" as SortOrder };
+  return { sort: opts.clicked, order: "desc" };
 }
 
 function InfiniteScrollSentinel(props: { canLoadMore: boolean; onLoadMore: () => void }) {

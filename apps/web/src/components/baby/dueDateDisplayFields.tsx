@@ -7,7 +7,7 @@ import {
 } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import type { Control, FieldPath, FieldValues } from "react-hook-form";
+import type { Control, FieldPath, FieldPathByValue, FieldValues } from "react-hook-form";
 import { useWatch } from "react-hook-form";
 import { ShowExactDueDateToggleField } from "@/components/baby/showExactDueDateToggleField";
 import { useI18n } from "@/lib/i18n";
@@ -15,25 +15,28 @@ import { useI18n } from "@/lib/i18n";
 type DueDateDisplayFieldsProps<
   TFieldValues extends FieldValues,
   TDateName extends FieldPath<TFieldValues>,
+  TShowExactName extends FieldPathByValue<TFieldValues, boolean>,
+  TPublicTextName extends FieldPathByValue<TFieldValues, string>,
 > = {
   control: Control<TFieldValues, unknown, unknown>;
   dateFieldName: TDateName;
+  showExactDueDateFieldName: TShowExactName;
+  publicDueDateTextFieldName: TPublicTextName;
   className: string | undefined;
   sectionLabelClassName: string | undefined;
   stopPopoverPropagation: boolean;
 };
 
 export function DueDateDisplayFields<
-  TFieldValues extends FieldValues & {
-    showExactDueDate: boolean;
-    publicDueDateText: string;
-  },
+  TFieldValues extends FieldValues,
   TDateName extends FieldPath<TFieldValues>,
->(props: DueDateDisplayFieldsProps<TFieldValues, TDateName>) {
+  TShowExactName extends FieldPathByValue<TFieldValues, boolean>,
+  TPublicTextName extends FieldPathByValue<TFieldValues, string>,
+>(props: DueDateDisplayFieldsProps<TFieldValues, TDateName, TShowExactName, TPublicTextName>) {
   const { t } = useI18n();
   const showExactDueDate = useWatch({
     control: props.control,
-    name: "showExactDueDate" as FieldPath<TFieldValues>,
+    name: props.showExactDueDateFieldName,
   });
 
   return (
@@ -42,7 +45,7 @@ export function DueDateDisplayFields<
       <div className="overflow-hidden rounded-xl border border-border">
         <ShowExactDueDateToggleField
           control={props.control}
-          name={"showExactDueDate" as FieldPath<TFieldValues>}
+          name={props.showExactDueDateFieldName}
           rowClassName="gap-3 p-3 pb-2"
           titleClassName={undefined}
         />
@@ -78,7 +81,7 @@ export function DueDateDisplayFields<
           ) : (
             <FormField
               control={props.control}
-              name={"publicDueDateText" as FieldPath<TFieldValues>}
+              name={props.publicDueDateTextFieldName}
               render={(renderProps) => (
                 <FormItem>
                   <FormLabel className="text-sm font-normal text-muted-foreground">

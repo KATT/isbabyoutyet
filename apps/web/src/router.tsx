@@ -42,8 +42,8 @@ export function getRouter() {
     defaultOptions: {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
-        // Wraps ConvexQueryClient.queryFn so infinite/paginated keys work too.
-        queryFn: convexInfiniteQueryFn(convexQueryClient) as never,
+        // Handles both regular Convex queries and infinite/paginated keys.
+        queryFn: convexInfiniteQueryFn(convexQueryClient),
       },
     },
   });

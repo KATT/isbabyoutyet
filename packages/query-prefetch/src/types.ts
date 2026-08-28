@@ -19,7 +19,9 @@ export interface AnyQueryOptions {
  * must take exactly zero or one argument; the `(input: never)` signature rejects
  * any factory that declares two or more parameters.
  */
-export type QueryOptionsFactory = (input: never) => AnyQueryOptions;
+export type QueryOptionsFactory<TOptions extends AnyQueryOptions = AnyQueryOptions> = {
+  bivarianceHack(input: unknown): TOptions;
+}["bivarianceHack"];
 
 /**
  * The single argument a factory accepts (its only parameter), or `never` for a

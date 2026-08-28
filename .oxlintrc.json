@@ -82,6 +82,8 @@
     // helper cannot reintroduce it behind a seam.
     "no-mock/no-mock": "error",
     "eslint/max-params": ["error", 2],
+    // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "react-compiler/no-manual-memoization": "error",
@@ -93,6 +95,21 @@
     "no-banned-react-reexport/no-banned-react-reexport": "error"
   },
   "overrides": [
+    {
+      // Tests sometimes need assertions to build deliberately incomplete or invalid values.
+      "files": [
+        "**/*.test.{js,jsx,ts,tsx}",
+        "**/*.spec.{js,jsx,ts,tsx}",
+        "**/test-*.{js,jsx,ts,tsx}",
+        "**/test.*.{js,jsx,ts,tsx}",
+        "**/test/**/*.{js,jsx,ts,tsx}",
+        "**/tests/**/*.{js,jsx,ts,tsx}",
+        "**/__tests__/**/*.{js,jsx,ts,tsx}"
+      ],
+      "rules": {
+        "typescript/consistent-type-assertions": "off"
+      }
+    },
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
@@ -157,6 +174,7 @@
       // Vendored shadcn/ui registry components — not first-party code.
       "files": ["packages/ui/src/**"],
       "rules": {
+        "typescript/consistent-type-assertions": "off",
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",

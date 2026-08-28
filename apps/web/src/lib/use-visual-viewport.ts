@@ -15,9 +15,9 @@ export function useVisualViewportMetrics() {
   const bottom = Number(bottomText);
   const width = Number(widthText);
   const left = Number(leftText);
-  const style = {
+  const style: CSSProperties & Record<"--visual-viewport-bottom", string> = {
     "--visual-viewport-bottom": `${bottom}px`,
-  } as CSSProperties;
+  };
   return { bottom, width, left, style };
 }
 

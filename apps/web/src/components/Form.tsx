@@ -46,7 +46,7 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
   const formRef = useRef<HTMLFormElement>(null);
   const form = useForm<TInput, TContext, TOutput>({
     ...props,
-    resolver: zodResolver(props.schema) as never,
+    resolver: zodResolver<TInput, TContext, TOutput>(props.schema),
   });
 
   return {
@@ -221,8 +221,8 @@ export function FormCancelButton<TFieldValues extends FieldValues>(
     form: CancelTargetForm<TFieldValues> | "context";
   },
 ) {
-  const { isSubmitting } = useFormState(
-    props.form === "context" ? {} : { control: props.form.control as Control<FieldValues> },
+  const { isSubmitting } = useFormState<TFieldValues>(
+    props.form === "context" ? {} : { control: props.form.control },
   );
   const { form: _form, disabled, variant, ...buttonProps } = props;
   return (
@@ -267,11 +267,10 @@ export function SubmitButton<TFieldValues extends FieldValues>(
   }
   // Subscribe through the hook — do not read `form.formState.isSubmitting` directly
   // (RHF Proxy + React Compiler often skips re-renders).
-  const { isSubmitting } = useFormState(
+  const { isSubmitting } = useFormState<TFieldValues>(
     props.form === "context"
       ? {}
-      : // RHF Control is invariant; cast so useFormState accepts any field map.
-        { control: props.form.control as Control<FieldValues> },
+      : { control: props.form.control },
   );
 
   const { form: formProp, IconComponent, iconPosition, disabled, children, ...buttonProps } = props;
@@ -285,12 +284,8 @@ export function SubmitButton<TFieldValues extends FieldValues>(
         </span>
       ) : typeof IconComponent === "string" ? (
         <span className="text-base leading-none">{IconComponent}</span>
-      ) : (
-        // showIcon requires a non-null IconComponent when idle.
-        (() => {
-          const IdleIcon = IconComponent as Icon;
-          return <IdleIcon className="size-4" />;
-        })()
+      ) : IconComponent == null ? null : (
+        <IconComponent className="size-4" />
       )}
     </span>
   ) : null;

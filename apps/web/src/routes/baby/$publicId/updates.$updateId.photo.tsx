@@ -3,7 +3,6 @@ import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch"
 import { useI18n } from "@/lib/i18n";
 import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, notFound, redirect } from "@tanstack/react-router";
 import { preloadedQueryOptions } from "@workspace/query-prefetch";
@@ -30,7 +29,7 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
       api.timeline.getUpdatePhoto,
       {
         babyId: opts.params.publicId,
-        updateId: opts.params.updateId as Id<"updates">,
+        updateId: opts.params.updateId,
       },
     );
     if (!updatePhoto.initialData) {
