@@ -38,8 +38,8 @@ import {
   testUpdateInsert,
 } from "./test.setup";
 
-function withoutKeys<TDoc>(doc: TDoc, keys: ReadonlyArray<keyof TDoc & string>) {
-  const copy: Record<string, unknown> = Object.assign({}, doc);
+function withoutKeys<TDoc extends object>(doc: TDoc, keys: ReadonlyArray<keyof TDoc & string>) {
+  const copy: Partial<TDoc> = { ...doc };
   for (const key of keys) {
     delete copy[key];
   }
