@@ -3,12 +3,12 @@ import { allKeyed } from "./allKeyed.js";
 
 test("allKeyed resolves values by key", async () => {
   const result = await allKeyed({
-    shape: Promise.resolve("circle"),
+    form: Promise.resolve("circle"),
     color: Promise.resolve("blue"),
     mass: 12,
   });
 
-  expect(result).toEqual({ shape: "circle", color: "blue", mass: 12 });
+  expect(result).toEqual({ form: "circle", color: "blue", mass: 12 });
   expect(Object.getPrototypeOf(result)).toBeNull();
 });
 
