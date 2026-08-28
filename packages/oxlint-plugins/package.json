@@ -7,7 +7,7 @@
     "./*": "./dist/*"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsdown --config-loader native",
     "lint": "oxfmt --check",
     "lint-fix": "oxfmt",
     "format": "oxfmt",
@@ -21,6 +21,7 @@
   "devDependencies": {
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "tsdown": "^0.22.14",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
