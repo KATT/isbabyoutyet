@@ -24,15 +24,25 @@ function requireAuthMutationCtx(ctx: GenericCtx<DataModel>) {
   return ctx;
 }
 
-function authUserFromReturned(returned: unknown) {
-  if (!returned || typeof returned !== "object" || !("user" in returned)) {
+/** Parsed Better Auth email auth user extracted from middleware returned. */
+type AuthEndpointUser = {
+  readonly userId: string;
+  readonly email: string | null;
+  readonly name: string | null;
+};
+
+function parseAuthUserFromReturned<TReturned>(returned: TReturned): AuthEndpointUser | null {
+  if (typeof returned !== "object" || returned === null || Array.isArray(returned)) {
+    return null;
+  }
+  if (!("user" in returned)) {
     return null;
   }
   const user = returned.user;
-  if (!user || typeof user !== "object" || !("id" in user)) {
+  if (typeof user !== "object" || user === null || Array.isArray(user)) {
     return null;
   }
-  const userId = user.id;
+  const userId = "id" in user ? user.id : null;
   if (typeof userId !== "string") {
     return null;
   }
@@ -91,7 +101,7 @@ export const createAuth = (convexCtx: GenericCtx<DataModel>) => {
         if (ctx.path !== "/sign-up/email" && ctx.path !== "/sign-in/email") {
           return;
         }
-        const authUser = authUserFromReturned(ctx.context.returned);
+        const authUser = parseAuthUserFromReturned(ctx.context.returned);
         if (!authUser) {
           return;
         }

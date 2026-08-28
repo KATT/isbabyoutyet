@@ -14,13 +14,29 @@ export interface AnyQueryOptions {
 }
 
 /**
+ * Untyped factory argument at the runtime options boundary — every serializable
+ * JS value a query factory might accept before a concrete
+ * {@link QueryOptionsFactory} narrows it.
+ */
+export type QueryFactoryInput =
+  | string
+  | number
+  | boolean
+  | bigint
+  | symbol
+  | null
+  | undefined
+  | QueryFactoryInput[]
+  | { readonly [key: string]: QueryFactoryInput };
+
+/**
  * A function that builds query options from a single optional input — e.g.
  * `postById({ postId })` or a no-arg factory like `currentUnits()`. Factories
  * must take exactly zero or one argument; the `(input: never)` signature rejects
  * any factory that declares two or more parameters.
  */
 export type QueryOptionsFactory<TOptions extends AnyQueryOptions = AnyQueryOptions> = {
-  bivarianceHack(input: unknown): TOptions;
+  bivarianceHack(input: QueryFactoryInput): TOptions;
 }["bivarianceHack"];
 
 /**

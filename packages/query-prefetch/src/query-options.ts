@@ -5,6 +5,7 @@ import type {
   PreloadedInfiniteQuery,
   PreloadedQuery,
   QueryDataOf,
+  QueryFactoryInput,
   QueryInput,
   QueryOptionsFactory,
 } from "./types.js";
@@ -35,22 +36,15 @@ type RemixInput<TFactory extends QueryOptionsFactory> = (
   input: QueryInput<TFactory>,
 ) => QueryInput<TFactory>;
 
-type RuntimeRemixInput = {
-  bivarianceHack(input: unknown): QueryInput<QueryOptionsFactory>;
-}["bivarianceHack"];
-
 type RuntimeQueryOptionsFactory = {
-  bivarianceHack(input: unknown): AnyQueryOptions;
+  bivarianceHack(input: QueryFactoryInput): AnyQueryOptions;
 }["bivarianceHack"];
 
 function resolveInput<TFactory extends QueryOptionsFactory>(
   preloadedQuery: { readonly input?: QueryInput<TFactory> },
   remixInput: RemixInput<TFactory> | undefined,
 ): QueryInput<TFactory> | undefined;
-function resolveInput(
-  preloadedQuery: { readonly input?: unknown },
-  remixInput: RuntimeRemixInput | undefined,
-) {
+function resolveInput(preloadedQuery: { readonly input?: unknown }, remixInput: any) {
   return remixInput ? remixInput(preloadedQuery.input) : preloadedQuery.input;
 }
 
@@ -58,7 +52,7 @@ function invokeFactory<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInput<TFactory> | undefined,
 ): ReturnType<TFactory>;
-function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
+function invokeFactory(factory: RuntimeQueryOptionsFactory, input: any) {
   return factory(input);
 }
 

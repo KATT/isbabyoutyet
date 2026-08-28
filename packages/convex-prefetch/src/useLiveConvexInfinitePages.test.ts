@@ -1,7 +1,12 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import { ConvexProvider, type ConvexReactClient } from "convex/react";
-import { anyApi, makeFunctionReference, type DefaultFunctionArgs } from "convex/server";
+import {
+  anyApi,
+  makeFunctionReference,
+  type DefaultFunctionArgs,
+  type FunctionReference,
+} from "convex/server";
 import * as React from "react";
 import { expect, test, vi } from "vitest";
 
@@ -14,7 +19,7 @@ type WatchHandle = {
   localQueryResult: () => LivePage | undefined;
 };
 
-type WatchQuery = (funcRef: unknown, args: DefaultFunctionArgs) => WatchHandle;
+type WatchQuery = (funcRef: FunctionReference<"query">, args: DefaultFunctionArgs) => WatchHandle;
 
 const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCursor: "" };
 

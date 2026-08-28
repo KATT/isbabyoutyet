@@ -62,11 +62,11 @@ type JsonValue =
   | { readonly [key: string]: JsonValue };
 type JsonObject = { readonly [key: string]: JsonValue };
 
-function isRecord(value: unknown): value is JsonObject {
+function isRecord<TValue>(value: TValue): value is TValue & JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function parseAuthUserPage(result: unknown) {
+export function parseAuthUserPage<TResult>(result: TResult) {
   if (!isRecord(result) || !Array.isArray(result.page)) {
     throw new Error("Better Auth returned an invalid user page");
   }

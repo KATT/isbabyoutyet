@@ -185,7 +185,8 @@ export const Route = createRootRouteWithContext<{
   notFoundComponent: NotFoundComponent,
 });
 
-export function contextLocale(context: unknown): SupportedLocale | undefined {
+/** Loose match-context bag before locale/token narrowing. */
+export function contextLocale<TContext>(context: TContext): SupportedLocale | undefined {
   if (
     typeof context !== "object" ||
     context === null ||
@@ -198,7 +199,7 @@ export function contextLocale(context: unknown): SupportedLocale | undefined {
   return context.locale;
 }
 
-function contextToken(context: unknown) {
+function contextToken<TContext>(context: TContext) {
   return typeof context === "object" &&
     context !== null &&
     "token" in context &&
@@ -210,7 +211,7 @@ function contextToken(context: unknown) {
 // better-auth and @convex-dev/better-auth currently expose structurally
 // incompatible client types despite supporting the same peer-version range.
 function compatibleAuthClient(client: typeof authClient): AuthClient;
-function compatibleAuthClient(client: unknown) {
+function compatibleAuthClient(client: any): AuthClient {
   return client;
 }
 

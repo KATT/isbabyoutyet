@@ -4,6 +4,7 @@ import { ConvexProvider, type ConvexReactClient } from "convex/react";
 import {
   makeFunctionReference,
   type DefaultFunctionArgs,
+  type FunctionReference,
   type PaginationResult,
 } from "convex/server";
 import * as React from "react";
@@ -18,7 +19,7 @@ type WatchHandle = {
   localQueryResult: () => undefined;
 };
 
-type WatchQuery = (funcRef: unknown, args: DefaultFunctionArgs) => WatchHandle;
+type WatchQuery = (funcRef: FunctionReference<"query">, args: DefaultFunctionArgs) => WatchHandle;
 
 type TestInfinitePage = PaginationResult<{ id: string }>;
 
