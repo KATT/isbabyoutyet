@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "compiled",
+    "rootDir": ".",
+    "declaration": false,
+    "sourceMap": false
+  },
+  "files": [
+    "anti-slop.ts",
+    "dictionary-types.ts",
+    "lexical-type-parameters.ts",
+    "reflect-method.ts",
+    "no-chained-type-assertions.ts",
+    "no-conditional-empty-object-spread.ts",
+    "no-known-value-widening.ts",
+    "no-module-mocking.ts",
+    "no-object-parameters.ts",
+    "no-reflect-apply.ts",
+    "no-reflect-get.ts",
+    "no-runtime-typeof.ts",
+    "no-shape-in-symbol-names.ts",
+    "no-unknown-parameters.ts",
+    "no-unknown-returns.ts",
+    "no-unknown-type-aliases.ts",
+    "no-unsafe-dictionary-type.ts",
+    "no-widen-then-assert.ts",
+    "require-safety-comment-for-type-assertion.ts"
+  ]
+}

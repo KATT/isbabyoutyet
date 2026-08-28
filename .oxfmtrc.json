@@ -1,5 +1,9 @@
 {
   "$schema": "./packages/convex/node_modules/oxfmt/configuration_schema.json",
   // From `oxfmt --init`, plus ignores for generated code.
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts"]
+  "ignorePatterns": [
+    "**/_generated/**",
+    "**/routeTree.gen.ts",
+    "oxlint-plugins/compiled/**"
+  ]
 }
