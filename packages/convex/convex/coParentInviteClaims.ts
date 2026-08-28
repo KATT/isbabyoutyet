@@ -3,7 +3,7 @@ import { components } from "./_generated/api";
 import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { findActiveCoParent } from "./babyAccess";
 import { isActive, softDeletePatch } from "./softDelete";
-import { parseOptionalString } from "../src/jsonValue";
+import { parseOptionalString } from "@workspace/runtime/json";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();

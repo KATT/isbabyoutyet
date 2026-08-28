@@ -1,6 +1,6 @@
 import { useMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { authClient } from "@/lib/auth-client";

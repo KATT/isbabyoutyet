@@ -8,7 +8,7 @@ import { env, query } from "./_generated/server";
 import type { GenericCtx } from "@convex-dev/better-auth";
 import type { DataModel } from "./_generated/dataModel";
 import { TIME_ZONE_HINT_HEADER } from "../src/timeZone";
-import { isJsonObjectValue, parseOptionalString } from "../src/jsonValue";
+import { isJsonObjectValue, parseOptionalString } from "@workspace/runtime/json";
 
 // The component client has methods needed for integrating Convex with Better Auth,
 // as well as helper methods for general use.

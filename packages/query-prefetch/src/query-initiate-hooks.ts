@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 import type {
   AnyQueryOptions,
   InitiatedInfiniteQuery,

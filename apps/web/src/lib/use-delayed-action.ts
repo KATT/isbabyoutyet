@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 
 /**
  * Delayed action after elapsed time. Callers supply domain-level actions;

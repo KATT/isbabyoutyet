@@ -11,7 +11,7 @@ import { tokenIdentifierForAuthUserId } from "./authIdentity";
 import { skipUserOnboarding, SKIP_TOUR_FOR_EXISTING_USERS_SENTINEL } from "./onboarding";
 import { isActive } from "./softDelete";
 import { DEMO_EMPTY_USER } from "../src/seedCredentials";
-import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "../src/jsonValue";
+import { isJsonObjectValue, parseJsonNumber, parseJsonString } from "@workspace/runtime/json";
 
 export const migrations = new Migrations<DataModel>(components.migrations);
 

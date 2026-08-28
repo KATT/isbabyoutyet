@@ -213,7 +213,7 @@
     },
     {
       // Boundary module: accepts unparsed external values (unknown / Record).
-      "files": ["**/runtimeGuards.ts"],
+      "files": ["packages/runtime/src/guards.ts"],
       "rules": {
         "anti-slop/no-unknown-parameters": "off",
         "anti-slop/no-unknown-returns": "off",

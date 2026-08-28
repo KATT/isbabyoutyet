@@ -16,7 +16,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@workspace/convex": "workspace:*"
+    "@workspace/runtime": "workspace:*"
   },
   "devDependencies": {
     "@tanstack/react-query": "^5.101.4",

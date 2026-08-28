@@ -15,7 +15,7 @@ import {
   parseJsonBoolean,
   parseJsonString,
   type JsonValue,
-} from "../src/jsonValue";
+} from "@workspace/runtime/json";
 
 const LFS_POINTER_PREFIX = "version https://git-lfs.github.com/spec/v1";
 const scriptsDir = path.dirname(fileURLToPath(import.meta.url));

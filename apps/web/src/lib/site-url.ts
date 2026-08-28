@@ -1,4 +1,4 @@
-import { isString } from "@workspace/convex/src/runtimeGuards";
+import { isString } from "@workspace/runtime/guards";
 
 /**
  * Canonical production origin — used for rel=canonical and og:url so search

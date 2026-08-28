@@ -4,7 +4,7 @@ import {
   parseJsonNumber,
   type JsonObject,
   type JsonValue,
-} from "../packages/convex/src/jsonValue.js";
+} from "../packages/runtime/src/jsonValue.js";
 
 const metrics = ["statements", "branches", "functions", "lines"] as const;
 

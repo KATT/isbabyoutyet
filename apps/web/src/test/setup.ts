@@ -7,7 +7,7 @@
 
 import { webcrypto } from "node:crypto";
 
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 
 // jsdom's SubtleCrypto rejects ArrayBuffers from Blob#arrayBuffer(); route storage
 // hashing in convex-test through Node's webcrypto instead.

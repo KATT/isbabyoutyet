@@ -10,7 +10,7 @@ import {
   parseJsonBoolean,
   parseJsonString,
   type JsonObject,
-} from "../src/jsonValue";
+} from "@workspace/runtime/json";
 import { requireAdmin } from "./adminAccess";
 import { isActive } from "./softDelete";
 import { loadCurrentStatus } from "./timeline";

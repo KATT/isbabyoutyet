@@ -63,7 +63,7 @@ import {
   isSupportedLocale,
   type SupportedLocale,
 } from "@workspace/convex/src/i18n";
-import { isString } from "@workspace/convex/src/runtimeGuards";
+import { isString } from "@workspace/runtime/guards";
 import {
   Form,
   FormCancelButton,

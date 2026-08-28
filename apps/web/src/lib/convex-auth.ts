@@ -2,7 +2,7 @@ import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
-import { isFunction, isPlainObject } from "@workspace/convex/src/runtimeGuards";
+import { isFunction, isPlainObject } from "@workspace/runtime/guards";
 import { authClient } from "./auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };

@@ -23,7 +23,7 @@ import type {
 import { FormProvider, useForm, useFormContext, useFormState } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
-import { isString } from "@workspace/convex/src/runtimeGuards";
+import { isString } from "@workspace/runtime/guards";
 import { useI18n } from "@/lib/i18n";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<

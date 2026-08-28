@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { isBoolean, isFunction, isNumber, isPlainObject, isString } from "./runtimeGuards.js";
+import { isBoolean, isFunction, isNumber, isPlainObject, isString } from "./guards";
 
-describe("runtimeGuards", () => {
+describe("guards", () => {
   test("isString accepts only strings", () => {
     expect(isString("")).toBe(true);
     expect(isString("hi")).toBe(true);

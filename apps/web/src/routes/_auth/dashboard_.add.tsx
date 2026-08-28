@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import type { NavigateOptions } from "@tanstack/react-router";
 import { z } from "zod";
-import { useMutation } from "convex/react";
 import type { FunctionArgs } from "convex/server";
+import { useMutation } from "convex/react";
+import type { ReactMutation } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
@@ -61,7 +62,7 @@ export const Route = createFileRoute("/_auth/dashboard_/add")({
   component: AddBabyPage,
 });
 
-type CreateBaby = (args: FunctionArgs<typeof api.baby.create>) => Promise<{ publicId: string }>;
+export type CreateBaby = ReactMutation<typeof api.baby.create>;
 
 export function AddBabyPage() {
   const router = useRouter();

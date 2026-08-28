@@ -3,7 +3,7 @@
  * Prefer these parsers at I/O boundaries, then branch on the domain value.
  */
 
-import { isBoolean, isNumber, isPlainObject, isString } from "./runtimeGuards.js";
+import { isBoolean, isNumber, isPlainObject, isString } from "./guards.js";
 
 export type JsonValue =
   | null

@@ -1,5 +1,5 @@
 import type { CSSProperties, ImgHTMLAttributes } from "react";
-import { isNumber, isString } from "@workspace/convex/src/runtimeGuards";
+import { isNumber, isString } from "@workspace/runtime/guards";
 import { useBlurImageLoad } from "@/lib/use-blur-image-load";
 
 type BlurImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "alt"> & {

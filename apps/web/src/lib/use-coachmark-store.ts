@@ -1,5 +1,5 @@
 import { useRef, useState, useSyncExternalStore } from "react";
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 
 type Rect = {
   top: number;

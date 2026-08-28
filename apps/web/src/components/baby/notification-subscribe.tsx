@@ -15,7 +15,7 @@ import { preloadedConvexQueryOptions } from "@workspace/convex-prefetch";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
-import { isFunction } from "@workspace/convex/src/runtimeGuards";
+import { isFunction } from "@workspace/runtime/guards";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { Button } from "@workspace/ui/components/button";

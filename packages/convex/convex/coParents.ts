@@ -12,7 +12,7 @@ import { FORBIDDEN } from "../src/types";
 import { toManagerBabyDto } from "./babyDto";
 import { babyIdOrPublicIdValidator, findBabyByIdOrPublicId } from "./babyLookup";
 import { isActive, softDeletePatch } from "./softDelete";
-import { parseOptionalString } from "../src/jsonValue";
+import { parseOptionalString } from "@workspace/runtime/json";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();

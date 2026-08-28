@@ -1,25 +1,23 @@
 import { fireEvent } from "@testing-library/react";
 import type { NavigateOptions } from "@tanstack/react-router";
-import type { FunctionArgs } from "convex/server";
 import { expect, test, vi } from "vitest";
-import { api } from "@workspace/convex/convex/_generated/api";
 import { LocaleProvider } from "@/lib/i18n";
-import { AddBabyPage, AddBabyPageView, Route } from "./dashboard_.add";
+import { AddBabyPage, AddBabyPageView, Route, type CreateBaby } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
-type CreateBabyArgs = FunctionArgs<typeof api.baby.create>;
-type CreateBabyFn = (args: CreateBabyArgs) => Promise<{ publicId: string }>;
 type NavigateFn = (args: NavigateOptions) => Promise<void>;
 
 function createAddBabyMocks() {
   return {
-    createBaby: vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" }),
+    createBaby: vi
+      .fn<CreateBaby>()
+      .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>),
     navigate: vi.fn<NavigateFn>().mockResolvedValue(undefined),
   };
 }
 
 function renderAddBaby(opts: {
-  createBaby: CreateBabyFn | undefined;
+  createBaby: CreateBaby | undefined;
   navigate: NavigateFn | undefined;
 }) {
   const mocks = createAddBabyMocks();
@@ -79,7 +77,7 @@ test("name field explains it can be filled later", async () => {
 });
 
 test("journey choices explain visible statuses and privacy", async () => {
-  const createBaby = vi.fn<CreateBabyFn>();
+  const createBaby = vi.fn<CreateBaby>();
   const navigate = vi.fn<NavigateFn>();
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -116,7 +114,9 @@ test("journey choices explain visible statuses and privacy", async () => {
 });
 
 test("submits optional theme selection", async () => {
-  const createBaby = vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" });
+  const createBaby = vi
+    .fn<CreateBaby>()
+    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -151,7 +151,9 @@ test.each([
   { label: "Home birth", birthJourney: "home_birth" },
   { label: "Planned C-section", birthJourney: "planned_c_section" },
 ])("submits the $label selection", async (testCase) => {
-  const createBaby = vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" });
+  const createBaby = vi
+    .fn<CreateBaby>()
+    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -187,7 +189,9 @@ test.each([
 });
 
 test("allows a hidden public due date when message mode has no text", async () => {
-  const createBaby = vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" });
+  const createBaby = vi
+    .fn<CreateBaby>()
+    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -210,7 +214,9 @@ test("allows a hidden public due date when message mode has no text", async () =
 });
 
 test("submits a custom public due date message when provided", async () => {
-  const createBaby = vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" });
+  const createBaby = vi
+    .fn<CreateBaby>()
+    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -237,7 +243,7 @@ test("submits a custom public due date message when provided", async () => {
 });
 
 test("toggles exact due date mode when clicking the row label", async () => {
-  const createBaby = vi.fn<CreateBabyFn>();
+  const createBaby = vi.fn<CreateBaby>();
   const navigate = vi.fn<NavigateFn>();
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -252,7 +258,9 @@ test("toggles exact due date mode when clicking the row label", async () => {
 });
 
 test("keeps entered date and message values while toggling fields", async () => {
-  const createBaby = vi.fn<CreateBabyFn>().mockResolvedValue({ publicId: "baby-fern" });
+  const createBaby = vi
+    .fn<CreateBaby>()
+    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 

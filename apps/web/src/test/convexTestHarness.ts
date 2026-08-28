@@ -14,7 +14,7 @@ import {
 import schema from "@workspace/convex/convex/schema";
 import { makeAsyncResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
-import { isPlainObject, isString } from "@workspace/convex/src/runtimeGuards";
+import { isPlainObject, isString } from "@workspace/runtime/guards";
 
 type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;

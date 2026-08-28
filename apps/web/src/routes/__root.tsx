@@ -32,7 +32,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { Baby, IconContext } from "@phosphor-icons/react";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import { isSupportedLocale } from "@workspace/convex/src/i18n";
-import { isPlainObject, isString } from "@workspace/convex/src/runtimeGuards";
+import { isPlainObject, isString } from "@workspace/runtime/guards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";

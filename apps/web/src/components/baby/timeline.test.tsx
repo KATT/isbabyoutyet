@@ -7,7 +7,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BabyData } from "@workspace/convex/src/types";
 import type { SupportedLocale } from "@workspace/convex/src/i18n";
-import { isPlainObject } from "@workspace/convex/src/runtimeGuards";
+import { isPlainObject } from "@workspace/runtime/guards";
 import { CONVEX_INFINITE_QUERY_KEY } from "@workspace/convex-prefetch";
 import { LocaleProvider } from "@/lib/i18n";
 import { TimelineFeed, UpdateComposer } from "@/components/baby/timeline";
