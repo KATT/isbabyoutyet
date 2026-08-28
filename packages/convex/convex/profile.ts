@@ -28,9 +28,7 @@ async function getProfileHandler(ctx: Pick<QueryCtx, "db">, tokenIdentifier: str
     .unique();
 }
 
-function toProfileResult(
-  profile: { locale: string; isAdmin: boolean } & Partial<{ timeZone: string }>,
-) {
+function toProfileResult(profile: { locale: string; timeZone: string; isAdmin: boolean }) {
   return {
     locale: resolveSupportedLocale(profile.locale),
     timeZone: resolveTimeZone(profile.timeZone),

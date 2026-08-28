@@ -83,7 +83,6 @@ async function ensureDemoProfile(ctx: MutationCtx, userId: string) {
   }
   await ctx.db.patch(existing._id, {
     tokenIdentifier,
-    timeZone: existing.timeZone ?? DEFAULT_TIME_ZONE,
     isAdmin: true,
   });
 }
