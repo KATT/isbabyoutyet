@@ -332,19 +332,22 @@ test("admins can list recently signed up users newest first", async () => {
   const seeded = await t.mutation(internal.seed.seedDemoData, {});
   const asDemo = t.withIdentity({ subject: seeded.userId });
   await t.run(async (ctx) => {
-    await ctx.db.insert("baby", {
-      userId: seeded.userId,
-      ownerTokenIdentifier: `https://convex.test|${seeded.userId}`,
-      name: "Deleted owned baby",
-      dueDate: "2026-12-01",
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
-      publicId: "deleted-owned-baby",
-      birthJourney: "labor",
-      lastActivityAt: Date.now(),
-      subscriptionCount: 0,
-      deletedAt: Date.now(),
-    });
+    await ctx.db.insert(
+      "baby",
+      testBabyInsert({
+        userId: seeded.userId,
+        ownerTokenIdentifier: `https://convex.test|${seeded.userId}`,
+        name: "Deleted owned baby",
+        dueDate: "2026-12-01",
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
+        publicId: "deleted-owned-baby",
+        birthJourney: "labor",
+        lastActivityAt: Date.now(),
+        subscriptionCount: 0,
+        deletedAt: Date.now(),
+      }),
+    );
   });
 
   const users = await asDemo.query(api.admin.listUsers, {
