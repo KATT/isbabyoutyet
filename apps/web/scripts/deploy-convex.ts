@@ -52,10 +52,8 @@ const scriptsDir = path.dirname(fileURLToPath(import.meta.url));
 const convexPackageDir = path.resolve(scriptsDir, "../../../packages/convex");
 
 function convexDeployEnv() {
-  const childEnv: Record<string, string | undefined> = {
-    ...process.env,
-    VITE_SITE_URL: siteUrl,
-  };
+  const childEnv: Record<string, string | undefined> = {};
+  Object.assign(childEnv, process.env, { VITE_SITE_URL: siteUrl });
   // Bake demo-login prefills into the web build on preview only.
   if (isPreview) {
     childEnv.VITE_HAS_DEMO_LOGIN = "true";

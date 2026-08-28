@@ -493,11 +493,11 @@ type UpdateTimelineItemProps = {
   onSetAsCurrentPhoto: (updateId: Id<"updates">) => Promise<void>;
 };
 
-const MILESTONE_EMOJI: Record<Milestone, string> = {
+const MILESTONE_EMOJI = {
   labor_started: "💫",
   gone_to_hospital: "🏥",
   born: "🎉",
-};
+} satisfies Record<Milestone, string>;
 
 const emptyActionSchema = z.object({});
 

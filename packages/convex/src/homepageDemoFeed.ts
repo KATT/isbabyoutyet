@@ -6,13 +6,13 @@ export const HOMEPAGE_DEMO_PHOTO_KEYS = ["bump", "bag", "labor", "hospital", "bo
 
 export type HomepageDemoPhotoKey = (typeof HOMEPAGE_DEMO_PHOTO_KEYS)[number];
 
-export const HOMEPAGE_DEMO_PHOTO_FILES: Record<HomepageDemoPhotoKey, string> = {
+export const HOMEPAGE_DEMO_PHOTO_FILES = {
   bump: "bump.jpg",
   bag: "bag.jpg",
   labor: "labor.jpg",
   hospital: "hospital.jpg",
   born: "born.jpg",
-};
+} satisfies Record<HomepageDemoPhotoKey, string>;
 
 /** Due date is two days before "now" — slightly overdue when labour starts. */
 export const HOMEPAGE_DEMO_DUE_DATE_MINUTES_AGO = 48 * 60;
@@ -84,7 +84,7 @@ export const HOMEPAGE_DEMO_FEED_SLOTS = [
   { kind: "encouragement", minutesAgo: 20 },
 ] satisfies ReadonlyArray<HomepageDemoFeedSlot>;
 
-export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocaleCopy> = {
+export const HOMEPAGE_DEMO_FEED_COPY = {
   "en-GB": {
     updates: [
       "40 weeks and this bump is out of control. Restless night. Is tonight the night?",
@@ -362,7 +362,7 @@ export const HOMEPAGE_DEMO_FEED_COPY: Record<SupportedLocale, HomepageDemoLocale
       { authorName: "Júlia", message: "Bem-vinda ao mundo, Helena! Que notícia linda." },
     ],
   },
-};
+} satisfies Record<SupportedLocale, HomepageDemoLocaleCopy>;
 
 function updateSlotCount() {
   return HOMEPAGE_DEMO_FEED_SLOTS.filter((slot) => slot.kind === "update").length;

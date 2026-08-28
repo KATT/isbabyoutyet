@@ -152,7 +152,7 @@ type SeedBabyExtras = {
 type SeedBabySpec = (typeof DEMO_BABIES)[number] & SeedBabyExtras;
 
 /** Fixture details keyed by publicId — identity fields come from DEMO_BABIES. */
-const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBabyExtras> = {
+const SEED_BABY_EXTRAS = {
   "baby-waiting": {
     dueDateOffsetDays: 14,
     encouragements: [
@@ -257,7 +257,7 @@ const SEED_BABY_EXTRAS: Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBab
       },
     ],
   },
-};
+} satisfies Record<(typeof DEMO_BABIES)[number]["publicId"], SeedBabyExtras>;
 
 const SEED_BABIES: SeedBabySpec[] = DEMO_BABIES.map((baby) => ({
   ...baby,

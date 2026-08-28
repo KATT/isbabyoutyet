@@ -43,6 +43,15 @@ function invokeFactory(factory: RuntimeQueryOptionsFactory, input: unknown) {
   return factory(input);
 }
 
+type RuntimeInitiatedQuery = {
+  input?: unknown;
+};
+
+type RuntimePreloadedQuery = {
+  input?: unknown;
+  initialData: unknown;
+};
+
 function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
   factory: TFactory,
   input: QueryInputArgs<TFactory>,
@@ -50,7 +59,7 @@ function createInitiatedQuery<TFactory extends QueryOptionsFactory>(
 function createInitiatedQuery(
   _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
-): { input?: unknown } {
+): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
 
@@ -61,7 +70,7 @@ function createInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>(
 function createInitiatedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
   input: readonly unknown[],
-): { input?: unknown } {
+): RuntimeInitiatedQuery {
   return { input: input[0] };
 }
 
@@ -75,7 +84,7 @@ function createPreloadedQuery<TFactory extends QueryOptionsFactory>(
 function createPreloadedQuery(
   _factory: RuntimeQueryOptionsFactory,
   handle: { input: readonly unknown[]; initialData: unknown },
-): { input?: unknown; initialData: unknown } {
+): RuntimePreloadedQuery {
   return { input: handle.input[0], initialData: handle.initialData };
 }
 
@@ -89,7 +98,7 @@ function createPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>(
 function createPreloadedInfiniteQuery(
   _factory: RuntimeQueryOptionsFactory,
   handle: { input: readonly unknown[]; initialData: unknown },
-): { input?: unknown; initialData: unknown } {
+): RuntimePreloadedQuery {
   return { input: handle.input[0], initialData: handle.initialData };
 }
 

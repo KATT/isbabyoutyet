@@ -148,11 +148,16 @@ export function formatWhen(ms: number, locale: string) {
  * Selecting a column always starts at desc; clicking the active desc column
  * toggles to asc.
  */
+type NextSortSearch = {
+  sort: SortBy;
+  order: SortOrder;
+};
+
 export function nextSortSearch(opts: {
   currentSort: SortBy;
   currentOrder: SortOrder;
   clicked: SortBy;
-}): { sort: SortBy; order: SortOrder } {
+}): NextSortSearch {
   if (opts.clicked === opts.currentSort && opts.currentOrder === "desc") {
     return { sort: opts.clicked, order: "asc" };
   }

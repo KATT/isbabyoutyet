@@ -58,10 +58,16 @@ function browserPushCapabilityFactory(queryClient: QueryClient) {
 
 export type BrowserPushCapabilityFactory = ReturnType<typeof browserPushCapabilityFactory>;
 
+type RuntimeInitiatedBrowserPushCapability = Partial<{
+  readonly input: unknown;
+}>;
+
 function initiatedBrowserPushCapability(
   babyRef: string,
 ): InitiatedQuery<BrowserPushCapabilityFactory>;
-function initiatedBrowserPushCapability(babyRef: string): unknown {
+function initiatedBrowserPushCapability(
+  babyRef: string,
+): RuntimeInitiatedBrowserPushCapability {
   return { input: babyRef };
 }
 

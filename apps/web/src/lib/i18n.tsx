@@ -565,7 +565,13 @@ export type TranslationFunction = <TKey extends TranslationKey>(
   ...args: TranslationArguments<TKey>
 ) => string;
 
-const sv: Record<TranslationKey, string> = {
+type TranslationCatalog = { readonly [TKey in TranslationKey]: string };
+type PartialTranslationCatalog = Partial<TranslationCatalog>;
+type TranslationsByLocale = {
+  readonly [TLocale in SupportedLocale]: PartialTranslationCatalog;
+};
+
+const sv: TranslationCatalog = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Följ förlossningen och få veta direkt när bäbisen är här!",
   "Is Baby Out Yet? – Share Your Baby's Arrival":
@@ -1098,7 +1104,7 @@ const sv: Record<TranslationKey, string> = {
   "Reload page": "Ladda om sidan",
 };
 
-const es: Record<TranslationKey, string> = {
+const es: TranslationCatalog = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Sigue el progreso del parto y entérate cuando nazca el bebé.",
   "Is Baby Out Yet? – Share Your Baby's Arrival": "¿Ya nació el bebé? Comparte su llegada",
@@ -1637,7 +1643,7 @@ const es: Record<TranslationKey, string> = {
   "Reload page": "Recargar la página",
 };
 
-const ptBR: Record<TranslationKey, string> = {
+const ptBR: TranslationCatalog = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Acompanhe o trabalho de parto e saiba quando o bebê nascer!",
   "Is Baby Out Yet? – Share Your Baby's Arrival":
@@ -2182,7 +2188,7 @@ const ptBR: Record<TranslationKey, string> = {
   "Reload page": "Recarregar a página",
 };
 
-const enUS: Partial<Record<TranslationKey, string>> = {
+const enUS: PartialTranslationCatalog = {
   "Track the progress of labour and birth – know when baby arrives!":
     "Follow the labor and birth. Know when baby arrives!",
   Labour: "Labor",
@@ -2214,7 +2220,7 @@ const enUS: Partial<Record<TranslationKey, string>> = {
     "Pick soft pastels, bold colors or whatever feels like you.",
 };
 
-const translations: Record<SupportedLocale, Partial<Record<TranslationKey, string>>> = {
+const translations: TranslationsByLocale = {
   "en-GB": enGB,
   "en-US": enUS,
   sv,
