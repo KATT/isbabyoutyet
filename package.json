@@ -19,9 +19,12 @@
     "coverage:compare": "node packages/scripts/dist/compareCoverage.js .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm format && pnpm --filter web i18n:compile && SKIP_I18N_COMPILE=1 run-p --print-label --continue-on-error typecheck checks:test checks:knip",
-    "checks:test": "vitest run --changed",
-    "checks:knip": "knip --production"
+    "checks": "run-s checks:prepare:* && run-p --print-label --continue-on-error checks:verify:*",
+    "checks:prepare:format": "pnpm format",
+    "checks:prepare:i18n": "pnpm --filter web i18n:compile",
+    "checks:verify:typecheck": "SKIP_I18N_COMPILE=1 pnpm typecheck",
+    "checks:verify:test": "vitest run --changed",
+    "checks:verify:knip": "knip --production"
   },
   "devDependencies": {
     "@oxlint/plugins": "^1.80.0",
