@@ -17,8 +17,6 @@ import {
   Form,
   FormCancelButton,
   FormOverlayProvider,
-  isNativeDatePickerDismiss,
-  overlayDismissDecision,
   shouldBlockOverlayDismiss,
   SubmitButton,
   useFormOverlay,
@@ -367,81 +365,6 @@ test("FormCancelButton disables while its form is submitting", async () => {
   });
 });
 
-test("overlayDismissDecision confirms dirty user dismissals and allows imperative closes", () => {
-  expect(
-    overlayDismissDecision({
-      isLocked: false,
-      isDirty: true,
-      isPickerDismiss: false,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe("confirm");
-  expect(
-    overlayDismissDecision({
-      isLocked: false,
-      isDirty: true,
-      isPickerDismiss: false,
-      open: false,
-      reason: "close-press",
-    }),
-  ).toBe("confirm");
-  expect(
-    overlayDismissDecision({
-      isLocked: false,
-      isDirty: true,
-      isPickerDismiss: false,
-      open: false,
-      reason: "imperative-action",
-    }),
-  ).toBe("allow");
-  expect(
-    overlayDismissDecision({
-      isLocked: true,
-      isDirty: true,
-      isPickerDismiss: false,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe("block");
-  expect(
-    overlayDismissDecision({
-      isLocked: false,
-      isDirty: true,
-      isPickerDismiss: true,
-      open: false,
-      reason: "outside-press",
-    }),
-  ).toBe("block");
-  expect(
-    overlayDismissDecision({
-      isLocked: false,
-      isDirty: false,
-      isPickerDismiss: false,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe("allow");
-});
-
-test("isNativeDatePickerDismiss detects focused date inputs", () => {
-  const dateInput = document.createElement("input");
-  dateInput.type = "date";
-  document.body.append(dateInput);
-  dateInput.focus();
-  expect(isNativeDatePickerDismiss("outside-press")).toBe(true);
-  expect(isNativeDatePickerDismiss("focus-out")).toBe(true);
-  expect(isNativeDatePickerDismiss("escape-key")).toBe(false);
-  dateInput.remove();
-
-  const textInput = document.createElement("input");
-  textInput.type = "text";
-  document.body.append(textInput);
-  textInput.focus();
-  expect(isNativeDatePickerDismiss("outside-press")).toBe(false);
-  textInput.remove();
-});
-
 test("shouldBlockOverlayDismiss locks user dismissals but allows imperative closes", () => {
   expect(
     shouldBlockOverlayDismiss({
@@ -715,6 +638,86 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
   expect(actionsClose).toHaveBeenCalled();
+});
+
+test("dirty overlay still allows imperative close and date-picker dismiss", async () => {
+  const forwarded = vi.fn();
+
+  function DirtyOverlayForm() {
+    const overlay = useFormOverlay({
+      onOpenChange: (open, eventDetails) => {
+        forwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <FormOverlayProvider overlay={overlay}>
+        <button
+          type="button"
+          onClick={() => {
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "imperative-action",
+              cancel,
+            });
+            (document.getElementById("imperative-result") as HTMLInputElement).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryImperative
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "outside-press",
+              cancel,
+            });
+            (document.getElementById("picker-result") as HTMLInputElement).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryPicker
+        </button>
+        <input id="imperative-result" readOnly defaultValue="unset" />
+        <input id="picker-result" readOnly defaultValue="unset" />
+        <Form form={form} handleSubmit={async () => undefined}>
+          <input aria-label="Note" {...form.register("note")} />
+        </Form>
+      </FormOverlayProvider>
+    );
+  }
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <DirtyOverlayForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+
+  fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
+  expect((document.getElementById("imperative-result") as HTMLInputElement).value).toBe("0");
+  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  forwarded.mockClear();
+
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  document.body.append(dateInput);
+  dateInput.focus();
+  fireEvent.click(view.getByRole("button", { name: "TryPicker" }));
+  expect((document.getElementById("picker-result") as HTMLInputElement).value).toBe("1");
+  expect(forwarded).not.toHaveBeenCalled();
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  dateInput.remove();
 });
 
 test("dirty form overlay blocks in-app navigation until discarded", async () => {

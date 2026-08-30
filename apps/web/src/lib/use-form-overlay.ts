@@ -17,7 +17,7 @@ import {
 } from "react";
 
 /** Counted so overlapping submits from sibling forms keep the overlay lock held. */
-export type FormSubmitLock = {
+type FormSubmitLock = {
   acquire: () => void;
   release: () => void;
   /** Permit the next overlay close / navigation even while the form is still dirty. */
@@ -47,7 +47,7 @@ export function shouldBlockOverlayDismiss(opts: {
   );
 }
 
-export type OverlayDismissDecision = "allow" | "block" | "confirm";
+type OverlayDismissDecision = "allow" | "block" | "confirm";
 
 /**
  * Decide what a form overlay should do with a close attempt.
@@ -56,7 +56,7 @@ export type OverlayDismissDecision = "allow" | "block" | "confirm";
  * - `confirm`: keep the overlay open and prompt to discard unsaved edits
  * - `allow`: forward the close (idle, or imperative success-close)
  */
-export function overlayDismissDecision(opts: {
+function overlayDismissDecision(opts: {
   isLocked: boolean;
   isDirty: boolean;
   isPickerDismiss: boolean;
@@ -82,7 +82,7 @@ export function overlayDismissDecision(opts: {
  * Native `<input type="date|datetime-local|time">` pickers render outside the
  * overlay; Base UI reports that as outside-press / focus-out.
  */
-export function isNativeDatePickerDismiss(reason: string) {
+function isNativeDatePickerDismiss(reason: string) {
   if (reason !== "outside-press" && reason !== "focus-out") {
     return false;
   }
@@ -96,12 +96,12 @@ export function isNativeDatePickerDismiss(reason: string) {
 }
 
 /** Structural subset of Base UI Root ChangeEventDetails (popover / dialog / alert-dialog). */
-export type OverlayDismissEventDetails = {
+type OverlayDismissEventDetails = {
   reason: string;
   cancel: () => void;
 };
 
-export type OverlayOpenChangeHandler = (
+type OverlayOpenChangeHandler = (
   open: boolean,
   eventDetails: OverlayDismissEventDetails,
 ) => void;
@@ -112,12 +112,12 @@ type OverlayActions = {
   unmount: () => void;
 };
 
-export type FormDirtyLock = {
+type FormDirtyLock = {
   set: (id: string, isDirty: boolean) => void;
   isDirty: () => boolean;
 };
 
-export type FormDiscardPrompt = {
+type FormDiscardPrompt = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDiscard: () => void;
