@@ -1,10 +1,10 @@
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   shouldBlockOverlayDismiss,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import {
@@ -58,7 +58,7 @@ const emptyActionSchema = z.object({});
 
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose +
-// FormCancelButton; successful save/delete closes via useFormOverlay.close.
+// FormCancelButton; successful save/delete closes via useFormGuard.close.
 
 type EditorFormProps = {
   baby: BabyData;
@@ -122,7 +122,7 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -134,9 +134,9 @@ export function DueDateEditor(props: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <DueDateForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -189,7 +189,7 @@ function statusDateSchema(t: TranslationFunction, timeZone: string) {
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -202,7 +202,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <StatusDateForm
             baby={props.baby}
             status={props.status}
@@ -211,7 +211,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
             onRemove={props.onRemove}
             onClose={overlay.close}
           />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -364,7 +364,7 @@ function nameSchema(t: TranslationFunction) {
 
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -376,9 +376,9 @@ export function NameEditor(props: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -436,7 +436,7 @@ function journeySchema() {
 
 export function JourneyEditor(props: JourneyEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -448,13 +448,13 @@ export function JourneyEditor(props: JourneyEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <JourneyForm
             birthJourney={props.birthJourney}
             onUpdate={props.onUpdate}
             onClose={overlay.close}
           />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -514,7 +514,7 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
 
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const selectedTheme = getThemeOption(props.baby.theme);
   const form = useZodForm({
     schema: z
@@ -542,7 +542,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
         }
       />
       <PopoverContent align="end" className="w-56">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <Form
             form={form}
             handleSubmit={async (values) => {
@@ -571,7 +571,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
               ))}
             </div>
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );

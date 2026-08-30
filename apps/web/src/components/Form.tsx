@@ -28,19 +28,19 @@ import {
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
 import {
-  FormOverlayContextProvider,
+  FormGuardContextProvider,
   useFormNavigationGuard,
-  useFormOverlayContext,
+  useFormGuardContext,
   useOptionalRouter,
   useRegisterFormDirty,
-  type FormOverlayHandle,
-} from "@/lib/use-form-overlay";
+  type FormGuardHandle,
+} from "@/lib/use-form-guard";
 
 export {
   shouldBlockOverlayDismiss,
-  useFormOverlay,
-  type FormOverlayHandle,
-} from "@/lib/use-form-overlay";
+  useFormGuard,
+  type FormGuardHandle,
+} from "@/lib/use-form-guard";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
   TInput,
@@ -75,37 +75,34 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
 
 const DEV_SUBMIT_DELAY_MS = 500;
 
-/** Wrap the overlay's content so child {@link Form}s register submits and dirty state. */
-export function FormOverlayProvider(props: { overlay: FormOverlayHandle; children: ReactNode }) {
+/** Wrap form content so child {@link Form}s register submits and dirty state. */
+export function FormGuardProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
   const router = useOptionalRouter();
   return (
-    <FormOverlayContextProvider overlay={props.overlay}>
+    <FormGuardContextProvider guard={props.guard}>
       {props.children}
       {router ? (
-        <FormDiscardHostWithRouter overlay={props.overlay} />
+        <FormDiscardHostWithRouter guard={props.guard} />
       ) : (
-        <FormDiscardDialog overlay={props.overlay} navigation={null} />
+        <FormDiscardDialog guard={props.guard} navigation={null} />
       )}
-    </FormOverlayContextProvider>
+    </FormGuardContextProvider>
   );
 }
 
-function FormDiscardHostWithRouter(props: { overlay: FormOverlayHandle }) {
-  const navigation = useFormNavigationGuard(props.overlay);
-  return <FormDiscardDialog overlay={props.overlay} navigation={navigation} />;
+function FormDiscardHostWithRouter(props: { guard: FormGuardHandle }) {
+  const navigation = useFormNavigationGuard(props.guard);
+  return <FormDiscardDialog guard={props.guard} navigation={navigation} />;
 }
 
 type NavigationGuard = ReturnType<typeof useFormNavigationGuard>;
 
-function FormDiscardDialog(props: {
-  overlay: FormOverlayHandle;
-  navigation: NavigationGuard | null;
-}) {
+function FormDiscardDialog(props: { guard: FormGuardHandle; navigation: NavigationGuard | null }) {
   const { t } = useI18n();
   const navigation = props.navigation;
   const discardingRef = useRef(false);
   const blocked = navigation?.status === "blocked";
-  const open = props.overlay.discardPrompt.open || blocked;
+  const open = props.guard.discardPrompt.open || blocked;
   return (
     <AlertDialog
       open={open}
@@ -113,7 +110,7 @@ function FormDiscardDialog(props: {
         if (nextOpen || discardingRef.current) {
           return;
         }
-        props.overlay.discardPrompt.onOpenChange(false);
+        props.guard.discardPrompt.onOpenChange(false);
         if (navigation?.status === "blocked") {
           navigation.reset();
         }
@@ -132,7 +129,7 @@ function FormDiscardDialog(props: {
             variant="destructive"
             onClick={() => {
               discardingRef.current = true;
-              props.overlay.discardPrompt.onDiscard();
+              props.guard.discardPrompt.onDiscard();
               if (navigation?.status === "blocked") {
                 navigation.proceed();
               }
@@ -152,7 +149,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   handleSubmit: (values: TOutput) => Promise<void>;
 }) => {
   const { t } = useI18n();
-  const overlay = useFormOverlayContext();
+  const guard = useFormGuardContext();
   const formState = useFormState({ control: props.form.control });
   useRegisterFormDirty(formState.isDirty);
   const { id, formRef, ...rest } = props.form;
@@ -163,8 +160,8 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
         ref={formRef}
         onSubmit={(event) => {
           return rest.handleSubmit(async (values) => {
-            overlay?.lock.acquire();
-            overlay?.lock.allowLeave();
+            guard?.lock.acquire();
+            guard?.lock.allowLeave();
             try {
               // Dev-only pause so submit spinners are visible while clicking around locally.
               /* v8 ignore next 3 */
@@ -173,11 +170,11 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
               }
               await props.handleSubmit(values);
             } catch (error) {
-              overlay?.lock.revokeAllowLeave();
+              guard?.lock.revokeAllowLeave();
               console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             } finally {
-              overlay?.lock.release();
+              guard?.lock.release();
             }
           })(event);
         }}

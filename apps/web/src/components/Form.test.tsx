@@ -16,10 +16,10 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   shouldBlockOverlayDismiss,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { LocaleProvider } from "@/lib/i18n";
@@ -410,7 +410,7 @@ test("shouldBlockOverlayDismiss locks user dismissals but allows imperative clos
   ).toBe(false);
 });
 
-test("useFormOverlay blocks escape while submitting and forwards when idle", async () => {
+test("useFormGuard blocks escape while submitting and forwards when idle", async () => {
   await using _timers = makeResource({}, () => {
     vi.useRealTimers();
   });
@@ -426,7 +426,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
   const actionsClose = vi.fn();
 
   function OverlayLockForm() {
-    const overlay = useFormOverlay({
+    const overlay = useFormGuard({
       onOpenChange: (open, eventDetails) => {
         forwarded({ open, reason: eventDetails.reason });
       },
@@ -437,7 +437,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
     });
 
     return (
-      <FormOverlayProvider overlay={overlay}>
+      <FormGuardProvider guard={overlay}>
         <button
           type="button"
           onClick={() => {
@@ -488,7 +488,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
             Send
           </SubmitButton>
         </Form>
-      </FormOverlayProvider>
+      </FormGuardProvider>
     );
   }
 
@@ -529,9 +529,9 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
   });
 });
 
-test("useFormOverlay close is a no-op without an actions handle", async () => {
+test("useFormGuard close is a no-op without an actions handle", async () => {
   function IdleOverlay() {
-    const overlay = useFormOverlay({ onOpenChange: undefined });
+    const overlay = useFormGuard({ onOpenChange: undefined });
     return (
       <>
         <button type="button" onClick={() => overlay.close()}>
@@ -571,7 +571,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
   const actionsClose = vi.fn();
 
   function DirtyOverlayForm() {
-    const overlay = useFormOverlay({
+    const overlay = useFormGuard({
       onOpenChange: (open, eventDetails) => {
         forwarded({ open, reason: eventDetails.reason });
       },
@@ -582,7 +582,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
     });
 
     return (
-      <FormOverlayProvider overlay={overlay}>
+      <FormGuardProvider guard={overlay}>
         <button
           type="button"
           onClick={() => {
@@ -606,7 +606,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
         <Form form={form} handleSubmit={async () => undefined}>
           <input aria-label="Note" {...form.register("note")} />
         </Form>
-      </FormOverlayProvider>
+      </FormGuardProvider>
     );
   }
 
@@ -644,7 +644,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
   const forwarded = vi.fn();
 
   function DirtyOverlayForm() {
-    const overlay = useFormOverlay({
+    const overlay = useFormGuard({
       onOpenChange: (open, eventDetails) => {
         forwarded({ open, reason: eventDetails.reason });
       },
@@ -655,7 +655,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
     });
 
     return (
-      <FormOverlayProvider overlay={overlay}>
+      <FormGuardProvider guard={overlay}>
         <button
           type="button"
           onClick={() => {
@@ -691,7 +691,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
         <Form form={form} handleSubmit={async () => undefined}>
           <input aria-label="Note" {...form.register("note")} />
         </Form>
-      </FormOverlayProvider>
+      </FormGuardProvider>
     );
   }
 
@@ -723,14 +723,14 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
 test("dirty form overlay blocks in-app navigation until discarded", async () => {
   function DirtyFormPage() {
     const router = useRouter();
-    const overlay = useFormOverlay({ onOpenChange: undefined });
+    const overlay = useFormGuard({ onOpenChange: undefined });
     const form = useZodForm({
       schema: z.object({ note: z.string() }),
       defaultValues: { note: "hi" },
     });
     return (
       <LocaleProvider locale="en-GB">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <Form form={form} handleSubmit={async () => undefined}>
             <input aria-label="Note" {...form.register("note")} />
           </Form>
@@ -742,7 +742,7 @@ test("dirty form overlay blocks in-app navigation until discarded", async () => 
           >
             Leave
           </button>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </LocaleProvider>
     );
   }

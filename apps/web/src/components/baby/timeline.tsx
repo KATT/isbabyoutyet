@@ -59,9 +59,9 @@ import {
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
@@ -540,7 +540,7 @@ function DeleteUpdateForm(props: {
   trigger: ReactElement;
 }) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
@@ -550,7 +550,7 @@ function DeleteUpdateForm(props: {
     <AlertDialog {...overlay.rootProps}>
       <AlertDialogTrigger render={props.trigger} />
       <AlertDialogContent>
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <AlertDialogHeader>
             <AlertDialogTitle>{props.title}</AlertDialogTitle>
             <AlertDialogDescription>{props.description}</AlertDialogDescription>
@@ -575,7 +575,7 @@ function DeleteUpdateForm(props: {
               </SubmitButton>
             </AlertDialogFooter>
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -588,7 +588,7 @@ function DeleteEncouragementForm(props: {
   onDelete: (encouragementId: Id<"encouragements">, visitorId: string | undefined) => Promise<void>;
 }) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
@@ -609,7 +609,7 @@ function DeleteEncouragementForm(props: {
         }
       />
       <AlertDialogContent>
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("Delete Encouragement?")}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -639,7 +639,7 @@ function DeleteEncouragementForm(props: {
               </SubmitButton>
             </AlertDialogFooter>
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -925,7 +925,7 @@ function EncouragementEditForm(props: {
 function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
   const { locale, t } = useI18n();
   const encouragement = props.item.encouragement;
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   const isOwnPost = encouragement.isMine;
   const canEdit = isOwnPost && isWithinEditWindow(encouragement.createdAt);
@@ -980,7 +980,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                     <PencilSimple className="w-4 h-4 text-muted-foreground hover:text-foreground" />
                   </PopoverTrigger>
                   <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-                    <FormOverlayProvider overlay={overlay}>
+                    <FormGuardProvider guard={overlay}>
                       <EncouragementEditForm
                         initialMessage={encouragement.message}
                         encouragementId={encouragement._id}
@@ -988,7 +988,7 @@ function EncouragementTimelineItem(props: EncouragementTimelineItemProps) {
                         onSave={props.onUpdate}
                         onClose={overlay.close}
                       />
-                    </FormOverlayProvider>
+                    </FormGuardProvider>
                   </PopoverContent>
                 </Popover>
               )}

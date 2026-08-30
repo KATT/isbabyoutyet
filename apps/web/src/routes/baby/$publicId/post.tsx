@@ -1,5 +1,5 @@
 import { Dialog, DialogContent, DialogTitle } from "@workspace/ui/components/dialog";
-import { FormOverlayProvider, useFormOverlay } from "@/components/Form";
+import { FormGuardProvider, useFormGuard } from "@/components/Form";
 import { UpdateComposer } from "@/components/baby/timeline";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { allKeyed } from "@workspace/query-prefetch";
@@ -68,7 +68,7 @@ export function BabyPostUpdateOverlay() {
   const completeOnboardingStep = useCompleteOnboardingStep();
   const { t } = useI18n();
   const post = useBabyPostOverlayNav(params.publicId);
-  const formOverlay = useFormOverlay({ onOpenChange: post.onOpenChange });
+  const formOverlay = useFormGuard({ onOpenChange: post.onOpenChange });
   const contentRef = useRef<HTMLDivElement | null>(null);
   const managerBabyDoc =
     loaderData.managerBaby.initialData === FORBIDDEN ? null : loaderData.managerBaby.initialData;
@@ -85,7 +85,7 @@ export function BabyPostUpdateOverlay() {
     >
       <DialogContent ref={contentRef} initialFocus={contentRef} className="sm:max-w-lg">
         <DialogTitle className="sr-only">{t("Post an update")}</DialogTitle>
-        <FormOverlayProvider overlay={formOverlay}>
+        <FormGuardProvider guard={formOverlay}>
           <UpdateComposer
             babyId={managerBabyDoc._id}
             baby={baby}
@@ -95,7 +95,7 @@ export function BabyPostUpdateOverlay() {
               post.close();
             }}
           />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </DialogContent>
     </Dialog>
   );

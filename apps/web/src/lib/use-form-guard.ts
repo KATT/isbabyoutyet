@@ -1,7 +1,11 @@
 /**
- * Form overlay guard: submit lock, unsaved-edit confirmation, and navigation
- * blocking. Lives in `apps/web/src/lib` so it can own overlay state, RHF dirty
+ * Form leave-guard: submit lock, unsaved-edit confirmation, and navigation
+ * blocking. Overlay dismiss and in-app navigation are two adapters for the
+ * same question — "may we leave this unsaved form?"
+ *
+ * Lives in `apps/web/src/lib` so it can own overlay state, RHF dirty
  * registration cleanup, and TanStack Router `history.block` / `beforeunload`.
+ * Full-page forms omit `rootProps`; overlay hosts spread them onto the Base UI Root.
  */
 import { useRouter, useBlocker } from "@tanstack/react-router";
 import {
@@ -101,10 +105,7 @@ type OverlayDismissEventDetails = {
   cancel: () => void;
 };
 
-type OverlayOpenChangeHandler = (
-  open: boolean,
-  eventDetails: OverlayDismissEventDetails,
-) => void;
+type OverlayOpenChangeHandler = (open: boolean, eventDetails: OverlayDismissEventDetails) => void;
 
 /** Identical shape across Popover / Dialog / AlertDialog Root.Actions. */
 type OverlayActions = {
@@ -123,48 +124,52 @@ type FormDiscardPrompt = {
   onDiscard: () => void;
 };
 
-export type FormOverlayHandle = {
-  /** Close the overlay. Safe mid-submit: reports `imperative-action`, which the guard allows. */
+export type FormGuardHandle = {
+  /**
+   * Close the overlay when {@link FormGuardHandle.rootProps} is spread onto a
+   * Base UI Root. No-op on full pages that only use the navigation guard.
+   * Safe mid-submit: reports `imperative-action`, which the guard allows.
+   */
   close: () => void;
-  /** Spread onto the Base UI Root (`Popover` / `Dialog` / `AlertDialog` / `Sheet`). */
+  /**
+   * Overlay adapter — spread onto the Base UI Root (`Popover` / `Dialog` /
+   * `AlertDialog` / `Sheet`). Omit on full-page forms.
+   */
   rootProps: {
     actionsRef: RefObject<OverlayActions | null>;
     onOpenChange: OverlayOpenChangeHandler;
   };
-  /** @internal consumed by {@link FormOverlayProvider}. */
+  /** @internal consumed by {@link FormGuardProvider}. */
   lock: FormSubmitLock;
   /** @internal consumed by {@link useRegisterFormDirty}. */
   dirty: FormDirtyLock;
-  /** @internal consumed by {@link FormOverlayProvider}. */
+  /** @internal consumed by {@link FormGuardProvider}. */
   discardPrompt: FormDiscardPrompt;
 };
 
-const FormOverlayContext = createContext<FormOverlayHandle | null>(null);
+const FormGuardContext = createContext<FormGuardHandle | null>(null);
 
-export function useFormOverlayContext() {
-  return useContext(FormOverlayContext);
+export function useFormGuardContext() {
+  return useContext(FormGuardContext);
 }
 
-/** Wrap overlay content so child forms register submits and dirty state. */
-export function FormOverlayContextProvider(props: {
-  overlay: FormOverlayHandle;
-  children: ReactNode;
-}) {
-  return createElement(FormOverlayContext.Provider, { value: props.overlay }, props.children);
+/** Wrap form content so child forms register submits and dirty state. */
+export function FormGuardContextProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
+  return createElement(FormGuardContext.Provider, { value: props.guard }, props.children);
 }
 
 /**
- * Overlay that hosts forms: owns the actions ref, a submit lock, and
- * unsaved-edit confirmation (overlay dismiss + in-app navigation).
+ * Form that may be left via overlay dismiss or in-app navigation: owns the
+ * actions ref, a submit lock, and unsaved-edit confirmation for both adapters.
  *
  * While any child form submits, user dismissal is cancelled; the imperative
  * success-close is not. While any child form is dirty, user dismissal opens a
  * discard confirmation instead of closing.
  */
-export function useFormOverlay(opts: {
+export function useFormGuard(opts: {
   /** Extra open-change logic (e.g. forwarded overlay-nav close); pass `undefined` otherwise. */
   onOpenChange: OverlayOpenChangeHandler | undefined;
-}): FormOverlayHandle {
+}): FormGuardHandle {
   const actionsRef = useRef<OverlayActions | null>(null);
   const pendingSubmitsRef = useRef(0);
   const dirtyIdsRef = useRef(new Set<string>());
@@ -268,24 +273,24 @@ export function useFormOverlay(opts: {
 }
 
 /**
- * Registers this form's dirty flag with the nearest {@link FormOverlayProvider}.
+ * Registers this form's dirty flag with the nearest {@link FormGuardProvider}.
  * Writes during render so a same-frame dismiss sees the latest value; effect
  * cleanup clears the slot when the form unmounts.
  *
- * Syncs React Hook Form `isDirty` into the overlay's dirty lock (external
- * subscription owned by the overlay, not the feature tree).
+ * Syncs React Hook Form `isDirty` into the guard's dirty lock (external
+ * subscription owned by the guard, not the feature tree).
  */
 export function useRegisterFormDirty(isDirty: boolean) {
-  const overlay = useFormOverlayContext();
+  const guard = useFormGuardContext();
   const id = useId();
-  const overlayRef = useRef(overlay);
-  overlayRef.current = overlay;
-  if (overlay) {
-    overlay.dirty.set(id, isDirty);
+  const guardRef = useRef(guard);
+  guardRef.current = guard;
+  if (guard) {
+    guard.dirty.set(id, isDirty);
   }
   useEffect(() => {
     return () => {
-      overlayRef.current?.dirty.set(id, false);
+      guardRef.current?.dirty.set(id, false);
     };
   }, [id]);
 }
@@ -295,18 +300,18 @@ export function useOptionalRouter() {
 }
 
 /**
- * Blocks in-app navigation while the overlay has unsaved edits, using the
+ * Blocks in-app navigation while the form has unsaved edits, using the
  * same discard prompt as overlay dismiss.
  *
  * Subscribes to TanStack Router history.block (and beforeunload). Mounted
- * from {@link FormOverlayProvider} only when a router is present.
+ * from {@link FormGuardProvider} only when a router is present.
  */
-export function useFormNavigationGuard(overlay: FormOverlayHandle) {
-  const overlayRef = useRef(overlay);
-  overlayRef.current = overlay;
+export function useFormNavigationGuard(guard: FormGuardHandle) {
+  const guardRef = useRef(guard);
+  guardRef.current = guard;
   return useBlocker({
-    shouldBlockFn: () => overlayRef.current.dirty.isDirty(),
-    enableBeforeUnload: () => overlayRef.current.dirty.isDirty(),
+    shouldBlockFn: () => guardRef.current.dirty.isDirty(),
+    enableBeforeUnload: () => guardRef.current.dirty.isDirty(),
     withResolver: true,
   });
 }

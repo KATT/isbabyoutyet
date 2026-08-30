@@ -20,9 +20,9 @@ import {
 } from "@workspace/ui/components/form";
 import {
   Form,
-  FormOverlayProvider,
+  FormGuardProvider,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
@@ -88,7 +88,7 @@ export function AddBabyPageView(props: {
   navigate: (opts: NavigateOptions) => Promise<void>;
 }) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   const form = useZodForm({
     schema: addBabySchema(t),
@@ -103,7 +103,7 @@ export function AddBabyPageView(props: {
   });
 
   return (
-    <FormOverlayProvider overlay={overlay}>
+    <FormGuardProvider guard={overlay}>
       <div className="min-h-screen bg-background bg-dots">
         <div className="mx-auto max-w-xl px-6 py-10">
           <Button
@@ -196,6 +196,6 @@ export function AddBabyPageView(props: {
           </Card>
         </div>
       </div>
-    </FormOverlayProvider>
+    </FormGuardProvider>
   );
 }

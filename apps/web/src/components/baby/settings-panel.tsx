@@ -67,9 +67,9 @@ import { isString } from "@workspace/runtime/guards";
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { getLanguageName, useI18n } from "@/lib/i18n";
@@ -185,7 +185,7 @@ function BabyLanguageSelect(props: {
 
 function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Promise<void> }) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
@@ -201,7 +201,7 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
         }
       />
       <AlertDialogContent>
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t("Delete {{name}}'s page?", { name: props.babyName })}
@@ -232,7 +232,7 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
               </SubmitButton>
             </AlertDialogFooter>
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
