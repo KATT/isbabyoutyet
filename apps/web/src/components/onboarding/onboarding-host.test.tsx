@@ -166,22 +166,13 @@ test("minimizes the checklist through the host mutation", async () => {
 });
 
 test("highlights how to restore the guide after dismissal", async () => {
-  const scrollTo = vi.fn<(options: ScrollToOptions) => void>();
-  const scrollToDescriptor = Object.getOwnPropertyDescriptor(window, "scrollTo");
-  await using _scrollTo = makeResource({}, () => {
-    if (scrollToDescriptor) {
-      Object.defineProperty(window, "scrollTo", scrollToDescriptor);
-    } else {
-      Reflect.deleteProperty(window, "scrollTo");
-    }
-  });
-  Object.defineProperty(window, "scrollTo", {
-    configurable: true,
-    value: scrollTo,
-  });
   await using _target = plantTourTarget("restart_tour");
 
   await using harness = await createConvexTestHarness({ identity: null });
+  const scrollTo = vi.spyOn(window, "scrollTo");
+  await using _scrollTo = makeResource({}, () => {
+    scrollTo.mockRestore();
+  });
   const userId = await signUpTestUser(harness, {
     email: "owner@example.com",
     password: "password123",

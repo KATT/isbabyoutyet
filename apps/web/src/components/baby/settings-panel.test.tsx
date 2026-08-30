@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, type RenderResult } from "@testing-library/react";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { SettingsPanel } from "@/components/baby/settings-panel";
@@ -9,6 +9,7 @@ import type {
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+import { renderResource } from "@/test/renderResource";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -41,18 +42,11 @@ const absentSettingsProps = {
   onOpenChangeComplete: null,
 };
 
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
-
-function openJourneyEditor(view: ReturnType<typeof render>) {
+function openJourneyEditor(view: RenderResult) {
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
 }
 
-function selectJourneyPreset(view: ReturnType<typeof render>, label: string) {
+function selectJourneyPreset(view: RenderResult, label: string) {
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
   const option = view.getByRole("option", { name: label });
   fireEvent.pointerDown(option, { pointerType: "mouse" });

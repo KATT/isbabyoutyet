@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import {
@@ -18,6 +18,7 @@ import type {
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+import { renderResource } from "@/test/renderResource";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -36,13 +37,6 @@ const baby: BabyData = {
   wentToHospital: null,
   babyBorn: null,
 };
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
 
 test("name editor mounts fresh on open: current name, reassurance note, trimmed save", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);

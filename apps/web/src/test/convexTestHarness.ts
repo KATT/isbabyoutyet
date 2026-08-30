@@ -15,6 +15,7 @@ import schema from "@workspace/convex/convex/schema";
 import { makeAsyncResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import { isPlainObject, isString } from "@workspace/runtime/guards";
+import { stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;
@@ -59,6 +60,7 @@ export type ConvexTestHarness = {
  * no hand-built query results.
  */
 export async function createConvexTestHarness(opts: { identity: Partial<UserIdentity> | null }) {
+  const jsdomWindow = stubJsdomWindow();
   const t = convexTest(schema, modules);
   await registerComponents(t);
   let activeClient: ConvexTestCaller = opts.identity ? t.withIdentity(opts.identity) : t;
@@ -174,6 +176,7 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   return makeAsyncResource(harness, async () => {
     registerConvexInfiniteQueryClient(null as never);
     queryClient.clear();
+    jsdomWindow.restore();
   });
 }
 

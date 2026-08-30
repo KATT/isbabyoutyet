@@ -1,17 +1,9 @@
-import { fireEvent, render } from "@testing-library/react";
-import type { ReactElement } from "react";
+import { fireEvent, type RenderResult } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
-import { makeResource } from "@workspace/convex/convex/test.resource";
 import type { BirthJourney } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
 import { JourneyMilestoneEditor } from "./journey-milestone-editor";
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { renderResource } from "@/test/renderResource";
 
 function renderEditor(opts: {
   birthJourney: BirthJourney;
@@ -28,7 +20,7 @@ function renderEditor(opts: {
   );
 }
 
-function selectPreset(view: ReturnType<typeof render>, label: string) {
+function selectPreset(view: RenderResult, label: string) {
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
   const option = view.getByRole("option", { name: label });
   fireEvent.pointerDown(option, { pointerType: "mouse" });

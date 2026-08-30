@@ -8,7 +8,6 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { render } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import type { FunctionReturnType } from "convex/server";
 import { expect, test, vi } from "vitest";
@@ -17,6 +16,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
+import { renderResource } from "@/test/renderResource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashboard/route";
 
@@ -142,9 +142,8 @@ test("parent dashboard stays mounted while child routes render through its outle
   });
   await router.load();
 
-  const rendered = render(<RouterProvider router={router} />);
+  const rendered = renderResource(<RouterProvider router={router} />);
   await using view = makeResource(rendered, () => {
-    rendered.unmount();
     queryClient.clear();
   });
 

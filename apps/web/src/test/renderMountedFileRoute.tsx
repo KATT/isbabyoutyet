@@ -17,6 +17,7 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 import { routeContextFromHarness } from "@/test/routeTestContext";
+import { stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 /**
  * `Route.update()` is typed for non-structural option tweaks only, so widen it
@@ -98,6 +99,7 @@ export async function renderMountedFileRoute(opts: {
 
   await router.load();
 
+  const jsdomWindow = stubJsdomWindow();
   const navigate = vi.spyOn(router, "navigate");
   const back = vi.spyOn(history, "back");
   const view = render(<RouterProvider router={router} />);
@@ -105,6 +107,7 @@ export async function renderMountedFileRoute(opts: {
     navigate.mockRestore();
     back.mockRestore();
     view.unmount();
+    jsdomWindow.restore();
   });
 }
 

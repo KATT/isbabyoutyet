@@ -1,5 +1,5 @@
 import { Check } from "@phosphor-icons/react";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { z } from "zod";
@@ -14,13 +14,7 @@ import {
   useZodForm,
 } from "@/components/Form";
 import { LocaleProvider } from "@/lib/i18n";
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { renderResource } from "@/test/renderResource";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -153,7 +147,7 @@ test("SubmitButton honors an extra disabled prop while idle", async () => {
 
 test("SubmitButton throws when used outside a Form without an explicit form", () => {
   expect(() => {
-    render(
+    renderResource(
       <LocaleProvider locale="en-GB">
         <SubmitButton form="context" IconComponent={Check} iconPosition="start">
           Send

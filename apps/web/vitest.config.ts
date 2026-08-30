@@ -77,7 +77,9 @@ export const webUnitProject = defineProject({
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
-    setupFiles: ["./src/test/setup.ts"],
+    // Loads the better-auth broadcast-channel stub before that package is
+    // imported. Window API stubs are opt-in via `stubJsdomWindow()`.
+    setupFiles: ["./src/test/stubJsdomWindow.ts"],
     // Keep auth/Convex clients off real backends so unit tests never dial the
     // developer's running `pnpm dev` / Convex backend (ports 3000 / 3210) or
     // a publicly resolvable Convex host (example.convex.cloud resolves in DNS).
