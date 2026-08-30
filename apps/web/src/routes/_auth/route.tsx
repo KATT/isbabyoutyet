@@ -1,5 +1,5 @@
 import { authServer } from "@/lib/auth-server";
-import { convexQuery } from "@convex-dev/react-query";
+import { clearAuthQueryCache } from "@/lib/auth-query-cache";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
@@ -74,9 +74,7 @@ export async function resolveAuthGuard(opts: {
     // The mounted provider exclusively owns browser Convex authentication.
     // A fresh session can invalidate a cached anonymous profile, so retry
     // once without replacing the provider's token callback.
-    opts.context.queryClient.removeQueries({
-      queryKey: convexQuery(api.profile.get, {}).queryKey,
-    });
+    clearAuthQueryCache(opts.context.queryClient);
     profileHandle = await preloader.ensureQueryData(api.profile.get, {});
     profile = profileHandle.initialData;
     if (!profile) {

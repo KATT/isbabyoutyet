@@ -1,8 +1,7 @@
-import { convexQuery } from "@convex-dev/react-query";
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
-import { api } from "@workspace/convex/convex/_generated/api";
 import { isFunction, isPlainObject } from "@workspace/runtime/guards";
+import { clearAuthQueryCache } from "./auth-query-cache";
 import { authClient } from "./auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
@@ -61,7 +60,7 @@ export function setupClientConvexAuthWithClient(opts: {
 
   opts.authClient.$store.atoms.session?.subscribe((session) => {
     if (session && !session.isPending && !session.data) {
-      opts.queryClient.setQueryData(convexQuery(api.profile.get, {}).queryKey, null);
+      clearAuthQueryCache(opts.queryClient);
     }
   });
 }

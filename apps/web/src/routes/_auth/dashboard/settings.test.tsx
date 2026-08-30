@@ -1,4 +1,5 @@
 import { fireEvent } from "@testing-library/react";
+import { convexQuery } from "@convex-dev/react-query";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { ReactNode } from "react";
@@ -88,7 +89,7 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <DashboardSettingsSheet profile={profile} />,
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -127,17 +128,24 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
     opts?.fetchOptions?.onSuccess?.({} as never);
     return { data: null, error: null } as never;
   });
+  const clearAuthQueryCache = vi.fn<typeof settingsAuthAdapter.clearAuthQueryCache>();
   const originalSignOut = settingsAuthAdapter.signOut;
+  const originalClearAuthQueryCache = settingsAuthAdapter.clearAuthQueryCache;
   settingsAuthAdapter.signOut = signOut;
+  settingsAuthAdapter.clearAuthQueryCache = clearAuthQueryCache;
   await using _adapter = makeResource({}, () => {
     settingsAuthAdapter.signOut = originalSignOut;
+    settingsAuthAdapter.clearAuthQueryCache = originalClearAuthQueryCache;
   });
 
   const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  harness.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, [
+    { _id: "baby-id", name: "Baby Smith" },
+  ]);
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <DashboardSettingsSheet profile={profile} />,
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -146,6 +154,7 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
   await vi.waitFor(() => {
+    expect(clearAuthQueryCache).toHaveBeenCalledWith(harness.queryClient);
     expect(signOut).toHaveBeenCalled();
   });
 });

@@ -93,7 +93,7 @@ test("setup tolerates a missing session atom", () => {
   expect(clients.setAuth).toHaveBeenCalledTimes(1);
 });
 
-test("a session resolving to none clears the cached profile; pending or signed-in leaves it", () => {
+test("a session resolving to none clears auth-scoped query cache; pending or signed-in leaves it", () => {
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
@@ -106,9 +106,13 @@ test("a session resolving to none clears the cached profile; pending or signed-i
     timeZone: "Europe/London",
     isAdmin: false,
   });
+  clients.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, []);
 
   auth.emit({ data: null, isPending: true });
   expect(clients.queryClient.getQueryData(profileKey)).not.toBeNull();
+  expect(clients.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey)).toEqual(
+    [],
+  );
 
   auth.emit({ data: { session: { id: "s1" } }, isPending: false });
   expect(clients.queryClient.getQueryData(profileKey)).not.toBeNull();
@@ -116,7 +120,10 @@ test("a session resolving to none clears the cached profile; pending or signed-i
   // Session expired (noticed by the store): the /_auth guard's session
   // signal must go null so the next navigation re-checks the token.
   auth.emit({ data: null, isPending: false });
-  expect(clients.queryClient.getQueryData(profileKey)).toBeNull();
+  expect(clients.queryClient.getQueryData(profileKey)).toBeUndefined();
+  expect(
+    clients.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
+  ).toBeUndefined();
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
