@@ -18,7 +18,9 @@
     "coverage:compare": "tsx packages/scripts/src/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
-    "checks": "pnpm format && pnpm lint-fix && pnpm typecheck && pnpm test --changed && pnpm knip"
+    "checks": "pnpm format && pnpm --filter web i18n:compile && SKIP_I18N_COMPILE=1 run-p --print-label --continue-on-error typecheck checks:test checks:knip",
+    "checks:test": "vitest run --changed",
+    "checks:knip": "knip --production"
   },
   "devDependencies": {
     "@oxlint/plugins": "^1.80.0",
