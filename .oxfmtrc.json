@@ -4,6 +4,7 @@
   "ignorePatterns": [
     "**/_generated/**",
     "**/routeTree.gen.ts",
-    "packages/oxlint-plugins/dist/**"
+    "packages/oxlint-plugins/dist/**",
+    "packages/scripts/dist/**"
   ]
 }

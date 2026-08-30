@@ -5,7 +5,8 @@
     "**/routeTree.gen.ts",
     "coverage/**",
     "**/paraglide/**",
-    "packages/oxlint-plugins/dist/**"
+    "packages/oxlint-plugins/dist/**",
+    "packages/scripts/dist/**"
   ],
   "tags": ["-@internal"],
   "workspaces": {

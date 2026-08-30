@@ -17,7 +17,7 @@ const baselinePath = process.argv[2];
 const currentPath = process.argv[3];
 
 if (baselinePath === undefined || currentPath === undefined) {
-  throw new Error("Usage: tsx src/compareCoverage.ts <baseline-summary> <current-summary>");
+  throw new Error("Usage: compare-coverage <baseline-summary> <current-summary>");
 }
 
 function formatPct(value: number) {

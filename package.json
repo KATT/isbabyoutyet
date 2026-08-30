@@ -15,7 +15,8 @@
     "test": "vitest run",
     "pretest:coverage": "pnpm --filter web i18n:compile",
     "test:coverage": "vitest run --coverage",
-    "coverage:compare": "tsx packages/scripts/src/compareCoverage.ts .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
+    "precoverage:compare": "turbo build --filter=@workspace/scripts",
+    "coverage:compare": "node packages/scripts/dist/compareCoverage.js .coverage-baseline/coverage-summary.json coverage/coverage-summary.json",
     "preknip": "pnpm --filter web i18n:compile",
     "knip": "knip --production",
     "checks": "pnpm format && pnpm --filter web i18n:compile && SKIP_I18N_COMPILE=1 run-p --print-label --continue-on-error typecheck checks:test checks:knip",
@@ -30,7 +31,6 @@
     "knip": "^6.32.2",
     "npm-run-all": "^4.1.5",
     "oxlint": "catalog:",
-    "tsx": "^4.23.12",
     "turbo": "^2.10.11",
     "typescript": "catalog:",
     "vitest": "^4.1.11"
