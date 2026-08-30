@@ -5,13 +5,11 @@
     "**/routeTree.gen.ts",
     "coverage/**",
     "**/paraglide/**",
-    "packages/oxlint-plugins/dist/**"
+    "packages/oxlint-plugins/dist/**",
+    "packages/scripts/dist/**"
   ],
   "tags": ["-@internal"],
   "workspaces": {
-    ".": {
-      "entry": ["scripts/compareCoverage.ts!"]
-    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -54,6 +52,9 @@
         "require-preloaded-query-options.ts!",
         "use-loader-preloads.ts!"
       ]
+    },
+    "packages/scripts": {
+      "entry": ["src/compareCoverage.ts!"]
     },
     "packages/runtime": {},
     "packages/query-prefetch": {},
