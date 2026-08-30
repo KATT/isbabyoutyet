@@ -11,6 +11,6 @@
     "rewriteRelativeImportExtensions": true,
     "noEmit": true
   },
-  "include": ["*.ts", "vitest.config.ts"],
+  "include": ["**/*.ts", "vitest.config.ts"],
   "exclude": ["**/*.test.ts", "tsdown.config.mjs"]
 }
