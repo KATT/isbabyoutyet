@@ -133,6 +133,8 @@ let installCount = 0;
 let restoreInstalled: (() => void) | null = null;
 
 function installJsdomWindowStubs() {
+  // Fill only missing constructors. Tests that install their own matchMedia or
+  // IntersectionObserver (viewport / infinite-scroll) must keep those doubles.
   const previousScrollTo = window.scrollTo;
   const previousScroll = window.scroll;
   const previousScrollBy = window.scrollBy;
