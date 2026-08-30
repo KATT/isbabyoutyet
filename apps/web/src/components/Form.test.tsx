@@ -1,5 +1,14 @@
 import { Check } from "@phosphor-icons/react";
 import { fireEvent, render } from "@testing-library/react";
+import {
+  Outlet,
+  RouterProvider,
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  useRouter,
+} from "@tanstack/react-router";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { z } from "zod";
@@ -8,6 +17,8 @@ import {
   Form,
   FormCancelButton,
   FormOverlayProvider,
+  isNativeDatePickerDismiss,
+  overlayDismissDecision,
   shouldBlockOverlayDismiss,
   SubmitButton,
   useFormOverlay,
@@ -356,6 +367,81 @@ test("FormCancelButton disables while its form is submitting", async () => {
   });
 });
 
+test("overlayDismissDecision confirms dirty user dismissals and allows imperative closes", () => {
+  expect(
+    overlayDismissDecision({
+      isLocked: false,
+      isDirty: true,
+      isPickerDismiss: false,
+      open: false,
+      reason: "escape-key",
+    }),
+  ).toBe("confirm");
+  expect(
+    overlayDismissDecision({
+      isLocked: false,
+      isDirty: true,
+      isPickerDismiss: false,
+      open: false,
+      reason: "close-press",
+    }),
+  ).toBe("confirm");
+  expect(
+    overlayDismissDecision({
+      isLocked: false,
+      isDirty: true,
+      isPickerDismiss: false,
+      open: false,
+      reason: "imperative-action",
+    }),
+  ).toBe("allow");
+  expect(
+    overlayDismissDecision({
+      isLocked: true,
+      isDirty: true,
+      isPickerDismiss: false,
+      open: false,
+      reason: "escape-key",
+    }),
+  ).toBe("block");
+  expect(
+    overlayDismissDecision({
+      isLocked: false,
+      isDirty: true,
+      isPickerDismiss: true,
+      open: false,
+      reason: "outside-press",
+    }),
+  ).toBe("block");
+  expect(
+    overlayDismissDecision({
+      isLocked: false,
+      isDirty: false,
+      isPickerDismiss: false,
+      open: false,
+      reason: "escape-key",
+    }),
+  ).toBe("allow");
+});
+
+test("isNativeDatePickerDismiss detects focused date inputs", () => {
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  document.body.append(dateInput);
+  dateInput.focus();
+  expect(isNativeDatePickerDismiss("outside-press")).toBe(true);
+  expect(isNativeDatePickerDismiss("focus-out")).toBe(true);
+  expect(isNativeDatePickerDismiss("escape-key")).toBe(false);
+  dateInput.remove();
+
+  const textInput = document.createElement("input");
+  textInput.type = "text";
+  document.body.append(textInput);
+  textInput.focus();
+  expect(isNativeDatePickerDismiss("outside-press")).toBe(false);
+  textInput.remove();
+});
+
 test("shouldBlockOverlayDismiss locks user dismissals but allows imperative closes", () => {
   expect(
     shouldBlockOverlayDismiss({
@@ -555,4 +641,157 @@ test("useFormOverlay close is a no-op without an actions handle", async () => {
   expect(() => {
     fireEvent.click(view.getByRole("button", { name: "EscapeIdle" }));
   }).not.toThrow();
+});
+
+test("dirty overlay dismiss prompts to discard and keep editing stays put", async () => {
+  const forwarded = vi.fn();
+  const actionsClose = vi.fn();
+
+  function DirtyOverlayForm() {
+    const overlay = useFormOverlay({
+      onOpenChange: (open, eventDetails) => {
+        forwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <FormOverlayProvider overlay={overlay}>
+        <button
+          type="button"
+          onClick={() => {
+            overlay.rootProps.actionsRef.current = {
+              close: actionsClose,
+              unmount: () => undefined,
+            };
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "escape-key",
+              cancel,
+            });
+            (document.getElementById("dismiss-result") as HTMLInputElement).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryEscape
+        </button>
+        <input id="dismiss-result" readOnly defaultValue="unset" />
+        <Form form={form} handleSubmit={async () => undefined}>
+          <input aria-label="Note" {...form.register("note")} />
+        </Form>
+      </FormOverlayProvider>
+    );
+  }
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <DirtyOverlayForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
+  forwarded.mockClear();
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("1");
+  expect(forwarded).not.toHaveBeenCalled();
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  expect(view.getByText("If you close now, your edits will be lost.")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(actionsClose).not.toHaveBeenCalled();
+  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
+
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  expect(actionsClose).toHaveBeenCalled();
+});
+
+test("dirty form overlay blocks in-app navigation until discarded", async () => {
+  function DirtyFormPage() {
+    const router = useRouter();
+    const overlay = useFormOverlay({ onOpenChange: undefined });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+    return (
+      <LocaleProvider locale="en-GB">
+        <FormOverlayProvider overlay={overlay}>
+          <Form form={form} handleSubmit={async () => undefined}>
+            <input aria-label="Note" {...form.register("note")} />
+          </Form>
+          <button
+            type="button"
+            onClick={() => {
+              router.history.push("/other");
+            }}
+          >
+            Leave
+          </button>
+        </FormOverlayProvider>
+      </LocaleProvider>
+    );
+  }
+
+  const rootRoute = createRootRoute({
+    component: function TestRoot() {
+      return <Outlet />;
+    },
+  });
+  const homeRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: DirtyFormPage,
+  });
+  const otherRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/other",
+    component: function OtherPage() {
+      return <div>Other page</div>;
+    },
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([homeRoute, otherRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    defaultPendingMinMs: 0,
+  });
+  await router.load();
+  const view = render(<RouterProvider router={router} />);
+  await using _view = makeResource(view, () => {
+    view.unmount();
+  });
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "Leave" }));
+
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  expect(view.queryByText("Other page")).toBeNull();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(view.queryByText("Other page")).toBeNull();
+
+  fireEvent.click(view.getByRole("button", { name: "Leave" }));
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Other page")).toBeTruthy();
+  });
 });

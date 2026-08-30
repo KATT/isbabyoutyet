@@ -122,22 +122,7 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({
-    onOpenChange: (open, eventDetails) => {
-      // Keep the popover open while the native date picker (rendered outside
-      // the popover) is in use; Base UI replaces onInteractOutside with
-      // onOpenChange reasons + eventDetails.cancel()
-      if (
-        !open &&
-        (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
-      ) {
-        const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLInputElement && activeElement.type === "date") {
-          eventDetails.cancel();
-        }
-      }
-    },
-  });
+  const overlay = useFormOverlay({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>

@@ -190,6 +190,8 @@ test("reopening the editor picks up the latest name without any reset", async ()
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Scrapped draft" } });
   fireEvent.click(view.getByRole("button", { name: "Cancel" }));
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
   await vi.waitFor(() => expect(view.queryByLabelText("Baby name")).toBeNull());
 
   // The name changes from outside (e.g. the mutation round-trip)
