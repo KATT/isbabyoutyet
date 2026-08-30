@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig, defineProject } from "vitest/config";
 import viteReact from "@vitejs/plugin-react";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommand } from "vitest/node";
 
@@ -69,12 +68,10 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
 
 export const webUnitProject = defineProject({
   root: WEB_ROOT,
-  plugins: [
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
-    viteReact(),
-  ],
+  resolve: {
+    tsconfigPaths: true,
+  },
+  plugins: [viteReact()],
   test: {
     name: "web",
     environment: "jsdom",

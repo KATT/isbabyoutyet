@@ -1,13 +1,14 @@
 /**
  * jsdom is missing a handful of browser APIs that real components we render
  * in tests rely on (embla-carousel, next-themes, base-ui's anchor
- * positioning, our own IntersectionObserver-based infinite scroll). Stub
- * them globally so components can run unmocked under test.
+ * positioning, our own IntersectionObserver-based infinite scroll, TanStack
+ * Router scroll restoration, Paraglide locale reloads). Stub them globally so
+ * components can run unmocked under test without "Not implemented" noise.
  */
 
 import { webcrypto } from "node:crypto";
 
-import { isFunction } from "@workspace/runtime/guards";
+import { isFunction, isPlainObject } from "@workspace/runtime/guards";
 
 const kAuthBroadcastChannel = Symbol.for("better-auth:broadcast-channel");
 
@@ -85,3 +86,56 @@ function stubScrollIntoView(this: Element) {}
 if (!isFunction(Element.prototype.scrollIntoView)) {
   Element.prototype.scrollIntoView = stubScrollIntoView;
 }
+
+// jsdom's Window#scrollTo / scroll / scrollBy exist but only emit
+// "Not implemented". TanStack Router's scroll restoration calls scrollTo on
+// every navigation, which drowned `pnpm test` in those warnings.
+function stubWindowScroll() {}
+window.scrollTo = stubWindowScroll;
+window.scroll = stubWindowScroll;
+window.scrollBy = stubWindowScroll;
+
+if (!isFunction(Element.prototype.scrollTo)) {
+  Element.prototype.scrollTo = stubWindowScroll;
+}
+
+/**
+ * jsdom's Location reload/assign/replace/href are unforgeable wrappers around
+ * an internal impl. Locale changes call `location.reload()`, which tries to
+ * fetch another Document and warns. Patch the impl so SPA tests stay on this
+ * document without `vi.mock`.
+ */
+type JsdomLocationInternals = {
+  reload: () => void;
+  assign: (url: string) => void;
+  replace: (url: string) => void;
+};
+
+function isJsdomLocationInternals(value: unknown): value is JsdomLocationInternals {
+  if (!isPlainObject(value)) {
+    return false;
+  }
+  return isFunction(value.reload) && isFunction(value.assign) && isFunction(value.replace);
+}
+
+function jsdomLocationInternals() {
+  for (const symbol of Object.getOwnPropertySymbols(window.location)) {
+    const candidate = Object.getOwnPropertyDescriptor(window.location, symbol)?.value;
+    if (isJsdomLocationInternals(candidate)) {
+      return candidate;
+    }
+  }
+  throw new Error("jsdom Location internals were not found");
+}
+
+function stubDocumentNavigation() {}
+
+const locationInternals = jsdomLocationInternals();
+locationInternals.reload = stubDocumentNavigation;
+locationInternals.assign = stubDocumentNavigation;
+locationInternals.replace = stubDocumentNavigation;
+Object.defineProperty(locationInternals, "_locationObjectNavigate", {
+  configurable: true,
+  writable: true,
+  value: stubDocumentNavigation,
+});
