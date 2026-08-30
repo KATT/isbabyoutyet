@@ -5,13 +5,11 @@
     "**/routeTree.gen.ts",
     "coverage/**",
     "**/paraglide/**",
-    "packages/oxlint-plugins/dist/**"
+    "packages/oxlint-plugins/dist/**",
+    "packages/scripts/dist/**"
   ],
   "tags": ["-@internal"],
   "workspaces": {
-    ".": {
-      "entry": ["scripts/compareCoverage.ts!"]
-    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -36,38 +34,27 @@
     "packages/oxlint-plugins": {
       "entry": [
         "workspace.ts!",
+        "anti-slop/index.ts!",
         "infer-callback-params.ts!",
         "inline-jsx-callback.ts!",
         "no-banned-react-reexport.ts!",
-        "no-chained-type-assertions.ts!",
-        "no-conditional-empty-object-spread.ts!",
         "no-convex-query-hooks.ts!",
         "no-invalid-convex-client.ts!",
-        "no-known-value-widening.ts!",
         "no-manual-memoization.ts!",
         "no-mock.ts!",
-        "no-module-mocking.ts!",
-        "no-object-parameters.ts!",
         "no-optional.ts!",
         "no-overzealous-destructuring.ts!",
-        "no-reflect-apply.ts!",
-        "no-reflect-get.ts!",
         "no-rhf-watch.ts!",
-        "no-runtime-typeof.ts!",
-        "no-shape-in-symbol-names.ts!",
         "no-test-preloaded-query.ts!",
-        "no-unknown-parameters.ts!",
-        "no-unknown-returns.ts!",
-        "no-unknown-type-aliases.ts!",
-        "no-unsafe-dictionary-type.ts!",
         "no-use-effect.ts!",
         "no-use-state.ts!",
-        "no-widen-then-assert.ts!",
         "query-prefetch-shared.ts!",
         "require-preloaded-query-options.ts!",
-        "require-safety-comment-for-type-assertion.ts!",
         "use-loader-preloads.ts!"
       ]
+    },
+    "packages/scripts": {
+      "entry": ["src/compareCoverage.ts!"]
     },
     "packages/runtime": {},
     "packages/query-prefetch": {},
