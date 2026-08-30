@@ -133,31 +133,35 @@ let installCount = 0;
 let restoreInstalled: (() => void) | null = null;
 
 function installJsdomWindowStubs() {
-  const previousMatchMedia = globalThis.matchMedia;
-  const previousIntersectionObserver = globalThis.IntersectionObserver;
-  const previousResizeObserver = globalThis.ResizeObserver;
   const previousScrollTo = window.scrollTo;
   const previousScroll = window.scroll;
   const previousScrollBy = window.scrollBy;
-  const previousElementScrollTo = Element.prototype.scrollTo;
-  const previousScrollIntoView = Object.getOwnPropertyDescriptor(
-    Element.prototype,
-    "scrollIntoView",
-  );
-  const addedElementScrollTo = !isFunction(previousElementScrollTo);
+  const addedMatchMedia = !isFunction(globalThis.matchMedia);
+  const addedIntersectionObserver = !isFunction(globalThis.IntersectionObserver);
+  const addedResizeObserver = !isFunction(globalThis.ResizeObserver);
+  const addedElementScrollTo = !isFunction(Element.prototype.scrollTo);
+  const addedScrollIntoView = !isFunction(Element.prototype.scrollIntoView);
 
-  vi.stubGlobal("matchMedia", stubMatchMedia);
-  vi.stubGlobal("IntersectionObserver", StubObserver);
-  vi.stubGlobal("ResizeObserver", StubObserver);
+  if (addedMatchMedia) {
+    vi.stubGlobal("matchMedia", stubMatchMedia);
+  }
+  if (addedIntersectionObserver) {
+    vi.stubGlobal("IntersectionObserver", StubObserver);
+  }
+  if (addedResizeObserver) {
+    vi.stubGlobal("ResizeObserver", StubObserver);
+  }
   vi.stubGlobal("scrollTo", stubWindowScroll);
   vi.stubGlobal("scroll", stubWindowScroll);
   vi.stubGlobal("scrollBy", stubWindowScroll);
 
-  Object.defineProperty(Element.prototype, "scrollIntoView", {
-    configurable: true,
-    writable: true,
-    value: stubWindowScroll,
-  });
+  if (addedScrollIntoView) {
+    Object.defineProperty(Element.prototype, "scrollIntoView", {
+      configurable: true,
+      writable: true,
+      value: stubWindowScroll,
+    });
+  }
   if (addedElementScrollTo) {
     Element.prototype.scrollTo = stubWindowScroll;
   }
@@ -171,14 +175,18 @@ function installJsdomWindowStubs() {
     if (addedElementScrollTo) {
       Reflect.deleteProperty(Element.prototype, "scrollTo");
     }
-    if (previousScrollIntoView) {
-      Object.defineProperty(Element.prototype, "scrollIntoView", previousScrollIntoView);
-    } else {
+    if (addedScrollIntoView) {
       Reflect.deleteProperty(Element.prototype, "scrollIntoView");
     }
-    vi.stubGlobal("matchMedia", previousMatchMedia);
-    vi.stubGlobal("IntersectionObserver", previousIntersectionObserver);
-    vi.stubGlobal("ResizeObserver", previousResizeObserver);
+    if (addedMatchMedia) {
+      Reflect.deleteProperty(globalThis, "matchMedia");
+    }
+    if (addedIntersectionObserver) {
+      Reflect.deleteProperty(globalThis, "IntersectionObserver");
+    }
+    if (addedResizeObserver) {
+      Reflect.deleteProperty(globalThis, "ResizeObserver");
+    }
     vi.stubGlobal("scrollTo", previousScrollTo);
     vi.stubGlobal("scroll", previousScroll);
     vi.stubGlobal("scrollBy", previousScrollBy);
