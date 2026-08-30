@@ -14,6 +14,7 @@ type SessionSnapshot = { data: unknown; isPending: boolean };
 type SessionListener = (session: SessionSnapshot | undefined) => void;
 
 const profileKey = convexQuery(api.profile.get, {}).queryKey;
+const babyListKey = convexQuery(api.baby.listByUser, {}).queryKey;
 
 function makeAuthClient() {
   const listeners: SessionListener[] = [];
@@ -93,7 +94,16 @@ test("setup tolerates a missing session atom", () => {
   expect(clients.setAuth).toHaveBeenCalledTimes(1);
 });
 
-test("a session resolving to none clears auth-scoped query cache; pending or signed-in leaves it", () => {
+function seedCachedQueries(queryClient: QueryClient) {
+  queryClient.setQueryData(profileKey, {
+    locale: "sv",
+    timeZone: "Europe/London",
+    isAdmin: false,
+  });
+  queryClient.setQueryData(babyListKey, []);
+}
+
+test("pending and the first settled session leave the query cache (SSR / reload)", () => {
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
@@ -101,29 +111,53 @@ test("a session resolving to none clears auth-scoped query cache; pending or sig
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
-  clients.queryClient.setQueryData(profileKey, {
-    locale: "sv",
-    timeZone: "Europe/London",
-    isAdmin: false,
-  });
-  clients.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, []);
+  seedCachedQueries(clients.queryClient);
 
   auth.emit({ data: null, isPending: true });
   expect(clients.queryClient.getQueryData(profileKey)).not.toBeNull();
-  expect(clients.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey)).toEqual(
-    [],
-  );
+  expect(clients.queryClient.getQueryData(babyListKey)).toEqual([]);
 
   auth.emit({ data: { session: { id: "s1" } }, isPending: false });
   expect(clients.queryClient.getQueryData(profileKey)).not.toBeNull();
 
-  // Session expired (noticed by the store): the /_auth guard's session
-  // signal must go null so the next navigation re-checks the token.
+  auth.emit({ data: { session: { id: "s1" } }, isPending: false });
+  expect(clients.queryClient.getQueryData(babyListKey)).toEqual([]);
+});
+
+test("a settled sign-out after a signed-in session clears the query cache", () => {
+  const clients = makeClients();
+  const auth = makeAuthClient();
+  setupClientConvexAuthWithClient({
+    convexQueryClient: clients.convexQueryClient as never,
+    queryClient: clients.queryClient,
+    authClient: auth.authClient,
+  });
+  seedCachedQueries(clients.queryClient);
+
+  auth.emit({ data: { session: { id: "s1" } }, isPending: false });
+  seedCachedQueries(clients.queryClient);
+
   auth.emit({ data: null, isPending: false });
   expect(clients.queryClient.getQueryData(profileKey)).toBeUndefined();
-  expect(
-    clients.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
-  ).toBeUndefined();
+  expect(clients.queryClient.getQueryData(babyListKey)).toBeUndefined();
+});
+
+test("a settled sign-in after an anonymous session clears the query cache", () => {
+  const clients = makeClients();
+  const auth = makeAuthClient();
+  setupClientConvexAuthWithClient({
+    convexQueryClient: clients.convexQueryClient as never,
+    queryClient: clients.queryClient,
+    authClient: auth.authClient,
+  });
+  seedCachedQueries(clients.queryClient);
+
+  auth.emit({ data: null, isPending: false });
+  expect(clients.queryClient.getQueryData(babyListKey)).toEqual([]);
+
+  auth.emit({ data: { session: { id: "s1" } }, isPending: false });
+  expect(clients.queryClient.getQueryData(profileKey)).toBeUndefined();
+  expect(clients.queryClient.getQueryData(babyListKey)).toBeUndefined();
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {

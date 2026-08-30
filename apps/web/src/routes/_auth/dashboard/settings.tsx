@@ -35,7 +35,6 @@ import {
 } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
-import { clearAuthQueryCache } from "@/lib/auth-query-cache";
 import { useI18n } from "@/lib/i18n";
 import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
@@ -80,7 +79,6 @@ type OverlayControl = {
  */
 export const settingsAuthAdapter = {
   signOut: (opts: Parameters<typeof authClient.signOut>[0]) => authClient.signOut(opts),
-  clearAuthQueryCache,
 };
 
 /**
@@ -102,7 +100,7 @@ export function DashboardSettingsSheet(props: {
       overlay={settings}
       languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
       onSignOut={async () => {
-        settingsAuthAdapter.clearAuthQueryCache(props.queryClient);
+        props.queryClient.clear();
         await settingsAuthAdapter.signOut({
           fetchOptions: {
             onSuccess: () => {

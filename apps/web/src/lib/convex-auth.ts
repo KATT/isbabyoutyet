@@ -1,7 +1,6 @@
 import type { ConvexQueryClient } from "@convex-dev/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import { isFunction, isPlainObject } from "@workspace/runtime/guards";
-import { clearAuthQueryCache } from "./auth-query-cache";
 import { authClient } from "./auth-client";
 
 type SessionSnapshot = { data: unknown; isPending: boolean };
@@ -34,10 +33,12 @@ export type ConvexAuthClient = {
  * socket as anonymous. `ConvexBetterAuthProvider` supersedes this fetcher
  * once its session effect runs and owns login/logout transitions from there.
  *
- * The session-store subscription keeps the /_auth guard's session signal
- * honest: when better-auth resolves to "no session" (e.g. expiry noticed on
- * focus — sign-out itself does a full reload), a stale profile must not
- * survive in the query cache and let the guard skip its token check.
+ * The session-store subscription drops the query cache when the settled
+ * identity flips (anonymous ↔ signed-in). Sign-in must not keep anonymous
+ * `baby.listByUser` / `profile.get` results; expiry must not keep a profile
+ * that would let the /_auth guard skip its token check. The first settled
+ * snapshot is left alone so SSR-hydrated queries survive reload, and a
+ * same-identity refresh does not wipe the dashboard.
  *
  * Takes `authClient` as a dependency (defaulted to the real client by
  * {@link setupClientConvexAuth}) so tests can inject a stub without mocking
@@ -58,10 +59,16 @@ export function setupClientConvexAuthWithClient(opts: {
     return result?.data?.token ?? null;
   });
 
+  let lastHasSession: boolean | null = null;
   opts.authClient.$store.atoms.session?.subscribe((session) => {
-    if (session && !session.isPending && !session.data) {
-      clearAuthQueryCache(opts.queryClient);
+    if (!session || session.isPending) {
+      return;
     }
+    const hasSession = session.data != null;
+    if (lastHasSession !== null && lastHasSession !== hasSession) {
+      opts.queryClient.clear();
+    }
+    lastHasSession = hasSession;
   });
 }
 

@@ -128,14 +128,10 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
     opts?.fetchOptions?.onSuccess?.({} as never);
     return { data: null, error: null } as never;
   });
-  const clearAuthQueryCache = vi.fn<typeof settingsAuthAdapter.clearAuthQueryCache>();
   const originalSignOut = settingsAuthAdapter.signOut;
-  const originalClearAuthQueryCache = settingsAuthAdapter.clearAuthQueryCache;
   settingsAuthAdapter.signOut = signOut;
-  settingsAuthAdapter.clearAuthQueryCache = clearAuthQueryCache;
   await using _adapter = makeResource({}, () => {
     settingsAuthAdapter.signOut = originalSignOut;
-    settingsAuthAdapter.clearAuthQueryCache = originalClearAuthQueryCache;
   });
 
   const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
@@ -154,7 +150,9 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
   await vi.waitFor(() => {
-    expect(clearAuthQueryCache).toHaveBeenCalledWith(harness.queryClient);
+    expect(
+      harness.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
+    ).toBeUndefined();
     expect(signOut).toHaveBeenCalled();
   });
 });
