@@ -114,7 +114,12 @@ const config = defineConfig({
   plugins: [
     // Docs require devtools() as the first Vite plugin:
     // https://tanstack.com/devtools/latest/docs/quick-start#vite-plugin
-    devtools(),
+    // Preview sets VITE_HAS_DEMO_LOGIN so `vite build` keeps the UI; production
+    // leaves it unset and the plugin strips every TanStack Devtools import.
+    // Local `vite dev` never runs the strip pass.
+    devtools({
+      removeDevtoolsOnBuild: process.env.VITE_HAS_DEMO_LOGIN !== "true",
+    }),
     aliasUseSyncExternalStoreShim(),
     skipNativeNodeAddons(),
     routeGeneratedImagesThroughSsr(),
