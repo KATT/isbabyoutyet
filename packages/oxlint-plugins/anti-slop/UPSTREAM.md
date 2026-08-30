@@ -8,3 +8,9 @@ Synced: 2026-03-28 (initial vendored import into `packages/oxlint-plugins/anti-s
 
 When syncing, replace the revision above and note the date. Compare `src/rules/` and
 `src/shared/` from that commit against this directory.
+
+## License
+
+Upstream is MIT-licensed. The full text lives in [`LICENSE`](./LICENSE) in this folder.
+When syncing, if upstream changes `LICENSE`, copy the updated file here and keep the
+vendored header at the top of `LICENSE` pointing to this repository path and `UPSTREAM.md`.

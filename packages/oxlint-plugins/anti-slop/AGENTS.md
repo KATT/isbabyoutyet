@@ -11,11 +11,12 @@ Oxlint rule IDs use the upstream plugin prefix: `anti-slop/<rule-name>` (for exa
 
 ```
 anti-slop/
+  README.md         # Vendored attribution + license summary
   index.ts          # Oxlint plugin entry (`meta.name: "anti-slop"`)
   rules/            # One file per rule (+ RuleTester tests)
   shared/           # Shared helpers (`dictionary-types`, etc.)
   LICENSE           # Upstream MIT license (required for vendored copy)
-  UPSTREAM.md       # Pinned upstream git revision
+  UPSTREAM.md       # Pinned upstream git revision + license note
   AGENTS.md         # This file
 ```
 
@@ -30,6 +31,7 @@ those belong in the parent `packages/oxlint-plugins/` workspace rules.
    - `anti-slop/shared/` ↔ upstream `src/shared/`
    - `anti-slop/index.ts` ↔ upstream `src/index.ts` (rule registry only; keep our build path)
 3. **Copy changed files** from upstream. Preserve our import paths (`../shared/…` in rules).
+   If upstream changed `LICENSE`, update `anti-slop/LICENSE` (keep the vendored header).
 4. **Run upstream tests** adapted to this repo:
    ```bash
    pnpm --filter @workspace/oxlint-plugins test
