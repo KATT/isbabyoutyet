@@ -720,6 +720,80 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
   dateInput.remove();
 });
 
+test("parent overlay prompts when a nested dirty form is dismissed from the parent", async () => {
+  const parentForwarded = vi.fn();
+  const parentClose = vi.fn();
+
+  function NestedDirtyOverlays() {
+    const parent = useFormGuard({
+      onOpenChange: (open, eventDetails) => {
+        parentForwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const child = useFormGuard({ onOpenChange: undefined });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+    return (
+      <FormGuardProvider guard={parent}>
+        <button
+          type="button"
+          onClick={() => {
+            parent.rootProps.actionsRef.current = {
+              close: parentClose,
+              unmount: () => undefined,
+            };
+            const cancel = vi.fn();
+            parent.rootProps.onOpenChange(false, {
+              reason: "outside-press",
+              cancel,
+            });
+            (document.getElementById("parent-dismiss") as HTMLInputElement).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          DismissParent
+        </button>
+        <input id="parent-dismiss" readOnly defaultValue="unset" />
+        <FormGuardProvider guard={child}>
+          <Form form={form} handleSubmit={async () => undefined}>
+            <input aria-label="Note" {...form.register("note")} />
+          </Form>
+        </FormGuardProvider>
+      </FormGuardProvider>
+    );
+  }
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <NestedDirtyOverlays />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  expect(parentForwarded).toHaveBeenCalledWith({ open: false, reason: "outside-press" });
+  parentForwarded.mockClear();
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  expect((document.getElementById("parent-dismiss") as HTMLInputElement).value).toBe("1");
+  expect(parentForwarded).not.toHaveBeenCalled();
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(parentClose).not.toHaveBeenCalled();
+  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
+
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  expect(parentClose).toHaveBeenCalled();
+});
+
 test("dirty form overlay blocks in-app navigation until discarded", async () => {
   function DirtyFormPage() {
     const router = useRouter();

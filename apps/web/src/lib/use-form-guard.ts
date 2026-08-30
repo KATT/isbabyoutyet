@@ -118,10 +118,23 @@ type FormDirtyLock = {
   isDirty: () => boolean;
 };
 
+/** What the discard prompt closes when the user confirms leaving. */
+type DiscardTarget = {
+  allowLeave: () => void;
+  close: () => void;
+};
+
 type FormDiscardPrompt = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDiscard: () => void;
+  /**
+   * Queue `target` for closing and open this guard's prompt. Stacked overlays
+   * (settings dialog + nested editor popover) route requests to the stack
+   * root, so one gesture that dismisses several dirty overlays yields a
+   * single prompt whose Discard closes them all.
+   */
+  request: (target: DiscardTarget) => void;
 };
 
 export type FormGuardHandle = {
@@ -145,17 +158,50 @@ export type FormGuardHandle = {
   dirty: FormDirtyLock;
   /** @internal consumed by {@link FormGuardProvider}. */
   discardPrompt: FormDiscardPrompt;
+  /**
+   * @internal wired by {@link FormGuardContextProvider} during render so the
+   * guard knows which ancestor (the stack root) hosts its discard prompt.
+   */
+  setAncestors: (ancestors: FormGuardHandle[]) => void;
 };
 
-const FormGuardContext = createContext<FormGuardHandle | null>(null);
+type FormGuardContextValue = {
+  guard: FormGuardHandle;
+  ancestors: FormGuardHandle[];
+};
+
+const FormGuardContext = createContext<FormGuardContextValue | null>(null);
 
 export function useFormGuardContext() {
-  return useContext(FormGuardContext);
+  return useContext(FormGuardContext)?.guard ?? null;
+}
+
+/**
+ * Every guard from the nearest provider up to the stack root. Submit locks and
+ * leave permission apply to the whole stack: a successful save inside a nested
+ * editor must also unblock the parent overlay's dismiss and navigation guard.
+ */
+export function useFormGuardStack() {
+  return guardStack(useContext(FormGuardContext));
 }
 
 /** Wrap form content so child forms register submits and dirty state. */
 export function FormGuardContextProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
-  return createElement(FormGuardContext.Provider, { value: props.guard }, props.children);
+  const parent = useContext(FormGuardContext);
+  const ancestors = parent ? [parent.guard, ...parent.ancestors] : [];
+  // Written during render (latest-callback idiom) so a same-frame dismiss
+  // already routes its discard prompt to the stack root.
+  props.guard.setAncestors(ancestors);
+  return createElement(
+    FormGuardContext.Provider,
+    {
+      value: {
+        guard: props.guard,
+        ancestors,
+      },
+    },
+    props.children,
+  );
 }
 
 /**
@@ -175,16 +221,34 @@ export function useFormGuard(opts: {
   const dirtyIdsRef = useRef(new Set<string>());
   const allowLeaveRef = useRef(false);
   const discardIntentRef = useRef<"idle" | "discard">("idle");
+  const ancestorsRef = useRef<FormGuardHandle[]>([]);
+  const pendingDiscardsRef = useRef<DiscardTarget[]>([]);
   const [discardOpen, setDiscardOpen] = useState(false);
 
   function isDirty() {
     return dirtyIdsRef.current.size > 0 && !allowLeaveRef.current;
   }
 
+  /** What discarding this guard means for whichever prompt hosts the question. */
+  const selfTarget: DiscardTarget = {
+    allowLeave: () => {
+      allowLeaveRef.current = true;
+    },
+    close: () => {
+      actionsRef.current?.close();
+    },
+  };
+
+  function requestDiscard(target: DiscardTarget) {
+    pendingDiscardsRef.current.push(target);
+    setDiscardOpen(true);
+  }
+
   function keepEditing() {
     if (discardIntentRef.current === "discard") {
       return;
     }
+    pendingDiscardsRef.current = [];
     setDiscardOpen(false);
   }
 
@@ -192,7 +256,12 @@ export function useFormGuard(opts: {
     discardIntentRef.current = "discard";
     allowLeaveRef.current = true;
     setDiscardOpen(false);
-    actionsRef.current?.close();
+    const targets = pendingDiscardsRef.current;
+    pendingDiscardsRef.current = [];
+    for (const target of targets) {
+      target.allowLeave();
+      target.close();
+    }
   }
 
   return {
@@ -240,6 +309,10 @@ export function useFormGuard(opts: {
       onDiscard: () => {
         discard();
       },
+      request: requestDiscard,
+    },
+    setAncestors: (ancestors) => {
+      ancestorsRef.current = ancestors;
     },
     rootProps: {
       actionsRef,
@@ -258,10 +331,20 @@ export function useFormGuard(opts: {
           case "block":
             eventDetails.cancel();
             return;
-          case "confirm":
+          case "confirm": {
             eventDetails.cancel();
-            setDiscardOpen(true);
+            // The outermost guard hosts the prompt: its provider lives outside
+            // nested popups, and one gesture that dismisses several dirty
+            // overlays (dialog backdrop + nested popover outside-press) must
+            // yield a single prompt that closes the whole stack on Discard.
+            const host = ancestorsRef.current.at(-1);
+            if (host) {
+              host.discardPrompt.request(selfTarget);
+            } else {
+              requestDiscard(selfTarget);
+            }
             return;
+          }
           default: {
             const _exhaustive: never = decision;
             return _exhaustive;
@@ -272,8 +355,15 @@ export function useFormGuard(opts: {
   };
 }
 
+function guardStack(ctx: FormGuardContextValue | null) {
+  return ctx ? [ctx.guard, ...ctx.ancestors] : [];
+}
+
 /**
- * Registers this form's dirty flag with the nearest {@link FormGuardProvider}.
+ * Registers this form's dirty flag with the nearest {@link FormGuardProvider}
+ * and every ancestor guard. Stacked overlays (settings + nested editor) share
+ * one leave question: a dirty child must block the parent too.
+ *
  * Writes during render so a same-frame dismiss sees the latest value; effect
  * cleanup clears the slot when the form unmounts.
  *
@@ -281,18 +371,28 @@ export function useFormGuard(opts: {
  * subscription owned by the guard, not the feature tree).
  */
 export function useRegisterFormDirty(isDirty: boolean) {
-  const guard = useFormGuardContext();
+  const ctx = useContext(FormGuardContext);
   const id = useId();
-  const guardRef = useRef(guard);
-  guardRef.current = guard;
-  if (guard) {
+  const registeredRef = useRef<FormGuardHandle[]>([]);
+  const targets = guardStack(ctx);
+  const previous = registeredRef.current;
+  const nextTargets = new Set(targets);
+  for (const guard of previous) {
+    if (!nextTargets.has(guard)) {
+      guard.dirty.set(id, false);
+    }
+  }
+  registeredRef.current = targets;
+  for (const guard of targets) {
     guard.dirty.set(id, isDirty);
   }
   useEffect(() => {
     return () => {
-      guardRef.current?.dirty.set(id, false);
+      for (const guard of registeredRef.current) {
+        guard.dirty.set(id, false);
+      }
     };
-  }, [id]);
+  }, [id, registeredRef]);
 }
 
 export function useOptionalRouter() {

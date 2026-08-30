@@ -52,6 +52,16 @@ function openJourneyEditor(view: ReturnType<typeof render>) {
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
 }
 
+/** Press the modal dialog's backdrop the way a real pointer would. */
+function clickDialogBackdrop(view: ReturnType<typeof render>) {
+  const backdrop = view.baseElement.querySelector("[data-slot=dialog-overlay]");
+  if (!backdrop) throw new Error("dialog backdrop missing");
+  fireEvent.pointerDown(backdrop, { pointerType: "mouse" });
+  fireEvent.mouseDown(backdrop);
+  fireEvent.mouseUp(backdrop);
+  fireEvent.click(backdrop);
+}
+
 function selectJourneyPreset(view: ReturnType<typeof render>, label: string) {
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
   const option = view.getByRole("option", { name: label });
@@ -108,6 +118,85 @@ test("settings dialog shows page fields when open and stays closed when not", as
   fireEvent.click(open.getByRole("button", { name: "Close" }));
   expect(onOpenChange).toHaveBeenCalled();
   expect(onOpenChange.mock.calls[0]?.[0]).toBe(false);
+});
+
+test("closing settings with a dirty nested editor prompts before discarding", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <SettingsPanel
+        baby={baby}
+        onUpdate={onUpdate}
+        open
+        onOpenChange={onOpenChange}
+        {...absentSettingsProps}
+      />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0] as HTMLButtonElement);
+  fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Draft name" } });
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  expect(view.getByText("Discard unsaved changes?")).toBeTruthy();
+  expect(onOpenChange).not.toHaveBeenCalled();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect((view.getByLabelText("Baby name") as HTMLInputElement).value).toBe("Draft name");
+
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  expect(onOpenChange.mock.calls.some((call) => call[0] === false)).toBe(true);
+});
+
+test("clicking the backdrop with a dirty nested editor shows one prompt for the whole stack", async () => {
+  const onOpenChange = vi.fn<(open: boolean) => void>();
+  const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
+
+  await using view = renderResource(
+    <LocaleProvider locale="en-GB">
+      <SettingsPanel
+        baby={baby}
+        onUpdate={onUpdate}
+        open
+        onOpenChange={onOpenChange}
+        {...absentSettingsProps}
+      />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0] as HTMLButtonElement);
+  fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Draft name" } });
+
+  // The dialog backdrop press dismisses both the dialog (modal outside press)
+  // and the nested popover (outside its popup); the stack must answer with a
+  // single prompt rather than two stacked alert dialogs.
+  clickDialogBackdrop(view);
+
+  expect(view.getAllByText("Discard unsaved changes?").length).toBe(1);
+  expect(onOpenChange).not.toHaveBeenCalled();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect((view.getByLabelText("Baby name") as HTMLInputElement).value).toBe("Draft name");
+
+  clickDialogBackdrop(view);
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+
+  await vi.waitFor(() => {
+    expect(onOpenChange.mock.calls.some((call) => call[0] === false)).toBe(true);
+  });
+  await vi.waitFor(() => {
+    expect(view.queryByLabelText("Baby name")).toBeNull();
+  });
 });
 
 test("due date row previews optional public text", async () => {
