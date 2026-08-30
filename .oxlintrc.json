@@ -11,11 +11,15 @@
     "builtin": true
   },
   // Generated code is not ours to lint
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/*.ts"],
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/**/*.ts"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
       "specifier": "@rrazvan.dev/oxlint-plugin-i18n-literal"
+    },
+    {
+      "name": "anti-slop",
+      "specifier": "./packages/oxlint-plugins/dist/anti-slop/index.js"
     },
     {
       "name": "workspace",
@@ -41,21 +45,21 @@
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
     // Anti-Slop zero-cost rules (no current violations):
-    "workspace/no-chained-type-assertions": "error",
-    "workspace/no-module-mocking": "error",
-    "workspace/no-reflect-apply": "error",
-    "workspace/no-unknown-type-aliases": "error",
-    "workspace/no-widen-then-assert": "error",
-    "workspace/require-safety-comment-for-type-assertion": "error",
-    "workspace/no-shape-in-symbol-names": "error",
-    "workspace/no-reflect-get": "error",
-    "workspace/no-object-parameters": "error",
-    "workspace/no-conditional-empty-object-spread": "error",
-    "workspace/no-known-value-widening": "error",
-    "workspace/no-unsafe-dictionary-type": "error",
-    "workspace/no-unknown-returns": "error",
-    "workspace/no-unknown-parameters": "error",
-    "workspace/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
+    "anti-slop/no-chained-type-assertions": "error",
+    "anti-slop/no-module-mocking": "error",
+    "anti-slop/no-reflect-apply": "error",
+    "anti-slop/no-unknown-type-aliases": "error",
+    "anti-slop/no-widen-then-assert": "error",
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+    "anti-slop/no-shape-in-symbol-names": "error",
+    "anti-slop/no-reflect-get": "error",
+    "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-conditional-empty-object-spread": "error",
+    "anti-slop/no-known-value-widening": "error",
+    "anti-slop/no-unsafe-dictionary-type": "error",
+    "anti-slop/no-unknown-returns": "error",
+    "anti-slop/no-unknown-parameters": "error",
+    "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
     "workspace/no-manual-memoization": "error",
@@ -71,7 +75,7 @@
       // Global jsdom stubs for better-auth broadcast channel (test infrastructure).
       "files": ["apps/web/src/test/setup.ts"],
       "rules": {
-        "workspace/no-unknown-parameters": "off"
+        "anti-slop/no-unknown-parameters": "off"
       }
     },
     {
@@ -85,10 +89,10 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "workspace/no-chained-type-assertions": "off",
-        "workspace/no-widen-then-assert": "off",
-        "workspace/no-known-value-widening": "off",
-        "workspace/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-chained-type-assertions": "off",
+        "anti-slop/no-widen-then-assert": "off",
+        "anti-slop/no-known-value-widening": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
       }
     },
@@ -157,25 +161,25 @@
       "files": ["apps/web/src/lib/auth-client-bridge.ts"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "workspace/no-chained-type-assertions": "off",
-        "workspace/require-safety-comment-for-type-assertion": "off",
-        "workspace/no-widen-then-assert": "off"
+        "anti-slop/no-chained-type-assertions": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-widen-then-assert": "off"
       }
     },
     {
       // Service worker: plain JS JSON boundary (no TS type predicates).
       "files": ["apps/web/public/sw.js"],
       "rules": {
-        "workspace/no-runtime-typeof": "off"
+        "anti-slop/no-runtime-typeof": "off"
       }
     },
     {
       // Boundary module: accepts unparsed external values (unknown / Record).
       "files": ["packages/runtime/src/guards.ts"],
       "rules": {
-        "workspace/no-unknown-parameters": "off",
-        "workspace/no-unknown-returns": "off",
-        "workspace/no-unsafe-dictionary-type": "off"
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off"
       }
     },
     {
@@ -183,21 +187,21 @@
       "files": ["packages/ui/src/**"],
       "rules": {
         "typescript/consistent-type-assertions": "off",
-        "workspace/no-chained-type-assertions": "off",
-        "workspace/no-conditional-empty-object-spread": "off",
-        "workspace/no-known-value-widening": "off",
-        "workspace/no-module-mocking": "off",
-        "workspace/no-object-parameters": "off",
-        "workspace/no-reflect-apply": "off",
-        "workspace/no-reflect-get": "off",
-        "workspace/no-runtime-typeof": "off",
-        "workspace/no-shape-in-symbol-names": "off",
-        "workspace/no-unknown-parameters": "off",
-        "workspace/no-unknown-returns": "off",
-        "workspace/no-unknown-type-aliases": "off",
-        "workspace/no-unsafe-dictionary-type": "off",
-        "workspace/no-widen-then-assert": "off",
-        "workspace/require-safety-comment-for-type-assertion": "off",
+        "anti-slop/no-chained-type-assertions": "off",
+        "anti-slop/no-conditional-empty-object-spread": "off",
+        "anti-slop/no-known-value-widening": "off",
+        "anti-slop/no-module-mocking": "off",
+        "anti-slop/no-object-parameters": "off",
+        "anti-slop/no-reflect-apply": "off",
+        "anti-slop/no-reflect-get": "off",
+        "anti-slop/no-runtime-typeof": "off",
+        "anti-slop/no-shape-in-symbol-names": "off",
+        "anti-slop/no-unknown-parameters": "off",
+        "anti-slop/no-unknown-returns": "off",
+        "anti-slop/no-unknown-type-aliases": "off",
+        "anti-slop/no-unsafe-dictionary-type": "off",
+        "anti-slop/no-widen-then-assert": "off",
+        "anti-slop/require-safety-comment-for-type-assertion": "off",
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
