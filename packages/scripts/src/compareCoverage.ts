@@ -1,10 +1,6 @@
 import { appendFile, readFile } from "node:fs/promises";
-import {
-  isJsonObjectValue,
-  parseJsonNumber,
-  type JsonObject,
-  type JsonValue,
-} from "../packages/runtime/src/jsonValue.js";
+import type { JsonObject, JsonValue } from "@workspace/runtime/json";
+import { isJsonObjectValue, parseJsonNumber } from "@workspace/runtime/json";
 
 const metrics = ["statements", "branches", "functions", "lines"] as const;
 
@@ -21,9 +17,7 @@ const baselinePath = process.argv[2];
 const currentPath = process.argv[3];
 
 if (baselinePath === undefined || currentPath === undefined) {
-  throw new Error(
-    "Usage: tsx scripts/compareCoverage.ts <baseline-summary> <current-summary>",
-  );
+  throw new Error("Usage: tsx src/compareCoverage.ts <baseline-summary> <current-summary>");
 }
 
 function formatPct(value: number) {
@@ -39,7 +33,11 @@ async function readSummary(path: string) {
   const contents = await readFile(path, "utf8");
   const summary: JsonValue = JSON.parse(contents);
 
-  if (!isJsonObjectValue(summary) || !("total" in summary) || !isJsonObjectValue(summary["total"])) {
+  if (
+    !isJsonObjectValue(summary) ||
+    !("total" in summary) ||
+    !isJsonObjectValue(summary["total"])
+  ) {
     throw new Error(`Invalid coverage summary: ${path}`);
   }
 
@@ -57,9 +55,7 @@ function getPercentage(
       : null;
 
   if (percentage === null || !Number.isFinite(percentage)) {
-    throw new Error(
-      `Invalid ${options.metric} coverage percentage: ${options.path}`,
-    );
+    throw new Error(`Invalid ${options.metric} coverage percentage: ${options.path}`);
   }
 
   return percentage;

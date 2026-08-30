@@ -9,9 +9,6 @@
   ],
   "tags": ["-@internal"],
   "workspaces": {
-    ".": {
-      "entry": ["scripts/compareCoverage.ts!"]
-    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -68,6 +65,9 @@
         "require-safety-comment-for-type-assertion.ts!",
         "use-loader-preloads.ts!"
       ]
+    },
+    "packages/scripts": {
+      "entry": ["src/compareCoverage.ts!"]
     },
     "packages/runtime": {},
     "packages/query-prefetch": {},
