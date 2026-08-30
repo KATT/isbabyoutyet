@@ -298,8 +298,8 @@ export function useOptionalRouter() {
  * Blocks in-app navigation while the overlay has unsaved edits, using the
  * same discard prompt as overlay dismiss.
  *
- * Subscribes to TanStack Router history.block (and beforeunload). Must be
- * rendered under a RouterProvider — mount via {@link FormNavigationGuard}.
+ * Subscribes to TanStack Router history.block (and beforeunload). Mounted
+ * from {@link FormOverlayProvider} only when a router is present.
  */
 export function useFormNavigationGuard(overlay: FormOverlayHandle) {
   const overlayRef = useRef(overlay);
