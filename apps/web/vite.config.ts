@@ -88,6 +88,36 @@ function routeGeneratedImagesThroughSsr(): Plugin {
 }
 
 /**
+ * `@tanstack/devtools-ui` is Solid and imports `use` from `solid-js/web`.
+ * That export exists only in the browser build; Nitro resolves
+ * `solid-js/web/dist/server.js` and fails (`MISSING_EXPORT`, tanstack/devtools#187).
+ * Replace our host module on server environments so preview can keep Devtools
+ * in the client bundle without pulling Solid into the serverless graph.
+ */
+function stubTanstackDevtoolsOnServer(): Plugin {
+  const stubId = "\0stub-tanstack-devtools-ssr";
+  return {
+    name: "stub-tanstack-devtools-on-server",
+    enforce: "pre",
+    applyToEnvironment(environment) {
+      return environment.config.consumer === "server";
+    },
+    resolveId(source) {
+      if (!/(?:^|[/\\])tanstack-devtools(?:\.[cm]?[jt]sx?)?$/.test(source)) {
+        return null;
+      }
+      return stubId;
+    },
+    load(id) {
+      if (id !== stubId) {
+        return null;
+      }
+      return "export function TanStackAppDevtools() { return null; }\n";
+    },
+  };
+}
+
+/**
  * Belt-and-suspenders for any remaining leaked `__require("react")` after the
  * shim alias (same rewrite as discussed on nitro#4171).
  */
@@ -120,6 +150,7 @@ const config = defineConfig({
     devtools({
       removeDevtoolsOnBuild: process.env.VITE_HAS_DEMO_LOGIN !== "true",
     }),
+    stubTanstackDevtoolsOnServer(),
     aliasUseSyncExternalStoreShim(),
     skipNativeNodeAddons(),
     routeGeneratedImagesThroughSsr(),
