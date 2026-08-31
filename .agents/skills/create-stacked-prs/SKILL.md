@@ -50,7 +50,7 @@ Fill `.github/pull_request_template.md`. Do not duplicate the template here.
 
 ## Stack table
 
-Put this table at the **top** of every stacked PR description, under `## Stack`. Columns are only **PR** and **Description**. Omit this section on non-stack PRs.
+Put this at the **top** of every stacked PR description, under `## Stack`. Columns are only **PR** and **Description**. Omit this section on non-stack PRs.
 
 ```markdown
 | PR | Description |
@@ -64,16 +64,27 @@ Use the actual PR numbers once known (`#123`, never a markdown link or repo URL 
 
 Mark the current PR in the **PR** column only: bold the cell and prefix `👉`. Do not add a third column. Do not put `← this PR` in Description.
 
-When a later slice cannot land in the **same batch** as earlier ones, say that in Description. Sequential PRs that *can* merge together should say so — do not imply a pause between every row. Example: lint + RPC + backfill merge together; the required-schema PR waits until the backfill has run on the target backend:
+When the stack cannot land in one batch, split into `###` subheadings — one table per merge batch. Put merge-when in the heading, not in Description. Example: lint + RPC + backfill merge together; the required-schema PR waits until the backfill has run on the target backend:
 
 ```markdown
+### Merge together (1 → 2 → 3)
+
 | PR | Description |
 | --- | --- |
-| #123 1/4 | Lint + `@todo`. Merge with #124 and #125. |
-| **👉 #124 2/4** | Require RPC args. Merge with #123 and #125. |
-| #125 3/4 | Backfill omitted keys. Merge with #123 and #124. After deploy, wait until `deploymentStatus` is done before #126. |
-| #126 4/4 | **Hold.** Require schema keys. Merge only after #125 has run on the target backend. Not with 1–3. |
+| #123 1/4 | Lint + `@todo` |
+| **👉 #124 2/4** | Require RPC args |
+| #125 3/4 | Backfill omitted keys |
+
+### Hold until #125 backfill has run
+
+Convex validates existing documents against the new schema before migrations run. Wait until `migrations.deploymentStatus` is done.
+
+| PR | Description |
+| --- | --- |
+| #126 4/4 | Require schema keys |
 ```
+
+If every PR in the stack can merge together, use a single table and skip the subheadings.
 
 After creating all PRs, edit earlier PR bodies so every table has real `#n` references for the whole stack.
 
