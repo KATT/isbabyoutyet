@@ -397,6 +397,79 @@ test("shows the loaded first page instead of a spinner while the live query sync
   expect(feed.getByText("Can't wait to meet you!")).toBeTruthy();
 });
 
+test("does not pop in encouragements from the first loaded page", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  await seedTimelineEncouragement(harness, {
+    babyId: baby.babyId,
+    authorName: "Grandma",
+    message: "Can't wait to meet you!",
+  });
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+
+  expect(feed.getByText("Can't wait to meet you!").closest("[data-live-insert]")).toBeNull();
+});
+
+test("pops in an encouragement that arrives after the first snapshot", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  await seedTimelineEncouragement(harness, {
+    babyId: baby.babyId,
+    authorName: "Grandma",
+    message: "Can't wait to meet you!",
+  });
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+
+  await harness.convexClient.mutation(api.encouragements.create, {
+    babyId: baby.babyId,
+    authorName: "Auntie",
+    message: "So exciting!",
+    visitorId: "visitor-live",
+  });
+
+  const liveMessage = await vi.waitFor(() => feed.getByText("So exciting!"));
+  expect(liveMessage.closest("[data-live-insert]")).not.toBeNull();
+  expect(feed.getByText("Can't wait to meet you!").closest("[data-live-insert]")).toBeNull();
+});
+
+test("pops in the first encouragement on a previously empty feed", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+  expect(feed.getByText("Nothing here yet")).toBeTruthy();
+
+  await harness.convexClient.mutation(api.encouragements.create, {
+    babyId: baby.babyId,
+    authorName: "Auntie",
+    message: "Hello little one!",
+    visitorId: "visitor-live",
+  });
+
+  const liveMessage = await vi.waitFor(() => feed.getByText("Hello little one!"));
+  expect(liveMessage.closest("[data-live-insert]")).not.toBeNull();
+});
+
 test("shows the empty feed, not a spinner, when the loaded first page is empty", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
@@ -487,6 +560,9 @@ test("owners can delete an encouragement and toast success", async () => {
 
   await vi.waitFor(() => {
     expect(toastSuccess).toHaveBeenCalledWith("Message deleted");
+  });
+  await vi.waitFor(() => {
+    expect(feed.queryByText("Can't wait!")).toBeNull();
   });
   const timeline = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,

@@ -47,6 +47,7 @@
     "better-auth": "catalog:",
     "convex": "catalog:",
     "date-fns": "^4.4.0",
+    "motion": "^13.1.1",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
