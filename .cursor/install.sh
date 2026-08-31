@@ -9,6 +9,9 @@ cd "$(dirname "$0")/.."
 # The base image ships an older Node ahead of nvm on PATH, so pin Node 24
 # (see .nvmrc / package.json engines) explicitly and put it first.
 export NVM_DIR="$HOME/.nvm"
+if [ ! -s "$NVM_DIR/nvm.sh" ]; then
+  curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+fi
 # shellcheck disable=SC1091
 . "$NVM_DIR/nvm.sh"
 nvm install 24
