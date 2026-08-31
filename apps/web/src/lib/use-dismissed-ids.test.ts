@@ -28,3 +28,18 @@ test("dismissing one id does not dismiss another", async () => {
   hook.rerender({ id: "juniper-hale" });
   expect(hook.result.current).toBe(true);
 });
+
+test("a second subscriber on the same id updates after dismiss", async () => {
+  const store = createDismissedIdsStore();
+  const first = renderHook(() => useIsDismissed(store, "juniper-hale"));
+  const second = renderHook(() => useIsDismissed(store, "juniper-hale"));
+  await using _first = makeResource({}, () => first.unmount());
+  await using _second = makeResource({}, () => second.unmount());
+
+  expect(first.result.current).toBe(false);
+  expect(second.result.current).toBe(false);
+
+  act(() => store.dismiss("juniper-hale"));
+  expect(first.result.current).toBe(true);
+  expect(second.result.current).toBe(true);
+});

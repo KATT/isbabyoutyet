@@ -36,6 +36,9 @@ test("can dismiss the notice and shows it again for another demo baby", async ()
   fireEvent.click(view.getByRole("button", { name: "Got it" }));
   expect(view.container.firstChild).toBeNull();
 
+  view.rerender(<HomepageDemoToast publicId={HOMEPAGE_DEMO_BABY.publicId} />);
+  expect(view.container.firstChild).toBeNull();
+
   view.rerender(<HomepageDemoToast publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} />);
   expect(view.getByRole("complementary")).toBeTruthy();
 });
