@@ -20,6 +20,7 @@ type WatchHandle = {
 };
 
 type WatchQuery = (funcRef: FunctionReference<"query">, args: DefaultFunctionArgs) => WatchHandle;
+type LivePagesHookProps = { args: DefaultFunctionArgs };
 
 const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCursor: "" };
 
@@ -290,9 +291,9 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
     localQueryResult: () => localResult,
   }));
 
-  const initialProps: { args: DefaultFunctionArgs } = { args: { babyId: "b1" } };
+  const initialProps: LivePagesHookProps = { args: { babyId: "b1" } };
   const { rerender, unmount } = renderHook(
-    (props: { args: DefaultFunctionArgs }) =>
+    (props: LivePagesHookProps) =>
       useLiveConvexInfinitePages({
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args],
         funcRef: anyApi.timeline.listByBaby,

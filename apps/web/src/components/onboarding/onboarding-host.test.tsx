@@ -12,6 +12,11 @@ import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { OnboardingHostWithSession, useCompleteOnboardingStep } from "./onboarding-host";
 
+type CompleteOnboardingStep = (args: { stepId: OnboardingStepId }) => Promise<null>;
+type CompleteStepHolder = {
+  completeStep: CompleteOnboardingStep | null;
+};
+
 async function renderOnboardingHost(opts: {
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>;
   surface: "dashboard" | "baby";
@@ -484,9 +489,7 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   harness.withIdentity({ subject: userId });
   await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
-  const holder: {
-    completeStep: ((args: { stepId: OnboardingStepId }) => Promise<null>) | null;
-  } = { completeStep: null };
+  const holder: CompleteStepHolder = { completeStep: null };
   function Probe() {
     holder.completeStep = useCompleteOnboardingStep();
     return null;

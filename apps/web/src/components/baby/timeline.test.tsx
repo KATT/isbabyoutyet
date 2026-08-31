@@ -93,12 +93,9 @@ async function renderComposer(
   let baby: BabyData = opts.baby;
   const locale = opts.locale ?? "en-GB";
   const view = render(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
-  const controls: {
-    view: ReturnType<typeof render>;
-    setBaby: (nextBaby: BabyData) => void;
-  } = {
+  const controls = {
     view,
-    setBaby(nextBaby) {
+    setBaby(nextBaby: BabyData) {
       baby = nextBaby;
       view.rerender(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
     },
