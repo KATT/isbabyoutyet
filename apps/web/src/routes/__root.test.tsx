@@ -103,6 +103,37 @@ test("the root document shell sets the html lang attribute", async () => {
   expect(document.documentElement.getAttribute("lang")).toBe("en-GB");
 });
 
+test("TanStack Devtools are omitted outside local dev and preview", async () => {
+  vi.stubEnv("DEV", false);
+  await using _env = makeResource({}, () => {
+    vi.unstubAllEnvs();
+  });
+
+  await using _view = await renderWithTestRouter(
+    <RootDocument locale="en-GB">
+      <div>shell</div>
+    </RootDocument>,
+  );
+
+  expect(document.querySelector("[data-slot=tanstack-devtools]")).toBeNull();
+});
+
+test("TanStack Devtools stay on preview builds", async () => {
+  vi.stubEnv("DEV", false);
+  vi.stubEnv("VITE_HAS_DEMO_LOGIN", "true");
+  await using _env = makeResource({}, () => {
+    vi.unstubAllEnvs();
+  });
+
+  await using _view = await renderWithTestRouter(
+    <RootDocument locale="en-GB">
+      <div>shell</div>
+    </RootDocument>,
+  );
+
+  expect(document.querySelector("[data-slot=tanstack-devtools]")).not.toBeNull();
+});
+
 test("the error page offers reload and go-home recovery, with details in dev", async () => {
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">

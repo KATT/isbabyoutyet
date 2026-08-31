@@ -4,6 +4,7 @@ import { useRef } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 import * as z from "zod";
+import type { QueryClient } from "@tanstack/react-query";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -33,6 +34,7 @@ import { useDashboardSettingsOverlayNav } from "@/lib/overlay-nav";
 import { ADMIN_DEFAULT_SEARCH } from "@/routes/_auth/dashboard_.admin";
 
 const authRoute = getRouteApi("/_auth");
+const rootRoute = getRouteApi("__root__");
 
 export const Route = createFileRoute("/_auth/dashboard/settings")({
   component: DashboardSettingsRoute,
@@ -40,7 +42,8 @@ export const Route = createFileRoute("/_auth/dashboard/settings")({
 
 export function DashboardSettingsRoute() {
   const authContext = authRoute.useRouteContext();
-  return <DashboardSettingsSheet profile={authContext.profile} />;
+  const { queryClient } = rootRoute.useRouteContext();
+  return <DashboardSettingsSheet profile={authContext.profile} queryClient={queryClient} />;
 }
 
 function SettingsSection(props: { title: string; children: ReactNode }) {
@@ -80,6 +83,7 @@ export const settingsAuthAdapter = {
  */
 export function DashboardSettingsSheet(props: {
   profile: PreloadedConvexQuery<typeof api.profile.get>;
+  queryClient: QueryClient;
 }) {
   const profileQuery = usePreloadedConvexQuery(api.profile.get, props.profile);
   const settings = useDashboardSettingsOverlayNav();
@@ -90,6 +94,7 @@ export function DashboardSettingsSheet(props: {
       overlay={settings}
       languageSettings={<LanguageSettings profile={props.profile} className="justify-start" />}
       onSignOut={async () => {
+        props.queryClient.clear();
         await settingsAuthAdapter.signOut({
           fetchOptions: {
             onSuccess: () => {

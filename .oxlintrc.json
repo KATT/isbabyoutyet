@@ -31,7 +31,7 @@
       "presets": ["react"],
       "translationFunctionNames": ["translate"],
       "ignoredAttributes": ["to", "params", "search"],
-      "ignoredComponents": ["TanStackDevtools"],
+      "ignoredComponents": ["TanStackDevtools", "TanStackAppDevtools"],
       "ignorePatterns": ["^LoadingMore$", "^TanStack (Router|Query)$", "^/[A-Za-z0-9_$/.-]+$"]
     }
   },

@@ -23,6 +23,7 @@ import { allKeyed, preloadedQueryOptions } from "@workspace/query-prefetch";
 import { toast } from "sonner";
 import { useCompleteOnboardingStep } from "@/components/onboarding/onboarding-host";
 import { getBabySeo } from "@/lib/baby-seo";
+import { copyTextToClipboard } from "@/lib/copy-text";
 import { browserImageFactory, prefetchBrowserImage } from "@/lib/image-prefetch";
 import { useI18n } from "@/lib/i18n";
 import { useBabyShareOverlayNav } from "@/lib/overlay-nav";
@@ -101,33 +102,17 @@ export function BabyShareOverlay() {
 
   async function copyShareLink() {
     try {
-      await navigator.clipboard.writeText(loaderData.shareLink);
+      await copyTextToClipboard(loaderData.shareLink);
       showCopied();
       toast.success(t("Copied to clipboard"));
       if (myAccessQuery.data.canManage) {
         void completeOnboardingStep({ stepId: "share_link" });
       }
-    } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = loaderData.shareLink;
-      textArea.style.position = "fixed";
-      textArea.style.opacity = "0";
-      document.body.appendChild(textArea);
-      textArea.select();
-      try {
-        document.execCommand("copy");
-        showCopied();
-        toast.success(t("Copied to clipboard"));
-        if (myAccessQuery.data.canManage) {
-          void completeOnboardingStep({ stepId: "share_link" });
-        }
-      } catch (cause) {
-        toast.error(
-          "Failed to copy to clipboard: " +
-            (cause instanceof Error ? cause.message : "Unknown error"),
-        );
-      }
-      document.body.removeChild(textArea);
+    } catch (cause) {
+      toast.error(
+        "Failed to copy to clipboard: " +
+          (cause instanceof Error ? cause.message : "Unknown error"),
+      );
     }
   }
 
