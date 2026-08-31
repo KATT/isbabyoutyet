@@ -40,15 +40,28 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon,
-      badge: data.icon, // Use same icon for badge
-      image: isString(data.image) ? data.image : undefined,
-      data: { url: data.url },
-      tag: data.tag,
-      requireInteraction: false,
-    }),
+    (async () => {
+      if (data.dismiss === true) {
+        if (!isString(data.tag)) {
+          return;
+        }
+        const notifications = await self.registration.getNotifications({ tag: data.tag });
+        for (const notification of notifications) {
+          notification.close();
+        }
+        return;
+      }
+
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: data.icon,
+        badge: data.icon, // Use same icon for badge
+        image: isString(data.image) ? data.image : undefined,
+        data: { url: data.url },
+        tag: data.tag,
+        requireInteraction: false,
+      });
+    })(),
   );
 });
 

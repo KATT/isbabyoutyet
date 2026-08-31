@@ -128,7 +128,7 @@ export function getPushMessage(opts: {
   return { title: message.title(opts.babyName), body: message.body };
 }
 
-export type OwnerMessagePushEvent = "created" | "updated" | "deleted";
+export type OwnerMessagePushEvent = "created" | "updated";
 
 const OWNER_PUSH_BODY_MAX_LENGTH = 180;
 
@@ -147,10 +147,6 @@ const ownerCopy = {
       title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
       body: (_authorName, snippet) => snippet,
     },
-    deleted: {
-      title: (babyName) => `A message was removed from ${babyName}'s page`,
-      body: (authorName) => `${authorName} took down their note.`,
-    },
   },
   "en-US": {
     created: {
@@ -160,10 +156,6 @@ const ownerCopy = {
     updated: {
       title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
       body: (_authorName, snippet) => snippet,
-    },
-    deleted: {
-      title: (babyName) => `A message was removed from ${babyName}'s page`,
-      body: (authorName) => `${authorName} took down their note.`,
     },
   },
   sv: {
@@ -176,10 +168,6 @@ const ownerCopy = {
         `${authorName} uppdaterade sin hälsning på ${babyName}s sida`,
       body: (_authorName, snippet) => snippet,
     },
-    deleted: {
-      title: (babyName) => `En hälsning togs bort från ${babyName}s sida`,
-      body: (authorName) => `${authorName} tog bort sin hälsning.`,
-    },
   },
   es: {
     created: {
@@ -191,10 +179,6 @@ const ownerCopy = {
         `${authorName} actualizó su mensaje en la página de ${babyName}`,
       body: (_authorName, snippet) => snippet,
     },
-    deleted: {
-      title: (babyName) => `Se eliminó un mensaje de la página de ${babyName}`,
-      body: (authorName) => `${authorName} quitó su mensaje.`,
-    },
   },
   "pt-BR": {
     created: {
@@ -205,10 +189,6 @@ const ownerCopy = {
       title: (babyName, authorName) =>
         `${authorName} atualizou a mensagem na página de ${babyName}`,
       body: (_authorName, snippet) => snippet,
-    },
-    deleted: {
-      title: (babyName) => `Uma mensagem foi removida da página de ${babyName}`,
-      body: (authorName) => `${authorName} tirou o recado.`,
     },
   },
 } satisfies Record<SupportedLocale, Record<OwnerMessagePushEvent, OwnerPushCopy>>;

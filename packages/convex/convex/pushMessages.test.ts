@@ -85,20 +85,20 @@ test("owner message push copy names the visitor and truncates long notes", () =>
   expect(
     getOwnerPushMessage({
       locale: "sv",
-      event: "deleted",
+      event: "updated",
       babyName: "Nova",
       authorName: "Mormor",
-      message: "oops",
+      message: "Korrigerade stavningen",
     }),
   ).toEqual({
-    title: "En hälsning togs bort från Novas sida",
-    body: "Mormor tog bort sin hälsning.",
+    title: "Mormor uppdaterade sin hälsning på Novas sida",
+    body: "Korrigerade stavningen",
   });
   expect(truncateOwnerPushBody("short")).toBe("short");
   expect(truncateOwnerPushBody("x".repeat(181)).length).toBe(180);
   expect(truncateOwnerPushBody("x".repeat(181)).endsWith("…")).toBe(true);
 
-  const events = ["created", "updated", "deleted"] as const satisfies OwnerMessagePushEvent[];
+  const events = ["created", "updated"] as const satisfies OwnerMessagePushEvent[];
   for (const locale of SUPPORTED_LOCALES) {
     for (const event of events) {
       const copy = getOwnerPushMessage({

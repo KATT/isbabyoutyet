@@ -8,8 +8,4 @@ export const notifiableStatusValidator = v.union(
   v.literal("update_posted"),
 );
 
-export const ownerMessagePushEventValidator = v.union(
-  v.literal("created"),
-  v.literal("updated"),
-  v.literal("deleted"),
-);
+export const ownerMessagePushEventValidator = v.union(v.literal("created"), v.literal("updated"));

@@ -50,6 +50,24 @@ async function scheduleOwnerEncouragementPush(
   });
 }
 
+async function scheduleOwnerEncouragementDismiss(
+  ctx: MutationCtx,
+  opts: { baby: Doc<"baby">; encouragementId: Id<"encouragements"> },
+) {
+  const existing = await ctx.db
+    .query("ownerPushSubscriptions")
+    .withIndex("by_babyId", (q) => q.eq("babyId", opts.baby._id))
+    .first();
+  if (!existing) {
+    return;
+  }
+
+  await ctx.scheduler.runAfter(0, internal.pushNotifications.dismissOwnerMessageNotification, {
+    babyId: opts.baby._id,
+    encouragementId: opts.encouragementId,
+  });
+}
+
 async function callerIsManager(ctx: MutationCtx, baby: Doc<"baby">) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -227,15 +245,10 @@ export const remove = mutationWithTriggers({
       throw new Error("Not authorized to delete this encouragement");
     }
 
-    if (!isManager) {
-      await scheduleOwnerEncouragementPush(ctx, {
-        baby,
-        authorName: encouragement.authorName,
-        message: encouragement.message,
-        encouragementId: args.encouragementId,
-        event: "deleted",
-      });
-    }
+    await scheduleOwnerEncouragementDismiss(ctx, {
+      baby,
+      encouragementId: args.encouragementId,
+    });
 
     await deleteEncouragementWithTimelineItem(ctx, encouragement);
   },

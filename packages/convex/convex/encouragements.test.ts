@@ -173,7 +173,7 @@ test("removing an encouragement soft-deletes it so it can be recovered later", a
   expect(stored?.message).toBe("Oops wrong baby");
 });
 
-test("visitor messages notify opted-in owners, including edits and visitor deletes", async () => {
+test("visitor messages notify opted-in owners; deletes retract the push instead of sending one", async () => {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
