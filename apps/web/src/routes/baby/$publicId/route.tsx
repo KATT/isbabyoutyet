@@ -291,6 +291,10 @@ function BabyPageLayout() {
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
   const canManage = myAccess.canManage;
+  const sessionPending = session.isPending;
+  const signedIn = session.data !== null || canManage;
+  const signInButton = signedIn || sessionPending ? null : login.openLink;
+  const dashboardButton = signedIn ? { to: "/dashboard" as const } : null;
   const managerBabyDoc = managerBabyQuery.data === FORBIDDEN ? null : managerBabyQuery.data;
   const managerBaby = managerBabyDoc ? managerDocToBabyData(managerBabyDoc) : null;
   const birthJourney = managerBabyDoc?.birthJourney ?? null;
@@ -347,6 +351,10 @@ function BabyPageLayout() {
                   }
                 : null
             }
+            signInButton={signInButton}
+            signInOpen={loginOpen}
+            onDismissSignIn={loginOpen ? login.dismiss : null}
+            dashboardButton={dashboardButton}
           />
         </div>
       </header>
@@ -383,14 +391,6 @@ function BabyPageLayout() {
                 browserPush={loaderData.browserPush}
                 audience={canManage ? "manager" : "visitor"}
               />
-              {!canManage && !session.isPending && session.data === null ? (
-                <Link
-                  {...login.openLink}
-                  className="mt-3 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-                >
-                  {t("Are you the parent? Sign in")}
-                </Link>
-              ) : null}
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />

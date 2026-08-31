@@ -580,7 +580,7 @@ test("share preview uses the canonical route slug while reactive baby data chang
   expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
 });
 
-test("logged-out visitors see a parent sign-in link under Get Notifications", async () => {
+test("logged-out visitors see a sign-in icon in the top dock", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   harness.withIdentity(null);
@@ -595,14 +595,16 @@ test("logged-out visitors see a parent sign-in link under Get Notifications", as
   });
 
   await vi.waitFor(() => {
-    expect(ctx.view.getByRole("link", { name: "Are you the parent? Sign in" })).toBeTruthy();
+    expect(ctx.view.getByRole("button", { name: "Sign in" })).toBeTruthy();
   });
-  expect(
-    ctx.view.getByRole("link", { name: "Are you the parent? Sign in" }).getAttribute("href"),
-  ).toBe(`/baby/${baby.publicId}/login`);
+  expect(ctx.view.getByRole("button", { name: "Sign in" }).getAttribute("href")).toBe(
+    `/baby/${baby.publicId}/login`,
+  );
+  expect(ctx.view.queryByRole("button", { name: "Dashboard" })).toBeNull();
+  expect(ctx.view.queryByText("Are you the parent? Sign in")).toBeNull();
 });
 
-test("owners do not see a parent sign-in link", async () => {
+test("owners see a dashboard icon instead of sign-in", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
 
@@ -618,5 +620,9 @@ test("owners do not see a parent sign-in link", async () => {
   await vi.waitFor(() => {
     expect(ctx.view.getByRole("heading", { name: /Is Baby Smith out yet/i })).toBeTruthy();
   });
-  expect(ctx.view.queryByRole("link", { name: "Are you the parent? Sign in" })).toBeNull();
+  expect(ctx.view.getByRole("button", { name: "Dashboard" }).getAttribute("href")).toBe(
+    "/dashboard",
+  );
+  expect(ctx.view.queryByRole("button", { name: "Sign in" })).toBeNull();
+  expect(ctx.view.queryByText("Are you the parent? Sign in")).toBeNull();
 });

@@ -331,7 +331,6 @@ const enGB = {
   'Come back here and tap "Get Notifications"': 'Come back here and tap "Get Notifications"',
   "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
     "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.",
-  "Are you the parent? Sign in": "Are you the parent? Sign in",
   "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
     "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.",
   "No subscription endpoint found": "Couldn't set up notifications. Try again.",
@@ -910,7 +909,6 @@ const sv: TranslationCatalog = {
   'Come back here and tap "Get Notifications"': 'Gå tillbaka hit och tryck på "Få notiser"',
   "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
     "Hemskärmsikonen tar inte med inloggningen från Safari. Logga in i appen och tryck sedan på Få notiser.",
-  "Are you the parent? Sign in": "Är du förälder? Logga in",
   "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
     "På iPhone behöver notiser om hälsningar appen på hemskärmen. Du slår på dem när du öppnat den från ikonen.",
   "No subscription endpoint found": "Vi hittade inga aktiva notiser",
@@ -1467,7 +1465,6 @@ const es: TranslationCatalog = {
   'Come back here and tap "Get Notifications"': 'Vuelve aquí y toca "Recibir notificaciones"',
   "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
     "El icono de la pantalla de inicio no hereda el inicio de sesión de Safari. Entra en la app, inicia sesión y luego toca Recibir notificaciones.",
-  "Are you the parent? Sign in": "¿Eres el padre o la madre? Inicia sesión",
   "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
     "En iPhone, las notificaciones de mensajes necesitan la app en la pantalla de inicio. Las activarás al abrirla desde el icono.",
   "No subscription endpoint found": "No encontramos la suscripción",
@@ -2033,7 +2030,6 @@ const ptBR: TranslationCatalog = {
   'Come back here and tap "Get Notifications"': 'Volte aqui e toque em "Ativar notificações"',
   "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.":
     "O ícone da Tela de Início não herda o login do Safari. Entre no app, faça login e toque em Ativar notificações.",
-  "Are you the parent? Sign in": "Você é o pai ou a mãe? Entrar",
   "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.":
     "No iPhone, as notificações de mensagens precisam do app na Tela de Início. Você liga depois de abrir pelo ícone.",
   "No subscription endpoint found": "Não foi possível encontrar os dados das notificações",

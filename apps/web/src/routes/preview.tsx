@@ -205,6 +205,10 @@ export function PreviewPage() {
               }}
               settingsOpen={!!search.settings}
               onDismissSettings={null}
+              signInButton={null}
+              signInOpen={false}
+              onDismissSignIn={null}
+              dashboardButton={null}
             />
           </div>
         </header>
