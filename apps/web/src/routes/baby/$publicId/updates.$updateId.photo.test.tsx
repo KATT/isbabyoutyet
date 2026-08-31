@@ -34,7 +34,7 @@ test("update photo beforeLoad redirects when the public id resolves to a differe
   });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
-    data: {
+    patch: {
       name: "Renamed Nova",
     },
   });

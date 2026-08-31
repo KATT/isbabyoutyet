@@ -25,7 +25,7 @@ test("beforeLoad redirects when the public id resolves to a different slug", asy
   const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
   await patchOwnedBaby(harness, {
     id: baby.babyId,
-    data: {
+    patch: {
       name: "Final Name",
     },
   });

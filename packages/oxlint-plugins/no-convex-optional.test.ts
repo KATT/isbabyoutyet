@@ -67,12 +67,12 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                  env: { SITE_URL: v.optional(v.string()) },
                });`,
     },
-    // Same shape as `baby.update`: `{ id, data }` with all-partial data.
+    // Same shape as `baby.update`: `{ id, patch }` with all-partial patch.
     `import { v } from "convex/values";
        export const update = mutationWithTriggers({
          args: {
            id: v.id("baby"),
-           data: v.object({
+           patch: v.object({
              dueDate: v.optional(v.union(v.string(), v.null())),
              dueDateDisplayMode: v.optional(v.string()),
              publicDueDateText: v.optional(v.union(v.string(), v.null())),
@@ -87,7 +87,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
        export const patchBaby = mutation({
          args: {
            id: v.id("baby"),
-           data: v.object({
+           patch: v.object({
              name: v.optional(v.string()),
            }),
          },
@@ -96,7 +96,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
        export const patch = mutation({
          args: {
            id: v.id("baby"),
-           data: v.object({
+           patch: v.object({
              theme: v.optional(v.string()),
            }),
          },
@@ -109,7 +109,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
              babyId: v.id("baby"),
              thumbnailId: v.id("_storage"),
            }),
-           data: v.object({
+           patch: v.object({
              blurDataUrl: v.optional(v.union(v.string(), v.null())),
            }),
          },
@@ -169,7 +169,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
       errors: [undocumented],
     },
     {
-      // Flat sibling optionals are not `{ id, data }`.
+      // Flat sibling optionals are not `{ id, patch }`.
       code: `import { v } from "convex/values";
                export const update = mutation({
                  args: {
@@ -185,7 +185,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                export const create = mutation({
                  args: {
                    id: v.id("baby"),
-                   data: v.object({
+                   patch: v.object({
                      theme: v.optional(v.string()),
                    }),
                  },
@@ -198,7 +198,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                export const updatePhoto = mutation({
                  args: {
                    id: v.id("baby"),
-                   data: v.object({
+                   patch: v.object({
                      photoId: v.optional(v.id("_storage")),
                    }),
                  },
@@ -210,7 +210,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
       code: `import { v } from "convex/values";
                export const update = mutation({
                  args: {
-                   data: v.object({
+                   patch: v.object({
                      theme: v.optional(v.string()),
                    }),
                  },
@@ -223,7 +223,7 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                export const update = mutation({
                  args: {
                    id: v.optional(v.id("baby")),
-                   data: v.object({
+                   patch: v.object({
                      theme: v.optional(v.string()),
                    }),
                  },
@@ -238,6 +238,19 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                    id: v.object({
                      babyId: v.id("baby"),
                    }),
+                   patch: v.object({
+                     theme: v.optional(v.string()),
+                   }),
+                 },
+               });`,
+      errors: [undocumented],
+    },
+    {
+      // `{ id, data }` is not the `{ id, patch }` shape.
+      code: `import { v } from "convex/values";
+               export const update = mutation({
+                 args: {
+                   id: v.id("baby"),
                    data: v.object({
                      theme: v.optional(v.string()),
                    }),
