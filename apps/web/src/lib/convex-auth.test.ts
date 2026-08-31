@@ -161,10 +161,10 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
-  expect(readSessionAtom({} as never)).toBeUndefined();
-  expect(readSessionAtom({ session: null } as never)).toBeUndefined();
-  expect(readSessionAtom({ session: "x" } as never)).toBeUndefined();
-  expect(readSessionAtom({ session: { subscribe: 1 } } as never)).toBeUndefined();
+  expect(readSessionAtom({})).toBeUndefined();
+  expect(readSessionAtom({ session: null })).toBeUndefined();
+  expect(readSessionAtom({ session: "x" })).toBeUndefined();
+  expect(readSessionAtom({ session: { subscribe: 1 } })).toBeUndefined();
 
   const unsub = vi.fn();
   function subscribeWithUnsub(listener: SessionListener) {
@@ -175,7 +175,7 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     session: {
       subscribe: subscribeWithUnsub,
     },
-  } as never);
+  });
   expect(atom).toBeTruthy();
   const stop = atom?.subscribe(() => {});
   stop?.();
@@ -185,7 +185,7 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     session: {
       subscribe: () => undefined,
     },
-  } as never);
+  });
   expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
 });
 

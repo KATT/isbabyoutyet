@@ -8,6 +8,10 @@ type SessionAtom = {
   subscribe: (listener: (session: SessionSnapshot | undefined) => void) => () => void;
 };
 
+function isSessionSubscribe<TValue>(value: TValue): value is TValue & SessionAtom["subscribe"] {
+  return isFunction(value);
+}
+
 /** The subset of `authClient` that `setupClientConvexAuth` depends on. */
 export type ConvexAuthClient = {
   convex: {
@@ -72,8 +76,14 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 }
 
-/** @internal Exported for tests. */
-export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
+/**
+ * Parses better-auth's atom bag. `session` is not assumed present or
+ * well-typed — the real client types `$store.atoms` as
+ * `Record<string, WritableAtom>`, and tests pass invalid shapes on purpose.
+ *
+ * @internal Exported for tests.
+ */
+export function readSessionAtom<TAtoms extends object>(atoms: TAtoms): SessionAtom | undefined {
   if (!("session" in atoms)) {
     return undefined;
   }
@@ -81,7 +91,7 @@ export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionA
   if (!isPlainObject(session)) {
     return undefined;
   }
-  if (!("subscribe" in session) || !isFunction(session.subscribe)) {
+  if (!("subscribe" in session) || !isSessionSubscribe(session.subscribe)) {
     return undefined;
   }
   const subscribe = session.subscribe;
