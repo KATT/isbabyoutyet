@@ -188,7 +188,7 @@ test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alo
     await backfillUserProfileIsAdminDoc(ctx, nonAdmin);
 
     // Simulate a pre-migration document shape for the helper.
-    const legacy = { ...nonAdmin } as LegacyUserProfile;
+    const legacy: LegacyUserProfile = { ...nonAdmin };
     delete legacy.isAdmin;
     await backfillUserProfileIsAdminDoc(ctx, legacy as typeof nonAdmin);
   });
