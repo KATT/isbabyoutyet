@@ -590,19 +590,12 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     dueDate: v.optional(v.union(v.string(), v.null())),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     name: v.optional(v.string()),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     theme: v.optional(v.union(v.string(), v.null())),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    /** @todo Sparse patch; omit means unchanged. Optional until callers send a full document. */
     birthJourney: v.optional(birthJourneyValidator),
   },
   handler: async (ctx, args) => {

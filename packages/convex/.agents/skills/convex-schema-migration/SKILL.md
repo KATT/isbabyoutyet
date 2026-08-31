@@ -26,7 +26,10 @@ Never combine "write missing keys / strip legacy values" and "make the field req
 
 `workspace/no-undocumented-optional` rejects undocumented `v.optional()`.
 
-Prefer **`@todo`**: the optional is still in use; remaining work is to require the key (or keep a documented exception such as `migrations.runAll` runner args).
+Permanent exceptions (not a follow-up to require the key):
+
+- `migrations.runAll` runner args: keep `@todo Keep mirroring @convex-dev/migrations runner options`.
+- Sparse `ctx.db.patch` RPCs named `update` or `patch*` whose `args` are `{ <id>: v.id(...), ...v.optional() }` (same shape as `baby.update`). Omitted keys mean unchanged. No `@todo` / `oxlint-disable`.
 
 ```typescript
 /** @todo Optional until every row sets this key. */
@@ -53,6 +56,8 @@ Skip phase 2 when the key is schema-only (no RPC arg). Skip phase 3 when every r
 **Do not merge/deploy phase 4 until phase 3 has finished on that backend.** Convex would reject omitted keys before the backfill runs.
 
 Leave `migrations.runAll` runner args optional (`@todo Keep mirroring @convex-dev/migrations runner options`).
+
+Leave `update` / `patch*` sparse patch args optional (required `v.id(...)` plus sibling `v.optional()` fields). Skip phase 2 for those mutations: omitted keys mean unchanged and map to `ctx.db.patch`.
 
 ## Removing fields or enum values
 

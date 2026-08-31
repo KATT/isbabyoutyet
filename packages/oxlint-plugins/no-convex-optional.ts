@@ -8,7 +8,9 @@
  * or `@deprecated`.
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
- * schema/RPC.
+ * schema/RPC. Sparse `ctx.db.patch` RPC args are excluded when the mutation is
+ * named `update` or `patch*` and `args` is `{ <id>: v.id(...), ...optionals }`
+ * (same shape as `baby.update`: required id, sibling omitted keys mean unchanged).
  */
 
 import { defineRule } from "@oxlint/plugins";
@@ -158,11 +160,11 @@ function collectVBindings(node, vNames, nsNames) {
   }
 }
 
-function isVOptionalCallee(callee, vNames, nsNames) {
+function isVMemberCallee(callee, methodName, vNames, nsNames) {
   if (callee.type !== "MemberExpression") {
     return false;
   }
-  if (memberName(callee.property, callee.computed) !== "optional") {
+  if (memberName(callee.property, callee.computed) !== methodName) {
     return false;
   }
   const object = callee.object;
@@ -178,6 +180,101 @@ function isVOptionalCallee(callee, vNames, nsNames) {
     return true;
   }
   return false;
+}
+
+function isVOptionalCallee(callee, vNames, nsNames) {
+  return isVMemberCallee(callee, "optional", vNames, nsNames);
+}
+
+function isVIdCallee(callee, vNames, nsNames) {
+  return isVMemberCallee(callee, "id", vNames, nsNames);
+}
+
+function isSparsePatchMutationName(name) {
+  return name === "update" || name === "patch" || /^patch[A-Z]/.test(name);
+}
+
+function callBindingName(callNode) {
+  let current = callNode;
+  let parent = callNode.parent;
+  while (parent && parent.type === "ParenthesizedExpression" && parent.expression === current) {
+    current = parent;
+    parent = parent.parent;
+  }
+  if (
+    parent &&
+    parent.type === "VariableDeclarator" &&
+    parent.init === current &&
+    parent.id.type === "Identifier"
+  ) {
+    return parent.id.name;
+  }
+  if (
+    parent &&
+    parent.type === "AssignmentExpression" &&
+    parent.right === current &&
+    parent.left.type === "Identifier"
+  ) {
+    return parent.left.name;
+  }
+  return null;
+}
+
+function argsObjectHasRequiredId(argsObject, vNames, nsNames) {
+  for (const property of argsObject.properties) {
+    if (property.type !== "Property" || property.value.type !== "CallExpression") {
+      continue;
+    }
+    if (isVIdCallee(property.value.callee, vNames, nsNames)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function propertyKeyName(property) {
+  return memberName(property.key, property.computed);
+}
+
+/**
+ * `v.optional()` on a sibling of a required `v.id(...)` in `args` of a mutation
+ * named `update` or `patch*` — omitted key means unchanged (`ctx.db.patch`).
+ */
+function isSparsePatchOptional(node, vNames, nsNames) {
+  const fieldProperty = node.parent;
+  if (!fieldProperty || fieldProperty.type !== "Property" || fieldProperty.value !== node) {
+    return false;
+  }
+  const argsObject = fieldProperty.parent;
+  if (!argsObject || argsObject.type !== "ObjectExpression") {
+    return false;
+  }
+  const argsProperty = argsObject.parent;
+  if (
+    !argsProperty ||
+    argsProperty.type !== "Property" ||
+    argsProperty.value !== argsObject ||
+    propertyKeyName(argsProperty) !== "args"
+  ) {
+    return false;
+  }
+  const optionsObject = argsProperty.parent;
+  if (!optionsObject || optionsObject.type !== "ObjectExpression") {
+    return false;
+  }
+  const callNode = optionsObject.parent;
+  if (
+    !callNode ||
+    callNode.type !== "CallExpression" ||
+    !callNode.arguments.includes(optionsObject)
+  ) {
+    return false;
+  }
+  const name = callBindingName(callNode);
+  if (!name || !isSparsePatchMutationName(name)) {
+    return false;
+  }
+  return argsObjectHasRequiredId(argsObject, vNames, nsNames);
 }
 
 const noUndocumentedOptional = defineRule({
@@ -211,6 +308,9 @@ const noUndocumentedOptional = defineRule({
           return;
         }
         if (hasDocumentedJsdoc(context, node)) {
+          return;
+        }
+        if (isSparsePatchOptional(node, vNames, nsNames)) {
           return;
         }
         context.report({ node, messageId: "undocumented" });

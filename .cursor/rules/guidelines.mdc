@@ -134,6 +134,14 @@ args: {
   dryRun: v.optional(v.boolean()),
 }
 
+// ✅ CORRECT — sparse ctx.db.patch (`update` / `patch*` + required v.id)
+export const update = mutation({
+  args: {
+    babyId: v.id("baby"),
+    theme: v.optional(v.union(v.string(), v.null())),
+  },
+});
+
 // ❌ INCORRECT — banned by lint
 args: {
   visitorId: v.optional(v.string()),
