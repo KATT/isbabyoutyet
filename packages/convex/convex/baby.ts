@@ -577,17 +577,20 @@ export async function syncStatusNotifications(
 
 export const update = mutationWithTriggers({
   args: {
-    babyId: v.id("baby"),
-    dueDate: v.optional(v.union(v.string(), v.null())),
-    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    name: v.optional(v.string()),
-    theme: v.optional(v.union(v.string(), v.null())),
-    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    birthJourney: v.optional(birthJourneyValidator),
+    id: v.id("baby"),
+    data: v.object({
+      dueDate: v.optional(v.union(v.string(), v.null())),
+      dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+      publicDueDateText: v.optional(v.union(v.string(), v.null())),
+      name: v.optional(v.string()),
+      theme: v.optional(v.union(v.string(), v.null())),
+      locale: v.optional(v.union(supportedLocaleValidator, v.null())),
+      birthJourney: v.optional(birthJourneyValidator),
+    }),
   },
   handler: async (ctx, args) => {
-    const { babyId, ...patch } = args;
+    const babyId = args.id;
+    const patch = { ...args.data };
     const { identity, baby } = await requireBabyManager(ctx, babyId);
     if (
       patch.dueDate !== undefined ||

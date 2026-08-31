@@ -11,8 +11,8 @@ test("patchOwnedBaby throws when the baby row is gone", async () => {
 
   await expect(
     patchOwnedBaby(harness, {
-      babyId: baby.babyId,
-      name: "Gone",
+      id: baby.babyId,
+      data: { name: "Gone" },
     }),
   ).rejects.toThrow("Baby not found");
 });

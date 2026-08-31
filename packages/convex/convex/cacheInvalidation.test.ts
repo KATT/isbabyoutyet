@@ -18,8 +18,10 @@ test("baby and related writes leave a durable targeted purge job", async () => {
     }),
   );
   await asAlice.mutation(api.baby.update, {
-    babyId: created.babyId,
-    name: "Baby Jones",
+    id: created.babyId,
+    data: {
+      name: "Baby Jones",
+    },
   });
   await t.mutation(
     api.encouragements.create,
