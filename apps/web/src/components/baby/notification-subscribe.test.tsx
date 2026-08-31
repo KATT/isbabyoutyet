@@ -433,7 +433,13 @@ test("offers subscribe when the browser is subscribed but Convex is not", async 
 test("owners subscribe for visitor messages rather than family status alerts", async () => {
   await using view = await renderSubscribe({ kind: "unsubscribed" }, "messages");
 
-  expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
+  const button = view.getByRole("button", { name: "Get Notifications" });
+  fireEvent.pointerMove(button);
+  fireEvent.pointerEnter(button);
+  fireEvent.focus(button);
+  await vi.waitFor(() => {
+    expect(screen.getByText("Get notified when someone leaves a message")).toBeTruthy();
+  });
 });
 
 test("message purpose treats family-only browser subscriptions as unsubscribed", async () => {

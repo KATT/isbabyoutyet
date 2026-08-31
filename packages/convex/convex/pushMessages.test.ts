@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import { getOwnerPushMessage, getPushMessage, truncateOwnerPushBody } from "../src/pushMessages";
+import type { OwnerMessagePushEvent } from "../src/pushMessages";
+import { SUPPORTED_LOCALES } from "../src/i18n";
 import type { SupportedLocale } from "../src/i18n";
 import type { NotifiableStatus } from "../src/types";
 
@@ -95,4 +97,19 @@ test("owner message push copy names the visitor and truncates long notes", () =>
   expect(truncateOwnerPushBody("short")).toBe("short");
   expect(truncateOwnerPushBody("x".repeat(181)).length).toBe(180);
   expect(truncateOwnerPushBody("x".repeat(181)).endsWith("…")).toBe(true);
+
+  const events = ["created", "updated", "deleted"] as const satisfies OwnerMessagePushEvent[];
+  for (const locale of SUPPORTED_LOCALES) {
+    for (const event of events) {
+      const copy = getOwnerPushMessage({
+        locale,
+        event,
+        babyName: "Nova",
+        authorName: "Ada",
+        message: "Hi from the waiting room",
+      });
+      expect(copy.title.length).toBeGreaterThan(0);
+      expect(copy.body.length).toBeGreaterThan(0);
+    }
+  }
 });

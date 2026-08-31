@@ -227,7 +227,7 @@ test("visitor messages notify opted-in owners, including edits and visitor delet
   expect(afterDelete.page).toEqual([]);
 });
 
-test("a manager deleting a message does not notify owners", async () => {
+test("a manager posting or deleting a message does not notify owners", async () => {
   const t = convexTest(schema, modules);
   await registerComponents(t);
   const asAlice = t.withIdentity({ subject: "alice" });
@@ -243,6 +243,14 @@ test("a manager deleting a message does not notify owners", async () => {
     userAgent: "Mozilla/5.0",
   });
 
+  const managerPostId = await asAlice.mutation(api.encouragements.create, {
+    babyId: created.babyId,
+    authorName: "Alice",
+    message: "Owner note",
+    visitorId: "owner-visitor",
+  });
+  await t.finishInProgressScheduledFunctions();
+
   const encouragementId = await t.mutation(api.encouragements.create, {
     babyId: created.babyId,
     authorName: "Stranger",
@@ -252,6 +260,7 @@ test("a manager deleting a message does not notify owners", async () => {
   await t.finishInProgressScheduledFunctions();
 
   await asAlice.mutation(api.encouragements.remove, { encouragementId });
+  await asAlice.mutation(api.encouragements.remove, { encouragementId: managerPostId });
   await t.finishInProgressScheduledFunctions();
 
   const listed = await t.query(api.encouragements.listByBaby, {

@@ -251,16 +251,82 @@ test("managers can opt into message alerts without changing the family subscribe
   });
   expect(ownerPage.page).toMatchObject([{ _id: subscriptionId, endpoint: ownerArgs.endpoint }]);
 
+  const rotatedId = await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    ...ownerArgs,
+    p256dh: "rotated-owner-key",
+    auth: "rotated-owner-secret",
+  });
+  expect(rotatedId).toBe(subscriptionId);
+  const rotatedOwnerPage = await t.query(internal.pushSubscriptions.getOwnerSubscriptionsPage, {
+    babyId: created.babyId,
+    paginationOpts: { numItems: 10, cursor: null },
+  });
+  expect(rotatedOwnerPage.page).toMatchObject([
+    { p256dh: "rotated-owner-key", auth: "rotated-owner-secret" },
+  ]);
+
   await asAlice.mutation(api.pushSubscriptions.unsubscribeAsOwner, {
     babyId: created.babyId,
     endpoint: ownerArgs.endpoint,
-    p256dh: "owner-key",
-    auth: "owner-secret",
+    p256dh: "wrong-key",
+    auth: "wrong-secret",
   });
   expect(
     await t.query(api.pushSubscriptions.isOwnerSubscribed, {
       babyId: created.babyId,
       endpoint: ownerArgs.endpoint,
+    }),
+  ).toBe(true);
+
+  await asAlice.mutation(api.pushSubscriptions.unsubscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: ownerArgs.endpoint,
+    p256dh: "rotated-owner-key",
+    auth: "rotated-owner-secret",
+  });
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: ownerArgs.endpoint,
+    }),
+  ).toBe(false);
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.publicId,
+      endpoint: ownerArgs.endpoint,
+    }),
+  ).toBe(false);
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: "missing-baby",
+      endpoint: ownerArgs.endpoint,
+    }),
+  ).toBe(false);
+});
+
+test("removeByEndpoint clears owner message subscriptions for that browser", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Owner Endpoint Baby",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/shared-endpoint",
+    p256dh: "owner-key",
+    auth: "owner-secret",
+    userAgent: TEST_USER_AGENT,
+  });
+
+  await t.mutation(internal.pushSubscriptions.removeByEndpoint, {
+    endpoint: "https://push.example/shared-endpoint",
+  });
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/shared-endpoint",
     }),
   ).toBe(false);
 });
