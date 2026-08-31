@@ -6,6 +6,7 @@ import schema from "./schema";
 import { backfillUserProfileIsAdminDoc } from "./migrations";
 import { modules, registerComponents } from "./test.setup";
 
+/** Pre-migration row: `isAdmin` is `| undefined` so deleting it is a known field, not a widened bag. */
 type LegacyUserProfile = {
   _id: Doc<"userProfiles">["_id"];
   _creationTime: number;
