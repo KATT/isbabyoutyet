@@ -64,15 +64,15 @@ Use the actual PR numbers once known (`#123`, never a markdown link or repo URL 
 
 Mark the current PR in the **PR** column only: bold the cell and prefix `👉`. Do not add a third column. Do not put `← this PR` in Description.
 
-When the stack cannot land in one batch, put **when it is safe to merge** in Description (merge after the previous PR is on `main`; call out any pause such as “wait until backfill has finished on the target backend”):
+When a later slice cannot land in the **same batch** as earlier ones, say that in Description. Sequential PRs that *can* merge together should say so — do not imply a pause between every row. Example: lint + RPC + backfill merge together; the required-schema PR waits until the backfill has run on the target backend:
 
 ```markdown
 | PR | Description |
 | --- | --- |
-| #123 1/4 | Merge first — safe on `main` alone. Lint + `@todo`. |
-| **👉 #124 2/4** | Merge after #123 is on `main`. Require RPC args. |
-| #125 3/4 | Merge after #124 is on `main`. Backfill omitted keys; wait until `deploymentStatus` is done. |
-| #126 4/4 | Merge last — only after #125 has run on the target backend. Never same deploy as #125. |
+| #123 1/4 | Lint + `@todo`. Merge with #124 and #125. |
+| **👉 #124 2/4** | Require RPC args. Merge with #123 and #125. |
+| #125 3/4 | Backfill omitted keys. Merge with #123 and #124. After deploy, wait until `deploymentStatus` is done before #126. |
+| #126 4/4 | **Hold.** Require schema keys. Merge only after #125 has run on the target backend. Not with 1–3. |
 ```
 
 After creating all PRs, edit earlier PR bodies so every table has real `#n` references for the whole stack.
