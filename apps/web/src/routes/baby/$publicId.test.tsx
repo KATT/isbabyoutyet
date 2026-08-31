@@ -24,10 +24,11 @@ const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
 
 test("parent route caches public overlays and keeps manager overlays private", () => {
-  const headers = routeModule.Route.options.headers as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields headers reads
+  const headers: (opts: {
     params: { publicId: string };
     matches: Array<{ routeId: string }>;
-  }) => Record<string, string>;
+  }) => Record<string, string> = routeModule.Route.options.headers;
   const publicHeaders = headers({
     params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/share" }],
@@ -333,10 +334,12 @@ async function setupBabyLoader(
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
     serverHttpClient: undefined,
-  } as never);
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  });
+  // @ts-expect-error — stub context is the subset the loader reads
+  const loader: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -346,7 +349,7 @@ async function setupBabyLoader(
       locale: string;
     };
     params: { publicId: string };
-  }) => Promise<BabyLoaderResult>;
+  }) => Promise<BabyLoaderResult> = routeModule.Route.options.loader;
   const queryClient = makeLoaderQueryClient(handlers);
   const result = await loader({
     context: {
@@ -413,7 +416,8 @@ test("loader gives managers the same handles with real data", async () => {
 });
 
 test("beforeLoad 404s unknown babies", async () => {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields beforeLoad reads
+  const beforeLoad: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -421,7 +425,7 @@ test("beforeLoad 404s unknown babies", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<object | void | null>;
+  }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
   const pending = beforeLoad({
@@ -438,7 +442,8 @@ test("beforeLoad 404s unknown babies", async () => {
 });
 
 test("beforeLoad redirects legacy settings links", async () => {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields beforeLoad reads
+  const beforeLoad: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -446,7 +451,7 @@ test("beforeLoad redirects legacy settings links", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<object | void | null>;
+  }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 
   await expect(

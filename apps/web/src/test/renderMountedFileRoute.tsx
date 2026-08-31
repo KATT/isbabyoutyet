@@ -8,7 +8,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { render } from "@testing-library/react";
-import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { vi } from "vitest";
@@ -70,7 +70,10 @@ export async function renderMountedFileRoute(opts: {
     component: function TestRoot() {
       const outlet = (
         <QueryClientProvider client={opts.harness.queryClient}>
-          <ConvexProvider client={opts.harness.convexClient as unknown as ConvexReactClient}>
+          <ConvexProvider
+            // @ts-expect-error — integration client is not ConvexReactClient
+            client={opts.harness.convexClient}
+          >
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               <TooltipProvider>
                 <LocaleProvider locale="en-GB">

@@ -131,7 +131,7 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
     clearAuth: () => {},
   };
 
-  const convexQueryClient = {
+  const convexQueryClientFields = {
     convexClient,
     hashFn: () => JSON.stringify,
     queryFn: () => Promise.resolve(null),
@@ -139,7 +139,9 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
       queryClientForInvalidation = nextQueryClient;
     },
     serverHttpClient: undefined,
-  } as unknown as ConvexQueryClient;
+  } as const;
+  // @ts-expect-error — stand-in only implements the members this harness reads
+  const convexQueryClient: ConvexQueryClient = convexQueryClientFields;
 
   registerConvexInfiniteQueryClient(convexQueryClient);
 
@@ -174,7 +176,8 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   };
 
   return makeAsyncResource(harness, async () => {
-    registerConvexInfiniteQueryClient(null as never);
+    // @ts-expect-error — teardown clears the registered client
+    registerConvexInfiniteQueryClient(null);
     queryClient.clear();
     jsdomWindow.restore();
   });

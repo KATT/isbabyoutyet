@@ -72,7 +72,14 @@ export function setupClientConvexAuthWithClient(opts: {
   });
 }
 
-/** @internal Exported for tests. */
+/**
+ * Parses better-auth's atom bag. `session` is not assumed present or
+ * well-typed at runtime — the real client types `$store.atoms` as
+ * `Record<string, WritableAtom>`. Tests pass invalid shapes under
+ * `@ts-expect-error`.
+ *
+ * @internal Exported for tests.
+ */
 export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
   if (!("session" in atoms)) {
     return undefined;
