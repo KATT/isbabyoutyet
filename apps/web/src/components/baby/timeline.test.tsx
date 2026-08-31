@@ -754,6 +754,50 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   expect(view.getByLabelText("Message")).toBeTruthy();
 });
 
+test("EncouragementForm restores a session draft silently", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({
+      authorName: "Auntie Jo",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Auntie Jo");
+  expect((view.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("Saved draft text");
+});
+
+test("EncouragementForm prefers a session name draft over committed localStorage", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  localStorage.setItem("encouragement-author-name", "Committed Name");
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({
+      authorName: "Draft Name",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Draft Name");
+});
+
 test("EncouragementForm submit reaches the Convex mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
@@ -787,4 +831,5 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
       (item) => item.kind === "encouragement" && item.encouragement?.message === "Thinking of you!",
     ),
   ).toBe(true);
+  expect(sessionStorage.getItem(`encouragement-message-draft:${baby.babyId}`)).toBeNull();
 });
