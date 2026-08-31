@@ -1,4 +1,5 @@
 import { useI18n } from "@/lib/i18n";
+import { useClientHydration } from "@/lib/use-client-hydration";
 import { ensureWebPushSubscription, readWebPushSubscription } from "@/lib/web-push-subscription";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,11 +20,14 @@ import {
   ItemTitle,
 } from "@workspace/ui/components/item";
 import { FormControl, FormField, FormItem, useFormField } from "@workspace/ui/components/form";
+import { Button } from "@workspace/ui/components/button";
 import { Switch } from "@workspace/ui/components/switch";
 import { toast } from "sonner";
 import type { Control, FieldPath, FieldValues } from "react-hook-form";
 import {
   browserPushQueryOptions,
+  IosPwaInstallPrompt,
+  needsIosPushInstall,
   type BrowserPushCapabilityFactory,
 } from "./notification-subscribe";
 
@@ -72,6 +76,32 @@ export function OwnerMessageNotifySwitchView(
   return <FormMessageNotifyRow {...props} />;
 }
 
+function MessageNotifySwitch(props: SwitchViewProps & { labelledBy: string; switchId: string | null }) {
+  const { t } = useI18n();
+  if (props.disabledReason === "needsIosInstall") {
+    return (
+      <IosPwaInstallPrompt
+        trigger={
+          <Button type="button" variant="outline" size="sm" id={props.switchId ?? undefined}>
+            {t("Get Notifications")}
+          </Button>
+        }
+      />
+    );
+  }
+  return (
+    <Switch
+      id={props.switchId ?? undefined}
+      checked={props.checked}
+      disabled={props.disabled || props.onCheckedChange === null}
+      onCheckedChange={(checked) => {
+        props.onCheckedChange?.(checked);
+      }}
+      aria-labelledby={props.labelledBy}
+    />
+  );
+}
+
 function SettingsMessageNotifyRow(props: SwitchViewProps) {
   const { t } = useI18n();
   const copy = ownerMessageNotifyCopy(props);
@@ -87,14 +117,7 @@ function SettingsMessageNotifyRow(props: SwitchViewProps) {
         <ItemDescription>{t(copy.description)}</ItemDescription>
       </ItemContent>
       <ItemActions>
-        <Switch
-          checked={props.checked}
-          disabled={props.disabled || props.onCheckedChange === null}
-          onCheckedChange={(checked) => {
-            props.onCheckedChange?.(checked);
-          }}
-          aria-labelledby={titleId}
-        />
+        <MessageNotifySwitch {...props} labelledBy={titleId} switchId={null} />
       </ItemActions>
     </Item>
   );
@@ -116,16 +139,13 @@ function FormMessageNotifyRow(props: SwitchViewProps) {
           {t(copy.description)}
         </span>
       </div>
-      <FormControl aria-labelledby={titleId}>
-        <Switch
-          id={formItemId}
-          checked={props.checked}
-          disabled={props.disabled || props.onCheckedChange === null}
-          onCheckedChange={(checked) => {
-            props.onCheckedChange?.(checked);
-          }}
-        />
-      </FormControl>
+      {props.disabledReason === "needsIosInstall" ? (
+        <MessageNotifySwitch {...props} labelledBy={titleId} switchId={formItemId} />
+      ) : (
+        <FormControl aria-labelledby={titleId}>
+          <MessageNotifySwitch {...props} labelledBy={titleId} switchId={formItemId} />
+        </FormControl>
+      )}
     </label>
   );
 }
@@ -134,6 +154,8 @@ export function OwnerMessageNotifyFormField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >(props: { control: Control<TFieldValues, unknown, unknown>; name: TName }) {
+  const hydrated = useClientHydration();
+  const needsIosInstall = hydrated && needsIosPushInstall();
   return (
     <FormField
       control={props.control}
@@ -141,10 +163,10 @@ export function OwnerMessageNotifyFormField<
       render={(renderProps) => (
         <FormItem className="border-0 p-0">
           <OwnerMessageNotifySwitchView
-            checked={Boolean(renderProps.field.value)}
+            checked={needsIosInstall ? false : Boolean(renderProps.field.value)}
             disabled={false}
-            disabledReason={null}
-            onCheckedChange={renderProps.field.onChange}
+            disabledReason={needsIosInstall ? "needsIosInstall" : null}
+            onCheckedChange={needsIosInstall ? null : renderProps.field.onChange}
             layout="form"
           />
         </FormItem>
@@ -222,6 +244,7 @@ export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitch
         ? "unsupported"
         : null;
   const isPending = subscribeMutation.isPending || unsubscribeMutation.isPending;
+  const iosInstallPending = disabledReason === "needsIosInstall";
 
   return (
     <OwnerMessageNotifySwitchView
@@ -230,7 +253,7 @@ export function OwnerMessageNotifyLiveSwitch(props: OwnerMessageNotifyLiveSwitch
         isPending ||
         !capability ||
         !vapidPublicKeyQuery.data ||
-        disabledReason !== null ||
+        (disabledReason !== null && !iosInstallPending) ||
         capability.kind === "serviceWorkerTimeout"
       }
       disabledReason={disabledReason}

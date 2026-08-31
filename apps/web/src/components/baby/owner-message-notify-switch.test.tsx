@@ -160,7 +160,7 @@ test("settings switch shows subscribed copy when on", async () => {
   ).toBeTruthy();
 });
 
-test("settings switch explains when iOS needs a Home Screen install", async () => {
+test("settings switch opens Home Screen instructions when iOS needs a PWA install", async () => {
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <OwnerMessageNotifySwitchView
@@ -173,15 +173,11 @@ test("settings switch explains when iOS needs a Home Screen install", async () =
     </LocaleProvider>,
   );
 
-  const notifySwitch = view.getByRole("switch", { name: "Message notifications" });
-  expect(
-    notifySwitch.getAttribute("data-disabled") ??
-      notifySwitch.getAttribute("aria-disabled") ??
-      notifySwitch.getAttribute("disabled"),
-  ).not.toBeNull();
-  expect(
-    view.getByText("Add this page to your Home Screen before turning on notifications."),
-  ).toBeTruthy();
+  const notifyButton = view.getByRole("button", { name: "Get Notifications" });
+  fireEvent.click(notifyButton);
+
+  expect(view.getByText("Get Notifications on iOS")).toBeTruthy();
+  expect(view.getByText(/Add to Home Screen/i)).toBeTruthy();
 });
 
 test("settings switch explains when the browser cannot push", async () => {
@@ -224,6 +220,15 @@ test("live switch stays disabled when push is unsupported", async () => {
     disabledAttr(ctx.view.getByRole("switch", { name: "Message notifications" })),
   ).not.toBeNull();
   expect(ctx.view.getByText("Push notifications are not supported in this browser.")).toBeTruthy();
+});
+
+test("live switch opens Home Screen instructions when iOS needs a PWA install", async () => {
+  await using ctx = await renderLiveSwitch({ capability: { kind: "needsIosInstall" } });
+
+  fireEvent.click(ctx.view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(ctx.view.getByText("Get Notifications on iOS")).toBeTruthy();
+  expect(ctx.view.getByText(/Add to Home Screen/i)).toBeTruthy();
 });
 
 test("live switch stays disabled while the service worker is not ready", async () => {

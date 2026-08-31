@@ -164,6 +164,9 @@ const enGB = {
   "Stop receiving push notifications for messages":
     "Stop receiving push notifications for messages",
   "Message notifications": "Message notifications",
+  "Choose notifications": "Choose notifications",
+  "Pick what this device should receive.": "Pick what this device should receive.",
+  "Status updates": "Status updates",
   Notifications: "Notifications",
   "You'll get a push when someone leaves a message on this page.":
     "You'll get a push when someone leaves a message on this page.",
@@ -734,6 +737,9 @@ const sv: TranslationCatalog = {
   "Stop receiving push notifications for updates": "Stäng av pushnotiser",
   "Stop receiving push notifications for messages": "Stäng av notiser om hälsningar",
   "Message notifications": "Notiser om hälsningar",
+  "Choose notifications": "Välj notiser",
+  "Pick what this device should receive.": "Välj vad den här enheten ska ta emot.",
+  "Status updates": "Statusuppdateringar",
   Notifications: "Notiser",
   "You'll get a push when someone leaves a message on this page.":
     "Du får en notis när någon lämnar en hälsning på sidan.",
@@ -1282,6 +1288,9 @@ const es: TranslationCatalog = {
   "Stop receiving push notifications for updates": "Dejar de recibir notificaciones",
   "Stop receiving push notifications for messages": "Dejar de recibir notificaciones de mensajes",
   "Message notifications": "Notificaciones de mensajes",
+  "Choose notifications": "Elegir notificaciones",
+  "Pick what this device should receive.": "Elige qué debe recibir este dispositivo.",
+  "Status updates": "Actualizaciones de estado",
   Notifications: "Notificaciones",
   "You'll get a push when someone leaves a message on this page.":
     "Recibirás un aviso cuando alguien deje un mensaje en esta página.",
@@ -1839,6 +1848,9 @@ const ptBR: TranslationCatalog = {
   "Stop receiving push notifications for updates": "Parar de receber notificações de novidades",
   "Stop receiving push notifications for messages": "Parar de receber notificações de mensagens",
   "Message notifications": "Notificações de mensagens",
+  "Choose notifications": "Escolher notificações",
+  "Pick what this device should receive.": "Escolha o que este dispositivo deve receber.",
+  "Status updates": "Atualizações de status",
   Notifications: "Notificações",
   "You'll get a push when someone leaves a message on this page.":
     "Você recebe um aviso quando alguém deixar um recado nesta página.",

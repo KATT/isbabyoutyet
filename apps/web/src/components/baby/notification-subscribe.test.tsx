@@ -9,8 +9,10 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   browserPushQueryOptions,
+  ManagerNotificationChooserView,
   NotificationSubscribe,
   prefetchBrowserPushCapability,
 } from "./notification-subscribe";
@@ -163,7 +165,10 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-async function renderSubscribe(capability: BrowserPushCapability) {
+async function renderSubscribe(
+  capability: BrowserPushCapability,
+  audience: "visitor" | "manager",
+) {
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
@@ -186,6 +191,7 @@ async function renderSubscribe(capability: BrowserPushCapability) {
             capability,
             babyRef,
           )}
+          audience={audience}
         />
       </TooltipProvider>
     ),
@@ -376,7 +382,7 @@ test("does not touch PushManager while prefetching on the server", async () => {
 });
 
 test("shows iOS Home Screen instructions when the PWA is not installed", async () => {
-  await using view = await renderSubscribe({ kind: "needsIosInstall" });
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "visitor");
 
   fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
 
@@ -385,43 +391,114 @@ test("shows iOS Home Screen instructions when the PWA is not installed", async (
 });
 
 test("offers subscribe when push is supported without a subscription", async () => {
-  await using view = await renderSubscribe({ kind: "unsubscribed" });
+  await using view = await renderSubscribe({ kind: "unsubscribed" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when the service worker times out", async () => {
-  await using view = await renderSubscribe({ kind: "serviceWorkerTimeout" });
+  await using view = await renderSubscribe({ kind: "serviceWorkerTimeout" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
   expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 });
 
 test("offers subscribe when push is unsupported", async () => {
-  await using view = await renderSubscribe({ kind: "unsupported" });
+  await using view = await renderSubscribe({ kind: "unsupported" }, "visitor");
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });
 
 test("shows unsubscribe when Convex reports an active subscription", async () => {
-  await using view = await renderSubscribe({
-    kind: "subscribed",
-    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    family: true,
-    messages: false,
-  });
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: true,
+      messages: false,
+    },
+    "visitor",
+  );
 
   expect(view.getByRole("button", { name: "Unsubscribe" })).toBeTruthy();
 });
 
 test("offers subscribe when the browser is subscribed but Convex is not", async () => {
-  await using view = await renderSubscribe({
-    kind: "subscribed",
-    subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    family: false,
-    messages: false,
-  });
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: false,
+      messages: false,
+    },
+    "visitor",
+  );
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
+});
+
+test("managers still get iOS Home Screen instructions before the chooser", async () => {
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "manager");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByText("Get Notifications on iOS")).toBeTruthy();
+  expect(screen.queryByText("Choose notifications")).toBeNull();
+});
+
+test("managers pick status and message alerts in a chooser", async () => {
+  await using view = await renderSubscribe({ kind: "unsubscribed" }, "manager");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+  expect(screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(
+    screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
+  ).toBe("true");
+});
+
+test("manager chooser defaults match the current subscription", async () => {
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: true,
+      messages: false,
+    },
+    "manager",
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Unsubscribe" }));
+
+  expect(screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked")).toBe(
+    "true",
+  );
+  expect(
+    screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
+  ).toBe("false");
+});
+
+test("saving the manager chooser reports the selected alerts", async () => {
+  const onSubmit = vi.fn<(selection: { family: boolean; messages: boolean }) => void>();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  expect(onSubmit).toHaveBeenCalledWith({ family: true, messages: false });
 });

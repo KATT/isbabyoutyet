@@ -373,6 +373,7 @@ function BabyPageLayout() {
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
                 browserPush={loaderData.browserPush}
+                audience={canManage ? "manager" : "visitor"}
               />
             </div>
             <div className="mt-4">
