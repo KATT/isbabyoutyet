@@ -1,4 +1,5 @@
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import {
@@ -37,16 +38,9 @@ const baby: BabyData = {
   babyBorn: null,
 };
 
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
-
 test("name editor mounts fresh on open: current name, reassurance note, trimmed save", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
 
@@ -70,7 +64,7 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
 
 test("due date editor encodes the picker value as a UTC midnight instant", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const input = view.getByLabelText("Due date") as HTMLInputElement;
@@ -97,7 +91,7 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
 
 test("due date editor saves message mode without public text", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
@@ -113,7 +107,7 @@ test("due date editor saves message mode without public text", async () => {
 
 test("due date editor saves a custom visitor message when provided", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
@@ -131,7 +125,7 @@ test("due date editor saves a custom visitor message when provided", async () =>
 
 test("due date editor toggles exact mode when clicking the row label", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
@@ -146,7 +140,7 @@ test("due date editor toggles exact mode when clicking the row label", async () 
 
 test("due date editor toggles modes without losing either field value", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <DueDateEditor
       baby={{
         ...baby,
@@ -184,7 +178,7 @@ test("due date editor toggles modes without losing either field value", async ()
 
 test("reopening the editor picks up the latest name without any reset", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<NameEditor baby={baby} onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(<NameEditor baby={baby} onUpdate={onUpdate} />);
 
   // Open, type a draft, then cancel — the draft must not survive
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
@@ -207,7 +201,7 @@ test("status editor saves the matching milestone instant", async () => {
   const onRedate = vi.fn<MilestoneRedateHandler>().mockResolvedValue(undefined);
   const onRemove = vi.fn<MilestoneRemoveHandler>().mockResolvedValue(undefined);
   const laborBaby = { ...baby, laborStarted: "2026-08-10T08:00:00.000Z" };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <StatusDateEditor
       baby={laborBaby}
       status="labor_started"
@@ -230,7 +224,7 @@ test("status editor saves the matching milestone instant", async () => {
 
 test("due date editor localizes its accessible label", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="pt-BR">
       <DueDateEditor baby={baby} onUpdate={onUpdate} />
     </LocaleProvider>,
@@ -242,7 +236,7 @@ test("due date editor localizes its accessible label", async () => {
 
 test("theme selector marks Baby Blue selected", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
@@ -260,7 +254,7 @@ test("theme selector marks Baby Blue selected", async () => {
 });
 
 test("theme selector leaves canonical options unselected for an unknown theme", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <ThemeSelector
       baby={{ ...baby, theme: "not-a-real-theme" }}
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
@@ -275,7 +269,7 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
 test("theme selector reports a failed update and remains open", async () => {
   await using toastError = spyOnToastErrorResource();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue(new Error("Theme update failed"));
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
@@ -289,7 +283,7 @@ test("theme selector reports a failed update and remains open", async () => {
 test("theme selector toasts a generic message for non-Error failures", async () => {
   await using toastError = spyOnToastErrorResource();
   const onUpdate = vi.fn<BabyUpdateHandler>().mockRejectedValue("nope");
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
   );
 
@@ -303,7 +297,9 @@ test("theme selector toasts a generic message for non-Error failures", async () 
 
 test("journey editor saves only when dirty", async () => {
   const onUpdate = vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined);
-  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(
+    <JourneyEditor birthJourney="labor" onUpdate={onUpdate} />,
+  );
 
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
   const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
@@ -326,7 +322,9 @@ test("journey editor reports a failed save and remains open", async () => {
   const onUpdate = vi
     .fn<BabyUpdateHandler>()
     .mockRejectedValue(new Error("Could not save journey"));
-  await using view = renderResource(<JourneyEditor birthJourney="labor" onUpdate={onUpdate} />);
+  await using view = await renderWithTestRouter(
+    <JourneyEditor birthJourney="labor" onUpdate={onUpdate} />,
+  );
 
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
@@ -350,7 +348,7 @@ test("status editor confirms destructive deletion", async () => {
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
   };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <StatusDateEditor
       baby={bornBaby}
       status="born"
@@ -378,7 +376,7 @@ test("status deletion is disabled until later statuses are deleted", async () =>
     wentToHospital: "2026-08-10T12:00:00.000Z",
     babyBorn: "2026-08-11T03:00:00.000Z",
   };
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <TooltipProvider>
       <StatusDateEditor
         baby={bornBaby}

@@ -12,4 +12,4 @@ export {
   useRegisterFormDirty,
   type FormGuardHandle,
 } from "./use-form-guard.js";
-export { useFormNavigationGuard, useOptionalRouter } from "./router.js";
+export { useFormNavigationGuard } from "./router.js";

@@ -4,13 +4,8 @@
  * overlay dismissal. The store has stable identity, so the blocker callbacks
  * never go stale — no latest-ref bookkeeping.
  */
-import { useBlocker, useRouter } from "@tanstack/react-router";
+import { useBlocker } from "@tanstack/react-router";
 import type { FormGuardHandle } from "./use-form-guard.js";
-
-/** Router when rendered under a `RouterProvider`, otherwise `null` (e.g. bare component tests). */
-export function useOptionalRouter() {
-  return useRouter({ warn: false });
-}
 
 /**
  * Blocks in-app navigation while the form has unsaved edits, using the same

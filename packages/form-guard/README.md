@@ -63,4 +63,4 @@ stack; "Keep editing" cancels both closes.
 - `src/dismiss.ts` — `overlayDismissDecision(...)`, `shouldBlockOverlayDismiss(...)`, native date-picker sniffing
 - `src/guard-store.ts` — `createFormGuardStore()` and the `FormGuardStore` interface
 - `src/use-form-guard.ts` — `useFormGuard(...)`, `FormGuardContextProvider`, `useFormGuardStack()`, `useRegisterFormDirty(...)`
-- `src/router.ts` — `useFormNavigationGuard(...)`, `useOptionalRouter()`
+- `src/router.ts` — `useFormNavigationGuard(...)`

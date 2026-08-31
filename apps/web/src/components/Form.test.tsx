@@ -1,5 +1,6 @@
 import { Check } from "@phosphor-icons/react";
 import { fireEvent, render } from "@testing-library/react";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   Outlet,
   RouterProvider,
@@ -22,13 +23,6 @@ import {
   useZodForm,
 } from "@/components/Form";
 import { LocaleProvider } from "@/lib/i18n";
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -90,7 +84,7 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
     });
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -130,7 +124,7 @@ test("SubmitButton can target an explicit form outside the <form> element", asyn
 
   const onSubmit = vi.fn(async () => undefined);
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ExplicitSubmitForm onSubmit={onSubmit} />
     </LocaleProvider>,
@@ -150,7 +144,7 @@ test("SubmitButton can target an explicit form outside the <form> element", asyn
 });
 
 test("SubmitButton honors an extra disabled prop while idle", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={vi.fn(async () => undefined)} disabled={true} />
     </LocaleProvider>,
@@ -183,7 +177,7 @@ test("Form surfaces uncaught submit errors as a toast", async () => {
     throw new Error("Nope");
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -209,7 +203,7 @@ test("Form toasts a generic message for non-Error throws", async () => {
     throw "string-fail";
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -238,7 +232,7 @@ test("SubmitButton supports an emoji glyph at the end of the label", async () =>
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <EmojiSubmitForm />
     </LocaleProvider>,
@@ -276,7 +270,7 @@ test("SubmitButton accepts IconComponent={null} for label-only actions", async (
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <NullIconForm />
     </LocaleProvider>,
@@ -318,7 +312,7 @@ test("FormCancelButton honors an extra disabled prop while idle", async () => {
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <DisabledCancelForm />
     </LocaleProvider>,
@@ -340,7 +334,7 @@ test("FormCancelButton disables while its form is submitting", async () => {
     });
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -446,7 +440,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <OverlayLockForm />
     </LocaleProvider>,
@@ -506,7 +500,7 @@ test("useFormGuard close is a no-op without an actions handle", async () => {
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <IdleOverlay />
     </LocaleProvider>,
@@ -564,7 +558,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <DirtyOverlayForm />
     </LocaleProvider>,
@@ -649,7 +643,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <DirtyOverlayForm />
     </LocaleProvider>,
@@ -720,7 +714,7 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <NestedDirtyOverlays />
     </LocaleProvider>,

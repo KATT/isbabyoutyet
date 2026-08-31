@@ -31,7 +31,6 @@ import {
   FormGuardContextProvider,
   useFormNavigationGuard,
   useFormGuardStack,
-  useOptionalRouter,
   useRegisterFormDirty,
   type FormGuardHandle,
 } from "@workspace/form-guard";
@@ -77,14 +76,13 @@ const DEV_SUBMIT_DELAY_MS = 500;
 
 /** Wrap form content so child {@link Form}s register submits and dirty state. */
 export function FormGuardProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
-  const router = useOptionalRouter();
   // Dirty state bubbles to the stack root, which hosts the single discard
   // prompt and navigation blocker; nested providers only relay to it.
   const isStackRoot = useFormGuardStack().length === 0;
   return (
     <FormGuardContextProvider guard={props.guard}>
       {props.children}
-      {router && isStackRoot ? (
+      {isStackRoot ? (
         <FormDiscardHostWithRouter guard={props.guard} />
       ) : (
         <FormDiscardDialog guard={props.guard} navigation={null} />
