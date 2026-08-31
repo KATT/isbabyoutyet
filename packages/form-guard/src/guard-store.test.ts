@@ -1,6 +1,6 @@
 import { expect, test, vi } from "vitest";
 import { createFormGuardStore } from "./guard-store.js";
-import type { FormGuardStore, OverlayDismissEventDetails } from "./guard-store.js";
+import type { FormGuardStore, FormStateFlags, OverlayDismissEventDetails } from "./guard-store.js";
 
 function dismissEvent(reason: string) {
   const cancel = vi.fn();
@@ -14,6 +14,10 @@ function attachActions(store: FormGuardStore) {
   return close;
 }
 
+function flags(partial: Partial<FormStateFlags>): FormStateFlags {
+  return { isDirty: false, isSubmitting: false, isSubmitSuccessful: false, ...partial };
+}
+
 test("clean store allows user dismissal without cancelling", () => {
   const store = createFormGuardStore();
   const { eventDetails, cancel } = dismissEvent("escape-key");
@@ -23,11 +27,9 @@ test("clean store allows user dismissal without cancelling", () => {
   expect(store.isPromptOpen()).toBe(false);
 });
 
-test("submit lock blocks user dismissal but not the imperative success-close", () => {
+test("a submitting form blocks user dismissal but not the imperative success-close", () => {
   const store = createFormGuardStore();
-  store.acquireSubmitLock();
-  store.acquireSubmitLock();
-  store.releaseSubmitLock();
+  store.setFormState("note", flags({ isDirty: true, isSubmitting: true }));
 
   const escape = dismissEvent("escape-key");
   expect(store.handleOpenChange(false, escape.eventDetails)).toBe("block");
@@ -36,15 +38,40 @@ test("submit lock blocks user dismissal but not the imperative success-close", (
   const imperative = dismissEvent("imperative-action");
   expect(store.handleOpenChange(false, imperative.eventDetails)).toBe("allow");
   expect(imperative.cancel).not.toHaveBeenCalled();
+});
 
-  store.releaseSubmitLock();
-  const idle = dismissEvent("escape-key");
-  expect(store.handleOpenChange(false, idle.eventDetails)).toBe("allow");
+test("submit outcome drives the unsaved-edits guard without imperative locks", () => {
+  const store = createFormGuardStore();
+
+  // Editing arms the guard.
+  store.setFormState("note", flags({ isDirty: true }));
+  expect(store.isDirty()).toBe(true);
+
+  // Mid-submit, leaving is allowed: success paths navigate before resolving.
+  store.setFormState("note", flags({ isDirty: true, isSubmitting: true }));
+  expect(store.isDirty()).toBe(false);
+
+  // A failed submit re-arms the guard by itself.
+  store.setFormState("note", flags({ isDirty: true }));
+  expect(store.isDirty()).toBe(true);
+
+  // A successful submit keeps leaving allowed even while still dirty.
+  store.setFormState("note", flags({ isDirty: true, isSubmitSuccessful: true }));
+  expect(store.isDirty()).toBe(false);
+});
+
+test("one sibling's successful save does not unguard another sibling's edits", () => {
+  const store = createFormGuardStore();
+  store.setFormState("saved", flags({ isDirty: true, isSubmitSuccessful: true }));
+  store.setFormState("draft", flags({ isDirty: true }));
+
+  expect(store.isDirty()).toBe(true);
+  expect(store.handleOpenChange(false, dismissEvent("escape-key").eventDetails)).toBe("confirm");
 });
 
 test("dirty store confirms dismissal and opens its own prompt", () => {
   const store = createFormGuardStore();
-  store.setDirty("note", true);
+  store.setFormState("note", flags({ isDirty: true }));
 
   const { eventDetails, cancel } = dismissEvent("outside-press");
   expect(store.handleOpenChange(false, eventDetails)).toBe("confirm");
@@ -55,7 +82,7 @@ test("dirty store confirms dismissal and opens its own prompt", () => {
 test("keep editing closes the prompt without closing the overlay", () => {
   const store = createFormGuardStore();
   const close = attachActions(store);
-  store.setDirty("note", true);
+  store.setFormState("note", flags({ isDirty: true }));
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
 
   store.keepEditing();
@@ -67,7 +94,7 @@ test("keep editing closes the prompt without closing the overlay", () => {
 test("discard allows leaving and closes every queued target", () => {
   const store = createFormGuardStore();
   const close = attachActions(store);
-  store.setDirty("note", true);
+  store.setFormState("note", flags({ isDirty: true }));
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
 
   store.discard();
@@ -76,19 +103,16 @@ test("discard allows leaving and closes every queued target", () => {
   expect(store.isDirty()).toBe(false);
 });
 
-test("allowLeave lets a dismiss through and re-dirtying re-arms the guard", () => {
+test("fresh edits after a discard re-arm the guard", () => {
   const store = createFormGuardStore();
-  store.setDirty("note", true);
-  store.allowLeave();
+  store.setFormState("note", flags({ isDirty: true }));
+  store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
+  store.discard();
   expect(store.isDirty()).toBe(false);
-  expect(store.handleOpenChange(false, dismissEvent("escape-key").eventDetails)).toBe("allow");
 
-  store.revokeAllowLeave();
-  expect(store.isDirty()).toBe(true);
-
-  store.allowLeave();
-  store.setDirty("note", false);
-  store.setDirty("note", true);
+  // The discarded form unmounts, then a new edit session starts.
+  store.setFormState("note", null);
+  store.setFormState("note", flags({ isDirty: true }));
   expect(store.isDirty()).toBe(true);
 });
 
@@ -98,8 +122,8 @@ test("a nested dirty store routes its prompt to the stack root", () => {
   const rootClose = attachActions(root);
   const childClose = attachActions(child);
   child.setAncestors([root]);
-  child.setDirty("note", true);
-  root.setDirty("note", true);
+  child.setFormState("note", flags({ isDirty: true }));
+  root.setFormState("note", flags({ isDirty: true }));
 
   // One backdrop click dismisses both popups: child outside-press first…
   expect(child.handleOpenChange(false, dismissEvent("outside-press").eventDetails)).toBe("confirm");
@@ -119,7 +143,7 @@ test("keep editing on the root clears queued nested targets", () => {
   const rootClose = attachActions(root);
   const childClose = attachActions(child);
   child.setAncestors([root]);
-  child.setDirty("note", true);
+  child.setFormState("note", flags({ isDirty: true }));
 
   child.handleOpenChange(false, dismissEvent("outside-press").eventDetails);
   expect(root.isPromptOpen()).toBe(true);
@@ -137,7 +161,7 @@ test("prompt subscribers are notified on open and close, and can unsubscribe", (
   const store = createFormGuardStore();
   const listener = vi.fn();
   const unsubscribe = store.subscribe(listener);
-  store.setDirty("note", true);
+  store.setFormState("note", flags({ isDirty: true }));
 
   store.handleOpenChange(false, dismissEvent("escape-key").eventDetails);
   expect(listener).toHaveBeenCalledTimes(1);

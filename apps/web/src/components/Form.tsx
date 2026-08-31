@@ -31,7 +31,7 @@ import {
   FormGuardContextProvider,
   useFormNavigationGuard,
   useFormGuardStack,
-  useRegisterFormDirty,
+  useRegisterFormState,
   type FormGuardHandle,
 } from "@workspace/form-guard";
 
@@ -150,12 +150,15 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   handleSubmit: (values: TOutput) => Promise<void>;
 }) => {
   const { t } = useI18n();
-  // Locks and leave permission span the whole stack: while a nested editor
-  // submits, the parent overlay must not be dismissable either, and a
-  // successful save must unblock the parent's navigation guard.
-  const guardStores = useFormGuardStack();
   const formState = useFormState({ control: props.form.control });
-  useRegisterFormDirty(formState.isDirty);
+  // The guard consumes reactive form state — no imperative submit lock:
+  // `isSubmitting` blocks user dismissal, and a failed submit re-arms the
+  // unsaved-edits guard on its own (`isSubmitSuccessful` stays false).
+  useRegisterFormState({
+    isDirty: formState.isDirty,
+    isSubmitting: formState.isSubmitting,
+    isSubmitSuccessful: formState.isSubmitSuccessful,
+  });
   const { id, formRef, ...rest } = props.form;
   return (
     <FormProvider {...rest}>
@@ -163,30 +166,21 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
         id={id}
         ref={formRef}
         onSubmit={(event) => {
-          return rest.handleSubmit(async (values) => {
-            for (const store of guardStores) {
-              store.acquireSubmitLock();
-              store.allowLeave();
-            }
-            try {
+          // Errors propagate through RHF's handleSubmit so `isSubmitSuccessful`
+          // reflects the real outcome; the outer catch only reports them.
+          return rest
+            .handleSubmit(async (values) => {
               // Dev-only pause so submit spinners are visible while clicking around locally.
               /* v8 ignore next 3 */
               if (import.meta.env.DEV) {
                 await new Promise((resolve) => setTimeout(resolve, DEV_SUBMIT_DELAY_MS));
               }
               await props.handleSubmit(values);
-            } catch (error) {
-              for (const store of guardStores) {
-                store.revokeAllowLeave();
-              }
+            })(event)
+            .catch((error) => {
               console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
-            } finally {
-              for (const store of guardStores) {
-                store.releaseSubmitLock();
-              }
-            }
-          })(event);
+            });
         }}
       >
         {props.children}

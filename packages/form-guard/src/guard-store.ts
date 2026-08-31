@@ -1,14 +1,21 @@
 /**
  * Framework-free form leave-guard core. One mutable store per guarded
- * overlay/page owns the submit lock, dirty registry, and discard queue, and
- * answers "may we leave this unsaved form?" for every adapter (Base UI
- * dismissal, router blocking, `beforeunload`).
+ * overlay/page answers "may we leave this unsaved form?" for every adapter
+ * (Base UI dismissal, router blocking, `beforeunload`).
  *
- * Stores stack: dirty state registers with every ancestor, submit locks and
- * leave permission apply stack-wide, and discard requests route to the stack
- * root so one gesture that dismisses several dirty overlays (dialog backdrop
- * + nested popover outside-press) yields a single prompt whose Discard closes
- * the whole stack.
+ * Forms register reactive flags (`isDirty` / `isSubmitting` /
+ * `isSubmitSuccessful`) instead of taking imperative locks, so there is no
+ * acquire/release pairing to leak across renders or overlapping submits:
+ *
+ * - user dismissal is blocked while any form submits
+ * - edits block leaving only while unsaved: not during a submit (success
+ *   paths navigate mid-submit) and not after a successful one; a failed
+ *   submit re-arms the guard by itself
+ *
+ * Stores stack: forms register with every ancestor, and discard requests
+ * route to the stack root so one gesture that dismisses several dirty
+ * overlays (dialog backdrop + nested popover outside-press) yields a single
+ * prompt whose Discard closes the whole stack.
  *
  * All mutations happen in event handlers and effects — never during render —
  * and the only reactive output (prompt open) is exposed via
@@ -34,6 +41,13 @@ export type OverlayActions = {
   unmount: () => void;
 };
 
+/** Structural subset of React Hook Form's `formState` (any form library fits). */
+export type FormStateFlags = {
+  isDirty: boolean;
+  isSubmitting: boolean;
+  isSubmitSuccessful: boolean;
+};
+
 export interface FormGuardStore {
   /** Base UI Root actions handle; pass as `actionsRef` so `close()` works. */
   actionsRef: { current: OverlayActions | null };
@@ -45,21 +59,23 @@ export interface FormGuardStore {
   /** Whether this store's discard prompt is open. */
   isPromptOpen: () => boolean;
 
-  /** Register a form's dirty flag; a `false → true` transition re-arms the guard. */
-  setDirty: (id: string, isDirty: boolean) => void;
-  /** Any registered dirty form, unless leaving was explicitly allowed. */
+  /**
+   * Register a form's reactive state, or clear it with `null` on unmount.
+   * When unsaved edits (re)appear — including after a failed submit — the
+   * guard re-arms and a previous Discard's leave permission is revoked.
+   */
+  setFormState: (id: string, flags: FormStateFlags | null) => void;
+  /**
+   * Any form with unsaved edits worth guarding, unless leaving was permitted
+   * by a Discard. Edits mid-submit or after a successful submit don't count:
+   * success paths close overlays and navigate while the form is still dirty.
+   */
   isDirty: () => boolean;
-
-  /** Counted so overlapping submits from sibling forms keep the lock held. */
-  acquireSubmitLock: () => void;
-  releaseSubmitLock: () => void;
-  /** Permit the next overlay close / navigation even while still dirty. */
-  allowLeave: () => void;
-  /** Re-arm discard confirmation after a failed submit. */
-  revokeAllowLeave: () => void;
 
   /** Wired by the context provider; the last ancestor is the stack root. */
   setAncestors: (ancestors: FormGuardStore[]) => void;
+  /** @internal Permit leaving despite unsaved edits (Discard on this target). */
+  allowLeave: () => void;
   /**
    * Queue `target` for closing and open this store's prompt. Callers route
    * requests through the stack root so merged gestures share one prompt.
@@ -83,9 +99,8 @@ export interface FormGuardStore {
 }
 
 export function createFormGuardStore(): FormGuardStore {
-  const dirtyIds = new Set<string>();
+  const forms = new Map<string, FormStateFlags>();
   const listeners = new Set<() => void>();
-  let pendingSubmits = 0;
   let leaveAllowed = false;
   let discardIntent: "idle" | "discard" = "idle";
   let ancestors: FormGuardStore[] = [];
@@ -102,6 +117,24 @@ export function createFormGuardStore(): FormGuardStore {
     }
   }
 
+  function hasBlockingEdits() {
+    for (const flags of forms.values()) {
+      if (flags.isDirty && !flags.isSubmitting && !flags.isSubmitSuccessful) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function isSubmitting() {
+    for (const flags of forms.values()) {
+      if (flags.isSubmitting) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   const store: FormGuardStore = {
     actionsRef: { current: null },
     close: () => {
@@ -114,34 +147,26 @@ export function createFormGuardStore(): FormGuardStore {
       };
     },
     isPromptOpen: () => promptOpen,
-    setDirty: (id, isDirty) => {
-      const wasDirty = dirtyIds.size > 0;
-      if (isDirty) {
-        dirtyIds.add(id);
+    setFormState: (id, flags) => {
+      const wasBlocking = hasBlockingEdits();
+      if (flags) {
+        forms.set(id, flags);
       } else {
-        dirtyIds.delete(id);
+        forms.delete(id);
       }
-      if (!wasDirty && dirtyIds.size > 0) {
+      // Unsaved edits (re)appearing — a fresh edit or a failed submit —
+      // re-arm the guard and revoke any earlier Discard's leave permission.
+      if (!wasBlocking && hasBlockingEdits()) {
         leaveAllowed = false;
         discardIntent = "idle";
       }
     },
-    isDirty: () => dirtyIds.size > 0 && !leaveAllowed,
-    acquireSubmitLock: () => {
-      pendingSubmits += 1;
-    },
-    releaseSubmitLock: () => {
-      pendingSubmits -= 1;
+    isDirty: () => hasBlockingEdits() && !leaveAllowed,
+    setAncestors: (next) => {
+      ancestors = next;
     },
     allowLeave: () => {
       leaveAllowed = true;
-    },
-    revokeAllowLeave: () => {
-      leaveAllowed = false;
-      discardIntent = "idle";
-    },
-    setAncestors: (next) => {
-      ancestors = next;
     },
     requestDiscard: (target) => {
       pendingDiscards.push(target);
@@ -167,7 +192,7 @@ export function createFormGuardStore(): FormGuardStore {
     },
     handleOpenChange: (open, eventDetails) => {
       const decision = overlayDismissDecision({
-        isLocked: pendingSubmits > 0,
+        isLocked: isSubmitting(),
         isDirty: store.isDirty(),
         isPickerDismiss: isNativeDatePickerDismiss(eventDetails.reason),
         open,

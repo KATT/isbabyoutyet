@@ -43,12 +43,15 @@ The app-side provider composes three package exports:
 - `FormGuardContextProvider` — stacks the store under context
 - `useFormNavigationGuard(guard)` — mount at the stack root only (dirty state
   bubbles up); render your own discard dialog from `guard.discardPrompt`
-- `useRegisterFormDirty(isDirty)` — call from your form wrapper with a plain
-  boolean (e.g. React Hook Form's `formState.isDirty`)
+- `useRegisterFormState({ isDirty, isSubmitting, isSubmitSuccessful })` — call
+  from your form wrapper with plain booleans (a structural subset of React
+  Hook Form's `formState`)
 
-Submitting forms drive the lock through the stack (`useFormGuardStack()`):
-`acquireSubmitLock()` + `allowLeave()` before the async submit,
-`revokeAllowLeave()` on failure, `releaseSubmitLock()` in `finally`.
+There is no imperative submit lock: `isSubmitting` blocks user dismissal
+while it holds, and `isDirty && !isSubmitting && !isSubmitSuccessful` is the
+"unsaved edits" signal — leaving is allowed mid-submit (success paths
+navigate before resolving) and after a successful save, while a failed
+submit re-arms the guard on its own.
 
 ## Stacked overlays
 

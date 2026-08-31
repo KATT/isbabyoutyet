@@ -18,7 +18,12 @@ import {
   type ReactNode,
 } from "react";
 import { createFormGuardStore } from "./guard-store.js";
-import type { FormGuardStore, OverlayActions, OverlayOpenChangeHandler } from "./guard-store.js";
+import type {
+  FormGuardStore,
+  FormStateFlags,
+  OverlayActions,
+  OverlayOpenChangeHandler,
+} from "./guard-store.js";
 
 export type FormGuardHandle = {
   /**
@@ -123,24 +128,31 @@ export function useFormGuard(opts: {
 }
 
 /**
- * Registers this form's dirty flag with the nearest provider's store and
+ * Registers this form's reactive state with the nearest provider's store and
  * every ancestor store. Stacked overlays (settings + nested editor) share one
  * leave question: a dirty child must block the parent too.
  *
- * Takes a plain boolean so any form library can feed it (e.g. React Hook
- * Form's `formState.isDirty`). Effect cleanup clears the slot on unmount.
+ * Takes plain booleans (a structural subset of React Hook Form's
+ * `formState`), so any form library can feed it and the guard needs no
+ * imperative submit lock: `isSubmitting` blocks user dismissal while it
+ * holds, and `isDirty && !isSubmitting && !isSubmitSuccessful` is the
+ * "unsaved edits" signal that blocks leaving. Effect cleanup clears the
+ * slot on unmount.
  */
-export function useRegisterFormDirty(isDirty: boolean) {
+export function useRegisterFormState(flags: FormStateFlags) {
   const stores = useFormGuardStack();
   const id = useId();
+  const isDirty = flags.isDirty;
+  const isSubmitting = flags.isSubmitting;
+  const isSubmitSuccessful = flags.isSubmitSuccessful;
   useEffect(() => {
     for (const store of stores) {
-      store.setDirty(id, isDirty);
+      store.setFormState(id, { isDirty, isSubmitting, isSubmitSuccessful });
     }
     return () => {
       for (const store of stores) {
-        store.setDirty(id, false);
+        store.setFormState(id, null);
       }
     };
-  }, [id, isDirty, stores]);
+  }, [id, stores, isDirty, isSubmitting, isSubmitSuccessful]);
 }
