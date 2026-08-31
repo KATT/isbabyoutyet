@@ -43,7 +43,7 @@ type BrowserPushCapability =
       messages: boolean;
     };
 
-export type NotificationSubscribePurpose = "family" | "messages";
+type NotificationSubscribePurpose = "family" | "messages";
 
 const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 
