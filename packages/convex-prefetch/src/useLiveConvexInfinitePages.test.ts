@@ -30,7 +30,7 @@ const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCurso
  * effect to resubscribe.
  */
 function wrapperFor(client: QueryClient, watchQuery: WatchQuery) {
-  const convex = { watchQuery } as unknown as ConvexReactClient;
+  const convex: ConvexReactClient = { watchQuery } as never;
   return function Wrapper(props: { children: React.ReactNode }) {
     return React.createElement(
       ConvexProvider,

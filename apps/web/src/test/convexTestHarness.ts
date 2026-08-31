@@ -131,7 +131,7 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
     clearAuth: () => {},
   };
 
-  const convexQueryClient = {
+  const convexQueryClientFields = {
     convexClient,
     hashFn: () => JSON.stringify,
     queryFn: () => Promise.resolve(null),
@@ -139,7 +139,8 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
       queryClientForInvalidation = nextQueryClient;
     },
     serverHttpClient: undefined,
-  } as unknown as ConvexQueryClient;
+  } as const;
+  const convexQueryClient: ConvexQueryClient = convexQueryClientFields as never;
 
   registerConvexInfiniteQueryClient(convexQueryClient);
 

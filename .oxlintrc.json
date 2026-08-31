@@ -82,7 +82,6 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "anti-slop/no-chained-type-assertions": "off",
         "anti-slop/no-widen-then-assert": "off",
         "anti-slop/no-known-value-widening": "off",
         "anti-slop/require-safety-comment-for-type-assertion": "off",

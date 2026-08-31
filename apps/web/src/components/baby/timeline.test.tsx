@@ -1,6 +1,6 @@
 import { fireEvent, render, within } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import { expect, test, vi } from "vitest";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -65,7 +65,7 @@ function renderComposerTree(
 ) {
   return (
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as unknown as ConvexReactClient}>
+      <ConvexProvider client={harness.convexClient as never}>
         <LocaleProvider locale={opts.locale}>
           <UpdateComposer
             babyId={opts.babyId}
@@ -132,7 +132,7 @@ async function renderTimelineFeed(
   const timeline = await prefetchTimeline(harness, opts.publicId);
   return await renderWithTestRouter(
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as unknown as ConvexReactClient}>
+      <ConvexProvider client={harness.convexClient as never}>
         <LocaleProvider locale="en-GB">
           <TimelineFeed
             babyId={opts.babyId}

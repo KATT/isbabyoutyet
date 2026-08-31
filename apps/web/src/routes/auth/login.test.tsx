@@ -137,9 +137,9 @@ test("LoginPage wires the real auth client into LoginCard", async () => {
 });
 
 test("login route head sets the document title", () => {
-  const head = Route.options.head as unknown as (opts: {
-    match: { context: { locale: "en-GB" } };
-  }) => { meta: Array<{ title: string | undefined }> };
+  const head: (opts: { match: { context: { locale: "en-GB" } } }) => {
+    meta: Array<{ title: string | undefined }>;
+  } = Route.options.head as never;
   const result = head({ match: { context: { locale: "en-GB" } } });
   expect(result.meta.some((entry) => entry.title?.includes("Log in"))).toBe(true);
 });

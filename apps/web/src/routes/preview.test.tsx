@@ -118,9 +118,9 @@ test("preview derives a born status from its search dates", async () => {
 });
 
 test("preview still supplies localized no-index metadata after the schema cutover", () => {
-  const head = Route.options.head as unknown as (opts: {
-    match: { context: { locale: "en-GB" } };
-  }) => { meta: unknown[] };
+  const head: (opts: { match: { context: { locale: "en-GB" } } }) => {
+    meta: unknown[];
+  } = Route.options.head as never;
   const result = head({
     match: { context: { locale: "en-GB" } },
   });

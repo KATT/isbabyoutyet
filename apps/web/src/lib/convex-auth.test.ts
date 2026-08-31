@@ -161,19 +161,10 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
-  const emptyAtoms = {} as unknown as typeof realAuthClient.$store.atoms;
-  expect(readSessionAtom(emptyAtoms)).toBeUndefined();
-  expect(
-    readSessionAtom({ session: null } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
-  expect(
-    readSessionAtom({ session: "x" } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
-  expect(
-    readSessionAtom({
-      session: { subscribe: 1 },
-    } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
+  expect(readSessionAtom({} as never)).toBeUndefined();
+  expect(readSessionAtom({ session: null } as never)).toBeUndefined();
+  expect(readSessionAtom({ session: "x" } as never)).toBeUndefined();
+  expect(readSessionAtom({ session: { subscribe: 1 } } as never)).toBeUndefined();
 
   const unsub = vi.fn();
   function subscribeWithUnsub(listener: SessionListener) {
@@ -184,7 +175,7 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     session: {
       subscribe: subscribeWithUnsub,
     },
-  } as unknown as typeof realAuthClient.$store.atoms);
+  } as never);
   expect(atom).toBeTruthy();
   const stop = atom?.subscribe(() => {});
   stop?.();
@@ -194,7 +185,7 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     session: {
       subscribe: () => undefined,
     },
-  } as unknown as typeof realAuthClient.$store.atoms);
+  } as never);
   expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
 });
 

@@ -35,7 +35,7 @@ function idleWatchQuery() {
  * carries a `watchQuery`-shaped stand-in for the live-page subscriptions.
  */
 function createWrapper(queryClient: QueryClient, watchQuery: WatchQuery) {
-  const convex = { watchQuery } as unknown as ConvexReactClient;
+  const convex: ConvexReactClient = { watchQuery } as never;
   return function Wrapper(props: { children: React.ReactNode }) {
     return React.createElement(
       ConvexProvider,
