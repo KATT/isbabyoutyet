@@ -469,7 +469,7 @@ test("renaming a baby without changing the slug keeps the publicId", async () =>
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       name: "Baby smith",
     },
   });
