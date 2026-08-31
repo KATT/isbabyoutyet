@@ -1,4 +1,5 @@
 import { fireEvent } from "@testing-library/react";
+import { convexQuery } from "@convex-dev/react-query";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { ReactNode } from "react";
@@ -88,7 +89,7 @@ test("DashboardSettingsSheet wires the preloaded profile into the view", async (
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <DashboardSettingsSheet profile={profile} />,
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -134,10 +135,13 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   });
 
   const profile = await harness.convexPreloader.ensureQueryData(api.profile.get, {});
+  harness.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, [
+    { _id: "baby-id", name: "Baby Smith" },
+  ]);
 
   await using view = await renderWithConvexTest({
     harness,
-    ui: <DashboardSettingsSheet profile={profile} />,
+    ui: <DashboardSettingsSheet profile={profile} queryClient={harness.queryClient} />,
     wrap: null,
   });
 
@@ -146,6 +150,9 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   });
   fireEvent.click(view.getByRole("button", { name: "Log out" }));
   await vi.waitFor(() => {
+    expect(
+      harness.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
+    ).toBeUndefined();
     expect(signOut).toHaveBeenCalled();
   });
 });
