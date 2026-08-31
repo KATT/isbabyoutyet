@@ -40,6 +40,7 @@ import {
 import { Link } from "@tanstack/react-router";
 import { useRef } from "react";
 import type { ReactElement } from "react";
+import { AnimatePresence, MotionConfig, motion } from "motion/react";
 import { Streamdown } from "streamdown";
 import { toast } from "sonner";
 import * as z from "zod";
@@ -73,12 +74,19 @@ import type { SupportedLocale } from "@workspace/convex/src/i18n";
 import type { TranslationFunction, TranslationKey } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import { useIntersectionAction } from "@/lib/use-intersection-action";
+import { useLiveInsertIds } from "@/lib/use-live-insert-ids";
 import { useObjectUrl } from "@/lib/use-object-url";
 import { useBabyUpdatePhotoOverlayNav } from "@/lib/overlay-nav";
 import { BlurImage } from "@/components/blur-image";
 import { MILESTONE_LABEL_KEYS } from "./translation-keys";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const TIMELINE_ITEM_LAYOUT = "position" as const;
+const TIMELINE_PRESENCE_MODE = "popLayout" as const;
+const TIMELINE_REDUCED_MOTION = "user" as const;
+const TIMELINE_ITEM_HIDDEN = { opacity: 0, scale: 0.96, y: -12 };
+const TIMELINE_ITEM_VISIBLE = { opacity: 1, scale: 1, y: 0 };
+const TIMELINE_ITEM_TRANSITION = { type: "spring", stiffness: 420, damping: 32 } as const;
 
 type TimelineItemData = FunctionReturnType<typeof api.timeline.listByBaby>["page"][number];
 type UpdateItemData = Extract<TimelineItemData, { kind: "update" }>;
@@ -1103,6 +1111,9 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
   const hasNextPage = props.hasNextPage;
   const isFetchingNextPage = props.isFetchingNextPage;
   const fetchNextPage = props.fetchNextPage;
+  const liveInsertIds = useLiveInsertIds(
+    props.items.map((item) => ({ id: item._id, sortKey: item.postedAt })),
+  );
   const loadMoreRef = useIntersectionAction({
     enabled: hasNextPage && !isFetchingNextPage,
     onIntersect: () => {
@@ -1153,15 +1164,14 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
     }
   };
 
-  if (props.items.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Heart className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-extrabold text-foreground">
-            {t("Updates & encouragements")}
-          </h3>
-        </div>
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="mb-4 flex items-center gap-2">
+        <Heart className="w-5 h-5 text-primary" />
+        <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
+      </div>
+
+      {props.items.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
           <p className="text-3xl" aria-hidden="true">
             💌
@@ -1173,51 +1183,60 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
               : t("Updates from the family will show up here.")}
           </p>
         </div>
-      </div>
-    );
-  }
+      ) : null}
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Heart className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
-      </div>
-
-      <div className="space-y-4">
-        {props.items.map((item) =>
-          item.kind === "update" ? (
-            <UpdateTimelineItem
-              key={item._id}
-              item={item}
-              publicId={props.publicId}
-              baby={props.baby}
-              babyName={props.babyName}
-              isOwner={props.isOwner}
-              onDelete={handleDeleteUpdate}
-              onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
-            />
-          ) : (
-            <EncouragementTimelineItem
-              key={item._id}
-              item={item}
-              isOwner={props.isOwner}
-              timeZone={props.baby.timeZone}
-              currentVisitorId={props.currentVisitorId}
-              onDelete={handleDeleteEncouragement}
-              onUpdate={handleUpdateEncouragement}
-            />
-          ),
-        )}
-
-        {/* Infinite scroll trigger */}
-        <div ref={loadMoreRef} className="py-2">
-          {isFetchingNextPage ? (
-            <div className="text-center text-muted-foreground">
-              <Spinner className="mx-auto" />
-            </div>
-          ) : null}
+      <MotionConfig reducedMotion={TIMELINE_REDUCED_MOTION}>
+        <div className="relative flex flex-col gap-4">
+          <AnimatePresence initial={false} mode={TIMELINE_PRESENCE_MODE}>
+            {props.items.map((item) => {
+              const isLiveInsert = liveInsertIds.has(item._id);
+              return (
+                <motion.div
+                  key={item._id}
+                  layout={TIMELINE_ITEM_LAYOUT}
+                  data-live-insert={isLiveInsert ? "" : undefined}
+                >
+                  <motion.div
+                    className="origin-top"
+                    initial={isLiveInsert ? TIMELINE_ITEM_HIDDEN : false}
+                    animate={TIMELINE_ITEM_VISIBLE}
+                    exit={TIMELINE_ITEM_HIDDEN}
+                    transition={TIMELINE_ITEM_TRANSITION}
+                  >
+                    {item.kind === "update" ? (
+                      <UpdateTimelineItem
+                        item={item}
+                        publicId={props.publicId}
+                        baby={props.baby}
+                        babyName={props.babyName}
+                        isOwner={props.isOwner}
+                        onDelete={handleDeleteUpdate}
+                        onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
+                      />
+                    ) : (
+                      <EncouragementTimelineItem
+                        item={item}
+                        isOwner={props.isOwner}
+                        timeZone={props.baby.timeZone}
+                        currentVisitorId={props.currentVisitorId}
+                        onDelete={handleDeleteEncouragement}
+                        onUpdate={handleUpdateEncouragement}
+                      />
+                    )}
+                  </motion.div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
+      </MotionConfig>
+
+      <div ref={loadMoreRef} className="py-2">
+        {isFetchingNextPage ? (
+          <div className="text-center text-muted-foreground">
+            <Spinner className="mx-auto" />
+          </div>
+        ) : null}
       </div>
     </div>
   );
