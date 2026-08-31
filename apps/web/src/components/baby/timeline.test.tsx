@@ -446,6 +446,9 @@ test("pops in an encouragement that arrives after the first snapshot", async () 
     authorName: "Auntie",
     message: "So exciting!",
     visitorId: "visitor-live",
+    userAgent: null,
+    locale: null,
+    timezone: null,
   });
 
   const liveMessage = await vi.waitFor(() => feed.getByText("So exciting!"));
@@ -471,6 +474,9 @@ test("pops in the first encouragement on a previously empty feed", async () => {
     authorName: "Auntie",
     message: "Hello little one!",
     visitorId: "visitor-live",
+    userAgent: null,
+    locale: null,
+    timezone: null,
   });
 
   const liveMessage = await vi.waitFor(() => feed.getByText("Hello little one!"));
