@@ -6,6 +6,18 @@ import { Link } from "@tanstack/react-router";
 import type { LinkProps } from "@tanstack/react-router";
 import { useI18n } from "@/lib/i18n";
 
+const postUpdateButtonClassName =
+  "rounded-full font-bold max-sm:size-8 max-sm:gap-0 max-sm:px-0 max-sm:has-data-[icon=inline-start]:pl-0";
+
+function PostUpdateLabel(props: { label: string }) {
+  return (
+    <>
+      <ChatCircleText data-icon="inline-start" />
+      <span className="max-sm:sr-only">{props.label}</span>
+    </>
+  );
+}
+
 type BabyNavProps = {
   /** Open-share link (push). Null when sharing is unavailable. */
   shareButton: LinkProps | null;
@@ -32,29 +44,35 @@ export function BabyNav(props: BabyNavProps) {
 
   const ownerActions = hasOwnerActions ? (
     <div role="group" aria-label={t("Owner actions")} className="flex items-center gap-1">
-      {props.postUpdateButton &&
-        (props.postUpdateOpen && props.onDismissPostUpdate ? (
-          <Button
-            variant="default"
-            className="rounded-full font-bold"
-            data-tour-id="post_update"
-            onClick={props.onDismissPostUpdate}
-          >
-            <ChatCircleText data-icon="inline-start" />
-            {t("Post update")}
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            className="rounded-full font-bold"
-            render={<Link {...props.postUpdateButton} />}
-            nativeButton={false}
-            data-tour-id="post_update"
-          >
-            <ChatCircleText data-icon="inline-start" />
-            {t("Post update")}
-          </Button>
-        ))}
+      {props.postUpdateButton && (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              props.postUpdateOpen && props.onDismissPostUpdate ? (
+                <Button
+                  variant="default"
+                  className={postUpdateButtonClassName}
+                  data-tour-id="post_update"
+                  onClick={props.onDismissPostUpdate}
+                >
+                  <PostUpdateLabel label={t("Post update")} />
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className={postUpdateButtonClassName}
+                  render={<Link {...props.postUpdateButton} />}
+                  nativeButton={false}
+                  data-tour-id="post_update"
+                >
+                  <PostUpdateLabel label={t("Post update")} />
+                </Button>
+              )
+            }
+          />
+          <TooltipContent>{t("Post update")}</TooltipContent>
+        </Tooltip>
+      )}
       {props.settingsButton && (
         <Tooltip>
           <TooltipTrigger
@@ -139,7 +157,7 @@ export function BabyNav(props: BabyNavProps) {
 
   // A floating pill dock; the page decides where it sits
   return (
-    <div className="flex items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
+    <div className="flex shrink-0 items-center gap-1 rounded-full border-2 border-border bg-background/85 p-1 backdrop-blur-md shadow-sm">
       {ownerActions}
       {ownerActions && <span className="h-5 w-px bg-border" aria-hidden="true" />}
       {pageActions}

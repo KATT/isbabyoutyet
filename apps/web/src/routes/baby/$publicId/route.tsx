@@ -320,7 +320,7 @@ function BabyPageLayout() {
 
       {/* Page chrome: brand pill left, action dock right. Scrolls with the page. */}
       <header className="px-4 pt-3 pb-1">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2">
+        <div className="mx-auto flex max-w-6xl min-w-0 items-center justify-between gap-2">
           <Link
             to="/"
             className="flex items-center gap-2 rounded-full border-2 border-border bg-background/85 py-1.5 pl-2 pr-4 backdrop-blur-md shadow-sm transition-transform hover:-rotate-2"
