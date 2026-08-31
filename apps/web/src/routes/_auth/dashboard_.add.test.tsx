@@ -1,24 +1,31 @@
 import { fireEvent } from "@testing-library/react";
 import type { NavigateOptions } from "@tanstack/react-router";
+import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import { AddBabyPage, AddBabyPageView, Route, type CreateBaby } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 type NavigateFn = (args: NavigateOptions) => Promise<void>;
+type SubscribeOwnerMessages = (babyId: Id<"baby">) => Promise<void>;
+
+const TEST_BABY_ID = "jd7baby000000000000000000" as Id<"baby">;
 
 function createAddBabyMocks() {
   return {
-    createBaby: vi
-      .fn<CreateBaby>()
-      .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>),
+    createBaby: vi.fn<CreateBaby>().mockResolvedValue({
+      publicId: "baby-fern",
+      babyId: TEST_BABY_ID,
+    } as Awaited<ReturnType<CreateBaby>>),
     navigate: vi.fn<NavigateFn>().mockResolvedValue(undefined),
+    subscribeOwnerMessages: vi.fn<SubscribeOwnerMessages>().mockResolvedValue(undefined),
   };
 }
 
 function renderAddBaby(opts: {
   createBaby: CreateBaby | undefined;
   navigate: NavigateFn | undefined;
+  subscribeOwnerMessages: SubscribeOwnerMessages | null | undefined;
 }) {
   const mocks = createAddBabyMocks();
   return renderWithTestRouter(
@@ -26,6 +33,7 @@ function renderAddBaby(opts: {
       <AddBabyPageView
         createBaby={(opts.createBaby ?? mocks.createBaby) as never}
         navigate={(opts.navigate ?? mocks.navigate) as never}
+        subscribeOwnerMessages={opts.subscribeOwnerMessages ?? null}
       />
     </LocaleProvider>,
     { path: "/dashboard/add" },
@@ -36,6 +44,7 @@ function renderDefaultAddBaby() {
   return renderAddBaby({
     createBaby: undefined,
     navigate: undefined,
+    subscribeOwnerMessages: null,
   });
 }
 
@@ -79,7 +88,7 @@ test("name field explains it can be filled later", async () => {
 test("journey choices explain visible statuses and privacy", async () => {
   const createBaby = vi.fn<CreateBaby>();
   const navigate = vi.fn<NavigateFn>();
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   expandOptionalSettings(view);
 
@@ -118,7 +127,7 @@ test("submits optional theme selection", async () => {
     .fn<CreateBaby>()
     .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -155,7 +164,7 @@ test.each([
     .fn<CreateBaby>()
     .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -193,7 +202,7 @@ test("allows a hidden public due date when message mode has no text", async () =
     .fn<CreateBaby>()
     .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -218,7 +227,7 @@ test("submits a custom public due date message when provided", async () => {
     .fn<CreateBaby>()
     .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -245,7 +254,7 @@ test("submits a custom public due date message when provided", async () => {
 test("toggles exact due date mode when clicking the row label", async () => {
   const createBaby = vi.fn<CreateBaby>();
   const navigate = vi.fn<NavigateFn>();
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
   expect(exactSwitch.getAttribute("aria-checked")).toBe("true");
@@ -262,7 +271,7 @@ test("keeps entered date and message values while toggling fields", async () => 
     .fn<CreateBaby>()
     .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
-  await using view = await renderAddBaby({ createBaby, navigate });
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages: null });
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },
@@ -293,4 +302,63 @@ test("keeps entered date and message values while toggling fields", async () => 
       theme: null,
     });
   });
+});
+
+test("shows a message-notification switch off by default", async () => {
+  await using view = await renderDefaultAddBaby();
+
+  const notifySwitch = view.getByRole("switch", { name: "Message notifications" });
+  expect(notifySwitch.getAttribute("aria-checked")).toBe("false");
+  expect(view.getByText("Get notified when someone leaves a message")).toBeTruthy();
+});
+
+test("subscribes for visitor messages when the switch is on at submit", async () => {
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue({
+    publicId: "baby-fern",
+    babyId: TEST_BABY_ID,
+  } as Awaited<ReturnType<CreateBaby>>);
+  const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
+  const subscribeOwnerMessages = vi.fn<SubscribeOwnerMessages>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  fireEvent.click(view.getByRole("switch", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
+
+  await vi.waitFor(() => {
+    expect(createBaby).toHaveBeenCalled();
+  });
+  expect(subscribeOwnerMessages).toHaveBeenCalledWith(TEST_BABY_ID);
+  expect(navigate).toHaveBeenCalledWith({
+    to: "/baby/$publicId",
+    params: { publicId: "baby-fern" },
+  });
+});
+
+test("does not subscribe for visitor messages when the switch stays off", async () => {
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue({
+    publicId: "baby-fern",
+    babyId: TEST_BABY_ID,
+  } as Awaited<ReturnType<CreateBaby>>);
+  const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
+  const subscribeOwnerMessages = vi.fn<SubscribeOwnerMessages>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
+
+  await vi.waitFor(() => {
+    expect(createBaby).toHaveBeenCalled();
+  });
+  expect(subscribeOwnerMessages).not.toHaveBeenCalled();
 });

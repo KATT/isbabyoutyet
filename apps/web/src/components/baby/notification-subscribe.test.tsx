@@ -163,10 +163,7 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-async function renderSubscribe(
-  capability: BrowserPushCapability,
-  purpose: "family" | "messages" = "family",
-) {
+async function renderSubscribe(capability: BrowserPushCapability) {
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
@@ -189,7 +186,6 @@ async function renderSubscribe(
             capability,
             babyRef,
           )}
-          purpose={purpose}
         />
       </TooltipProvider>
     ),
@@ -426,32 +422,6 @@ test("offers subscribe when the browser is subscribed but Convex is not", async 
     family: false,
     messages: false,
   });
-
-  expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
-});
-
-test("owners subscribe for visitor messages rather than family status alerts", async () => {
-  await using view = await renderSubscribe({ kind: "unsubscribed" }, "messages");
-
-  const button = view.getByRole("button", { name: "Get Notifications" });
-  fireEvent.pointerMove(button);
-  fireEvent.pointerEnter(button);
-  fireEvent.focus(button);
-  await vi.waitFor(() => {
-    expect(screen.getByText("Get notified when someone leaves a message")).toBeTruthy();
-  });
-});
-
-test("message purpose treats family-only browser subscriptions as unsubscribed", async () => {
-  await using view = await renderSubscribe(
-    {
-      kind: "subscribed",
-      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-      family: true,
-      messages: false,
-    },
-    "messages",
-  );
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });

@@ -171,6 +171,7 @@ export function PreviewPage() {
         profileLocale={locale}
         onDelete={null}
         coParents={null}
+        messagePush={null}
       />
 
       <div className="min-h-screen bg-background bg-dots">

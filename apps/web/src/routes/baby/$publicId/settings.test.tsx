@@ -147,6 +147,8 @@ test("settings overlay closes to the baby page after the dialog exit animation",
   await vi.waitFor(() => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
+  expect(ctx.view.getByRole("heading", { name: "Notifications" })).toBeTruthy();
+  expect(ctx.view.getByRole("switch", { name: "Message notifications" })).toBeTruthy();
   fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
 
   expect(ctx.back).not.toHaveBeenCalled();

@@ -1,5 +1,6 @@
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import { ensureWebPushSubscription, readWebPushSubscription } from "@/lib/web-push-subscription";
 import { useConvexMutation } from "@convex-dev/react-query";
 import { convexQuery } from "@convex-dev/react-query";
 import { Bell, BellSlash, Export } from "@phosphor-icons/react";
@@ -42,8 +43,6 @@ type BrowserPushCapability =
       family: boolean;
       messages: boolean;
     };
-
-type NotificationSubscribePurpose = "family" | "messages";
 
 const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 
@@ -92,7 +91,6 @@ type NotificationSubscribeProps = {
   babyId: Id<"baby">;
   vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
   browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
-  purpose: NotificationSubscribePurpose;
 };
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
@@ -109,8 +107,6 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
   const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
-  const subscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.subscribeAsOwner);
-  const unsubscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribeAsOwner);
 
   const subscribeMutation = useMutation({
     mutationFn: async () => {
@@ -123,70 +119,32 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         throw new Error(t("Push notifications are not supported in this browser."));
       }
 
-      if (Notification.permission === "default") {
-        const permissionResult = await Notification.requestPermission();
-
-        if (permissionResult !== "granted") {
-          throw new Error(t("Notification permission denied"));
-        }
-      } else if (Notification.permission !== "granted") {
-        throw new Error(t("Notification permission is required"));
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-
-      const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
-      const pushSubscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
+      const keys = await ensureWebPushSubscription(vapidPublicKey);
+      return await subscribeMutationFn({
+        babyId: props.babyId,
+        endpoint: keys.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        userAgent: navigator.userAgent,
       });
-
-      const subscriptionData = pushSubscription.toJSON();
-      if (
-        subscriptionData.endpoint &&
-        subscriptionData.keys?.p256dh &&
-        subscriptionData.keys?.auth
-      ) {
-        const subscriptionArgs = {
-          babyId: props.babyId,
-          endpoint: subscriptionData.endpoint,
-          p256dh: subscriptionData.keys.p256dh,
-          auth: subscriptionData.keys.auth,
-          userAgent: navigator.userAgent,
-        };
-        if (props.purpose === "messages") {
-          return await subscribeAsOwnerMutationFn(subscriptionArgs);
-        }
-        return await subscribeMutationFn(subscriptionArgs);
-      }
-
-      throw new Error(t("Failed to get subscription data"));
     },
     onSuccess: () => {
       void capabilityQuery.refetch();
     },
   });
 
-  const unsubscribeMutation = useMutation<unknown, Error, PushSubscription>({
-    mutationFn: async (subscription) => {
-      const subscriptionData = subscription.toJSON();
-      if (
-        !subscriptionData.endpoint ||
-        !subscriptionData.keys?.p256dh ||
-        !subscriptionData.keys.auth
-      ) {
+  const unsubscribeMutation = useMutation({
+    mutationFn: async () => {
+      const keys = await readWebPushSubscription();
+      if (!keys) {
         throw new Error(t("Failed to get subscription data"));
       }
-      const subscriptionArgs = {
+      return await unsubscribeMutationFn({
         babyId: props.babyId,
-        endpoint: subscriptionData.endpoint,
-        p256dh: subscriptionData.keys.p256dh,
-        auth: subscriptionData.keys.auth,
-      };
-      if (props.purpose === "messages") {
-        return await unsubscribeAsOwnerMutationFn(subscriptionArgs);
-      }
-      return await unsubscribeMutationFn(subscriptionArgs);
+        endpoint: keys.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+      });
     },
     onSuccess: () => {
       void capabilityQuery.refetch();
@@ -194,9 +152,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
 
   const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
-  const isSubscribed =
-    capability?.kind === "subscribed" &&
-    (props.purpose === "messages" ? capability.messages : capability.family);
+  const isSubscribed = capability?.kind === "subscribed" && capability.family;
 
   if (!capability || !vapidPublicKey) {
     return <GetNotificationsPending />;
@@ -210,7 +166,6 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     case "unsubscribed":
       return (
         <NotificationSubscribeControls
-          purpose={props.purpose}
           isSubscribed={false}
           isLoading={isLoading}
           onClick={() => {
@@ -221,12 +176,11 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     case "subscribed":
       return (
         <NotificationSubscribeControls
-          purpose={props.purpose}
           isSubscribed={isSubscribed}
           isLoading={isLoading}
           onClick={() => {
             if (isSubscribed) {
-              toast.promise(unsubscribeMutation.mutateAsync(capability.subscription), {
+              toast.promise(unsubscribeMutation.mutateAsync(), {
                 loading: t("Unsubscribing from notifications..."),
                 success: t("Unsubscribed from notifications!"),
                 error: (error) =>
@@ -244,7 +198,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 }
 
 function toastSubscribe(
-  mutateAsync: () => Promise<Id<"pushSubscriptions"> | Id<"ownerPushSubscriptions">>,
+  mutateAsync: () => Promise<Id<"pushSubscriptions">>,
   t: TranslationFunction,
 ) {
   toast.promise(mutateAsync(), {
@@ -324,13 +278,14 @@ function IosPwaInstallPrompt() {
 }
 
 function NotificationSubscribeControls(props: {
-  purpose: NotificationSubscribePurpose;
   isSubscribed: boolean;
   isLoading: boolean;
   onClick: () => void;
 }) {
   const { t } = useI18n();
-  const tooltip = subscribeTooltipKey(props);
+  const tooltip = props.isSubscribed
+    ? "Stop receiving push notifications for updates"
+    : "Get notified when the baby's status changes";
 
   return (
     <Tooltip>
@@ -365,20 +320,6 @@ function NotificationSubscribeControls(props: {
       </TooltipContent>
     </Tooltip>
   );
-}
-
-function subscribeTooltipKey(opts: {
-  purpose: NotificationSubscribePurpose;
-  isSubscribed: boolean;
-}) {
-  if (opts.purpose === "messages") {
-    return opts.isSubscribed
-      ? "Stop receiving push notifications for messages"
-      : "Get notified when someone leaves a message";
-  }
-  return opts.isSubscribed
-    ? "Stop receiving push notifications for updates"
-    : "Get notified when the baby's status changes";
 }
 
 function hasLegacyMSStream(value: Window): value is Window & { MSStream: unknown } {
@@ -496,18 +437,4 @@ async function resolveBrowserPushCapability(
     }
     return { kind: "unsubscribed" };
   }
-}
-
-// Convert VAPID key from base64 URL to Uint8Array
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }

@@ -1,4 +1,5 @@
 import { SettingsPanel } from "@/components/baby/settings-panel";
+import { prefetchBrowserPushCapability } from "@/components/baby/notification-subscribe";
 import { allKeyed } from "@workspace/query-prefetch";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { FORBIDDEN } from "@workspace/convex/src/types";
@@ -44,6 +45,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
   },
   loader: async (opts) => {
     const babyRef = opts.params.publicId;
+    const browserPush = prefetchBrowserPushCapability(opts.context.queryClient, babyRef);
     const data = await allKeyed({
       managerBaby: opts.context.convexPreloader.ensureQueryData(api.baby.getManagerBaby, {
         babyId: babyRef,
@@ -55,6 +57,10 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
         babyId: babyRef,
       }),
       profile: opts.context.convexPreloader.ensureQueryData(api.profile.get, {}),
+      vapidPublicKey: opts.context.convexPreloader.ensureQueryData(
+        api.pushSubscriptions.getPublicKey,
+        {},
+      ),
     });
     if (!data.myAccess.initialData.canManage || data.managerBaby.initialData === FORBIDDEN) {
       throw redirect({
@@ -64,7 +70,7 @@ export const Route = createFileRoute("/baby/$publicId/settings")({
       });
     }
     // oxlint-disable-next-line workspace/use-loader-preloads -- The authorized snapshot must remain stable while client auth reconnects.
-    return data;
+    return { ...data, browserPush };
   },
   component: BabySettingsOverlay,
 });
@@ -121,6 +127,11 @@ export function BabySettingsOverlay() {
         babyId: managerBabyDoc._id,
         isOwner,
         listing: loaderData.coParentsList,
+      }}
+      messagePush={{
+        babyId: managerBabyDoc._id,
+        vapidPublicKey: loaderData.vapidPublicKey,
+        browserPush: loaderData.browserPush,
       }}
       open={settings.open}
       onOpenChange={settings.onOpenChange}
