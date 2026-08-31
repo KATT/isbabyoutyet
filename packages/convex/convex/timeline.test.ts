@@ -297,8 +297,8 @@ test("an invalid persisted milestone timestamp fails closed", async () => {
 test("journey selection does not block backend milestone writes", async () => {
   const { t, asAlice, babyId } = await setup();
   await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
+    id: babyId,
+    data: { birthJourney: "planned_c_section" },
   });
 
   await asAlice.mutation(
@@ -338,8 +338,8 @@ test("changing selection leaves existing updates and notifications untouched", a
 
   const notificationsBefore = await asAlice.query(api.baby.getScheduledNotifications, { babyId });
   await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
+    id: babyId,
+    data: { birthJourney: "planned_c_section" },
   });
 
   const feed = await t.query(api.timeline.listByBaby, {
@@ -372,8 +372,8 @@ test("changing selection then unmarking cancels the pending milestone push", asy
   );
 
   await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
+    id: babyId,
+    data: { birthJourney: "planned_c_section" },
   });
   await asAlice.mutation(api.updates.unmarkMilestone, {
     babyId,
@@ -389,8 +389,8 @@ test("selection changes do not filter empty historical milestone rows", async ()
   await asAlice.mutation(api.updates.post, postUpdateArgs({ babyId, milestone: "labor_started" }));
 
   await asAlice.mutation(api.baby.update, {
-    babyId,
-    birthJourney: "planned_c_section",
+    id: babyId,
+    data: { birthJourney: "planned_c_section" },
   });
 
   const feed = await t.query(api.timeline.listByBaby, {

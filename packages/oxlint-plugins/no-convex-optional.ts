@@ -9,8 +9,9 @@
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
  * schema/RPC. Sparse `ctx.db.patch` RPC args are excluded when the mutation is
- * named `update` or `patch*` and `args` is `{ <id>: v.id(...), ...optionals }`
- * (same shape as `baby.update`: required id, sibling omitted keys mean unchanged).
+ * named `update` or `patch*` and `args` is `{ id, data }` (`baby.update`):
+ * `id` is `v.id(...)` or `v.object` of two or more `v.id(...)` fields;
+ * `data` is `v.object` of `v.optional()` fields (omitted key means unchanged).
  */
 
 import { defineRule } from "@oxlint/plugins";
@@ -194,6 +195,14 @@ function isSparsePatchMutationName(name) {
   return name === "update" || name === "patch" || /^patch[A-Z]/.test(name);
 }
 
+function unwrapParens(node) {
+  let current = node;
+  while (current && current.type === "ParenthesizedExpression") {
+    current = current.expression;
+  }
+  return current;
+}
+
 function callBindingName(callNode) {
   let current = callNode;
   let parent = callNode.parent;
@@ -220,32 +229,91 @@ function callBindingName(callNode) {
   return null;
 }
 
-function argsObjectHasRequiredId(argsObject, vNames, nsNames) {
-  for (const property of argsObject.properties) {
-    if (property.type !== "Property" || property.value.type !== "CallExpression") {
-      continue;
-    }
-    if (isVIdCallee(property.value.callee, vNames, nsNames)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function propertyKeyName(property) {
   return memberName(property.key, property.computed);
 }
 
+function isVObjectCallee(callee, vNames, nsNames) {
+  return isVMemberCallee(callee, "object", vNames, nsNames);
+}
+
+function countRequiredIdFields(objectExpression, vNames, nsNames) {
+  let count = 0;
+  for (const property of objectExpression.properties) {
+    if (property.type !== "Property") {
+      continue;
+    }
+    const value = unwrapParens(property.value);
+    if (value && value.type === "CallExpression" && isVIdCallee(value.callee, vNames, nsNames)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+/** `v.id(...)` or `v.object({ ... two or more v.id(...) fields })`. */
+function isSparsePatchIdValidator(node, vNames, nsNames) {
+  const value = unwrapParens(node);
+  if (!value || value.type !== "CallExpression") {
+    return false;
+  }
+  if (isVIdCallee(value.callee, vNames, nsNames)) {
+    return true;
+  }
+  if (!isVObjectCallee(value.callee, vNames, nsNames)) {
+    return false;
+  }
+  const fields = value.arguments[0];
+  return (
+    !!fields &&
+    fields.type === "ObjectExpression" &&
+    countRequiredIdFields(fields, vNames, nsNames) >= 2
+  );
+}
+
+function argsObjectHasSparsePatchId(argsObject, vNames, nsNames) {
+  for (const property of argsObject.properties) {
+    if (property.type !== "Property" || propertyKeyName(property) !== "id") {
+      continue;
+    }
+    return isSparsePatchIdValidator(property.value, vNames, nsNames);
+  }
+  return false;
+}
+
 /**
- * `v.optional()` on a sibling of a required `v.id(...)` in `args` of a mutation
- * named `update` or `patch*` — omitted key means unchanged (`ctx.db.patch`).
+ * `v.optional()` inside `args.data` (`v.object`) of a mutation named `update`
+ * or `patch*` whose `id` is a required `v.id(...)` or composite id object.
+ * Omitted `data` keys mean unchanged (`ctx.db.patch`).
  */
 function isSparsePatchOptional(node, vNames, nsNames) {
   const fieldProperty = node.parent;
   if (!fieldProperty || fieldProperty.type !== "Property" || fieldProperty.value !== node) {
     return false;
   }
-  const argsObject = fieldProperty.parent;
+  const dataFields = fieldProperty.parent;
+  if (!dataFields || dataFields.type !== "ObjectExpression") {
+    return false;
+  }
+  const vObjectCall = dataFields.parent;
+  if (
+    !vObjectCall ||
+    vObjectCall.type !== "CallExpression" ||
+    !vObjectCall.arguments.includes(dataFields) ||
+    !isVObjectCallee(vObjectCall.callee, vNames, nsNames)
+  ) {
+    return false;
+  }
+  const dataProperty = vObjectCall.parent;
+  if (
+    !dataProperty ||
+    dataProperty.type !== "Property" ||
+    dataProperty.value !== vObjectCall ||
+    propertyKeyName(dataProperty) !== "data"
+  ) {
+    return false;
+  }
+  const argsObject = dataProperty.parent;
   if (!argsObject || argsObject.type !== "ObjectExpression") {
     return false;
   }
@@ -274,7 +342,7 @@ function isSparsePatchOptional(node, vNames, nsNames) {
   if (!name || !isSparsePatchMutationName(name)) {
     return false;
   }
-  return argsObjectHasRequiredId(argsObject, vNames, nsNames);
+  return argsObjectHasSparsePatchId(argsObject, vNames, nsNames);
 }
 
 const noUndocumentedOptional = defineRule({
