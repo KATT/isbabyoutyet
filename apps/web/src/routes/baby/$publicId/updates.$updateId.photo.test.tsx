@@ -28,8 +28,10 @@ test("update photo beforeLoad redirects when the public id resolves to a differe
     message: "Photo update",
   });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    name: "Renamed Nova",
+    id: baby.babyId,
+    data: {
+      name: "Renamed Nova",
+    },
   });
   const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
 

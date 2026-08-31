@@ -134,11 +134,13 @@ args: {
   dryRun: v.optional(v.boolean()),
 }
 
-// ✅ CORRECT — sparse ctx.db.patch (`update` / `patch*` + required v.id)
+// ✅ CORRECT — sparse ctx.db.patch (`update` / `patch*` + `{ id, data }`)
 export const update = mutation({
   args: {
-    babyId: v.id("baby"),
-    theme: v.optional(v.union(v.string(), v.null())),
+    id: v.id("baby"),
+    data: v.object({
+      theme: v.optional(v.union(v.string(), v.null())),
+    }),
   },
 });
 

@@ -23,8 +23,10 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
 
   const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    name: "Renamed Nova",
+    id: baby.babyId,
+    data: {
+      name: "Renamed Nova",
+    },
   });
   const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
 
@@ -47,8 +49,10 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "baby-blue",
+    id: baby.babyId,
+    data: {
+      theme: "baby-blue",
+    },
   });
   await using _image = stubBrowserImageResource();
 
@@ -76,8 +80,10 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "orange",
+    id: baby.babyId,
+    data: {
+      theme: "orange",
+    },
   });
   const staleBaby = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
   if (!staleBaby) throw new Error("expected baby");
@@ -87,8 +93,10 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
   );
 
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "baby-blue",
+    id: baby.babyId,
+    data: {
+      theme: "baby-blue",
+    },
   });
   await using _image = stubBrowserImageResource();
 
@@ -108,8 +116,10 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "baby-blue",
+    id: baby.babyId,
+    data: {
+      theme: "baby-blue",
+    },
   });
   const babyDoc = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
   if (!babyDoc) throw new Error("expected baby");
@@ -163,8 +173,10 @@ test("BabyShareOverlay mounts from the real route loader", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "baby-blue",
+    id: baby.babyId,
+    data: {
+      theme: "baby-blue",
+    },
   });
   await using _image = stubBrowserImageResource();
 
@@ -187,8 +199,10 @@ test("share overlay falls back to execCommand when clipboard.writeText fails", a
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    theme: "baby-blue",
+    id: baby.babyId,
+    data: {
+      theme: "baby-blue",
+    },
   });
   const writeText = vi.fn<() => Promise<void>>().mockRejectedValue(new Error("denied"));
   const execCommand = vi.fn<() => boolean>().mockReturnValue(true);

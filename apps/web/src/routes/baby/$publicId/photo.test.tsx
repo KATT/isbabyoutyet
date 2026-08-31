@@ -24,8 +24,10 @@ test("beforeLoad redirects when the public id resolves to a different slug", asy
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Working Title", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
-    babyId: baby.babyId,
-    name: "Final Name",
+    id: baby.babyId,
+    data: {
+      name: "Final Name",
+    },
   });
   const renamed = await harness.client.query(api.baby.getByPublicId, { id: baby.publicId });
 
