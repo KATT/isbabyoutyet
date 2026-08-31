@@ -130,6 +130,37 @@ test("post overlay asks to discard a dirty composer before closing", async () =>
   });
 });
 
+test("discard prompt blocks interaction with the post composer behind it", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: Route,
+    path: "/baby/$publicId/post",
+    initialEntry: `/baby/${baby.publicId}/post`,
+    overlayHistory: { parentEntry: `/baby/${baby.publicId}`, overlayPush: true },
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("dialog")).toBeTruthy();
+  });
+
+  fireEvent.change(ctx.view.getByPlaceholderText("Write a message (optional)…"), {
+    target: { value: "Draft update" },
+  });
+  fireEvent.click(ctx.view.getByRole("button", { name: "Close" }));
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("alertdialog")).toBeTruthy();
+  });
+  expect(ctx.back).not.toHaveBeenCalled();
+  expect(ctx.navigate).not.toHaveBeenCalled();
+  // Nested alert dialogs skip their backdrop unless forceRender is set.
+  expect(ctx.view.baseElement.querySelector('[data-slot="alert-dialog-overlay"]')).toBeTruthy();
+});
+
 test("post overlay prefers history.back when opened via push", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });

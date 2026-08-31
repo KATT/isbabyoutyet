@@ -1,5 +1,6 @@
 import { Check } from "@phosphor-icons/react";
 import { fireEvent, render } from "@testing-library/react";
+import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
   Outlet,
@@ -740,6 +741,54 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
   fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
   expect(parentClose).toHaveBeenCalled();
+});
+
+test("discard prompt blocks clicks on the dialog behind it", async () => {
+  const onDialogOpenChange = vi.fn();
+
+  function DirtyDialogForm() {
+    const overlay = useFormGuard({
+      onOpenChange: (open) => {
+        onDialogOpenChange(open);
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <Dialog open {...overlay.rootProps}>
+        <DialogContent>
+          <FormGuardProvider guard={overlay}>
+            <Form form={form} handleSubmit={async () => undefined}>
+              <input aria-label="Note" {...form.register("note")} />
+            </Form>
+          </FormGuardProvider>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <DirtyDialogForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  const dialogClose = view.getByRole("button", { name: "Close" });
+  fireEvent.click(dialogClose);
+
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  expect(onDialogOpenChange).not.toHaveBeenCalled();
+
+  fireEvent.click(dialogClose);
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  expect(onDialogOpenChange).not.toHaveBeenCalled();
+  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
 });
 
 test("dirty form overlay blocks in-app navigation until discarded", async () => {
