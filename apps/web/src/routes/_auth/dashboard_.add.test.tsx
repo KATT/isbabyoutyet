@@ -24,8 +24,8 @@ function renderAddBaby(opts: {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <AddBabyPageView
-        createBaby={(opts.createBaby ?? mocks.createBaby) as never}
-        navigate={(opts.navigate ?? mocks.navigate) as never}
+        createBaby={opts.createBaby ?? mocks.createBaby}
+        navigate={opts.navigate ?? mocks.navigate}
       />
     </LocaleProvider>,
     { path: "/dashboard/add" },

@@ -72,6 +72,7 @@ test("fetchQueryData replaces cached data with a fresh snapshot", async () => {
 
 test("getConvexQueryPreloader ensures infinite pages and stores numItems", async () => {
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: {
       query: vi.fn<() => Promise<TestInfinitePage>>(async () => ({
         page: ["row"],
@@ -80,12 +81,13 @@ test("getConvexQueryPreloader ensures infinite pages and stores numItems", async
       })),
     },
     serverHttpClient: undefined,
-  } as never);
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   const preloader = getConvexQueryPreloader(queryClient);
-  const handle = await preloader.ensureInfiniteQueryData("admin:listBabies" as never, {
-    args: { hideDemo: true } as never,
+  // @ts-expect-error — string is not a FunctionReference
+  const handle = await preloader.ensureInfiniteQueryData("admin:listBabies", {
+    args: { hideDemo: true },
     numItems: 20,
   });
 
@@ -121,14 +123,16 @@ test("initiateInfiniteQueryData starts the first page without awaiting", async (
     continueCursor: "",
   }));
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: convexClientQuery },
     serverHttpClient: undefined,
-  } as never);
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   const preloader = getConvexQueryPreloader(queryClient);
-  const handle = preloader.initiateInfiniteQueryData("admin:listBabies" as never, {
-    args: { hideDemo: true } as never,
+  // @ts-expect-error — string is not a FunctionReference
+  const handle = preloader.initiateInfiniteQueryData("admin:listBabies", {
+    args: { hideDemo: true },
     numItems: 20,
   });
 

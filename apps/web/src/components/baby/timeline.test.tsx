@@ -65,7 +65,10 @@ function renderComposerTree(
 ) {
   return (
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as never}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={harness.convexClient}
+      >
         <LocaleProvider locale={opts.locale}>
           <UpdateComposer
             babyId={opts.babyId}
@@ -132,7 +135,10 @@ async function renderTimelineFeed(
   const timeline = await prefetchTimeline(harness, opts.publicId);
   return await renderWithTestRouter(
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as never}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={harness.convexClient}
+      >
         <LocaleProvider locale="en-GB">
           <TimelineFeed
             babyId={opts.babyId}

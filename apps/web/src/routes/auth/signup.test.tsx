@@ -166,9 +166,10 @@ test("SignupPage sign-up path invokes the wired auth client", async () => {
 });
 
 test("signup route head sets the document title", () => {
+  // @ts-expect-error — stub match is the locale head reads
   const head: (opts: { match: { context: { locale: "en-GB" } } }) => {
     meta: Array<{ title: string | undefined }>;
-  } = Route.options.head as never;
+  } = Route.options.head;
   const result = head({ match: { context: { locale: "en-GB" } } });
   expect(result.meta.some((entry) => entry.title?.includes("Sign up"))).toBe(true);
 });

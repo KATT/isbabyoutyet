@@ -126,9 +126,9 @@ test("getQueryInitiator starts infinite queries in the background", async () => 
 test("getQueryInitiator rejects factories without infinite-query page options", () => {
   const initiator = getQueryInitiator(new QueryClient());
 
-  expect(() =>
-    initiator.ensureInfiniteQueryData(postById as never, { postId: "invalid" } as never),
-  ).toThrow("Infinite query options require page parameters");
+  expect(() => initiator.ensureInfiniteQueryData(postById, { postId: "invalid" })).toThrow(
+    "Infinite query options require page parameters",
+  );
 });
 
 test("getQueryPreloader awaits data and returns a preloaded handle with initialData", async () => {

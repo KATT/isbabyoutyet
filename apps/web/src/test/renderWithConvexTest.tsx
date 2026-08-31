@@ -19,7 +19,12 @@ export async function renderWithConvexTest(opts: {
   return await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <QueryClientProvider client={opts.harness.queryClient}>
-        <ConvexProvider client={opts.harness.convexClient as never}>{wrapped}</ConvexProvider>
+        <ConvexProvider
+          // @ts-expect-error — integration client is not ConvexReactClient
+          client={opts.harness.convexClient}
+        >
+          {wrapped}
+        </ConvexProvider>
       </QueryClientProvider>
     </LocaleProvider>,
   );

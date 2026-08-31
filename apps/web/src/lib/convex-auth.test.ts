@@ -56,7 +56,8 @@ test("setup establishes auth immediately: token for signed-in, null for anonymou
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -86,7 +87,8 @@ test("setup tolerates a missing session atom", () => {
   auth.authClient.$store.atoms.session = undefined;
 
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -107,7 +109,8 @@ test("pending and the first settled session leave the query cache (SSR / reload)
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -128,7 +131,8 @@ test("a settled sign-out after a signed-in session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -146,7 +150,8 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });

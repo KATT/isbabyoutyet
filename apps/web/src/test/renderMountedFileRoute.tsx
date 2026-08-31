@@ -70,7 +70,10 @@ export async function renderMountedFileRoute(opts: {
     component: function TestRoot() {
       const outlet = (
         <QueryClientProvider client={opts.harness.queryClient}>
-          <ConvexProvider client={opts.harness.convexClient as never}>
+          <ConvexProvider
+            // @ts-expect-error — integration client is not ConvexReactClient
+            client={opts.harness.convexClient}
+          >
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               <TooltipProvider>
                 <LocaleProvider locale="en-GB">

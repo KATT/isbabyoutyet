@@ -30,7 +30,8 @@ const localResult: LivePage = { page: [{ id: "a" }], isDone: true, continueCurso
  * effect to resubscribe.
  */
 function wrapperFor(client: QueryClient, watchQuery: WatchQuery) {
-  const convex: ConvexReactClient = { watchQuery } as never;
+  // @ts-expect-error — stand-in only implements watchQuery
+  const convex: ConvexReactClient = { watchQuery };
   return function Wrapper(props: { children: React.ReactNode }) {
     return React.createElement(
       ConvexProvider,
@@ -44,7 +45,7 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
   const client = new QueryClient();
   const setSpy = vi.spyOn(client, "setQueryData");
   const queryKey = ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }] as const;
-  const funcRef = makeFunctionReference("timeline:listByBaby");
+  const funcRef = makeFunctionReference<"query">("timeline:listByBaby");
   const updateCbs: Array<() => void> = [];
 
   const watchQuery = vi.fn<WatchQuery>(() => ({
@@ -59,7 +60,7 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: funcRef as never,
+        funcRef,
         args: { babyId: "b1" },
         pageParams: [
           { numItems: 20, cursor: null },
@@ -142,7 +143,7 @@ test("useLiveConvexInfinitePages skips updates when localQueryResult throws or i
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: makeFunctionReference("timeline:listByBaby") as never,
+        funcRef: makeFunctionReference("timeline:listByBaby"),
         args: { babyId: "b1" },
         pageParams: [
           { numItems: 20, cursor: null },
@@ -174,7 +175,7 @@ test("useLiveConvexInfinitePages leaves cache alone when previous data is missin
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: makeFunctionReference("timeline:listByBaby") as never,
+        funcRef: makeFunctionReference("timeline:listByBaby"),
         args: { babyId: "b1" },
         pageParams: [{ numItems: 20, cursor: null }],
       }),
@@ -203,7 +204,7 @@ test("useLiveConvexInfinitePages is a no-op when there are no pageParams", () =>
     () =>
       useLiveConvexInfinitePages({
         queryKey: ["convexInfiniteQuery", "timeline:listByBaby", { babyId: "b1" }],
-        funcRef: makeFunctionReference("timeline:listByBaby") as never,
+        funcRef: makeFunctionReference("timeline:listByBaby"),
         args: { babyId: "b1" },
         pageParams: [],
       }),
@@ -234,9 +235,9 @@ test("useLiveConvexInfinitePages does not resubscribe when opts identities chang
       pageParams: { numItems: number; cursor: string | null }[];
     }) =>
       useLiveConvexInfinitePages({
-        queryKey: props.queryKey as never,
+        queryKey: props.queryKey,
         // Fresh api-proxy identity each render, same function name.
-        funcRef: anyApi.timeline.listByBaby as never,
+        funcRef: anyApi.timeline.listByBaby,
         args: props.args,
         pageParams: props.pageParams,
       }),
@@ -293,8 +294,8 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
   const { rerender, unmount } = renderHook(
     (props: { args: DefaultFunctionArgs }) =>
       useLiveConvexInfinitePages({
-        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args] as never,
-        funcRef: anyApi.timeline.listByBaby as never,
+        queryKey: ["convexInfiniteQuery", "timeline:listByBaby", props.args],
+        funcRef: anyApi.timeline.listByBaby,
         args: props.args,
         pageParams: [{ numItems: 20, cursor: null }],
       }),
@@ -338,7 +339,7 @@ test("useLiveConvexInfinitePages ignores late updates past the cached page count
     () =>
       useLiveConvexInfinitePages({
         queryKey,
-        funcRef: makeFunctionReference("timeline:listByBaby") as never,
+        funcRef: makeFunctionReference("timeline:listByBaby"),
         args: { babyId: "b1" },
         pageParams: [
           { numItems: 20, cursor: null },

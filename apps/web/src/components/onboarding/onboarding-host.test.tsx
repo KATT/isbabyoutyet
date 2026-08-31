@@ -20,7 +20,10 @@ async function renderOnboardingHost(opts: {
   const onboarding = await opts.harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
   return await renderWithTestRouter(
     <QueryClientProvider client={opts.harness.queryClient}>
-      <ConvexProvider client={opts.harness.convexClient as never}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={opts.harness.convexClient}
+      >
         <LocaleProvider locale="en-GB">
           <OnboardingHostWithSession
             surface={opts.surface}

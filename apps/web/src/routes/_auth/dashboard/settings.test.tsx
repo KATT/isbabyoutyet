@@ -124,9 +124,11 @@ test("DashboardSettingsSheet signs out through the auth adapter", async () => {
   });
   harness.withIdentity({ subject: userId });
 
+  // @ts-expect-error — stub return is not the full signOut result
   const signOut = vi.fn<typeof settingsAuthAdapter.signOut>(async (opts) => {
-    opts?.fetchOptions?.onSuccess?.({} as never);
-    return { data: null, error: null } as never;
+    // @ts-expect-error — empty object is not the Better Auth onSuccess context
+    opts?.fetchOptions?.onSuccess?.({});
+    return { data: null, error: null };
   });
   const originalSignOut = settingsAuthAdapter.signOut;
   settingsAuthAdapter.signOut = signOut;

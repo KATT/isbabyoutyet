@@ -153,9 +153,10 @@ test("parent dashboard stays mounted while child routes render through its outle
 
 test("parent dashboard loader refetches auth-scoped reads without a waterfall", async () => {
   const preloader = stubPreloader([]);
+  // @ts-expect-error — stub context is the subset the loader reads
   const loader: (opts: {
     context: typeof preloader.context;
-  }) => Promise<{ babies: object; onboarding: object }> = Route.options.loader as never;
+  }) => Promise<{ babies: object; onboarding: object }> = Route.options.loader;
 
   const pending = loader({ context: preloader.context });
 
