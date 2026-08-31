@@ -80,9 +80,7 @@ export function setupClientConvexAuthWithClient(opts: {
  *
  * @internal Exported for tests.
  */
-export function readSessionAtom(
-  atoms: typeof authClient.$store.atoms,
-): SessionAtom | undefined {
+export function readSessionAtom(atoms: typeof authClient.$store.atoms): SessionAtom | undefined {
   if (!("session" in atoms)) {
     return undefined;
   }
