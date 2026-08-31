@@ -7,7 +7,7 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
 import { env, internalAction } from "./_generated/server";
-import { babyFeedUrl } from "../src/babyFeedUrl";
+import { babyFeedUrl, babyPageUrl } from "../src/babyFeedUrl";
 import { getOwnerPushMessage, getPushMessage } from "../src/pushMessages";
 import { supportedLocaleValidator } from "./i18n";
 import { notifiableStatusValidator, ownerMessagePushEventValidator } from "./pushValidators";
@@ -131,7 +131,7 @@ export const sendNotification = internalAction({
     });
     const body = args.customMessage || message.body;
 
-    const url = babyFeedUrl(args.publicId);
+    const url = babyPageUrl(args.publicId);
     const imageStorageId = await ctx.runQuery(internal.baby.resolveNotificationImage, {
       updateId: args.updateId ?? null,
       photoId: args.photoId ?? null,

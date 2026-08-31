@@ -67,6 +67,12 @@ test("applyNotificationClickUrl sets a same-origin feed hash", async () => {
   expect(window.location.hash).toBe("#feed");
 });
 
+test("applyNotificationClickUrl leaves the page as-is when the target has no hash", async () => {
+  await using _path = withPath("/baby/baby-waiting");
+  applyNotificationClickUrl(`${window.location.origin}/baby/baby-waiting`);
+  expect(window.location.hash).toBe("");
+});
+
 test("applyNotificationClickUrl ignores another origin", async () => {
   await using _path = withPath("/baby/baby-waiting");
   applyNotificationClickUrl("https://preview.example/baby/baby-waiting#feed");

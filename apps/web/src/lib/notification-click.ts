@@ -27,9 +27,10 @@ export function shouldReuseBabyClient(opts: { clientUrl: string; targetUrl: stri
 
 /**
  * Apply a notification-click target on the already-focused baby page.
- * The service worker posts the URL; we set `#feed` here so the SW does not
- * have to `navigate()` (that rejects on uncontrolled / iOS clients and then
- * the click handler never focuses).
+ * The service worker posts the URL; we apply its hash here (message push
+ * uses `#feed`; status / family push has none) so the SW does not have to
+ * `navigate()` (that rejects on uncontrolled / iOS clients and then the
+ * click handler never focuses).
  */
 export function applyNotificationClickUrl(url: string) {
   const next = new URL(url, window.location.href);
