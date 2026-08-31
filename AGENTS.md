@@ -63,6 +63,11 @@ still use `resetScroll: false` (not overlay history).
 
 ## Tests
 
+Prefer automated tests (Vitest / jsdom) over a GUI browser. Do **not** use a
+computer-use agent unless the user asks for a walkthrough or the change cannot
+be proven without a real viewport (layout overflow, animation, pointer
+hit-testing). Do not open a browser just to capture PR screenshots.
+
 `vi.mock` / `vi.hoisted` / `vi.doMock` (and the `jest` equivalents) are banned
 repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
 
@@ -118,5 +123,6 @@ For stacked PRs, also follow
   runs, setup steps, stale UI, redundant captures, or sensitive data.
 - Capture artifacts from the final tested preview revision and remove references
   to superseded artifacts when the UI changes.
-- If visual evidence is not applicable, write `None — <brief reason>` instead of
-  omitting the section.
+- If visual evidence is not applicable, or you did not run a browser
+  walkthrough, write `None — <brief reason>` instead of omitting the section.
+  Do not start computer use solely to fill this section.
