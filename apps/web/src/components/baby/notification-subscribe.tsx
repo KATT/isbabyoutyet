@@ -107,6 +107,11 @@ type NotificationSubscribeProps = {
   audience: "visitor" | "manager";
 };
 
+type NotificationSelection = {
+  family: boolean;
+  messages: boolean;
+};
+
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -124,58 +129,60 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   const subscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.subscribeAsOwner);
   const unsubscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribeAsOwner);
 
-  const subscribeMutation = useMutation({
-    mutationFn: async (selection: { family: boolean; messages: boolean }) => {
-      if (
-        !capability ||
-        capability.kind === "unsupported" ||
-        capability.kind === "needsIosInstall" ||
-        !vapidPublicKey
-      ) {
-        throw new Error(t("Push notifications are not supported in this browser."));
-      }
+  const syncDeviceNotifications = async (selection: NotificationSelection) => {
+    if (
+      !capability ||
+      capability.kind === "unsupported" ||
+      capability.kind === "needsIosInstall" ||
+      !vapidPublicKey
+    ) {
+      throw new Error(t("Push notifications are not supported in this browser."));
+    }
 
-      const familyOn = capability.kind === "subscribed" && capability.family;
-      const messagesOn = capability.kind === "subscribed" && capability.messages;
-      if (!selection.family && !selection.messages) {
-        const existing = await readWebPushSubscription();
-        if (!existing) {
-          return;
-        }
-        const pushKeys = {
-          babyId: props.babyId,
-          endpoint: existing.endpoint,
-          p256dh: existing.p256dh,
-          auth: existing.auth,
-        };
-        if (familyOn) {
-          await unsubscribeMutationFn(pushKeys);
-        }
-        if (messagesOn) {
-          await unsubscribeAsOwnerMutationFn(pushKeys);
-        }
+    const familyOn = capability.kind === "subscribed" && capability.family;
+    const messagesOn = capability.kind === "subscribed" && capability.messages;
+    if (!selection.family && !selection.messages) {
+      const existing = await readWebPushSubscription();
+      if (!existing) {
         return;
       }
-
-      const keys = await ensureWebPushSubscription(vapidPublicKey);
       const pushKeys = {
         babyId: props.babyId,
-        endpoint: keys.endpoint,
-        p256dh: keys.p256dh,
-        auth: keys.auth,
-        userAgent: navigator.userAgent,
+        endpoint: existing.endpoint,
+        p256dh: existing.p256dh,
+        auth: existing.auth,
       };
-      if (selection.family) {
-        await subscribeMutationFn(pushKeys);
-      } else if (familyOn) {
+      if (familyOn) {
         await unsubscribeMutationFn(pushKeys);
       }
-      if (selection.messages) {
-        await subscribeAsOwnerMutationFn(pushKeys);
-      } else if (messagesOn) {
+      if (messagesOn) {
         await unsubscribeAsOwnerMutationFn(pushKeys);
       }
-    },
+      return;
+    }
+
+    const keys = await ensureWebPushSubscription(vapidPublicKey);
+    const pushKeys = {
+      babyId: props.babyId,
+      endpoint: keys.endpoint,
+      p256dh: keys.p256dh,
+      auth: keys.auth,
+      userAgent: navigator.userAgent,
+    };
+    if (selection.family) {
+      await subscribeMutationFn(pushKeys);
+    } else if (familyOn) {
+      await unsubscribeMutationFn(pushKeys);
+    }
+    if (selection.messages) {
+      await subscribeAsOwnerMutationFn(pushKeys);
+    } else if (messagesOn) {
+      await unsubscribeAsOwnerMutationFn(pushKeys);
+    }
+  };
+
+  const subscribeMutation = useMutation({
+    mutationFn: syncDeviceNotifications,
     onSuccess: () => {
       void capabilityQuery.refetch();
     },
@@ -253,7 +260,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
               });
               return;
             }
-            toastSubscribe(() => subscribeMutation.mutateAsync({ family: true, messages: false }), t);
+            toastSubscribe(
+              () => subscribeMutation.mutateAsync({ family: true, messages: false }),
+              t,
+            );
           }}
         />
       );
@@ -354,7 +364,7 @@ export function ManagerNotificationChooserView(props: {
   messagesDefault: boolean;
   isSubscribed: boolean;
   isPending: boolean;
-  onSubmit: (selection: { family: boolean; messages: boolean }) => void;
+  onSubmit: (selection: NotificationSelection) => void;
 }) {
   const { t } = useI18n();
 

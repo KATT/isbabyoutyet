@@ -76,7 +76,9 @@ export function OwnerMessageNotifySwitchView(
   return <FormMessageNotifyRow {...props} />;
 }
 
-function MessageNotifySwitch(props: SwitchViewProps & { labelledBy: string; switchId: string | null }) {
+function MessageNotifySwitch(
+  props: SwitchViewProps & { labelledBy: string; switchId: string | null },
+) {
   const { t } = useI18n();
   if (props.disabledReason === "needsIosInstall") {
     return (

@@ -165,10 +165,7 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-async function renderSubscribe(
-  capability: BrowserPushCapability,
-  audience: "visitor" | "manager",
-) {
+async function renderSubscribe(capability: BrowserPushCapability, audience: "visitor" | "manager") {
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
@@ -453,9 +450,9 @@ test("managers pick status and message alerts in a chooser", async () => {
   fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
 
   expect(screen.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
-  expect(screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(
+    screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked"),
+  ).toBe("true");
   expect(
     screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
   ).toBe("true");
@@ -474,9 +471,9 @@ test("manager chooser defaults match the current subscription", async () => {
 
   fireEvent.click(view.getByRole("button", { name: "Unsubscribe" }));
 
-  expect(screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked")).toBe(
-    "true",
-  );
+  expect(
+    screen.getByRole("checkbox", { name: "Status updates" }).getAttribute("aria-checked"),
+  ).toBe("true");
   expect(
     screen.getByRole("checkbox", { name: "Message notifications" }).getAttribute("aria-checked"),
   ).toBe("false");
