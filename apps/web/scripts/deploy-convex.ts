@@ -13,10 +13,12 @@
  *    `--preview-name` reuses the branch backend so deploys skip seed and
  *    photo uploads. `--preview-run` reseeds demo login on a fresh backend
  *    (ignored in production).
- * 2. Runtime environment variables are synced to the Convex deployment.
- *    Tip: most of these can instead be configured once as project "default
- *    environment variables" in the Convex dashboard; SITE_URL is the only
- *    per-preview value.
+ * 2. Runtime environment variables are synced when the backend is new
+ *    (production every deploy; preview only after `--preview-create`).
+ *    Consecutive preview deploys skip `env set` — SITE_URL and secrets
+ *    already landed on first create. Tip: most of these can instead be
+ *    configured once as project "default environment variables" in the
+ *    Convex dashboard; SITE_URL is the only per-preview value.
  * 3. Pending migrations are run.
  * 4. Production bootstraps homepage demos in-band. Preview wipes seed
  *    fixture text during the build; homepage photos run from GitHub Actions
@@ -34,6 +36,7 @@ import {
   parseEnvGetOutput,
   previewDeployCliArgs,
   shouldRecreatePreview,
+  shouldWriteConvexEnv,
 } from "@workspace/convex/src/previewDeploy";
 import * as z from "zod";
 
@@ -140,12 +143,15 @@ convexCli([
 // commands need it passed explicitly.
 const previewArgs = isPreview ? ["--preview-name", env.VERCEL_GIT_COMMIT_REF] : [];
 
-for (const [key, value] of Object.entries(convexEnv)) {
-  convexCli(["env", "set", key, value, ...previewArgs]);
-}
-
-if (isPreview) {
-  convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
+if (shouldWriteConvexEnv(isPreview, recreatePreview)) {
+  for (const [key, value] of Object.entries(convexEnv)) {
+    convexCli(["env", "set", key, value, ...previewArgs]);
+  }
+  if (isPreview) {
+    convexCli(["env", "set", SCHEMA_FINGERPRINT_ENV, currentFingerprint, ...previewArgs]);
+  }
+} else {
+  console.log("\nConvex env already set on this preview — skipping env sync");
 }
 
 convexCli(["run", "migrations:runAll", ...previewArgs]);

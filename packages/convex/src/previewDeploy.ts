@@ -30,6 +30,10 @@ export function shouldRecreatePreview(
   return storedFingerprint !== currentFingerprint;
 }
 
+export function shouldWriteConvexEnv(isPreview: boolean, recreatePreview: boolean) {
+  return !isPreview || recreatePreview;
+}
+
 export function previewDeployCliArgs(branch: string, recreate: boolean) {
   if (recreate) {
     return ["--preview-create", branch, "--preview-run", "seed:seedDemoData"];

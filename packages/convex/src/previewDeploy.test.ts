@@ -5,6 +5,7 @@ import {
   previewDeployCliArgs,
   previewNameFromGitRef,
   shouldRecreatePreview,
+  shouldWriteConvexEnv,
 } from "./previewDeploy";
 
 test("fingerprint changes when schema contents change", () => {
@@ -38,6 +39,12 @@ test("reuses the preview when the schema fingerprint matches", () => {
 
 test("recreates the preview when the schema fingerprint changed", () => {
   expect(shouldRecreatePreview("old", "new")).toBe(true);
+});
+
+test("writes Convex env on production and on preview recreate, not on reuse", () => {
+  expect(shouldWriteConvexEnv(false, false)).toBe(true);
+  expect(shouldWriteConvexEnv(true, true)).toBe(true);
+  expect(shouldWriteConvexEnv(true, false)).toBe(false);
 });
 
 test("preview deploy flags wipe and seed only when recreating", () => {
