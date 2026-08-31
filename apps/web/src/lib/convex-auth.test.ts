@@ -161,9 +161,13 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
+  // Empty bag is a valid `Record<string, WritableAtom>`; runtime still rejects it.
   expect(readSessionAtom({})).toBeUndefined();
+  // @ts-expect-error — session must be a WritableAtom, not null
   expect(readSessionAtom({ session: null })).toBeUndefined();
+  // @ts-expect-error — session must be a WritableAtom, not a string
   expect(readSessionAtom({ session: "x" })).toBeUndefined();
+  // @ts-expect-error — subscribe must be a function
   expect(readSessionAtom({ session: { subscribe: 1 } })).toBeUndefined();
 
   const unsub = vi.fn();
@@ -171,21 +175,15 @@ test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
     listener({ data: null, isPending: false });
     return unsub;
   }
-  const atom = readSessionAtom({
-    session: {
-      subscribe: subscribeWithUnsub,
-    },
-  });
+  // @ts-expect-error — fixture only implements subscribe
+  const atom = readSessionAtom({ session: { subscribe: subscribeWithUnsub } });
   expect(atom).toBeTruthy();
   const stop = atom?.subscribe(() => {});
   stop?.();
   expect(unsub).toHaveBeenCalledTimes(1);
 
-  const atomWithoutUnsub = readSessionAtom({
-    session: {
-      subscribe: () => undefined,
-    },
-  });
+  // @ts-expect-error — subscribe must return an unsubscribe function
+  const atomWithoutUnsub = readSessionAtom({ session: { subscribe: () => undefined } });
   expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
 });
 
