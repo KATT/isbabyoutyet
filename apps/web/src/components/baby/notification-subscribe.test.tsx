@@ -449,6 +449,16 @@ test("managers still get iOS Home Screen instructions before the chooser", async
 
   expect(screen.getByText("Get Notifications on iOS")).toBeTruthy();
   expect(screen.queryByText("Choose notifications")).toBeNull();
+  expect(screen.getByText(/does not inherit your Safari login/i)).toBeTruthy();
+});
+
+test("visitor iOS install copy does not mention signing in", async () => {
+  await using view = await renderSubscribe({ kind: "needsIosInstall" }, "visitor");
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  expect(screen.getByText(/Come back here and tap/i)).toBeTruthy();
+  expect(screen.queryByText(/does not inherit your Safari login/i)).toBeNull();
 });
 
 test("managers pick status and message alerts in a chooser", async () => {

@@ -446,3 +446,81 @@ test("toasts a generic subscribe failure when the error is not an Error", async 
   });
   expect(navigate).toHaveBeenCalled();
 });
+
+const IPHONE_SAFARI_UA =
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+
+test("iOS Safari add-baby shows a Show me how row and does not subscribe", async () => {
+  const restore: Array<() => void> = [];
+  const existingUa = Object.getOwnPropertyDescriptor(navigator, "userAgent");
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    get: () => IPHONE_SAFARI_UA,
+  });
+  restore.push(() => {
+    if (existingUa) {
+      Object.defineProperty(navigator, "userAgent", existingUa);
+      return;
+    }
+    Reflect.deleteProperty(navigator, "userAgent");
+  });
+  Object.defineProperty(navigator, "standalone", {
+    configurable: true,
+    value: false,
+  });
+  restore.push(() => {
+    Reflect.deleteProperty(navigator, "standalone");
+  });
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = (query: string) =>
+    // SAFETY: Test fixture is a subset of the production type.
+    ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+  restore.push(() => {
+    window.matchMedia = originalMatchMedia;
+  });
+  await using _ios = makeResource({}, () => {
+    for (const fn of restore.toReversed()) {
+      fn();
+    }
+  });
+
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests read publicId and babyId from the result. */ {
+      publicId: "baby-fern",
+      babyId: TEST_BABY_ID,
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
+  const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
+  const subscribeOwnerMessages = vi.fn<SubscribeOwnerMessages>().mockResolvedValue(undefined);
+  await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
+
+  expect(view.queryByRole("switch", { name: "Message notifications" })).toBeNull();
+  fireEvent.click(view.getByRole("button", { name: "Show me how" }));
+  expect(view.getByText("Get Notifications on iOS")).toBeTruthy();
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("dialog")).toBeNull();
+  });
+
+  fireEvent.change(view.getByLabelText("Baby name"), {
+    target: { value: "Baby Fern" },
+  });
+  fireEvent.change(view.getByLabelText("Due date"), {
+    target: { value: "2026-09-09" },
+  });
+  fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
+
+  await vi.waitFor(() => {
+    expect(createBaby).toHaveBeenCalled();
+  });
+  expect(subscribeOwnerMessages).not.toHaveBeenCalled();
+});

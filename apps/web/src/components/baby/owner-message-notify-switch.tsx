@@ -38,7 +38,7 @@ function ownerMessageNotifyCopy(opts: { checked: boolean; disabledReason: Disabl
     return {
       title: "Message notifications",
       description:
-        "Install this app on your Home Screen before enabling push notifications on iOS.",
+        "On iPhone, message notifications need the Home Screen app. You'll turn them on after you open it from the icon.",
     } as const;
   }
   if (opts.disabledReason === "unsupported") {
@@ -83,6 +83,7 @@ function MessageNotifySwitch(
   if (props.disabledReason === "needsIosInstall") {
     return (
       <IosPwaInstallPrompt
+        audience="owner"
         trigger={
           <Button type="button" variant="outline" size="sm" id={props.switchId ?? undefined}>
             {t("Get Notifications")}
@@ -131,6 +132,29 @@ function FormMessageNotifyRow(props: SwitchViewProps) {
   const copy = ownerMessageNotifyCopy(props);
   const titleId = `${formItemId}-title`;
 
+  if (props.disabledReason === "needsIosInstall") {
+    return (
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <span id={titleId} className="text-sm leading-none font-bold">
+            {t(copy.title)}
+          </span>
+          <span id={formDescriptionId} className="text-muted-foreground text-sm">
+            {t(copy.description)}
+          </span>
+        </div>
+        <IosPwaInstallPrompt
+          audience="owner"
+          trigger={
+            <Button type="button" variant="outline" size="sm">
+              {t("Show me how")}
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <label htmlFor={formItemId} className="flex items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
@@ -141,13 +165,9 @@ function FormMessageNotifyRow(props: SwitchViewProps) {
           {t(copy.description)}
         </span>
       </div>
-      {props.disabledReason === "needsIosInstall" ? (
+      <FormControl aria-labelledby={titleId}>
         <MessageNotifySwitch {...props} labelledBy={titleId} switchId={formItemId} />
-      ) : (
-        <FormControl aria-labelledby={titleId}>
-          <MessageNotifySwitch {...props} labelledBy={titleId} switchId={formItemId} />
-        </FormControl>
-      )}
+      </FormControl>
     </label>
   );
 }

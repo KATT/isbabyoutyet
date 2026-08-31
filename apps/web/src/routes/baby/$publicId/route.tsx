@@ -32,7 +32,11 @@ import { getBabySeo } from "@/lib/baby-seo";
 import { babyRouteCacheHeaders } from "@/lib/cachePolicy";
 import { babyPageRobotsHeaders, searchRobotsMeta } from "@/lib/robots";
 import { useI18n } from "@/lib/i18n";
+import { authClient } from "@/lib/auth-client";
+import { BABY_FEED_HASH } from "@workspace/convex/src/babyFeedUrl";
+import { useHashScroll } from "@/lib/use-hash-scroll";
 import {
+  useBabyLoginOverlayNav,
   useBabyPostOverlayNav,
   useBabySettingsOverlayNav,
   useBabyShareOverlayNav,
@@ -250,9 +254,12 @@ function BabyPageLayout() {
   const { t } = useI18n();
   const params = Route.useParams();
   const matchRoute = useMatchRoute();
+  const session = authClient.useSession();
+  useHashScroll();
   const shareOpen = !!matchRoute({ to: "/baby/$publicId/share" });
   const settingsOpen = !!matchRoute({ to: "/baby/$publicId/settings" });
   const postUpdateOpen = !!matchRoute({ to: "/baby/$publicId/post" });
+  const loginOpen = !!matchRoute({ to: "/baby/$publicId/login" });
   const photoOpen =
     !!matchRoute({ to: "/baby/$publicId/photo" }) ||
     !!matchRoute({ to: "/baby/$publicId/updates/$updateId/photo" });
@@ -279,6 +286,7 @@ function BabyPageLayout() {
   const share = useBabyShareOverlayNav(params.publicId);
   const post = useBabyPostOverlayNav(params.publicId);
   const settings = useBabySettingsOverlayNav(params.publicId);
+  const login = useBabyLoginOverlayNav(params.publicId);
 
   const latestUpdate = latestUpdateQuery.data;
   const myAccess = myAccessQuery.data;
@@ -306,7 +314,7 @@ function BabyPageLayout() {
           surface="baby"
           onboarding={loaderData.onboarding}
           enabled={undefined}
-          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen}
+          spotlight={!shareOpen && !postUpdateOpen && !settingsOpen && !photoOpen && !loginOpen}
         />
       ) : null}
 
@@ -368,13 +376,21 @@ function BabyPageLayout() {
                   : null
               }
             />
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center">
               <NotificationSubscribe
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
                 browserPush={loaderData.browserPush}
                 audience={canManage ? "manager" : "visitor"}
               />
+              {!canManage && !session.isPending && session.data === null ? (
+                <Link
+                  {...login.openLink}
+                  className="mt-3 text-sm font-semibold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  {t("Are you the parent? Sign in")}
+                </Link>
+              ) : null}
             </div>
             <div className="mt-4">
               <ProgressIndicator baby={baby} currentStatus={currentStatus} />
@@ -385,7 +401,7 @@ function BabyPageLayout() {
               visitor's encouragement form sits above the feed so nobody has
               to scroll past every message to post; the owner posts via the
               "Post update" button in the dock. */}
-          <div className="space-y-8">
+          <div className="space-y-8" id={BABY_FEED_HASH}>
             <section
               className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
               data-tour-id="learn_encouragements"

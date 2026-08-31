@@ -219,6 +219,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     case "needsIosInstall":
       return (
         <IosPwaInstallPrompt
+          audience={props.audience === "manager" ? "owner" : "visitor"}
           trigger={
             <Button variant="default" size="lg">
               <Bell className="w-5 h-5" />
@@ -289,7 +290,10 @@ function GetNotificationsPending() {
   );
 }
 
-export function IosPwaInstallPrompt(props: { trigger: ReactElement }) {
+export function IosPwaInstallPrompt(props: {
+  trigger: ReactElement;
+  audience: "visitor" | "owner";
+}) {
   const { t } = useI18n();
 
   return (
@@ -326,10 +330,23 @@ export function IosPwaInstallPrompt(props: { trigger: ReactElement }) {
             <span className="font-medium min-w-5">3.</span>
             <span>{t("Open the app from your Home Screen")}</span>
           </li>
-          <li className="flex items-start gap-2">
-            <span className="font-medium min-w-5">4.</span>
-            <span>{t('Come back here and tap "Get Notifications"')}</span>
-          </li>
+          {props.audience === "owner" ? (
+            <>
+              <li className="flex items-start gap-2">
+                <span className="font-medium min-w-5">4.</span>
+                <span>
+                  {t(
+                    "The Home Screen icon does not inherit your Safari login. Sign in inside the app, then tap Get Notifications.",
+                  )}
+                </span>
+              </li>
+            </>
+          ) : (
+            <li className="flex items-start gap-2">
+              <span className="font-medium min-w-5">4.</span>
+              <span>{t('Come back here and tap "Get Notifications"')}</span>
+            </li>
+          )}
         </ol>
       </DialogContent>
     </Dialog>

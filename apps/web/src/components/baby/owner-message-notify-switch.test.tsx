@@ -179,6 +179,7 @@ test("settings switch opens Home Screen instructions when iOS needs a PWA instal
 
   expect(view.getByText("Get Notifications on iOS")).toBeTruthy();
   expect(view.getByText(/Add to Home Screen/i)).toBeTruthy();
+  expect(view.getByText(/does not inherit your Safari login/i)).toBeTruthy();
 });
 
 test("settings switch explains when the browser cannot push", async () => {
@@ -230,6 +231,7 @@ test("live switch opens Home Screen instructions when iOS needs a PWA install", 
 
   expect(ctx.view.getByText("Get Notifications on iOS")).toBeTruthy();
   expect(ctx.view.getByText(/Add to Home Screen/i)).toBeTruthy();
+  expect(ctx.view.getByText(/does not inherit your Safari login/i)).toBeTruthy();
 });
 
 test("live switch stays disabled while the service worker is not ready", async () => {

@@ -1,3 +1,28 @@
+/**
+ * Shared notification-click matching for the service worker. Keep this in
+ * sync with `apps/web/src/lib/notification-click.ts`.
+ */
+function isBabyOverlayPath(pathname) {
+  return (
+    /\/baby\/[^/]+\/(?:photo|settings|post|share|login)\/?$/.test(pathname) ||
+    /\/baby\/[^/]+\/updates\/[^/]+\/photo\/?$/.test(pathname)
+  );
+}
+
+function shouldReuseBabyClient(clientUrl, targetUrl) {
+  const client = new URL(clientUrl);
+  const target = new URL(targetUrl);
+  if (client.origin !== target.origin) {
+    return false;
+  }
+  if (isBabyOverlayPath(client.pathname)) {
+    return false;
+  }
+  const clientBaby = /^\/baby\/([^/]+)\/?$/.exec(client.pathname);
+  const targetBaby = /^\/baby\/([^/]+)\/?$/.exec(target.pathname);
+  return Boolean(clientBaby && targetBaby && clientBaby[1] === targetBaby[1]);
+}
+
 // Service Worker for Push Notifications
 const CACHE_NAME = "isbabyoutyet-v1";
 
@@ -80,14 +105,17 @@ self.addEventListener("notificationclick", (event) => {
         includeUncontrolled: true,
       })
       .then((clientList) => {
-        // Check if there's already a window/tab open with the target URL
         for (const client of clientList) {
-          // Compare absolute URLs (client.url is always absolute)
-          if (client.url === urlToOpen && "focus" in client) {
+          if (shouldReuseBabyClient(client.url, urlToOpen) && "focus" in client) {
+            // WindowClient.postMessage has no targetOrigin; this client is already same-origin.
+            // oxlint-disable-next-line unicorn/require-post-message-target-origin
+            client.postMessage({ type: "notification-click", url: urlToOpen });
+            if ("navigate" in client) {
+              return client.navigate(urlToOpen).then(() => client.focus());
+            }
             return client.focus();
           }
         }
-        // If not, open a new window/tab
         if (clients.openWindow) {
           return clients.openWindow(urlToOpen);
         }

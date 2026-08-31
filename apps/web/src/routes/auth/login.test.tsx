@@ -21,7 +21,12 @@ function renderLogin(props: {
 }) {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <LoginCard demoLoginEnabled={props.demoLoginEnabled} onSignIn={props.onSignIn} />
+      <LoginCard
+        demoLoginEnabled={props.demoLoginEnabled}
+        onSignIn={props.onSignIn}
+        variant="page"
+        homeLink={{ to: "/" }}
+      />
     </LocaleProvider>,
     { path: "/auth/login" },
   );
@@ -179,6 +184,87 @@ test("LoginPage sign-in path invokes the wired auth client", async () => {
   await vi.waitFor(() => {
     expect(signInEmail).toHaveBeenCalled();
   });
+  await vi.waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith({ to: "/dashboard" });
+  });
+});
+
+test("LoginPage returns to an allowlisted baby page after sign-in", async () => {
+  const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
+  const original = {
+    signInEmail: loginAuthAdapter.signInEmail,
+    headers: loginAuthAdapter.headers,
+    waitForAuth: loginAuthAdapter.waitForAuth,
+  };
+  // SAFETY: Mock constructor is installed in place of the browser global.
+  loginAuthAdapter.signInEmail = signInEmail as typeof loginAuthAdapter.signInEmail;
+  loginAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
+  loginAuthAdapter.waitForAuth = async () => undefined;
+  await using _adapter = makeResource({}, () => {
+    loginAuthAdapter.signInEmail = original.signInEmail;
+    loginAuthAdapter.headers = original.headers;
+    loginAuthAdapter.waitForAuth = original.waitForAuth;
+  });
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <LoginPage />
+    </LocaleProvider>,
+    { path: "/auth/login?redirect=/baby/baby-waiting" },
+  );
+  const navigate = vi.spyOn(view.router, "navigate").mockResolvedValue(undefined);
+  await using _navigate = makeResource({}, () => {
+    navigate.mockRestore();
+  });
+
+  expect(screen.getByRole("link", { name: "isbabyoutyet" }).getAttribute("href")).toBe(
+    "/baby/baby-waiting",
+  );
+
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: DEMO_USER.email } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: DEMO_USER.password } });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  await vi.waitFor(() => {
+    expect(navigate).toHaveBeenCalledWith({
+      to: "/baby/$publicId",
+      params: { publicId: "baby-waiting" },
+    });
+  });
+});
+
+test("LoginPage ignores an open-redirect after sign-in", async () => {
+  const signInEmail = vi.fn().mockResolvedValue({ data: null, error: null });
+  const original = {
+    signInEmail: loginAuthAdapter.signInEmail,
+    headers: loginAuthAdapter.headers,
+    waitForAuth: loginAuthAdapter.waitForAuth,
+  };
+  // SAFETY: Test stub replaces the adapter's email sign-in method.
+  loginAuthAdapter.signInEmail = signInEmail as typeof loginAuthAdapter.signInEmail;
+  loginAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
+  loginAuthAdapter.waitForAuth = async () => undefined;
+  await using _adapter = makeResource({}, () => {
+    loginAuthAdapter.signInEmail = original.signInEmail;
+    loginAuthAdapter.headers = original.headers;
+    loginAuthAdapter.waitForAuth = original.waitForAuth;
+  });
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <LoginPage />
+    </LocaleProvider>,
+    { path: "/auth/login?redirect=https://evil.example" },
+  );
+  const navigate = vi.spyOn(view.router, "navigate").mockResolvedValue(undefined);
+  await using _navigate = makeResource({}, () => {
+    navigate.mockRestore();
+  });
+
+  fireEvent.change(screen.getByLabelText("Email"), { target: { value: DEMO_USER.email } });
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: DEMO_USER.password } });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
   await vi.waitFor(() => {
     expect(navigate).toHaveBeenCalledWith({ to: "/dashboard" });
   });

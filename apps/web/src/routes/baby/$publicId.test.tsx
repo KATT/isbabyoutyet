@@ -37,11 +37,17 @@ test("parent route caches public overlays and keeps manager overlays private", (
     params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/settings" }],
   });
+  const loginHeaders = headers({
+    params: { publicId: "juniper-hale" },
+    matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/login" }],
+  });
 
   expect(publicHeaders["Cache-Control"]).toContain("public");
   expect(publicHeaders["Vercel-Cache-Tag"]).toContain("baby-public-id:juniper-hale");
   expect(privateHeaders["Cache-Control"]).toContain("private");
   expect(privateHeaders["Cache-Control"]).toContain("no-store");
+  expect(loginHeaders["Cache-Control"]).toContain("private");
+  expect(loginHeaders["Cache-Control"]).toContain("no-store");
 });
 
 function useFakeTimersResource(now: Date) {
