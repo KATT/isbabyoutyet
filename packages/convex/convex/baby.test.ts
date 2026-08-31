@@ -70,7 +70,7 @@ test("create a baby and list it for the owner", async () => {
     sameSubjectFromAnotherIssuer.mutation(api.baby.update, {
       id: created.babyId,
       data: {
-      name: "Not Alice",
+        name: "Not Alice",
       },
     }),
   ).rejects.toThrow("Not authorized");
@@ -146,7 +146,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    dueDateDisplayMode: "exact",
+      dueDateDisplayMode: "exact",
     },
   });
   const publicExactBaby = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -170,7 +170,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    dueDateDisplayMode: "message",
+      dueDateDisplayMode: "message",
     },
   });
   const publicMessageAgain = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -182,8 +182,8 @@ test("custom public due date text hides the exact day from visitors", async () =
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    dueDateDisplayMode: "message",
-    publicDueDateText: "   ",
+      dueDateDisplayMode: "message",
+      publicDueDateText: "   ",
     },
   });
   const publicBlankMessage = await t.query(api.baby.getByPublicId, { id: created.publicId });
@@ -197,8 +197,8 @@ test("custom public due date text hides the exact day from visitors", async () =
     asAlice.mutation(api.baby.update, {
       id: created.babyId,
       data: {
-      dueDateDisplayMode: "message",
-      publicDueDateText: "x".repeat(81),
+        dueDateDisplayMode: "message",
+        publicDueDateText: "x".repeat(81),
       },
     }),
   ).rejects.toThrow("80 characters or fewer");
@@ -206,9 +206,9 @@ test("custom public due date text hides the exact day from visitors", async () =
     asAlice.mutation(api.baby.update, {
       id: created.babyId,
       data: {
-      dueDate: null,
-      dueDateDisplayMode: "exact",
-      publicDueDateText: null,
+        dueDate: null,
+        dueDateDisplayMode: "exact",
+        publicDueDateText: null,
       },
     }),
   ).rejects.toThrow("due date is required");
@@ -298,7 +298,7 @@ test("journey selection can change after milestone updates without deleting them
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    birthJourney: "planned_c_section",
+      birthJourney: "planned_c_section",
     },
   });
 
@@ -380,7 +380,7 @@ test("a baby inherits the owner locale until an override is set", async () => {
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    locale: "en-US",
+      locale: "en-US",
     },
   });
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
@@ -391,7 +391,7 @@ test("a baby inherits the owner locale until an override is set", async () => {
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    locale: null,
+      locale: null,
     },
   });
   expect(await t.query(api.baby.getByPublicId, { id: created.publicId })).toMatchObject({
@@ -441,7 +441,7 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    name: "Final Name",
+      name: "Final Name",
     },
   });
 
@@ -482,7 +482,7 @@ test("renaming a baby without changing the slug keeps the publicId", async () =>
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
     data: {
-    name: "Baby smith",
+      name: "Baby smith",
     },
   });
 

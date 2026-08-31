@@ -586,13 +586,13 @@ export const update = mutationWithTriggers({
   args: {
     id: v.id("baby"),
     data: v.object({
-    dueDate: v.optional(v.union(v.string(), v.null())),
-    dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
-    publicDueDateText: v.optional(v.union(v.string(), v.null())),
-    name: v.optional(v.string()),
-    theme: v.optional(v.union(v.string(), v.null())),
-    locale: v.optional(v.union(supportedLocaleValidator, v.null())),
-    birthJourney: v.optional(birthJourneyValidator),
+      dueDate: v.optional(v.union(v.string(), v.null())),
+      dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
+      publicDueDateText: v.optional(v.union(v.string(), v.null())),
+      name: v.optional(v.string()),
+      theme: v.optional(v.union(v.string(), v.null())),
+      locale: v.optional(v.union(supportedLocaleValidator, v.null())),
+      birthJourney: v.optional(birthJourneyValidator),
     }),
   },
   handler: async (ctx, args) => {
