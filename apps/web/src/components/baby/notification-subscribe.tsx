@@ -278,18 +278,14 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   }
 }
 
-function toastPushSync(opts: {
-  run: Promise<void>;
-  t: TranslationFunction;
-  turningOff: boolean;
-}) {
+function toastPushSync(opts: { run: Promise<void>; t: TranslationFunction; turningOff: boolean }) {
   toast.promise(
     opts.run,
     opts.turningOff
       ? {
           loading: opts.t("Unsubscribing from notifications..."),
           success: opts.t("Unsubscribed from notifications!"),
-          error: (error: unknown) =>
+          error: (error) =>
             error instanceof Error
               ? error.message
               : opts.t("Failed to unsubscribe from notifications"),
@@ -297,10 +293,8 @@ function toastPushSync(opts: {
       : {
           loading: opts.t("Subscribing to notifications..."),
           success: opts.t("Subscribed to notifications!"),
-          error: (error: unknown) =>
-            error instanceof Error
-              ? error.message
-              : opts.t("Failed to subscribe to notifications"),
+          error: (error) =>
+            error instanceof Error ? error.message : opts.t("Failed to subscribe to notifications"),
         },
   );
   return opts.run;
