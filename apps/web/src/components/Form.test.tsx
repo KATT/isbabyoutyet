@@ -17,7 +17,6 @@ import {
   Form,
   FormCancelButton,
   FormGuardProvider,
-  shouldBlockOverlayDismiss,
   SubmitButton,
   useFormGuard,
   useZodForm,
@@ -363,51 +362,6 @@ test("FormCancelButton disables while its form is submitting", async () => {
   await vi.waitFor(() => {
     expect(cancel.disabled).toBe(false);
   });
-});
-
-test("shouldBlockOverlayDismiss locks user dismissals but allows imperative closes", () => {
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "outside-press",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "close-press",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "imperative-action",
-    }),
-  ).toBe(false);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: false,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe(false);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: true,
-      reason: "trigger-press",
-    }),
-  ).toBe(false);
 });
 
 test("useFormGuard blocks escape while submitting and forwards when idle", async () => {

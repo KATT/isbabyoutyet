@@ -57,6 +57,7 @@
       "entry": ["src/compareCoverage.ts!"]
     },
     "packages/runtime": {},
+    "packages/form-guard": {},
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
     "packages/ui": {}

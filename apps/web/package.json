@@ -40,6 +40,7 @@
     "@vercel/functions": "^3.9.3",
     "@workspace/convex": "workspace:*",
     "@workspace/convex-prefetch": "workspace:*",
+    "@workspace/form-guard": "workspace:*",
     "@workspace/query-prefetch": "workspace:*",
     "@workspace/runtime": "workspace:*",
     "@workspace/ui": "workspace:*",

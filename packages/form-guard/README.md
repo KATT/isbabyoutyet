@@ -1,0 +1,66 @@
+# Form leave-guard
+
+Headless answer to one question — **"may we leave this unsaved form?"** — asked
+by two different systems: overlay dismissal (Base UI `onOpenChange`) and in-app
+navigation (TanStack Router `useBlocker` / `beforeunload`). The guard owns a
+submit lock, a dirty registry, and a single discard prompt per overlay stack;
+the app renders the prompt UI.
+
+## Layers
+
+```
+dismiss.ts        pure decision: allow / block / confirm
+guard-store.ts    framework-free store: dirty registry, submit lock, discard queue, stacking
+use-form-guard.ts React bridge: one lazy store per guard, useSyncExternalStore for prompt state
+router.ts         TanStack Router adapter: useBlocker + beforeunload on the store
+```
+
+The store is plain TypeScript with callbacks — no React, no form library. The
+React layer never mutates during render: stacking is wired in effects, dirty
+flags register in effects, and the only reactive output (prompt open) flows
+through `useSyncExternalStore`.
+
+## Usage
+
+```tsx
+function Editor() {
+  const guard = useFormGuard({ onOpenChange: undefined });
+  return (
+    <Popover {...guard.rootProps}>
+      <PopoverTrigger … />
+      <PopoverContent>
+        <FormGuardProvider guard={guard}>{/* app-side: context + discard dialog */}
+          <MyForm onClose={guard.close} />
+        </FormGuardProvider>
+      </PopoverContent>
+    </Popover>
+  );
+}
+```
+
+The app-side provider composes three package exports:
+
+- `FormGuardContextProvider` — stacks the store under context
+- `useFormNavigationGuard(guard)` — mount at the stack root only (dirty state
+  bubbles up); render your own discard dialog from `guard.discardPrompt`
+- `useRegisterFormDirty(isDirty)` — call from your form wrapper with a plain
+  boolean (e.g. React Hook Form's `formState.isDirty`)
+
+Submitting forms drive the lock through the stack (`useFormGuardStack()`):
+`acquireSubmitLock()` + `allowLeave()` before the async submit,
+`revokeAllowLeave()` on failure, `releaseSubmitLock()` in `finally`.
+
+## Stacked overlays
+
+Dirty state registers with every ancestor store, submit locks and leave
+permission apply stack-wide, and a nested guard's `confirm` routes its discard
+request to the stack root. One backdrop click that dismisses both a dialog and
+a nested popover therefore yields **one** prompt whose Discard closes the whole
+stack; "Keep editing" cancels both closes.
+
+## Source files
+
+- `src/dismiss.ts` — `overlayDismissDecision(...)`, `shouldBlockOverlayDismiss(...)`, native date-picker sniffing
+- `src/guard-store.ts` — `createFormGuardStore()` and the `FormGuardStore` interface
+- `src/use-form-guard.ts` — `useFormGuard(...)`, `FormGuardContextProvider`, `useFormGuardStack()`, `useRegisterFormDirty(...)`
+- `src/router.ts` — `useFormNavigationGuard(...)`, `useOptionalRouter()`

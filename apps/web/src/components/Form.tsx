@@ -30,18 +30,17 @@ import {
 import {
   FormGuardContextProvider,
   useFormNavigationGuard,
-  useFormGuardContext,
   useFormGuardStack,
   useOptionalRouter,
   useRegisterFormDirty,
   type FormGuardHandle,
-} from "@/lib/use-form-guard";
+} from "@workspace/form-guard";
 
 export {
   shouldBlockOverlayDismiss,
   useFormGuard,
   type FormGuardHandle,
-} from "@/lib/use-form-guard";
+} from "@workspace/form-guard";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
   TInput,
@@ -81,7 +80,7 @@ export function FormGuardProvider(props: { guard: FormGuardHandle; children: Rea
   const router = useOptionalRouter();
   // Dirty state bubbles to the stack root, which hosts the single discard
   // prompt and navigation blocker; nested providers only relay to it.
-  const isStackRoot = useFormGuardContext() === null;
+  const isStackRoot = useFormGuardStack().length === 0;
   return (
     <FormGuardContextProvider guard={props.guard}>
       {props.children}
@@ -156,7 +155,7 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
   // Locks and leave permission span the whole stack: while a nested editor
   // submits, the parent overlay must not be dismissable either, and a
   // successful save must unblock the parent's navigation guard.
-  const guards = useFormGuardStack();
+  const guardStores = useFormGuardStack();
   const formState = useFormState({ control: props.form.control });
   useRegisterFormDirty(formState.isDirty);
   const { id, formRef, ...rest } = props.form;
@@ -167,9 +166,9 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
         ref={formRef}
         onSubmit={(event) => {
           return rest.handleSubmit(async (values) => {
-            for (const guard of guards) {
-              guard.lock.acquire();
-              guard.lock.allowLeave();
+            for (const store of guardStores) {
+              store.acquireSubmitLock();
+              store.allowLeave();
             }
             try {
               // Dev-only pause so submit spinners are visible while clicking around locally.
@@ -179,14 +178,14 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
               }
               await props.handleSubmit(values);
             } catch (error) {
-              for (const guard of guards) {
-                guard.lock.revokeAllowLeave();
+              for (const store of guardStores) {
+                store.revokeAllowLeave();
               }
               console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
             } finally {
-              for (const guard of guards) {
-                guard.lock.release();
+              for (const store of guardStores) {
+                store.releaseSubmitLock();
               }
             }
           })(event);
