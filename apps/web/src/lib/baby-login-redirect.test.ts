@@ -40,6 +40,9 @@ test.each([
   "/baby/baby-waiting#feed",
   "/baby/../dashboard",
   "/baby/%2e%2e",
+  "/baby/",
+  "/baby/foo.bar",
+  "/baby/baby\\waiting",
   "baby-waiting",
 ])("rejects %s as a login redirect", (redirect) => {
   expect(parseBabyLoginPublicId(redirect)).toBeNull();

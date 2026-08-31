@@ -14,17 +14,44 @@ function HashScrollHarness() {
   );
 }
 
-test("smooth-scrolls to the hash landmark on load", async () => {
-  window.location.hash = "#feed";
-  await using _hash = makeResource({}, () => {
+function withHash(hash: string) {
+  window.location.hash = hash;
+  return makeResource({}, () => {
     window.location.hash = "";
   });
+}
+
+function withScrollSpy() {
   const scrollIntoView = vi.fn();
   const originalScroll = HTMLElement.prototype.scrollIntoView;
   HTMLElement.prototype.scrollIntoView = scrollIntoView;
-  await using _scroll = makeResource({}, () => {
+  return makeResource(scrollIntoView, () => {
     HTMLElement.prototype.scrollIntoView = originalScroll;
   });
+}
+
+function withMatchMedia(matches: (query: string) => boolean) {
+  const original = window.matchMedia;
+  window.matchMedia = (query: string) =>
+    // SAFETY: Test fixture is a subset of the production type.
+    ({
+      matches: matches(query),
+      media: query,
+      onchange: null,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+      dispatchEvent: () => false,
+    }) as MediaQueryList;
+  return makeResource({}, () => {
+    window.matchMedia = original;
+  });
+}
+
+test("smooth-scrolls to the hash landmark on load", async () => {
+  await using _hash = withHash("#feed");
+  await using scrollIntoView = withScrollSpy();
 
   await using _view = renderResource(<HashScrollHarness />);
 
@@ -34,17 +61,40 @@ test("smooth-scrolls to the hash landmark on load", async () => {
   });
 });
 
+test("does not scroll when the location has no hash", async () => {
+  await using _hash = withHash("");
+  await using scrollIntoView = withScrollSpy();
+
+  await using _view = renderResource(<HashScrollHarness />);
+
+  expect(scrollIntoView).not.toHaveBeenCalled();
+});
+
+test("does not scroll when the hash landmark is missing", async () => {
+  await using _hash = withHash("#missing");
+  await using scrollIntoView = withScrollSpy();
+
+  await using _view = renderResource(<HashScrollHarness />);
+
+  expect(scrollIntoView).not.toHaveBeenCalled();
+});
+
+test("uses instant scroll when the user prefers reduced motion", async () => {
+  await using _hash = withHash("#feed");
+  await using scrollIntoView = withScrollSpy();
+  await using _motion = withMatchMedia((query) => query.includes("prefers-reduced-motion"));
+
+  await using _view = renderResource(<HashScrollHarness />);
+
+  expect(scrollIntoView).toHaveBeenCalledWith({
+    behavior: "auto",
+    block: "start",
+  });
+});
+
 test("scrolls again when the service worker posts a notification-click", async () => {
-  window.location.hash = "#feed";
-  await using _hash = makeResource({}, () => {
-    window.location.hash = "";
-  });
-  const scrollIntoView = vi.fn();
-  const originalScroll = HTMLElement.prototype.scrollIntoView;
-  HTMLElement.prototype.scrollIntoView = scrollIntoView;
-  await using _scroll = makeResource({}, () => {
-    HTMLElement.prototype.scrollIntoView = originalScroll;
-  });
+  await using _hash = withHash("#feed");
+  await using scrollIntoView = withScrollSpy();
   const listeners: EventListener[] = [];
   const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
     (type, listener) => {
@@ -75,4 +125,38 @@ test("scrolls again when the service worker posts a notification-click", async (
   listeners[0]?.(new MessageEvent("message", { data: { type: NOTIFICATION_CLICK_MESSAGE } }));
 
   expect(scrollIntoView).toHaveBeenCalledOnce();
+});
+
+test("ignores service-worker messages that are not notification clicks", async () => {
+  await using _hash = withHash("#feed");
+  await using scrollIntoView = withScrollSpy();
+  const listeners: EventListener[] = [];
+  const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
+    (_type, listener) => {
+      listeners.push(listener);
+    },
+  );
+  const removeEventListener = vi.fn();
+  const originalServiceWorker = navigator.serviceWorker;
+  Object.defineProperty(navigator, "serviceWorker", {
+    configurable: true,
+    value: { addEventListener, removeEventListener },
+  });
+  await using _sw = makeResource({}, () => {
+    if (originalServiceWorker) {
+      Object.defineProperty(navigator, "serviceWorker", {
+        configurable: true,
+        value: originalServiceWorker,
+      });
+      return;
+    }
+    Reflect.deleteProperty(navigator, "serviceWorker");
+  });
+
+  await using _view = renderResource(<HashScrollHarness />);
+  scrollIntoView.mockClear();
+  listeners[0]?.(new MessageEvent("message", { data: "nope" }));
+  listeners[0]?.(new MessageEvent("message", { data: { type: "other" } }));
+
+  expect(scrollIntoView).not.toHaveBeenCalled();
 });

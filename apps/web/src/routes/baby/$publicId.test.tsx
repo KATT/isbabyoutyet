@@ -19,6 +19,9 @@ import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 import { getBabySeo } from "@/lib/baby-seo";
 import { renderResource } from "@/test/renderResource";
+import { createConvexTestHarness } from "@/test/convexTestHarness";
+import { seedOwnedBaby } from "@/test/convexTestSeed";
+import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -575,4 +578,45 @@ test("share preview uses the canonical route slug while reactive baby data chang
 
   expect(new URL(seo.imageUrl).pathname).toBe("/og/baby/juniper-hale");
   expect(seo.canonical).toBe("https://isbabyoutyet.com/baby/juniper-hale");
+});
+
+test("logged-out visitors see a parent sign-in link under Get Notifications", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  harness.withIdentity(null);
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("link", { name: "Are you the parent? Sign in" })).toBeTruthy();
+  });
+  expect(
+    ctx.view.getByRole("link", { name: "Are you the parent? Sign in" }).getAttribute("href"),
+  ).toBe(`/baby/${baby.publicId}/login`);
+});
+
+test("owners do not see a parent sign-in link", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("heading", { name: /Is Baby Smith out yet/i })).toBeTruthy();
+  });
+  expect(ctx.view.queryByRole("link", { name: "Are you the parent? Sign in" })).toBeNull();
 });
