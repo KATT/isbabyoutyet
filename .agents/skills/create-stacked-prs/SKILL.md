@@ -60,19 +60,22 @@ Put this table at the **top** of every stacked PR description, under `## Stack`.
 | #125 3/3 | Follow-up cleanup |
 ```
 
-Use the actual PR numbers once known. Before numbers exist, still put the table at the top (use `(1/3)` in the PR cell) and update after `gh pr create`.
+Use the actual PR numbers once known (`#123`, never a markdown link or repo URL — GitHub autolinks `#123` on the current repo, so the table cannot point at a stale owner path). Before numbers exist, still put the table at the top (use `(1/3)` in the PR cell) and update after `gh pr create`.
 
 Mark the current PR in the **PR** column only: bold the cell and prefix `👉`. Do not add a third column. Do not put `← this PR` in Description.
+
+When the stack cannot land in one batch, put **when it is safe to merge** in Description (merge after the previous PR is on `main`; call out any pause such as “wait until backfill has finished on the target backend”):
 
 ```markdown
 | PR | Description |
 | --- | --- |
-| [#123](https://github.com/KATT/isbabyoutyet/pull/123) 1/3 | Backfill existing data |
-| **👉 [#124](https://github.com/KATT/isbabyoutyet/pull/124) 2/3** | Add the UI |
-| [#125](https://github.com/KATT/isbabyoutyet/pull/125) 3/3 | Follow-up cleanup |
+| #123 1/4 | Merge first — safe on `main` alone. Lint + `@todo`. |
+| **👉 #124 2/4** | Merge after #123 is on `main`. Require RPC args. |
+| #125 3/4 | Merge after #124 is on `main`. Backfill omitted keys; wait until `deploymentStatus` is done. |
+| #126 4/4 | Merge last — only after #125 has run on the target backend. Never same deploy as #125. |
 ```
 
-After creating all PRs, edit earlier PR bodies so every table has real numbers and links for the whole stack.
+After creating all PRs, edit earlier PR bodies so every table has real `#n` references for the whole stack.
 
 ## Plan the stack
 
@@ -135,7 +138,7 @@ EOF
 
 Capture each PR number from `gh pr create` output (or `gh pr view --json number,url`).
 
-Then rebuild the table with real numbers and links, and write it to **every** PR:
+Then rebuild the table with real `#n` references (no URLs), and write it to **every** PR:
 
 ```bash
 gh pr edit <n> --body "$(cat <<'EOF'
@@ -143,9 +146,9 @@ gh pr edit <n> --body "$(cat <<'EOF'
 
 | PR | Description |
 | --- | --- |
-| [#123](https://github.com/KATT/isbabyoutyet/pull/123) 1/3 | Backfill existing data |
-| **👉 [#124](https://github.com/KATT/isbabyoutyet/pull/124) 2/3** | Add the UI |
-| [#125](https://github.com/KATT/isbabyoutyet/pull/125) 3/3 | Follow-up cleanup |
+| #123 1/3 | Backfill existing data |
+| **👉 #124 2/3** | Add the UI |
+| #125 3/3 | Follow-up cleanup |
 
 ## Why
 

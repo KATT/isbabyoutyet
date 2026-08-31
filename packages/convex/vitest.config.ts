@@ -5,7 +5,7 @@ export default defineProject({
     name: "convex",
     // Approximate the Convex runtime better than node
     environment: "edge-runtime",
-    include: ["convex/**/*.test.ts"],
+    include: ["convex/**/*.test.ts", "src/**/*.test.ts"],
     env: {
       SITE_URL: "http://localhost:3000",
       BETTER_AUTH_SECRET: "test-secret-for-vitest-at-least-32-chars",

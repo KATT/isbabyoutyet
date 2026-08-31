@@ -2,7 +2,7 @@ import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
-import { htmlButton } from "@/test/htmlElement";
+import { htmlButton, htmlElement } from "@/test/htmlElement";
 
 test("groups owner actions separately from page actions", async () => {
   await using view = await renderWithTestRouter(
@@ -31,6 +31,31 @@ test("groups owner actions separately from page actions", async () => {
   expect(ownerGroup.contains(settings)).toBe(true);
   expect(pageGroup.contains(share)).toBe(true);
   expect(pageGroup.contains(theme)).toBe(true);
+});
+
+test("collapses Post update to an icon on small screens without dropping the name", async () => {
+  await using view = await renderWithTestRouter(
+    <BabyNav
+      shareButton={{ to: "/baby/$publicId/share" }}
+      shareOpen={false}
+      onDismissShare={null}
+      postUpdateButton={{ to: "/baby/$publicId/post" }}
+      postUpdateOpen={false}
+      onDismissPostUpdate={null}
+      onSettingsOpened={null}
+      settingsButton={{ to: "/" }}
+      settingsOpen={false}
+      onDismissSettings={null}
+    />,
+  );
+
+  expect(htmlElement(view.getByRole("button", { name: "Post update" })).className).toMatch(
+    /max-sm:size-8/,
+  );
+  const label = [...view.container.querySelectorAll("span")].find(
+    (el) => el.textContent === "Post update",
+  );
+  expect(htmlElement(label ?? null).className).toMatch(/max-sm:sr-only/);
 });
 
 test("hides the owner group when the visitor has no owner actions", async () => {
