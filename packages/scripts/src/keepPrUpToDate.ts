@@ -33,6 +33,11 @@ type StackPr = {
   headRefName: string;
   headRefOid: string;
   baseRefName: string;
+  baseRefOid: string;
+};
+
+export type KeepUpToDatePlanOptions = {
+  requiredCheckNames: string[] | null;
 };
 
 export type KeepUpToDateDecision =
@@ -64,18 +69,55 @@ export function withBehindBy(pr: ParsedPullRequest, behindBy: number): PullReque
   return { ...pr, behindBy };
 }
 
-export function planKeepUpToDate(prs: PullRequest[]): KeepUpToDateDecision[] {
+export function planKeepUpToDate(
+  prs: PullRequest[],
+  options: KeepUpToDatePlanOptions = { requiredCheckNames: null },
+): KeepUpToDateDecision[] {
   const decisions: KeepUpToDateDecision[] = [];
   const groups = connectedGroups(prs).toSorted(compareGroups);
 
   for (const group of groups) {
-    const decision = planGroup(group);
+    const decision = planGroup(group, options.requiredCheckNames);
     if (decision !== null) {
       decisions.push(decision);
     }
   }
 
-  return decisions;
+  return keepOneMutation(decisions);
+}
+
+export function parseRequiredStatusCheckNames(value: JsonValue): string[] {
+  if (!Array.isArray(value)) {
+    throw new Error("Expected an array of branch rules");
+  }
+
+  const names: string[] = [];
+  for (const rule of value) {
+    if (!isJsonObjectValue(rule)) {
+      continue;
+    }
+    if (parseJsonString(rule["type"]) !== "required_status_checks") {
+      continue;
+    }
+    const parameters = rule["parameters"];
+    if (!isJsonObjectValue(parameters)) {
+      continue;
+    }
+    const checks = parameters["required_status_checks"];
+    if (!Array.isArray(checks)) {
+      continue;
+    }
+    for (const check of checks) {
+      if (!isJsonObjectValue(check)) {
+        continue;
+      }
+      const context = parseJsonString(check["context"]);
+      if (context !== null && context !== "") {
+        names.push(context);
+      }
+    }
+  }
+  return names;
 }
 
 function parseGhPullRequest(value: JsonValue): ParsedPullRequest {
@@ -257,27 +299,33 @@ function minPrNumber(prs: PullRequest[]): number {
   return min;
 }
 
-function planGroup(group: PullRequest[]): KeepUpToDateDecision | null {
+function planGroup(
+  group: PullRequest[],
+  requiredCheckNames: string[] | null,
+): KeepUpToDateDecision | null {
   if (group.length > 1) {
-    return planStack(group);
+    return planStack(group, requiredCheckNames);
   }
   const pr = group[0];
   if (pr === undefined) {
     return null;
   }
-  return planSingle(pr);
+  return planSingle(pr, requiredCheckNames);
 }
 
-function planSingle(pr: PullRequest): KeepUpToDateDecision | null {
+function planSingle(
+  pr: PullRequest,
+  requiredCheckNames: string[] | null,
+): KeepUpToDateDecision | null {
   if (!pr.autoMergeEnabled) {
     return null;
   }
-  const blocker = singleBlocker(pr);
-  if (blocker !== null) {
-    return { action: "skip", prNumbers: [pr.number], reason: blocker };
-  }
   if (pr.behindBy <= 0) {
     return null;
+  }
+  const blocker = singleBlocker(pr, requiredCheckNames);
+  if (blocker !== null) {
+    return { action: "skip", prNumbers: [pr.number], reason: blocker };
   }
   return {
     action: "update-branch",
@@ -287,9 +335,20 @@ function planSingle(pr: PullRequest): KeepUpToDateDecision | null {
   };
 }
 
-function planStack(group: PullRequest[]): KeepUpToDateDecision | null {
+function planStack(
+  group: PullRequest[],
+  requiredCheckNames: string[] | null,
+): KeepUpToDateDecision | null {
   if (!group.some((pr) => pr.autoMergeEnabled)) {
     return null;
+  }
+
+  if (hasDuplicateHeads(group)) {
+    return {
+      action: "skip",
+      prNumbers: numbered(group),
+      reason: "stack has duplicate head branches",
+    };
   }
 
   const ordered = sortStack(group);
@@ -301,12 +360,13 @@ function planStack(group: PullRequest[]): KeepUpToDateDecision | null {
     };
   }
 
-  const blocker = stackBlocker(ordered);
-  if (blocker !== null) {
-    return { action: "skip", prNumbers: numbered(ordered), reason: blocker };
-  }
   if (!ordered.some((pr) => pr.behindBy > 0)) {
     return null;
+  }
+
+  const blocker = stackBlocker(ordered, requiredCheckNames);
+  if (blocker !== null) {
+    return { action: "skip", prNumbers: numbered(ordered), reason: blocker };
   }
   return {
     action: "rebase-stack",
@@ -315,6 +375,7 @@ function planStack(group: PullRequest[]): KeepUpToDateDecision | null {
       headRefName: pr.headRefName,
       headRefOid: pr.headRefOid,
       baseRefName: pr.baseRefName,
+      baseRefOid: pr.baseRefOid,
     })),
   };
 }
@@ -344,7 +405,7 @@ function sortStack(group: PullRequest[]): PullRequest[] | null {
   return ordered;
 }
 
-function singleBlocker(pr: PullRequest): string | null {
+function singleBlocker(pr: PullRequest, requiredCheckNames: string[] | null): string | null {
   if (pr.isDraft) {
     return "draft pull request";
   }
@@ -357,13 +418,13 @@ function singleBlocker(pr: PullRequest): string | null {
   if (pr.mergeable === "UNKNOWN") {
     return "mergeability not computed yet";
   }
-  if (!checksPassing(pr)) {
+  if (!checksPassing(pr, requiredCheckNames)) {
     return "checks are not passing";
   }
   return null;
 }
 
-function stackBlocker(group: PullRequest[]): string | null {
+function stackBlocker(group: PullRequest[], requiredCheckNames: string[] | null): string | null {
   if (group.some((pr) => pr.isFromFork)) {
     return "stack includes a fork";
   }
@@ -376,17 +437,75 @@ function stackBlocker(group: PullRequest[]): string | null {
   if (group.some((pr) => pr.mergeable === "UNKNOWN")) {
     return "stack mergeability not computed yet";
   }
-  if (group.some((pr) => !checksPassing(pr))) {
+  if (group.some((pr) => !checksPassing(pr, requiredCheckNames))) {
     return "stack has a pull request whose checks are not passing";
   }
   return null;
 }
 
-function checksPassing(pr: PullRequest): boolean {
-  if (pr.checks.length === 0) {
+function checksPassing(pr: PullRequest, requiredCheckNames: string[] | null): boolean {
+  const required =
+    requiredCheckNames === null || requiredCheckNames.length === 0
+      ? pr.checks.map((check) => check.name)
+      : requiredCheckNames;
+  if (required.length === 0) {
     return false;
   }
-  return pr.checks.every((check) => check.state === "passing");
+  for (const name of required) {
+    const check = pr.checks.find((candidate) => candidate.name === name);
+    if (check === undefined || check.state !== "passing") {
+      return false;
+    }
+  }
+  return true;
+}
+
+function hasDuplicateHeads(group: PullRequest[]): boolean {
+  const heads = new Set<string>();
+  for (const pr of group) {
+    if (heads.has(pr.headRefName)) {
+      return true;
+    }
+    heads.add(pr.headRefName);
+  }
+  return false;
+}
+
+function keepOneMutation(decisions: KeepUpToDateDecision[]): KeepUpToDateDecision[] {
+  let usedMutation = false;
+  const limited: KeepUpToDateDecision[] = [];
+  for (const decision of decisions) {
+    if (decision.action === "skip") {
+      limited.push(decision);
+      continue;
+    }
+    if (usedMutation) {
+      limited.push({
+        action: "skip",
+        prNumbers: mutationPrNumbers(decision),
+        reason: "another eligible update is already running this cycle",
+      });
+      continue;
+    }
+    usedMutation = true;
+    limited.push(decision);
+  }
+  return limited;
+}
+
+function mutationPrNumbers(decision: KeepUpToDateDecision): number[] {
+  switch (decision.action) {
+    case "update-branch":
+      return [decision.prNumber];
+    case "rebase-stack":
+      return decision.prs.map((pr) => pr.number);
+    case "skip":
+      return decision.prNumbers;
+    default: {
+      const _exhaustive: never = decision;
+      return _exhaustive;
+    }
+  }
 }
 
 function numbered(prs: PullRequest[]): number[] {

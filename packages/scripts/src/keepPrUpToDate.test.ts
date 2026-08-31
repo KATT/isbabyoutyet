@@ -1,5 +1,10 @@
 import { describe, expect, test } from "vitest";
-import { parseGhPullRequests, planKeepUpToDate, type PullRequest } from "./keepPrUpToDate";
+import {
+  parseGhPullRequests,
+  parseRequiredStatusCheckNames,
+  planKeepUpToDate,
+  type PullRequest,
+} from "./keepPrUpToDate";
 
 const passingChecks: PullRequest["checks"] = [{ name: "checks", state: "passing" }];
 
@@ -54,8 +59,15 @@ describe("planKeepUpToDate", () => {
     expect(plannedActions([pullRequest({ autoMergeEnabled: false })])).toEqual([]);
   });
 
-  test("does not touch an up-to-date auto-merge PR", () => {
-    expect(plannedActions([pullRequest({ behindBy: 0 })])).toEqual([]);
+  test("does not skip an up-to-date auto-merge PR whose checks are failing", () => {
+    expect(
+      plannedActions([
+        pullRequest({
+          behindBy: 0,
+          checks: [{ name: "checks", state: "failing" }],
+        }),
+      ]),
+    ).toEqual([]);
   });
 
   test("skips drafts, forks, conflicts, unknown mergeability, and failing or pending builds", () => {
@@ -84,6 +96,41 @@ describe("planKeepUpToDate", () => {
     expect(plannedActions([pullRequest({ checks: [] })])).toEqual([
       { action: "skip", prNumbers: [1], reason: "checks are not passing" },
     ]);
+  });
+
+  test("ignores non-required failing checks when required names are provided", () => {
+    expect(
+      planKeepUpToDate(
+        [
+          pullRequest({
+            checks: [
+              { name: "checks", state: "passing" },
+              { name: "codecov", state: "passing" },
+              { name: "Vercel", state: "passing" },
+              { name: "keep-up-to-date", state: "failing" },
+              { name: "Vercel Preview Comments", state: "failing" },
+            ],
+          }),
+        ],
+        { requiredCheckNames: ["Vercel", "checks", "codecov"] },
+      ).map((decision) => decision.action),
+    ).toEqual(["update-branch"]);
+  });
+
+  test("skips when a required check is missing or not passing", () => {
+    expect(
+      planKeepUpToDate(
+        [
+          pullRequest({
+            checks: [
+              { name: "checks", state: "passing" },
+              { name: "Vercel", state: "passing" },
+            ],
+          }),
+        ],
+        { requiredCheckNames: ["Vercel", "checks", "codecov"] },
+      ),
+    ).toEqual([{ action: "skip", prNumbers: [1], reason: "checks are not passing" }]);
   });
 
   test("treats skipped and neutral checks as passing, including Vercel statuses", () => {
@@ -294,7 +341,41 @@ describe("planKeepUpToDate", () => {
 
     expect(plannedActions([single, tip, root])).toEqual([
       { action: "rebase-stack", prNumbers: [10, 11] },
-      { action: "update-branch", prNumber: 20 },
+      {
+        action: "skip",
+        prNumbers: [20],
+        reason: "another eligible update is already running this cycle",
+      },
+    ]);
+  });
+
+  test("skips a stack that reuses the same head branch twice", () => {
+    const root = pullRequest({
+      number: 10,
+      headRefName: "shared-head",
+      baseRefName: "main",
+      headRefOid: "sha-10",
+    });
+    const mid = pullRequest({
+      number: 11,
+      headRefName: "mid",
+      baseRefName: "shared-head",
+      headRefOid: "sha-11",
+      behindBy: 0,
+    });
+    const again = pullRequest({
+      number: 12,
+      headRefName: "shared-head",
+      baseRefName: "mid",
+      headRefOid: "sha-12",
+      behindBy: 0,
+    });
+    expect(plannedActions([root, mid, again])).toEqual([
+      {
+        action: "skip",
+        prNumbers: [10, 11, 12],
+        reason: "stack has duplicate head branches",
+      },
     ]);
   });
 });
@@ -402,5 +483,26 @@ describe("parseGhPullRequests", () => {
         { name: "Vercel", state: "passing" },
       ],
     });
+  });
+});
+
+describe("parseRequiredStatusCheckNames", () => {
+  test("reads required check contexts from branch rules", () => {
+    expect(
+      parseRequiredStatusCheckNames([
+        { type: "deletion" },
+        {
+          type: "required_status_checks",
+          parameters: {
+            strict_required_status_checks_policy: true,
+            required_status_checks: [
+              { context: "Vercel", integration_id: 8329 },
+              { context: "checks", integration_id: 15368 },
+              { context: "codecov", integration_id: 15368 },
+            ],
+          },
+        },
+      ]),
+    ).toEqual(["Vercel", "checks", "codecov"]);
   });
 });

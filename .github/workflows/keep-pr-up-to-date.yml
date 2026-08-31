@@ -1,7 +1,7 @@
 name: keep-pr-up-to-date
 
-# Kodiak-style "keep up to date" for PRs with auto-merge enabled:
-# passing checks, no conflicts, then update (or rebase a whole stack).
+# Keep auto-merge PRs up to date: passing required checks, no conflicts, then
+# update (or rebase a whole stack). One eligible update per run.
 #
 # GitHub does not retrigger workflows for GITHUB_TOKEN pushes. Configure a
 # GitHub App (preferred) or PAT so required checks re-run after an update:
@@ -11,8 +11,11 @@ name: keep-pr-up-to-date
 #
 # Triggers are event-driven (no cron):
 # - push to a base branch: other auto-merge PRs just became behind
-# - PR auto-merge enabled / head updated / reopened / ready
-# - `main` CI completed: checks just became passing (or the base build landed)
+# - PR auto-merge enabled
+# - `main` CI completed: Actions checks just settled
+# - Vercel commit status completed (required, not an Actions workflow)
+# Stack rebase force-pushes every member of an eligible stack, including PRs
+# that do not themselves have auto-merge.
 
 on:
   push:
@@ -20,12 +23,10 @@ on:
   pull_request:
     types:
       - auto_merge_enabled
-      - synchronize
-      - reopened
-      - ready_for_review
   workflow_run:
     workflows: [main]
     types: [completed]
+  status:
   workflow_dispatch:
 
 concurrency:
@@ -34,6 +35,7 @@ concurrency:
 
 jobs:
   keep-up-to-date:
+    if: ${{ github.event_name != 'status' || github.event.context == 'Vercel' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -49,10 +51,11 @@ jobs:
           app-id: ${{ secrets.AUTO_UPDATE_APP_ID }}
           private-key: ${{ secrets.AUTO_UPDATE_APP_PRIVATE_KEY }}
 
-      - name: Warn when updates will not retrigger checks
+      - name: Require a token that retriggers checks
         if: ${{ steps.app-token.outputs.token == '' && secrets.AUTO_UPDATE_TOKEN == '' }}
         run: |
-          echo "::warning::Using GITHUB_TOKEN. GitHub will not retrigger required checks after a branch update, so auto-merge can stall. Set AUTO_UPDATE_APP_ID and AUTO_UPDATE_APP_PRIVATE_KEY (or AUTO_UPDATE_TOKEN)."
+          echo "::error::GITHUB_TOKEN updates do not retrigger required checks, so auto-merge stalls. Set AUTO_UPDATE_APP_ID and AUTO_UPDATE_APP_PRIVATE_KEY (or AUTO_UPDATE_TOKEN)."
+          exit 1
 
       - name: Checkout code
         uses: actions/checkout@v7
@@ -60,7 +63,7 @@ jobs:
           lfs: true
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
-          token: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
+          token: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -79,8 +82,8 @@ jobs:
 
       - name: Keep auto-merge PRs up to date
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

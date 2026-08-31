@@ -5,6 +5,7 @@ import type { JsonValue } from "@workspace/runtime/json";
 import { isJsonObjectValue, parseJsonNumber } from "@workspace/runtime/json";
 import {
   parseGhPullRequests,
+  parseRequiredStatusCheckNames,
   planKeepUpToDate,
   withBehindBy,
   type KeepUpToDateDecision,
@@ -38,12 +39,13 @@ async function main() {
   const repoDir = process.cwd();
 
   let parsed = await listOpenPullRequests();
-  if (parsed.some((pr) => pr.mergeable === "UNKNOWN")) {
-    await delay(2000);
+  for (let attempt = 0; attempt < 3 && parsed.some((pr) => pr.mergeable === "UNKNOWN"); attempt++) {
+    await delay(5000);
     parsed = await listOpenPullRequests();
   }
+  const requiredCheckNames = await loadRequiredCheckNames(repo);
   const prs = await Promise.all(parsed.map((pr) => withCompare(repo, pr)));
-  const decisions = planKeepUpToDate(prs);
+  const decisions = planKeepUpToDate(prs, { requiredCheckNames });
 
   const lines = ["## Keep auto-merge PRs up to date", ""];
   if (decisions.length === 0) {
@@ -151,6 +153,8 @@ async function applyDecision(
           branches: decision.prs.map((pr) => ({
             name: pr.headRefName,
             expectedHeadOid: pr.headRefOid,
+            oldParentOid: pr.baseRefOid,
+            baseRefName: pr.baseRefName,
           })),
         });
         if (!result.ok) {
@@ -183,15 +187,35 @@ async function fetchRefs(repoDir: string, refs: string[]): Promise<void> {
   await git(repoDir, ["fetch", "--quiet", "origin", ...unique]);
 }
 
+async function loadRequiredCheckNames(repo: string): Promise<string[] | null> {
+  try {
+    const output = await gh(["api", `repos/${repo}/rules/branches/main`]);
+    const names = parseRequiredStatusCheckNames(parseJson(output));
+    if (names.length === 0) {
+      return null;
+    }
+    return names;
+  } catch {
+    return null;
+  }
+}
+
 async function gh(args: string[]): Promise<string> {
-  const result = await execFileAsync("gh", args, { encoding: "utf8" });
+  const result = await execFileAsync("gh", args, {
+    encoding: "utf8",
+    maxBuffer: 10 * 1024 * 1024,
+  });
   return result.stdout;
 }
 
 async function git(repoDir: string, args: string[]): Promise<string> {
-  const result = await execFileAsync("git", ["-C", repoDir, ...args], {
-    encoding: "utf8",
-  });
+  const result = await execFileAsync(
+    "git",
+    ["-C", repoDir, "-c", "commit.gpgsign=false", "-c", "core.fsmonitor=false", ...args],
+    {
+      encoding: "utf8",
+    },
+  );
   return result.stdout.trim();
 }
 

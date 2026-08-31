@@ -14,6 +14,7 @@ test("rebases a linear stack onto an updated base", async () => {
   await writeFileInRepo({ repoDir: repo.dir, filename: "base.txt", contents: "one\n" });
   await git(repo.dir, ["add", "base.txt"]);
   await git(repo.dir, ["commit", "-m", "base-file"]);
+  const oldMain = await git(repo.dir, ["rev-parse", "HEAD"]);
 
   await git(repo.dir, ["checkout", "-b", "stack-1"]);
   await writeFileInRepo({ repoDir: repo.dir, filename: "a.txt", contents: "a\n" });
@@ -37,8 +38,18 @@ test("rebases a linear stack onto an updated base", async () => {
     repoDir: repo.dir,
     baseRef: "main",
     branches: [
-      { name: "stack-1", expectedHeadOid: stack1 },
-      { name: "stack-2", expectedHeadOid: stack2 },
+      {
+        name: "stack-1",
+        expectedHeadOid: stack1,
+        oldParentOid: oldMain,
+        baseRefName: "main",
+      },
+      {
+        name: "stack-2",
+        expectedHeadOid: stack2,
+        oldParentOid: stack1,
+        baseRefName: "stack-1",
+      },
     ],
   });
 
@@ -57,6 +68,7 @@ test("aborts a stack rebase on conflict and leaves original SHAs", async () => {
   await writeFileInRepo({ repoDir: repo.dir, filename: "file.txt", contents: "base\n" });
   await git(repo.dir, ["add", "file.txt"]);
   await git(repo.dir, ["commit", "-m", "base"]);
+  const oldMain = await git(repo.dir, ["rev-parse", "HEAD"]);
 
   await git(repo.dir, ["checkout", "-b", "stack-1"]);
   await writeFileInRepo({ repoDir: repo.dir, filename: "file.txt", contents: "feature\n" });
@@ -79,8 +91,18 @@ test("aborts a stack rebase on conflict and leaves original SHAs", async () => {
     repoDir: repo.dir,
     baseRef: "main",
     branches: [
-      { name: "stack-1", expectedHeadOid: stack1 },
-      { name: "stack-2", expectedHeadOid: stack2 },
+      {
+        name: "stack-1",
+        expectedHeadOid: stack1,
+        oldParentOid: oldMain,
+        baseRefName: "main",
+      },
+      {
+        name: "stack-2",
+        expectedHeadOid: stack2,
+        oldParentOid: stack1,
+        baseRefName: "stack-1",
+      },
     ],
   });
 
@@ -91,6 +113,7 @@ test("aborts a stack rebase on conflict and leaves original SHAs", async () => {
 
 test("refuses to rebase when a branch head moved", async () => {
   await using repo = await createGitRepo();
+  const oldMain = await git(repo.dir, ["rev-parse", "HEAD"]);
   await git(repo.dir, ["checkout", "-b", "stack-1"]);
   await git(repo.dir, ["commit", "--allow-empty", "-m", "a"]);
   const stack1 = await git(repo.dir, ["rev-parse", "HEAD"]);
@@ -99,10 +122,150 @@ test("refuses to rebase when a branch head moved", async () => {
   const result = await rebaseStackBranches({
     repoDir: repo.dir,
     baseRef: "main",
-    branches: [{ name: "stack-1", expectedHeadOid: stack1 }],
+    branches: [
+      {
+        name: "stack-1",
+        expectedHeadOid: stack1,
+        oldParentOid: oldMain,
+        baseRefName: "main",
+      },
+    ],
   });
 
   expect(result).toEqual({ ok: false, reason: "stale head on stack-1" });
+});
+
+test("rebases tree-stack siblings onto the shared parent, not each other", async () => {
+  await using repo = await createGitRepo();
+  await writeFileInRepo({ repoDir: repo.dir, filename: "base.txt", contents: "one\n" });
+  await git(repo.dir, ["add", "base.txt"]);
+  await git(repo.dir, ["commit", "-m", "base-file"]);
+  const oldMain = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "-b", "stack-1"]);
+  await writeFileInRepo({ repoDir: repo.dir, filename: "a.txt", contents: "a\n" });
+  await git(repo.dir, ["add", "a.txt"]);
+  await git(repo.dir, ["commit", "-m", "a"]);
+  const stack1 = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "-b", "stack-2a"]);
+  await writeFileInRepo({ repoDir: repo.dir, filename: "left.txt", contents: "left\n" });
+  await git(repo.dir, ["add", "left.txt"]);
+  await git(repo.dir, ["commit", "-m", "left"]);
+  const stack2a = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "-B", "stack-2b", stack1]);
+  await writeFileInRepo({ repoDir: repo.dir, filename: "right.txt", contents: "right\n" });
+  await git(repo.dir, ["add", "right.txt"]);
+  await git(repo.dir, ["commit", "-m", "right"]);
+  const stack2b = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "main"]);
+  await writeFileInRepo({ repoDir: repo.dir, filename: "base.txt", contents: "one\ntwo\n" });
+  await git(repo.dir, ["add", "base.txt"]);
+  await git(repo.dir, ["commit", "-m", "base-2"]);
+  const main = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  const result = await rebaseStackBranches({
+    repoDir: repo.dir,
+    baseRef: "main",
+    branches: [
+      {
+        name: "stack-1",
+        expectedHeadOid: stack1,
+        oldParentOid: oldMain,
+        baseRefName: "main",
+      },
+      {
+        name: "stack-2a",
+        expectedHeadOid: stack2a,
+        oldParentOid: stack1,
+        baseRefName: "stack-1",
+      },
+      {
+        name: "stack-2b",
+        expectedHeadOid: stack2b,
+        oldParentOid: stack1,
+        baseRefName: "stack-1",
+      },
+    ],
+  });
+
+  expect(result).toEqual({ ok: true });
+  expect(await git(repo.dir, ["merge-base", "--is-ancestor", main, "stack-1"])).toBe("");
+  expect(await git(repo.dir, ["merge-base", "--is-ancestor", "stack-1", "stack-2a"])).toBe("");
+  expect(await git(repo.dir, ["merge-base", "--is-ancestor", "stack-1", "stack-2b"])).toBe("");
+  expect(await showFile({ repoDir: repo.dir, filename: "left.txt", ref: "stack-2a" })).toBe(
+    "left\n",
+  );
+  expect(await showFile({ repoDir: repo.dir, filename: "right.txt", ref: "stack-2b" })).toBe(
+    "right\n",
+  );
+  expect(await git(repo.dir, ["ls-tree", "--name-only", "stack-2b"])).not.toContain("left.txt");
+  expect(await git(repo.dir, ["ls-tree", "--name-only", "stack-2a"])).not.toContain("right.txt");
+});
+
+test("does not replay a rebased parent commit onto its child", async () => {
+  await using repo = await createGitRepo();
+  await writeFileInRepo({
+    repoDir: repo.dir,
+    filename: "file.txt",
+    contents: "alpha\nbravo\ncharlie\ndelta\necho\nfoxtrot\n",
+  });
+  await git(repo.dir, ["add", "file.txt"]);
+  await git(repo.dir, ["commit", "-m", "base"]);
+  const oldMain = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "-b", "stack-1"]);
+  await writeFileInRepo({
+    repoDir: repo.dir,
+    filename: "file.txt",
+    contents: "alpha\nbravo\ncharlie\ndelta\necho\nSTACK\n",
+  });
+  await git(repo.dir, ["add", "file.txt"]);
+  await git(repo.dir, ["commit", "-m", "stack-1"]);
+  const stack1 = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "-b", "stack-2"]);
+  await writeFileInRepo({ repoDir: repo.dir, filename: "child.txt", contents: "child\n" });
+  await git(repo.dir, ["add", "child.txt"]);
+  await git(repo.dir, ["commit", "-m", "stack-2"]);
+  const stack2 = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  await git(repo.dir, ["checkout", "main"]);
+  await writeFileInRepo({
+    repoDir: repo.dir,
+    filename: "file.txt",
+    contents: "MAIN\nbravo\ncharlie\ndelta\necho\nfoxtrot\n",
+  });
+  await git(repo.dir, ["add", "file.txt"]);
+  await git(repo.dir, ["commit", "-m", "mainline"]);
+  const main = await git(repo.dir, ["rev-parse", "HEAD"]);
+
+  const result = await rebaseStackBranches({
+    repoDir: repo.dir,
+    baseRef: "main",
+    branches: [
+      {
+        name: "stack-1",
+        expectedHeadOid: stack1,
+        oldParentOid: oldMain,
+        baseRefName: "main",
+      },
+      {
+        name: "stack-2",
+        expectedHeadOid: stack2,
+        oldParentOid: stack1,
+        baseRefName: "stack-1",
+      },
+    ],
+  });
+
+  expect(result).toEqual({ ok: true });
+  expect(await showFile({ repoDir: repo.dir, filename: "file.txt", ref: "stack-2" })).toBe(
+    "MAIN\nbravo\ncharlie\ndelta\necho\nSTACK\n",
+  );
+  expect(await git(repo.dir, ["log", "--format=%s", `${main}..stack-2`])).toBe("stack-2\nstack-1");
 });
 
 async function createGitRepo() {

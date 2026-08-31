@@ -6,6 +6,8 @@ const execFileAsync = promisify(execFile);
 type StackBranch = {
   name: string;
   expectedHeadOid: string;
+  oldParentOid: string;
+  baseRefName: string;
 };
 
 export type RebaseStackRequest = {
@@ -32,26 +34,35 @@ export async function rebaseStackBranches(request: RebaseStackRequest): Promise<
     }
   }
 
-  let previousBranch = request.baseRef;
+  const stackHeads = new Set(request.branches.map((branch) => branch.name));
   for (const branch of request.branches) {
-    await git(request.repoDir, ["checkout", "--quiet", branch.name]);
-    const rebased = await tryRebase(request.repoDir, previousBranch);
+    const onto = stackHeads.has(branch.baseRefName) ? branch.baseRefName : request.baseRef;
+    const rebased = await tryRebase({
+      repoDir: request.repoDir,
+      onto,
+      oldParentOid: branch.oldParentOid,
+      branch: branch.name,
+    });
     if (!rebased) {
       await restoreBranches(request.repoDir, request.branches);
       return { ok: false, reason: `conflict on ${branch.name}` };
     }
-    previousBranch = branch.name;
   }
 
   return { ok: true };
 }
 
-async function tryRebase(repoDir: string, onto: string): Promise<boolean> {
+async function tryRebase(opts: {
+  repoDir: string;
+  onto: string;
+  oldParentOid: string;
+  branch: string;
+}): Promise<boolean> {
   try {
-    await git(repoDir, ["rebase", onto]);
+    await git(opts.repoDir, ["rebase", "--onto", opts.onto, opts.oldParentOid, opts.branch]);
     return true;
   } catch {
-    await git(repoDir, ["rebase", "--abort"]).catch(() => undefined);
+    await git(opts.repoDir, ["rebase", "--abort"]).catch(() => undefined);
     return false;
   }
 }
