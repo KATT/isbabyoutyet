@@ -42,6 +42,8 @@ function withoutKeys<TDoc extends object>(doc: TDoc, keys: ReadonlyArray<keyof T
   for (const key of keys) {
     delete copy[key];
   }
+  // SAFETY: Tests delete keys to simulate pre-backfill documents; the runtime
+  // object is still the same Convex row with those fields undefined.
   return copy as TDoc;
 }
 
