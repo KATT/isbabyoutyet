@@ -2,9 +2,9 @@
 Stack: include only for stacked PRs. Add ## Stack at the top with a two-column
 table (PR | Description). Title suffix is (n/N). Current row: bold + 👉 in the
 PR column. PR cells are `#123 1/N` references — no markdown links or repo URLs.
-When the stack cannot land in one batch, Description says when that row is safe
-to merge. Omit this entire section if this PR is not part of a stack — do not
-write n/a.
+If some rows can merge together and a later row must wait (e.g. backfill vs
+required-schema), Description says which batch it belongs to. Omit this entire
+section if this PR is not part of a stack — do not write n/a.
 -->
 
 ## Why
