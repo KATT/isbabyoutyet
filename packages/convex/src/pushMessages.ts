@@ -127,3 +127,110 @@ export function getPushMessage(opts: {
   const message = copy[opts.locale][opts.status];
   return { title: message.title(opts.babyName), body: message.body };
 }
+
+export type OwnerMessagePushEvent = "created" | "updated" | "deleted";
+
+const OWNER_PUSH_BODY_MAX_LENGTH = 180;
+
+type OwnerPushCopy = {
+  title: (babyName: string, authorName: string) => string;
+  body: (authorName: string, snippet: string) => string;
+};
+
+const ownerCopy = {
+  "en-GB": {
+    created: {
+      title: (babyName) => `New message for ${babyName}`,
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+    },
+    updated: {
+      title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
+      body: (_authorName, snippet) => snippet,
+    },
+    deleted: {
+      title: (babyName) => `A message was removed from ${babyName}'s page`,
+      body: (authorName) => `${authorName} took down their note.`,
+    },
+  },
+  "en-US": {
+    created: {
+      title: (babyName) => `New message for ${babyName}`,
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+    },
+    updated: {
+      title: (babyName, authorName) => `${authorName} updated their message on ${babyName}'s page`,
+      body: (_authorName, snippet) => snippet,
+    },
+    deleted: {
+      title: (babyName) => `A message was removed from ${babyName}'s page`,
+      body: (authorName) => `${authorName} took down their note.`,
+    },
+  },
+  sv: {
+    created: {
+      title: (babyName) => `Ny hälsning till ${babyName}`,
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+    },
+    updated: {
+      title: (babyName, authorName) =>
+        `${authorName} uppdaterade sin hälsning på ${babyName}s sida`,
+      body: (_authorName, snippet) => snippet,
+    },
+    deleted: {
+      title: (babyName) => `En hälsning togs bort från ${babyName}s sida`,
+      body: (authorName) => `${authorName} tog bort sin hälsning.`,
+    },
+  },
+  es: {
+    created: {
+      title: (babyName) => `Nuevo mensaje para ${babyName}`,
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+    },
+    updated: {
+      title: (babyName, authorName) =>
+        `${authorName} actualizó su mensaje en la página de ${babyName}`,
+      body: (_authorName, snippet) => snippet,
+    },
+    deleted: {
+      title: (babyName) => `Se eliminó un mensaje de la página de ${babyName}`,
+      body: (authorName) => `${authorName} quitó su mensaje.`,
+    },
+  },
+  "pt-BR": {
+    created: {
+      title: (babyName) => `Nova mensagem para ${babyName}`,
+      body: (authorName, snippet) => `${authorName}: ${snippet}`,
+    },
+    updated: {
+      title: (babyName, authorName) =>
+        `${authorName} atualizou a mensagem na página de ${babyName}`,
+      body: (_authorName, snippet) => snippet,
+    },
+    deleted: {
+      title: (babyName) => `Uma mensagem foi removida da página de ${babyName}`,
+      body: (authorName) => `${authorName} tirou o recado.`,
+    },
+  },
+} satisfies Record<SupportedLocale, Record<OwnerMessagePushEvent, OwnerPushCopy>>;
+
+export function truncateOwnerPushBody(text: string) {
+  if (text.length <= OWNER_PUSH_BODY_MAX_LENGTH) {
+    return text;
+  }
+  return `${text.slice(0, OWNER_PUSH_BODY_MAX_LENGTH - 1)}…`;
+}
+
+export function getOwnerPushMessage(opts: {
+  locale: SupportedLocale;
+  event: OwnerMessagePushEvent;
+  babyName: string;
+  authorName: string;
+  message: string;
+}) {
+  const message = ownerCopy[opts.locale][opts.event];
+  const snippet = truncateOwnerPushBody(opts.message);
+  return {
+    title: message.title(opts.babyName, opts.authorName),
+    body: message.body(opts.authorName, snippet),
+  };
+}

@@ -159,7 +159,10 @@ const enGB = {
   "Get Notifications": "Get Notifications",
   Unsubscribe: "Unsubscribe",
   "Get notified when the baby's status changes": "Get notified when the baby's status changes",
+  "Get notified when someone leaves a message": "Get notified when someone leaves a message",
   "Stop receiving push notifications for updates": "Stop receiving push notifications for updates",
+  "Stop receiving push notifications for messages":
+    "Stop receiving push notifications for messages",
   "Your Babies": "Your Babies",
   "Track and manage all your babies' journeys": "Keep all your baby pages in one place",
   "Add Baby": "Add Baby",
@@ -722,7 +725,9 @@ const sv: TranslationCatalog = {
   "Get Notifications": "Få notiser",
   Unsubscribe: "Stäng av notiser",
   "Get notified when the baby's status changes": "Få en notis när bäbisens status ändras",
+  "Get notified when someone leaves a message": "Få en notis när någon lämnar en hälsning",
   "Stop receiving push notifications for updates": "Stäng av pushnotiser",
+  "Stop receiving push notifications for messages": "Stäng av notiser om hälsningar",
   "Your Babies": "Dina bäbisar",
   "Track and manage all your babies' journeys": "Håll koll på alla dina bäbissidor",
   "Add Baby": "Lägg till bäbis",
@@ -1262,7 +1267,10 @@ const es: TranslationCatalog = {
   "Get Notifications": "Recibir notificaciones",
   Unsubscribe: "Cancelar suscripción",
   "Get notified when the baby's status changes": "Recibe una notificación cuando cambie el estado",
+  "Get notified when someone leaves a message":
+    "Recibe una notificación cuando alguien deje un mensaje",
   "Stop receiving push notifications for updates": "Dejar de recibir notificaciones",
+  "Stop receiving push notifications for messages": "Dejar de recibir notificaciones de mensajes",
   "Your Babies": "Tus bebés",
   "Track and manage all your babies' journeys": "Sigue y gestiona las páginas de tus bebés",
   "Add Baby": "Añadir bebé",
@@ -1811,7 +1819,10 @@ const ptBR: TranslationCatalog = {
   Unsubscribe: "Desativar notificações",
   "Get notified when the baby's status changes":
     "Ative as notificações para saber quando o status do bebê mudar",
+  "Get notified when someone leaves a message":
+    "Ative as notificações para saber quando alguém deixar um recado",
   "Stop receiving push notifications for updates": "Parar de receber notificações de novidades",
+  "Stop receiving push notifications for messages": "Parar de receber notificações de mensagens",
   "Your Babies": "Seus bebês",
   "Track and manage all your babies' journeys": "Acompanhe e cuide das páginas dos seus bebês",
   "Add Baby": "Adicionar bebê",

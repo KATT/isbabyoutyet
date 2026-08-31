@@ -1,9 +1,14 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
 import { deleteEncouragementWithTimelineItem, insertEncouragementTimelineItem } from "./timeline";
 import { appIdentity } from "./authIdentity";
 import { canManageBaby } from "./babyAccess";
+import { resolveBabyPreferences } from "./babyPreferences";
+import type { OwnerMessagePushEvent } from "../src/pushMessages";
 import { isActive } from "./softDelete";
 import { mutationWithTriggers } from "./triggers";
 
@@ -12,6 +17,45 @@ const EDIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
 function isWithinEditWindow(createdAt: number): boolean {
   return Date.now() - createdAt < EDIT_WINDOW_MS;
+}
+
+async function scheduleOwnerEncouragementPush(
+  ctx: MutationCtx,
+  opts: {
+    baby: Doc<"baby">;
+    authorName: string;
+    message: string;
+    encouragementId: Id<"encouragements">;
+    event: OwnerMessagePushEvent;
+  },
+) {
+  const existing = await ctx.db
+    .query("ownerPushSubscriptions")
+    .withIndex("by_babyId", (q) => q.eq("babyId", opts.baby._id))
+    .first();
+  if (!existing) {
+    return;
+  }
+
+  const preferences = await resolveBabyPreferences(ctx.db, opts.baby);
+  await ctx.scheduler.runAfter(0, internal.pushNotifications.sendOwnerMessageNotification, {
+    babyId: opts.baby._id,
+    babyName: opts.baby.name,
+    publicId: opts.baby.publicId,
+    authorName: opts.authorName,
+    message: opts.message,
+    encouragementId: opts.encouragementId,
+    event: opts.event,
+    locale: preferences.resolvedLocale,
+  });
+}
+
+async function callerIsManager(ctx: MutationCtx, baby: Doc<"baby">) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    return false;
+  }
+  return await canManageBaby(ctx, { baby, identity: appIdentity(identity) });
 }
 
 export const create = mutationWithTriggers({
@@ -63,6 +107,16 @@ export const create = mutationWithTriggers({
       timezone: args.timezone,
     });
 
+    if (!(await callerIsManager(ctx, baby))) {
+      await scheduleOwnerEncouragementPush(ctx, {
+        baby,
+        authorName: trimmedName,
+        message: trimmedMessage,
+        encouragementId,
+        event: "created",
+      });
+    }
+
     return encouragementId;
   },
 });
@@ -98,6 +152,17 @@ export const update = mutationWithTriggers({
     await ctx.db.patch(args.encouragementId, {
       message: trimmedMessage,
     });
+
+    const baby = await ctx.db.get(encouragement.babyId);
+    if (baby && isActive(baby)) {
+      await scheduleOwnerEncouragementPush(ctx, {
+        baby,
+        authorName: encouragement.authorName,
+        message: trimmedMessage,
+        encouragementId: args.encouragementId,
+        event: "updated",
+      });
+    }
   },
 });
 
@@ -160,6 +225,16 @@ export const remove = mutationWithTriggers({
 
     if (!isManager && !canVisitorDelete) {
       throw new Error("Not authorized to delete this encouragement");
+    }
+
+    if (!isManager) {
+      await scheduleOwnerEncouragementPush(ctx, {
+        baby,
+        authorName: encouragement.authorName,
+        message: encouragement.message,
+        encouragementId: args.encouragementId,
+        event: "deleted",
+      });
     }
 
     await deleteEncouragementWithTimelineItem(ctx, encouragement);

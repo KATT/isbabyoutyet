@@ -36,7 +36,14 @@ type BrowserPushCapability =
   | { kind: "needsIosInstall" }
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
-  | { kind: "subscribed"; subscription: PushSubscription; isSubscribed: boolean };
+  | {
+      kind: "subscribed";
+      subscription: PushSubscription;
+      family: boolean;
+      messages: boolean;
+    };
+
+export type NotificationSubscribePurpose = "family" | "messages";
 
 const browserPushCapabilityQueryKey = ["browserPushCapability"] as const;
 
@@ -85,6 +92,7 @@ type NotificationSubscribeProps = {
   babyId: Id<"baby">;
   vapidPublicKey: PreloadedConvexQuery<typeof api.pushSubscriptions.getPublicKey>;
   browserPush: InitiatedQuery<BrowserPushCapabilityFactory>;
+  purpose: NotificationSubscribePurpose;
 };
 
 export function NotificationSubscribe(props: NotificationSubscribeProps) {
@@ -101,6 +109,8 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 
   const subscribeMutationFn = useConvexMutation(api.pushSubscriptions.subscribe);
   const unsubscribeMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribe);
+  const subscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.subscribeAsOwner);
+  const unsubscribeAsOwnerMutationFn = useConvexMutation(api.pushSubscriptions.unsubscribeAsOwner);
 
   const subscribeMutation = useMutation({
     mutationFn: async () => {
@@ -137,13 +147,17 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
         subscriptionData.keys?.p256dh &&
         subscriptionData.keys?.auth
       ) {
-        return await subscribeMutationFn({
+        const subscriptionArgs = {
           babyId: props.babyId,
           endpoint: subscriptionData.endpoint,
           p256dh: subscriptionData.keys.p256dh,
           auth: subscriptionData.keys.auth,
           userAgent: navigator.userAgent,
-        });
+        };
+        if (props.purpose === "messages") {
+          return await subscribeAsOwnerMutationFn(subscriptionArgs);
+        }
+        return await subscribeMutationFn(subscriptionArgs);
       }
 
       throw new Error(t("Failed to get subscription data"));
@@ -163,12 +177,16 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
       ) {
         throw new Error(t("Failed to get subscription data"));
       }
-      return await unsubscribeMutationFn({
+      const subscriptionArgs = {
         babyId: props.babyId,
         endpoint: subscriptionData.endpoint,
         p256dh: subscriptionData.keys.p256dh,
         auth: subscriptionData.keys.auth,
-      });
+      };
+      if (props.purpose === "messages") {
+        return await unsubscribeAsOwnerMutationFn(subscriptionArgs);
+      }
+      return await unsubscribeMutationFn(subscriptionArgs);
     },
     onSuccess: () => {
       void capabilityQuery.refetch();
@@ -176,6 +194,9 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
   });
 
   const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
+  const isSubscribed =
+    capability?.kind === "subscribed" &&
+    (props.purpose === "messages" ? capability.messages : capability.family);
 
   if (!capability || !vapidPublicKey) {
     return <GetNotificationsPending />;
@@ -189,6 +210,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     case "unsubscribed":
       return (
         <NotificationSubscribeControls
+          purpose={props.purpose}
           isSubscribed={false}
           isLoading={isLoading}
           onClick={() => {
@@ -199,10 +221,11 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     case "subscribed":
       return (
         <NotificationSubscribeControls
-          isSubscribed={capability.isSubscribed}
+          purpose={props.purpose}
+          isSubscribed={isSubscribed}
           isLoading={isLoading}
           onClick={() => {
-            if (capability.isSubscribed) {
+            if (isSubscribed) {
               toast.promise(unsubscribeMutation.mutateAsync(capability.subscription), {
                 loading: t("Unsubscribing from notifications..."),
                 success: t("Unsubscribed from notifications!"),
@@ -221,7 +244,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
 }
 
 function toastSubscribe(
-  mutateAsync: () => Promise<Id<"pushSubscriptions">>,
+  mutateAsync: () => Promise<Id<"pushSubscriptions"> | Id<"ownerPushSubscriptions">>,
   t: TranslationFunction,
 ) {
   toast.promise(mutateAsync(), {
@@ -301,11 +324,13 @@ function IosPwaInstallPrompt() {
 }
 
 function NotificationSubscribeControls(props: {
+  purpose: NotificationSubscribePurpose;
   isSubscribed: boolean;
   isLoading: boolean;
   onClick: () => void;
 }) {
   const { t } = useI18n();
+  const tooltip = subscribeTooltipKey(props);
 
   return (
     <Tooltip>
@@ -336,14 +361,24 @@ function NotificationSubscribeControls(props: {
         }
       />
       <TooltipContent>
-        <p>
-          {props.isSubscribed
-            ? t("Stop receiving push notifications for updates")
-            : t("Get notified when the baby's status changes")}
-        </p>
+        <p>{t(tooltip)}</p>
       </TooltipContent>
     </Tooltip>
   );
+}
+
+function subscribeTooltipKey(opts: {
+  purpose: NotificationSubscribePurpose;
+  isSubscribed: boolean;
+}) {
+  if (opts.purpose === "messages") {
+    return opts.isSubscribed
+      ? "Stop receiving push notifications for messages"
+      : "Get notified when someone leaves a message";
+  }
+  return opts.isSubscribed
+    ? "Stop receiving push notifications for updates"
+    : "Get notified when the baby's status changes";
 }
 
 function hasLegacyMSStream(value: Window): value is Window & { MSStream: unknown } {
@@ -392,9 +427,26 @@ async function waitForServiceWorkerWithTimeout(timeoutMs: number) {
   return Promise.race([navigator.serviceWorker.ready, timeoutPromise]);
 }
 
-function fetchIsSubscribed(opts: { queryClient: QueryClient; babyRef: string; endpoint: string }) {
+function fetchFamilyIsSubscribed(opts: {
+  queryClient: QueryClient;
+  babyRef: string;
+  endpoint: string;
+}) {
   return opts.queryClient.fetchQuery(
     convexQuery(api.pushSubscriptions.isSubscribed, {
+      babyId: opts.babyRef,
+      endpoint: opts.endpoint,
+    }),
+  );
+}
+
+function fetchOwnerIsSubscribed(opts: {
+  queryClient: QueryClient;
+  babyRef: string;
+  endpoint: string;
+}) {
+  return opts.queryClient.fetchQuery(
+    convexQuery(api.pushSubscriptions.isOwnerSubscribed, {
       babyId: opts.babyRef,
       endpoint: opts.endpoint,
     }),
@@ -418,12 +470,24 @@ async function resolveBrowserPushCapability(
     const registration = await waitForServiceWorkerWithTimeout(SERVICE_WORKER_READY_TIMEOUT_MS);
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
-      const isSubscribed = await fetchIsSubscribed({
-        queryClient,
-        babyRef,
-        endpoint: subscription.endpoint,
-      });
-      return { kind: "subscribed", subscription, isSubscribed: Boolean(isSubscribed) };
+      const [family, messages] = await Promise.all([
+        fetchFamilyIsSubscribed({
+          queryClient,
+          babyRef,
+          endpoint: subscription.endpoint,
+        }),
+        fetchOwnerIsSubscribed({
+          queryClient,
+          babyRef,
+          endpoint: subscription.endpoint,
+        }),
+      ]);
+      return {
+        kind: "subscribed",
+        subscription,
+        family: Boolean(family),
+        messages: Boolean(messages),
+      };
     }
     return { kind: "unsubscribed" };
   } catch (error) {

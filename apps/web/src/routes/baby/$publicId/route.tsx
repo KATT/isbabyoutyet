@@ -372,6 +372,7 @@ function BabyPageLayout() {
                 babyId={babyDoc._id}
                 vapidPublicKey={loaderData.vapidPublicKey}
                 browserPush={loaderData.browserPush}
+                purpose={canManage ? "messages" : "family"}
               />
             </div>
             <div className="mt-4">

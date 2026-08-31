@@ -81,6 +81,22 @@ export default defineSchema({
     .index("by_babyId", ["babyId"])
     .index("by_endpoint", ["endpoint"])
     .index("by_babyId_and_endpoint", ["babyId", "endpoint"]),
+  // Managers (owner / co-parent) opt in to visitor-message alerts separately
+  // from family status-update subscriptions, so counts and payloads stay distinct.
+  ownerPushSubscriptions: defineTable({
+    babyId: v.id("baby"),
+    userId: v.string(), // Better Auth user id
+    tokenIdentifier: v.string(), // Stable Convex auth identity
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    createdAt: v.number(),
+    userAgent: v.optional(v.union(v.string(), v.null())),
+  })
+    .index("by_babyId", ["babyId"])
+    .index("by_endpoint", ["endpoint"])
+    .index("by_babyId_and_endpoint", ["babyId", "endpoint"])
+    .index("by_babyId_and_tokenIdentifier", ["babyId", "tokenIdentifier"]),
   scheduledNotifications: defineTable({
     babyId: v.id("baby"), // Reference to the baby
     scheduledId: v.optional(v.id("_scheduled_functions")), // The Convex scheduler job ID (set after scheduling)

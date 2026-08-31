@@ -172,3 +172,97 @@ test("removing an encouragement soft-deletes it so it can be recovered later", a
   expect(stored?.deletedAt).toEqual(expect.any(Number));
   expect(stored?.message).toBe("Oops wrong baby");
 });
+
+test("visitor messages notify opted-in owners, including edits and visitor deletes", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Notify Baby",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/owner-inbox",
+    p256dh: "owner-key",
+    auth: "owner-secret",
+    userAgent: "Mozilla/5.0",
+  });
+
+  const encouragementId = await t.mutation(api.encouragements.create, {
+    babyId: created.babyId,
+    authorName: "Grandma",
+    message: "Thinking of you!",
+    visitorId: "visitor-1",
+  });
+  await t.finishInProgressScheduledFunctions();
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/owner-inbox",
+    }),
+  ).toBe(true);
+
+  await t.mutation(api.encouragements.update, {
+    encouragementId,
+    visitorId: "visitor-1",
+    message: "Thinking of you both!",
+  });
+  await t.finishInProgressScheduledFunctions();
+  const afterEdit = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(afterEdit.page).toMatchObject([{ message: "Thinking of you both!" }]);
+
+  await t.mutation(api.encouragements.remove, {
+    encouragementId,
+    visitorId: "visitor-1",
+  });
+  await t.finishInProgressScheduledFunctions();
+  const afterDelete = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(afterDelete.page).toEqual([]);
+});
+
+test("a manager deleting a message does not notify owners", async () => {
+  const t = convexTest(schema, modules);
+  await registerComponents(t);
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(api.baby.create, {
+    name: "Quiet Delete Baby",
+    dueDate: "2026-09-01",
+  });
+  await asAlice.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: created.babyId,
+    endpoint: "https://push.example/owner-inbox",
+    p256dh: "owner-key",
+    auth: "owner-secret",
+    userAgent: "Mozilla/5.0",
+  });
+
+  const encouragementId = await t.mutation(api.encouragements.create, {
+    babyId: created.babyId,
+    authorName: "Stranger",
+    message: "Please delete me",
+    visitorId: "visitor-x",
+  });
+  await t.finishInProgressScheduledFunctions();
+
+  await asAlice.mutation(api.encouragements.remove, { encouragementId });
+  await t.finishInProgressScheduledFunctions();
+
+  const listed = await t.query(api.encouragements.listByBaby, {
+    babyId: created.babyId,
+    paginationOpts: FIRST_PAGE,
+  });
+  expect(listed.page).toEqual([]);
+  expect(
+    await t.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: created.babyId,
+      endpoint: "https://push.example/owner-inbox",
+    }),
+  ).toBe(true);
+});

@@ -25,7 +25,12 @@ type BrowserPushCapability =
   | { kind: "needsIosInstall" }
   | { kind: "serviceWorkerTimeout" }
   | { kind: "unsubscribed" }
-  | { kind: "subscribed"; subscription: PushSubscription; isSubscribed: boolean };
+  | {
+      kind: "subscribed";
+      subscription: PushSubscription;
+      family: boolean;
+      messages: boolean;
+    };
 
 type BrowserPushStub = {
   userAgent: string;
@@ -145,6 +150,9 @@ function queryClientResource(isSubscribedInConvex = true) {
           if (name === "pushSubscriptions:isSubscribed") {
             return Promise.resolve(isSubscribedInConvex);
           }
+          if (name === "pushSubscriptions:isOwnerSubscribed") {
+            return Promise.resolve(isSubscribedInConvex);
+          }
           return Promise.reject(new Error(`unexpected query ${name}`));
         },
       },
@@ -155,7 +163,10 @@ function queryClientResource(isSubscribedInConvex = true) {
   });
 }
 
-async function renderSubscribe(capability: BrowserPushCapability) {
+async function renderSubscribe(
+  capability: BrowserPushCapability,
+  purpose: "family" | "messages" = "family",
+) {
   const harnessCtx = await createConvexTestHarness({ identity: null });
   await signUpTestUser(harnessCtx, {
     email: "owner@example.com",
@@ -178,6 +189,7 @@ async function renderSubscribe(capability: BrowserPushCapability) {
             capability,
             babyRef,
           )}
+          purpose={purpose}
         />
       </TooltipProvider>
     ),
@@ -254,7 +266,12 @@ test("returns the existing browser push subscription and Convex isSubscribed", a
 
   const capability = await queryClient.fetchQuery(browserPushQueryOptions(queryClient, babyRef));
 
-  expect(capability).toEqual({ kind: "subscribed", subscription, isSubscribed: true });
+  expect(capability).toEqual({
+    kind: "subscribed",
+    subscription,
+    family: true,
+    messages: true,
+  });
 });
 
 test("lets an installed iOS PWA subscribe instead of showing the install guide", async () => {
@@ -337,7 +354,8 @@ test("prefetches capability and isSubscribed into the query cache in the browser
     ).toEqual({
       kind: "subscribed",
       subscription: { endpoint: "https://push.example/sub" },
-      isSubscribed: true,
+      family: true,
+      messages: true,
     });
   });
 });
@@ -394,7 +412,8 @@ test("shows unsubscribe when Convex reports an active subscription", async () =>
   await using view = await renderSubscribe({
     kind: "subscribed",
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    isSubscribed: true,
+    family: true,
+    messages: false,
   });
 
   expect(view.getByRole("button", { name: "Unsubscribe" })).toBeTruthy();
@@ -404,8 +423,29 @@ test("offers subscribe when the browser is subscribed but Convex is not", async 
   await using view = await renderSubscribe({
     kind: "subscribed",
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
-    isSubscribed: false,
+    family: false,
+    messages: false,
   });
+
+  expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
+});
+
+test("owners subscribe for visitor messages rather than family status alerts", async () => {
+  await using view = await renderSubscribe({ kind: "unsubscribed" }, "messages");
+
+  expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
+});
+
+test("message purpose treats family-only browser subscriptions as unsubscribed", async () => {
+  await using view = await renderSubscribe(
+    {
+      kind: "subscribed",
+      subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
+      family: true,
+      messages: false,
+    },
+    "messages",
+  );
 
   expect(view.getByRole("button", { name: "Get Notifications" })).toBeTruthy();
 });
