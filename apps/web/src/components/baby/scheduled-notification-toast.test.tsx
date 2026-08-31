@@ -120,3 +120,36 @@ test("shows the exact subscriber count in a pending notification toast", async (
     expect(view.queryByText("Sending notification...")).toBeNull();
   });
 });
+
+test("shows a pending notification countdown even with no subscribers", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const ownerId = await signUpTestUser(harness, {
+    email: "owner@example.com",
+    password: "password123",
+    name: "Owner",
+  });
+  harness.withIdentity({ subject: ownerId });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await seedPendingLaborNotification(harness, { babyId: baby.babyId });
+
+  const notifications = await harness.convexPreloader.ensureQueryData(
+    api.baby.getScheduledNotifications,
+    { babyId: baby.babyId },
+  );
+  const subscriptionCount = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getSubscriptionCount,
+    { babyId: baby.babyId },
+  );
+
+  await using view = await renderToastResource(
+    harness,
+    <ScheduledNotificationToast
+      notifications={notifications}
+      subscriptionCount={subscriptionCount}
+    />,
+  );
+
+  expect(view.container.textContent).toContain("Sending notification...");
+  expect(view.container.textContent).toContain("No one is subscribed yet");
+  expect(view.getByRole("button", { name: "Cancel" })).toBeTruthy();
+});

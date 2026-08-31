@@ -18,6 +18,7 @@ import type { NotifiableStatus } from "@workspace/convex/src/types";
 import { FORBIDDEN } from "@workspace/convex/src/types";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
 import { usePreloadedConvexQuery } from "@workspace/convex-prefetch";
+import type { TranslationFunction } from "@/lib/i18n";
 import { Form, SubmitButton, useZodForm } from "@/components/Form";
 import { useI18n } from "@/lib/i18n";
 import { useTimedTransition } from "@/lib/use-delayed-action";
@@ -52,17 +53,14 @@ export function ScheduledNotificationToast(props: ScheduledNotificationToastProp
   );
   const subscriptionCount =
     subscriptionCountQuery.data === FORBIDDEN ? 0 : subscriptionCountQuery.data;
-  const tickEnabled = subscriptionCount > 0 && notifications.length > 0;
+  const tickEnabled = notifications.length > 0;
   const currentSecond = useCurrentSecond(tickEnabled);
   if (!tickEnabled || currentSecond === null) return null;
 
   const currentTime = currentSecond * 1000;
 
   return (
-    <aside
-      className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col gap-2"
-      aria-live="polite"
-    >
+    <aside className="pointer-events-auto flex w-full flex-col gap-2" aria-live="polite">
       {notifications.map((notification) => (
         <ScheduledNotificationItem
           key={notification._id}
@@ -107,7 +105,10 @@ function ScheduledNotificationItem(props: {
   if (!sentRecently) return null;
 
   return (
-    <Item variant="outline" className="min-w-[300px] border-green-500/50 bg-background shadow-lg">
+    <Item
+      variant="outline"
+      className="w-full min-w-0 flex-nowrap border-green-500/50 bg-background shadow-lg"
+    >
       <ItemMedia className="size-10 rounded-full bg-green-500/10">
         <Check className="size-5 text-green-500" />
       </ItemMedia>
@@ -115,9 +116,7 @@ function ScheduledNotificationItem(props: {
         <ItemTitle>{t("Notification sent!")}</ItemTitle>
         <ItemDescription>
           {t(NOTIFICATION_LABEL_KEYS[props.notification.notificationType])} ·{" "}
-          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-            count: props.subscriptionCount,
-          })}
+          {notificationAudienceLabel(t, props.subscriptionCount)}
         </ItemDescription>
       </ItemContent>
     </Item>
@@ -147,7 +146,7 @@ function NotificationToastContent(props: NotificationToastContentProps) {
   if (cancelMutation.isSuccess) return null;
 
   return (
-    <Item variant="outline" className="min-w-[300px] shadow-lg bg-background">
+    <Item variant="outline" className="w-full min-w-0 flex-nowrap bg-background shadow-lg">
       <ItemMedia className="size-10 rounded-full bg-primary/10 tabular-nums text-lg font-semibold text-primary">
         {seconds}
       </ItemMedia>
@@ -155,12 +154,10 @@ function NotificationToastContent(props: NotificationToastContentProps) {
         <ItemTitle>{t("Sending notification...")}</ItemTitle>
         <ItemDescription>
           {t(NOTIFICATION_LABEL_KEYS[props.notificationType])} ·{" "}
-          {t(props.subscriptionCount === 1 ? "{{count}} person" : "{{count}} people", {
-            count: props.subscriptionCount,
-          })}
+          {notificationAudienceLabel(t, props.subscriptionCount)}
         </ItemDescription>
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="shrink-0">
         <Form
           form={form}
           handleSubmit={async () => {
@@ -171,7 +168,8 @@ function NotificationToastContent(props: NotificationToastContentProps) {
           <SubmitButton
             form="context"
             variant="outline"
-            size="sm"
+            size="default"
+            className="relative after:absolute after:-inset-3 after:content-['']"
             IconComponent={X}
             iconPosition="start"
           >
@@ -181,4 +179,14 @@ function NotificationToastContent(props: NotificationToastContentProps) {
       </ItemActions>
     </Item>
   );
+}
+
+function notificationAudienceLabel(t: TranslationFunction, count: number) {
+  if (count === 0) {
+    return t("No one is subscribed yet");
+  }
+  if (count === 1) {
+    return t("{{count}} person", { count });
+  }
+  return t("{{count}} people", { count });
 }
