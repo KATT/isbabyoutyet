@@ -22,7 +22,7 @@ import {
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
-import { htmlButton, htmlInput, htmlImage, htmlElement } from "@/test/htmlElement";
+import { htmlButton, htmlInput, htmlTextArea, htmlImage, htmlElement } from "@/test/htmlElement";
 
 function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
   return isPlainObject(args);
@@ -776,8 +776,8 @@ test("EncouragementForm restores a session draft silently", async () => {
     wrap: null,
   });
 
-  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Auntie Jo");
-  expect((view.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("Saved draft text");
+  expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Auntie Jo");
+  expect(htmlTextArea(view.getByLabelText("Message")).value).toBe("Saved draft text");
 });
 
 test("EncouragementForm prefers a session name draft over committed localStorage", async () => {
@@ -799,7 +799,7 @@ test("EncouragementForm prefers a session name draft over committed localStorage
     wrap: null,
   });
 
-  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Draft Name");
+  expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Draft Name");
 });
 
 test("EncouragementForm submit reaches the Convex mutation", async () => {

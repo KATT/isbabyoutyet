@@ -269,7 +269,11 @@ test("infinite scroll sentinel requests another page when visible", async () => 
       observers.push(callback);
     }
     observe() {
-      this.callback([{ isIntersecting: true } as IntersectionObserverEntry], this);
+      this.callback(
+        /* SAFETY: mock entry only needs isIntersecting for this callback. */
+        [{ isIntersecting: true } as IntersectionObserverEntry],
+        this,
+      );
     }
     unobserve() {}
     disconnect() {}

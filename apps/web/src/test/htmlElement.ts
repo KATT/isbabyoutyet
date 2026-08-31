@@ -17,6 +17,13 @@ export function htmlInput(node: EventTarget | Node | null) {
   throw new Error("expected HTMLInputElement");
 }
 
+export function htmlTextArea(node: EventTarget | Node | null) {
+  if (node instanceof HTMLTextAreaElement) {
+    return node;
+  }
+  throw new Error("expected HTMLTextAreaElement");
+}
+
 export function htmlImage(node: EventTarget | Node | null) {
   if (node instanceof HTMLImageElement) {
     return node;
