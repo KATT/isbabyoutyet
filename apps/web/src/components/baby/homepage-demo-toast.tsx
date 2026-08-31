@@ -1,5 +1,5 @@
 import { useI18n } from "@/lib/i18n";
-import { Info, X } from "@phosphor-icons/react";
+import { Info } from "@phosphor-icons/react";
 import { isHomepageDemoPublicId } from "@workspace/convex/src/seedCredentials";
 import { Button } from "@workspace/ui/components/button";
 import {
@@ -28,28 +28,28 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
   if (!isHomepageDemoPublicId(props.publicId) || dismissed) return null;
 
   return (
-    <aside className="fixed bottom-4 left-4 z-40 max-w-[calc(100vw-2rem)]" aria-live="polite">
+    <aside className="pointer-events-auto w-full" aria-live="polite">
       <Item
         variant="outline"
-        className="min-w-[300px] max-w-sm border-primary/40 bg-background shadow-lg"
+        className="w-full min-w-0 flex-nowrap border-primary/40 bg-background shadow-lg"
       >
         <ItemMedia className="size-10 rounded-full bg-primary/10">
           <Info className="size-5 text-primary" />
         </ItemMedia>
-        <ItemContent>
+        <ItemContent className="min-w-0">
           <ItemTitle>{t("This is a demo baby")}</ItemTitle>
           <ItemDescription>
             {t("Feel free to post test messages — we reset this demo daily.")}
           </ItemDescription>
         </ItemContent>
-        <ItemActions>
+        <ItemActions className="shrink-0 self-start">
           <Button
-            variant="ghost"
-            size="icon"
-            aria-label={t("Hide tip")}
+            variant="outline"
+            size="default"
+            className="relative after:absolute after:-inset-3 after:content-['']"
             onClick={() => homepageDemoDismissals.dismiss(props.publicId)}
           >
-            <X />
+            {t("Got it")}
           </Button>
         </ItemActions>
       </Item>

@@ -59,6 +59,7 @@ test("delays becoming true and hides on the next timeout", async () => {
 test("reports only a live transition for the configured duration", async () => {
   vi.useFakeTimers();
   await using _timers = makeResource({}, () => vi.useRealTimers());
+  // SAFETY: Test fixture is a subset of the production type.
   const initialProps = { value: "sent" as "pending" | "sent" };
   const hook = renderHook(
     (props) =>

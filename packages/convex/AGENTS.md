@@ -16,7 +16,7 @@ stacked migration PRs), read
 before editing `schema.ts` or `migrations.ts`.
 
 `v.optional()` on schema fields and RPC args is a migration transient only.
-Undocumented optionals fail `no-convex-optional/no-undocumented-optional`;
+Undocumented optionals fail `workspace/no-undocumented-optional`;
 mark remaining optionals with JSDoc `@todo` (they are still in use), then
 backfill and require the key. `baby.update` is a documented exception: sparse
 patch args stay `v.optional()` with an `oxlint-disable` because omitted keys

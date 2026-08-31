@@ -186,7 +186,8 @@ test("completeStep rejects unknown step ids", async () => {
   const asAlice = t.withIdentity({ subject: "alice" });
 
   await expect(
-    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" as never }),
+    // @ts-expect-error — "not_a_real_step" is not an onboarding step id
+    asAlice.mutation(api.onboarding.completeStep, { stepId: "not_a_real_step" }),
   ).rejects.toThrow(/Validator error/);
 });
 

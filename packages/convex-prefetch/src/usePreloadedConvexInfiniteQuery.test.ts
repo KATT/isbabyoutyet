@@ -35,7 +35,8 @@ function idleWatchQuery() {
  * carries a `watchQuery`-shaped stand-in for the live-page subscriptions.
  */
 function createWrapper(queryClient: QueryClient, watchQuery: WatchQuery) {
-  const convex = { watchQuery } as unknown as ConvexReactClient;
+  // @ts-expect-error — stand-in only implements watchQuery
+  const convex: ConvexReactClient = { watchQuery };
   return function Wrapper(props: { children: React.ReactNode }) {
     return React.createElement(
       ConvexProvider,
@@ -47,9 +48,10 @@ function createWrapper(queryClient: QueryClient, watchQuery: WatchQuery) {
 
 test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", async () => {
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
-  } as never);
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   const handle = testPreloadedConvexInfiniteQuery({
@@ -59,12 +61,13 @@ test("usePreloadedConvexInfiniteQuery reads preloaded pages and watches them", a
       pages: [{ page: [{ id: "1", tag: "news" }], isDone: true, continueCursor: "" }],
       pageParams: [{ numItems: 20, cursor: null }],
     },
-  } as never);
+  });
 
   const watchQuery = idleWatchQuery();
   const { result } = renderHook(
     () =>
-      usePreloadedConvexInfiniteQuery("posts:list" as never, {
+      // @ts-expect-error — string is not a FunctionReference
+      usePreloadedConvexInfiniteQuery("posts:list", {
         handle,
         remixArgs: null,
       }),
@@ -93,16 +96,18 @@ test("usePreloadedConvexInfiniteQuery fetches when the handle has no initialData
     continueCursor: "",
   }));
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query },
     serverHttpClient: undefined,
-  } as never);
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   const initiatedHandle = { input: { tag: "news" }, numItems: 20 };
   const { result } = renderHook(
     () =>
-      usePreloadedConvexInfiniteQuery("posts:listFresh" as never, {
-        handle: initiatedHandle as never,
+      // @ts-expect-error — string is not a FunctionReference
+      usePreloadedConvexInfiniteQuery("posts:listFresh", {
+        handle: initiatedHandle,
         remixArgs: null,
       }),
     { wrapper: createWrapper(queryClient, idleWatchQuery()) },
@@ -123,9 +128,10 @@ test("usePreloadedConvexInfiniteQuery fetches when the handle has no initialData
 
 test("usePreloadedConvexInfiniteQuery remixes args from local state", async () => {
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: vi.fn<() => Promise<TestInfinitePage>>() },
     serverHttpClient: undefined,
-  } as never);
+  });
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
   const handle = testPreloadedConvexInfiniteQuery({
@@ -135,12 +141,13 @@ test("usePreloadedConvexInfiniteQuery remixes args from local state", async () =
       pages: [{ page: [{ id: "1", tag: "news" }], isDone: true, continueCursor: "" }],
       pageParams: [{ numItems: 20, cursor: null }],
     },
-  } as never);
+  });
 
   const watchQuery = idleWatchQuery();
   const { result } = renderHook(
     () =>
-      usePreloadedConvexInfiniteQuery("posts:list" as never, {
+      // @ts-expect-error — string is not a FunctionReference
+      usePreloadedConvexInfiniteQuery("posts:list", {
         handle,
         remixArgs: (args) => ({ ...args, visitor: "v1" }),
       }),

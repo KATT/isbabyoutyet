@@ -8,7 +8,6 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
-import { render } from "@testing-library/react";
 import { getFunctionName } from "convex/server";
 import type { FunctionReturnType } from "convex/server";
 import { expect, test, vi } from "vitest";
@@ -17,10 +16,12 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
+import { renderResource } from "@/test/renderResource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashboard/route";
 
 const babySmith = {
+  // SAFETY: Seeded convex-test document id.
   _id: "baby-id" as Id<"baby">,
   name: "Baby Smith",
   timeZone: "Europe/London",
@@ -61,18 +62,19 @@ function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
   opts: { path: string; getParentRoute: () => AnyRoute },
 ): TRoute {
+  // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
   return update(opts);
 }
 
-type EnsureQueryData = (
+type FetchQueryData = (
   query: Parameters<typeof getFunctionName>[0],
   input: Record<string, never>,
 ) => Promise<{ input: Record<string, never>; initialData: unknown }>;
 
 function stubPreloader(babies: (typeof babySmith)[]) {
   const calls: string[] = [];
-  const ensureQueryData = vi.fn<EnsureQueryData>((query, input) => {
+  const fetchQueryData = vi.fn<FetchQueryData>((query, input) => {
     const name = getFunctionName(query);
     calls.push(name);
     return Promise.resolve({
@@ -80,7 +82,7 @@ function stubPreloader(babies: (typeof babySmith)[]) {
       initialData: name === getFunctionName(api.baby.listByUser) ? babies : onboardingProgress,
     });
   });
-  return { calls, context: { convexPreloader: { ensureQueryData } } };
+  return { calls, context: { convexPreloader: { fetchQueryData } } };
 }
 
 test("shows the empty state once the list has loaded with no babies", async () => {
@@ -142,9 +144,8 @@ test("parent dashboard stays mounted while child routes render through its outle
   });
   await router.load();
 
-  const rendered = render(<RouterProvider router={router} />);
+  const rendered = renderResource(<RouterProvider router={router} />);
   await using view = makeResource(rendered, () => {
-    rendered.unmount();
     queryClient.clear();
   });
 
@@ -152,11 +153,12 @@ test("parent dashboard stays mounted while child routes render through its outle
   expect(view.getByTestId("dashboard-outlet")).toBeTruthy();
 });
 
-test("parent dashboard loader starts independent prefetches without a waterfall", async () => {
+test("parent dashboard loader refetches auth-scoped reads without a waterfall", async () => {
   const preloader = stubPreloader([]);
-  const loader = Route.options.loader as unknown as (opts: {
+  // @ts-expect-error — stub context is the subset the loader reads
+  const loader: (opts: {
     context: typeof preloader.context;
-  }) => Promise<{ babies: object; onboarding: object }>;
+  }) => Promise<{ babies: object; onboarding: object }> = Route.options.loader;
 
   const pending = loader({ context: preloader.context });
 

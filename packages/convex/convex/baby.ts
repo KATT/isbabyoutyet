@@ -578,7 +578,7 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     babyId: v.id("baby"),
-    /* oxlint-disable no-convex-optional/no-undocumented-optional -- Sparse patch; omitted keys mean unchanged and map to ctx.db.patch. */
+    /* oxlint-disable workspace/no-undocumented-optional -- Sparse patch; omitted keys mean unchanged and map to ctx.db.patch. */
     dueDate: v.optional(v.union(v.string(), v.null())),
     dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
     publicDueDateText: v.optional(v.union(v.string(), v.null())),

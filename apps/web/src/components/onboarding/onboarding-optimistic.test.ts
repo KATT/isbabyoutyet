@@ -39,6 +39,7 @@ function createMineStore(seed: OnboardingProgress | undefined) {
       return value;
     },
   };
+  // SAFETY: Test fixture is a subset of the production type.
   return store as OptimisticLocalStore & {
     read: () => OnboardingProgress | undefined;
   };

@@ -12,6 +12,7 @@ export function testPreloadedConvexQuery<TQuery extends QueryReference>(opts: {
   input: FunctionArgs<TQuery>;
   initialData: FunctionReturnType<TQuery>;
 }): PreloadedConvexQuery<TQuery> {
+  // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
   return { input: opts.input, initialData: opts.initialData } as PreloadedConvexQuery<TQuery>;
 }
 
@@ -21,6 +22,7 @@ export function testPreloadedConvexInfiniteQuery<TQuery extends PaginatedQueryRe
   numItems: number;
   initialData: InfiniteData<FunctionReturnType<TQuery>, PaginationOptions>;
 }): PreloadedConvexInfiniteQuery<TQuery> {
+  // SAFETY: Test fixture is a subset of the production type.
   return {
     input: opts.input,
     numItems: opts.numItems,

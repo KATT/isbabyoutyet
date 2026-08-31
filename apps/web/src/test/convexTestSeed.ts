@@ -21,6 +21,7 @@ export async function seedOwnedBaby(
     theme: null,
   });
   return {
+    // SAFETY: Seeded convex-test document id.
     babyId: created.babyId as Id<"baby">,
     publicId: created.publicId,
   };

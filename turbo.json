@@ -25,10 +25,13 @@
     },
     "test": {},
     "lint": {
+      "dependsOn": ["@workspace/oxlint-plugins#build"]
     },
     "lint-fix": {
+      "dependsOn": ["@workspace/oxlint-plugins#build"]
     },
     "format": {
+      "dependsOn": ["@workspace/oxlint-plugins#build"]
     },
     "//#test:coverage": {
       "outputs": [
@@ -40,7 +43,7 @@
         "$TURBO_ROOT$/vitest.config.ts",
         "$TURBO_ROOT$/apps/**",
         "$TURBO_ROOT$/packages/**",
-        "$TURBO_ROOT$/oxlint-plugins/**",
+        "!$TURBO_ROOT$/packages/oxlint-plugins/*.ts",
         "!$TURBO_ROOT$/**/node_modules/**",
         "!$TURBO_ROOT$/**/.turbo/**",
         "!$TURBO_ROOT$/coverage/**",

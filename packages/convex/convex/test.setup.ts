@@ -46,12 +46,14 @@ type TestConvex = ReturnType<typeof convexTest>;
 
 export async function registerComponents(t: TestConvex) {
   const babyAuditLogSchema =
+    // SAFETY: Test fixture is a subset of the production type.
     (await import("../node_modules/convex-table-history/src/component/schema")) as {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
   t.registerComponent("babyAuditLog", babyAuditLogSchema.default, babyAuditLogModules);
 
   const betterAuthSchema =
+    // SAFETY: Test fixture is a subset of the production type.
     (await import("../node_modules/@convex-dev/better-auth/dist/component/schema.js")) as {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
@@ -60,6 +62,7 @@ export async function registerComponents(t: TestConvex) {
 
 export async function registerMigrationsComponent(t: TestConvex) {
   const migrationsSchema =
+    // SAFETY: Test fixture is a subset of the production type.
     (await import("../node_modules/@convex-dev/migrations/dist/component/schema.js")) as {
       default: Parameters<TestConvex["registerComponent"]>[1];
     };
