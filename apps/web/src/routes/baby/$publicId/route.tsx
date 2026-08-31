@@ -292,7 +292,7 @@ function BabyPageLayout() {
   return (
     <div className="min-h-screen bg-background bg-dots">
       <div className="pointer-events-none fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-50 mx-auto flex w-auto max-w-sm flex-col gap-2 sm:inset-x-auto sm:right-4 sm:left-auto sm:mx-0">
-      <HomepageDemoToast publicId={babyDoc.publicId} />
+        <HomepageDemoToast publicId={babyDoc.publicId} />
         {canManage && birthJourney && managerBaby ? (
           <ScheduledNotificationToast
             notifications={loaderData.scheduledNotifications}
