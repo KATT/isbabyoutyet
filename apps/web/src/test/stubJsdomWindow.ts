@@ -10,8 +10,8 @@
  * test helpers so most tests never call this directly.
  *
  * This file is also a Vitest `setupFiles` entry so better-auth's broadcast
- * channel is replaced *before* that package loads. Window stubs are not
- * installed at import time.
+ * channel, focus manager, and online manager are replaced *before* that
+ * package loads. Window stubs are not installed at import time.
  */
 
 import { webcrypto } from "node:crypto";
@@ -21,6 +21,8 @@ import { isFunction, isPlainObject } from "@workspace/runtime/guards";
 import { vi } from "vitest";
 
 const kAuthBroadcastChannel = Symbol.for("better-auth:broadcast-channel");
+const kAuthFocusManager = Symbol.for("better-auth:focus-manager");
+const kAuthOnlineManager = Symbol.for("better-auth:online-manager");
 
 class StubAuthBroadcastChannel {
   subscribe() {
@@ -34,10 +36,42 @@ class StubAuthBroadcastChannel {
   }
 }
 
-// better-auth's default channel cleanup calls window.removeEventListener after
-// jsdom tears down, which vitest reports as an unhandled error. Never restore:
-// leftover session-refresh cleanup must keep hitting this no-op.
-Object.assign(globalThis, { [kAuthBroadcastChannel]: new StubAuthBroadcastChannel() });
+class StubAuthFocusManager {
+  subscribe() {
+    return () => {};
+  }
+
+  setFocused() {}
+
+  setup() {
+    return () => {};
+  }
+}
+
+class StubAuthOnlineManager {
+  isOnline = true;
+
+  subscribe() {
+    return () => {};
+  }
+
+  setOnline() {}
+
+  setup() {
+    return () => {};
+  }
+}
+
+// better-auth's default host cleanup uses window/document after jsdom tears
+// down (broadcast: window.removeEventListener, focus: document.removeEventListener,
+// online: window.removeEventListener). Vitest reports that as an unhandled
+// error from leftover nanostores session-refresh cleanup. Never restore:
+// leftover cleanup must keep hitting these no-ops.
+Object.assign(globalThis, {
+  [kAuthBroadcastChannel]: new StubAuthBroadcastChannel(),
+  [kAuthFocusManager]: new StubAuthFocusManager(),
+  [kAuthOnlineManager]: new StubAuthOnlineManager(),
+});
 
 class StubObserver {
   observe() {}

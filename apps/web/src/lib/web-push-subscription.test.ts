@@ -6,11 +6,12 @@ const VAPID_PUBLIC_KEY = btoa("test-vapid-public-key");
 const ENDPOINT = "https://push.example/owner";
 
 function pushSubscription(opts: { keys: { p256dh: string; auth: string } | null }) {
+  // SAFETY: Test fixture is a subset of the production type.
   return {
     endpoint: ENDPOINT,
     toJSON: () =>
       opts.keys ? { endpoint: ENDPOINT, keys: opts.keys } : { endpoint: ENDPOINT, keys: undefined },
-  } as unknown as PushSubscription;
+  } as PushSubscription;
 }
 
 function stubPushEnvironment(opts: {
@@ -37,7 +38,8 @@ function stubPushEnvironment(opts: {
     });
   }
 
-  const NotificationStub = function Notification() {} as unknown as typeof Notification;
+  // SAFETY: Mock constructor is installed in place of the browser global.
+  const NotificationStub = function Notification() {} as typeof Notification;
   Object.defineProperty(NotificationStub, "permission", {
     configurable: true,
     get: () => opts.permission,
@@ -53,6 +55,7 @@ function stubPushEnvironment(opts: {
     descriptor: { value: NotificationStub },
   });
 
+  // SAFETY: Test fixture is a subset of the production type.
   const registration = {
     pushManager: {
       getSubscription: () => Promise.resolve(current),

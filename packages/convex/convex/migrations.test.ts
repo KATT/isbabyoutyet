@@ -1,7 +1,6 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { internal } from "./_generated/api";
-import type { Doc } from "./_generated/dataModel";
 import {
   backfillBabyBirthJourneyDoc,
   backfillBabyLastActivityAtDoc,
@@ -76,7 +75,7 @@ test("retained migrations skip linked rows and backfill update metadata and coun
     await backfillEncouragementTimelineDoc(ctx, {
       ...encouragement,
       timelineItemId: undefined,
-    } as unknown as Doc<"encouragements">);
+    });
     await backfillUpdatePostedByUserIdDoc(ctx, update);
     const updated = await ctx.db.get(ids.updateId);
     if (!updated) throw new Error("Updated fixture missing");
@@ -84,11 +83,11 @@ test("retained migrations skip linked rows and backfill update metadata and coun
     await backfillBabyBirthJourneyDoc(ctx, {
       ...baby,
       birthJourney: undefined,
-    } as unknown as Doc<"baby">);
+    });
     await backfillBabyLastActivityAtDoc(ctx, {
       ...baby,
       lastActivityAt: undefined,
-    } as unknown as Doc<"baby">);
+    });
     await backfillBabySubscriptionCountDoc(ctx, baby);
   });
 

@@ -4,6 +4,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { useEncouragementMessageDraft } from "@/lib/use-encouragement-message-draft";
 
+// SAFETY: Seeded convex-test document id.
 const babyId = "baby_test_2" as Id<"baby">;
 
 function sessionStorageResource() {

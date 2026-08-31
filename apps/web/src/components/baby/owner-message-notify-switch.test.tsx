@@ -2,7 +2,6 @@ import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
-import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { LocaleProvider } from "@/lib/i18n";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
@@ -18,13 +17,14 @@ import {
 const ENDPOINT = "https://push.example/owner-messages";
 
 function pushSubscription() {
+  // SAFETY: Test fixture is a subset of the production type.
   return {
     endpoint: ENDPOINT,
     toJSON: () => ({
       endpoint: ENDPOINT,
       keys: { p256dh: "p256", auth: "auth" },
     }),
-  } as unknown as PushSubscription;
+  } as PushSubscription;
 }
 
 function stubGrantedPush(opts: { existing: PushSubscription | null }) {
@@ -46,7 +46,8 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
     });
   }
 
-  const NotificationStub = function Notification() {} as unknown as typeof Notification;
+  // SAFETY: Mock constructor is installed in place of the browser global.
+  const NotificationStub = function Notification() {} as typeof Notification;
   Object.defineProperty(NotificationStub, "permission", {
     configurable: true,
     get: () => "granted",
@@ -56,6 +57,7 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
     descriptor: { value: NotificationStub },
   });
 
+  // SAFETY: Test fixture is a subset of the production type.
   const registration = {
     pushManager: {
       getSubscription: () => Promise.resolve(current),
@@ -111,7 +113,7 @@ async function renderLiveSwitch(opts: {
     ),
     wrap: null,
   });
-  return makeAsyncResource({ view, harness, babyId: baby.babyId as Id<"baby"> }, async () => {
+  return makeAsyncResource({ view, harness, babyId: baby.babyId }, async () => {
     view[Symbol.dispose]();
     await harness[Symbol.asyncDispose]();
   });

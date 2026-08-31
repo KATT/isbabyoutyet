@@ -8,6 +8,7 @@ import { renderMountedFileRoute } from "@/test/renderMountedFileRoute";
 import { runRouteBeforeLoad, runRouteLoader } from "@/test/routeTestContext";
 import { managerDocToBabyData } from "@/routes/baby/$publicId/route";
 import { Route } from "@/routes/baby/$publicId/settings";
+import { htmlButton } from "@/test/htmlElement";
 
 test("settings loader fetches only manager settings data", async () => {
   await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
@@ -213,7 +214,7 @@ test("settings overlay persists baby name edits through Convex", async () => {
     expect(ctx.view.getByRole("dialog")).toBeTruthy();
   });
 
-  fireEvent.click(ctx.view.getAllByRole("button", { name: "Edit" })[0] as HTMLButtonElement);
+  fireEvent.click(htmlButton(ctx.view.getAllByRole("button", { name: "Edit" })[0]));
   fireEvent.change(ctx.view.getByLabelText("Baby name"), { target: { value: "Nova Rae" } });
   fireEvent.click(ctx.view.getByRole("button", { name: "Save" }));
 

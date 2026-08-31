@@ -56,7 +56,8 @@ test("setup establishes auth immediately: token for signed-in, null for anonymou
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -86,7 +87,8 @@ test("setup tolerates a missing session atom", () => {
   auth.authClient.$store.atoms.session = undefined;
 
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -107,7 +109,8 @@ test("pending and the first settled session leave the query cache (SSR / reload)
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -128,7 +131,8 @@ test("a settled sign-out after a signed-in session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -146,7 +150,8 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
   const clients = makeClients();
   const auth = makeAuthClient();
   setupClientConvexAuthWithClient({
-    convexQueryClient: clients.convexQueryClient as never,
+    // @ts-expect-error — stand-in only implements setAuth
+    convexQueryClient: clients.convexQueryClient,
     queryClient: clients.queryClient,
     authClient: auth.authClient,
   });
@@ -161,40 +166,29 @@ test("a settled sign-in after an anonymous session clears the query cache", () =
 });
 
 test("readSessionAtom accepts session atoms and rejects invalid shapes", () => {
-  const emptyAtoms = {} as unknown as typeof realAuthClient.$store.atoms;
-  expect(readSessionAtom(emptyAtoms)).toBeUndefined();
-  expect(
-    readSessionAtom({ session: null } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
-  expect(
-    readSessionAtom({ session: "x" } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
-  expect(
-    readSessionAtom({
-      session: { subscribe: 1 },
-    } as unknown as typeof realAuthClient.$store.atoms),
-  ).toBeUndefined();
+  // Empty bag is a valid `Record<string, WritableAtom>`; runtime still rejects it.
+  expect(readSessionAtom({})).toBeUndefined();
+  // @ts-expect-error — session must be a WritableAtom, not null
+  expect(readSessionAtom({ session: null })).toBeUndefined();
+  // @ts-expect-error — session must be a WritableAtom, not a string
+  expect(readSessionAtom({ session: "x" })).toBeUndefined();
+  // @ts-expect-error — subscribe must be a function
+  expect(readSessionAtom({ session: { subscribe: 1 } })).toBeUndefined();
 
   const unsub = vi.fn();
   function subscribeWithUnsub(listener: SessionListener) {
     listener({ data: null, isPending: false });
     return unsub;
   }
-  const atom = readSessionAtom({
-    session: {
-      subscribe: subscribeWithUnsub,
-    },
-  } as unknown as typeof realAuthClient.$store.atoms);
+  // @ts-expect-error — fixture only implements subscribe
+  const atom = readSessionAtom({ session: { subscribe: subscribeWithUnsub } });
   expect(atom).toBeTruthy();
   const stop = atom?.subscribe(() => {});
   stop?.();
   expect(unsub).toHaveBeenCalledTimes(1);
 
-  const atomWithoutUnsub = readSessionAtom({
-    session: {
-      subscribe: () => undefined,
-    },
-  } as unknown as typeof realAuthClient.$store.atoms);
+  // @ts-expect-error — subscribe must return an unsubscribe function
+  const atomWithoutUnsub = readSessionAtom({ session: { subscribe: () => undefined } });
   expect(atomWithoutUnsub?.subscribe(() => {})).toBeTypeOf("function");
 });
 

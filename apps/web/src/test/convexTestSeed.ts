@@ -16,6 +16,7 @@ export async function seedOwnedBaby(
     dueDate: opts.dueDate,
   });
   return {
+    // SAFETY: Seeded convex-test document id.
     babyId: created.babyId as Id<"baby">,
     publicId: created.publicId,
   };

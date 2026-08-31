@@ -45,6 +45,7 @@ type BrowserPushStub = {
   serviceWorkerReady: Promise<ServiceWorkerRegistration>;
 };
 
+// SAFETY: Seeded convex-test document id.
 const babyId = "jd7baby000000000000000000" as Id<"baby">;
 
 function stubBrowserPush(stub: Partial<BrowserPushStub>) {
@@ -75,6 +76,7 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
 
   const originalMatchMedia = window.matchMedia;
   window.matchMedia = (query: string) =>
+    // SAFETY: Test fixture is a subset of the production type.
     ({
       matches: query === "(display-mode: standalone)" && Boolean(stub.displayModeStandalone),
       media: query,
@@ -120,6 +122,7 @@ function stubBrowserPush(stub: Partial<BrowserPushStub>) {
   }
 
   if (stub.hasServiceWorker) {
+    // SAFETY: Test fixture is a subset of the production type.
     const registration = {
       pushManager: {
         getSubscription: () => Promise.resolve(stub.subscription ?? null),
@@ -253,6 +256,7 @@ test("treats a ready browser with no push subscription as unsubscribed", async (
 
 test("returns the existing browser push subscription and Convex isSubscribed", async () => {
   await using queryClient = queryClientResource(true);
+  // SAFETY: Test fixture is a subset of the production type.
   const subscription = {
     endpoint: "https://push.example/subscription",
   } as PushSubscription;
@@ -341,6 +345,7 @@ test("prefetches capability and isSubscribed into the query cache in the browser
     hasPushManager: true,
     hasNotification: true,
     hasServiceWorker: true,
+    // SAFETY: Test fixture is a subset of the production type.
     subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
   });
 
@@ -411,6 +416,7 @@ test("shows unsubscribe when Convex reports an active subscription", async () =>
   await using view = await renderSubscribe(
     {
       kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
       family: true,
       messages: false,
@@ -425,6 +431,7 @@ test("offers subscribe when the browser is subscribed but Convex is not", async 
   await using view = await renderSubscribe(
     {
       kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
       family: false,
       messages: false,
@@ -462,6 +469,7 @@ test("manager chooser defaults match the current subscription", async () => {
   await using view = await renderSubscribe(
     {
       kind: "subscribed",
+      // SAFETY: Test fixture is a subset of the production type.
       subscription: { endpoint: "https://push.example/sub" } as PushSubscription,
       family: true,
       messages: false,

@@ -1,6 +1,6 @@
 import { fireEvent } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { OnboardingStepId } from "@workspace/convex/src/onboardingSteps";
 import { expect, test, vi } from "vitest";
@@ -12,6 +12,11 @@ import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { OnboardingHostWithSession, useCompleteOnboardingStep } from "./onboarding-host";
 
+type CompleteOnboardingStep = (args: { stepId: OnboardingStepId }) => Promise<null>;
+type CompleteStepHolder = {
+  completeStep: CompleteOnboardingStep | null;
+};
+
 async function renderOnboardingHost(opts: {
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>;
   surface: "dashboard" | "baby";
@@ -20,7 +25,10 @@ async function renderOnboardingHost(opts: {
   const onboarding = await opts.harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
   return await renderWithTestRouter(
     <QueryClientProvider client={opts.harness.queryClient}>
-      <ConvexProvider client={opts.harness.convexClient as unknown as ConvexReactClient}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={opts.harness.convexClient}
+      >
         <LocaleProvider locale="en-GB">
           <OnboardingHostWithSession
             surface={opts.surface}
@@ -44,6 +52,7 @@ function plantTourTarget(targetId: string) {
   el.style.cssText = "position:fixed;top:80px;left:80px;width:40px;height:40px;";
   el.scrollIntoView = () => {};
   el.getBoundingClientRect = () =>
+    // SAFETY: Test fixture is a subset of the production type.
     ({
       x: 80,
       y: 80,
@@ -481,9 +490,7 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
   harness.withIdentity({ subject: userId });
   await seedOwnedBaby(harness, { name: "Smith", dueDate: "2026-09-01" });
 
-  const holder: {
-    completeStep: ((args: { stepId: OnboardingStepId }) => Promise<null>) | null;
-  } = { completeStep: null };
+  const holder: CompleteStepHolder = { completeStep: null };
   function Probe() {
     holder.completeStep = useCompleteOnboardingStep();
     return null;

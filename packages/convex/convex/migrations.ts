@@ -101,9 +101,13 @@ export const generateBlurDataUrlsForExistingBabyPhotos = migrations.define({
  * creation time. Idempotent: an encouragement with `timelineItemId` set has
  * already been migrated.
  */
+type EncouragementTimelineBackfill = Omit<Doc<"encouragements">, "timelineItemId"> & {
+  timelineItemId: Doc<"encouragements">["timelineItemId"] | undefined;
+};
+
 export async function backfillEncouragementTimelineDoc(
   ctx: MutationCtx,
-  encouragement: Doc<"encouragements">,
+  encouragement: EncouragementTimelineBackfill,
 ) {
   if (encouragement.timelineItemId) return;
 
@@ -240,7 +244,14 @@ export const backfillBabyOwnerTokenIdentifier = migrations.define({
  * can tighten `birthJourney` from optional to required without changing any
  * currently visible milestones.
  */
-export async function backfillBabyBirthJourneyDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+type BabyBirthJourneyBackfill = Omit<Doc<"baby">, "birthJourney"> & {
+  birthJourney: Doc<"baby">["birthJourney"] | undefined;
+};
+
+export async function backfillBabyBirthJourneyDoc(
+  ctx: MutationCtx,
+  baby: BabyBirthJourneyBackfill,
+) {
   if (baby.birthJourney !== undefined) return;
   await ctx.db.patch(baby._id, { birthJourney: "labor" });
 }
@@ -272,7 +283,14 @@ export const backfillBabyDueDateDisplay = migrations.define({
   migrateOne: backfillBabyDueDateDisplayDoc,
 });
 
-export async function backfillBabyLastActivityAtDoc(ctx: MutationCtx, baby: Doc<"baby">) {
+type BabyLastActivityAtBackfill = Omit<Doc<"baby">, "lastActivityAt"> & {
+  lastActivityAt: Doc<"baby">["lastActivityAt"] | undefined;
+};
+
+export async function backfillBabyLastActivityAtDoc(
+  ctx: MutationCtx,
+  baby: BabyLastActivityAtBackfill,
+) {
   if (baby.lastActivityAt !== undefined) return;
   const timelineItems = await ctx.db
     .query("timelineItems")

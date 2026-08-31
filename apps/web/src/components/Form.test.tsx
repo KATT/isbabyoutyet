@@ -25,6 +25,7 @@ import {
   useZodForm,
 } from "@/components/Form";
 import { LocaleProvider } from "@/lib/i18n";
+import { htmlButton, htmlInput } from "@/test/htmlElement";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -92,7 +93,7 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
     </LocaleProvider>,
   );
 
-  const button = view.getByRole("button", { name: "Send" }) as HTMLButtonElement;
+  const button = htmlButton(view.getByRole("button", { name: "Send" }));
   expect(view.queryByRole("status")).toBeNull();
   expect(button.disabled).toBe(false);
   expect(button.getAttribute("aria-busy")).toBe("false");
@@ -152,7 +153,7 @@ test("SubmitButton honors an extra disabled prop while idle", async () => {
     </LocaleProvider>,
   );
 
-  expect((view.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(htmlButton(view.getByRole("button", { name: "Send" })).disabled).toBe(true);
 });
 
 test("SubmitButton throws when used outside a Form without an explicit form", () => {
@@ -278,7 +279,7 @@ test("SubmitButton accepts IconComponent={null} for label-only actions", async (
     </LocaleProvider>,
   );
 
-  const button = view.getByRole("button", { name: "Confirm" }) as HTMLButtonElement;
+  const button = htmlButton(view.getByRole("button", { name: "Confirm" }));
   expect(button.querySelector("svg")).toBeNull();
   expect(button.querySelector('[data-slot="spinner"]')).toBeNull();
 
@@ -320,7 +321,7 @@ test("FormCancelButton honors an extra disabled prop while idle", async () => {
     </LocaleProvider>,
   );
 
-  expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(true);
 });
 
 test("FormCancelButton disables while its form is submitting", async () => {
@@ -342,7 +343,7 @@ test("FormCancelButton disables while its form is submitting", async () => {
     </LocaleProvider>,
   );
 
-  const cancel = view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement;
+  const cancel = htmlButton(view.getByRole("button", { name: "Cancel" }));
   expect(cancel.disabled).toBe(false);
 
   fireEvent.click(view.getByRole("button", { name: "Send" }));
@@ -396,7 +397,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
               reason: "escape-key",
               cancel,
             });
-            (document.getElementById("dismiss-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("dismiss-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -411,7 +412,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
               reason: "imperative-action",
               cancel,
             });
-            (document.getElementById("imperative-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("imperative-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -449,22 +450,22 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
   );
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
-  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("0");
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("0");
   expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
   forwarded.mockClear();
 
   fireEvent.click(view.getByRole("button", { name: "Send" }));
   await vi.advanceTimersByTimeAsync(500);
   await vi.waitFor(() => {
-    expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(true);
   });
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
-  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("1");
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("1");
   expect(forwarded).not.toHaveBeenCalled();
 
   fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
-  expect((document.getElementById("imperative-result") as HTMLInputElement).value).toBe("0");
+  expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
   expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
 
   fireEvent.click(view.getByRole("button", { name: "Close" }));
@@ -473,9 +474,7 @@ test("useFormGuard blocks escape while submitting and forwards when idle", async
   releaseSubmit?.();
   await vi.advanceTimersByTimeAsync(0);
   await vi.waitFor(() => {
-    expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(
-      false,
-    );
+    expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(false);
   });
 });
 
@@ -545,7 +544,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
               reason: "escape-key",
               cancel,
             });
-            (document.getElementById("dismiss-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("dismiss-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -573,7 +572,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
 
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
-  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("1");
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("1");
   expect(forwarded).not.toHaveBeenCalled();
   expect(view.getByRole("alertdialog")).toBeTruthy();
   expect(view.getByText("If you close now, your edits will be lost.")).toBeTruthy();
@@ -583,7 +582,7 @@ test("dirty overlay dismiss prompts to discard and keep editing stays put", asyn
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
   expect(actionsClose).not.toHaveBeenCalled();
-  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
@@ -614,7 +613,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
               reason: "imperative-action",
               cancel,
             });
-            (document.getElementById("imperative-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("imperative-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -629,7 +628,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
               reason: "outside-press",
               cancel,
             });
-            (document.getElementById("picker-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("picker-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -654,7 +653,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
 
   fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
-  expect((document.getElementById("imperative-result") as HTMLInputElement).value).toBe("0");
+  expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
   expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
   expect(view.queryByRole("alertdialog")).toBeNull();
   forwarded.mockClear();
@@ -664,7 +663,7 @@ test("dirty overlay still allows imperative close and date-picker dismiss", asyn
   document.body.append(dateInput);
   dateInput.focus();
   fireEvent.click(view.getByRole("button", { name: "TryPicker" }));
-  expect((document.getElementById("picker-result") as HTMLInputElement).value).toBe("1");
+  expect(htmlInput(document.getElementById("picker-result")).value).toBe("1");
   expect(forwarded).not.toHaveBeenCalled();
   expect(view.queryByRole("alertdialog")).toBeNull();
   dateInput.remove();
@@ -699,7 +698,7 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
               reason: "outside-press",
               cancel,
             });
-            (document.getElementById("parent-dismiss") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("parent-dismiss")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -728,7 +727,7 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
 
   fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
   fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
-  expect((document.getElementById("parent-dismiss") as HTMLInputElement).value).toBe("1");
+  expect(htmlInput(document.getElementById("parent-dismiss")).value).toBe("1");
   expect(parentForwarded).not.toHaveBeenCalled();
   expect(view.getByRole("alertdialog")).toBeTruthy();
 
@@ -737,7 +736,7 @@ test("parent overlay prompts when a nested dirty form is dismissed from the pare
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
   expect(parentClose).not.toHaveBeenCalled();
-  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
 
   fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
@@ -789,7 +788,7 @@ test("discard prompt blocks clicks on the dialog behind it", async () => {
   fireEvent.click(dialogClose);
   expect(view.getByRole("alertdialog")).toBeTruthy();
   expect(onDialogOpenChange).not.toHaveBeenCalled();
-  expect((view.getByLabelText("Note") as HTMLInputElement).value).toBe("hello");
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
 });
 
 test("dirty form overlay blocks in-app navigation until discarded", async () => {

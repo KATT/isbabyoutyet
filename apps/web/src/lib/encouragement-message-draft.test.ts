@@ -7,7 +7,12 @@ import {
   writeEncouragementFormDraft,
 } from "@/lib/encouragement-message-draft";
 
+// SAFETY: Seeded convex-test document id.
 const babyId = "baby_test_1" as Id<"baby">;
+// SAFETY: Seeded convex-test document id.
+const babyA = "baby_a" as Id<"baby">;
+// SAFETY: Seeded convex-test document id.
+const babyB = "baby_b" as Id<"baby">;
 
 function sessionStorageResource() {
   const store = new Map<string, string>();
@@ -30,10 +35,10 @@ function sessionStorageResource() {
 
 test("drafts are isolated per baby", async () => {
   await using _storage = sessionStorageResource();
-  writeEncouragementFormDraft("baby_a" as Id<"baby">, { authorName: "", message: "For A" });
-  writeEncouragementFormDraft("baby_b" as Id<"baby">, { authorName: "", message: "For B" });
-  expect(readEncouragementFormDraft("baby_a" as Id<"baby">).message).toBe("For A");
-  expect(readEncouragementFormDraft("baby_b" as Id<"baby">).message).toBe("For B");
+  writeEncouragementFormDraft(babyA, { authorName: "", message: "For A" });
+  writeEncouragementFormDraft(babyB, { authorName: "", message: "For B" });
+  expect(readEncouragementFormDraft(babyA).message).toBe("For A");
+  expect(readEncouragementFormDraft(babyB).message).toBe("For B");
 });
 
 test("write and read round-trip a form draft", async () => {

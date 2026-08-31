@@ -5,6 +5,7 @@ import type { ImgHTMLAttributes } from "react";
 import { BlurImage } from "./blur-image";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { renderResource } from "@/test/renderResource";
+import { htmlImage } from "@/test/htmlElement";
 
 const BLUR = "data:image/jpeg;base64,/9j/blur";
 
@@ -13,7 +14,7 @@ test("paints a blurred SVG in front of the real image until it decodes", async (
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
 
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   const wrapper = img.parentElement;
   const placeholder = wrapper?.querySelector<HTMLImageElement>("[data-blur-image-placeholder]");
   expect(img.src).toContain("photo.jpg");
@@ -45,7 +46,7 @@ test("keeps the placeholder until decode completes", async () => {
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={BLUR} onLoad={onLoad} />,
   );
 
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   const wrapper = img.parentElement;
   img.decode = () =>
     new Promise<void>((resolve) => {
@@ -78,7 +79,7 @@ test("clears the placeholder when a cached image completed before hydration", as
   using view = renderResource(
     <BlurImage src="https://example.com/cached.jpg" alt="Nova" blurDataUrl={BLUR} />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   await vi.waitFor(() => {
     expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).toBeNull();
   });
@@ -88,7 +89,7 @@ test("skips the placeholder when no blur data URL is provided", () => {
   using view = renderResource(
     <BlurImage src="https://example.com/photo.jpg" alt="Nova" blurDataUrl={null} />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   expect(img.parentElement).toBe(view.container);
   expect(img.style.backgroundImage).toBe("");
   expect(img.className).not.toContain("blur-xl");
@@ -105,7 +106,7 @@ test("keeps sizing classes and dimensions on the wrapper and real image", () => 
       height={160}
     />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
     "[data-blur-image-placeholder]",
   );
@@ -166,7 +167,7 @@ test("preserves caller styles while layering the placeholder separately", async 
       style={{ backgroundImage: "linear-gradient(red, blue)" }}
     />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   expect(img.style.backgroundImage).toBe("linear-gradient(red, blue)");
   expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
   fireEvent.load(img);
@@ -186,7 +187,7 @@ test("removes the placeholder and reveals alt text when loading fails", () => {
       onError={onError}
     />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   expect(img.style.color).toBe("transparent");
   expect(img.parentElement?.querySelector("[data-blur-image-placeholder]")).not.toBeNull();
   fireEvent.error(img);
@@ -206,7 +207,7 @@ test("accepts string width/height attributes for the placeholder SVG", () => {
       height="120"
     />,
   );
-  const img = view.getByAltText("Nova") as HTMLImageElement;
+  const img = htmlImage(view.getByAltText("Nova"));
   const placeholder = img.parentElement?.querySelector<HTMLImageElement>(
     "[data-blur-image-placeholder]",
   );
