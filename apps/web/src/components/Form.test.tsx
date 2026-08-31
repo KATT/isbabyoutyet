@@ -1,5 +1,17 @@
 import { Check } from "@phosphor-icons/react";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent } from "@testing-library/react";
+import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
+import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { renderResource } from "@/test/renderResource";
+import {
+  Outlet,
+  RouterProvider,
+  createMemoryHistory,
+  createRootRoute,
+  createRoute,
+  createRouter,
+  useRouter,
+} from "@tanstack/react-router";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
 import { z } from "zod";
@@ -7,20 +19,13 @@ import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
-  shouldBlockOverlayDismiss,
+  FormGuardProvider,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { LocaleProvider } from "@/lib/i18n";
-
-function renderResource(ui: React.ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
+import { htmlButton, htmlInput } from "@/test/htmlElement";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -82,13 +87,13 @@ test("SubmitButton keeps its label and swaps the icon for a spinner while submit
     });
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
   );
 
-  const button = view.getByRole("button", { name: "Send" }) as HTMLButtonElement;
+  const button = htmlButton(view.getByRole("button", { name: "Send" }));
   expect(view.queryByRole("status")).toBeNull();
   expect(button.disabled).toBe(false);
   expect(button.getAttribute("aria-busy")).toBe("false");
@@ -122,7 +127,7 @@ test("SubmitButton can target an explicit form outside the <form> element", asyn
 
   const onSubmit = vi.fn(async () => undefined);
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ExplicitSubmitForm onSubmit={onSubmit} />
     </LocaleProvider>,
@@ -142,18 +147,18 @@ test("SubmitButton can target an explicit form outside the <form> element", asyn
 });
 
 test("SubmitButton honors an extra disabled prop while idle", async () => {
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={vi.fn(async () => undefined)} disabled={true} />
     </LocaleProvider>,
   );
 
-  expect((view.getByRole("button", { name: "Send" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(htmlButton(view.getByRole("button", { name: "Send" })).disabled).toBe(true);
 });
 
 test("SubmitButton throws when used outside a Form without an explicit form", () => {
   expect(() => {
-    render(
+    renderResource(
       <LocaleProvider locale="en-GB">
         <SubmitButton form="context" IconComponent={Check} iconPosition="start">
           Send
@@ -175,7 +180,7 @@ test("Form surfaces uncaught submit errors as a toast", async () => {
     throw new Error("Nope");
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -201,7 +206,7 @@ test("Form toasts a generic message for non-Error throws", async () => {
     throw "string-fail";
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
@@ -230,7 +235,7 @@ test("SubmitButton supports an emoji glyph at the end of the label", async () =>
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <EmojiSubmitForm />
     </LocaleProvider>,
@@ -268,13 +273,13 @@ test("SubmitButton accepts IconComponent={null} for label-only actions", async (
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <NullIconForm />
     </LocaleProvider>,
   );
 
-  const button = view.getByRole("button", { name: "Confirm" }) as HTMLButtonElement;
+  const button = htmlButton(view.getByRole("button", { name: "Confirm" }));
   expect(button.querySelector("svg")).toBeNull();
   expect(button.querySelector('[data-slot="spinner"]')).toBeNull();
 
@@ -310,13 +315,13 @@ test("FormCancelButton honors an extra disabled prop while idle", async () => {
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <DisabledCancelForm />
     </LocaleProvider>,
   );
 
-  expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
+  expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(true);
 });
 
 test("FormCancelButton disables while its form is submitting", async () => {
@@ -332,13 +337,13 @@ test("FormCancelButton disables while its form is submitting", async () => {
     });
   });
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <ContextSubmitForm onSubmit={onSubmit} disabled={undefined} />
     </LocaleProvider>,
   );
 
-  const cancel = view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement;
+  const cancel = htmlButton(view.getByRole("button", { name: "Cancel" }));
   expect(cancel.disabled).toBe(false);
 
   fireEvent.click(view.getByRole("button", { name: "Send" }));
@@ -356,52 +361,7 @@ test("FormCancelButton disables while its form is submitting", async () => {
   });
 });
 
-test("shouldBlockOverlayDismiss locks user dismissals but allows imperative closes", () => {
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "outside-press",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "close-press",
-    }),
-  ).toBe(true);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: false,
-      reason: "imperative-action",
-    }),
-  ).toBe(false);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: false,
-      open: false,
-      reason: "escape-key",
-    }),
-  ).toBe(false);
-  expect(
-    shouldBlockOverlayDismiss({
-      isLocked: true,
-      open: true,
-      reason: "trigger-press",
-    }),
-  ).toBe(false);
-});
-
-test("useFormOverlay blocks escape while submitting and forwards when idle", async () => {
+test("useFormGuard blocks escape while submitting and forwards when idle", async () => {
   await using _timers = makeResource({}, () => {
     vi.useRealTimers();
   });
@@ -417,7 +377,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
   const actionsClose = vi.fn();
 
   function OverlayLockForm() {
-    const overlay = useFormOverlay({
+    const overlay = useFormGuard({
       onOpenChange: (open, eventDetails) => {
         forwarded({ open, reason: eventDetails.reason });
       },
@@ -428,7 +388,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
     });
 
     return (
-      <FormOverlayProvider overlay={overlay}>
+      <FormGuardProvider guard={overlay}>
         <button
           type="button"
           onClick={() => {
@@ -437,7 +397,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
               reason: "escape-key",
               cancel,
             });
-            (document.getElementById("dismiss-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("dismiss-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -452,7 +412,7 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
               reason: "imperative-action",
               cancel,
             });
-            (document.getElementById("imperative-result") as HTMLInputElement).value = String(
+            htmlInput(document.getElementById("imperative-result")).value = String(
               cancel.mock.calls.length,
             );
           }}
@@ -479,33 +439,33 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
             Send
           </SubmitButton>
         </Form>
-      </FormOverlayProvider>
+      </FormGuardProvider>
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <OverlayLockForm />
     </LocaleProvider>,
   );
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
-  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("0");
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("0");
   expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
   forwarded.mockClear();
 
   fireEvent.click(view.getByRole("button", { name: "Send" }));
   await vi.advanceTimersByTimeAsync(500);
   await vi.waitFor(() => {
-    expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true);
+    expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(true);
   });
 
   fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
-  expect((document.getElementById("dismiss-result") as HTMLInputElement).value).toBe("1");
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("1");
   expect(forwarded).not.toHaveBeenCalled();
 
   fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
-  expect((document.getElementById("imperative-result") as HTMLInputElement).value).toBe("0");
+  expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
   expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
 
   fireEvent.click(view.getByRole("button", { name: "Close" }));
@@ -514,15 +474,13 @@ test("useFormOverlay blocks escape while submitting and forwards when idle", asy
   releaseSubmit?.();
   await vi.advanceTimersByTimeAsync(0);
   await vi.waitFor(() => {
-    expect((view.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(
-      false,
-    );
+    expect(htmlButton(view.getByRole("button", { name: "Cancel" })).disabled).toBe(false);
   });
 });
 
-test("useFormOverlay close is a no-op without an actions handle", async () => {
+test("useFormGuard close is a no-op without an actions handle", async () => {
   function IdleOverlay() {
-    const overlay = useFormOverlay({ onOpenChange: undefined });
+    const overlay = useFormGuard({ onOpenChange: undefined });
     return (
       <>
         <button type="button" onClick={() => overlay.close()}>
@@ -543,7 +501,7 @@ test("useFormOverlay close is a no-op without an actions handle", async () => {
     );
   }
 
-  await using view = renderResource(
+  await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <IdleOverlay />
     </LocaleProvider>,
@@ -555,4 +513,356 @@ test("useFormOverlay close is a no-op without an actions handle", async () => {
   expect(() => {
     fireEvent.click(view.getByRole("button", { name: "EscapeIdle" }));
   }).not.toThrow();
+});
+
+test("dirty overlay dismiss prompts to discard and keep editing stays put", async () => {
+  const forwarded = vi.fn();
+  const actionsClose = vi.fn();
+
+  function DirtyOverlayForm() {
+    const overlay = useFormGuard({
+      onOpenChange: (open, eventDetails) => {
+        forwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <FormGuardProvider guard={overlay}>
+        <button
+          type="button"
+          onClick={() => {
+            overlay.rootProps.actionsRef.current = {
+              close: actionsClose,
+              unmount: () => undefined,
+            };
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "escape-key",
+              cancel,
+            });
+            htmlInput(document.getElementById("dismiss-result")).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryEscape
+        </button>
+        <input id="dismiss-result" readOnly defaultValue="unset" />
+        <Form form={form} handleSubmit={async () => undefined}>
+          <input aria-label="Note" {...form.register("note")} />
+        </Form>
+      </FormGuardProvider>
+    );
+  }
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <DirtyOverlayForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "escape-key" });
+  forwarded.mockClear();
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  expect(htmlInput(document.getElementById("dismiss-result")).value).toBe("1");
+  expect(forwarded).not.toHaveBeenCalled();
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  expect(view.getByText("If you close now, your edits will be lost.")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(actionsClose).not.toHaveBeenCalled();
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
+
+  fireEvent.click(view.getByRole("button", { name: "TryEscape" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  expect(actionsClose).toHaveBeenCalled();
+});
+
+test("dirty overlay still allows imperative close and date-picker dismiss", async () => {
+  const forwarded = vi.fn();
+
+  function DirtyOverlayForm() {
+    const overlay = useFormGuard({
+      onOpenChange: (open, eventDetails) => {
+        forwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <FormGuardProvider guard={overlay}>
+        <button
+          type="button"
+          onClick={() => {
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "imperative-action",
+              cancel,
+            });
+            htmlInput(document.getElementById("imperative-result")).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryImperative
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const cancel = vi.fn();
+            overlay.rootProps.onOpenChange(false, {
+              reason: "outside-press",
+              cancel,
+            });
+            htmlInput(document.getElementById("picker-result")).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          TryPicker
+        </button>
+        <input id="imperative-result" readOnly defaultValue="unset" />
+        <input id="picker-result" readOnly defaultValue="unset" />
+        <Form form={form} handleSubmit={async () => undefined}>
+          <input aria-label="Note" {...form.register("note")} />
+        </Form>
+      </FormGuardProvider>
+    );
+  }
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <DirtyOverlayForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+
+  fireEvent.click(view.getByRole("button", { name: "TryImperative" }));
+  expect(htmlInput(document.getElementById("imperative-result")).value).toBe("0");
+  expect(forwarded).toHaveBeenCalledWith({ open: false, reason: "imperative-action" });
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  forwarded.mockClear();
+
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  document.body.append(dateInput);
+  dateInput.focus();
+  fireEvent.click(view.getByRole("button", { name: "TryPicker" }));
+  expect(htmlInput(document.getElementById("picker-result")).value).toBe("1");
+  expect(forwarded).not.toHaveBeenCalled();
+  expect(view.queryByRole("alertdialog")).toBeNull();
+  dateInput.remove();
+});
+
+test("parent overlay prompts when a nested dirty form is dismissed from the parent", async () => {
+  const parentForwarded = vi.fn();
+  const parentClose = vi.fn();
+
+  function NestedDirtyOverlays() {
+    const parent = useFormGuard({
+      onOpenChange: (open, eventDetails) => {
+        parentForwarded({ open, reason: eventDetails.reason });
+      },
+    });
+    const child = useFormGuard({ onOpenChange: undefined });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+    return (
+      <FormGuardProvider guard={parent}>
+        <button
+          type="button"
+          onClick={() => {
+            parent.rootProps.actionsRef.current = {
+              close: parentClose,
+              unmount: () => undefined,
+            };
+            const cancel = vi.fn();
+            parent.rootProps.onOpenChange(false, {
+              reason: "outside-press",
+              cancel,
+            });
+            htmlInput(document.getElementById("parent-dismiss")).value = String(
+              cancel.mock.calls.length,
+            );
+          }}
+        >
+          DismissParent
+        </button>
+        <input id="parent-dismiss" readOnly defaultValue="unset" />
+        <FormGuardProvider guard={child}>
+          <Form form={form} handleSubmit={async () => undefined}>
+            <input aria-label="Note" {...form.register("note")} />
+          </Form>
+        </FormGuardProvider>
+      </FormGuardProvider>
+    );
+  }
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <NestedDirtyOverlays />
+    </LocaleProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  expect(parentForwarded).toHaveBeenCalledWith({ open: false, reason: "outside-press" });
+  parentForwarded.mockClear();
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  expect(htmlInput(document.getElementById("parent-dismiss")).value).toBe("1");
+  expect(parentForwarded).not.toHaveBeenCalled();
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(parentClose).not.toHaveBeenCalled();
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
+
+  fireEvent.click(view.getByRole("button", { name: "DismissParent" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  expect(parentClose).toHaveBeenCalled();
+});
+
+test("discard prompt blocks clicks on the dialog behind it", async () => {
+  const onDialogOpenChange = vi.fn();
+
+  function DirtyDialogForm() {
+    const overlay = useFormGuard({
+      onOpenChange: (open) => {
+        onDialogOpenChange(open);
+      },
+    });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+
+    return (
+      <Dialog open {...overlay.rootProps}>
+        <DialogContent>
+          <FormGuardProvider guard={overlay}>
+            <Form form={form} handleSubmit={async () => undefined}>
+              <input aria-label="Note" {...form.register("note")} />
+            </Form>
+          </FormGuardProvider>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  await using view = await renderWithTestRouter(
+    <LocaleProvider locale="en-GB">
+      <DirtyDialogForm />
+    </LocaleProvider>,
+  );
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  const dialogClose = view.getByRole("button", { name: "Close" });
+  fireEvent.click(dialogClose);
+
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  expect(onDialogOpenChange).not.toHaveBeenCalled();
+
+  fireEvent.click(dialogClose);
+  expect(view.getByRole("alertdialog")).toBeTruthy();
+  expect(onDialogOpenChange).not.toHaveBeenCalled();
+  expect(htmlInput(view.getByLabelText("Note")).value).toBe("hello");
+});
+
+test("dirty form overlay blocks in-app navigation until discarded", async () => {
+  function DirtyFormPage() {
+    const router = useRouter();
+    const overlay = useFormGuard({ onOpenChange: undefined });
+    const form = useZodForm({
+      schema: z.object({ note: z.string() }),
+      defaultValues: { note: "hi" },
+    });
+    return (
+      <LocaleProvider locale="en-GB">
+        <FormGuardProvider guard={overlay}>
+          <Form form={form} handleSubmit={async () => undefined}>
+            <input aria-label="Note" {...form.register("note")} />
+          </Form>
+          <button
+            type="button"
+            onClick={() => {
+              router.history.push("/other");
+            }}
+          >
+            Leave
+          </button>
+        </FormGuardProvider>
+      </LocaleProvider>
+    );
+  }
+
+  const rootRoute = createRootRoute({
+    component: function TestRoot() {
+      return <Outlet />;
+    },
+  });
+  const homeRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/",
+    component: DirtyFormPage,
+  });
+  const otherRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: "/other",
+    component: function OtherPage() {
+      return <div>Other page</div>;
+    },
+  });
+  const router = createRouter({
+    routeTree: rootRoute.addChildren([homeRoute, otherRoute]),
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+    defaultPendingMinMs: 0,
+  });
+  await router.load();
+  await using view = renderResource(<RouterProvider router={router} />);
+
+  fireEvent.change(view.getByLabelText("Note"), { target: { value: "hello" } });
+  fireEvent.click(view.getByRole("button", { name: "Leave" }));
+
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  expect(view.queryByText("Other page")).toBeNull();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  await vi.waitFor(() => {
+    expect(view.queryByRole("alertdialog")).toBeNull();
+  });
+  expect(view.queryByText("Other page")).toBeNull();
+
+  fireEvent.click(view.getByRole("button", { name: "Leave" }));
+  await vi.waitFor(() => {
+    expect(view.getByRole("alertdialog")).toBeTruthy();
+  });
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+  await vi.waitFor(() => {
+    expect(view.getByText("Other page")).toBeTruthy();
+  });
 });

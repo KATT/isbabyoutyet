@@ -104,7 +104,7 @@ function load(id: string, visitorId?: string) {}
 
 ### No Convex `v.optional()` except migration transients
 
-Enforced by `no-convex-optional/no-undocumented-optional` in `.oxlintrc.json`.
+Enforced by `workspace/no-undocumented-optional` in `.oxlintrc.json`.
 Do not use `v.optional()` on Convex schema fields or RPC args unless the
 optional is a **temporary** migration hatch. Mark those with JSDoc `@todo`
 (the field is still in use; remaining work is to require the key). `@deprecated`
@@ -208,7 +208,7 @@ import { z } from 'zod';
 - **NEVER** import from `@trpc/*/src` - remove the `/src` part
 - **NEVER** use `waitFor` from Testing Library - use `vi.waitFor` instead
 - **NEVER** use `Symbol.dispose` or `Symbol.asyncDispose` - use `makeResource()` or `makeAsyncResource()`
-- **NEVER** use module mocking (`vi.mock` / `vi.hoisted` / `jest.mock`) in `apps/web` tests — enforced by `no-mock/no-mock` in `.oxlintrc.json`. Prefer `convex-test` seeding, real providers (`renderWithTestRouter`), prop injection into presentational views, or `vi.spyOn` for browser APIs. Local `vi.fn()` callbacks are fine.
+- **NEVER** use module mocking (`vi.mock` / `vi.hoisted` / `jest.mock`) in `apps/web` tests — enforced by `no-mock/no-mock` in `.oxlintrc.json`. Prefer `convex-test` seeding, real providers (`renderWithTestRouter`), prop injection into presentational views, or `vi.spyOn` / `vi.stubGlobal` for browser host APIs. Local `vi.fn()` callbacks are fine.
 
 ```typescript
 // ✅ CORRECT — inject callbacks into a presentational view

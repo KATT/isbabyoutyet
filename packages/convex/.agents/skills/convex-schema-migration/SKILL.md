@@ -24,7 +24,7 @@ Never combine "write missing keys / strip legacy values" and "make the field req
 
 ## JSDoc on `v.optional()`
 
-`no-convex-optional/no-undocumented-optional` rejects undocumented `v.optional()`.
+`workspace/no-undocumented-optional` rejects undocumented `v.optional()`.
 
 Prefer **`@todo`**: the optional is still in use; remaining work is to require the key (or keep a documented exception such as `migrations.runAll` runner args).
 

@@ -30,7 +30,8 @@ test("client overlay navigations use the already-authenticated live client", asy
   const fetchToken = vi.fn<() => Promise<string | null>>();
 
   expect(
-    await authenticateManagerOverlaySsrWithToken({ context: ctx.context as never, fetchToken }),
+    // @ts-expect-error — stand-in only implements the Convex auth methods this reads
+    await authenticateManagerOverlaySsrWithToken({ context: ctx.context, fetchToken }),
   ).toBeNull();
   expect(fetchToken).not.toHaveBeenCalled();
   expect(ctx.setServerAuth).not.toHaveBeenCalled();
@@ -42,7 +43,8 @@ test("direct manager-overlay SSR authenticates both Convex clients", async () =>
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue("manager-token");
 
   expect(
-    await authenticateManagerOverlaySsrWithToken({ context: ctx.context as never, fetchToken }),
+    // @ts-expect-error — stand-in only implements the Convex auth methods this reads
+    await authenticateManagerOverlaySsrWithToken({ context: ctx.context, fetchToken }),
   ).toBe("manager-token");
   expect(ctx.setServerAuth).toHaveBeenCalledWith("manager-token");
   expect(ctx.setClientAuth).toHaveBeenCalledOnce();
@@ -55,7 +57,8 @@ test("anonymous manager-overlay SSR stays unauthenticated", async () => {
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValue(null);
 
   expect(
-    await authenticateManagerOverlaySsrWithToken({ context: ctx.context as never, fetchToken }),
+    // @ts-expect-error — stand-in only implements the Convex auth methods this reads
+    await authenticateManagerOverlaySsrWithToken({ context: ctx.context, fetchToken }),
   ).toBeNull();
   expect(ctx.setServerAuth).not.toHaveBeenCalled();
   expect(ctx.setClientAuth).not.toHaveBeenCalled();

@@ -57,7 +57,7 @@
     "tsx": "^4.23.12",
     "typescript": "catalog:",
     "vite": "^8.2.1",
-    "vitest": "^4.1.11",
+    "vitest": "catalog:",
     "zod": "catalog:"
   }
 }

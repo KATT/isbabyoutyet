@@ -8,7 +8,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { render } from "@testing-library/react";
-import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { vi } from "vitest";
@@ -17,6 +17,7 @@ import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { LocaleProvider } from "@/lib/i18n";
 import type { ConvexTestHarness } from "@/test/convexTestHarness";
 import { routeContextFromHarness } from "@/test/routeTestContext";
+import { stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 /**
  * `Route.update()` is typed for non-structural option tweaks only, so widen it
@@ -27,6 +28,7 @@ function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
   opts: { path: string; getParentRoute: () => AnyRoute },
 ): TRoute {
+  // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
   return update(opts);
 }
@@ -69,7 +71,10 @@ export async function renderMountedFileRoute(opts: {
     component: function TestRoot() {
       const outlet = (
         <QueryClientProvider client={opts.harness.queryClient}>
-          <ConvexProvider client={opts.harness.convexClient as unknown as ConvexReactClient}>
+          <ConvexProvider
+            // @ts-expect-error — integration client is not ConvexReactClient
+            client={opts.harness.convexClient}
+          >
             <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
               <TooltipProvider>
                 <LocaleProvider locale="en-GB">
@@ -98,6 +103,7 @@ export async function renderMountedFileRoute(opts: {
 
   await router.load();
 
+  const jsdomWindow = stubJsdomWindow();
   const navigate = vi.spyOn(router, "navigate");
   const back = vi.spyOn(history, "back");
   const view = render(<RouterProvider router={router} />);
@@ -105,6 +111,7 @@ export async function renderMountedFileRoute(opts: {
     navigate.mockRestore();
     back.mockRestore();
     view.unmount();
+    jsdomWindow.restore();
   });
 }
 

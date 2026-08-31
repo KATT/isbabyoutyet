@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { GettingStartedCard } from "./getting-started";
+import { htmlElement } from "@/test/htmlElement";
 
 test("shows the next incomplete step and an add-baby CTA on the dashboard", async () => {
   await using _view = await renderWithTestRouter(
@@ -104,6 +105,7 @@ test("anchors the mobile dock and drawer to the visual viewport", async () => {
     }
   });
 
+  // SAFETY: Test fixture is a subset of the production type.
   const visualViewport = Object.assign(new EventTarget(), {
     height: 844,
     width: 390,
@@ -431,8 +433,8 @@ test("next-step hint See page runs the dashboard deep link", async () => {
   const hintPanel = hintTitles[hintTitles.length - 1]!.closest("div.rounded-lg");
   expect(hintPanel).toBeTruthy();
   const seePage =
-    within(hintPanel as HTMLElement).queryByRole("link", { name: /see ada's page/i }) ||
-    within(hintPanel as HTMLElement).getByRole("button", { name: /see ada's page/i });
+    within(htmlElement(hintPanel)).queryByRole("link", { name: /see ada's page/i }) ||
+    within(htmlElement(hintPanel)).getByRole("button", { name: /see ada's page/i });
   expect(seePage.getAttribute("href") ?? "").toContain("baby-waiting");
   fireEvent.click(seePage);
 });
