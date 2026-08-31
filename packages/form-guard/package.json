@@ -15,14 +15,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@tanstack/react-router": "^1.170.30",
+    "@tanstack/react-router": "catalog:",
     "@types/react": "catalog:",
-    "jsdom": "^30.0.1",
+    "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^4.1.11"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@tanstack/react-router": "^1.0.0",

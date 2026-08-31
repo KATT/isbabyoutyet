@@ -15,6 +15,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4.3.3
       version: 4.3.3
+    '@tanstack/react-router':
+      specifier: ^1.170.30
+      version: 1.170.30
     '@types/node':
       specifier: ^26.2.0
       version: 26.2.0
@@ -30,6 +33,9 @@ catalogs:
     convex:
       specifier: ^1.45.0
       version: 1.45.0
+    jsdom:
+      specifier: ^30.0.1
+      version: 30.0.1
     lucide-react:
       specifier: ^1.32.0
       version: 1.32.0
@@ -102,7 +108,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   apps/web:
@@ -138,7 +144,7 @@ importers:
         specifier: ^5.101.4
         version: 5.101.4(@tanstack/react-query@5.101.4(react@19.2.8))(react@19.2.8)
       '@tanstack/react-router':
-        specifier: ^1.170.30
+        specifier: 'catalog:'
         version: 1.170.30(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-router-devtools':
         specifier: ^1.167.1
@@ -244,7 +250,7 @@ importers:
         specifier: ^0.0.56
         version: 0.0.56(convex@1.45.0(react@19.2.8))
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
       nitro:
         specifier: latest
@@ -280,7 +286,7 @@ importers:
         specifier: ^6.1.1
         version: 6.1.1(typescript@7.0.2)(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       web-vitals:
         specifier: ^6.1.1
@@ -347,7 +353,7 @@ importers:
         specifier: ^8.2.1
         version: 8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0)
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
       zod:
         specifier: 'catalog:'
@@ -371,7 +377,7 @@ importers:
         specifier: 'catalog:'
         version: 1.45.0(react@19.2.8)
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
       oxfmt:
         specifier: 'catalog:'
@@ -386,19 +392,19 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/form-guard:
     devDependencies:
       '@tanstack/react-router':
-        specifier: ^1.170.30
+        specifier: 'catalog:'
         version: 1.170.30(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.18
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
       oxfmt:
         specifier: 'catalog:'
@@ -413,7 +419,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/oxlint-plugins:
@@ -454,7 +460,7 @@ importers:
         specifier: 'catalog:'
         version: 19.2.18
       jsdom:
-        specifier: ^30.0.1
+        specifier: 'catalog:'
         version: 30.0.1(@noble/hashes@2.3.0)
       oxfmt:
         specifier: 'catalog:'
@@ -469,7 +475,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/runtime:
@@ -484,7 +490,7 @@ importers:
         specifier: 'catalog:'
         version: 7.0.2
       vitest:
-        specifier: ^4.1.11
+        specifier: 'catalog:'
         version: 4.1.11(@edge-runtime/vm@5.0.0)(@types/node@26.2.0)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(jsdom@30.0.1(@noble/hashes@2.3.0))(vite@8.2.1(@types/node@26.2.0)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.12)(yaml@2.9.0))
 
   packages/scripts:
