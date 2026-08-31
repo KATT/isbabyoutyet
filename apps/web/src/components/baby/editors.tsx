@@ -534,7 +534,7 @@ function ThemeOptionList(props: {
             aria-busy={isPending}
             disabled={isSubmitting}
             size="sm"
-            className="justify-start gap-2"
+            className="w-full justify-start gap-2"
             onClick={() => {
               props.onPick(option.value);
             }}
