@@ -13,6 +13,7 @@ import { expect, test, vi } from "vitest";
 import { useLiveConvexInfinitePages } from "./useLiveConvexInfinitePages";
 
 type LivePage = { page: { id: string }[]; isDone: boolean; continueCursor: string };
+type LivePagesHookProps = { args: DefaultFunctionArgs };
 
 type WatchHandle = {
   onUpdate: (cb: () => void) => () => void;
@@ -290,7 +291,7 @@ test("useLiveConvexInfinitePages resubscribes when args contents change", () => 
     localQueryResult: () => localResult,
   }));
 
-  const initialProps: { args: DefaultFunctionArgs } = { args: { babyId: "b1" } };
+  const initialProps: LivePagesHookProps = { args: { babyId: "b1" } };
   const { rerender, unmount } = renderHook(
     (props: { args: DefaultFunctionArgs }) =>
       useLiveConvexInfinitePages({

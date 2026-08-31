@@ -1,9 +1,19 @@
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import { api } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import schema from "./schema";
 import { backfillUserProfileIsAdminDoc } from "./migrations";
 import { modules, registerComponents } from "./test.setup";
+
+type LegacyUserProfile = {
+  _id: Doc<"userProfiles">["_id"];
+  _creationTime: number;
+  userId: string;
+  tokenIdentifier: string;
+  locale: Doc<"userProfiles">["locale"];
+  isAdmin: boolean | undefined;
+};
 
 async function setup() {
   const t = convexTest(schema, modules);
@@ -178,14 +188,7 @@ test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alo
     await backfillUserProfileIsAdminDoc(ctx, nonAdmin);
 
     // Simulate a pre-migration document shape for the helper.
-    const legacy = { ...nonAdmin } as {
-      _id: typeof nonAdmin._id;
-      _creationTime: number;
-      userId: string;
-      tokenIdentifier: string;
-      locale: typeof nonAdmin.locale;
-      isAdmin: boolean | undefined;
-    };
+    const legacy = { ...nonAdmin } as LegacyUserProfile;
     delete legacy.isAdmin;
     await backfillUserProfileIsAdminDoc(ctx, legacy as typeof nonAdmin);
   });

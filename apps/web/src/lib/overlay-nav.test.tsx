@@ -17,6 +17,10 @@ import {
 } from "@/lib/overlay-nav";
 import type { LinkProps } from "@tanstack/react-router";
 
+type BabyPostOverlayNavRef = {
+  current: ReturnType<typeof useBabyPostOverlayNav> | null;
+};
+
 test("openOverlayLink preloads through a real link and keeps overlay history", () => {
   expect(
     openOverlayLink({
@@ -126,7 +130,7 @@ test("useOverlayNav owns enter/exit state and dismisses after animation", async 
     cancelFrame.mockRestore();
   });
 
-  const latest: { current: ReturnType<typeof useBabyPostOverlayNav> | null } = { current: null };
+  const latest: BabyPostOverlayNavRef = { current: null };
   function Harness() {
     latest.current = useBabyPostOverlayNav("baby-smith");
     return null;

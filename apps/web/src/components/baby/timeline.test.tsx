@@ -23,6 +23,11 @@ import {
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
+type ComposerControls = {
+  view: ReturnType<typeof render>;
+  setBaby: (nextBaby: BabyData) => void;
+};
+
 function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
   return isPlainObject(args);
 }
@@ -93,10 +98,7 @@ async function renderComposer(
   let baby: BabyData = opts.baby;
   const locale = opts.locale ?? "en-GB";
   const view = render(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
-  const controls: {
-    view: ReturnType<typeof render>;
-    setBaby: (nextBaby: BabyData) => void;
-  } = {
+  const controls: ComposerControls = {
     view,
     setBaby(nextBaby) {
       baby = nextBaby;
