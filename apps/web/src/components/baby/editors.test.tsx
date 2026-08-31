@@ -253,6 +253,24 @@ test("theme selector marks Baby Blue selected", async () => {
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
 });
 
+test("theme selector marks Mango selected for the default theme", async () => {
+  await using view = await renderWithTestRouter(
+    <ThemeSelector
+      baby={{ ...baby, theme: null }}
+      onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
+    />,
+  );
+
+  expect(view.getByRole("button", { name: "Change theme" }).textContent).toContain("Mango");
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
+
+  expect(view.getByRole("button", { name: "Mango" }).getAttribute("aria-pressed")).toBe("true");
+  expect(view.getByRole("button", { name: "Baby Blue" }).getAttribute("aria-pressed")).toBe(
+    "false",
+  );
+});
+
 test("theme selector shows a trailing spinner only on the option being applied", async () => {
   await using _timers = makeResource({}, () => {
     vi.useRealTimers();
@@ -295,6 +313,44 @@ test("theme selector shows a trailing spinner only on the option being applied",
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: "bubblegum" }));
 });
 
+test("theme selector shows a trailing spinner on Mango when applying the default theme", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+
+  let releaseUpdate: (() => void) | undefined;
+  const onUpdate = vi.fn<BabyUpdateHandler>(async () => {
+    await new Promise<void>((resolve) => {
+      releaseUpdate = resolve;
+    });
+  });
+
+  await using view = await renderWithTestRouter(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
+
+  const mango = view.getByRole("button", { name: "Mango" });
+  const babyBlue = view.getByRole("button", { name: "Baby Blue" });
+
+  fireEvent.click(mango);
+  await vi.advanceTimersByTimeAsync(500);
+
+  await vi.waitFor(() => {
+    expect(mango.getAttribute("aria-busy")).toBe("true");
+  });
+  expect(within(mango).getByRole("status", { name: "Loading" })).toBeTruthy();
+  expect(within(babyBlue).queryByRole("status", { name: "Loading" })).toBeNull();
+  expect(view.getAllByRole("status", { name: "Loading" })).toHaveLength(1);
+
+  releaseUpdate?.();
+  await vi.advanceTimersByTimeAsync(0);
+
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: null }));
+});
+
 test("theme selector leaves canonical options unselected for an unknown theme", async () => {
   await using view = await renderWithTestRouter(
     <ThemeSelector
@@ -302,6 +358,8 @@ test("theme selector leaves canonical options unselected for an unknown theme", 
       onUpdate={vi.fn<BabyUpdateHandler>().mockResolvedValue(undefined)}
     />,
   );
+
+  expect(view.getByRole("button", { name: "Change theme" }).textContent).toContain("Change");
 
   fireEvent.click(view.getByRole("button", { name: "Change theme" }));
 
