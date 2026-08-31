@@ -8,7 +8,7 @@ import { renderResource } from "@/test/renderResource";
 
 function DemoToastHarness(props: { publicId: string; enabled: boolean }) {
   useDemoToast(props);
-  return <Toaster />;
+  return <Toaster closeButton />;
 }
 
 function renderDemoToast(opts: { publicId: string; enabled: boolean }) {
@@ -85,4 +85,38 @@ test("Got it dismisses through sonner and stays gone for that baby", async () =>
 
   view.rerender(<DemoToastHarness publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} enabled={true} />);
   expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
+});
+
+test("unmounting does not persist dismiss for that baby", async () => {
+  resetDemoToastDismissals();
+  toast.dismiss();
+  {
+    await using first = renderResource(
+      <DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />,
+    );
+    void first;
+    expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
+  }
+
+  await using second = renderResource(
+    <DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />,
+  );
+  void second;
+  expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
+});
+
+test("closing the toast persists dismiss for that baby", async () => {
+  await using view = renderDemoToast({
+    publicId: HOMEPAGE_DEMO_BABY.publicId,
+    enabled: true,
+  });
+
+  fireEvent.click(await screen.findByRole("button", { name: "Close toast" }));
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
+  });
+
+  view.rerender(<DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />);
+  expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
 });

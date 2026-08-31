@@ -30,7 +30,12 @@ export function useDemoToast(opts: { publicId: string; enabled: boolean }) {
   const actionLabel = t("Got it");
 
   useEffect(() => {
-    if (!shouldShow) return;
+    if (!shouldShow) {
+      return;
+    }
+    // Cleanup `toast.dismiss` also fires `onDismiss`. Only persist when the
+    // visitor closed the toast (Got it, X, swipe) — not on unmount.
+    let persistOnDismiss = true;
     toast.info(title, {
       id: toastId,
       description,
@@ -38,14 +43,18 @@ export function useDemoToast(opts: { publicId: string; enabled: boolean }) {
       action: {
         label: actionLabel,
         onClick: () => {
-          demoToastDismissals.dismiss(opts.publicId);
+          toast.dismiss(toastId);
         },
       },
       onDismiss: () => {
+        if (!persistOnDismiss) {
+          return;
+        }
         demoToastDismissals.dismiss(opts.publicId);
       },
     });
     return () => {
+      persistOnDismiss = false;
       toast.dismiss(toastId);
     };
   }, [shouldShow, toastId, title, description, actionLabel, opts.publicId]);
