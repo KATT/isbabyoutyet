@@ -7,6 +7,7 @@
  * Takes a value and a dispose function and returns a new object that implements the Disposable interface.
  */
 export function makeResource<T>(thing: T, dispose: () => void): T & Disposable {
+  // SAFETY: This helper attaches Symbol.dispose onto the live test value.
   const it = thing as T & Partial<Disposable>;
 
   // eslint-disable-next-line no-restricted-syntax -- only place allowed to attach Symbol.dispose
@@ -18,6 +19,7 @@ export function makeResource<T>(thing: T, dispose: () => void): T & Disposable {
     existing?.();
   };
 
+  // SAFETY: This helper attaches Symbol.dispose onto the live test value.
   return it as T & Disposable;
 }
 
@@ -25,6 +27,7 @@ export function makeResource<T>(thing: T, dispose: () => void): T & Disposable {
  * Takes a value and an async dispose function and returns a new object that implements the AsyncDisposable interface.
  */
 export function makeAsyncResource<T>(thing: T, dispose: () => Promise<void>): T & AsyncDisposable {
+  // SAFETY: This helper attaches Symbol.dispose onto the live test value.
   const it = thing as T & Partial<AsyncDisposable>;
 
   // eslint-disable-next-line no-restricted-syntax -- only place allowed to attach Symbol.asyncDispose
@@ -36,5 +39,6 @@ export function makeAsyncResource<T>(thing: T, dispose: () => Promise<void>): T 
     await existing?.();
   };
 
+  // SAFETY: This helper attaches Symbol.dispose onto the live test value.
   return it as T & AsyncDisposable;
 }

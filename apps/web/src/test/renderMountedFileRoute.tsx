@@ -28,6 +28,7 @@ function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
   opts: { path: string; getParentRoute: () => AnyRoute },
 ): TRoute {
+  // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
   return update(opts);
 }

@@ -1,9 +1,26 @@
 import { webcrypto } from "node:crypto";
 
 import { makeResource } from "@workspace/convex/convex/test.resource";
-import { isString } from "@workspace/runtime/guards";
+import { isFunction, isPlainObject, isString } from "@workspace/runtime/guards";
 import { expect, test, vi } from "vitest";
 import { stubJsdomWindow } from "@/test/stubJsdomWindow";
+
+function betterAuthHostCleanup(symbolName: string) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, Symbol.for(symbolName));
+  const stub = descriptor?.value;
+  if (!isPlainObject(stub)) {
+    throw new Error(`${symbolName} stub is missing`);
+  }
+  const setup = stub.setup;
+  if (!isFunction(setup)) {
+    throw new Error(`${symbolName} stub is missing setup`);
+  }
+  const cleanup = setup();
+  if (!isFunction(cleanup)) {
+    throw new Error(`${symbolName} setup did not return a cleanup`);
+  }
+  return cleanup;
+}
 
 class CallerObserver {
   observe() {}
@@ -201,4 +218,43 @@ test("restore is safe to call twice and still allows a later install", async () 
   await using _second = stubJsdomWindow();
   expect(window.scrollTo).not.toBe(original);
   expect(await notImplementedMessages(() => window.scrollTo(0, 0))).toEqual([]);
+});
+
+test("better-auth leftover session-refresh cleanup is a no-op without document", async () => {
+  const documentAdd = vi.spyOn(document, "addEventListener");
+  const documentRemove = vi.spyOn(document, "removeEventListener");
+  const windowAdd = vi.spyOn(window, "addEventListener");
+  const windowRemove = vi.spyOn(window, "removeEventListener");
+  await using _spies = makeResource({}, () => {
+    documentAdd.mockRestore();
+    documentRemove.mockRestore();
+    windowAdd.mockRestore();
+    windowRemove.mockRestore();
+  });
+
+  const cleanups = [
+    betterAuthHostCleanup("better-auth:broadcast-channel"),
+    betterAuthHostCleanup("better-auth:focus-manager"),
+    betterAuthHostCleanup("better-auth:online-manager"),
+  ];
+
+  expect(documentAdd).not.toHaveBeenCalled();
+  expect(windowAdd).not.toHaveBeenCalled();
+
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  if (!previousDocument) {
+    throw new Error("expected jsdom document");
+  }
+  await using _restoreDocument = makeResource({}, () => {
+    Object.defineProperty(globalThis, "document", previousDocument);
+  });
+  // @ts-expect-error — simulate vitest tearing down jsdom before nanostores unmount
+  delete globalThis.document;
+
+  for (const cleanup of cleanups) {
+    cleanup();
+  }
+
+  expect(documentRemove).not.toHaveBeenCalled();
+  expect(windowRemove).not.toHaveBeenCalled();
 });

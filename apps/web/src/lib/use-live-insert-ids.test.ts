@@ -3,9 +3,16 @@ import { expect, test } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { useLiveInsertIds } from "./use-live-insert-ids";
 
+type LiveInsertItem = {
+  id: string;
+  sortKey: number;
+};
+
+const emptyItems: LiveInsertItem[] = [];
+
 test("the first snapshot is never a live insert, including an empty list", async () => {
   const empty = renderHook((props) => useLiveInsertIds(props.items), {
-    initialProps: { items: [] as Array<{ id: string; sortKey: number }> },
+    initialProps: { items: emptyItems },
   });
   await using _empty = makeResource({}, () => empty.unmount());
   expect(empty.result.current.size).toBe(0);
@@ -74,7 +81,7 @@ test("does not mark older appended ids as live inserts", async () => {
 
 test("a first item after an empty snapshot is a live insert", async () => {
   const hook = renderHook((props) => useLiveInsertIds(props.items), {
-    initialProps: { items: [] as Array<{ id: string; sortKey: number }> },
+    initialProps: { items: emptyItems },
   });
   await using _hook = makeResource({}, () => hook.unmount());
 

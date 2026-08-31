@@ -33,8 +33,10 @@ const postsInfinite = (input: { tag: string }) =>
     queryKey: ["posts", "infinite", input] as const,
     queryFn: async () => ({
       page: [{ id: "1", tag: input.tag }],
+      // SAFETY: Test fixture is a subset of the production type.
       nextCursor: null as string | null,
     }),
+    // SAFETY: Test fixture is a subset of the production type.
     initialPageParam: null as string | null,
     getNextPageParam: () => null,
   });
@@ -59,6 +61,7 @@ const failingInfinite = (input: { tag: string }) =>
     queryFn: async () => {
       throw new Error("infinite boom");
     },
+    // SAFETY: Test fixture is a subset of the production type.
     initialPageParam: null as string | null,
     getNextPageParam: () => null,
   });

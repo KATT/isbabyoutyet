@@ -7,6 +7,7 @@ import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { LanguageSettings } from "./language-settings";
+import { htmlInput } from "@/test/htmlElement";
 
 async function renderLanguageSettings(
   harness: Awaited<ReturnType<typeof createConvexTestHarness>>,
@@ -56,17 +57,17 @@ test("changing the profile time zone persists it", async () => {
   const trigger = picker.parentElement?.querySelector("button");
   if (!trigger) throw new Error("time zone trigger missing");
   fireEvent.focus(picker);
-  expect((picker as HTMLInputElement).selectionStart).toBe(0);
-  expect((picker as HTMLInputElement).selectionEnd).toBe("London (Europe)".length);
+  expect(htmlInput(picker).selectionStart).toBe(0);
+  expect(htmlInput(picker).selectionEnd).toBe("London (Europe)".length);
   fireEvent.click(trigger);
-  expect((picker as HTMLInputElement).value).toBe("London (Europe)");
+  expect(htmlInput(picker).value).toBe("London (Europe)");
   expect(view.queryByText("No time zones found")).toBeNull();
   fireEvent.input(picker, { target: { value: "Tokyo" } });
   const tokyo = view.getByRole("option", { name: "Tokyo (Asia)" });
   fireEvent.pointerDown(tokyo, { pointerType: "mouse" });
   fireEvent.click(tokyo);
 
-  expect((picker as HTMLInputElement).value).toBe("Tokyo (Asia)");
+  expect(htmlInput(picker).value).toBe("Tokyo (Asia)");
   await vi.waitFor(async () => {
     const profile = await harness.client.query(api.profile.get, {});
     expect(profile?.timeZone).toBe("Asia/Tokyo");
@@ -118,7 +119,7 @@ test.each([
   fireEvent.click(tokyo);
 
   await vi.waitFor(() => {
-    expect((picker as HTMLInputElement).value).toBe("London (Europe)");
+    expect(htmlInput(picker).value).toBe("London (Europe)");
   });
   expect(toastError).toHaveBeenLastCalledWith(testCase.expectedMessage);
 });

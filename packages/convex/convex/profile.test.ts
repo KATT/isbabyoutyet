@@ -191,6 +191,7 @@ test("backfillUserProfileIsAdmin fills missing isAdmin and leaves set values alo
     // Simulate a pre-migration document shape for the helper.
     const legacy: LegacyUserProfile = { ...nonAdmin };
     delete legacy.isAdmin;
+    // SAFETY: Mock constructor is installed in place of the browser global.
     await backfillUserProfileIsAdminDoc(ctx, legacy as typeof nonAdmin);
   });
 

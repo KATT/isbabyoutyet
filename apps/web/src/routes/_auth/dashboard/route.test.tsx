@@ -21,6 +21,7 @@ import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { DashboardBabyList, DashboardHeader, Route } from "@/routes/_auth/dashboard/route";
 
 const babySmith = {
+  // SAFETY: Seeded convex-test document id.
   _id: "baby-id" as Id<"baby">,
   name: "Baby Smith",
   timeZone: "Europe/London",
@@ -61,6 +62,7 @@ function reparentRoute<TRoute extends AnyRoute>(
   route: TRoute,
   opts: { path: string; getParentRoute: () => AnyRoute },
 ): TRoute {
+  // SAFETY: Test fixture is a subset of the production type.
   const update = route.update as (options: typeof opts) => TRoute;
   return update(opts);
 }

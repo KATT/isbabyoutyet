@@ -142,6 +142,7 @@ test("uses a bounded mobile card on narrow viewports", async () => {
       Reflect.deleteProperty(window, "matchMedia");
     }
   });
+  // SAFETY: Test fixture is a subset of the production type.
   const mediaQuery = {
     matches: true,
     media: "(max-width: 767px)",

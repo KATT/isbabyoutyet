@@ -17,6 +17,7 @@ export function testInitiatedQuery<TFactory extends QueryOptionsFactory>(
   _factory: TFactory,
   ...input: QueryInputArgs<TFactory>
 ): InitiatedQuery<TFactory> {
+  // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
   return { input: input[0] } as InitiatedQuery<TFactory>;
 }
 
@@ -28,6 +29,7 @@ export function testPreloadedQuery<TFactory extends QueryOptionsFactory>(
   initialData: QueryDataOf<ReturnType<TFactory>>,
   ...input: QueryInputArgs<TFactory>
 ): PreloadedQuery<TFactory> {
+  // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
   return { input: input[0], initialData } as PreloadedQuery<TFactory>;
 }
 
@@ -36,6 +38,7 @@ export function testInitiatedInfiniteQuery<TFactory extends QueryOptionsFactory>
   _factory: TFactory,
   ...input: QueryInputArgs<TFactory>
 ): InitiatedInfiniteQuery<TFactory> {
+  // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
   return { input: input[0] } as InitiatedInfiniteQuery<TFactory>;
 }
 
@@ -45,5 +48,6 @@ export function testPreloadedInfiniteQuery<TFactory extends QueryOptionsFactory>
   initialData: QueryDataOf<ReturnType<TFactory>>,
   ...input: QueryInputArgs<TFactory>
 ): PreloadedInfiniteQuery<TFactory> {
+  // SAFETY: Handle brands are type-only; input/initialData are the runtime fields.
   return { input: input[0], initialData } as PreloadedInfiniteQuery<TFactory>;
 }
