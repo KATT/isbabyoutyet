@@ -1162,12 +1162,12 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
     }
   };
 
-    return (
+  return (
     <div className="flex flex-col gap-4">
       <div className="mb-4 flex items-center gap-2">
-          <Heart className="w-5 h-5 text-primary" />
+        <Heart className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-extrabold text-foreground">{t("Updates & encouragements")}</h3>
-        </div>
+      </div>
 
       {props.items.length === 0 ? (
         <div className="rounded-3xl border-2 border-dashed border-border py-10 text-center">
@@ -1188,9 +1188,9 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
           <AnimatePresence initial={false} mode={TIMELINE_PRESENCE_MODE}>
             {props.items.map((item) => {
               const isLiveInsert = liveInsertIds.has(item._id);
-  return (
+              return (
                 <motion.div
-              key={item._id}
+                  key={item._id}
                   layout={TIMELINE_ITEM_LAYOUT}
                   data-live-insert={isLiveInsert ? "" : undefined}
                 >
@@ -1203,24 +1203,24 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
                   >
                     {item.kind === "update" ? (
                       <UpdateTimelineItem
-              item={item}
-              publicId={props.publicId}
-              baby={props.baby}
-              babyName={props.babyName}
-              isOwner={props.isOwner}
-              onDelete={handleDeleteUpdate}
-              onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
-            />
-          ) : (
-            <EncouragementTimelineItem
-              item={item}
-              isOwner={props.isOwner}
-              timeZone={props.baby.timeZone}
-              currentVisitorId={props.currentVisitorId}
-              onDelete={handleDeleteEncouragement}
-              onUpdate={handleUpdateEncouragement}
-            />
-        )}
+                        item={item}
+                        publicId={props.publicId}
+                        baby={props.baby}
+                        babyName={props.babyName}
+                        isOwner={props.isOwner}
+                        onDelete={handleDeleteUpdate}
+                        onSetAsCurrentPhoto={handleSetAsCurrentPhoto}
+                      />
+                    ) : (
+                      <EncouragementTimelineItem
+                        item={item}
+                        isOwner={props.isOwner}
+                        timeZone={props.baby.timeZone}
+                        currentVisitorId={props.currentVisitorId}
+                        onDelete={handleDeleteEncouragement}
+                        onUpdate={handleUpdateEncouragement}
+                      />
+                    )}
                   </motion.div>
                 </motion.div>
               );
@@ -1229,13 +1229,13 @@ function TimelineFeedView(props: TimelineFeedViewProps) {
         </div>
       </MotionConfig>
 
-        <div ref={loadMoreRef} className="py-2">
-          {isFetchingNextPage ? (
-            <div className="text-center text-muted-foreground">
-              <Spinner className="mx-auto" />
-            </div>
-          ) : null}
-        </div>
+      <div ref={loadMoreRef} className="py-2">
+        {isFetchingNextPage ? (
+          <div className="text-center text-muted-foreground">
+            <Spinner className="mx-auto" />
+          </div>
+        ) : null}
       </div>
+    </div>
   );
 }
