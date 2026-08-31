@@ -29,7 +29,7 @@ test("update photo beforeLoad redirects when the public id resolves to a differe
   });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       name: "Renamed Nova",
     },
   });

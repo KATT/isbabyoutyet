@@ -24,7 +24,7 @@ test("beforeLoad validates and canonicalizes the baby slug", async () => {
   const baby = await seedOwnedBaby(harness, { name: "Baby Nova", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       name: "Renamed Nova",
     },
   });
@@ -50,7 +50,7 @@ test("loader prefetches the canonical OG image in the browser", async () => {
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "baby-blue",
     },
   });
@@ -81,7 +81,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "orange",
     },
   });
@@ -94,7 +94,7 @@ test("loader replaces a cached old theme with the fresh baby snapshot", async ()
 
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "baby-blue",
     },
   });
@@ -117,7 +117,7 @@ test("copies from the route overlay and dismisses through overlay history", asyn
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "baby-blue",
     },
   });
@@ -174,7 +174,7 @@ test("BabyShareOverlay mounts from the real route loader", async () => {
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "baby-blue",
     },
   });
@@ -200,7 +200,7 @@ test("share overlay falls back to execCommand when clipboard.writeText fails", a
   const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
   await harness.client.mutation(api.baby.update, {
     id: baby.babyId,
-    data: {
+    patch: {
       theme: "baby-blue",
     },
   });

@@ -29,7 +29,7 @@ Never combine "write missing keys / strip legacy values" and "make the field req
 Permanent exceptions (not a follow-up to require the key):
 
 - `migrations.runAll` runner args: keep `@todo Keep mirroring @convex-dev/migrations runner options`.
-- Sparse `ctx.db.patch` RPCs named `update` or `patch*` whose `args` are `{ id, data }` (same shape as `baby.update`). `id` is `v.id(...)` or `v.object` of two or more `v.id(...)` fields; `data` is `v.object` of `v.optional()` fields. Omitted keys mean unchanged. No `@todo` / `oxlint-disable`.
+- Sparse `ctx.db.patch` RPCs named `update` or `patch*` whose `args` are `{ id, patch }` (same shape as `baby.update`). `id` is `v.id(...)` or `v.object` of two or more `v.id(...)` fields; `patch` is `v.object` of `v.optional()` fields. Omitted keys mean unchanged. No `@todo` / `oxlint-disable`.
 
 ```typescript
 /** @todo Optional until every row sets this key. */
@@ -57,7 +57,7 @@ Skip phase 2 when the key is schema-only (no RPC arg). Skip phase 3 when every r
 
 Leave `migrations.runAll` runner args optional (`@todo Keep mirroring @convex-dev/migrations runner options`).
 
-Leave `update` / `patch*` sparse patch args optional (`{ id, data }` with all-partial `data`). Skip phase 2 for those mutations: omitted keys mean unchanged and map to `ctx.db.patch`.
+Leave `update` / `patch*` sparse patch args optional (`{ id, patch }` with all-partial `patch`). Skip phase 2 for those mutations: omitted keys mean unchanged and map to `ctx.db.patch`.
 
 ## Removing fields or enum values
 
