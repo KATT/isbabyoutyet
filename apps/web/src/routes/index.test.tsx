@@ -109,8 +109,11 @@ test("homepage session-refresh leftover cleanup does not require document", asyn
   });
   // @ts-expect-error — simulate vitest tearing down jsdom before nanostores unmount
   delete globalThis.document;
+  expect(Object.getOwnPropertyDescriptor(globalThis, "document")).toBeUndefined();
 
-  act(() => {
-    vi.advanceTimersByTime(1000);
-  });
+  expect(() => {
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+  }).not.toThrow();
 });
