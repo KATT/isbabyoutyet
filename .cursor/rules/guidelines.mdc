@@ -252,6 +252,14 @@ const method = options!.method;
 - Follow React Hooks rules (`react-hooks/react-compiler`)
 - Use React Compiler compatible patterns
 
+#### Overlay forms (form-guard)
+
+Dialog, popover, sheet, and route-overlay forms must use `useFormGuard` +
+`FormGuardProvider` + `useZodForm` + `Form` from `@/components/Form`. Close
+after a successful save with `guard.close()`. Do not save from `DialogClose`
+or `PopoverClose` (that unmounts before the mutation finishes and skips the
+leave-guard). Live switches that persist immediately are not overlay forms.
+
 #### Components
 
 - Use JSX runtime (no need to import React for JSX)
