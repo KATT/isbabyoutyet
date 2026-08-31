@@ -20,11 +20,13 @@ import { isFunction } from "@workspace/runtime/guards";
 import type { InitiatedQuery } from "@workspace/query-prefetch";
 import { getQueryInitiator, preloadedQueryOptions } from "@workspace/query-prefetch";
 import type { ReactElement } from "react";
+import { toast } from "sonner";
+import * as z from "zod";
+import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { Button } from "@workspace/ui/components/button";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -41,9 +43,9 @@ import {
   FieldSet,
   FieldTitle,
 } from "@workspace/ui/components/field";
+import { FormControl, FormField, FormItem } from "@workspace/ui/components/form";
 import { Spinner } from "@workspace/ui/components/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@workspace/ui/components/tooltip";
-import { toast } from "sonner";
 
 type BrowserPushCapability =
   | { kind: "unsupported" }
@@ -239,8 +241,12 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
             messagesDefault={!familyOn && !messagesOn ? true : Boolean(messagesOn)}
             isSubscribed={Boolean(isSubscribed)}
             isPending={isLoading}
-            onSubmit={(selection) => {
-              toastSubscribe(() => subscribeMutation.mutateAsync(selection), t);
+            onSubmit={async (selection) => {
+              await toastPushSync({
+                run: subscribeMutation.mutateAsync(selection),
+                t,
+                turningOff: !selection.family && !selection.messages,
+              });
             }}
           />
         );
@@ -261,23 +267,43 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
               });
               return;
             }
-            toastSubscribe(
-              () => subscribeMutation.mutateAsync({ family: true, messages: false }),
+            toastPushSync({
+              run: subscribeMutation.mutateAsync({ family: true, messages: false }),
               t,
-            );
+              turningOff: false,
+            });
           }}
         />
       );
   }
 }
 
-function toastSubscribe(mutateAsync: () => Promise<void>, t: TranslationFunction) {
-  toast.promise(mutateAsync(), {
-    loading: t("Subscribing to notifications..."),
-    success: t("Subscribed to notifications!"),
-    error: (error) =>
-      error instanceof Error ? error.message : t("Failed to subscribe to notifications"),
-  });
+function toastPushSync(opts: {
+  run: Promise<void>;
+  t: TranslationFunction;
+  turningOff: boolean;
+}) {
+  toast.promise(
+    opts.run,
+    opts.turningOff
+      ? {
+          loading: opts.t("Unsubscribing from notifications..."),
+          success: opts.t("Unsubscribed from notifications!"),
+          error: (error: unknown) =>
+            error instanceof Error
+              ? error.message
+              : opts.t("Failed to unsubscribe from notifications"),
+        }
+      : {
+          loading: opts.t("Subscribing to notifications..."),
+          success: opts.t("Subscribed to notifications!"),
+          error: (error: unknown) =>
+            error instanceof Error
+              ? error.message
+              : opts.t("Failed to subscribe to notifications"),
+        },
+  );
+  return opts.run;
 }
 
 function GetNotificationsPending() {
@@ -353,26 +379,14 @@ export function IosPwaInstallPrompt(props: {
   );
 }
 
-function formCheckboxChecked(form: HTMLFormElement, id: string) {
-  const named = form.querySelector(`#${id}`);
-  if (named instanceof HTMLInputElement) {
-    return named.checked;
-  }
-  if (named instanceof HTMLElement) {
-    return named.getAttribute("aria-checked") === "true";
-  }
-  return false;
-}
-
-function readChooserSelection(form: HTMLFormElement) {
-  return {
-    family: formCheckboxChecked(form, "notify-family"),
-    messages: formCheckboxChecked(form, "notify-messages"),
-  };
-}
+const chooserSchema = z.object({
+  family: z.boolean(),
+  messages: z.boolean(),
+});
 
 /**
- * Uncontrolled chooser for managers picking status and/or message alerts.
+ * Manager chooser for status and/or message alerts. Guarded overlay form:
+ * Save waits for the mutation, then closes; dirty dismiss asks to discard.
  *
  * @internal
  */
@@ -381,12 +395,13 @@ export function ManagerNotificationChooserView(props: {
   messagesDefault: boolean;
   isSubscribed: boolean;
   isPending: boolean;
-  onSubmit: (selection: NotificationSelection) => void;
+  onSubmit: (selection: NotificationSelection) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
-    <Dialog>
+    <Dialog {...overlay.rootProps}>
       <Tooltip>
         <TooltipTrigger
           render={
@@ -411,74 +426,121 @@ export function ManagerNotificationChooserView(props: {
         </TooltipContent>
       </Tooltip>
       <DialogContent>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            props.onSubmit(readChooserSelection(event.currentTarget));
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{t("Choose notifications")}</DialogTitle>
-            <DialogDescription>{t("Pick what this device should receive.")}</DialogDescription>
-          </DialogHeader>
-          <FieldSet className="mt-4">
-            <FieldLegend className="sr-only">{t("Choose notifications")}</FieldLegend>
-            <FieldGroup>
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="notify-family"
-                  name="family"
-                  value="on"
-                  defaultChecked={props.familyDefault}
-                />
-                <FieldContent>
-                  <FieldTitle>
-                    <label htmlFor="notify-family">{t("Status updates")}</label>
-                  </FieldTitle>
-                  <FieldDescription>
-                    {t("Get notified when the baby's status changes")}
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-              <Field orientation="horizontal">
-                <Checkbox
-                  id="notify-messages"
-                  name="messages"
-                  value="on"
-                  defaultChecked={props.messagesDefault}
-                />
-                <FieldContent>
-                  <FieldTitle>
-                    <label htmlFor="notify-messages">{t("Message notifications")}</label>
-                  </FieldTitle>
-                  <FieldDescription>
-                    {t("Get notified when someone leaves a message")}
-                  </FieldDescription>
-                </FieldContent>
-              </Field>
-            </FieldGroup>
-          </FieldSet>
-          <DialogFooter>
-            <DialogClose
-              render={
-                <Button
-                  type="button"
-                  disabled={props.isPending}
-                  onClick={(event) => {
-                    const form = event.currentTarget.closest("form");
-                    if (form instanceof HTMLFormElement) {
-                      props.onSubmit(readChooserSelection(form));
-                    }
-                  }}
-                />
-              }
-            >
-              {t("Save")}
-            </DialogClose>
-          </DialogFooter>
-        </form>
+        <FormGuardProvider guard={overlay}>
+          <ManagerNotificationChooserForm
+            key={`${String(props.familyDefault)}:${String(props.messagesDefault)}`}
+            familyDefault={props.familyDefault}
+            messagesDefault={props.messagesDefault}
+            isPending={props.isPending}
+            onSubmit={props.onSubmit}
+            onClose={overlay.close}
+          />
+        </FormGuardProvider>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ManagerNotificationChooserForm(props: {
+  familyDefault: boolean;
+  messagesDefault: boolean;
+  isPending: boolean;
+  onSubmit: (selection: NotificationSelection) => Promise<void>;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
+  const form = useZodForm({
+    schema: chooserSchema,
+    defaultValues: {
+      family: props.familyDefault,
+      messages: props.messagesDefault,
+    },
+  });
+
+  return (
+    <Form
+      form={form}
+      handleSubmit={async (values) => {
+        await props.onSubmit(values);
+        props.onClose();
+      }}
+    >
+      <DialogHeader>
+        <DialogTitle>{t("Choose notifications")}</DialogTitle>
+        <DialogDescription>{t("Pick what this device should receive.")}</DialogDescription>
+      </DialogHeader>
+      <FieldSet className="mt-4">
+        <FieldLegend className="sr-only">{t("Choose notifications")}</FieldLegend>
+        <FieldGroup>
+          <FormField
+            control={form.control}
+            name="family"
+            render={(renderProps) => (
+              <FormItem className="border-0 p-0">
+                <Field orientation="horizontal">
+                  <FormControl>
+                    <Checkbox
+                      id="notify-family"
+                      checked={renderProps.field.value}
+                      disabled={props.isPending}
+                      onCheckedChange={(checked) => {
+                        renderProps.field.onChange(checked === true);
+                      }}
+                    />
+                  </FormControl>
+                  <FieldContent>
+                    <FieldTitle>
+                      <label htmlFor="notify-family">{t("Status updates")}</label>
+                    </FieldTitle>
+                    <FieldDescription>
+                      {t("Get notified when the baby's status changes")}
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="messages"
+            render={(renderProps) => (
+              <FormItem className="border-0 p-0">
+                <Field orientation="horizontal">
+                  <FormControl>
+                    <Checkbox
+                      id="notify-messages"
+                      checked={renderProps.field.value}
+                      disabled={props.isPending}
+                      onCheckedChange={(checked) => {
+                        renderProps.field.onChange(checked === true);
+                      }}
+                    />
+                  </FormControl>
+                  <FieldContent>
+                    <FieldTitle>
+                      <label htmlFor="notify-messages">{t("Message notifications")}</label>
+                    </FieldTitle>
+                    <FieldDescription>
+                      {t("Get notified when someone leaves a message")}
+                    </FieldDescription>
+                  </FieldContent>
+                </Field>
+              </FormItem>
+            )}
+          />
+        </FieldGroup>
+      </FieldSet>
+      <DialogFooter>
+        <SubmitButton
+          form="context"
+          IconComponent={null}
+          iconPosition="start"
+          disabled={props.isPending}
+        >
+          {t("Save")}
+        </SubmitButton>
+      </DialogFooter>
+    </Form>
   );
 }
 

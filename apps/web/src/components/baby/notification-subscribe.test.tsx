@@ -498,7 +498,8 @@ test("manager chooser defaults match the current subscription", async () => {
 });
 
 test("saving the manager chooser reports the selected alerts", async () => {
-  const onSubmit = vi.fn<(selection: { family: boolean; messages: boolean }) => void>();
+  const onSubmit =
+    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
   await using view = await renderWithTestRouter(
     <TooltipProvider>
       <ManagerNotificationChooserView
@@ -515,5 +516,100 @@ test("saving the manager chooser reports the selected alerts", async () => {
   fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
-  expect(onSubmit).toHaveBeenCalledWith({ family: true, messages: false });
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ family: true, messages: false });
+  });
+});
+
+test("saving both channels off reports an unsubscribe selection", async () => {
+  const onSubmit =
+    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={true}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Unsubscribe" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Status updates" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledWith({ family: false, messages: false });
+  });
+});
+
+test("chooser Save waits for the mutation before closing", async () => {
+  let finishSave: (() => void) | undefined;
+  const onSubmit = vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>(
+    () =>
+      new Promise((resolve) => {
+        finishSave = resolve;
+      }),
+  );
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Save" }));
+
+  await vi.waitFor(() => {
+    expect(onSubmit).toHaveBeenCalledOnce();
+  });
+  expect(view.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+
+  finishSave?.();
+  await vi.waitFor(() => {
+    expect(view.queryByRole("heading", { name: "Choose notifications" })).toBeNull();
+  });
+});
+
+test("dirty chooser dismiss asks to discard unsaved changes", async () => {
+  const onSubmit =
+    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
+  await using view = await renderWithTestRouter(
+    <TooltipProvider>
+      <ManagerNotificationChooserView
+        familyDefault={true}
+        messagesDefault={true}
+        isSubscribed={false}
+        isPending={false}
+        onSubmit={onSubmit}
+      />
+    </TooltipProvider>,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+  fireEvent.click(view.getByRole("checkbox", { name: "Message notifications" }));
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+
+  expect(view.getByRole("heading", { name: "Discard unsaved changes?" })).toBeTruthy();
+  expect(onSubmit).not.toHaveBeenCalled();
+
+  fireEvent.click(view.getByRole("button", { name: "Keep editing" }));
+  expect(view.getByRole("heading", { name: "Choose notifications" })).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Close" }));
+  fireEvent.click(view.getByRole("button", { name: "Discard" }));
+
+  await vi.waitFor(() => {
+    expect(view.queryByRole("heading", { name: "Choose notifications" })).toBeNull();
+  });
+  expect(onSubmit).not.toHaveBeenCalled();
 });
