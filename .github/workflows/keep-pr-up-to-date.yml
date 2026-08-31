@@ -1,0 +1,80 @@
+name: keep-pr-up-to-date
+
+# Kodiak-style "keep up to date" for PRs with auto-merge enabled:
+# passing checks, no conflicts, then update (or rebase a whole stack).
+#
+# GitHub does not retrigger workflows for GITHUB_TOKEN pushes. Configure a
+# GitHub App (preferred) or PAT so required checks re-run after an update:
+#   AUTO_UPDATE_APP_ID + AUTO_UPDATE_APP_PRIVATE_KEY
+#   or AUTO_UPDATE_TOKEN
+# App permissions: contents read/write, pull requests read/write.
+
+on:
+  push:
+    branches: [main, next, canary]
+  pull_request:
+    types: [auto_merge_enabled]
+  workflow_run:
+    workflows: [main]
+    types: [completed]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: keep-pr-up-to-date
+  cancel-in-progress: false
+
+jobs:
+  keep-up-to-date:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Mint GitHub App token
+        id: app-token
+        if: ${{ secrets.AUTO_UPDATE_APP_ID != '' && secrets.AUTO_UPDATE_APP_PRIVATE_KEY != '' }}
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTO_UPDATE_APP_ID }}
+          private-key: ${{ secrets.AUTO_UPDATE_APP_PRIVATE_KEY }}
+
+      - name: Warn when updates will not retrigger checks
+        if: ${{ steps.app-token.outputs.token == '' && secrets.AUTO_UPDATE_TOKEN == '' }}
+        run: |
+          echo "::warning::Using GITHUB_TOKEN. GitHub will not retrigger required checks after a branch update, so auto-merge can stall. Set AUTO_UPDATE_APP_ID and AUTO_UPDATE_APP_PRIVATE_KEY (or AUTO_UPDATE_TOKEN)."
+
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          lfs: true
+          fetch-depth: 0
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: ".nvmrc"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build keep-up-to-date CLI
+        run: pnpm --filter @workspace/scripts build
+
+      - name: Keep auto-merge PRs up to date
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.AUTO_UPDATE_TOKEN || github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node packages/scripts/dist/keepPrUpToDateCli.js

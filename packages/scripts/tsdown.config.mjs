@@ -1,7 +1,7 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/compareCoverage.ts"],
+  entry: ["src/compareCoverage.ts", "src/keepPrUpToDateCli.ts"],
   format: "esm",
   outDir: "dist",
   clean: true,

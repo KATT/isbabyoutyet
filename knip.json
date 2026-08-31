@@ -55,7 +55,7 @@
       ]
     },
     "packages/scripts": {
-      "entry": ["src/compareCoverage.ts!"]
+      "entry": ["src/compareCoverage.ts!", "src/keepPrUpToDateCli.ts!"]
     },
     "packages/runtime": {},
     "packages/form-guard": {},

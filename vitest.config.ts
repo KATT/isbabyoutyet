@@ -14,6 +14,7 @@ export default defineConfig({
       "packages/query-prefetch",
       "packages/convex-prefetch",
       "packages/form-guard",
+      "packages/scripts",
       webUnitProject,
     ],
     experimental: {
