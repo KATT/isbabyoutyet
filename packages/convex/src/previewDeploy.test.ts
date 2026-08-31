@@ -3,6 +3,7 @@ import {
   computeSchemaFingerprint,
   parseEnvGetOutput,
   previewDeployCliArgs,
+  previewNameFromGitRef,
   shouldRecreatePreview,
 } from "./previewDeploy";
 
@@ -47,6 +48,14 @@ test("preview deploy flags wipe and seed only when recreating", () => {
     "seed:seedDemoData",
   ]);
   expect(previewDeployCliArgs("feat/demo", false)).toEqual(["--preview-name", "feat/demo"]);
+});
+
+test("preview name comes from a branch ref, not a commit SHA", () => {
+  expect(previewNameFromGitRef("refs/heads/perf/skip-convex-preview-wipe")).toBe(
+    "perf/skip-convex-preview-wipe",
+  );
+  expect(previewNameFromGitRef("feat/demo")).toBe("feat/demo");
+  expect(previewNameFromGitRef("54c61db7fcd60a732df7573671eb7777ab6b1054")).toBe(null);
 });
 
 test("env get parser uses the last non-empty line", () => {

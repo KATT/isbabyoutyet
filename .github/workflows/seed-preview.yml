@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout deployed commit
@@ -30,6 +31,7 @@ jobs:
         with:
           lfs: true
           ref: ${{ github.event.deployment.sha }}
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -46,11 +48,31 @@ jobs:
       - name: Seed homepage demo photos
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYMENT_REF: ${{ github.event.deployment.ref }}
+          DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
         run: |
           if [ -z "$CONVEX_DEPLOY_KEY" ]; then
             echo "CONVEX_DEPLOY_KEY is not set in GitHub secrets; cannot seed Convex preview photos."
             exit 1
           fi
-          REF="${{ github.event.deployment.ref }}"
-          BRANCH="${REF#refs/heads/}"
+          # Vercel GitHub deployments set ref to the commit SHA. Convex
+          # preview names follow VERCEL_GIT_COMMIT_REF (the git branch).
+          BRANCH=""
+          if [[ "$DEPLOYMENT_REF" =~ ^refs/heads/ ]]; then
+            BRANCH="${DEPLOYMENT_REF#refs/heads/}"
+          elif [[ "$DEPLOYMENT_REF" =~ ^[0-9a-f]{7,40}$ ]]; then
+            BRANCH="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${DEPLOYMENT_SHA}/pulls" --jq '.[0].head.ref // empty')"
+          else
+            BRANCH="$DEPLOYMENT_REF"
+          fi
+          if [ -z "$BRANCH" ]; then
+            git fetch --force origin '+refs/heads/*:refs/remotes/origin/*'
+            BRANCH="$(git for-each-ref --points-at HEAD --format='%(refname:short)' refs/remotes/origin | sed 's|^origin/||' | grep -v '^HEAD$' | head -1)"
+          fi
+          if [ -z "$BRANCH" ]; then
+            echo "Could not resolve Convex preview name for ${DEPLOYMENT_SHA}"
+            exit 1
+          fi
+          echo "Seeding Convex preview ${BRANCH}"
           pnpm --filter @workspace/convex run seed:homepage:photos -- --preview-name "$BRANCH"

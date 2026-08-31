@@ -37,6 +37,18 @@ export function previewDeployCliArgs(branch: string, recreate: boolean) {
   return ["--preview-name", branch];
 }
 
+/** Vercel GitHub deployments set `ref` to a SHA, not `refs/heads/<branch>`. */
+export function previewNameFromGitRef(ref: string) {
+  const headsPrefix = "refs/heads/";
+  if (ref.startsWith(headsPrefix)) {
+    return ref.slice(headsPrefix.length);
+  }
+  if (/^[0-9a-f]{7,40}$/i.test(ref)) {
+    return null;
+  }
+  return ref;
+}
+
 export function parseEnvGetOutput(stdout: string) {
   const lines = stdout
     .trim()
