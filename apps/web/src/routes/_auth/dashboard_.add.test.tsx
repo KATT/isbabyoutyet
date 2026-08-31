@@ -450,7 +450,7 @@ test("toasts a generic subscribe failure when the error is not an Error", async 
 const IPHONE_SAFARI_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
-test("iOS Safari add-baby shows a Show me how row and does not subscribe", async () => {
+test("iOS Safari add-baby omits message notifications and does not subscribe", async () => {
   const restore: Array<() => void> = [];
   const existingUa = Object.getOwnPropertyDescriptor(navigator, "userAgent");
   Object.defineProperty(navigator, "userAgent", {
@@ -504,12 +504,9 @@ test("iOS Safari add-baby shows a Show me how row and does not subscribe", async
   await using view = await renderAddBaby({ createBaby, navigate, subscribeOwnerMessages });
 
   expect(view.queryByRole("switch", { name: "Message notifications" })).toBeNull();
-  fireEvent.click(view.getByRole("button", { name: "Show me how" }));
-  expect(view.getByText("Get Notifications on iOS")).toBeTruthy();
-  fireEvent.click(view.getByRole("button", { name: "Close" }));
-  await vi.waitFor(() => {
-    expect(view.queryByRole("dialog")).toBeNull();
-  });
+  expect(view.queryByRole("button", { name: "Show me how" })).toBeNull();
+  expect(view.queryByRole("button", { name: "Get Notifications" })).toBeNull();
+  expect(view.queryByText("Get Notifications on iOS")).toBeNull();
 
   fireEvent.change(view.getByLabelText("Baby name"), {
     target: { value: "Baby Fern" },

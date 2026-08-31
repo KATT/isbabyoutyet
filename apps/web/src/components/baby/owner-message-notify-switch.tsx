@@ -132,29 +132,6 @@ function FormMessageNotifyRow(props: SwitchViewProps) {
   const copy = ownerMessageNotifyCopy(props);
   const titleId = `${formItemId}-title`;
 
-  if (props.disabledReason === "needsIosInstall") {
-    return (
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <span id={titleId} className="text-sm leading-none font-bold">
-            {t(copy.title)}
-          </span>
-          <span id={formDescriptionId} className="text-muted-foreground text-sm">
-            {t(copy.description)}
-          </span>
-        </div>
-        <IosPwaInstallPrompt
-          audience="owner"
-          trigger={
-            <Button type="button" variant="outline" size="sm">
-              {t("Show me how")}
-            </Button>
-          }
-        />
-      </div>
-    );
-  }
-
   return (
     <label htmlFor={formItemId} className="flex items-center justify-between gap-4">
       <div className="flex flex-col gap-1">
@@ -177,7 +154,11 @@ export function OwnerMessageNotifyFormField<
   TName extends FieldPath<TFieldValues>,
 >(props: { control: Control<TFieldValues, unknown, unknown>; name: TName }) {
   const hydrated = useClientHydration();
-  const needsIosInstall = hydrated && needsIosPushInstall();
+  // Add-baby is `/dashboard/add`, outside the baby PWA scope. Home Screen
+  // install from this form would bookmark the dashboard, not the baby page.
+  if (hydrated && needsIosPushInstall()) {
+    return null;
+  }
   return (
     <FormField
       control={props.control}
@@ -185,10 +166,10 @@ export function OwnerMessageNotifyFormField<
       render={(renderProps) => (
         <FormItem className="border-0 p-0">
           <OwnerMessageNotifySwitchView
-            checked={needsIosInstall ? false : Boolean(renderProps.field.value)}
+            checked={Boolean(renderProps.field.value)}
             disabled={false}
-            disabledReason={needsIosInstall ? "needsIosInstall" : null}
-            onCheckedChange={needsIosInstall ? null : renderProps.field.onChange}
+            disabledReason={null}
+            onCheckedChange={renderProps.field.onChange}
             layout="form"
           />
         </FormItem>
