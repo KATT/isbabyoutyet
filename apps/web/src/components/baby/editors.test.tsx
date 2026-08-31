@@ -19,6 +19,7 @@ import type {
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+import { htmlButton, htmlInput } from "@/test/htmlElement";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -45,12 +46,12 @@ test("name editor mounts fresh on open: current name, reassurance note, trimmed 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
 
   // The form mounted with the current name and the link reassurance
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = htmlInput(view.getByLabelText("Baby name"));
   expect(input.value).toBe("Nova");
   expect(view.getByText(/links you have already shared will keep working/i)).toBeTruthy();
 
   // Save is dirty-gated until the name changes
-  const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+  const saveButton = htmlButton(view.getByRole("button", { name: "Save" }));
   expect(saveButton.disabled).toBe(true);
 
   fireEvent.change(input, { target: { value: "  Nova Rae  " } });
@@ -67,7 +68,7 @@ test("due date editor encodes the picker value as a UTC midnight instant", async
   await using view = await renderWithTestRouter(<DueDateEditor baby={baby} onUpdate={onUpdate} />);
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Due date") as HTMLInputElement;
+  const input = htmlInput(view.getByLabelText("Due date"));
   expect(input.value).toBe("2026-09-01");
   expect(
     view.getAllByText("Due date").filter((element) => !element.classList.contains("sr-only")),
@@ -111,7 +112,7 @@ test("due date editor saves a custom visitor message when provided", async () =>
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  const publicMessageInput = htmlInput(view.getByLabelText("Public due date message"));
   fireEvent.change(publicMessageInput, { target: { value: "  Any day now  " } });
   fireEvent.click(view.getByRole("button", { name: "Save" }));
   await vi.waitFor(() =>
@@ -154,16 +155,12 @@ test("due date editor toggles modes without losing either field value", async ()
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
   const exactSwitch = view.getByRole("switch", { name: "Show exact due date" });
   expect(exactSwitch.getAttribute("aria-checked")).toBe("false");
-  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
-    "Any day now",
-  );
+  expect(htmlInput(view.getByLabelText("Public due date message")).value).toBe("Any day now");
   fireEvent.click(exactSwitch);
   expect(view.queryByLabelText("Public due date message")).toBeNull();
-  expect((view.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-09-01");
+  expect(htmlInput(view.getByLabelText("Due date")).value).toBe("2026-09-01");
   fireEvent.click(exactSwitch);
-  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
-    "Any day now",
-  );
+  expect(htmlInput(view.getByLabelText("Public due date message")).value).toBe("Any day now");
   fireEvent.click(exactSwitch);
   fireEvent.click(view.getByRole("button", { name: "Save" }));
 
@@ -193,7 +190,7 @@ test("reopening the editor picks up the latest name without any reset", async ()
 
   // Reopening mounts a fresh form seeded with the latest name
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const input = view.getByLabelText("Baby name") as HTMLInputElement;
+  const input = htmlInput(view.getByLabelText("Baby name"));
   expect(input.value).toBe("Nova Rae");
 });
 
@@ -402,7 +399,7 @@ test("journey editor saves only when dirty", async () => {
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit journey" }));
-  const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+  const saveButton = htmlButton(view.getByRole("button", { name: "Save" }));
   expect(saveButton.disabled).toBe(true);
 
   fireEvent.click(view.getByRole("combobox", { name: "Presets" }));
@@ -489,7 +486,7 @@ test("status deletion is disabled until later statuses are deleted", async () =>
   );
 
   fireEvent.click(view.getByRole("button", { name: "Edit" }));
-  const deleteButton = view.getByRole("button", { name: "Delete" }) as HTMLButtonElement;
+  const deleteButton = htmlButton(view.getByRole("button", { name: "Delete" }));
   expect(deleteButton.disabled).toBe(true);
 
   const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');

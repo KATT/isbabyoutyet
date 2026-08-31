@@ -97,7 +97,8 @@ test("useLiveConvexInfinitePages watches each loaded page and patches the cache"
   expect(setSpy).toHaveBeenCalled();
   const updater = setSpy.mock.calls[0]?.[1];
   expect(updater).toBeTypeOf("function");
-  const next = (
+  const next = // SAFETY: setQueryData spy records the updater this test invokes.
+  (
     updater as (previous: {
       pages: unknown[];
       pageParams: unknown[];
@@ -189,6 +190,7 @@ test("useLiveConvexInfinitePages leaves cache alone when previous data is missin
   expect(setSpy).toHaveBeenCalled();
   const updater = setSpy.mock.calls[0]?.[1];
   expect(updater).toBeTypeOf("function");
+  // SAFETY: setQueryData spy records the updater this test invokes.
   expect((updater as (previous: undefined) => undefined)(undefined)).toBeUndefined();
 
   unmount();
@@ -352,6 +354,7 @@ test("useLiveConvexInfinitePages ignores late updates past the cached page count
 
   setSpy.mockClear();
   updateCb!();
+  // SAFETY: Test fixture is a subset of the production type.
   const updater = setSpy.mock.calls[0]?.[1] as (previous: {
     pages: unknown[];
     pageParams: unknown[];

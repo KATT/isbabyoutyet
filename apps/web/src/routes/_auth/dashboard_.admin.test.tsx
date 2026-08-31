@@ -21,6 +21,7 @@ import {
   statusLabel,
 } from "@/routes/_auth/dashboard_.admin";
 
+// SAFETY: Test fixture is a subset of the production type.
 const t = ((key: string) => key) as TranslationFunction;
 
 const sampleBaby = {

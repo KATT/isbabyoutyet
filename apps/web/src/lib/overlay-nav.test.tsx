@@ -13,7 +13,6 @@ import {
   dismissOverlay,
   openOverlayLink,
   useBabyPostOverlayNav,
-  type OverlayControl,
 } from "@/lib/overlay-nav";
 import type { LinkProps } from "@tanstack/react-router";
 
@@ -161,8 +160,12 @@ test("useOverlayNav owns enter/exit state and dismisses after animation", async 
   expect(latest.current?.open).toBe(false);
   expect(back).not.toHaveBeenCalled();
 
+  const overlay = latest.current;
+  if (!overlay) {
+    throw new Error("expected overlay nav");
+  }
   act(() => {
-    (latest.current as OverlayControl).onOpenChangeComplete(false);
+    overlay.onOpenChangeComplete(false);
   });
   expect(back).toHaveBeenCalledOnce();
 });

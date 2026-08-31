@@ -2,6 +2,7 @@ import { fireEvent } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { BabyNav } from "@/components/baby/baby-nav";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlButton } from "@/test/htmlElement";
 
 test("groups owner actions separately from page actions", async () => {
   await using view = await renderWithTestRouter(
@@ -68,7 +69,7 @@ test("disables sharing when the share link is empty", async () => {
     />,
   );
 
-  const share = view.getByRole("button", { name: /share the link/i }) as HTMLButtonElement;
+  const share = htmlButton(view.getByRole("button", { name: /share the link/i }));
   expect(share.disabled).toBe(true);
   expect(view.getByRole("button", { name: /close settings/i })).toBeTruthy();
 });

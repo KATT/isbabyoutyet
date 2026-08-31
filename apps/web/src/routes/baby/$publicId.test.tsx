@@ -117,6 +117,7 @@ test("renders a baby detail page from local convex-test data", async () => {
       laborStarted: "2026-08-10T08:00:00.000Z",
       wentToHospital: "2026-08-10T12:00:00.000Z",
       babyBorn: "2026-08-11T03:00:00.000Z",
+      // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
@@ -133,6 +134,7 @@ test("renders a baby detail page from local convex-test data", async () => {
       theme: "baby-blue",
       locale: "sv",
       publicDueDateText: "Retained message",
+      // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
@@ -515,6 +517,7 @@ test("loader prefetches browser push capability on the client", async () => {
 test("docToBabyData coalesces missing public due date text to null", () => {
   expect(
     docToBabyData({
+      // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
       _creationTime: 1,
       name: "Nova",
@@ -542,6 +545,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
 test("share preview uses the canonical route slug while reactive baby data changes", () => {
   const seo = getBabySeo(
     {
+      // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
       _creationTime: 1,
       name: "Juniper Hale",

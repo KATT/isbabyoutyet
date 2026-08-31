@@ -22,6 +22,7 @@ import {
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlButton, htmlInput, htmlImage, htmlElement } from "@/test/htmlElement";
 
 function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
   return isPlainObject(args);
@@ -156,7 +157,7 @@ async function updateRow(view: ReturnType<typeof render>, message: string) {
   const messageNode = await view.findByText(message);
   const row = messageNode.closest(".group");
   if (!row) throw new Error(`Timeline row missing for "${message}"`);
-  return within(row as HTMLElement);
+  return within(htmlElement(row));
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {
@@ -261,7 +262,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
   const postedBefore = Date.now();
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  const picker = view.getByLabelText(/when did it happen/i) as HTMLInputElement;
+  const picker = htmlInput(view.getByLabelText(/when did it happen/i));
   expect(picker.value).toBe("");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
@@ -369,9 +370,9 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 
   const blockedDeleteButtons = feed
     .getAllByRole("button", { name: "Delete update" })
-    .filter((button) => (button as HTMLButtonElement).disabled);
+    .filter((button) => htmlButton(button).disabled);
   expect(blockedDeleteButtons.length).toBeGreaterThan(0);
-  const deleteButton = blockedDeleteButtons[0] as HTMLButtonElement;
+  const deleteButton = htmlButton(blockedDeleteButtons[0]);
   const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');
   if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
@@ -533,7 +534,7 @@ test("timeline photos link to the update photo overlay", async () => {
   expect(photoLink.getAttribute("href")).toBe(
     `/baby/${baby.publicId}/updates/${seeded.updateId}/photo`,
   );
-  const inline = feed.getByAltText("Baby update") as HTMLImageElement;
+  const inline = htmlImage(feed.getByAltText("Baby update"));
   expect(inline.src).toContain("http");
 });
 
@@ -817,9 +818,7 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
 
   await vi.waitFor(
     () => {
-      expect(
-        (view.getByRole("button", { name: "Send some love" }) as HTMLButtonElement).disabled,
-      ).toBe(false);
+      expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
     },
     // Form DEV delay (500ms) + encouragement toast DEV delay (1000ms)
     { timeout: 5000 },

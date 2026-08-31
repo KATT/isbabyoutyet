@@ -10,6 +10,7 @@ import type {
   MilestoneRemoveHandler,
 } from "@workspace/convex/src/types";
 import { LocaleProvider } from "@/lib/i18n";
+import { htmlButton, htmlInput } from "@/test/htmlElement";
 
 function spyOnToastErrorResource() {
   const toastError = vi.spyOn(toast, "error").mockReturnValue("toast-id");
@@ -130,7 +131,7 @@ test("closing settings with a dirty nested editor prompts before discarding", as
     </LocaleProvider>,
   );
 
-  fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0] as HTMLButtonElement);
+  fireEvent.click(htmlButton(view.getAllByRole("button", { name: "Edit" })[0]));
   fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Draft name" } });
   fireEvent.click(view.getByRole("button", { name: "Close" }));
 
@@ -142,7 +143,7 @@ test("closing settings with a dirty nested editor prompts before discarding", as
   await vi.waitFor(() => {
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
-  expect((view.getByLabelText("Baby name") as HTMLInputElement).value).toBe("Draft name");
+  expect(htmlInput(view.getByLabelText("Baby name")).value).toBe("Draft name");
 
   fireEvent.click(view.getByRole("button", { name: "Close" }));
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
@@ -165,7 +166,7 @@ test("clicking the backdrop with a dirty nested editor shows one prompt for the 
     </LocaleProvider>,
   );
 
-  fireEvent.click(view.getAllByRole("button", { name: "Edit" })[0] as HTMLButtonElement);
+  fireEvent.click(htmlButton(view.getAllByRole("button", { name: "Edit" })[0]));
   fireEvent.change(view.getByLabelText("Baby name"), { target: { value: "Draft name" } });
 
   // The dialog backdrop press dismisses both the dialog (modal outside press)
@@ -180,7 +181,7 @@ test("clicking the backdrop with a dirty nested editor shows one prompt for the 
   await vi.waitFor(() => {
     expect(view.queryByRole("alertdialog")).toBeNull();
   });
-  expect((view.getByLabelText("Baby name") as HTMLInputElement).value).toBe("Draft name");
+  expect(htmlInput(view.getByLabelText("Baby name")).value).toBe("Draft name");
 
   clickDialogBackdrop(view);
   fireEvent.click(view.getByRole("button", { name: "Discard" }));
@@ -311,7 +312,7 @@ test("journey selection saves the chosen preset after Save", async () => {
   expect(view.getByText("Journey")).toBeTruthy();
   openJourneyEditor(view);
   expect(view.getByRole("combobox", { name: "Presets" }).textContent).toContain("Labour");
-  const saveButton = view.getByRole("button", { name: "Save" }) as HTMLButtonElement;
+  const saveButton = htmlButton(view.getByRole("button", { name: "Save" }));
   expect(saveButton.disabled).toBe(true);
   selectJourneyPreset(view, "Home birth");
   expect(onUpdate).not.toHaveBeenCalled();

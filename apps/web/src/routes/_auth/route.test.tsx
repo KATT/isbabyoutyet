@@ -46,6 +46,7 @@ function makeGuardCtx() {
 
 async function runGuard(opts: { context: GuardCtx; fetchToken: () => Promise<string | null> }) {
   return await resolveAuthGuard({
+    // SAFETY: Test fixture is a subset of the production type.
     context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
     fetchToken: opts.fetchToken,
   });

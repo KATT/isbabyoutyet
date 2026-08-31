@@ -52,6 +52,7 @@ function plantTourTarget(targetId: string) {
   el.style.cssText = "position:fixed;top:80px;left:80px;width:40px;height:40px;";
   el.scrollIntoView = () => {};
   el.getBoundingClientRect = () =>
+    // SAFETY: Test fixture is a subset of the production type.
     ({
       x: 80,
       y: 80,

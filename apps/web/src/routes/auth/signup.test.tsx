@@ -10,6 +10,7 @@ import {
   signUpAndHandoff,
 } from "@/routes/auth/signup";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlInput } from "@/test/htmlElement";
 
 type NewAccount = { name: string; email: string; password: string };
 type SignUpResult = { errorMessage: string | null };
@@ -89,9 +90,9 @@ test("signup has no test-account picker and starts empty", async () => {
   await using _view = await renderSignup(onSignUp);
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
-  expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("");
-  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
-  expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Name")).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Email")).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Password")).value).toBe("");
   expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/auth/login");
 });
 
@@ -130,6 +131,7 @@ test("SignupPage sign-up path invokes the wired auth client", async () => {
     headers: signupAuthAdapter.headers,
     waitForAuth: signupAuthAdapter.waitForAuth,
   };
+  // SAFETY: Mock constructor is installed in place of the browser global.
   signupAuthAdapter.signUpEmail = signUpEmail as typeof signupAuthAdapter.signUpEmail;
   signupAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
   signupAuthAdapter.waitForAuth = async () => undefined;
