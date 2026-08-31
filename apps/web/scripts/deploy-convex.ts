@@ -87,6 +87,27 @@ function convexCli(args: string[]) {
   });
 }
 
+/** `--preview-create` `start_push` can 408; retry instead of failing the Vercel build. */
+const CONVEX_DEPLOY_ATTEMPTS = 3;
+const CONVEX_DEPLOY_RETRY_MS = 15_000;
+
+async function convexDeploy(args: string[]) {
+  for (let attempt = 1; attempt <= CONVEX_DEPLOY_ATTEMPTS; attempt += 1) {
+    try {
+      convexCli(args);
+      return;
+    } catch (error) {
+      if (attempt === CONVEX_DEPLOY_ATTEMPTS) {
+        throw error;
+      }
+      console.log(
+        `\nConvex deploy failed (attempt ${attempt}/${CONVEX_DEPLOY_ATTEMPTS}); retrying in ${CONVEX_DEPLOY_RETRY_MS / 1000}s...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, CONVEX_DEPLOY_RETRY_MS));
+    }
+  }
+}
+
 function convexCliOutput(args: string[]) {
   console.log(`\n$ convex ${args.join(" ")}`);
   return execFileSync("pnpm", ["convex", ...args], {
@@ -130,7 +151,7 @@ if (isPreview) {
   }
 }
 
-convexCli([
+await convexDeploy([
   "deploy",
   "--cmd-url-env-var-name",
   "VITE_CONVEX_URL",
