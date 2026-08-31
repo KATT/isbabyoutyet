@@ -19,9 +19,9 @@ before editing `schema.ts` or `migrations.ts`.
 Undocumented optionals fail `workspace/no-undocumented-optional`;
 mark remaining optionals with JSDoc `@todo` (they are still in use), then
 backfill and require the key. Sparse `ctx.db.patch` RPCs named `update` or
-`patch*` with `{ id, data }` (same shape as `baby.update`) are a permanent
+`patch*` with `{ id, patch }` (same shape as `baby.update`) are a permanent
 exception — `id` is `v.id(...)` or a composite `v.object` of two or more
-`v.id(...)` fields; `data` is all `v.optional()`. Omitted keys mean unchanged. See
+`v.id(...)` fields; `patch` is all `v.optional()`. Omitted keys mean unchanged. See
 [`.agents/skills/convex-schema-migration/SKILL.md`](.agents/skills/convex-schema-migration/SKILL.md).
 
 <!-- convex-ai-end -->

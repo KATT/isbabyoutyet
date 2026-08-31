@@ -9,9 +9,9 @@
  *
  * `convex.config.ts` env validators are excluded — those are process env, not
  * schema/RPC. Sparse `ctx.db.patch` RPC args are excluded when the mutation is
- * named `update` or `patch*` and `args` is `{ id, data }` (`baby.update`):
+ * named `update` or `patch*` and `args` is `{ id, patch }` (`baby.update`):
  * `id` is `v.id(...)` or `v.object` of two or more `v.id(...)` fields;
- * `data` is `v.object` of `v.optional()` fields (omitted key means unchanged).
+ * `patch` is `v.object` of `v.optional()` fields (omitted key means unchanged).
  */
 
 import { defineRule } from "@oxlint/plugins";
@@ -282,38 +282,38 @@ function argsObjectHasSparsePatchId(argsObject, vNames, nsNames) {
 }
 
 /**
- * `v.optional()` inside `args.data` (`v.object`) of a mutation named `update`
+ * `v.optional()` inside `args.patch` (`v.object`) of a mutation named `update`
  * or `patch*` whose `id` is a required `v.id(...)` or composite id object.
- * Omitted `data` keys mean unchanged (`ctx.db.patch`).
+ * Omitted `patch` keys mean unchanged (`ctx.db.patch`).
  */
 function isSparsePatchOptional(node, vNames, nsNames) {
   const fieldProperty = node.parent;
   if (!fieldProperty || fieldProperty.type !== "Property" || fieldProperty.value !== node) {
     return false;
   }
-  const dataFields = fieldProperty.parent;
-  if (!dataFields || dataFields.type !== "ObjectExpression") {
+  const patchFields = fieldProperty.parent;
+  if (!patchFields || patchFields.type !== "ObjectExpression") {
     return false;
   }
-  const vObjectCall = dataFields.parent;
+  const vObjectCall = patchFields.parent;
   if (
     !vObjectCall ||
     vObjectCall.type !== "CallExpression" ||
-    !vObjectCall.arguments.includes(dataFields) ||
+    !vObjectCall.arguments.includes(patchFields) ||
     !isVObjectCallee(vObjectCall.callee, vNames, nsNames)
   ) {
     return false;
   }
-  const dataProperty = vObjectCall.parent;
+  const patchProperty = vObjectCall.parent;
   if (
-    !dataProperty ||
-    dataProperty.type !== "Property" ||
-    dataProperty.value !== vObjectCall ||
-    propertyKeyName(dataProperty) !== "data"
+    !patchProperty ||
+    patchProperty.type !== "Property" ||
+    patchProperty.value !== vObjectCall ||
+    propertyKeyName(patchProperty) !== "patch"
   ) {
     return false;
   }
-  const argsObject = dataProperty.parent;
+  const argsObject = patchProperty.parent;
   if (!argsObject || argsObject.type !== "ObjectExpression") {
     return false;
   }

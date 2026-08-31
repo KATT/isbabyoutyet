@@ -131,7 +131,7 @@ export async function seedPendingLaborNotification(
   });
 }
 
-/** Sparse test patch for `baby.update`; unspecified `data` keys keep the stored values. */
+/** Sparse test patch for `baby.update`; unspecified `patch` keys keep the stored values. */
 export async function patchOwnedBaby(
   harness: ConvexTestHarness,
   args: FunctionArgs<typeof api.baby.update>,
