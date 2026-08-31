@@ -3,6 +3,7 @@ import { expect, test, vi } from "vitest";
 import { makeAsyncResource, makeResource } from "@workspace/convex/convex/test.resource";
 import { api } from "@workspace/convex/convex/_generated/api";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
+import { Dialog, DialogContent } from "@workspace/ui/components/dialog";
 import { LocaleProvider } from "@/lib/i18n";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
 import { seedOwnedBaby } from "@/test/convexTestSeed";
@@ -164,13 +165,17 @@ test("settings switch shows subscribed copy when on", async () => {
 test("settings switch opens Home Screen instructions when iOS needs a PWA install", async () => {
   await using view = await renderWithTestRouter(
     <LocaleProvider locale="en-GB">
-      <OwnerMessageNotifySwitchView
-        checked={false}
-        disabled={true}
-        disabledReason="needsIosInstall"
-        onCheckedChange={null}
-        layout="settings"
-      />
+      <Dialog open>
+        <DialogContent>
+          <OwnerMessageNotifySwitchView
+            checked={false}
+            disabled={true}
+            disabledReason="needsIosInstall"
+            onCheckedChange={null}
+            layout="settings"
+          />
+        </DialogContent>
+      </Dialog>
     </LocaleProvider>,
   );
 
@@ -180,6 +185,10 @@ test("settings switch opens Home Screen instructions when iOS needs a PWA instal
   expect(view.getByText("Get Notifications on iOS")).toBeTruthy();
   expect(view.getByText(/Add to Home Screen/i)).toBeTruthy();
   expect(view.getByText(/does not inherit your Safari login/i)).toBeTruthy();
+  // Nested dialogs skip their backdrop unless forceRender is set.
+  expect(view.baseElement.querySelectorAll('[data-slot="dialog-overlay"]').length).toBeGreaterThan(
+    1,
+  );
 });
 
 test("settings switch explains when the browser cannot push", async () => {
