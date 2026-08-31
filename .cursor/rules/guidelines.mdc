@@ -168,6 +168,7 @@ import { z } from 'zod';
 - **NEVER** use `waitFor` from Testing Library - use `vi.waitFor` instead
 - **NEVER** use `Symbol.dispose` or `Symbol.asyncDispose` - use `makeResource()` or `makeAsyncResource()`
 - **NEVER** use module mocking (`vi.mock` / `vi.hoisted` / `jest.mock`) in `apps/web` tests — enforced by `no-mock/no-mock` in `.oxlintrc.json`. Prefer `convex-test` seeding, real providers (`renderWithTestRouter`), prop injection into presentational views, or `vi.spyOn` / `vi.stubGlobal` for browser host APIs. Local `vi.fn()` callbacks are fine.
+- **Tautological tests considered harmful.** Do not `expect(fn(x)).toEqual(fn(x))` or derive expected values from the same helper/constant the production code uses. Enforced in part by `workspace/no-tautological-expect`. Expected values must be independent literals or spec values.
 
 ```typescript
 // ✅ CORRECT — inject callbacks into a presentational view

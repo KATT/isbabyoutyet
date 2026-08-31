@@ -63,6 +63,18 @@ still use `resetScroll: false` (not overlay history).
 
 ## Tests
 
+### Tautological tests considered harmful.
+
+Do not recompute the expected value the way the code under test does. A test
+that `expect(add(a, b)).toBe(a + b)`, `expect(fn(x)).toEqual(fn(x))`, or
+asserts a production constant equal to itself passes by construction and can
+never disagree with the implementation.
+
+Expected values must come from an independent source of truth — a known-good
+literal, a worked example, or the spec. `workspace/no-tautological-expect`
+flags the same-expression form. Also avoid deriving expected values from the
+same helper, table, or constant the production code uses.
+
 `vi.mock` / `vi.hoisted` / `vi.doMock` (and the `jest` equivalents) are banned
 repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
 
