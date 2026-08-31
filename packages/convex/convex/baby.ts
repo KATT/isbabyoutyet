@@ -586,7 +586,7 @@ export const update = mutationWithTriggers({
     theme: v.optional(v.union(v.string(), v.null())),
     locale: v.optional(v.union(supportedLocaleValidator, v.null())),
     birthJourney: v.optional(birthJourneyValidator),
-    /* oxlint-enable no-convex-optional/no-undocumented-optional */
+    /* oxlint-enable workspace/no-undocumented-optional */
   },
   handler: async (ctx, args) => {
     const { babyId, ...patch } = args;
