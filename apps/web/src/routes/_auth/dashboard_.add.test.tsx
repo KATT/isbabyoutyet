@@ -4,14 +4,17 @@ import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import { AddBabyPage, AddBabyPageView, Route, type CreateBaby } from "./dashboard_.add";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlInput } from "@/test/htmlElement";
 
 type NavigateFn = (args: NavigateOptions) => Promise<void>;
 
 function createAddBabyMocks() {
   return {
-    createBaby: vi
-      .fn<CreateBaby>()
-      .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>),
+    createBaby: vi.fn<CreateBaby>().mockResolvedValue(
+      /* SAFETY: createBaby tests only read publicId from the result. */ {
+        publicId: "baby-fern",
+      } as Awaited<ReturnType<CreateBaby>>,
+    ),
     navigate: vi.fn<NavigateFn>().mockResolvedValue(undefined),
   };
 }
@@ -24,8 +27,8 @@ function renderAddBaby(opts: {
   return renderWithTestRouter(
     <LocaleProvider locale="en-GB">
       <AddBabyPageView
-        createBaby={(opts.createBaby ?? mocks.createBaby) as never}
-        navigate={(opts.navigate ?? mocks.navigate) as never}
+        createBaby={opts.createBaby ?? mocks.createBaby}
+        navigate={opts.navigate ?? mocks.navigate}
       />
     </LocaleProvider>,
     { path: "/dashboard/add" },
@@ -114,9 +117,11 @@ test("journey choices explain visible statuses and privacy", async () => {
 });
 
 test("submits optional theme selection", async () => {
-  const createBaby = vi
-    .fn<CreateBaby>()
-    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests only read publicId from the result. */ {
+      publicId: "baby-fern",
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -151,9 +156,11 @@ test.each([
   { label: "Home birth", birthJourney: "home_birth" },
   { label: "Planned C-section", birthJourney: "planned_c_section" },
 ])("submits the $label selection", async (testCase) => {
-  const createBaby = vi
-    .fn<CreateBaby>()
-    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests only read publicId from the result. */ {
+      publicId: "baby-fern",
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -189,9 +196,11 @@ test.each([
 });
 
 test("allows a hidden public due date when message mode has no text", async () => {
-  const createBaby = vi
-    .fn<CreateBaby>()
-    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests only read publicId from the result. */ {
+      publicId: "baby-fern",
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -214,9 +223,11 @@ test("allows a hidden public due date when message mode has no text", async () =
 });
 
 test("submits a custom public due date message when provided", async () => {
-  const createBaby = vi
-    .fn<CreateBaby>()
-    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests only read publicId from the result. */ {
+      publicId: "baby-fern",
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -224,7 +235,7 @@ test("submits a custom public due date message when provided", async () => {
     target: { value: "Baby Fern" },
   });
   fireEvent.click(view.getByRole("switch", { name: "Show exact due date" }));
-  const publicMessageInput = view.getByLabelText("Public due date message") as HTMLInputElement;
+  const publicMessageInput = htmlInput(view.getByLabelText("Public due date message"));
   fireEvent.change(publicMessageInput, {
     target: { value: "  Any day now  " },
   });
@@ -258,9 +269,11 @@ test("toggles exact due date mode when clicking the row label", async () => {
 });
 
 test("keeps entered date and message values while toggling fields", async () => {
-  const createBaby = vi
-    .fn<CreateBaby>()
-    .mockResolvedValue({ publicId: "baby-fern" } as Awaited<ReturnType<CreateBaby>>);
+  const createBaby = vi.fn<CreateBaby>().mockResolvedValue(
+    /* SAFETY: createBaby tests only read publicId from the result. */ {
+      publicId: "baby-fern",
+    } as Awaited<ReturnType<CreateBaby>>,
+  );
   const navigate = vi.fn<NavigateFn>().mockResolvedValue(undefined);
   await using view = await renderAddBaby({ createBaby, navigate });
 
@@ -276,11 +289,9 @@ test("keeps entered date and message values while toggling fields", async () => 
     target: { value: "Any day now" },
   });
   fireEvent.click(exactSwitch);
-  expect((view.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-09-19");
+  expect(htmlInput(view.getByLabelText("Due date")).value).toBe("2026-09-19");
   fireEvent.click(exactSwitch);
-  expect((view.getByLabelText("Public due date message") as HTMLInputElement).value).toBe(
-    "Any day now",
-  );
+  expect(htmlInput(view.getByLabelText("Public due date message")).value).toBe("Any day now");
   fireEvent.click(view.getByRole("button", { name: "Add Baby" }));
 
   await vi.waitFor(() => {

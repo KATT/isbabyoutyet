@@ -5,23 +5,16 @@ import { webUnitProject } from "./apps/web/vitest.config.ts";
  * Monorepo Vitest projects (formerly "workspaces").
  * Run all packages from the repo root with `pnpm test` / `pnpm exec vitest run`.
  */
-const oxlintPluginsProject = {
-  test: {
-    name: "oxlint-plugins",
-    include: ["oxlint-plugins/**/*.test.ts"],
-    environment: "node" as const,
-  },
-};
-
 export default defineConfig({
   test: {
     projects: [
       "packages/convex",
       "packages/runtime",
+      "packages/oxlint-plugins",
       "packages/query-prefetch",
       "packages/convex-prefetch",
+      "packages/form-guard",
       webUnitProject,
-      oxlintPluginsProject,
     ],
     experimental: {
       fsModuleCache: true,
@@ -39,6 +32,7 @@ export default defineConfig({
         "packages/runtime/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
+        "packages/form-guard/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",
@@ -46,6 +40,8 @@ export default defineConfig({
         "**/*.test.{ts,tsx}",
         "**/test.setup.ts",
         "**/test.resource.ts",
+        // setupFiles / host-API test helper; same role as test.setup.ts.
+        "**/stubJsdomWindow.ts",
       ],
       // CI: json-summary for the local coverage ratchet; lcov for Codecov history uploads.
       // Local: full HTML/JSON reports for browsing.

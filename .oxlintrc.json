@@ -11,67 +11,19 @@
     "builtin": true
   },
   // Generated code is not ours to lint
-  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "oxlint-plugins/**"],
+  "ignorePatterns": ["**/_generated/**", "**/routeTree.gen.ts", "packages/oxlint-plugins/**/*.ts"],
   "jsPlugins": [
     {
       "name": "i18n-literal",
       "specifier": "@rrazvan.dev/oxlint-plugin-i18n-literal"
     },
     {
-      "name": "no-optional",
-      "specifier": "./oxlint-plugins/no-optional.mjs"
-    },
-    {
-      "name": "no-convex-optional",
-      "specifier": "./oxlint-plugins/no-convex-optional.mjs"
-    },
-    {
-      "name": "no-mock",
-      "specifier": "./oxlint-plugins/no-mock.mjs"
-    },
-    {
-      "name": "no-convex-stubs",
-      "specifier": "./oxlint-plugins/no-convex-stubs.mjs"
-    },
-    {
-      "name": "query-prefetch",
-      "specifier": "./oxlint-plugins/query-prefetch.mjs"
-    },
-    {
-      "name": "no-overzealous-destructuring",
-      "specifier": "./oxlint-plugins/no-overzealous-destructuring.mjs"
-    },
-    {
-      "name": "inline-jsx-callback",
-      "specifier": "./oxlint-plugins/inline-jsx-callback.mjs"
-    },
-    {
-      "name": "no-use-effect",
-      "specifier": "./oxlint-plugins/no-use-effect.mjs"
-    },
-    {
-      "name": "no-use-state",
-      "specifier": "./oxlint-plugins/no-use-state.mjs"
-    },
-    {
-      "name": "no-banned-react-reexport",
-      "specifier": "./oxlint-plugins/no-banned-react-reexport.mjs"
-    },
-    {
-      "name": "react-compiler",
-      "specifier": "./oxlint-plugins/react-compiler.mjs"
-    },
-    {
-      "name": "infer-callback-params",
-      "specifier": "./oxlint-plugins/infer-callback-params.mjs"
-    },
-    {
-      "name": "no-rhf-watch",
-      "specifier": "./oxlint-plugins/no-rhf-watch.mjs"
-    },
-    {
       "name": "anti-slop",
-      "specifier": "./oxlint-plugins/compiled/anti-slop.js"
+      "specifier": "./packages/oxlint-plugins/dist/anti-slop/index.js"
+    },
+    {
+      "name": "workspace",
+      "specifier": "./packages/oxlint-plugins/dist/workspace.js"
     }
   ],
   "settings": {
@@ -79,7 +31,7 @@
       "presets": ["react"],
       "translationFunctionNames": ["translate"],
       "ignoredAttributes": ["to", "params", "search"],
-      "ignoredComponents": ["TanStackDevtools"],
+      "ignoredComponents": ["TanStackDevtools", "TanStackAppDevtools"],
       "ignorePatterns": ["^LoadingMore$", "^TanStack (Router|Query)$", "^/[A-Za-z0-9_$/.-]+$"]
     }
   },
@@ -88,10 +40,22 @@
     "vitest/no-hooks": "error",
     // Ban module mocking everywhere — tests *and* shared test helpers, so a
     // helper cannot reintroduce it behind a seam.
-    "no-mock/no-mock": "error",
+    "workspace/no-mock": "error",
     "eslint/max-params": ["error", 2],
     // Type assertions can hide mismatches. Narrow values or use `satisfies` instead.
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    // Unused `@ts-expect-error` is TS2578 (typecheck). This rule requires a description
+    // and bans `@ts-ignore` / `@ts-nocheck`.
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": "allow-with-description",
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-check": false,
+        "minimumDescriptionLength": 10
+      }
+    ],
     // Anti-Slop zero-cost rules (no current violations):
     "anti-slop/no-chained-type-assertions": "error",
     "anti-slop/no-module-mocking": "error",
@@ -110,23 +74,16 @@
     "anti-slop/no-runtime-typeof": ["error", { "allowInTypeGuards": true }],
     // Convex system fields use leading underscores (`_id`, `_creationTime`).
     "eslint/no-underscore-dangle": ["error", { "allow": ["_id", "_creationTime", "_exhaustive"] }],
-    "react-compiler/no-manual-memoization": "error",
-    "query-prefetch/no-convex-query-hooks": "error",
-    "no-use-effect/no-use-effect": "error",
-    "no-use-state/no-use-state": "error",
+    "workspace/no-manual-memoization": "error",
+    "workspace/no-convex-query-hooks": "error",
+    "workspace/no-use-effect": "error",
+    "workspace/no-use-state": "error",
     // Always on — including apps/web/src/lib — so banned hooks cannot be
     // laundered through a local re-export barrel.
-    "no-banned-react-reexport/no-banned-react-reexport": "error",
-    "no-convex-optional/no-undocumented-optional": "error"
+    "workspace/no-banned-react-reexport": "error",
+    "workspace/no-undocumented-optional": "error"
   },
   "overrides": [
-    {
-      // Global jsdom stubs for better-auth session-refresh window managers.
-      "files": ["apps/web/src/test/setup.ts"],
-      "rules": {
-        "anti-slop/no-unknown-parameters": "off"
-      }
-    },
     {
       "files": [
         "**/*.test.{js,jsx,ts,tsx}",
@@ -138,26 +95,22 @@
         "**/__tests__/**/*.{js,jsx,ts,tsx}"
       ],
       "rules": {
-        "anti-slop/no-chained-type-assertions": "off",
-        "anti-slop/no-widen-then-assert": "off",
-        "anti-slop/no-known-value-widening": "off",
-        "anti-slop/require-safety-comment-for-type-assertion": "off",
         "typescript/consistent-type-assertions": "off"
       }
     },
     {
       "files": ["apps/web/src/**/*.{ts,tsx}"],
       "rules": {
-        "infer-callback-params/infer-callback-params": "error",
+        "workspace/infer-callback-params": "error",
         "i18n-literal/no-literal-string": "error",
         "i18n-literal/no-literal-jsx-attribute": "error",
         "i18n-literal/no-literal-template": "error",
-        "inline-jsx-callback/inline-jsx-callback": "error",
-        "no-optional/no-optional": "error",
-        "no-overzealous-destructuring/no-overzealous-destructuring": "error",
-        "no-rhf-watch/no-rhf-watch": "error",
-        "query-prefetch/require-preloaded-query-options": "error",
-        "query-prefetch/use-loader-preloads": "error",
+        "workspace/inline-jsx-callback": "error",
+        "workspace/no-optional": "error",
+        "workspace/no-overzealous-destructuring": "error",
+        "workspace/no-rhf-watch": "error",
+        "workspace/require-preloaded-query-options": "error",
+        "workspace/use-loader-preloads": "error",
         // Automatic JSX runtime — no React import required.
         "react/react-in-jsx-scope": "off"
       }
@@ -176,8 +129,8 @@
         "i18n-literal/no-literal-string": "off",
         "i18n-literal/no-literal-jsx-attribute": "off",
         "i18n-literal/no-literal-template": "off",
-        "query-prefetch/require-preloaded-query-options": "off",
-        "query-prefetch/use-loader-preloads": "off"
+        "workspace/require-preloaded-query-options": "off",
+        "workspace/use-loader-preloads": "off"
       }
     },
     {
@@ -185,8 +138,8 @@
       // fake preloaded handles.
       "files": ["apps/web/src/**/*.test.{ts,tsx}"],
       "rules": {
-        "no-convex-stubs/no-invalid-convex-client": "error",
-        "no-convex-stubs/no-test-preloaded-query": "error"
+        "workspace/no-invalid-convex-client": "error",
+        "workspace/no-test-preloaded-query": "error"
       }
     },
     {
@@ -254,9 +207,9 @@
         "eslint/max-params": "off",
         "eslint/no-shadow": "off",
         "eslint/no-underscore-dangle": "off",
-        "no-use-effect/no-use-effect": "off",
-        "no-use-state/no-use-state": "off",
-        "react-compiler/no-manual-memoization": "off",
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off",
+        "workspace/no-manual-memoization": "off",
         "react/react-in-jsx-scope": "off",
         "react/no-unstable-nested-components": "off",
         "react/set-state-in-effect": "off",
@@ -275,18 +228,29 @@
         "apps/web/src/lib/convexAuthHandoff.ts"
       ],
       "rules": {
-        "no-use-effect/no-use-effect": "off",
-        "no-use-state/no-use-state": "off",
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off",
         "react/set-state-in-effect": "off",
         "react/refs": "off",
         "react/immutability": "off"
       }
     },
     {
+      // Audited external-store seam: the form leave-guard bridges Base UI
+      // dismissal, form dirty state, and router blocking through one store.
+      // The React layer needs a lazy useState store instance,
+      // useSyncExternalStore for prompt state, and effects for store wiring.
+      "files": ["packages/form-guard/src/**"],
+      "rules": {
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off"
+      }
+    },
+    {
       // Process env validators, not schema/RPC — absence is "unset in this deploy".
       "files": ["packages/convex/convex/convex.config.ts"],
       "rules": {
-        "no-convex-optional/no-undocumented-optional": "off"
+        "workspace/no-undocumented-optional": "off"
       }
     },
     {
@@ -302,7 +266,7 @@
       // subscribe identity when watch deps are deeply equal.
       "files": ["packages/convex-prefetch/src/useLiveConvexInfinitePages.ts"],
       "rules": {
-        "no-use-state/no-use-state": "off"
+        "workspace/no-use-state": "off"
       }
     }
   ]

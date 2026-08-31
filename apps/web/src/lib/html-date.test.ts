@@ -2,6 +2,7 @@ import { expect, test } from "vitest";
 import type { TranslationFunction } from "@/lib/i18n";
 import { htmlDate, htmlDateTime, htmlDateTimeNow, optionalHtmlDateTime } from "@/lib/html-date";
 
+// SAFETY: Test fixture is a subset of the production type.
 const t = ((key: string) => key) as TranslationFunction;
 const dateCodec = htmlDate(t);
 const dateTimeCodec = htmlDateTime(t, "Europe/London");
@@ -74,6 +75,7 @@ test("datetime-local rejects an empty picker", () => {
 });
 
 test("codec error messages come from t", () => {
+  // SAFETY: Test fixture is a subset of the production type.
   const swedish = ((key: string) =>
     key === "Pick a date" ? "Välj ett datum" : key) as TranslationFunction;
   const result = htmlDate(swedish).safeDecode("nope");

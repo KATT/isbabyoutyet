@@ -11,6 +11,7 @@ import {
   signInAndHandoff,
 } from "@/routes/auth/login";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlInput } from "@/test/htmlElement";
 
 type SignInResult = { errorMessage: string | null };
 
@@ -93,16 +94,14 @@ test("picking a test account prefills the form and submits it", async () => {
     .mockResolvedValue(undefined);
   await using _view = await renderLogin({ demoLoginEnabled: true, onSignIn });
 
-  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(DEMO_USER.email);
+  expect(htmlInput(screen.getByLabelText("Email")).value).toBe(DEMO_USER.email);
 
   fireEvent.change(screen.getByLabelText("Test account"), {
     target: { value: DEMO_EMPTY_USER.email },
   });
 
-  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe(DEMO_EMPTY_USER.email);
-  expect((screen.getByLabelText("Password") as HTMLInputElement).value).toBe(
-    DEMO_EMPTY_USER.password,
-  );
+  expect(htmlInput(screen.getByLabelText("Email")).value).toBe(DEMO_EMPTY_USER.email);
+  expect(htmlInput(screen.getByLabelText("Password")).value).toBe(DEMO_EMPTY_USER.password);
 
   await vi.waitFor(() => {
     expect(onSignIn).toHaveBeenCalledWith({
@@ -119,7 +118,7 @@ test("hides the test-account picker when demo login is disabled", async () => {
   await using _view = await renderLogin({ demoLoginEnabled: false, onSignIn });
 
   expect(screen.queryByLabelText("Test account")).toBeNull();
-  expect((screen.getByLabelText("Email") as HTMLInputElement).value).toBe("");
+  expect(htmlInput(screen.getByLabelText("Email")).value).toBe("");
   expect(screen.getByRole("link", { name: "Sign up" }).getAttribute("href")).toBe("/auth/signup");
 });
 
@@ -137,9 +136,10 @@ test("LoginPage wires the real auth client into LoginCard", async () => {
 });
 
 test("login route head sets the document title", () => {
-  const head = Route.options.head as unknown as (opts: {
-    match: { context: { locale: "en-GB" } };
-  }) => { meta: Array<{ title: string | undefined }> };
+  // @ts-expect-error — stub match is the locale head reads
+  const head: (opts: { match: { context: { locale: "en-GB" } } }) => {
+    meta: Array<{ title: string | undefined }>;
+  } = Route.options.head;
   const result = head({ match: { context: { locale: "en-GB" } } });
   expect(result.meta.some((entry) => entry.title?.includes("Log in"))).toBe(true);
 });
@@ -151,6 +151,7 @@ test("LoginPage sign-in path invokes the wired auth client", async () => {
     headers: loginAuthAdapter.headers,
     waitForAuth: loginAuthAdapter.waitForAuth,
   };
+  // SAFETY: Mock constructor is installed in place of the browser global.
   loginAuthAdapter.signInEmail = signInEmail as typeof loginAuthAdapter.signInEmail;
   loginAuthAdapter.headers = () => ({ "x-time-zone": "Asia/Tokyo" });
   loginAuthAdapter.waitForAuth = async () => undefined;

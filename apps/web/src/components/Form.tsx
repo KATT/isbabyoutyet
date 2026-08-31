@@ -4,15 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { Icon } from "@phosphor-icons/react";
 import { Button } from "@workspace/ui/components/button";
 import { Spinner } from "@workspace/ui/components/spinner";
-import {
-  createContext,
-  useContext,
-  useId,
-  useRef,
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-} from "react";
+import { useId, useRef, type ComponentProps, type ReactNode, type RefObject } from "react";
 import type {
   Control,
   DefaultValues,
@@ -25,6 +17,28 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { isString } from "@workspace/runtime/guards";
 import { useI18n } from "@/lib/i18n";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog";
+import {
+  FormGuardProvider as GuardProvider,
+  useRegisterFormState,
+  type DiscardPromptProps,
+  type FormGuardHandle,
+} from "@workspace/form-guard";
+
+export {
+  shouldBlockOverlayDismiss,
+  useFormGuard,
+  type FormGuardHandle,
+} from "@workspace/form-guard";
 
 interface UseZodForm<TInput extends FieldValues, TContext, TOutput> extends UseFormReturn<
   TInput,
@@ -59,114 +73,71 @@ export function useZodForm<TInput extends FieldValues, TContext, TOutput>(
 
 const DEV_SUBMIT_DELAY_MS = 500;
 
-/** Counted so overlapping submits from sibling forms keep the overlay lock held. */
-type FormSubmitLock = {
-  acquire: () => void;
-  release: () => void;
-};
-
-const FormSubmitLockContext = createContext<FormSubmitLock | null>(null);
-
-/**
- * Whether a Base UI overlay close attempt should be cancelled while a form submits.
- * Allows `imperative-action` so success closes from inside `handleSubmit` still work
- * (they fire while `isSubmitting` is still true).
- */
-export function shouldBlockOverlayDismiss(opts: {
-  isLocked: boolean;
-  open: boolean;
-  reason: string;
-}) {
-  return !opts.open && opts.isLocked && opts.reason !== "imperative-action";
+/** Wrap form content so child {@link Form}s register submits and dirty state. */
+export function FormGuardProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
+  return (
+    <GuardProvider
+      guard={props.guard}
+      renderDiscardPrompt={(promptProps) => <FormDiscardDialog {...promptProps} />}
+    >
+      {props.children}
+    </GuardProvider>
+  );
 }
 
-/** Structural subset of Base UI Root ChangeEventDetails (popover / dialog / alert-dialog). */
-type OverlayDismissEventDetails = {
-  reason: string;
-  cancel: () => void;
-};
-
-type OverlayOpenChangeHandler = (open: boolean, eventDetails: OverlayDismissEventDetails) => void;
-
-/** Identical shape across Popover / Dialog / AlertDialog Root.Actions. */
-type OverlayActions = {
-  close: () => void;
-  unmount: () => void;
-};
-
-export type FormOverlayHandle = {
-  /** Close the overlay. Safe mid-submit: reports `imperative-action`, which the guard allows. */
-  close: () => void;
-  /** Spread onto the Base UI Root (`Popover` / `Dialog` / `AlertDialog` / `Sheet`). */
-  rootProps: {
-    actionsRef: RefObject<OverlayActions | null>;
-    onOpenChange: OverlayOpenChangeHandler;
-  };
-  /** @internal consumed by {@link FormOverlayProvider}. */
-  lock: FormSubmitLock;
-};
-
-/**
- * Overlay that hosts {@link Form}s: owns the actions ref and a submit lock.
- * While any child form submits, user dismissal (escape, outside press, close
- * buttons, trigger toggle) is cancelled; the imperative success-close is not.
- */
-export function useFormOverlay(opts: {
-  /** Extra open-change logic (e.g. DueDateEditor's date-picker cancel); pass `undefined` otherwise. */
-  onOpenChange: OverlayOpenChangeHandler | undefined;
-}): FormOverlayHandle {
-  const actionsRef = useRef<OverlayActions | null>(null);
-  const pendingSubmitsRef = useRef(0);
-
-  return {
-    close: () => {
-      actionsRef.current?.close();
-    },
-    lock: {
-      acquire: () => {
-        pendingSubmitsRef.current += 1;
-      },
-      release: () => {
-        pendingSubmitsRef.current -= 1;
-      },
-    },
-    rootProps: {
-      actionsRef,
-      onOpenChange: (open, eventDetails) => {
-        if (
-          shouldBlockOverlayDismiss({
-            isLocked: pendingSubmitsRef.current > 0,
-            open,
-            reason: eventDetails.reason,
-          })
-        ) {
-          eventDetails.cancel();
-          // Do not forward — critical for controlled roots (Sheet) whose
-          // consumer would otherwise set open=false despite cancel().
+/** Localized discard prompt; the guard mounts it once at the stack root. */
+function FormDiscardDialog(props: DiscardPromptProps) {
+  const { t } = useI18n();
+  const discardingRef = useRef(false);
+  return (
+    <AlertDialog
+      open={props.open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen || discardingRef.current) {
           return;
         }
-        opts.onOpenChange?.(open, eventDetails);
-      },
-    },
-  };
-}
-
-/** Wrap the overlay's content so child {@link Form}s register submits with the lock. */
-export function FormOverlayProvider(props: { overlay: FormOverlayHandle; children: ReactNode }) {
-  return (
-    <FormSubmitLockContext.Provider value={props.overlay.lock}>
-      {props.children}
-    </FormSubmitLockContext.Provider>
+        props.onOpenChange(false);
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("Discard unsaved changes?")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("If you close now, your edits will be lost.")}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{t("Keep editing")}</AlertDialogCancel>
+          <AlertDialogAction
+            variant="destructive"
+            onClick={() => {
+              discardingRef.current = true;
+              props.onDiscard();
+            }}
+          >
+            {t("Discard")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
 export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
-  children: React.ReactNode;
+  children: ReactNode;
   form: UseZodForm<TInput, TContext, TOutput>;
   handleSubmit: (values: TOutput) => Promise<void>;
 }) => {
   const { t } = useI18n();
-  const lock = useContext(FormSubmitLockContext);
+  const formState = useFormState({ control: props.form.control });
+  // The guard consumes reactive form state — no imperative submit lock:
+  // `isSubmitting` blocks user dismissal, and a failed submit re-arms the
+  // unsaved-edits guard on its own (`isSubmitSuccessful` stays false).
+  useRegisterFormState({
+    isDirty: formState.isDirty,
+    isSubmitting: formState.isSubmitting,
+    isSubmitSuccessful: formState.isSubmitSuccessful,
+  });
   const { id, formRef, ...rest } = props.form;
   return (
     <FormProvider {...rest}>
@@ -174,22 +145,21 @@ export const Form = <TInput extends FieldValues, TContext, TOutput>(props: {
         id={id}
         ref={formRef}
         onSubmit={(event) => {
-          return rest.handleSubmit(async (values) => {
-            lock?.acquire();
-            try {
+          // Errors propagate through RHF's handleSubmit so `isSubmitSuccessful`
+          // reflects the real outcome; the outer catch only reports them.
+          return rest
+            .handleSubmit(async (values) => {
               // Dev-only pause so submit spinners are visible while clicking around locally.
               /* v8 ignore next 3 */
               if (import.meta.env.DEV) {
                 await new Promise((resolve) => setTimeout(resolve, DEV_SUBMIT_DELAY_MS));
               }
               await props.handleSubmit(values);
-            } catch (error) {
+            })(event)
+            .catch((error) => {
               console.error("Uncaught error in form", error);
               toast.error(error instanceof Error ? error.message : t("Failed to submit form"));
-            } finally {
-              lock?.release();
-            }
-          })(event);
+            });
         }}
       >
         {props.children}

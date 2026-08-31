@@ -15,6 +15,7 @@ import schema from "@workspace/convex/convex/schema";
 import { makeAsyncResource } from "@workspace/convex/convex/test.resource";
 import { modules, registerComponents } from "@workspace/convex/convex/test.setup";
 import { isPlainObject, isString } from "@workspace/runtime/guards";
+import { stubJsdomWindow } from "@/test/stubJsdomWindow";
 
 type ConvexTestRoot = ReturnType<typeof convexTest>;
 type ConvexTestCaller = ConvexTestRoot | ReturnType<ConvexTestRoot["withIdentity"]>;
@@ -59,6 +60,7 @@ export type ConvexTestHarness = {
  * no hand-built query results.
  */
 export async function createConvexTestHarness(opts: { identity: Partial<UserIdentity> | null }) {
+  const jsdomWindow = stubJsdomWindow();
   const t = convexTest(schema, modules);
   await registerComponents(t);
   let activeClient: ConvexTestCaller = opts.identity ? t.withIdentity(opts.identity) : t;
@@ -67,14 +69,17 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   let queryClientForInvalidation: QueryClient | null = null;
 
   function runQuery<TArgs>(query: ConvexQueryRef, args: TArgs) {
+    // SAFETY: convex-test caller methods are generic over FunctionReference.
     return (activeClient.query as ConvexCallerQuery)(query, args);
   }
 
   function runMutation<TArgs>(mutation: ConvexMutationRef, args: TArgs) {
+    // SAFETY: convex-test caller methods are generic over FunctionReference.
     return (activeClient.mutation as ConvexCallerMutation)(mutation, args);
   }
 
   function runAction<TArgs>(action: ConvexActionRef, args: TArgs) {
+    // SAFETY: convex-test caller methods are generic over FunctionReference.
     return (activeClient.action as ConvexCallerAction)(action, args);
   }
 
@@ -102,9 +107,11 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
       return result;
     },
     watchQuery: (query, args) => {
+      // SAFETY: Test fixture is a subset of the production type.
       let queryCache = watchCache.get(query as object);
       if (!queryCache) {
         queryCache = new Map<string, Value>();
+        // SAFETY: Test fixture is a subset of the production type.
         watchCache.set(query as object, queryCache);
       }
       const argsKey = JSON.stringify(args ?? {});
@@ -129,7 +136,7 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
     clearAuth: () => {},
   };
 
-  const convexQueryClient = {
+  const convexQueryClientFields = {
     convexClient,
     hashFn: () => JSON.stringify,
     queryFn: () => Promise.resolve(null),
@@ -137,7 +144,9 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
       queryClientForInvalidation = nextQueryClient;
     },
     serverHttpClient: undefined,
-  } as unknown as ConvexQueryClient;
+  } as const;
+  // @ts-expect-error — stand-in only implements the members this harness reads
+  const convexQueryClient: ConvexQueryClient = convexQueryClientFields;
 
   registerConvexInfiniteQueryClient(convexQueryClient);
 
@@ -172,8 +181,10 @@ export async function createConvexTestHarness(opts: { identity: Partial<UserIden
   };
 
   return makeAsyncResource(harness, async () => {
-    registerConvexInfiniteQueryClient(null as never);
+    // @ts-expect-error — teardown clears the registered client
+    registerConvexInfiniteQueryClient(null);
     queryClient.clear();
+    jsdomWindow.restore();
   });
 }
 
@@ -189,6 +200,7 @@ function createIntegrationQueryFn(
     const caller = getClient();
     if (tag === "convexQuery" && funcName !== null) {
       const args = context.queryKey[2] ?? {};
+      // SAFETY: convex-test caller methods are generic over FunctionReference.
       return await (caller.query as ConvexCallerQuery)(
         makeFunctionReference<"query">(funcName),
         args,
@@ -196,12 +208,14 @@ function createIntegrationQueryFn(
     }
     if (tag === "convexAction" && funcName !== null) {
       const args = context.queryKey[2] ?? {};
+      // SAFETY: convex-test caller methods are generic over FunctionReference.
       return await (caller.action as ConvexCallerAction)(
         makeFunctionReference<"action">(funcName),
         args,
       );
     }
     if (tag === CONVEX_INFINITE_QUERY_KEY) {
+      // SAFETY: Test fixture is a subset of the production type.
       return await infiniteQueryFn(context as Parameters<typeof infiniteQueryFn>[0]);
     }
     return undefined;
