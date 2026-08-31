@@ -482,6 +482,78 @@ test("renaming a baby without changing the slug keeps the publicId", async () =>
   });
 });
 
+test("sparse baby.update patch leaves omitted keys and same-slug names unchanged", async () => {
+  const t = await setup();
+  const asAlice = t.withIdentity({ subject: "alice" });
+  const created = await asAlice.mutation(
+    api.baby.create,
+    createBabyArgs({
+      name: "Working Title",
+      dueDate: "2026-09-01",
+      dueDateDisplayMode: "message",
+      publicDueDateText: "Any day now",
+    }),
+  );
+  expect(created.publicId).toBe("working-title");
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: {},
+  });
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    name: "Working Title",
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Any day now",
+    publicId: "working-title",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: {
+      name: "Working Title",
+    },
+  });
+  expect(await t.query(api.baby.getByPublicId, { id: "working-title" })).toMatchObject({
+    name: "Working Title",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: {
+      name: "working title",
+    },
+  });
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    name: "working title",
+    publicId: "working-title",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: {
+      publicDueDateText: "Soon",
+    },
+  });
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    dueDate: "2026-09-01",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Soon",
+  });
+
+  await asAlice.mutation(api.baby.update, {
+    id: created.babyId,
+    patch: {
+      dueDate: "2026-10-15",
+    },
+  });
+  expect(await asAlice.query(api.baby.getManagerBaby, { babyId: created.babyId })).toMatchObject({
+    dueDate: "2026-10-15",
+    dueDateDisplayMode: "message",
+    publicDueDateText: "Soon",
+  });
+});
+
 test("homepage demo publicIds are reserved and never assigned to real babies", async () => {
   const t = await setup();
   const asAlice = t.withIdentity({ subject: "alice" });
