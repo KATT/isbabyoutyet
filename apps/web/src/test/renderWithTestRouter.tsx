@@ -4,11 +4,10 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { render } from "@testing-library/react";
 import { createContext, useContext, type ReactElement, type ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { renderResource } from "@/test/renderResource";
 
 /**
  * Render UI under a real TanStack memory router (and theme/tooltip providers)
@@ -59,12 +58,10 @@ export async function renderWithTestRouter(ui: ReactElement, opts = { path: "/" 
     );
   }
 
-  const view = render(<Shell ui={ui} />);
+  const view = renderResource(<Shell ui={ui} />);
   const rerenderShell = view.rerender;
   const rerenderUi = (nextUi: ReactElement) => {
     rerenderShell(<Shell ui={nextUi} />);
   };
-  return makeResource(Object.assign(view, { router, rerender: rerenderUi }), () => {
-    view.unmount();
-  });
+  return Object.assign(view, { router, rerender: rerenderUi });
 }

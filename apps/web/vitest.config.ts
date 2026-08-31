@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig, defineProject } from "vitest/config";
 import viteReact from "@vitejs/plugin-react";
-import viteTsConfigPaths from "vite-tsconfig-paths";
 import { playwright } from "@vitest/browser-playwright";
 import type { BrowserCommand } from "vitest/node";
 
@@ -69,18 +68,18 @@ const measureMobileOverflow: BrowserCommand<[PageCheckOptions], OverflowResult> 
 
 export const webUnitProject = defineProject({
   root: WEB_ROOT,
-  plugins: [
-    viteTsConfigPaths({
-      projects: ["./tsconfig.json"],
-    }),
-    viteReact(),
-  ],
+  resolve: {
+    tsconfigPaths: true,
+  },
+  plugins: [viteReact()],
   test: {
     name: "web",
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}"],
     exclude: ["src/**/*.browser.test.{ts,tsx}"],
-    setupFiles: ["./src/test/setup.ts"],
+    // Loads the better-auth broadcast-channel stub before that package is
+    // imported. Window API stubs are opt-in via `stubJsdomWindow()`.
+    setupFiles: ["./src/test/stubJsdomWindow.ts"],
     // Keep auth/Convex clients off real backends so unit tests never dial the
     // developer's running `pnpm dev` / Convex backend (ports 3000 / 3210) or
     // a publicly resolvable Convex host (example.convex.cloud resolves in DNS).

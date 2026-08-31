@@ -86,8 +86,11 @@ repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
   `workspace/no-test-preloaded-query` bans
   `@workspace/convex-prefetch/test-helpers` fake handles.
 - **Everything else:** `vi.fn` and `vi.spyOn` are still fine (e.g. spying on
-  `sonner`'s `toast` methods). Browser API gaps belong in
-  `apps/web/src/test/setup.ts`.
+  `sonner`'s `toast` methods). `vi.stubGlobal` is the allowed exception for
+  jsdom/window host APIs — use `stubJsdomWindow()` (an `await using` resource)
+  or go through `renderResource` / `renderWithTestRouter` /
+  `renderWithConvexTest` / `renderMountedFileRoute` / `createConvexTestHarness`.
+  Do not use `vi.mock`.
 
 ## Convex
 

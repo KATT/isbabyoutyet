@@ -4,8 +4,8 @@ import { defineRule } from "@oxlint/plugins";
  * Disallow Vitest/Jest module mocking (`vi.mock`, `vi.hoisted`, …).
  *
  * Prefer real providers, convex-test seeding, and prop injection over
- * replacing modules. Local `vi.fn()` / `vi.spyOn()` for callbacks and
- * browser APIs remain allowed.
+ * replacing modules. Local `vi.fn()` / `vi.spyOn()` / `vi.stubGlobal()` for
+ * callbacks and browser host APIs remain allowed.
  */
 
 const BANNED = new Set([

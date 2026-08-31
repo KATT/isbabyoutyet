@@ -1,9 +1,7 @@
-import { render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { convexTest } from "convex-test";
 import type { FunctionReturnType } from "convex/server";
-import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -20,6 +18,7 @@ import {
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 import { getBabySeo } from "@/lib/baby-seo";
+import { renderResource } from "@/test/renderResource";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
@@ -75,13 +74,6 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
       />
     </div>
   );
-}
-
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
 }
 
 test("renders a baby detail page from local convex-test data", async () => {

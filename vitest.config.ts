@@ -40,6 +40,8 @@ export default defineConfig({
         "**/*.test.{ts,tsx}",
         "**/test.setup.ts",
         "**/test.resource.ts",
+        // setupFiles / host-API test helper; same role as test.setup.ts.
+        "**/stubJsdomWindow.ts",
       ],
       // CI: json-summary for the local coverage ratchet; lcov for Codecov history uploads.
       // Local: full HTML/JSON reports for browsing.
