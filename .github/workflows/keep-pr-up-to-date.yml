@@ -8,17 +8,24 @@ name: keep-pr-up-to-date
 #   AUTO_UPDATE_APP_ID + AUTO_UPDATE_APP_PRIVATE_KEY
 #   or AUTO_UPDATE_TOKEN
 # App permissions: contents read/write, pull requests read/write.
+#
+# Triggers are event-driven (no cron):
+# - push to a base branch: other auto-merge PRs just became behind
+# - PR auto-merge enabled / head updated / reopened / ready
+# - `main` CI completed: checks just became passing (or the base build landed)
 
 on:
   push:
     branches: [main, next, canary]
   pull_request:
-    types: [auto_merge_enabled]
+    types:
+      - auto_merge_enabled
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_run:
     workflows: [main]
     types: [completed]
-  schedule:
-    - cron: "*/15 * * * *"
   workflow_dispatch:
 
 concurrency:
