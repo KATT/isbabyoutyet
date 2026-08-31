@@ -44,10 +44,9 @@ export function createDismissedIdsStore() {
   return { dismiss, isDismissed, subscribe, clear };
 }
 
-function getServerSnapshot() {
-  return false;
-}
-
 export function useIsDismissed(store: ReturnType<typeof createDismissedIdsStore>, id: string) {
-  return useSyncExternalStore(store.subscribe, () => store.isDismissed(id), getServerSnapshot);
+  function getSnapshot() {
+    return store.isDismissed(id);
+  }
+  return useSyncExternalStore(store.subscribe, getSnapshot, getSnapshot);
 }

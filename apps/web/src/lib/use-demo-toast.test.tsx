@@ -1,0 +1,88 @@
+import { fireEvent, screen } from "@testing-library/react";
+import { expect, test, vi } from "vitest";
+import { Toaster, toast } from "sonner";
+import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
+import { makeResource } from "@workspace/convex/convex/test.resource";
+import { resetDemoToastDismissals, useDemoToast } from "./use-demo-toast";
+import { renderResource } from "@/test/renderResource";
+
+function DemoToastHarness(props: { publicId: string; enabled: boolean }) {
+  useDemoToast(props);
+  return <Toaster />;
+}
+
+function renderDemoToast(opts: { publicId: string; enabled: boolean }) {
+  resetDemoToastDismissals();
+  toast.dismiss();
+  return renderResource(<DemoToastHarness publicId={opts.publicId} enabled={opts.enabled} />);
+}
+
+test("shows a persistent demo toast on the homepage demo baby", async () => {
+  await using view = renderDemoToast({
+    publicId: HOMEPAGE_DEMO_BABY.publicId,
+    enabled: true,
+  });
+  void view;
+
+  // English locale maps the key "This is a demo baby" → "This is a demo page"
+  expect(await screen.findByText("This is a demo page")).toBeTruthy();
+  expect(
+    screen.getByText("Feel free to post test messages — we reset this demo daily."),
+  ).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Got it" })).toBeTruthy();
+});
+
+test("does not show the toast when disabled or on a real baby", async () => {
+  const info = vi.spyOn(toast, "info");
+  await using _spy = makeResource({}, () => {
+    info.mockRestore();
+  });
+
+  await using disabled = renderDemoToast({
+    publicId: HOMEPAGE_DEMO_BABY.publicId,
+    enabled: false,
+  });
+  void disabled;
+  expect(info).not.toHaveBeenCalled();
+
+  await using realBaby = renderDemoToast({
+    publicId: "baby-waiting",
+    enabled: true,
+  });
+  void realBaby;
+  expect(info).not.toHaveBeenCalled();
+});
+
+test("shows the demo toast on every locale homepage baby", async () => {
+  await using view = renderDemoToast({
+    publicId: HOMEPAGE_DEMO_BABIES.sv.publicId,
+    enabled: true,
+  });
+  void view;
+
+  expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
+});
+
+test("Got it dismisses through sonner and stays gone for that baby", async () => {
+  const dismiss = vi.spyOn(toast, "dismiss");
+  await using _spy = makeResource({}, () => {
+    dismiss.mockRestore();
+  });
+  await using view = renderDemoToast({
+    publicId: HOMEPAGE_DEMO_BABY.publicId,
+    enabled: true,
+  });
+
+  fireEvent.click(await screen.findByRole("button", { name: "Got it" }));
+
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
+  });
+  expect(dismiss).toHaveBeenCalled();
+
+  view.rerender(<DemoToastHarness publicId={HOMEPAGE_DEMO_BABY.publicId} enabled={true} />);
+  expect(screen.queryByRole("button", { name: "Got it" })).toBeNull();
+
+  view.rerender(<DemoToastHarness publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} enabled={true} />);
+  expect(await screen.findByRole("button", { name: "Got it" })).toBeTruthy();
+});
