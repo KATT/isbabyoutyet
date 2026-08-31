@@ -1,4 +1,4 @@
-import { fireEvent } from "@testing-library/react";
+import { fireEvent, within } from "@testing-library/react";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { toast } from "sonner";
 import { expect, test, vi } from "vitest";
@@ -251,6 +251,48 @@ test("theme selector marks Baby Blue selected", async () => {
 
   fireEvent.click(babyBlueButton);
   await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: BABY_BLUE_THEME }));
+});
+
+test("theme selector shows a trailing spinner only on the option being applied", async () => {
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  vi.useFakeTimers();
+
+  let releaseUpdate: (() => void) | undefined;
+  const onUpdate = vi.fn<BabyUpdateHandler>(async () => {
+    await new Promise<void>((resolve) => {
+      releaseUpdate = resolve;
+    });
+  });
+
+  await using view = await renderWithTestRouter(
+    <ThemeSelector baby={{ ...baby, theme: BABY_BLUE_THEME }} onUpdate={onUpdate} />,
+  );
+
+  fireEvent.click(view.getByRole("button", { name: "Change theme" }));
+
+  const bubblegum = view.getByRole("button", { name: "Bubblegum" });
+  const mango = view.getByRole("button", { name: "Mango" });
+  const babyBlue = view.getByRole("button", { name: "Baby Blue" });
+
+  fireEvent.click(bubblegum);
+  await vi.advanceTimersByTimeAsync(500);
+
+  await vi.waitFor(() => {
+    expect(bubblegum.getAttribute("aria-busy")).toBe("true");
+  });
+  expect(within(bubblegum).getByRole("status", { name: "Loading" })).toBeTruthy();
+  expect(within(mango).queryByRole("status", { name: "Loading" })).toBeNull();
+  expect(within(babyBlue).queryByRole("status", { name: "Loading" })).toBeNull();
+  expect(mango.getAttribute("aria-busy")).toBe("false");
+  expect(babyBlue.getAttribute("aria-busy")).toBe("false");
+  expect(view.getAllByRole("status", { name: "Loading" })).toHaveLength(1);
+
+  releaseUpdate?.();
+  await vi.advanceTimersByTimeAsync(0);
+
+  await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith({ theme: "bubblegum" }));
 });
 
 test("theme selector leaves canonical options unselected for an unknown theme", async () => {

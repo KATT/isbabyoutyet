@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -512,6 +513,46 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
   );
 }
 
+function ThemeOptionList(props: {
+  selectedValue: string | null | undefined;
+  onPick: (theme: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const { isSubmitting } = useFormState();
+  const pendingTheme = useWatch({ name: "theme" });
+
+  return (
+    <div className="flex flex-col gap-1">
+      {THEME_OPTIONS.map((option) => {
+        const isPending = isSubmitting && pendingTheme === option.value;
+        return (
+          <Button
+            key={option.value ?? "default"}
+            type="submit"
+            variant={props.selectedValue === option.value ? "default" : "ghost"}
+            aria-pressed={props.selectedValue === option.value}
+            aria-busy={isPending}
+            disabled={isSubmitting}
+            size="sm"
+            className="justify-start gap-2"
+            onClick={() => {
+              props.onPick(option.value);
+            }}
+          >
+            <ThemeSwatches colors={option.colors} />
+            <span className="min-w-0 flex-1 text-left">{t(option.labelKey)}</span>
+            {isPending ? (
+              <span className="submit-icon-swap-in inline-grid size-4 shrink-0 place-items-center">
+                <Spinner className="size-4" />
+              </span>
+            ) : null}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
   const overlay = useFormGuard({ onOpenChange: undefined });
@@ -550,26 +591,12 @@ export function ThemeSelector(props: ThemeSelectorProps) {
               overlay.close();
             }}
           >
-            <div className="flex flex-col gap-1">
-              {THEME_OPTIONS.map((option) => (
-                <SubmitButton
-                  key={option.value ?? "default"}
-                  form="context"
-                  variant={selectedTheme?.value === option.value ? "default" : "ghost"}
-                  aria-pressed={selectedTheme?.value === option.value}
-                  size="sm"
-                  className="justify-start gap-2"
-                  IconComponent={null}
-                  iconPosition="start"
-                  onClick={() => {
-                    form.setValue("theme", option.value, { shouldDirty: true });
-                  }}
-                >
-                  <ThemeSwatches colors={option.colors} />
-                  {t(option.labelKey)}
-                </SubmitButton>
-              ))}
-            </div>
+            <ThemeOptionList
+              selectedValue={selectedTheme?.value}
+              onPick={(theme) => {
+                form.setValue("theme", theme, { shouldDirty: true });
+              }}
+            />
           </Form>
         </FormGuardProvider>
       </PopoverContent>
