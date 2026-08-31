@@ -678,6 +678,29 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   expect(view.getByLabelText("Message")).toBeTruthy();
 });
 
+test("EncouragementForm restores a session draft with a hint", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({ message: "Saved draft text", savedAt: Date.now() }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect((view.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("Saved draft text");
+  expect(view.getByText("We restored your unsent message.")).toBeTruthy();
+
+  fireEvent.click(view.getByRole("button", { name: "Clear draft" }));
+  expect((view.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("");
+  expect(view.queryByText("We restored your unsent message.")).toBeNull();
+  expect(sessionStorage.getItem(`encouragement-message-draft:${baby.babyId}`)).toBeNull();
+});
+
 test("EncouragementForm submit reaches the Convex mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
@@ -711,4 +734,5 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
       (item) => item.kind === "encouragement" && item.encouragement?.message === "Thinking of you!",
     ),
   ).toBe(true);
+  expect(sessionStorage.getItem(`encouragement-message-draft:${baby.babyId}`)).toBeNull();
 });

@@ -444,6 +444,8 @@ const enGB = {
     "Create an account to share your baby's arrival",
   "Not arrived yet!": "Not arrived yet!",
   "Send some love": "Send some love",
+  "We restored your unsent message.": "We restored your unsent message.",
+  "Clear draft": "Clear draft",
   Dashboard: "Dashboard",
   "Get started": "Get started",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
@@ -1008,6 +1010,8 @@ const sv: TranslationCatalog = {
   "Create an account to share your baby's arrival": "Skapa ett konto och låt alla följa med",
   "Not arrived yet!": "Har inte kommit än!",
   "Send some love": "Skicka lite kärlek",
+  "We restored your unsent message.": "Vi återställde ditt oskickade meddelande.",
+  "Clear draft": "Rensa utkast",
   Dashboard: "Översikt",
   "Get started": "Kom igång",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
@@ -1550,6 +1554,8 @@ const es: TranslationCatalog = {
     "Crea una cuenta para compartir la llegada de tu bebé",
   "Not arrived yet!": "¡Aún no ha llegado!",
   "Send some love": "Manda un poco de cariño",
+  "We restored your unsent message.": "Hemos restaurado tu mensaje sin enviar.",
+  "Clear draft": "Borrar borrador",
   Dashboard: "Panel",
   "Get started": "Empezar",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':
@@ -2100,6 +2106,8 @@ const ptBR: TranslationCatalog = {
     "Crie uma conta para compartilhar a chegada do bebê",
   "Not arrived yet!": "Ainda não chegou!",
   "Send some love": "Envie um pouco de carinho",
+  "We restored your unsent message.": "Restauramos sua mensagem não enviada.",
+  "Clear draft": "Limpar rascunho",
   Dashboard: "Painel",
   "Get started": "Começar",
   'Stop answering "any news yet?" texts. Share one link, let everyone follow along, and tell them all at once when baby arrives. 🍼':

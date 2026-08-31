@@ -6,6 +6,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
+import { Alert, AlertAction, AlertDescription } from "@workspace/ui/components/alert";
+import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
@@ -17,8 +19,14 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
+import {
+  readEncouragementMessageDraft,
+  clearEncouragementMessageDraft,
+} from "@/lib/encouragement-message-draft";
+import { useEncouragementMessageDraft } from "@/lib/use-encouragement-message-draft";
 import { useClientHydration } from "@/lib/use-client-hydration";
 import { getVisitorId } from "@/lib/use-visitor-id";
+import { useWatch } from "react-hook-form";
 
 type EncouragementFormProps = {
   babyId: Id<"baby">;
@@ -66,11 +74,14 @@ export function EncouragementForm(props: EncouragementFormProps) {
       babyId={props.babyId}
       babyName={props.babyName}
       initialAuthorName={hydrated ? getStoredAuthorName() : ""}
+      initialMessage={hydrated ? readEncouragementMessageDraft(props.babyId) : ""}
     />
   );
 }
 
-function EncouragementFormFields(props: EncouragementFormProps & { initialAuthorName: string }) {
+function EncouragementFormFields(
+  props: EncouragementFormProps & { initialAuthorName: string; initialMessage: string },
+) {
   const { t } = useI18n();
   const createEncouragement = useMutation(api.encouragements.create);
   const schema = encouragementSchema(t, props.babyId);
@@ -79,8 +90,14 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
     schema,
     defaultValues: {
       authorName: props.initialAuthorName,
-      message: "",
+      message: props.initialMessage,
     },
+  });
+  const message = useWatch({ control: form.control, name: "message" }) ?? "";
+  const draft = useEncouragementMessageDraft({
+    babyId: props.babyId,
+    message,
+    initialRestored: props.initialMessage.trim().length > 0,
   });
 
   return (
@@ -115,10 +132,30 @@ function EncouragementFormFields(props: EncouragementFormProps & { initialAuthor
               err instanceof Error ? err.message : t("Failed to send encouragement"),
           });
           await promise;
+          clearEncouragementMessageDraft(props.babyId);
           form.reset({ authorName: values.authorName, message: "" });
         }}
       >
         <div className="space-y-3">
+          {draft.showRestoredHint ? (
+            <Alert>
+              <AlertDescription>{t("We restored your unsent message.")}</AlertDescription>
+              <AlertAction>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    draft.clearDraft();
+                    form.setValue("message", "", { shouldDirty: true });
+                  }}
+                >
+                  {t("Clear draft")}
+                </Button>
+              </AlertAction>
+            </Alert>
+          ) : null}
+
           <FormField
             control={form.control}
             name="authorName"
