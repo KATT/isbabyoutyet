@@ -19,7 +19,7 @@ test("CoParentsSettings lists co-parents seeded through convex-test", async () =
     babyId: baby.babyId,
   });
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
     wrap: null,
@@ -35,7 +35,7 @@ test("owner can invite a co-parent by email through real mutations", async () =>
     babyId: baby.babyId,
   });
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
     wrap: null,
@@ -81,7 +81,7 @@ test("owner can remove co-parents and cancel pending invites", async () => {
     babyId: baby.babyId,
   });
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <CoParentsSettings babyId={baby.babyId} isOwner={true} listing={listing} />,
     wrap: null,
@@ -126,7 +126,7 @@ test("co-parents see a read-only list without invite form", async () => {
     babyId: baby.babyId,
   });
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <CoParentsSettings babyId={baby.babyId} isOwner={false} listing={listing} />,
     wrap: null,

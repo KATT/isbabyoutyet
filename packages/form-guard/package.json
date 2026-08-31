@@ -1,11 +1,10 @@
 {
-  "name": "@workspace/runtime",
+  "name": "@workspace/form-guard",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "exports": {
-    "./guards": "./src/guards.ts",
-    "./json": "./src/jsonValue.ts"
+    ".": "./src/index.ts"
   },
   "scripts": {
     "lint": "oxlint",
@@ -16,9 +15,17 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@tanstack/react-router": "catalog:",
+    "@types/react": "catalog:",
+    "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
+    "react": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@tanstack/react-router": "^1.0.0",
+    "react": "^19.0.0"
   }
 }

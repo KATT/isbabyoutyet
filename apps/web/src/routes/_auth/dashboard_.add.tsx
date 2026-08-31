@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Form, SubmitButton, useZodForm } from "@/components/Form";
+import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { htmlDate } from "@/lib/html-date";
 import { ArrowLeft } from "@phosphor-icons/react";
 import type { TranslationFunction } from "@/lib/i18n";
@@ -82,6 +82,7 @@ export function AddBabyPageView(props: {
   navigate: (opts: NavigateOptions) => Promise<void>;
 }) {
   const { t } = useI18n();
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   const form = useZodForm({
     schema: addBabySchema(t),
@@ -96,97 +97,99 @@ export function AddBabyPageView(props: {
   });
 
   return (
-    <div className="min-h-screen bg-background bg-dots">
-      <div className="mx-auto max-w-xl px-6 py-10">
-        <Button
-          variant="outline"
-          size="sm"
-          className="mb-8 rounded-full border-2 font-bold"
-          render={<Link to="/dashboard" />}
-          nativeButton={false}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          {t("Back to Dashboard")}
-        </Button>
+    <FormGuardProvider guard={overlay}>
+      <div className="min-h-screen bg-background bg-dots">
+        <div className="mx-auto max-w-xl px-6 py-10">
+          <Button
+            variant="outline"
+            size="sm"
+            className="mb-8 rounded-full border-2 font-bold"
+            render={<Link to="/dashboard" />}
+            nativeButton={false}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t("Back to Dashboard")}
+          </Button>
 
-        <div className="mb-8 text-center">
-          <p className="text-5xl" aria-hidden="true">
-            🎉
-          </p>
-          <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground md:text-5xl">
-            {t("Add a")}{" "}
-            <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
-              {t("baby")}
-            </span>
-          </h1>
-          <p className="mt-2 font-semibold text-muted-foreground">
-            {t("A name and a due date — that's all it takes!")}
-          </p>
+          <div className="mb-8 text-center">
+            <p className="text-5xl" aria-hidden="true">
+              🎉
+            </p>
+            <h1 className="mt-4 text-4xl font-black tracking-tight text-foreground md:text-5xl">
+              {t("Add a")}{" "}
+              <span className="inline-block -rotate-1 rounded-2xl bg-primary/15 px-3 text-primary">
+                {t("baby")}
+              </span>
+            </h1>
+            <p className="mt-2 font-semibold text-muted-foreground">
+              {t("A name and a due date — that's all it takes!")}
+            </p>
+          </div>
+
+          <Card className="rounded-[2rem] border-2 pop-shadow-strong">
+            <CardContent className="pt-6">
+              <Form
+                form={form}
+                handleSubmit={async (values) => {
+                  const result = await props.createBaby(values);
+
+                  await props.navigate({
+                    to: "/baby/$publicId",
+                    params: { publicId: result.publicId },
+                  });
+                }}
+              >
+                <div className="flex flex-col gap-5">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={(renderProps) => (
+                      <FormItem>
+                        <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
+                        <FormControl>
+                          <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
+                        </FormControl>
+                        <FormDescription>
+                          {t(
+                            "Optional — leave blank for now. You can change the time later in settings.",
+                          )}
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <DueDateDisplayFields
+                    control={form.control}
+                    dateFieldName="dueDate"
+                    showExactDueDateFieldName="showExactDueDate"
+                    publicDueDateTextFieldName="publicDueDateText"
+                    className={undefined}
+                    sectionLabelClassName="font-bold"
+                    stopPopoverPropagation={false}
+                  />
+
+                  <AddBabyOptionalSettings
+                    control={form.control}
+                    birthJourneyFieldName="birthJourney"
+                    themeFieldName="theme"
+                  />
+
+                  <SubmitButton
+                    form="context"
+                    IconComponent="🍼"
+                    iconPosition="end"
+                    className="w-full rounded-full font-extrabold pop-shadow"
+                    size="lg"
+                  >
+                    {t("Add Baby")}
+                  </SubmitButton>
+                </div>
+              </Form>
+            </CardContent>
+          </Card>
         </div>
-
-        <Card className="rounded-[2rem] border-2 pop-shadow-strong">
-          <CardContent className="pt-6">
-            <Form
-              form={form}
-              handleSubmit={async (values) => {
-                const result = await props.createBaby(values);
-
-                await props.navigate({
-                  to: "/baby/$publicId",
-                  params: { publicId: result.publicId },
-                });
-              }}
-            >
-              <div className="flex flex-col gap-5">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={(renderProps) => (
-                    <FormItem>
-                      <FormLabel className="font-bold">{t("Baby Name")}</FormLabel>
-                      <FormControl>
-                        <Input placeholder={t("Enter baby's name")} {...renderProps.field} />
-                      </FormControl>
-                      <FormDescription>
-                        {t(
-                          "Optional — leave blank for now. You can change the time later in settings.",
-                        )}
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <DueDateDisplayFields
-                  control={form.control}
-                  dateFieldName="dueDate"
-                  showExactDueDateFieldName="showExactDueDate"
-                  publicDueDateTextFieldName="publicDueDateText"
-                  className={undefined}
-                  sectionLabelClassName="font-bold"
-                  stopPopoverPropagation={false}
-                />
-
-                <AddBabyOptionalSettings
-                  control={form.control}
-                  birthJourneyFieldName="birthJourney"
-                  themeFieldName="theme"
-                />
-
-                <SubmitButton
-                  form="context"
-                  IconComponent="🍼"
-                  iconPosition="end"
-                  className="w-full rounded-full font-extrabold pop-shadow"
-                  size="lg"
-                >
-                  {t("Add Baby")}
-                </SubmitButton>
-              </div>
-            </Form>
-          </CardContent>
-        </Card>
       </div>
-    </div>
+    </FormGuardProvider>
   );
 }
