@@ -36,10 +36,12 @@ owner user/token, and only grandfathers the existing pre-flag Juniper Hale row.
 Resetting deletes only those babies' feed documents and never deletes storage
 objects, whose IDs may be reused by non-demo data. Local `setup-dev` seeds fixture
 text first (`seed:data`); sharp resize + photo uploads run in the background
-after `pnpm dev` starts (`dev:seed-photos-deferred`). Production/preview
-deploys run `seed:homepage` as an idempotent bootstrap: an existing complete
-fixture feed is the photo sentinel, so builds do not reset dates, wipe visitor
-encouragements, or reupload photos. `crons.ts` checks daily and resets every
+after `pnpm dev` starts (`dev:seed-photos-deferred`). Production deploys run
+`seed:homepage` in the Vercel build (idempotent: a complete fixture feed is
+the photo sentinel). Preview deploys reuse the branch Convex backend unless
+`schema.ts` / `convex.config.ts` changed; a wipe reseeds demo login + fixture
+text in the Vercel build, and homepage photos upload from GitHub Actions after
+Vercel is Ready (`seed-preview.yml`). `crons.ts` checks daily and resets every
 locale independently when that baby has no real visitor encouragement from the
 previous hour.
 When opening PRs, follow the root

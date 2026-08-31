@@ -46,7 +46,7 @@ export function DevBar() {
   const onPreview = pathname.startsWith("/preview");
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4 max-sm:top-16">
       <DropdownMenu key={pathname}>
         <DropdownMenuTrigger
           render={
@@ -54,13 +54,13 @@ export function DevBar() {
               type="button"
               variant="outline"
               size="sm"
-              className="pointer-events-auto rounded-full border-2 bg-background/90 font-extrabold shadow-sm backdrop-blur-md"
+              className="pointer-events-auto rounded-full border-2 bg-background/90 font-extrabold shadow-sm backdrop-blur-md max-sm:size-8 max-sm:px-0 max-sm:has-data-[icon=inline-start]:pl-0"
               aria-label="Developer shortcuts"
             />
           }
         >
           <Code data-icon="inline-start" />
-          Dev
+          <span className="max-sm:sr-only">Dev</span>
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="center" side="bottom" sideOffset={8} className="w-72">

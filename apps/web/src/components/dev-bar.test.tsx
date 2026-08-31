@@ -13,6 +13,14 @@ async function openDevBar() {
   });
 }
 
+test("sits below the page chrome on small screens", async () => {
+  await using _view = await renderWithTestRouter(<DevBar />, { path: "/dashboard" });
+  const trigger = screen.getByRole("button", { name: /developer shortcuts/i });
+  const overlay = trigger.closest("[class*='fixed']");
+  expect(overlay?.className).toMatch(/max-sm:top-16/);
+  expect(screen.getByText("Dev").className).toMatch(/max-sm:sr-only/);
+});
+
 test("opens a menu of seeded baby shortcuts", async () => {
   await using _view = await renderWithTestRouter(<DevBar />, {
     path: "/dashboard",
