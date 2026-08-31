@@ -585,7 +585,7 @@ export async function syncStatusNotifications(
 export const update = mutationWithTriggers({
   args: {
     id: v.id("baby"),
-    data: v.object({
+    patch: v.object({
       dueDate: v.optional(v.union(v.string(), v.null())),
       dueDateDisplayMode: v.optional(dueDateDisplayModeValidator),
       publicDueDateText: v.optional(v.union(v.string(), v.null())),
@@ -597,7 +597,7 @@ export const update = mutationWithTriggers({
   },
   handler: async (ctx, args) => {
     const babyId = args.id;
-    const patch = { ...args.data };
+    const patch = { ...args.patch };
     const { identity, baby } = await requireBabyManager(ctx, babyId);
     if (
       patch.dueDate !== undefined ||

@@ -69,7 +69,7 @@ test("create a baby and list it for the owner", async () => {
   await expect(
     sameSubjectFromAnotherIssuer.mutation(api.baby.update, {
       id: created.babyId,
-      data: {
+      patch: {
         name: "Not Alice",
       },
     }),
@@ -145,7 +145,7 @@ test("custom public due date text hides the exact day from visitors", async () =
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       dueDateDisplayMode: "exact",
     },
   });
@@ -169,7 +169,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   });
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       dueDateDisplayMode: "message",
     },
   });
@@ -181,7 +181,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   expect(publicMessageAgain).not.toHaveProperty("dueDate");
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       dueDateDisplayMode: "message",
       publicDueDateText: "   ",
     },
@@ -196,7 +196,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   await expect(
     asAlice.mutation(api.baby.update, {
       id: created.babyId,
-      data: {
+      patch: {
         dueDateDisplayMode: "message",
         publicDueDateText: "x".repeat(81),
       },
@@ -205,7 +205,7 @@ test("custom public due date text hides the exact day from visitors", async () =
   await expect(
     asAlice.mutation(api.baby.update, {
       id: created.babyId,
-      data: {
+      patch: {
         dueDate: null,
         dueDateDisplayMode: "exact",
         publicDueDateText: null,
@@ -297,7 +297,7 @@ test("journey selection can change after milestone updates without deleting them
   );
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       birthJourney: "planned_c_section",
     },
   });
@@ -379,7 +379,7 @@ test("a baby inherits the owner locale until an override is set", async () => {
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       locale: "en-US",
     },
   });
@@ -390,7 +390,7 @@ test("a baby inherits the owner locale until an override is set", async () => {
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       locale: null,
     },
   });
@@ -440,7 +440,7 @@ test("renaming a baby rotates the publicId and keeps the old one resolvable", as
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       name: "Final Name",
     },
   });
@@ -481,7 +481,7 @@ test("renaming a baby without changing the slug keeps the publicId", async () =>
 
   await asAlice.mutation(api.baby.update, {
     id: created.babyId,
-    data: {
+    patch: {
       name: "Baby smith",
     },
   });

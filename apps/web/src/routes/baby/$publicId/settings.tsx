@@ -94,7 +94,7 @@ export function BabySettingsOverlay() {
       birthJourney={managerBabyDoc.birthJourney}
       profileLocale={loaderData.profile.initialData?.locale ?? locale}
       onUpdate={async (update) => {
-        await updateBaby({ id: managerBabyDoc._id, data: update });
+        await updateBaby({ id: managerBabyDoc._id, patch: update });
         await router.invalidate();
       }}
       onMilestoneRedate={async (milestone, occurredAt) => {
