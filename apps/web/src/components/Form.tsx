@@ -28,10 +28,9 @@ import {
   AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
 import {
-  FormGuardContextProvider,
-  useFormNavigationGuard,
-  useFormGuardStack,
+  FormGuardProvider as GuardProvider,
   useRegisterFormState,
+  type DiscardPromptProps,
   type FormGuardHandle,
 } from "@workspace/form-guard";
 
@@ -76,45 +75,28 @@ const DEV_SUBMIT_DELAY_MS = 500;
 
 /** Wrap form content so child {@link Form}s register submits and dirty state. */
 export function FormGuardProvider(props: { guard: FormGuardHandle; children: ReactNode }) {
-  // Dirty state bubbles to the stack root, which hosts the single discard
-  // prompt and navigation blocker; nested providers only relay to it.
-  const isStackRoot = useFormGuardStack().length === 0;
   return (
-    <FormGuardContextProvider guard={props.guard}>
+    <GuardProvider
+      guard={props.guard}
+      renderDiscardPrompt={(promptProps) => <FormDiscardDialog {...promptProps} />}
+    >
       {props.children}
-      {isStackRoot ? (
-        <FormDiscardHostWithRouter guard={props.guard} />
-      ) : (
-        <FormDiscardDialog guard={props.guard} navigation={null} />
-      )}
-    </FormGuardContextProvider>
+    </GuardProvider>
   );
 }
 
-function FormDiscardHostWithRouter(props: { guard: FormGuardHandle }) {
-  const navigation = useFormNavigationGuard(props.guard);
-  return <FormDiscardDialog guard={props.guard} navigation={navigation} />;
-}
-
-type NavigationGuard = ReturnType<typeof useFormNavigationGuard>;
-
-function FormDiscardDialog(props: { guard: FormGuardHandle; navigation: NavigationGuard | null }) {
+/** Localized discard prompt; the guard mounts it once at the stack root. */
+function FormDiscardDialog(props: DiscardPromptProps) {
   const { t } = useI18n();
-  const navigation = props.navigation;
   const discardingRef = useRef(false);
-  const blocked = navigation?.status === "blocked";
-  const open = props.guard.discardPrompt.open || blocked;
   return (
     <AlertDialog
-      open={open}
+      open={props.open}
       onOpenChange={(nextOpen) => {
         if (nextOpen || discardingRef.current) {
           return;
         }
-        props.guard.discardPrompt.onOpenChange(false);
-        if (navigation?.status === "blocked") {
-          navigation.reset();
-        }
+        props.onOpenChange(false);
       }}
     >
       <AlertDialogContent>
@@ -130,10 +112,7 @@ function FormDiscardDialog(props: { guard: FormGuardHandle; navigation: Navigati
             variant="destructive"
             onClick={() => {
               discardingRef.current = true;
-              props.guard.discardPrompt.onDiscard();
-              if (navigation?.status === "blocked") {
-                navigation.proceed();
-              }
+              props.onDiscard();
             }}
           >
             {t("Discard")}

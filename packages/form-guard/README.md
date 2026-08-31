@@ -29,7 +29,7 @@ function Editor() {
     <Popover {...guard.rootProps}>
       <PopoverTrigger … />
       <PopoverContent>
-        <FormGuardProvider guard={guard}>{/* app-side: context + discard dialog */}
+        <FormGuardProvider guard={guard} DiscardPrompt={MyDiscardDialog}>
           <MyForm onClose={guard.close} />
         </FormGuardProvider>
       </PopoverContent>
@@ -38,20 +38,29 @@ function Editor() {
 }
 ```
 
-The app-side provider composes three package exports:
+`FormGuardProvider` figures out stacking by itself: the outermost provider is
+the stack root, which mounts the navigation blocker and renders the single
+`DiscardPrompt` for the whole stack. The app supplies only the localized
+prompt UI:
 
-- `FormGuardContextProvider` — stacks the store under context
-- `useFormNavigationGuard(guard)` — mount at the stack root only (dirty state
-  bubbles up); render your own discard dialog from `guard.discardPrompt`
-- `useRegisterFormState({ isDirty, isSubmitting, isSubmitSuccessful })` — call
-  from your form wrapper with plain booleans (a structural subset of React
-  Hook Form's `formState`)
+```tsx
+<FormGuardProvider guard={guard} DiscardPrompt={MyDiscardDialog}>
+  …
+</FormGuardProvider>;
 
-There is no imperative submit lock: `isSubmitting` blocks user dismissal
-while it holds, and `isDirty && !isSubmitting && !isSubmitSuccessful` is the
-"unsaved edits" signal — leaving is allowed mid-submit (success paths
-navigate before resolving) and after a successful save, while a failed
-submit re-arms the guard on its own.
+function MyDiscardDialog(props: DiscardPromptProps) {
+  // props.open / props.onOpenChange(false) = keep editing / props.onDiscard()
+}
+```
+
+Forms register reactive state with
+`useRegisterFormState({ isDirty, isSubmitting, isSubmitSuccessful })` — plain
+booleans, a structural subset of React Hook Form's `formState`. There is no
+imperative submit lock: `isSubmitting` blocks user dismissal while it holds,
+and `isDirty && !isSubmitting && !isSubmitSuccessful` is the "unsaved edits"
+signal — leaving is allowed mid-submit (success paths navigate before
+resolving) and after a successful save, while a failed submit re-arms the
+guard on its own.
 
 ## Stacked overlays
 
@@ -65,5 +74,5 @@ stack; "Keep editing" cancels both closes.
 
 - `src/dismiss.ts` — `overlayDismissDecision(...)`, `shouldBlockOverlayDismiss(...)`, native date-picker sniffing
 - `src/guard-store.ts` — `createFormGuardStore()` and the `FormGuardStore` interface
-- `src/use-form-guard.ts` — `useFormGuard(...)`, `FormGuardContextProvider`, `useFormGuardStack()`, `useRegisterFormDirty(...)`
-- `src/router.ts` — `useFormNavigationGuard(...)`
+- `src/use-form-guard.ts` — `useFormGuard(...)`, `FormGuardProvider`, `useRegisterFormState(...)`
+- `src/router.ts` — the internal TanStack Router blocker the root provider mounts

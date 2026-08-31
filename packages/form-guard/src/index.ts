@@ -7,10 +7,9 @@ export type {
   OverlayOpenChangeHandler,
 } from "./guard-store.js";
 export {
-  FormGuardContextProvider,
+  FormGuardProvider,
   useFormGuard,
-  useFormGuardStack,
   useRegisterFormState,
+  type DiscardPromptProps,
   type FormGuardHandle,
 } from "./use-form-guard.js";
-export { useFormNavigationGuard } from "./router.js";
