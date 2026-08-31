@@ -3,8 +3,8 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import {
   clearEncouragementMessageDraft,
-  readEncouragementMessageDraft,
-  writeEncouragementMessageDraft,
+  readEncouragementFormDraft,
+  writeEncouragementFormDraft,
 } from "@/lib/encouragement-message-draft";
 
 const babyId = "baby_test_1" as Id<"baby">;
@@ -30,29 +30,51 @@ function sessionStorageResource() {
 
 test("drafts are isolated per baby", async () => {
   await using _storage = sessionStorageResource();
-  writeEncouragementMessageDraft("baby_a" as Id<"baby">, "For A");
-  writeEncouragementMessageDraft("baby_b" as Id<"baby">, "For B");
-  expect(readEncouragementMessageDraft("baby_a" as Id<"baby">)).toBe("For A");
-  expect(readEncouragementMessageDraft("baby_b" as Id<"baby">)).toBe("For B");
+  writeEncouragementFormDraft("baby_a" as Id<"baby">, { authorName: "", message: "For A" });
+  writeEncouragementFormDraft("baby_b" as Id<"baby">, { authorName: "", message: "For B" });
+  expect(readEncouragementFormDraft("baby_a" as Id<"baby">).message).toBe("For A");
+  expect(readEncouragementFormDraft("baby_b" as Id<"baby">).message).toBe("For B");
 });
 
-test("write and read round-trip a message draft", async () => {
+test("write and read round-trip a form draft", async () => {
   await using _storage = sessionStorageResource();
-  writeEncouragementMessageDraft(babyId, "Thinking of you all!");
-  expect(readEncouragementMessageDraft(babyId)).toBe("Thinking of you all!");
+  writeEncouragementFormDraft(babyId, {
+    authorName: "Grandma",
+    message: "Thinking of you all!",
+  });
+  expect(readEncouragementFormDraft(babyId)).toEqual({
+    authorName: "Grandma",
+    message: "Thinking of you all!",
+    hasDraft: true,
+  });
+});
+
+test("partial message updates preserve an existing author name draft", async () => {
+  await using _storage = sessionStorageResource();
+  writeEncouragementFormDraft(babyId, { authorName: "Grandma", message: "First" });
+  writeEncouragementFormDraft(babyId, { authorName: "Grandma", message: "Updated" });
+  expect(readEncouragementFormDraft(babyId)).toEqual({
+    authorName: "Grandma",
+    message: "Updated",
+    hasDraft: true,
+  });
 });
 
 test("whitespace-only drafts are not stored", async () => {
   await using _storage = sessionStorageResource();
-  writeEncouragementMessageDraft(babyId, "   ");
-  expect(readEncouragementMessageDraft(babyId)).toBe("");
+  writeEncouragementFormDraft(babyId, { authorName: "   ", message: "   " });
+  expect(readEncouragementFormDraft(babyId)).toEqual({
+    authorName: "",
+    message: "",
+    hasDraft: false,
+  });
 });
 
 test("clear removes a stored draft", async () => {
   await using _storage = sessionStorageResource();
-  writeEncouragementMessageDraft(babyId, "Draft text");
+  writeEncouragementFormDraft(babyId, { authorName: "", message: "Draft text" });
   clearEncouragementMessageDraft(babyId);
-  expect(readEncouragementMessageDraft(babyId)).toBe("");
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
 });
 
 test("expired drafts are dropped on read", async () => {
@@ -62,9 +84,9 @@ test("expired drafts are dropped on read", async () => {
     vi.useRealTimers();
   });
   vi.setSystemTime(new Date("2026-08-30T12:00:00.000Z"));
-  writeEncouragementMessageDraft(babyId, "Old draft");
+  writeEncouragementFormDraft(babyId, { authorName: "", message: "Old draft" });
   vi.setSystemTime(new Date("2026-08-31T13:00:00.000Z"));
-  expect(readEncouragementMessageDraft(babyId)).toBe("");
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
 });
 
 test("drafts younger than the ttl are kept", async () => {
@@ -74,7 +96,75 @@ test("drafts younger than the ttl are kept", async () => {
     vi.useRealTimers();
   });
   vi.setSystemTime(new Date("2026-08-30T12:00:00.000Z"));
-  writeEncouragementMessageDraft(babyId, "Still fresh");
+  writeEncouragementFormDraft(babyId, { authorName: "", message: "Still fresh" });
   vi.setSystemTime(new Date(Date.parse("2026-08-30T12:00:00.000Z") + 24 * 60 * 60 * 1000 - 1));
-  expect(readEncouragementMessageDraft(babyId)).toBe("Still fresh");
+  expect(readEncouragementFormDraft(babyId).message).toBe("Still fresh");
+});
+
+test("read returns empty when sessionStorage is unavailable", async () => {
+  vi.stubGlobal("sessionStorage", undefined);
+  await using _storage = makeResource({}, () => {
+    vi.unstubAllGlobals();
+  });
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
+});
+
+test("write and clear no-op when sessionStorage is unavailable", async () => {
+  vi.stubGlobal("sessionStorage", undefined);
+  await using _storage = makeResource({}, () => {
+    vi.unstubAllGlobals();
+  });
+  writeEncouragementFormDraft(babyId, { authorName: "", message: "Draft text" });
+  clearEncouragementMessageDraft(babyId);
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
+});
+
+test("corrupt stored drafts are removed on read", async () => {
+  await using _storage = sessionStorageResource();
+  sessionStorage.setItem(`encouragement-message-draft:${babyId}`, "not-json{{{");
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
+  expect(sessionStorage.getItem(`encouragement-message-draft:${babyId}`)).toBeNull();
+});
+
+test("invalid stored draft shape is removed on read", async () => {
+  await using _storage = sessionStorageResource();
+  sessionStorage.setItem(
+    `encouragement-message-draft:${babyId}`,
+    JSON.stringify({ message: 123, savedAt: Date.now() }),
+  );
+  expect(readEncouragementFormDraft(babyId).message).toBe("");
+  expect(sessionStorage.getItem(`encouragement-message-draft:${babyId}`)).toBeNull();
+});
+
+test("legacy message-only drafts still restore the message", async () => {
+  await using _storage = sessionStorageResource();
+  sessionStorage.setItem(
+    `encouragement-message-draft:${babyId}`,
+    JSON.stringify({ message: "Older draft", savedAt: Date.now() }),
+  );
+  expect(readEncouragementFormDraft(babyId)).toEqual({
+    authorName: "",
+    message: "Older draft",
+    hasDraft: true,
+  });
+});
+
+test("write swallows sessionStorage quota errors", async () => {
+  let setItemCalled = false;
+  const storage = {
+    getItem() {
+      return null;
+    },
+    setItem() {
+      setItemCalled = true;
+      throw new Error("QuotaExceededError");
+    },
+    removeItem() {},
+  };
+  vi.stubGlobal("sessionStorage", storage);
+  await using _storage = makeResource({}, () => {
+    vi.unstubAllGlobals();
+  });
+  writeEncouragementFormDraft(babyId, { authorName: "", message: "Draft text" });
+  expect(setItemCalled).toBe(true);
 });

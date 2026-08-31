@@ -5,53 +5,74 @@ export const ENCOURAGEMENT_MESSAGE_DRAFT_DEBOUNCE_MS = 500;
 const ENCOURAGEMENT_MESSAGE_DRAFT_TTL_MS = 24 * 60 * 60 * 1000;
 
 const draftRecordSchema = z.object({
+  authorName: z.string().optional(),
   message: z.string(),
   savedAt: z.number(),
 });
+
+export type EncouragementFormDraft = {
+  authorName: string;
+  message: string;
+};
 
 function encouragementMessageDraftKey(babyId: Id<"baby">) {
   return `encouragement-message-draft:${babyId}`;
 }
 
-export function readEncouragementMessageDraft(babyId: Id<"baby">) {
+function readRawDraft(babyId: Id<"baby">) {
   if (globalThis.sessionStorage === undefined) {
-    return "";
+    return null;
   }
   const key = encouragementMessageDraftKey(babyId);
   const raw = sessionStorage.getItem(key);
   if (!raw) {
-    return "";
+    return null;
   }
   try {
     const parsed = draftRecordSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) {
       sessionStorage.removeItem(key);
-      return "";
+      return null;
     }
     const record = parsed.data;
     if (Date.now() - record.savedAt > ENCOURAGEMENT_MESSAGE_DRAFT_TTL_MS) {
       sessionStorage.removeItem(key);
-      return "";
+      return null;
     }
-    return record.message;
+    return { key, record };
   } catch {
     sessionStorage.removeItem(key);
-    return "";
+    return null;
   }
 }
 
-export function writeEncouragementMessageDraft(babyId: Id<"baby">, message: string) {
+export function readEncouragementFormDraft(babyId: Id<"baby">): EncouragementFormDraft & {
+  hasDraft: boolean;
+} {
+  const raw = readRawDraft(babyId);
+  if (!raw) {
+    return { authorName: "", message: "", hasDraft: false };
+  }
+  return {
+    authorName: raw.record.authorName ?? "",
+    message: raw.record.message,
+    hasDraft: true,
+  };
+}
+
+export function writeEncouragementFormDraft(babyId: Id<"baby">, draft: EncouragementFormDraft) {
   if (globalThis.sessionStorage === undefined) {
     return;
   }
   const key = encouragementMessageDraftKey(babyId);
-  if (!message.trim()) {
+  if (!draft.authorName.trim() && !draft.message.trim()) {
     sessionStorage.removeItem(key);
     return;
   }
   try {
     const record = draftRecordSchema.parse({
-      message,
+      authorName: draft.authorName,
+      message: draft.message,
       savedAt: Date.now(),
     });
     sessionStorage.setItem(key, JSON.stringify(record));

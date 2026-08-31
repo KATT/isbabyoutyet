@@ -36,13 +36,14 @@ test("debounces draft writes to sessionStorage", async () => {
     (props) =>
       useEncouragementMessageDraft({
         babyId,
+        authorName: props.authorName,
         message: props.message,
       }),
-    { initialProps: { message: "" } },
+    { initialProps: { authorName: "", message: "" } },
   );
   await using _hook = makeResource({}, () => hook.unmount());
 
-  act(() => hook.rerender({ message: "Draft" }));
+  act(() => hook.rerender({ authorName: "Grandma", message: "Draft" }));
   expect(sessionStorage.getItem(`encouragement-message-draft:${babyId}`)).toBeNull();
 
   act(() => vi.advanceTimersByTime(500));
@@ -51,5 +52,7 @@ test("debounces draft writes to sessionStorage", async () => {
   if (!stored) {
     throw new Error("expected draft in sessionStorage");
   }
-  expect(JSON.parse(stored).message).toBe("Draft");
+  const parsed = JSON.parse(stored);
+  expect(parsed.authorName).toBe("Grandma");
+  expect(parsed.message).toBe("Draft");
 });

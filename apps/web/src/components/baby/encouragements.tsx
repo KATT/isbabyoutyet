@@ -18,7 +18,7 @@ import { api } from "@workspace/convex/convex/_generated/api";
 import type { TranslationFunction } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n";
 import {
-  readEncouragementMessageDraft,
+  readEncouragementFormDraft,
   clearEncouragementMessageDraft,
 } from "@/lib/encouragement-message-draft";
 import { useEncouragementMessageDraft } from "@/lib/use-encouragement-message-draft";
@@ -66,13 +66,16 @@ function encouragementSchema(t: TranslationFunction, babyId: Id<"baby">) {
 
 export function EncouragementForm(props: EncouragementFormProps) {
   const hydrated = useClientHydration();
+  const sessionDraft = hydrated ? readEncouragementFormDraft(props.babyId) : null;
   return (
     <EncouragementFormFields
       key={hydrated ? "hydrated" : "server"}
       babyId={props.babyId}
       babyName={props.babyName}
-      initialAuthorName={hydrated ? getStoredAuthorName() : ""}
-      initialMessage={hydrated ? readEncouragementMessageDraft(props.babyId) : ""}
+      initialAuthorName={
+        sessionDraft?.hasDraft ? sessionDraft.authorName : hydrated ? getStoredAuthorName() : ""
+      }
+      initialMessage={sessionDraft?.message ?? ""}
     />
   );
 }
@@ -92,7 +95,8 @@ function EncouragementFormFields(
     },
   });
   const message = useWatch({ control: form.control, name: "message" }) ?? "";
-  useEncouragementMessageDraft({ babyId: props.babyId, message });
+  const authorName = useWatch({ control: form.control, name: "authorName" }) ?? "";
+  useEncouragementMessageDraft({ babyId: props.babyId, authorName, message });
 
   return (
     <div className="space-y-4">

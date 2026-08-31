@@ -1,19 +1,24 @@
 import { useEffect } from "react";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
+import type { EncouragementFormDraft } from "@/lib/encouragement-message-draft";
 import {
   ENCOURAGEMENT_MESSAGE_DRAFT_DEBOUNCE_MS,
-  writeEncouragementMessageDraft,
+  writeEncouragementFormDraft,
 } from "@/lib/encouragement-message-draft";
 
 /**
- * Debounced sessionStorage sync for encouragement message bodies, keyed per
- * baby.
+ * Debounced sessionStorage sync for encouragement form drafts, keyed per baby.
  */
-export function useEncouragementMessageDraft(opts: { babyId: Id<"baby">; message: string }) {
+export function useEncouragementMessageDraft(
+  opts: { babyId: Id<"baby"> } & EncouragementFormDraft,
+) {
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      writeEncouragementMessageDraft(opts.babyId, opts.message);
+      writeEncouragementFormDraft(opts.babyId, {
+        authorName: opts.authorName,
+        message: opts.message,
+      });
     }, ENCOURAGEMENT_MESSAGE_DRAFT_DEBOUNCE_MS);
     return () => window.clearTimeout(timeout);
-  }, [opts.babyId, opts.message]);
+  }, [opts.babyId, opts.authorName, opts.message]);
 }

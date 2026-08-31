@@ -683,7 +683,11 @@ test("EncouragementForm restores a session draft silently", async () => {
   const baby = await seedOwnerBaby(harness);
   sessionStorage.setItem(
     `encouragement-message-draft:${baby.babyId}`,
-    JSON.stringify({ message: "Saved draft text", savedAt: Date.now() }),
+    JSON.stringify({
+      authorName: "Auntie Jo",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
   );
 
   await using view = await renderWithConvexTest({
@@ -692,7 +696,30 @@ test("EncouragementForm restores a session draft silently", async () => {
     wrap: null,
   });
 
+  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Auntie Jo");
   expect((view.getByLabelText("Message") as HTMLTextAreaElement).value).toBe("Saved draft text");
+});
+
+test("EncouragementForm prefers a session name draft over committed localStorage", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  localStorage.setItem("encouragement-author-name", "Committed Name");
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({
+      authorName: "Draft Name",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect((view.getByLabelText("Your name") as HTMLInputElement).value).toBe("Draft Name");
 });
 
 test("EncouragementForm submit reaches the Convex mutation", async () => {
