@@ -400,8 +400,9 @@ function BabyPageLayout() {
           {/* Timeline: owner updates interleaved with encouragements. The
               visitor's encouragement form sits above the feed so nobody has
               to scroll past every message to post; the owner posts via the
-              "Post update" button in the dock. */}
-          <div className="space-y-8" id={BABY_FEED_HASH}>
+              "Post update" button in the dock. Notification clicks land on
+              #feed — the messages list, not the compose box. */}
+          <div className="space-y-8">
             <section
               className="rounded-[2rem] border-2 border-secondary/60 bg-secondary/15 p-6 pop-shadow md:p-8"
               data-tour-id="learn_encouragements"
@@ -409,7 +410,10 @@ function BabyPageLayout() {
               <EncouragementForm babyId={babyDoc._id} babyName={baby.name} />
             </section>
 
-            <section className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8">
+            <section
+              id={BABY_FEED_HASH}
+              className="rounded-[2rem] border-2 border-border bg-card p-6 pop-shadow md:p-8"
+            >
               <TimelineFeed
                 babyId={babyDoc._id}
                 publicId={babyDoc.publicId}

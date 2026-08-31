@@ -626,3 +626,26 @@ test("owners see a dashboard icon instead of sign-in", async () => {
   expect(ctx.view.queryByRole("button", { name: "Sign in" })).toBeNull();
   expect(ctx.view.queryByText("Are you the parent? Sign in")).toBeNull();
 });
+
+test("notification #feed landmark is the messages list, not the compose box", async () => {
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+
+  await using ctx = await renderMountedFileRoute({
+    harness,
+    route: routeModule.Route,
+    path: "/baby/$publicId",
+    initialEntry: `/baby/${baby.publicId}`,
+    overlayHistory: null,
+    wrap: null,
+  });
+
+  await vi.waitFor(() => {
+    expect(ctx.view.getByRole("heading", { name: "Updates & messages" })).toBeTruthy();
+  });
+
+  const feed = document.getElementById("feed");
+  expect(feed).toBeTruthy();
+  expect(feed?.contains(ctx.view.getByRole("heading", { name: "Updates & messages" }))).toBe(true);
+  expect(feed?.contains(ctx.view.getByLabelText("Message"))).toBe(false);
+});
