@@ -10,13 +10,14 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@workspace/ui/components/item";
-import { createDismissedIdsStore } from "@/lib/use-dismissed-ids";
+import { createDismissedIdsStore, useIsDismissed } from "@/lib/use-dismissed-ids";
 
 type HomepageDemoToastProps = {
   publicId: string;
 };
 
-const homepageDemoDismissals = createDismissedIdsStore();
+/** @internal Exported for tests. */
+export const homepageDemoDismissals = createDismissedIdsStore();
 
 /**
  * Persistent notice on the public homepage demo baby so visitors know they
@@ -24,7 +25,7 @@ const homepageDemoDismissals = createDismissedIdsStore();
  */
 export function HomepageDemoToast(props: HomepageDemoToastProps) {
   const { t } = useI18n();
-  const dismissed = homepageDemoDismissals.useIsDismissed(props.publicId);
+  const dismissed = useIsDismissed(homepageDemoDismissals, props.publicId);
   if (!isHomepageDemoPublicId(props.publicId) || dismissed) return null;
 
   return (
@@ -44,6 +45,7 @@ export function HomepageDemoToast(props: HomepageDemoToastProps) {
         </ItemContent>
         <ItemActions className="shrink-0 self-start">
           <Button
+            type="button"
             variant="outline"
             size="default"
             className="relative after:absolute after:-inset-3 after:content-['']"

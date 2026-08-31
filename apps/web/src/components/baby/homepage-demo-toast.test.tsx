@@ -1,10 +1,11 @@
 import { fireEvent } from "@testing-library/react";
 import { expect, test } from "vitest";
 import { HOMEPAGE_DEMO_BABIES, HOMEPAGE_DEMO_BABY } from "@workspace/convex/src/seedCredentials";
-import { HomepageDemoToast } from "@/components/baby/homepage-demo-toast";
+import { HomepageDemoToast, homepageDemoDismissals } from "@/components/baby/homepage-demo-toast";
 import { renderResource } from "@/test/renderResource";
 
 function renderToastResource(publicId: string) {
+  homepageDemoDismissals.clear();
   return renderResource(<HomepageDemoToast publicId={publicId} />);
 }
 

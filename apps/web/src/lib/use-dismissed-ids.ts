@@ -3,11 +3,16 @@ import { useSyncExternalStore } from "react";
 /**
  * Module-level set of dismissed string ids with useSyncExternalStore so feature
  * components can hide UI after dismiss without local useState.
+ *
+ * `useIsDismissed` is a top-level hook (not a store method) so React Compiler
+ * treats it as a hook. The snapshot is the dismissed boolean itself — returning
+ * a version number and then reading the Set separately lets the compiler
+ * memoize `isDismissed(id)` as a pure function of `id`, so "Got it" never
+ * hides the UI.
  */
 export function createDismissedIdsStore() {
   const dismissed = new Set<string>();
   const listeners = new Set<() => void>();
-  let version = 0;
 
   function subscribe(notify: () => void) {
     listeners.add(notify);
@@ -16,14 +21,9 @@ export function createDismissedIdsStore() {
     };
   }
 
-  function getVersion() {
-    return version;
-  }
-
   function dismiss(id: string) {
     if (dismissed.has(id)) return;
     dismissed.add(id);
-    version += 1;
     for (const listener of listeners) {
       listener();
     }
@@ -33,11 +33,21 @@ export function createDismissedIdsStore() {
     return dismissed.has(id);
   }
 
-  function useIsDismissed(id: string) {
-    const currentVersion = useSyncExternalStore(subscribe, getVersion, () => 0);
-    void currentVersion;
-    return isDismissed(id);
+  function clear() {
+    if (dismissed.size === 0) return;
+    dismissed.clear();
+    for (const listener of listeners) {
+      listener();
+    }
   }
 
-  return { dismiss, isDismissed, useIsDismissed };
+  return { dismiss, isDismissed, subscribe, clear };
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
+export function useIsDismissed(store: ReturnType<typeof createDismissedIdsStore>, id: string) {
+  return useSyncExternalStore(store.subscribe, () => store.isDismissed(id), getServerSnapshot);
 }
