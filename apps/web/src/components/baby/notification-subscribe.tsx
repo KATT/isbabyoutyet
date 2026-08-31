@@ -190,6 +190,25 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     },
   });
 
+  const subscribeFamilyMutation = useMutation({
+    mutationFn: async () => {
+      if (!vapidPublicKey) {
+        throw new Error(t("Push notifications are not supported in this browser."));
+      }
+      const keys = await ensureWebPushSubscription(vapidPublicKey);
+      await subscribeMutationFn({
+        babyId: props.babyId,
+        endpoint: keys.endpoint,
+        p256dh: keys.p256dh,
+        auth: keys.auth,
+        userAgent: navigator.userAgent,
+      });
+    },
+    onSuccess: () => {
+      void capabilityQuery.refetch();
+    },
+  });
+
   const unsubscribeMutation = useMutation({
     mutationFn: async () => {
       const keys = await readWebPushSubscription();
@@ -208,7 +227,10 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
     },
   });
 
-  const isLoading = subscribeMutation.isPending || unsubscribeMutation.isPending;
+  const isLoading =
+    subscribeMutation.isPending ||
+    subscribeFamilyMutation.isPending ||
+    unsubscribeMutation.isPending;
   const familyOn = capability?.kind === "subscribed" && capability.family;
   const messagesOn = capability?.kind === "subscribed" && capability.messages;
   const isSubscribed = props.audience === "manager" ? familyOn || messagesOn : familyOn;
@@ -268,7 +290,7 @@ export function NotificationSubscribe(props: NotificationSubscribeProps) {
               return;
             }
             toastPushSync({
-              run: subscribeMutation.mutateAsync({ family: true, messages: false }),
+              run: subscribeFamilyMutation.mutateAsync(),
               t,
               turningOff: false,
             });

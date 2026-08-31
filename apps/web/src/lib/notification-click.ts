@@ -1,15 +1,16 @@
 /**
- * Service-worker notification clicks should reuse the open baby tab (hash
- * ignored) instead of stacking windows. Overlay URLs keep their own tab.
+ * Service-worker notification clicks should reuse the open baby page (hash
+ * ignored) instead of stacking windows. Nested overlay paths are a different
+ * document and keep their own tab.
+ *
+ * `apps/web/public/sw.js` keeps a copy of {@link shouldReuseBabyClient} —
+ * only the baby page itself (`/baby/$publicId`) matches.
  */
 export const NOTIFICATION_CLICK_MESSAGE = "notification-click";
 
-/** @internal Exported for tests; the service worker keeps a copy in `sw.js`. */
-export function isBabyOverlayPath(pathname: string) {
-  return (
-    /\/baby\/[^/]+\/(?:photo|settings|post|share|login)\/?$/.test(pathname) ||
-    /\/baby\/[^/]+\/updates\/[^/]+\/photo\/?$/.test(pathname)
-  );
+function babyPagePublicId(pathname: string) {
+  const match = /^\/baby\/([^/]+)\/?$/.exec(pathname);
+  return match?.[1] ?? null;
 }
 
 /** @internal Exported for tests; the service worker keeps a copy in `sw.js`. */
@@ -19,10 +20,27 @@ export function shouldReuseBabyClient(opts: { clientUrl: string; targetUrl: stri
   if (client.origin !== target.origin) {
     return false;
   }
-  if (isBabyOverlayPath(client.pathname)) {
-    return false;
+  const clientBaby = babyPagePublicId(client.pathname);
+  const targetBaby = babyPagePublicId(target.pathname);
+  return clientBaby !== null && clientBaby === targetBaby;
+}
+
+/**
+ * Apply a notification-click target on the already-focused baby page.
+ * The service worker posts the URL; we set `#feed` here so the SW does not
+ * have to `navigate()` (that rejects on uncontrolled / iOS clients and then
+ * the click handler never focuses).
+ */
+export function applyNotificationClickUrl(url: string) {
+  const next = new URL(url, window.location.href);
+  if (next.origin !== window.location.origin) {
+    return;
   }
-  const clientBaby = /^\/baby\/([^/]+)\/?$/.exec(client.pathname);
-  const targetBaby = /^\/baby\/([^/]+)\/?$/.exec(target.pathname);
-  return Boolean(clientBaby && targetBaby && clientBaby[1] === targetBaby[1]);
+  if (next.hash && window.location.hash !== next.hash) {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}${next.hash}`,
+    );
+  }
 }

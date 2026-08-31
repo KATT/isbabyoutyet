@@ -127,6 +127,50 @@ test("scrolls again when the service worker posts a notification-click", async (
   expect(scrollIntoView).toHaveBeenCalledOnce();
 });
 
+test("notification-click with a feed url sets the hash when the page has none", async () => {
+  await using _hash = withHash("");
+  await using scrollIntoView = withScrollSpy();
+  const listeners: EventListener[] = [];
+  const addEventListener = vi.fn<(type: string, listener: EventListener) => void>(
+    (type, listener) => {
+      if (type === "message") {
+        listeners.push(listener);
+      }
+    },
+  );
+  const removeEventListener = vi.fn();
+  const originalServiceWorker = navigator.serviceWorker;
+  Object.defineProperty(navigator, "serviceWorker", {
+    configurable: true,
+    value: { addEventListener, removeEventListener },
+  });
+  await using _sw = makeResource({}, () => {
+    if (originalServiceWorker) {
+      Object.defineProperty(navigator, "serviceWorker", {
+        configurable: true,
+        value: originalServiceWorker,
+      });
+      return;
+    }
+    Reflect.deleteProperty(navigator, "serviceWorker");
+  });
+
+  await using _view = renderResource(<HashScrollHarness />);
+  expect(listeners).toHaveLength(1);
+  scrollIntoView.mockClear();
+  listeners[0]?.(
+    new MessageEvent("message", {
+      data: {
+        type: NOTIFICATION_CLICK_MESSAGE,
+        url: "#feed",
+      },
+    }),
+  );
+
+  expect(window.location.hash).toBe("#feed");
+  expect(scrollIntoView).toHaveBeenCalled();
+});
+
 test("ignores service-worker messages that are not notification clicks", async () => {
   await using _hash = withHash("#feed");
   await using scrollIntoView = withScrollSpy();

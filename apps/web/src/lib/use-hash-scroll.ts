@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
-import { isFunction, isPlainObject } from "@workspace/runtime/guards";
-import { NOTIFICATION_CLICK_MESSAGE } from "@/lib/notification-click";
+import { isFunction, isPlainObject, isString } from "@workspace/runtime/guards";
+import { applyNotificationClickUrl, NOTIFICATION_CLICK_MESSAGE } from "@/lib/notification-click";
 
 /**
  * Scrolls to `location.hash` on load, hashchange, and service-worker
@@ -37,6 +37,9 @@ export function useHashScroll() {
         return;
       }
       if (event.data.type === NOTIFICATION_CLICK_MESSAGE) {
+        if (isString(event.data.url)) {
+          applyNotificationClickUrl(event.data.url);
+        }
         scrollToHashRef.current();
       }
     }

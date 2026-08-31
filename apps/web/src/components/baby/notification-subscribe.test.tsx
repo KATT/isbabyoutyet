@@ -7,7 +7,7 @@ import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { testPreloadedQuery } from "@workspace/query-prefetch/test-helpers";
 import { TooltipProvider } from "@workspace/ui/components/tooltip";
 import { createConvexTestHarness } from "@/test/convexTestHarness";
-import { signUpTestUser } from "@/test/convexTestSeed";
+import { seedOwnedBaby, signUpTestUser } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import {
@@ -615,4 +615,126 @@ test("dirty chooser dismiss asks to discard unsaved changes", async () => {
     expect(view.queryByRole("heading", { name: "Choose notifications" })).toBeNull();
   });
   expect(onSubmit).not.toHaveBeenCalled();
+});
+
+const OWNER_ENDPOINT = "https://push.example/owner-and-family";
+
+function ownerPushSubscription() {
+  // SAFETY: Test fixture is a subset of the production type.
+  return {
+    endpoint: OWNER_ENDPOINT,
+    toJSON: (): PushSubscriptionJSON => ({
+      endpoint: OWNER_ENDPOINT,
+      keys: { p256dh: "p256", auth: "auth" },
+    }),
+  } as PushSubscription;
+}
+
+function stubGrantedOwnerPush() {
+  const restore: Array<() => void> = [];
+  const subscription = ownerPushSubscription();
+
+  function replaceProperty<$Target extends object>(
+    target: $Target,
+    property: { key: string; descriptor: PropertyDescriptor },
+  ) {
+    const existing = Object.getOwnPropertyDescriptor(target, property.key);
+    Object.defineProperty(target, property.key, { configurable: true, ...property.descriptor });
+    restore.push(() => {
+      if (existing) {
+        Object.defineProperty(target, property.key, existing);
+        return;
+      }
+      Reflect.deleteProperty(target, property.key);
+    });
+  }
+
+  const NotificationStub = function Notification() {};
+  Object.defineProperty(NotificationStub, "permission", {
+    configurable: true,
+    get: () => "granted",
+  });
+  replaceProperty(globalThis, {
+    key: "Notification",
+    descriptor: { value: NotificationStub },
+  });
+  // SAFETY: Test fixture is a subset of the production type.
+  const registration = {
+    pushManager: {
+      getSubscription: () => Promise.resolve(subscription),
+      subscribe: () => Promise.resolve(subscription),
+    },
+  } as ServiceWorkerRegistration;
+  replaceProperty(navigator, {
+    key: "serviceWorker",
+    descriptor: { value: { ready: Promise.resolve(registration) } },
+  });
+
+  return makeResource({}, () => {
+    for (const fn of restore.toReversed()) {
+      fn();
+    }
+  });
+}
+
+test("visitor Get Notifications does not drop owner message alerts", async () => {
+  await using _env = stubGrantedOwnerPush();
+  await using harness = await createConvexTestHarness({ identity: { subject: "alice" } });
+  const baby = await seedOwnedBaby(harness, { name: "Baby Smith", dueDate: "2026-09-01" });
+  await harness.client.mutation(api.pushSubscriptions.subscribeAsOwner, {
+    babyId: baby.babyId,
+    endpoint: OWNER_ENDPOINT,
+    p256dh: "p256",
+    auth: "auth",
+    userAgent: "vitest",
+  });
+  harness.withIdentity(null);
+
+  const vapid = await harness.convexPreloader.ensureQueryData(
+    api.pushSubscriptions.getPublicKey,
+    {},
+  );
+  const view = await renderWithConvexTest({
+    harness,
+    ui: (
+      <TooltipProvider>
+        <NotificationSubscribe
+          babyId={baby.babyId}
+          vapidPublicKey={vapid}
+          browserPush={testPreloadedQuery(
+            (ref) => browserPushQueryOptions(harness.queryClient, ref),
+            {
+              kind: "subscribed",
+              subscription: ownerPushSubscription(),
+              family: false,
+              messages: true,
+            },
+            baby.publicId,
+          )}
+          audience="visitor"
+        />
+      </TooltipProvider>
+    ),
+    wrap: null,
+  });
+  await using _view = makeAsyncResource(view, async () => {
+    view[Symbol.dispose]();
+  });
+
+  fireEvent.click(view.getByRole("button", { name: "Get Notifications" }));
+
+  await vi.waitFor(async () => {
+    expect(
+      await harness.client.query(api.pushSubscriptions.isSubscribed, {
+        babyId: baby.babyId,
+        endpoint: OWNER_ENDPOINT,
+      }),
+    ).toBe(true);
+  });
+  expect(
+    await harness.client.query(api.pushSubscriptions.isOwnerSubscribed, {
+      babyId: baby.babyId,
+      endpoint: OWNER_ENDPOINT,
+    }),
+  ).toBe(true);
 });

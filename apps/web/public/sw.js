@@ -1,25 +1,17 @@
 /**
- * Shared notification-click matching for the service worker. Keep this in
- * sync with `apps/web/src/lib/notification-click.ts`.
+ * Reuse the open baby page tab (hash ignored). Keep in sync with
+ * `shouldReuseBabyClient` in `apps/web/src/lib/notification-click.ts`.
+ * Nested overlay paths (`/settings`, `/login`, …) do not match.
  */
-function isBabyOverlayPath(pathname) {
-  return (
-    /\/baby\/[^/]+\/(?:photo|settings|post|share|login)\/?$/.test(pathname) ||
-    /\/baby\/[^/]+\/updates\/[^/]+\/photo\/?$/.test(pathname)
-  );
-}
-
 function shouldReuseBabyClient(clientUrl, targetUrl) {
   const client = new URL(clientUrl);
   const target = new URL(targetUrl);
   if (client.origin !== target.origin) {
     return false;
   }
-  if (isBabyOverlayPath(client.pathname)) {
-    return false;
-  }
-  const clientBaby = /^\/baby\/([^/]+)\/?$/.exec(client.pathname);
-  const targetBaby = /^\/baby\/([^/]+)\/?$/.exec(target.pathname);
+  const babyPage = /^\/baby\/([^/]+)\/?$/;
+  const clientBaby = babyPage.exec(client.pathname);
+  const targetBaby = babyPage.exec(target.pathname);
   return Boolean(clientBaby && targetBaby && clientBaby[1] === targetBaby[1]);
 }
 
@@ -110,9 +102,8 @@ self.addEventListener("notificationclick", (event) => {
             // WindowClient.postMessage has no targetOrigin; this client is already same-origin.
             // oxlint-disable-next-line unicorn/require-post-message-target-origin
             client.postMessage({ type: "notification-click", url: urlToOpen });
-            if ("navigate" in client) {
-              return client.navigate(urlToOpen).then(() => client.focus());
-            }
+            // Do not client.navigate() — it rejects on uncontrolled / iOS
+            // clients and then focus never runs. The page sets #feed itself.
             return client.focus();
           }
         }
