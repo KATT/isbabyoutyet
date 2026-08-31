@@ -25,19 +25,6 @@ function sessionStorageResource() {
   });
 }
 
-test("shows a restored hint when initialRestored is true", async () => {
-  await using _storage = sessionStorageResource();
-  const hook = renderHook(() =>
-    useEncouragementMessageDraft({
-      babyId,
-      message: "Hello",
-      initialRestored: true,
-    }),
-  );
-  await using _hook = makeResource({}, () => hook.unmount());
-  expect(hook.result.current.showRestoredHint).toBe(true);
-});
-
 test("debounces draft writes to sessionStorage", async () => {
   await using _storage = sessionStorageResource();
   vi.useFakeTimers();
@@ -50,7 +37,6 @@ test("debounces draft writes to sessionStorage", async () => {
       useEncouragementMessageDraft({
         babyId,
         message: props.message,
-        initialRestored: false,
       }),
     { initialProps: { message: "" } },
   );
@@ -67,27 +53,3 @@ test("debounces draft writes to sessionStorage", async () => {
   }
   expect(JSON.parse(stored).message).toBe("Draft");
 });
-
-test("clearDraft removes storage and hides the hint", async () => {
-  await using _storage = sessionStorageResource();
-  writeDraftToStorage(babyId, "Saved");
-  const hook = renderHook(() =>
-    useEncouragementMessageDraft({
-      babyId,
-      message: "Saved",
-      initialRestored: true,
-    }),
-  );
-  await using _hook = makeResource({}, () => hook.unmount());
-
-  act(() => hook.result.current.clearDraft());
-  expect(hook.result.current.showRestoredHint).toBe(false);
-  expect(sessionStorage.getItem(`encouragement-message-draft:${babyId}`)).toBeNull();
-});
-
-function writeDraftToStorage(id: Id<"baby">, message: string) {
-  sessionStorage.setItem(
-    `encouragement-message-draft:${id}`,
-    JSON.stringify({ message, savedAt: Date.now() }),
-  );
-}

@@ -6,8 +6,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@workspace/ui/components/form";
-import { Alert, AlertAction, AlertDescription } from "@workspace/ui/components/alert";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Textarea } from "@workspace/ui/components/textarea";
 import { useMutation } from "convex/react";
@@ -94,11 +92,7 @@ function EncouragementFormFields(
     },
   });
   const message = useWatch({ control: form.control, name: "message" }) ?? "";
-  const draft = useEncouragementMessageDraft({
-    babyId: props.babyId,
-    message,
-    initialRestored: props.initialMessage.trim().length > 0,
-  });
+  useEncouragementMessageDraft({ babyId: props.babyId, message });
 
   return (
     <div className="space-y-4">
@@ -137,25 +131,6 @@ function EncouragementFormFields(
         }}
       >
         <div className="space-y-3">
-          {draft.showRestoredHint ? (
-            <Alert>
-              <AlertDescription>{t("We restored your unsent message.")}</AlertDescription>
-              <AlertAction>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    draft.clearDraft();
-                    form.setValue("message", "", { shouldDirty: true });
-                  }}
-                >
-                  {t("Clear draft")}
-                </Button>
-              </AlertAction>
-            </Alert>
-          ) : null}
-
           <FormField
             control={form.control}
             name="authorName"
