@@ -22,12 +22,12 @@
     "@tanstack/react-query": "^5.101.4",
     "@testing-library/react": "^16.3.2",
     "@types/react": "catalog:",
-    "jsdom": "^30.0.1",
+    "jsdom": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "react": "catalog:",
     "typescript": "catalog:",
-    "vitest": "^4.1.11"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@tanstack/react-query": "^5.0.0",

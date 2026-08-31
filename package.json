@@ -36,7 +36,7 @@
     "oxlint": "catalog:",
     "turbo": "^2.10.11",
     "typescript": "catalog:",
-    "vitest": "^4.1.11"
+    "vitest": "catalog:"
   },
   "engines": {
     "node": "^24.0.0"

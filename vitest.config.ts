@@ -13,6 +13,7 @@ export default defineConfig({
       "packages/oxlint-plugins",
       "packages/query-prefetch",
       "packages/convex-prefetch",
+      "packages/form-guard",
       webUnitProject,
     ],
     experimental: {
@@ -31,6 +32,7 @@ export default defineConfig({
         "packages/runtime/src/**/*.ts",
         "packages/query-prefetch/src/**/*.ts",
         "packages/convex-prefetch/src/**/*.ts",
+        "packages/form-guard/src/**/*.ts",
       ],
       exclude: [
         "**/_generated/**",

@@ -65,14 +65,14 @@ function reparentRoute<TRoute extends AnyRoute>(
   return update(opts);
 }
 
-type EnsureQueryData = (
+type FetchQueryData = (
   query: Parameters<typeof getFunctionName>[0],
   input: Record<string, never>,
 ) => Promise<{ input: Record<string, never>; initialData: unknown }>;
 
 function stubPreloader(babies: (typeof babySmith)[]) {
   const calls: string[] = [];
-  const ensureQueryData = vi.fn<EnsureQueryData>((query, input) => {
+  const fetchQueryData = vi.fn<FetchQueryData>((query, input) => {
     const name = getFunctionName(query);
     calls.push(name);
     return Promise.resolve({
@@ -80,7 +80,7 @@ function stubPreloader(babies: (typeof babySmith)[]) {
       initialData: name === getFunctionName(api.baby.listByUser) ? babies : onboardingProgress,
     });
   });
-  return { calls, context: { convexPreloader: { ensureQueryData } } };
+  return { calls, context: { convexPreloader: { fetchQueryData } } };
 }
 
 test("shows the empty state once the list has loaded with no babies", async () => {
@@ -151,7 +151,7 @@ test("parent dashboard stays mounted while child routes render through its outle
   expect(view.getByTestId("dashboard-outlet")).toBeTruthy();
 });
 
-test("parent dashboard loader starts independent prefetches without a waterfall", async () => {
+test("parent dashboard loader refetches auth-scoped reads without a waterfall", async () => {
   const preloader = stubPreloader([]);
   const loader = Route.options.loader as unknown as (opts: {
     context: typeof preloader.context;

@@ -15,9 +15,6 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { ConvexReactClient } from "convex/react";
 import * as React from "react";
 import { ConvexBetterAuthProvider } from "@convex-dev/better-auth/react";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ThemeProvider } from "next-themes";
 import appCss from "../../../../packages/ui/src/styles/globals.css?url";
 import typeCss from "@/styles/app.css?url";
@@ -36,14 +33,12 @@ import { isPlainObject, isString } from "@workspace/runtime/guards";
 import { LocaleProvider, getDetectedLocale, translate, useI18n } from "@/lib/i18n";
 import { detectRequestLocale } from "@/lib/detect-locale";
 import { DevBar } from "@/components/dev-bar";
+import { TanStackAppDevtools } from "@/components/tanstack-devtools";
 import { m } from "@/paraglide/messages";
 import "@/lib/register-service-worker";
 import { privateCacheHeaders } from "@/lib/cachePolicy";
 import { ConvexAuthObserver } from "@/lib/convexAuthHandoff";
 import { useDelayedBoolean } from "@/lib/use-delayed-action";
-
-/** Same gate as `hasDemoLogin` — inlined so Vite can DCE `DevBar` in prod. */
-const showDevBar = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
 
 /**
  * Root `beforeLoad` with locale detection injected so tests can drive the SSR
@@ -363,6 +358,10 @@ export function NavigationProgressBar(props: { isNavigating: boolean }) {
 
 /** @internal exported for tests — document shell without Convex/auth providers. */
 export function RootDocument(props: { children: React.ReactNode; locale: SupportedLocale }) {
+  // Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar and
+  // TanStack Devtools in prod. Same expression as the Vite strip flag:
+  // preview sets VITE_HAS_DEMO_LOGIN; production leaves it unset.
+  const showPreviewDevTools = import.meta.env.DEV || import.meta.env.VITE_HAS_DEMO_LOGIN === "true";
   return (
     <html lang={props.locale} dir="ltr">
       <head>
@@ -371,25 +370,10 @@ export function RootDocument(props: { children: React.ReactNode; locale: Support
       <body>
         <NavigationProgress />
         {props.children}
-        {/* Inlined env gate (not `hasDemoLogin`) so Vite DCE drops DevBar in prod. */}
-        {showDevBar ? <DevBar /> : null}
+        {showPreviewDevTools ? <DevBar /> : null}
         <Toaster />
         <Analytics />
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            {
-              name: "TanStack Query",
-              render: <ReactQueryDevtoolsPanel />,
-            },
-            {
-              name: "TanStack Router",
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        {showPreviewDevTools ? <TanStackAppDevtools /> : null}
         <Scripts />
       </body>
     </html>

@@ -78,7 +78,7 @@ test("returns null for anonymous visitors", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const onboarding = await harness.convexPreloader.ensureQueryData(api.onboarding.getMine, {});
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: (
       <OnboardingHostWithSession
@@ -489,7 +489,7 @@ test("useCompleteOnboardingStep returns the Convex mutation", async () => {
     return null;
   }
 
-  await using _view = renderWithConvexTest({
+  await using _view = await renderWithConvexTest({
     harness,
     ui: <Probe />,
     wrap: null,

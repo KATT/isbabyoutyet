@@ -31,7 +31,7 @@
       "presets": ["react"],
       "translationFunctionNames": ["translate"],
       "ignoredAttributes": ["to", "params", "search"],
-      "ignoredComponents": ["TanStackDevtools"],
+      "ignoredComponents": ["TanStackDevtools", "TanStackAppDevtools"],
       "ignorePatterns": ["^LoadingMore$", "^TanStack (Router|Query)$", "^/[A-Za-z0-9_$/.-]+$"]
     }
   },
@@ -224,6 +224,17 @@
         "react/set-state-in-effect": "off",
         "react/refs": "off",
         "react/immutability": "off"
+      }
+    },
+    {
+      // Audited external-store seam: the form leave-guard bridges Base UI
+      // dismissal, form dirty state, and router blocking through one store.
+      // The React layer needs a lazy useState store instance,
+      // useSyncExternalStore for prompt state, and effects for store wiring.
+      "files": ["packages/form-guard/src/**"],
+      "rules": {
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off"
       }
     },
     {

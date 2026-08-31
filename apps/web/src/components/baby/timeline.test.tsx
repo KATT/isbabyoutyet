@@ -667,7 +667,7 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
@@ -682,7 +682,7 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
