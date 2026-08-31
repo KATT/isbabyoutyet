@@ -9,8 +9,8 @@ function pushSubscription(opts: { keys: { p256dh: string; auth: string } | null 
   // SAFETY: Test fixture is a subset of the production type.
   return {
     endpoint: ENDPOINT,
-    toJSON: () =>
-      opts.keys ? { endpoint: ENDPOINT, keys: opts.keys } : { endpoint: ENDPOINT, keys: undefined },
+    toJSON: (): PushSubscriptionJSON =>
+      opts.keys ? { endpoint: ENDPOINT, keys: opts.keys } : { endpoint: ENDPOINT },
   } as PushSubscription;
 }
 
@@ -38,18 +38,20 @@ function stubPushEnvironment(opts: {
     });
   }
 
-  // SAFETY: Mock constructor is installed in place of the browser global.
-  const NotificationStub = function Notification() {} as typeof Notification;
+  const NotificationStub = function Notification() {};
   Object.defineProperty(NotificationStub, "permission", {
     configurable: true,
     get: () => opts.permission,
   });
-  NotificationStub.requestPermission = () => {
-    if (!opts.requestPermissionResult) {
-      throw new Error("requestPermission should not run");
-    }
-    return Promise.resolve(opts.requestPermissionResult);
-  };
+  Object.defineProperty(NotificationStub, "requestPermission", {
+    configurable: true,
+    value: () => {
+      if (!opts.requestPermissionResult) {
+        throw new Error("requestPermission should not run");
+      }
+      return Promise.resolve(opts.requestPermissionResult);
+    },
+  });
   replaceProperty(globalThis, {
     key: "Notification",
     descriptor: { value: NotificationStub },

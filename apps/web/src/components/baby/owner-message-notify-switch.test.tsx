@@ -20,7 +20,7 @@ function pushSubscription() {
   // SAFETY: Test fixture is a subset of the production type.
   return {
     endpoint: ENDPOINT,
-    toJSON: () => ({
+    toJSON: (): PushSubscriptionJSON => ({
       endpoint: ENDPOINT,
       keys: { p256dh: "p256", auth: "auth" },
     }),
@@ -46,8 +46,7 @@ function stubGrantedPush(opts: { existing: PushSubscription | null }) {
     });
   }
 
-  // SAFETY: Mock constructor is installed in place of the browser global.
-  const NotificationStub = function Notification() {} as typeof Notification;
+  const NotificationStub = function Notification() {};
   Object.defineProperty(NotificationStub, "permission", {
     configurable: true,
     get: () => "granted",
