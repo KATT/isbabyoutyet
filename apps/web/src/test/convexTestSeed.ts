@@ -131,13 +131,12 @@ export async function seedPendingLaborNotification(
   });
 }
 
-/** Sparse test patch for `baby.update`; unspecified fields keep the stored values. */
+/** Sparse test patch for `baby.update`; unspecified `data` keys keep the stored values. */
 export async function patchOwnedBaby(
   harness: ConvexTestHarness,
-  patch: Pick<FunctionArgs<typeof api.baby.update>, "babyId"> &
-    Partial<Omit<FunctionArgs<typeof api.baby.update>, "babyId">>,
+  args: FunctionArgs<typeof api.baby.update>,
 ) {
-  await harness.client.mutation(api.baby.update, patch);
+  await harness.client.mutation(api.baby.update, args);
 }
 
 /** Posts a timeline update with omitted fields as explicit `null`. */

@@ -67,32 +67,51 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
                  env: { SITE_URL: v.optional(v.string()) },
                });`,
     },
-    // Same shape as `baby.update`: required `babyId` + sibling omitted keys.
+    // Same shape as `baby.update`: `{ id, data }` with all-partial data.
     `import { v } from "convex/values";
        export const update = mutationWithTriggers({
          args: {
-           babyId: v.id("baby"),
-           dueDate: v.optional(v.union(v.string(), v.null())),
-           dueDateDisplayMode: v.optional(v.string()),
-           publicDueDateText: v.optional(v.union(v.string(), v.null())),
-           name: v.optional(v.string()),
-           theme: v.optional(v.union(v.string(), v.null())),
-           locale: v.optional(v.union(v.string(), v.null())),
-           birthJourney: v.optional(v.string()),
+           id: v.id("baby"),
+           data: v.object({
+             dueDate: v.optional(v.union(v.string(), v.null())),
+             dueDateDisplayMode: v.optional(v.string()),
+             publicDueDateText: v.optional(v.union(v.string(), v.null())),
+             name: v.optional(v.string()),
+             theme: v.optional(v.union(v.string(), v.null())),
+             locale: v.optional(v.union(v.string(), v.null())),
+             birthJourney: v.optional(v.string()),
+           }),
          },
        });`,
     `import { v } from "convex/values";
        export const patchBaby = mutation({
          args: {
-           babyId: v.id("baby"),
-           name: v.optional(v.string()),
+           id: v.id("baby"),
+           data: v.object({
+             name: v.optional(v.string()),
+           }),
          },
        });`,
     `import { v } from "convex/values";
        export const patch = mutation({
          args: {
            id: v.id("baby"),
-           theme: v.optional(v.string()),
+           data: v.object({
+             theme: v.optional(v.string()),
+           }),
+         },
+       });`,
+    // Composite id object (two or more `v.id(...)` fields).
+    `import { v } from "convex/values";
+       export const patchThumbnail = mutation({
+         args: {
+           id: v.object({
+             babyId: v.id("baby"),
+             thumbnailId: v.id("_storage"),
+           }),
+           data: v.object({
+             blurDataUrl: v.optional(v.union(v.string(), v.null())),
+           }),
          },
        });`,
   ],
@@ -150,12 +169,25 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
       errors: [undocumented],
     },
     {
+      // Flat sibling optionals are not `{ id, data }`.
+      code: `import { v } from "convex/values";
+               export const update = mutation({
+                 args: {
+                   babyId: v.id("baby"),
+                   theme: v.optional(v.string()),
+                 },
+               });`,
+      errors: [undocumented],
+    },
+    {
       // `create` is not a sparse patch mutation.
       code: `import { v } from "convex/values";
                export const create = mutation({
                  args: {
-                   babyId: v.id("baby"),
-                   theme: v.optional(v.string()),
+                   id: v.id("baby"),
+                   data: v.object({
+                     theme: v.optional(v.string()),
+                   }),
                  },
                });`,
       errors: [undocumented],
@@ -165,32 +197,53 @@ tester.run("no-undocumented-optional", plugin.rules["no-undocumented-optional"],
       code: `import { v } from "convex/values";
                export const updatePhoto = mutation({
                  args: {
-                   babyId: v.id("baby"),
-                   photoId: v.optional(v.id("_storage")),
+                   id: v.id("baby"),
+                   data: v.object({
+                     photoId: v.optional(v.id("_storage")),
+                   }),
                  },
                });`,
       errors: [undocumented],
     },
     {
-      // Sparse patch still needs a required `v.id(...)`.
+      // Sparse patch still needs a required `id`.
       code: `import { v } from "convex/values";
                export const update = mutation({
                  args: {
-                   theme: v.optional(v.string()),
+                   data: v.object({
+                     theme: v.optional(v.string()),
+                   }),
                  },
                });`,
       errors: [undocumented],
     },
     {
-      // Optional id is not the `baby.update` required-id shape.
+      // Optional id is not the required-id shape.
       code: `import { v } from "convex/values";
                export const update = mutation({
                  args: {
-                   babyId: v.optional(v.id("baby")),
-                   theme: v.optional(v.string()),
+                   id: v.optional(v.id("baby")),
+                   data: v.object({
+                     theme: v.optional(v.string()),
+                   }),
                  },
                });`,
       errors: [undocumented, undocumented],
+    },
+    {
+      // A single-field `id` object is not a composite id.
+      code: `import { v } from "convex/values";
+               export const patch = mutation({
+                 args: {
+                   id: v.object({
+                     babyId: v.id("baby"),
+                   }),
+                   data: v.object({
+                     theme: v.optional(v.string()),
+                   }),
+                 },
+               });`,
+      errors: [undocumented],
     },
   ],
 });
