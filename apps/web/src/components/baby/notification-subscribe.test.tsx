@@ -498,8 +498,9 @@ test("manager chooser defaults match the current subscription", async () => {
 });
 
 test("saving the manager chooser reports the selected alerts", async () => {
-  const onSubmit =
-    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
   await using view = await renderWithTestRouter(
     <TooltipProvider>
       <ManagerNotificationChooserView
@@ -522,8 +523,9 @@ test("saving the manager chooser reports the selected alerts", async () => {
 });
 
 test("saving both channels off reports an unsubscribe selection", async () => {
-  const onSubmit =
-    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
   await using view = await renderWithTestRouter(
     <TooltipProvider>
       <ManagerNotificationChooserView
@@ -581,8 +583,9 @@ test("chooser Save waits for the mutation before closing", async () => {
 });
 
 test("dirty chooser dismiss asks to discard unsaved changes", async () => {
-  const onSubmit =
-    vi.fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>().mockResolvedValue();
+  const onSubmit = vi
+    .fn<(selection: { family: boolean; messages: boolean }) => Promise<void>>()
+    .mockResolvedValue();
   await using view = await renderWithTestRouter(
     <TooltipProvider>
       <ManagerNotificationChooserView
