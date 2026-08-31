@@ -13,6 +13,7 @@ const app = defineApp({
     VAPID_PUBLIC_KEY: v.optional(v.string()),
     VAPID_SUBJECT: v.optional(v.string()),
     VERCEL_ENV: v.optional(v.union(v.literal("production"), v.literal("preview"))),
+    PREVIEW_SCHEMA_FINGERPRINT: v.optional(v.string()),
   },
 });
 app.use(betterAuth);
