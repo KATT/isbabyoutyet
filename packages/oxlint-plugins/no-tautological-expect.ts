@@ -24,15 +24,6 @@ function normalizeSource(text) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function isExpectCall(node) {
-  return (
-    node.type === "CallExpression" &&
-    node.callee.type === "Identifier" &&
-    node.callee.name === "expect" &&
-    node.arguments.length > 0
-  );
-}
-
 export const noTautologicalExpect = defineRule({
   meta: {
     type: "problem",
@@ -57,10 +48,16 @@ export const noTautologicalExpect = defineRule({
         if (matcher == null || !MATCHERS.has(matcher)) {
           return;
         }
-        if (!isExpectCall(node.callee.object)) {
+        const expectCall = node.callee.object;
+        if (
+          expectCall.type !== "CallExpression" ||
+          expectCall.callee.type !== "Identifier" ||
+          expectCall.callee.name !== "expect" ||
+          expectCall.arguments.length === 0
+        ) {
           return;
         }
-        const actual = node.callee.object.arguments[0];
+        const actual = expectCall.arguments[0];
         const expected = node.arguments[0];
         if (actual.type === "SpreadElement" || expected.type === "SpreadElement") {
           return;
