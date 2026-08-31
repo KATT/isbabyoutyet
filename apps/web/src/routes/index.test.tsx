@@ -90,3 +90,30 @@ test("homepage language picker saves an explicit language choice", async () => {
     expect(document.cookie).toContain(`${cookieName}=sv`);
   });
 });
+
+test("homepage session-refresh leftover cleanup does not require document", async () => {
+  vi.useFakeTimers();
+  await using _timers = makeResource({}, () => {
+    vi.useRealTimers();
+  });
+  {
+    await using _view = await renderWithTestRouter(<HomePage />);
+  }
+
+  const previousDocument = Object.getOwnPropertyDescriptor(globalThis, "document");
+  if (!previousDocument) {
+    throw new Error("expected jsdom document");
+  }
+  await using _restoreDocument = makeResource({}, () => {
+    Object.defineProperty(globalThis, "document", previousDocument);
+  });
+  // @ts-expect-error — simulate vitest tearing down jsdom before nanostores unmount
+  delete globalThis.document;
+  expect(Object.getOwnPropertyDescriptor(globalThis, "document")).toBeUndefined();
+
+  expect(() => {
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+  }).not.toThrow();
+});

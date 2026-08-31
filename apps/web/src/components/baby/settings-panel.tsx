@@ -67,9 +67,9 @@ import { isString } from "@workspace/runtime/guards";
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import { getLanguageName, useI18n } from "@/lib/i18n";
@@ -185,7 +185,7 @@ function BabyLanguageSelect(props: {
 
 function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Promise<void> }) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const form = useZodForm({
     schema: emptyActionSchema,
     defaultValues: {},
@@ -201,7 +201,7 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
         }
       />
       <AlertDialogContent>
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t("Delete {{name}}'s page?", { name: props.babyName })}
@@ -232,7 +232,7 @@ function DeleteBabyPageForm(props: { babyName: string; onDelete: () => void | Pr
               </SubmitButton>
             </AlertDialogFooter>
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </AlertDialogContent>
     </AlertDialog>
   );
@@ -250,251 +250,258 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const onDelete = props.onDelete;
   const coParents = props.coParents;
   const journeyOption = JOURNEY_OPTION_BY_VALUE[props.birthJourney];
+  const overlay = useFormGuard({
+    onOpenChange: (open) => {
+      props.onOpenChange(open);
+    },
+  });
   return (
     <Dialog
       open={props.open}
-      onOpenChange={props.onOpenChange}
+      {...overlay.rootProps}
       onOpenChangeComplete={props.onOpenChangeComplete ?? undefined}
     >
-      <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t("Settings")}</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-5">
-          <SettingsSection title={t("Page details")}>
-            <Item>
-              <ItemMedia variant="icon">
-                <Baby className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Baby Name")}</ItemTitle>
-                <ItemDescription>{props.baby.name}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <NameEditor baby={props.baby} onUpdate={props.onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            <Item>
-              <ItemMedia variant="icon">
-                <CalendarHeart className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Due Date")}</ItemTitle>
-                <ItemDescription>
-                  {props.baby.dueDateDisplayMode === "message" ? (
-                    props.baby.publicDueDateText?.trim() ? (
-                      t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText })
-                    ) : (
-                      t("Due date hidden from visitors.")
-                    )
-                  ) : (
-                    <>
-                      {props.baby.dueDate ? formatDueDate(props.baby.dueDate, locale) : ""} ·{" "}
-                      {t("Visitors see the exact date and countdown.")}
-                    </>
-                  )}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
-              </ItemActions>
-            </Item>
-          </SettingsSection>
-
-          <SettingsSection title={t("Birth journey")}>
-            <Item>
-              <ItemMedia variant="icon">
-                <Heartbeat className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Journey")}</ItemTitle>
-                <ItemDescription>{t(journeyOption.descriptionKey)}</ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />
-              </ItemActions>
-            </Item>
-
-            {/* Marked milestones: correct their date here; mark new ones via
-              the "Post update" composer, unmark by deleting the timeline
-              update */}
-            {props.baby.laborStarted && (
-              <>
-                <ItemSeparator />
-                <Item>
-                  <ItemMedia variant="icon">
-                    <Heartbeat className="w-4 h-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>{t("Labour started")}</ItemTitle>
-                    <ItemDescription>
-                      {formatDate(props.baby.laborStarted, {
-                        locale,
-                        timeZone: props.baby.timeZone,
-                      })}{" "}
-                      ({getRelativeTime(props.baby.laborStarted, locale)})
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <StatusDateEditor
-                      baby={props.baby}
-                      status="labor_started"
-                      currentDate={props.baby.laborStarted}
-                      onRedate={props.onMilestoneRedate}
-                      onRemove={props.onMilestoneRemove}
-                    />
-                  </ItemActions>
-                </Item>
-              </>
-            )}
-
-            {props.baby.wentToHospital && (
-              <>
-                <ItemSeparator />
-                <Item>
-                  <ItemMedia variant="icon">
-                    <Hospital className="w-4 h-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>{t("Gone to hospital")}</ItemTitle>
-                    <ItemDescription>
-                      {formatDate(props.baby.wentToHospital, {
-                        locale,
-                        timeZone: props.baby.timeZone,
-                      })}{" "}
-                      ({getRelativeTime(props.baby.wentToHospital, locale)})
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <StatusDateEditor
-                      baby={props.baby}
-                      status="gone_to_hospital"
-                      currentDate={props.baby.wentToHospital}
-                      onRedate={props.onMilestoneRedate}
-                      onRemove={props.onMilestoneRemove}
-                    />
-                  </ItemActions>
-                </Item>
-              </>
-            )}
-
-            {props.baby.babyBorn && (
-              <>
-                <ItemSeparator />
-                <Item>
-                  <ItemMedia variant="icon">
-                    <Confetti className="w-4 h-4" />
-                  </ItemMedia>
-                  <ItemContent>
-                    <ItemTitle>{t("Baby born")}</ItemTitle>
-                    <ItemDescription>
-                      {formatDate(props.baby.babyBorn, {
-                        locale,
-                        timeZone: props.baby.timeZone,
-                      })}{" "}
-                      ({getRelativeTime(props.baby.babyBorn, locale)})
-                    </ItemDescription>
-                  </ItemContent>
-                  <ItemActions>
-                    <StatusDateEditor
-                      baby={props.baby}
-                      status="born"
-                      currentDate={props.baby.babyBorn}
-                      onRedate={props.onMilestoneRedate}
-                      onRemove={props.onMilestoneRemove}
-                    />
-                  </ItemActions>
-                </Item>
-              </>
-            )}
-          </SettingsSection>
-
-          <SettingsSection title={t("Appearance")}>
-            <Item>
-              <ItemMedia variant="icon">
-                <Palette className="w-4 h-4" />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Theme")}</ItemTitle>
-                <ItemDescription>
-                  {t(getThemeOption(props.baby.theme)?.labelKey ?? "Mango")}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <ThemeSelector baby={props.baby} onUpdate={props.onUpdate} />
-              </ItemActions>
-            </Item>
-
-            <ItemSeparator />
-
-            <Item>
-              <ItemMedia variant="icon">
-                <Translate />
-              </ItemMedia>
-              <ItemContent>
-                <ItemTitle>{t("Language")}</ItemTitle>
-                <ItemDescription>
-                  {t("All visitors see this page in {{language}}.", {
-                    language: getLanguageName(props.baby.locale ?? inheritedLocale, locale),
-                  })}
-                </ItemDescription>
-              </ItemContent>
-              <ItemActions>
-                <BabyLanguageSelect
-                  value={props.baby.locale}
-                  inheritedLocale={inheritedLocale}
-                  onUpdate={props.onUpdate}
-                />
-              </ItemActions>
-            </Item>
-          </SettingsSection>
-
-          {coParents && (
-            <SettingsSection title={t("Access")}>
-              <Item variant="default" className="items-start">
-                <ItemMedia variant="icon">
-                  <Users className="w-4 h-4" />
-                </ItemMedia>
-                <ItemContent className="gap-3">
-                  <div>
-                    <ItemTitle>{t("Co-parents")}</ItemTitle>
-                    <ItemDescription>
-                      {coParents.isOwner
-                        ? t("People who can post updates and change settings")
-                        : t("Others who can manage this page with you")}
-                    </ItemDescription>
-                  </div>
-                  <CoParentsSettings
-                    babyId={coParents.babyId}
-                    isOwner={coParents.isOwner}
-                    listing={coParents.listing}
-                  />
-                </ItemContent>
-              </Item>
-            </SettingsSection>
-          )}
-
-          {onDelete && (
-            <SettingsSection title={t("Danger zone")}>
+      <FormGuardProvider guard={overlay}>
+        <DialogContent className="sm:max-w-lg max-h-[min(90vh,40rem)] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("Settings")}</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-5">
+            <SettingsSection title={t("Page details")}>
               <Item>
                 <ItemMedia variant="icon">
-                  <Trash className="w-4 h-4" />
+                  <Baby className="w-4 h-4" />
                 </ItemMedia>
                 <ItemContent>
-                  <ItemTitle>{t("Delete page")}</ItemTitle>
-                  <ItemDescription>{t("Hide this baby page from everyone")}</ItemDescription>
+                  <ItemTitle>{t("Baby Name")}</ItemTitle>
+                  <ItemDescription>{props.baby.name}</ItemDescription>
                 </ItemContent>
                 <ItemActions>
-                  <DeleteBabyPageForm babyName={props.baby.name} onDelete={onDelete} />
+                  <NameEditor baby={props.baby} onUpdate={props.onUpdate} />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item>
+                <ItemMedia variant="icon">
+                  <CalendarHeart className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Due Date")}</ItemTitle>
+                  <ItemDescription>
+                    {props.baby.dueDateDisplayMode === "message" ? (
+                      props.baby.publicDueDateText?.trim() ? (
+                        t("Visitors see “{{text}}”.", { text: props.baby.publicDueDateText })
+                      ) : (
+                        t("Due date hidden from visitors.")
+                      )
+                    ) : (
+                      <>
+                        {props.baby.dueDate ? formatDueDate(props.baby.dueDate, locale) : ""} ·{" "}
+                        {t("Visitors see the exact date and countdown.")}
+                      </>
+                    )}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <DueDateEditor baby={props.baby} onUpdate={props.onUpdate} />
                 </ItemActions>
               </Item>
             </SettingsSection>
-          )}
-        </div>
-      </DialogContent>
+
+            <SettingsSection title={t("Birth journey")}>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Heartbeat className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Journey")}</ItemTitle>
+                  <ItemDescription>{t(journeyOption.descriptionKey)}</ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <JourneyEditor birthJourney={props.birthJourney} onUpdate={props.onUpdate} />
+                </ItemActions>
+              </Item>
+
+              {/* Marked milestones: correct their date here; mark new ones via
+              the "Post update" composer, unmark by deleting the timeline
+              update */}
+              {props.baby.laborStarted && (
+                <>
+                  <ItemSeparator />
+                  <Item>
+                    <ItemMedia variant="icon">
+                      <Heartbeat className="w-4 h-4" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle>{t("Labour started")}</ItemTitle>
+                      <ItemDescription>
+                        {formatDate(props.baby.laborStarted, {
+                          locale,
+                          timeZone: props.baby.timeZone,
+                        })}{" "}
+                        ({getRelativeTime(props.baby.laborStarted, locale)})
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <StatusDateEditor
+                        baby={props.baby}
+                        status="labor_started"
+                        currentDate={props.baby.laborStarted}
+                        onRedate={props.onMilestoneRedate}
+                        onRemove={props.onMilestoneRemove}
+                      />
+                    </ItemActions>
+                  </Item>
+                </>
+              )}
+
+              {props.baby.wentToHospital && (
+                <>
+                  <ItemSeparator />
+                  <Item>
+                    <ItemMedia variant="icon">
+                      <Hospital className="w-4 h-4" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle>{t("Gone to hospital")}</ItemTitle>
+                      <ItemDescription>
+                        {formatDate(props.baby.wentToHospital, {
+                          locale,
+                          timeZone: props.baby.timeZone,
+                        })}{" "}
+                        ({getRelativeTime(props.baby.wentToHospital, locale)})
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <StatusDateEditor
+                        baby={props.baby}
+                        status="gone_to_hospital"
+                        currentDate={props.baby.wentToHospital}
+                        onRedate={props.onMilestoneRedate}
+                        onRemove={props.onMilestoneRemove}
+                      />
+                    </ItemActions>
+                  </Item>
+                </>
+              )}
+
+              {props.baby.babyBorn && (
+                <>
+                  <ItemSeparator />
+                  <Item>
+                    <ItemMedia variant="icon">
+                      <Confetti className="w-4 h-4" />
+                    </ItemMedia>
+                    <ItemContent>
+                      <ItemTitle>{t("Baby born")}</ItemTitle>
+                      <ItemDescription>
+                        {formatDate(props.baby.babyBorn, {
+                          locale,
+                          timeZone: props.baby.timeZone,
+                        })}{" "}
+                        ({getRelativeTime(props.baby.babyBorn, locale)})
+                      </ItemDescription>
+                    </ItemContent>
+                    <ItemActions>
+                      <StatusDateEditor
+                        baby={props.baby}
+                        status="born"
+                        currentDate={props.baby.babyBorn}
+                        onRedate={props.onMilestoneRedate}
+                        onRemove={props.onMilestoneRemove}
+                      />
+                    </ItemActions>
+                  </Item>
+                </>
+              )}
+            </SettingsSection>
+
+            <SettingsSection title={t("Appearance")}>
+              <Item>
+                <ItemMedia variant="icon">
+                  <Palette className="w-4 h-4" />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Theme")}</ItemTitle>
+                  <ItemDescription>
+                    {t(getThemeOption(props.baby.theme)?.labelKey ?? "Mango")}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <ThemeSelector baby={props.baby} onUpdate={props.onUpdate} />
+                </ItemActions>
+              </Item>
+
+              <ItemSeparator />
+
+              <Item>
+                <ItemMedia variant="icon">
+                  <Translate />
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{t("Language")}</ItemTitle>
+                  <ItemDescription>
+                    {t("All visitors see this page in {{language}}.", {
+                      language: getLanguageName(props.baby.locale ?? inheritedLocale, locale),
+                    })}
+                  </ItemDescription>
+                </ItemContent>
+                <ItemActions>
+                  <BabyLanguageSelect
+                    value={props.baby.locale}
+                    inheritedLocale={inheritedLocale}
+                    onUpdate={props.onUpdate}
+                  />
+                </ItemActions>
+              </Item>
+            </SettingsSection>
+
+            {coParents && (
+              <SettingsSection title={t("Access")}>
+                <Item variant="default" className="items-start">
+                  <ItemMedia variant="icon">
+                    <Users className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent className="gap-3">
+                    <div>
+                      <ItemTitle>{t("Co-parents")}</ItemTitle>
+                      <ItemDescription>
+                        {coParents.isOwner
+                          ? t("People who can post updates and change settings")
+                          : t("Others who can manage this page with you")}
+                      </ItemDescription>
+                    </div>
+                    <CoParentsSettings
+                      babyId={coParents.babyId}
+                      isOwner={coParents.isOwner}
+                      listing={coParents.listing}
+                    />
+                  </ItemContent>
+                </Item>
+              </SettingsSection>
+            )}
+
+            {onDelete && (
+              <SettingsSection title={t("Danger zone")}>
+                <Item>
+                  <ItemMedia variant="icon">
+                    <Trash className="w-4 h-4" />
+                  </ItemMedia>
+                  <ItemContent>
+                    <ItemTitle>{t("Delete page")}</ItemTitle>
+                    <ItemDescription>{t("Hide this baby page from everyone")}</ItemDescription>
+                  </ItemContent>
+                  <ItemActions>
+                    <DeleteBabyPageForm babyName={props.baby.name} onDelete={onDelete} />
+                  </ItemActions>
+                </Item>
+              </SettingsSection>
+            )}
+          </div>
+        </DialogContent>
+      </FormGuardProvider>
     </Dialog>
   );
 }

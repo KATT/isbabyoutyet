@@ -1,6 +1,6 @@
 import { fireEvent, render, within } from "@testing-library/react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { ConvexProvider, type ConvexReactClient } from "convex/react";
+import { ConvexProvider } from "convex/react";
 import { expect, test, vi } from "vitest";
 import type { Id } from "@workspace/convex/convex/_generated/dataModel";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -23,6 +23,7 @@ import {
 } from "@/test/convexTestSeed";
 import { renderWithConvexTest } from "@/test/renderWithConvexTest";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
+import { htmlButton, htmlInput, htmlTextArea, htmlImage, htmlElement } from "@/test/htmlElement";
 
 function isMutationArgsRecord<TArgs>(args: TArgs): args is TArgs & object {
   return isPlainObject(args);
@@ -69,7 +70,10 @@ function renderComposerTree(
 ) {
   return (
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as unknown as ConvexReactClient}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={harness.convexClient}
+      >
         <LocaleProvider locale={opts.locale}>
           <UpdateComposer
             babyId={opts.babyId}
@@ -94,12 +98,9 @@ async function renderComposer(
   let baby: BabyData = opts.baby;
   const locale = opts.locale ?? "en-GB";
   const view = render(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
-  const controls: {
-    view: ReturnType<typeof render>;
-    setBaby: (nextBaby: BabyData) => void;
-  } = {
+  const controls = {
     view,
-    setBaby(nextBaby) {
+    setBaby(nextBaby: BabyData) {
       baby = nextBaby;
       view.rerender(renderComposerTree(harness, { babyId: opts.babyId, baby, locale }));
     },
@@ -136,7 +137,10 @@ async function renderTimelineFeed(
   const timeline = await prefetchTimeline(harness, opts.publicId);
   return await renderWithTestRouter(
     <QueryClientProvider client={harness.queryClient}>
-      <ConvexProvider client={harness.convexClient as unknown as ConvexReactClient}>
+      <ConvexProvider
+        // @ts-expect-error — integration client is not ConvexReactClient
+        client={harness.convexClient}
+      >
         <LocaleProvider locale="en-GB">
           <TimelineFeed
             babyId={opts.babyId}
@@ -157,7 +161,7 @@ async function updateRow(view: ReturnType<typeof render>, message: string) {
   const messageNode = await view.findByText(message);
   const row = messageNode.closest(".group");
   if (!row) throw new Error(`Timeline row missing for "${message}"`);
-  return within(row as HTMLElement);
+  return within(htmlElement(row));
 }
 
 test("the status radio group is labelled and offers only future stages", async () => {
@@ -262,7 +266,7 @@ test("an empty event-time picker does not post occurredAt", async () => {
   const postedBefore = Date.now();
 
   fireEvent.click(view.getByRole("radio", { name: "Labour started" }));
-  const picker = view.getByLabelText(/when did it happen/i) as HTMLInputElement;
+  const picker = htmlInput(view.getByLabelText(/when did it happen/i));
   expect(picker.value).toBe("");
   fireEvent.click(view.getByRole("button", { name: /post and mark/i }));
 
@@ -372,9 +376,9 @@ test("timeline milestone deletion is disabled while a later status exists", asyn
 
   const blockedDeleteButtons = feed
     .getAllByRole("button", { name: "Delete update" })
-    .filter((button) => (button as HTMLButtonElement).disabled);
+    .filter((button) => htmlButton(button).disabled);
   expect(blockedDeleteButtons.length).toBeGreaterThan(0);
-  const deleteButton = blockedDeleteButtons[0] as HTMLButtonElement;
+  const deleteButton = htmlButton(blockedDeleteButtons[0]);
   const tooltipTrigger = deleteButton.closest('[data-slot="tooltip-trigger"]');
   if (!tooltipTrigger) throw new Error("Tooltip trigger missing");
   expect(tooltipTrigger.getAttribute("aria-label")).toBe("Delete the Born status first");
@@ -401,6 +405,79 @@ test("shows the loaded first page instead of a spinner while the live query sync
   expect(feed.queryByText("Loading the timeline...")).toBeNull();
   expect(feed.getByText("Grandma")).toBeTruthy();
   expect(feed.getByText("Can't wait to meet you!")).toBeTruthy();
+});
+
+test("does not pop in encouragements from the first loaded page", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  await seedTimelineEncouragement(harness, {
+    babyId: baby.babyId,
+    authorName: "Grandma",
+    message: "Can't wait to meet you!",
+  });
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+
+  expect(feed.getByText("Can't wait to meet you!").closest("[data-live-insert]")).toBeNull();
+});
+
+test("pops in an encouragement that arrives after the first snapshot", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  await seedTimelineEncouragement(harness, {
+    babyId: baby.babyId,
+    authorName: "Grandma",
+    message: "Can't wait to meet you!",
+  });
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+
+  await harness.convexClient.mutation(api.encouragements.create, {
+    babyId: baby.babyId,
+    authorName: "Auntie",
+    message: "So exciting!",
+    visitorId: "visitor-live",
+  });
+
+  const liveMessage = await vi.waitFor(() => feed.getByText("So exciting!"));
+  expect(liveMessage.closest("[data-live-insert]")).not.toBeNull();
+  expect(feed.getByText("Can't wait to meet you!").closest("[data-live-insert]")).toBeNull();
+});
+
+test("pops in the first encouragement on a previously empty feed", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+
+  await using feed = await renderTimelineFeed(harness, {
+    babyId: baby.babyId,
+    publicId: baby.publicId,
+    baby: notYetBaby,
+    isOwner: false,
+    visitorId: undefined,
+  });
+  expect(feed.getByText("Nothing here yet")).toBeTruthy();
+
+  await harness.convexClient.mutation(api.encouragements.create, {
+    babyId: baby.babyId,
+    authorName: "Auntie",
+    message: "Hello little one!",
+    visitorId: "visitor-live",
+  });
+
+  const liveMessage = await vi.waitFor(() => feed.getByText("Hello little one!"));
+  expect(liveMessage.closest("[data-live-insert]")).not.toBeNull();
 });
 
 test("shows the empty feed, not a spinner, when the loaded first page is empty", async () => {
@@ -463,7 +540,7 @@ test("timeline photos link to the update photo overlay", async () => {
   expect(photoLink.getAttribute("href")).toBe(
     `/baby/${baby.publicId}/updates/${seeded.updateId}/photo`,
   );
-  const inline = feed.getByAltText("Baby update") as HTMLImageElement;
+  const inline = htmlImage(feed.getByAltText("Baby update"));
   expect(inline.src).toContain("http");
 });
 
@@ -493,6 +570,9 @@ test("owners can delete an encouragement and toast success", async () => {
 
   await vi.waitFor(() => {
     expect(toastSuccess).toHaveBeenCalledWith("Message deleted");
+  });
+  await vi.waitFor(() => {
+    expect(feed.queryByText("Can't wait!")).toBeNull();
   });
   const timeline = await harness.client.query(api.timeline.listByBaby, {
     babyId: baby.publicId,
@@ -678,7 +758,7 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
@@ -689,11 +769,55 @@ test("EncouragementForm mounts through the Convex provider", async () => {
   expect(view.getByLabelText("Message")).toBeTruthy();
 });
 
+test("EncouragementForm restores a session draft silently", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({
+      authorName: "Auntie Jo",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Auntie Jo");
+  expect(htmlTextArea(view.getByLabelText("Message")).value).toBe("Saved draft text");
+});
+
+test("EncouragementForm prefers a session name draft over committed localStorage", async () => {
+  await using harness = await createConvexTestHarness({ identity: null });
+  const baby = await seedOwnerBaby(harness);
+  localStorage.setItem("encouragement-author-name", "Committed Name");
+  sessionStorage.setItem(
+    `encouragement-message-draft:${baby.babyId}`,
+    JSON.stringify({
+      authorName: "Draft Name",
+      message: "Saved draft text",
+      savedAt: Date.now(),
+    }),
+  );
+
+  await using view = await renderWithConvexTest({
+    harness,
+    ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
+    wrap: null,
+  });
+
+  expect(htmlInput(view.getByLabelText("Your name")).value).toBe("Draft Name");
+});
+
 test("EncouragementForm submit reaches the Convex mutation", async () => {
   await using harness = await createConvexTestHarness({ identity: null });
   const baby = await seedOwnerBaby(harness);
 
-  await using view = renderWithConvexTest({
+  await using view = await renderWithConvexTest({
     harness,
     ui: <EncouragementForm babyId={baby.babyId} babyName={notYetBaby.name} />,
     wrap: null,
@@ -705,9 +829,7 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
 
   await vi.waitFor(
     () => {
-      expect(
-        (view.getByRole("button", { name: "Send some love" }) as HTMLButtonElement).disabled,
-      ).toBe(false);
+      expect(htmlButton(view.getByRole("button", { name: "Send some love" })).disabled).toBe(false);
     },
     // Form DEV delay (500ms) + encouragement toast DEV delay (1000ms)
     { timeout: 5000 },
@@ -723,4 +845,5 @@ test("EncouragementForm submit reaches the Convex mutation", async () => {
       (item) => item.kind === "encouragement" && item.encouragement?.message === "Thinking of you!",
     ),
   ).toBe(true);
+  expect(sessionStorage.getItem(`encouragement-message-draft:${baby.babyId}`)).toBeNull();
 });

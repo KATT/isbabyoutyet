@@ -81,13 +81,16 @@ repo-wide by the `no-mock` oxlint plugin. Build a seam instead:
   hand-built handler maps and production `*View` / DI props when integration
   tests can mount the real component. Wrap in the real `ConvexProvider` /
   `QueryClientProvider`.
-- **Convex stub lint:** `no-convex-stubs/no-invalid-convex-client` bans
+- **Convex stub lint:** `workspace/no-invalid-convex-client` bans
   `new ConvexReactClient("https://example.invalid")` in web tests;
-  `no-convex-stubs/no-test-preloaded-query` bans
+  `workspace/no-test-preloaded-query` bans
   `@workspace/convex-prefetch/test-helpers` fake handles.
 - **Everything else:** `vi.fn` and `vi.spyOn` are still fine (e.g. spying on
-  `sonner`'s `toast` methods). Browser API gaps belong in
-  `apps/web/src/test/setup.ts`.
+  `sonner`'s `toast` methods). `vi.stubGlobal` is the allowed exception for
+  jsdom/window host APIs — use `stubJsdomWindow()` (an `await using` resource)
+  or go through `renderResource` / `renderWithTestRouter` /
+  `renderWithConvexTest` / `renderMountedFileRoute` / `createConvexTestHarness`.
+  Do not use `vi.mock`.
 
 ## Convex
 

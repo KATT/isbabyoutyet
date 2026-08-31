@@ -4,6 +4,7 @@ import type { BabyData } from "@workspace/convex/src/types";
 import { makeResource } from "@workspace/convex/convex/test.resource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 import { StatusDisplay } from "./status-display";
+import { htmlImage } from "@/test/htmlElement";
 
 function useFakeTimersResource(now: Date) {
   vi.useFakeTimers({ now });
@@ -202,7 +203,7 @@ test("uses the thumbnail inline and links to the photo overlay", async () => {
 
   const avatar = view.getByRole("link", { name: "Photo of Nova" });
   expect(avatar.getAttribute("href")).toBe("/baby/baby-nova/photo");
-  const inline = view.getByAltText("Photo of Nova") as HTMLImageElement;
+  const inline = htmlImage(view.getByAltText("Photo of Nova"));
   expect(inline.src).toContain("thumb.jpg");
   expect(
     inline.parentElement?.querySelector<HTMLImageElement>("[data-blur-image-placeholder]")?.src,

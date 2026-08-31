@@ -5,13 +5,11 @@
     "**/routeTree.gen.ts",
     "coverage/**",
     "**/paraglide/**",
-    "oxlint-plugins/**"
+    "packages/oxlint-plugins/dist/**",
+    "packages/scripts/dist/**"
   ],
   "tags": ["-@internal"],
   "workspaces": {
-    ".": {
-      "entry": ["scripts/compareCoverage.ts!"]
-    },
     "apps/web": {
       "tanstack-router": {
         "entry": ["src/routes/**/*.{ts,tsx}!", "src/router.tsx!"]
@@ -19,7 +17,9 @@
       "entry": [
         "public/sw.js!",
         "src/server.ts!",
-        "src/test/setup.ts!",
+        "src/test/stubJsdomWindow.ts!",
+        "src/test/htmlElement.ts!",
+        "src/test/renderResource.ts!",
         "src/test/convexTestHarness.ts!",
         "src/test/convexTestSeed.ts!",
         "src/test/renderWithConvexTest.tsx!",
@@ -33,7 +33,34 @@
     "packages/convex": {
       "entry": ["scripts/seedHomepageDemo.ts!", "scripts/seedHomepagePhotosDeferred.ts!"]
     },
+    "packages/oxlint-plugins": {
+      "entry": [
+        "workspace.ts!",
+        "anti-slop/index.ts!",
+        "infer-callback-params.ts!",
+        "inline-jsx-callback.ts!",
+        "no-banned-react-reexport.ts!",
+        "no-convex-optional.ts!",
+        "no-convex-query-hooks.ts!",
+        "no-invalid-convex-client.ts!",
+        "no-manual-memoization.ts!",
+        "no-mock.ts!",
+        "no-optional.ts!",
+        "no-overzealous-destructuring.ts!",
+        "no-rhf-watch.ts!",
+        "no-test-preloaded-query.ts!",
+        "no-use-effect.ts!",
+        "no-use-state.ts!",
+        "query-prefetch-shared.ts!",
+        "require-preloaded-query-options.ts!",
+        "use-loader-preloads.ts!"
+      ]
+    },
+    "packages/scripts": {
+      "entry": ["src/compareCoverage.ts!"]
+    },
     "packages/runtime": {},
+    "packages/form-guard": {},
     "packages/query-prefetch": {},
     "packages/convex-prefetch": {},
     "packages/ui": {}

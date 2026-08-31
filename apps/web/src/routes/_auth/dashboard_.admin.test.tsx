@@ -21,6 +21,7 @@ import {
   statusLabel,
 } from "@/routes/_auth/dashboard_.admin";
 
+// SAFETY: Test fixture is a subset of the production type.
 const t = ((key: string) => key) as TranslationFunction;
 
 const sampleBaby = {
@@ -269,8 +270,9 @@ test("infinite scroll sentinel requests another page when visible", async () => 
     }
     observe() {
       this.callback(
+        /* SAFETY: mock entry only needs isIntersecting for this callback. */
         [{ isIntersecting: true } as IntersectionObserverEntry],
-        this as unknown as IntersectionObserver,
+        this,
       );
     }
     unobserve() {}
@@ -280,10 +282,10 @@ test("infinite scroll sentinel requests another page when visible", async () => 
     }
     root = null;
     rootMargin = "";
+    scrollMargin = "";
     thresholds = [];
   }
-  globalThis.IntersectionObserver =
-    MockIntersectionObserver as unknown as typeof IntersectionObserver;
+  globalThis.IntersectionObserver = MockIntersectionObserver;
 
   await using _view = await renderAdmin(
     <BabiesSection
@@ -424,10 +426,12 @@ async function runAdminLoader(
 ) {
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: () => Promise.resolve(ADMIN_EMPTY_PAGE) },
     serverHttpClient: undefined,
-  } as never);
-  const route = AdminRoute as unknown as {
+  });
+  // @ts-expect-error — stub loader opts are the fields this route reads
+  const route: {
     options: {
       loader: (opts: {
         context: {
@@ -438,7 +442,7 @@ async function runAdminLoader(
         deps: { tab: string; sort: string; order: string; hideDemo: boolean };
       }) => Promise<AdminLoaderResult>;
     };
-  };
+  } = AdminRoute;
   const queryClient = makeAdminLoaderQueryClient(handlers);
   return await route.options.loader({
     context: {

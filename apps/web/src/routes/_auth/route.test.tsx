@@ -46,6 +46,7 @@ function makeGuardCtx() {
 
 async function runGuard(opts: { context: GuardCtx; fetchToken: () => Promise<string | null> }) {
   return await resolveAuthGuard({
+    // SAFETY: Test fixture is a subset of the production type.
     context: opts.context as Parameters<typeof resolveAuthGuard>[0]["context"],
     fetchToken: opts.fetchToken,
   });
@@ -99,6 +100,7 @@ test("a fresh login retries the profile without taking auth ownership from the p
   const fetchToken = vi.fn<() => Promise<string | null>>().mockResolvedValueOnce("fresh-token");
   const setAuth = vi.fn<(fetchToken: () => Promise<string | null>) => void>();
   const guard = makeGuardCtx();
+  guard.queryClient.setQueryData(convexQuery(api.baby.listByUser, {}).queryKey, []);
   guard.queryFn
     .mockResolvedValueOnce(null)
     .mockResolvedValueOnce({ locale: "en-US", timeZone: "Europe/London", isAdmin: false });
@@ -108,6 +110,9 @@ test("a fresh login retries the profile without taking auth ownership from the p
 
   expect(result).toMatchObject({ locale: "en-US", isAuthenticated: true });
   expect(setAuth).not.toHaveBeenCalled();
+  expect(
+    guard.queryClient.getQueryData(convexQuery(api.baby.listByUser, {}).queryKey),
+  ).toBeUndefined();
   // The ensured profile lands in the cache for subsequent navigations.
   expect(guard.queryClient.getQueryData(convexQuery(api.profile.get, {}).queryKey)).toMatchObject({
     locale: "en-US",

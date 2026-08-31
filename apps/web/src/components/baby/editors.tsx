@@ -1,10 +1,10 @@
 import {
   Form,
   FormCancelButton,
-  FormOverlayProvider,
+  FormGuardProvider,
   shouldBlockOverlayDismiss,
   SubmitButton,
-  useFormOverlay,
+  useFormGuard,
   useZodForm,
 } from "@/components/Form";
 import {
@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@workspace/ui/components/alert-dialog";
 import { Button } from "@workspace/ui/components/button";
+import { Spinner } from "@workspace/ui/components/spinner";
 import { FormControl, FormField, FormItem, FormMessage } from "@workspace/ui/components/form";
 import { Input } from "@workspace/ui/components/input";
 import {
@@ -58,7 +59,7 @@ const emptyActionSchema = z.object({});
 
 // Uncontrolled popovers: forms mount fresh when the popup opens so
 // defaultValues stay current without a reset. Cancel uses PopoverClose +
-// FormCancelButton; successful save/delete closes via useFormOverlay.close.
+// FormCancelButton; successful save/delete closes via useFormGuard.close.
 
 type EditorFormProps = {
   baby: BabyData;
@@ -122,22 +123,7 @@ function dueDateSchema(t: TranslationFunction) {
 
 export function DueDateEditor(props: DueDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({
-    onOpenChange: (open, eventDetails) => {
-      // Keep the popover open while the native date picker (rendered outside
-      // the popover) is in use; Base UI replaces onInteractOutside with
-      // onOpenChange reasons + eventDetails.cancel()
-      if (
-        !open &&
-        (eventDetails.reason === "outside-press" || eventDetails.reason === "focus-out")
-      ) {
-        const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLInputElement && activeElement.type === "date") {
-          eventDetails.cancel();
-        }
-      }
-    },
-  });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -149,9 +135,9 @@ export function DueDateEditor(props: DueDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <DueDateForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -204,7 +190,7 @@ function statusDateSchema(t: TranslationFunction, timeZone: string) {
 
 export function StatusDateEditor(props: StatusDateEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -217,7 +203,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <StatusDateForm
             baby={props.baby}
             status={props.status}
@@ -226,7 +212,7 @@ export function StatusDateEditor(props: StatusDateEditorProps) {
             onRemove={props.onRemove}
             onClose={overlay.close}
           />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -379,7 +365,7 @@ function nameSchema(t: TranslationFunction) {
 
 export function NameEditor(props: NameEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -391,9 +377,9 @@ export function NameEditor(props: NameEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-80 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <NameForm baby={props.baby} onUpdate={props.onUpdate} onClose={overlay.close} />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -451,7 +437,7 @@ function journeySchema() {
 
 export function JourneyEditor(props: JourneyEditorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <Popover {...overlay.rootProps}>
@@ -463,13 +449,13 @@ export function JourneyEditor(props: JourneyEditorProps) {
         }
       />
       <PopoverContent align="end" className="w-96 max-w-[calc(100vw-1rem)]">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <JourneyForm
             birthJourney={props.birthJourney}
             onUpdate={props.onUpdate}
             onClose={overlay.close}
           />
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );
@@ -527,9 +513,49 @@ function ThemeSwatches(props: { colors: readonly string[] }) {
   );
 }
 
+function ThemeOptionList(props: {
+  selectedValue: string | null | undefined;
+  onPick: (theme: string | null) => void;
+}) {
+  const { t } = useI18n();
+  const { isSubmitting } = useFormState();
+  const pendingTheme = useWatch({ name: "theme" });
+
+  return (
+    <div className="flex flex-col gap-1">
+      {THEME_OPTIONS.map((option) => {
+        const isPending = isSubmitting && pendingTheme === option.value;
+        return (
+          <Button
+            key={option.value ?? "default"}
+            type="submit"
+            variant={props.selectedValue === option.value ? "default" : "ghost"}
+            aria-pressed={props.selectedValue === option.value}
+            aria-busy={isPending}
+            disabled={isSubmitting}
+            size="sm"
+            className="w-full justify-start gap-2"
+            onClick={() => {
+              props.onPick(option.value);
+            }}
+          >
+            <ThemeSwatches colors={option.colors} />
+            <span className="min-w-0 flex-1 text-left">{t(option.labelKey)}</span>
+            {isPending ? (
+              <span className="submit-icon-swap-in inline-grid size-4 shrink-0 place-items-center">
+                <Spinner className="size-4" />
+              </span>
+            ) : null}
+          </Button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ThemeSelector(props: ThemeSelectorProps) {
   const { t } = useI18n();
-  const overlay = useFormOverlay({ onOpenChange: undefined });
+  const overlay = useFormGuard({ onOpenChange: undefined });
   const selectedTheme = getThemeOption(props.baby.theme);
   const form = useZodForm({
     schema: z
@@ -557,7 +583,7 @@ export function ThemeSelector(props: ThemeSelectorProps) {
         }
       />
       <PopoverContent align="end" className="w-56">
-        <FormOverlayProvider overlay={overlay}>
+        <FormGuardProvider guard={overlay}>
           <Form
             form={form}
             handleSubmit={async (values) => {
@@ -565,28 +591,14 @@ export function ThemeSelector(props: ThemeSelectorProps) {
               overlay.close();
             }}
           >
-            <div className="flex flex-col gap-1">
-              {THEME_OPTIONS.map((option) => (
-                <SubmitButton
-                  key={option.value ?? "default"}
-                  form="context"
-                  variant={selectedTheme?.value === option.value ? "default" : "ghost"}
-                  aria-pressed={selectedTheme?.value === option.value}
-                  size="sm"
-                  className="justify-start gap-2"
-                  IconComponent={null}
-                  iconPosition="start"
-                  onClick={() => {
-                    form.setValue("theme", option.value, { shouldDirty: true });
-                  }}
-                >
-                  <ThemeSwatches colors={option.colors} />
-                  {t(option.labelKey)}
-                </SubmitButton>
-              ))}
-            </div>
+            <ThemeOptionList
+              selectedValue={selectedTheme?.value}
+              onPick={(theme) => {
+                form.setValue("theme", theme, { shouldDirty: true });
+              }}
+            />
           </Form>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </PopoverContent>
     </Popover>
   );

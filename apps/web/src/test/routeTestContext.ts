@@ -25,6 +25,7 @@ export async function runRouteBeforeLoad(opts: {
   route: AnyRoute;
   params: Record<string, string>;
 }) {
+  // SAFETY: Test fixture is a subset of the production type.
   const beforeLoad = opts.route.options.beforeLoad as
     | ((routeOpts: {
         context: RouteTestContext;
@@ -45,6 +46,7 @@ export async function runRouteLoader<TLoaderData>(opts: {
   route: AnyRoute;
   params: Record<string, string>;
 }) {
+  // SAFETY: Test fixture is a subset of the production type.
   const loader = opts.route.options.loader as
     | ((routeOpts: {
         context: RouteTestContext;

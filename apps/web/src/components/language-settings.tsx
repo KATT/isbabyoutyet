@@ -29,13 +29,7 @@ import {
   ComboboxItem,
   ComboboxList,
 } from "@workspace/ui/components/combobox";
-import {
-  Form,
-  FormOverlayProvider,
-  SubmitButton,
-  useFormOverlay,
-  useZodForm,
-} from "@/components/Form";
+import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { PaperPlaneTilt } from "@phosphor-icons/react";
 import { LanguagePicker } from "@/components/language-picker";
 import type { PreloadedConvexQuery } from "@workspace/convex-prefetch";
@@ -145,7 +139,7 @@ export function LanguageSettings(props: {
   });
   const selectedTimeZoneOption =
     timeZoneOptions.find((option) => option.value === optimisticTimeZone) ?? defaultTimeZoneOption;
-  const languageRequestOverlay = useFormOverlay({ onOpenChange: undefined });
+  const languageRequestOverlay = useFormGuard({ onOpenChange: undefined });
 
   return (
     <div className={cn("flex flex-wrap items-center justify-center gap-2", props.className)}>
@@ -209,7 +203,7 @@ export function LanguageSettings(props: {
           }
         />
         <DialogContent>
-          <FormOverlayProvider overlay={languageRequestOverlay}>
+          <FormGuardProvider guard={languageRequestOverlay}>
             <DialogHeader>
               <DialogTitle>{t("Request another language")}</DialogTitle>
               <DialogDescription>
@@ -220,7 +214,7 @@ export function LanguageSettings(props: {
               onRequestLanguage={onRequestLanguage}
               onClose={languageRequestOverlay.close}
             />
-          </FormOverlayProvider>
+          </FormGuardProvider>
         </DialogContent>
       </Dialog>
     </div>

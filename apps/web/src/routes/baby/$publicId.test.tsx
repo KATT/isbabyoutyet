@@ -1,9 +1,7 @@
-import { render } from "@testing-library/react";
 import { QueryClient } from "@tanstack/react-query";
 import { getConvexQueryPreloader } from "@workspace/convex-prefetch";
 import { convexTest } from "convex-test";
 import type { FunctionReturnType } from "convex/server";
-import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { StatusDisplay } from "@/components/baby/status-display";
 import { api } from "@workspace/convex/convex/_generated/api";
@@ -20,15 +18,17 @@ import {
 import { LocaleProvider } from "@/lib/i18n";
 import { browserPushQueryOptions } from "@/components/baby/notification-subscribe";
 import { getBabySeo } from "@/lib/baby-seo";
+import { renderResource } from "@/test/renderResource";
 
 const routeModule = await import("@/routes/baby/$publicId/route");
 const { docToBabyData, managerDocToBabyData } = routeModule;
 
 test("parent route caches public overlays and keeps manager overlays private", () => {
-  const headers = routeModule.Route.options.headers as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields headers reads
+  const headers: (opts: {
     params: { publicId: string };
     matches: Array<{ routeId: string }>;
-  }) => Record<string, string>;
+  }) => Record<string, string> = routeModule.Route.options.headers;
   const publicHeaders = headers({
     params: { publicId: "juniper-hale" },
     matches: [{ routeId: "/baby/$publicId" }, { routeId: "/baby/$publicId/share" }],
@@ -77,13 +77,6 @@ function BabyDetailPage(props: { baby: PublicBaby }) {
   );
 }
 
-function renderResource(ui: ReactElement) {
-  const view = render(ui);
-  return makeResource(view, () => {
-    view.unmount();
-  });
-}
-
 test("renders a baby detail page from local convex-test data", async () => {
   // Freeze "now" so StatusDisplay's until-due / overdue copy stays deterministic
   await using _timers = useFakeTimersResource(new Date("2026-08-11T12:00:00.000Z"));
@@ -127,6 +120,7 @@ test("renders a baby detail page from local convex-test data", async () => {
       laborStarted: "2026-08-10T08:00:00.000Z",
       wentToHospital: "2026-08-10T12:00:00.000Z",
       babyBorn: "2026-08-11T03:00:00.000Z",
+      // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
@@ -143,6 +137,7 @@ test("renders a baby detail page from local convex-test data", async () => {
       theme: "baby-blue",
       locale: "sv",
       publicDueDateText: "Retained message",
+      // SAFETY: Seeded convex-test document id.
       photoId: "photo-id" as Id<"_storage">,
     }),
   ).toMatchObject({
@@ -356,10 +351,12 @@ async function setupBabyLoader(
   // The infinite timeline query fetches through the registered Convex client.
   const { registerConvexInfiniteQueryClient } = await import("@workspace/convex-prefetch");
   registerConvexInfiniteQueryClient({
+    // @ts-expect-error — fixture only implements query
     convexClient: { query: () => Promise.resolve(EMPTY_PAGE) },
     serverHttpClient: undefined,
-  } as never);
-  const loader = routeModule.Route.options.loader as unknown as (opts: {
+  });
+  // @ts-expect-error — stub context is the subset the loader reads
+  const loader: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -369,7 +366,7 @@ async function setupBabyLoader(
       locale: string;
     };
     params: { publicId: string };
-  }) => Promise<BabyLoaderResult>;
+  }) => Promise<BabyLoaderResult> = routeModule.Route.options.loader;
   const queryClient = makeLoaderQueryClient(handlers);
   const result = await loader({
     context: {
@@ -436,7 +433,8 @@ test("loader gives managers the same handles with real data", async () => {
 });
 
 test("beforeLoad 404s unknown babies", async () => {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields beforeLoad reads
+  const beforeLoad: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -444,7 +442,7 @@ test("beforeLoad 404s unknown babies", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<object | void | null>;
+  }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
 
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": null });
   const pending = beforeLoad({
@@ -461,7 +459,8 @@ test("beforeLoad 404s unknown babies", async () => {
 });
 
 test("beforeLoad redirects legacy settings links", async () => {
-  const beforeLoad = routeModule.Route.options.beforeLoad as unknown as (opts: {
+  // @ts-expect-error — stub opts are the fields beforeLoad reads
+  const beforeLoad: (opts: {
     context: {
       queryClient: QueryClient;
       convexPreloader: ReturnType<typeof getConvexQueryPreloader>;
@@ -469,7 +468,7 @@ test("beforeLoad redirects legacy settings links", async () => {
     params: { publicId: string };
     search: { settings: boolean | undefined };
     location: { search: Record<string, string | boolean> };
-  }) => Promise<object | void | null>;
+  }) => Promise<object | void | null> = routeModule.Route.options.beforeLoad;
   const queryClient = makeLoaderQueryClient({ "baby:getByPublicId": BABY_DOC });
 
   await expect(
@@ -533,6 +532,7 @@ test("loader prefetches browser push capability on the client", async () => {
 test("docToBabyData coalesces missing public due date text to null", () => {
   expect(
     docToBabyData({
+      // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
       _creationTime: 1,
       name: "Nova",
@@ -563,6 +563,7 @@ test("docToBabyData coalesces missing public due date text to null", () => {
 test("share preview uses the canonical route slug while reactive baby data changes", () => {
   const seo = getBabySeo(
     {
+      // SAFETY: Seeded convex-test document id.
       _id: "baby-1" as Id<"baby">,
       _creationTime: 1,
       name: "Juniper Hale",

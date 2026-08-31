@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { expect, test, vi } from "vitest";
 import { makeResource } from "@workspace/convex/convex/test.resource";
@@ -13,13 +13,11 @@ import {
   RootDocument,
   RootErrorComponent,
 } from "@/routes/__root";
+import { renderResource } from "@/test/renderResource";
 import { renderWithTestRouter } from "@/test/renderWithTestRouter";
 
 function renderProgress(ui: ReactElement) {
-  const view = render(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
-  return makeResource(view, () => {
-    view.unmount();
-  });
+  return renderResource(<LocaleProvider locale="en-GB">{ui}</LocaleProvider>);
 }
 
 function withoutBrowserWindow(run: () => Promise<void>) {
@@ -101,6 +99,37 @@ test("the root document shell sets the html lang attribute", async () => {
 
   // React 19 hoists the <html> element onto the real document.
   expect(document.documentElement.getAttribute("lang")).toBe("en-GB");
+});
+
+test("TanStack Devtools are omitted outside local dev and preview", async () => {
+  vi.stubEnv("DEV", false);
+  await using _env = makeResource({}, () => {
+    vi.unstubAllEnvs();
+  });
+
+  await using _view = await renderWithTestRouter(
+    <RootDocument locale="en-GB">
+      <div>shell</div>
+    </RootDocument>,
+  );
+
+  expect(document.querySelector("[data-slot=tanstack-devtools]")).toBeNull();
+});
+
+test("TanStack Devtools stay on preview builds", async () => {
+  vi.stubEnv("DEV", false);
+  vi.stubEnv("VITE_HAS_DEMO_LOGIN", "true");
+  await using _env = makeResource({}, () => {
+    vi.unstubAllEnvs();
+  });
+
+  await using _view = await renderWithTestRouter(
+    <RootDocument locale="en-GB">
+      <div>shell</div>
+    </RootDocument>,
+  );
+
+  expect(document.querySelector("[data-slot=tanstack-devtools]")).not.toBeNull();
 });
 
 test("the error page offers reload and go-home recovery, with details in dev", async () => {

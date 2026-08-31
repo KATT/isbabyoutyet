@@ -43,7 +43,7 @@ export const Route = createFileRoute("/baby/$publicId/updates/$updateId/photo")(
       opts.context.queryClient,
       updatePhoto.initialData.photoUrl,
     );
-    // oxlint-disable-next-line query-prefetch/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
+    // oxlint-disable-next-line workspace/use-loader-preloads -- Snapshot must stay stable while the lightbox is open.
     return {
       updatePhoto,
       imagePrefetch,

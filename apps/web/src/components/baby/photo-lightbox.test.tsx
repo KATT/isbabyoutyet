@@ -1,12 +1,12 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { makeResource } from "@workspace/convex/convex/test.resource";
+import { fireEvent, screen } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 import { LocaleProvider } from "@/lib/i18n";
 import { PhotoLightbox } from "./photo-lightbox";
+import { renderResource } from "@/test/renderResource";
 
 test("renders the photo and delegates the close control to overlay navigation", async () => {
   const close = vi.fn<() => void>();
-  const view = render(
+  await using _view = renderResource(
     <LocaleProvider locale="en-GB">
       <PhotoLightbox
         photoUrl="https://cdn.example/full.jpg"
@@ -21,9 +21,6 @@ test("renders the photo and delegates the close control to overlay navigation", 
       />
     </LocaleProvider>,
   );
-  await using _view = makeResource(view, () => {
-    view.unmount();
-  });
 
   // The dialog renders into a portal, so query the whole document body.
   expect(screen.getByAltText("Photo of Nova")).toBeTruthy();
