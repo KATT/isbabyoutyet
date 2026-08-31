@@ -32,7 +32,7 @@ test("shows the demo toast on every locale homepage baby", async () => {
 test("can dismiss the notice and shows it again for another demo baby", async () => {
   await using view = renderToastResource(HOMEPAGE_DEMO_BABY.publicId);
 
-  fireEvent.click(view.getByRole("button", { name: "Hide tip" }));
+  fireEvent.click(view.getByRole("button", { name: "Got it" }));
   expect(view.container.firstChild).toBeNull();
 
   view.rerender(<HomepageDemoToast publicId={HOMEPAGE_DEMO_BABIES.sv.publicId} />);
