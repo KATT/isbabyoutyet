@@ -44,7 +44,8 @@ test("runs with empty notifications and no subscriptions", async () => {
     />,
   );
 
-  expect(view.container.firstChild).toBeNull();
+  // The toast renders an <aside aria-live="polite"> when active, nothing when empty.
+  expect(view.queryByRole("complementary")).toBeNull();
 });
 
 test("treats forbidden notification data as empty", async () => {
@@ -79,7 +80,8 @@ test("treats forbidden notification data as empty", async () => {
     />,
   );
 
-  expect(view.container.firstChild).toBeNull();
+  // The toast renders an <aside aria-live="polite"> when active, nothing when empty.
+  expect(view.queryByRole("complementary")).toBeNull();
 });
 
 test("shows the exact subscriber count in a pending notification toast", async () => {

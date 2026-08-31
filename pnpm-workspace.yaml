@@ -6,11 +6,13 @@ catalog:
   '@convex-dev/better-auth': ^0.12.5
   '@oxlint/plugins': ^1.80.0
   '@tailwindcss/vite': ^4.3.3
+  '@tanstack/react-router': ^1.170.30
   '@types/node': ^26.2.0
   '@types/react': ^19.2.18
   '@types/react-dom': ^19.2.4
   better-auth: ~1.6.30
   convex: ^1.45.0
+  jsdom: ^30.0.1
   lucide-react: ^1.32.0
   next-themes: ^0.4.6
   oxfmt: ^0.64.0

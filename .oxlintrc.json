@@ -234,6 +234,17 @@
       }
     },
     {
+      // Audited external-store seam: the form leave-guard bridges Base UI
+      // dismissal, form dirty state, and router blocking through one store.
+      // The React layer needs a lazy useState store instance,
+      // useSyncExternalStore for prompt state, and effects for store wiring.
+      "files": ["packages/form-guard/src/**"],
+      "rules": {
+        "workspace/no-use-effect": "off",
+        "workspace/no-use-state": "off"
+      }
+    },
+    {
       // query-prefetch overloads use an optional third `remixInput` param (KATT gist API).
       "files": ["packages/query-prefetch/src/**"],
       "rules": {

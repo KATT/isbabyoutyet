@@ -25,13 +25,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
-import {
-  Form,
-  FormOverlayProvider,
-  SubmitButton,
-  useFormOverlay,
-  useZodForm,
-} from "@/components/Form";
+import { Form, FormGuardProvider, SubmitButton, useFormGuard, useZodForm } from "@/components/Form";
 import { LanguageSettings } from "@/components/language-settings";
 import { authClient } from "@/lib/auth-client";
 import { useI18n } from "@/lib/i18n";
@@ -125,7 +119,7 @@ export function DashboardSettingsSheetView(props: {
 }) {
   const { t } = useI18n();
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const formOverlay = useFormOverlay({ onOpenChange: props.overlay.onOpenChange });
+  const formOverlay = useFormGuard({ onOpenChange: props.overlay.onOpenChange });
 
   return (
     <Sheet
@@ -139,7 +133,7 @@ export function DashboardSettingsSheetView(props: {
         side="right"
         className="w-full sm:max-w-sm"
       >
-        <FormOverlayProvider overlay={formOverlay}>
+        <FormGuardProvider guard={formOverlay}>
           <SheetHeader>
             <SheetTitle>{t("Settings")}</SheetTitle>
             <SheetDescription>{t("Manage your profile and app preferences.")}</SheetDescription>
@@ -188,7 +182,7 @@ export function DashboardSettingsSheetView(props: {
           <SheetFooter>
             <SignOutForm onSignOut={props.onSignOut} />
           </SheetFooter>
-        </FormOverlayProvider>
+        </FormGuardProvider>
       </SheetContent>
     </Sheet>
   );

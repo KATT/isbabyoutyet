@@ -166,7 +166,7 @@ async function renderSubscribe(capability: BrowserPushCapability) {
     api.pushSubscriptions.getPublicKey,
     {},
   );
-  const view = renderWithConvexTest({
+  const view = await renderWithConvexTest({
     harness: harnessCtx,
     ui: (
       <TooltipProvider>
